@@ -24,6 +24,14 @@ export function isInLineClient(): boolean {
   }
 }
 
+export function isLineLoggedIn(): boolean {
+  try {
+    return liff.isLoggedIn()
+  } catch {
+    return false
+  }
+}
+
 export async function getLineProfile() {
   await initLiff()
   if (!liff.isLoggedIn()) return null

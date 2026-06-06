@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
 import { authRedirectUrl } from '../lib/authRedirect'
 import { consumeReturnTo, saveReturnTo } from '../lib/authReturnTo'
 import { syncProfileForUser } from '../lib/authProfile'
+import { signInWithLine } from '../lib/line/auth'
+import { hasLiffId, isInLineClient } from '../lib/line/liff'
 import { supabase } from '../lib/supabaseClient'
 
 type AuthMode = 'sign-in' | 'sign-up' | 'forgot'
@@ -23,11 +26,18 @@ const titles: Record<AuthMode, string> = {
 export function Login() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { session, loading } = useAuth()
   const fromPath = (location.state as { from?: string } | null)?.from
 
   useEffect(() => {
     if (fromPath) saveReturnTo(fromPath)
   }, [fromPath])
+
+  useEffect(() => {
+    if (!loading && session) {
+      navigate(fromPath ?? consumeReturnTo('/'), { replace: true })
+    }
+  }, [loading, session, fromPath, navigate])
 
   const goAfterAuth = () => {
     navigate(fromPath ?? consumeReturnTo('/'), { replace: true })
@@ -41,6 +51,34 @@ export function Login() {
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [lineBusy, setLineBusy] = useState(false)
+  const lineConfigured = hasLiffId()
+
+  useEffect(() => {
+    if (!lineConfigured || !isInLineClient()) return
+    let cancelled = false
+    void (async () => {
+      setLineBusy(true)
+      const { error: lineError, redirected } = await signInWithLine()
+      if (cancelled || redirected) return
+      setLineBusy(false)
+      if (lineError) setError(lineError)
+      else goAfterAuth()
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [lineConfigured])
+
+  const handleLineLogin = async () => {
+    setError(null)
+    setLineBusy(true)
+    const { error: lineError, redirected } = await signInWithLine()
+    if (redirected) return
+    setLineBusy(false)
+    if (lineError) setError(lineError)
+    else goAfterAuth()
+  }
 
   const switchMode = (next: AuthMode) => {
     setMode(next)
@@ -138,14 +176,15 @@ export function Login() {
   }
 
   const showPasswordFields = mode === 'sign-in' || mode === 'sign-up'
+  const showLine = mode === 'sign-in' || mode === 'sign-up'
 
   return (
-    <div className="game-bg flex h-full min-h-0 w-full min-w-0 items-center justify-center overflow-hidden">
+    <div className="game-bg flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden">
       <div
         data-scroll-y
-        className="scroll-y login-panel min-h-0 min-w-0 max-h-full py-8 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))]"
+        className="scroll-y login-panel mx-auto min-h-0 w-full max-w-md flex-1 py-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]"
       >
-        <div className="mb-6 text-center">
+        <div className="mb-5 text-center">
           <img
             src="/brand/logo-padel.webp"
             alt="Success Padel"
@@ -153,6 +192,45 @@ export function Login() {
           />
           <h1 className="font-display mt-3 text-xl font-semibold text-brand-primary">{titles[mode]}</h1>
         </div>
+
+        {mode !== 'forgot' && (
+          <div
+            className="mb-5 flex rounded-xl border border-brand-border bg-brand-surface p-1"
+            role="tablist"
+            aria-label="Sign in or sign up"
+          >
+            {(['sign-in', 'sign-up'] as const).map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                role="tab"
+                aria-selected={mode === tab}
+                onClick={() => switchMode(tab)}
+                className={`flex-1 rounded-lg py-2 text-sm font-semibold transition ${
+                  mode === tab
+                    ? 'bg-brand-accent text-white shadow-sm'
+                    : 'text-brand-muted hover:text-brand-text'
+                }`}
+              >
+                {tab === 'sign-in' ? 'Sign in' : 'Sign up'}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {showLine && (
+          <div className="mb-4 space-y-3">
+            <button
+              type="button"
+              disabled={busy || lineBusy}
+              onClick={() => void handleLineLogin()}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#06C755] py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              {lineBusy ? 'Connecting…' : 'Continue with LINE'}
+            </button>
+            <p className="text-center text-xs text-brand-muted">or use email</p>
+          </div>
+        )}
 
         <form onSubmit={submit} className="w-full min-w-0 space-y-3">
           {mode === 'sign-up' && (
@@ -227,25 +305,9 @@ export function Login() {
 
         <div className="mt-4 space-y-2 text-center text-sm">
           {mode === 'sign-in' && (
-            <>
-              <p>
-                <button type="button" onClick={() => switchMode('forgot')} className="brand-link">
-                  Forgot password?
-                </button>
-              </p>
-              <p className="game-subtle">
-                No account?{' '}
-                <button type="button" onClick={() => switchMode('sign-up')} className="brand-link">
-                  Sign up
-                </button>
-              </p>
-            </>
-          )}
-          {mode === 'sign-up' && (
-            <p className="game-subtle">
-              Already have an account?{' '}
-              <button type="button" onClick={() => switchMode('sign-in')} className="brand-link">
-                Sign in
+            <p>
+              <button type="button" onClick={() => switchMode('forgot')} className="brand-link">
+                Forgot password?
               </button>
             </p>
           )}

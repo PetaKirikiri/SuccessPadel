@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { formatClubDateShort, formatClubTime } from '../lib/courtSchedule'
 import { canJoinGame, rosterLabel } from '../lib/playerCaps'
 import { supabase } from '../lib/supabaseClient'
@@ -43,6 +43,7 @@ function CompetitionCard({
   onToggle: () => void
   onRefresh: () => void
 }) {
+  const loc = useLocation()
   const [busy, setBusy] = useState(false)
   const [joinError, setJoinError] = useState<string | null>(null)
   const isLive = Boolean(row.competition_started_at)
@@ -50,8 +51,9 @@ function CompetitionCard({
   const rosterCount = roster.length
   const target = row.target_players ?? row.max_players ?? null
   const joined = userId ? roster.some((sp) => sp.profile_id === userId) : false
-  const canJoin =
-    !joined && userId && canJoinGame(row, rosterCount) && row.status === 'open'
+  const spotsOpen = canJoinGame(row, rosterCount) && row.status === 'open'
+  const canJoin = !joined && userId && spotsOpen
+  const needsSignIn = !joined && !userId && spotsOpen
 
   const spots =
     target != null
@@ -135,6 +137,17 @@ function CompetitionCard({
             >
               Join
             </button>
+          )}
+
+          {needsSignIn && (
+            <Link
+              to="/login"
+              state={{ from: loc.pathname }}
+              className="brand-btn block w-full py-2 text-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              Sign in to join
+            </Link>
           )}
 
           {isAdmin && row.status === 'open' && !row.competition_started_at && rosterCount >= 4 && (

@@ -19,19 +19,13 @@ export type CompetitionRow = GameSession & {
   session_players: CompetitionPlayer[]
 }
 
-export function useCompetitions(userId?: string) {
+export function useCompetitions(_userId?: string) {
   const location = useLocation()
   const [rows, setRows] = useState<CompetitionRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const refresh = useCallback(async () => {
-    if (!userId) {
-      setRows([])
-      setLoading(false)
-      return
-    }
-
     setLoading(true)
     setError(null)
 
@@ -54,7 +48,7 @@ export function useCompetitions(userId?: string) {
       setRows((data as CompetitionRow[]) ?? [])
     }
     setLoading(false)
-  }, [userId])
+  }, [])
 
   useEffect(() => {
     void refresh()

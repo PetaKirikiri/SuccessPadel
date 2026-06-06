@@ -1,7 +1,7 @@
 import type React from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { Profile } from '../pages/Profile'
+import { saveReturnTo } from '../lib/authReturnTo'
 
 type NavIconProps = { className?: string }
 
@@ -129,13 +129,19 @@ function tabClass(active: boolean, variant: NavVariant) {
 }
 
 export function Layout() {
-  const { profile } = useAuth()
+  const { profile, user } = useAuth()
   const loc = useLocation()
   const navigate = useNavigate()
   const onProfile = loc.pathname === '/profile'
 
   const openProfile = () => {
-    if (!onProfile) navigate('/profile')
+    if (onProfile) return
+    if (!user) {
+      saveReturnTo('/profile')
+      navigate('/login', { state: { from: '/profile' } })
+      return
+    }
+    navigate('/profile')
   }
 
   return (
@@ -166,7 +172,7 @@ export function Layout() {
               onClick={openProfile}
               className="max-w-[45%] truncate rounded-full border border-brand-border bg-brand-surface px-3 py-1.5 text-xs font-medium text-brand-primary"
             >
-              {profile?.display_name ?? 'Profile'}
+              {profile?.display_name ?? (user ? 'Profile' : 'Sign in')}
             </button>
           </>
         )}
@@ -174,7 +180,7 @@ export function Layout() {
 
       <main data-scroll-y className="scroll-y min-h-0 min-w-0 flex-1 px-3 pb-2 pt-1">
         <div className="w-full min-w-0 max-w-full">
-          {onProfile ? <Profile /> : <Outlet />}
+          <Outlet />
         </div>
       </main>
 

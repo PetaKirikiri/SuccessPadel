@@ -16,12 +16,17 @@ import { Competitions } from './pages/Competitions'
 import { FindGame } from './pages/FindGame'
 import { Leaderboard } from './pages/Leaderboard'
 import { Login } from './pages/Login'
+import { Profile } from './pages/Profile'
 import { ResetPassword } from './pages/ResetPassword'
 import { MakeGame } from './pages/MakeGame'
 import { MatchNew } from './pages/MatchNew'
 import { Week } from './pages/Week'
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
+  return <ProtectedRoute>{children}</ProtectedRoute>
+}
+
+function AdminOnly({ children }: { children: React.ReactNode }) {
   const { profile, loading, user } = useAuth()
   if (loading || (user && !profile)) {
     return <p className="game-subtle p-4 text-center">Loading…</p>
@@ -67,11 +72,9 @@ export default function App() {
         />
         <Route
           element={
-            <ProtectedRoute>
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-                <Layout />
-              </div>
-            </ProtectedRoute>
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+              <Layout />
+            </div>
           }
         >
           <Route index element={<Leaderboard />} />
@@ -79,7 +82,9 @@ export default function App() {
             path="fun/new"
             element={
               <AdminRoute>
-                <CourtGameForm />
+                <AdminOnly>
+                  <CourtGameForm />
+                </AdminOnly>
               </AdminRoute>
             }
           />
@@ -91,7 +96,9 @@ export default function App() {
             path="competitions/new"
             element={
               <AdminRoute>
-                <CompetitionForm />
+                <AdminOnly>
+                  <CompetitionForm />
+                </AdminOnly>
               </AdminRoute>
             }
           />
@@ -99,19 +106,37 @@ export default function App() {
             path="competitions/:id/edit"
             element={
               <AdminRoute>
-                <CompetitionForm />
+                <AdminOnly>
+                  <CompetitionForm />
+                </AdminOnly>
               </AdminRoute>
             }
           />
           <Route path="competitions/:id/run" element={<CompetitionRun />} />
           <Route path="week" element={<Week />} />
-          <Route path="profile" element={null} />
-          <Route path="match/new" element={<MatchNew />} />
+          <Route
+            path="profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="match/new"
+            element={
+              <ProtectedRoute>
+                <MatchNew />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="admin/games"
             element={
               <AdminRoute>
-                <AdminGames />
+                <AdminOnly>
+                  <AdminGames />
+                </AdminOnly>
               </AdminRoute>
             }
           />
@@ -119,7 +144,9 @@ export default function App() {
             path="admin/games/new"
             element={
               <AdminRoute>
-                <CourtGameForm />
+                <AdminOnly>
+                  <CourtGameForm />
+                </AdminOnly>
               </AdminRoute>
             }
           />
@@ -127,7 +154,9 @@ export default function App() {
             path="admin/games/competition/new"
             element={
               <AdminRoute>
-                <AdminGameForm />
+                <AdminOnly>
+                  <AdminGameForm />
+                </AdminOnly>
               </AdminRoute>
             }
           />
@@ -135,7 +164,9 @@ export default function App() {
             path="admin/games/:id/edit"
             element={
               <AdminRoute>
-                <AdminGameForm />
+                <AdminOnly>
+                  <AdminGameForm />
+                </AdminOnly>
               </AdminRoute>
             }
           />
@@ -143,7 +174,9 @@ export default function App() {
             path="admin/seasons"
             element={
               <AdminRoute>
-                <AdminSeasons />
+                <AdminOnly>
+                  <AdminSeasons />
+                </AdminOnly>
               </AdminRoute>
             }
           />
