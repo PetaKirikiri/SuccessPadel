@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { authRedirectUrl } from '../lib/authRedirect'
@@ -53,9 +53,14 @@ export function Login() {
   const [busy, setBusy] = useState(false)
   const [lineBusy, setLineBusy] = useState(false)
   const lineConfigured = hasLiffId()
+  const inLineApp = isInLineClient()
+  const mobile = isMobileWeb()
+  const lineFirst = mobile && !inLineApp && lineConfigured
+  const [showEmail, setShowEmail] = useState(!lineFirst)
+  const autoLineStarted = useRef(false)
 
   useEffect(() => {
-    if (!lineConfigured || !isInLineClient()) return
+    if (!lineConfigured || !inLineApp) return
     let cancelled = false
     void (async () => {
       setLineBusy(true)
@@ -68,7 +73,20 @@ export function Login() {
     return () => {
       cancelled = true
     }
-  }, [lineConfigured])
+  }, [lineConfigured, inLineApp])
+
+  useEffect(() => {
+    if (!lineFirst || showEmail || loading || session || autoLineStarted.current) return
+    autoLineStarted.current = true
+    setLineBusy(true)
+    const returnPath = fromPath ?? consumeReturnTo('/login')
+    void (async () => {
+      const { error: lineError, redirected } = await startLineLogin(returnPath)
+      if (redirected) return
+      setLineBusy(false)
+      if (lineError) setError(lineError)
+    })()
+  }, [lineFirst, showEmail, loading, session, fromPath])
 
   const handleLineLogin = async () => {
     setError(null)
@@ -81,7 +99,6 @@ export function Login() {
     else goAfterAuth()
   }
 
-  const inLineApp = isInLineClient()
   const lineButtonLabel = lineBusy
     ? 'Connecting…'
     : inLineApp
@@ -187,6 +204,21 @@ export function Login() {
 
   const showPasswordFields = mode === 'sign-in' || mode === 'sign-up'
   const showLine = mode === 'sign-in' || mode === 'sign-up'
+  const signingInViaLine = inLineApp && lineConfigured && lineBusy && !error
+
+  if (signingInViaLine || (lineFirst && !showEmail && lineBusy && !error)) {
+    return (
+      <div className="game-bg flex h-full min-h-0 w-full min-w-0 flex-col items-center justify-center overflow-hidden px-6">
+        <img
+          src="/brand/logo-padel.webp"
+          alt="Success Padel"
+          className="mb-6 h-14 w-auto max-w-[min(100%,11rem)]"
+        />
+        <p className="font-display text-lg font-semibold text-brand-primary">Opening LINE…</p>
+        <p className="mt-2 text-center text-sm text-brand-muted">Tap Allow in LINE to continue.</p>
+      </div>
+    )
+  }
 
   return (
     <div className="game-bg flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden">
@@ -200,10 +232,32 @@ export function Login() {
             alt="Success Padel"
             className="mx-auto h-14 w-auto max-w-[min(100%,11rem)]"
           />
-          <h1 className="font-display mt-3 text-xl font-semibold text-brand-primary">{titles[mode]}</h1>
+          <h1 className="font-display mt-3 text-xl font-semibold text-brand-primary">
+            {lineFirst && !showEmail ? 'Sign in with LINE' : titles[mode]}
+          </h1>
         </div>
 
-        {mode !== 'forgot' && (
+        {lineFirst && !showEmail && showLine && (
+          <div className="space-y-4">
+            <button
+              type="button"
+              disabled={busy || lineBusy}
+              onClick={() => void handleLineLogin()}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#06C755] py-3 text-base font-semibold text-white disabled:opacity-60"
+            >
+              {lineButtonLabel}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowEmail(true)}
+              className="brand-link block w-full text-center text-sm"
+            >
+              Use email instead
+            </button>
+          </div>
+        )}
+
+        {showEmail && mode !== 'forgot' && (
           <div
             className="mb-5 flex rounded-xl border border-brand-border bg-brand-surface p-1"
             role="tablist"
@@ -228,7 +282,7 @@ export function Login() {
           </div>
         )}
 
-        {showLine && (
+        {showEmail && showLine && (
           <div className="mb-4 space-y-3">
             <button
               type="button"
@@ -238,15 +292,11 @@ export function Login() {
             >
               {lineButtonLabel}
             </button>
-            {!inLineApp && (
-              <p className="text-center text-xs text-brand-muted">
-                Opens LINE on your phone — tap Allow, then you&apos;re in.
-              </p>
-            )}
             <p className="text-center text-xs text-brand-muted">or use email</p>
           </div>
         )}
 
+        {showEmail && (
         <form onSubmit={submit} className="w-full min-w-0 space-y-3">
           {mode === 'sign-up' && (
             <input
@@ -317,7 +367,9 @@ export function Login() {
             {mode === 'forgot' ? 'Send reset email' : mode === 'sign-up' ? 'Create account' : 'Sign in'}
           </button>
         </form>
+        )}
 
+        {showEmail && (
         <div className="mt-4 space-y-2 text-center text-sm">
           {mode === 'sign-in' && (
             <p>
@@ -332,6 +384,7 @@ export function Login() {
             </button>
           )}
         </div>
+        )}
 
         {error && <p className="mt-4 break-words text-center text-sm text-red-600">{error}</p>}
         {info && <p className="mt-4 break-words text-center text-sm text-brand-primary">{info}</p>}
