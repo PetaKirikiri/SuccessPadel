@@ -45,7 +45,8 @@ export function Login() {
   const lineEnabled = isLineLoginConfigured()
   const inLineApp = isInLineClient()
 
-  const [showEmail, setShowEmail] = useState(!lineEnabled)
+  const adminEmail = new URLSearchParams(location.search).get('email') === '1'
+  const [showEmail, setShowEmail] = useState(!lineEnabled || adminEmail)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -224,7 +225,7 @@ export function Login() {
               className="mx-auto h-16 w-auto max-w-[min(100%,12rem)]"
             />
             <h1 className="font-display mt-4 text-2xl font-semibold text-brand-primary">Success Padel</h1>
-            <p className="mt-2 text-sm text-brand-muted">Tap below to sign in</p>
+            <p className="mt-2 text-sm text-brand-muted">No email needed — we use your LINE name</p>
           </div>
 
           <button
@@ -237,19 +238,8 @@ export function Login() {
           </button>
 
           <p className="mt-3 text-center text-xs text-brand-muted">
-            LINE opens → tap Allow → you&apos;re in
+            LINE app opens → tap Allow → done
           </p>
-
-          <button
-            type="button"
-            onClick={() => {
-              setShowEmail(true)
-              setError(null)
-            }}
-            className="brand-link mt-8 block w-full text-center text-xs"
-          >
-            Sign in with email instead
-          </button>
 
           {error && <p className="mt-4 text-center text-sm text-red-600">{error}</p>}
         </div>

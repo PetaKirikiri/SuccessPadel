@@ -68,7 +68,12 @@ export async function completeLineOAuthFromUrl(search: string): Promise<string |
     refresh_token?: string
   }
 
-  if (payload.error) return payload.error
+  if (payload.error) {
+    if (/LINE channel not configured/i.test(payload.error)) {
+      return 'LINE login is not fully set up on the server yet. Ask your admin.'
+    }
+    return payload.error
+  }
   if (!payload.access_token || !payload.refresh_token) {
     return 'Sign-in failed — no session returned.'
   }

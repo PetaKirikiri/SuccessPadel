@@ -6,6 +6,8 @@ import {
   initLiff,
   isInLineClient,
   isLineLoggedIn,
+  isMobileWeb,
+  lineAppEntryUrl,
   lineLoginRedirect,
 } from './liff'
 import { hasLineOAuth, startLineOAuthLogin } from './oauth'
@@ -20,17 +22,30 @@ export function isLineLoginConfigured(): boolean {
 }
 
 export async function startLineLogin(returnPath = '/login'): Promise<LineSignInResult> {
+  if (isInLineClient() && hasLiffId()) {
+    return signInWithLine()
+  }
+
+  // Phone: open the LINE app (LIFF). Avoids LINE's web email/password login page.
+  if (isMobileWeb() && hasLiffId()) {
+    const path =
+      returnPath && !returnPath.startsWith('/auth/') && returnPath !== '/login'
+        ? returnPath
+        : '/login'
+    const url = lineAppEntryUrl(path)
+    if (url) {
+      window.location.assign(url)
+      return { error: null, redirected: true }
+    }
+  }
+
   if (hasLineOAuth()) {
     startLineOAuthLogin(returnPath)
     return { error: null, redirected: true }
   }
 
-  if (hasLiffId() && isInLineClient()) {
-    return signInWithLine()
-  }
-
   return {
-    error: 'LINE sign-in is not set up yet. Use email for now.',
+    error: 'LINE sign-in is not set up yet.',
     redirected: false,
   }
 }
