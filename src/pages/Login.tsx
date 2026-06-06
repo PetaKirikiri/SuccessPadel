@@ -5,7 +5,7 @@ import { authRedirectUrl } from '../lib/authRedirect'
 import { consumeReturnTo, saveReturnTo } from '../lib/authReturnTo'
 import { syncProfileForUser } from '../lib/authProfile'
 import { isLineLoginConfigured, signInWithLine, startLineLogin } from '../lib/line/auth'
-import { hasLiffId, isInLineClient } from '../lib/line/liff'
+import { detectInLineClient, hasLiffId, lineAppEntryUrl } from '../lib/line/liff'
 import { completeLineOAuthFromUrl, lineOAuthCallbackCode } from '../lib/line/oauth'
 import { supabase } from '../lib/supabaseClient'
 
@@ -43,7 +43,10 @@ export function Login() {
   const { session, loading } = useAuth()
   const fromPath = (location.state as { from?: string } | null)?.from
   const lineEnabled = isLineLoginConfigured()
-  const inLineApp = isInLineClient()
+  const [inLineApp, setInLineApp] = useState(false)
+  const lineReturnPath =
+    fromPath && !fromPath.startsWith('/auth/') && fromPath !== '/login' ? fromPath : '/login'
+  const lineOpenUrl = lineAppEntryUrl(lineReturnPath)
 
   const adminEmail = new URLSearchParams(location.search).get('email') === '1'
   const [showEmail, setShowEmail] = useState(!lineEnabled || adminEmail)
@@ -96,9 +99,14 @@ export function Login() {
   }
 
   useEffect(() => {
-    if (!hasLiffId() || !inLineApp) return
+    if (!hasLiffId()) return
     let cancelled = false
     void (async () => {
+      const insideLine = await detectInLineClient()
+      if (cancelled) return
+      setInLineApp(insideLine)
+      if (!insideLine) return
+
       setLineBusy(true)
       const { error: lineError, redirected } = await signInWithLine()
       if (cancelled || redirected) return
@@ -109,7 +117,7 @@ export function Login() {
     return () => {
       cancelled = true
     }
-  }, [inLineApp])
+  }, [])
 
   const handleLineLogin = async () => {
     setError(null)
@@ -228,18 +236,37 @@ export function Login() {
             <p className="mt-2 text-sm text-brand-muted">No email needed — we use your LINE name</p>
           </div>
 
-          <button
-            type="button"
-            disabled={lineBusy}
-            onClick={() => void handleLineLogin()}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#06C755] py-3.5 text-base font-semibold text-white disabled:opacity-60"
-          >
-            Continue with LINE
-          </button>
+          {lineOpenUrl ? (
+            <a
+              href={lineOpenUrl}
+              onClick={() => saveReturnTo(fromPath ?? consumeReturnTo('/login'))}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#06C755] py-3.5 text-base font-semibold text-white no-underline"
+            >
+              Continue with LINE
+            </a>
+          ) : (
+            <button
+              type="button"
+              disabled={lineBusy}
+              onClick={() => void handleLineLogin()}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#06C755] py-3.5 text-base font-semibold text-white disabled:opacity-60"
+            >
+              Continue with LINE
+            </button>
+          )}
 
           <p className="mt-3 text-center text-xs text-brand-muted">
-            LINE app opens → tap Allow → done
+            Opens LINE → tap Allow → done
           </p>
+
+          {lineOpenUrl && (
+            <p className="mt-2 text-center text-[10px] text-brand-muted">
+              Didn&apos;t open?{' '}
+              <a href={lineOpenUrl} className="brand-link">
+                Tap here
+              </a>
+            </p>
+          )}
 
           {error && <p className="mt-4 text-center text-sm text-red-600">{error}</p>}
         </div>

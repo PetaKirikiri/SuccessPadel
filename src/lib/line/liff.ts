@@ -24,6 +24,16 @@ export function isInLineClient(): boolean {
   }
 }
 
+export async function detectInLineClient(): Promise<boolean> {
+  if (!liffId) return false
+  try {
+    await initLiff()
+    return liff.isInClient()
+  } catch {
+    return false
+  }
+}
+
 export function isLineLoggedIn(): boolean {
   try {
     return liff.isLoggedIn()

@@ -6,7 +6,6 @@ import {
   initLiff,
   isInLineClient,
   isLineLoggedIn,
-  isMobileWeb,
   lineAppEntryUrl,
   lineLoginRedirect,
 } from './liff'
@@ -26,8 +25,8 @@ export async function startLineLogin(returnPath = '/login'): Promise<LineSignInR
     return signInWithLine()
   }
 
-  // Phone: open the LINE app (LIFF). Avoids LINE's web email/password login page.
-  if (isMobileWeb() && hasLiffId()) {
+  // LIFF opens the LINE app on phones (use instead of web OAuth when possible).
+  if (hasLiffId()) {
     const path =
       returnPath && !returnPath.startsWith('/auth/') && returnPath !== '/login'
         ? returnPath
