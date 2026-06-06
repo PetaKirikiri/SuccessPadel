@@ -4,8 +4,8 @@ import { useAuth } from '../hooks/useAuth'
 import { authRedirectUrl } from '../lib/authRedirect'
 import { consumeReturnTo, saveReturnTo } from '../lib/authReturnTo'
 import { syncProfileForUser } from '../lib/authProfile'
-import { signInWithLine } from '../lib/line/auth'
-import { hasLiffId, isInLineClient } from '../lib/line/liff'
+import { signInWithLine, startLineLogin } from '../lib/line/auth'
+import { hasLiffId, isInLineClient, isMobileWeb } from '../lib/line/liff'
 import { supabase } from '../lib/supabaseClient'
 
 type AuthMode = 'sign-in' | 'sign-up' | 'forgot'
@@ -73,12 +73,22 @@ export function Login() {
   const handleLineLogin = async () => {
     setError(null)
     setLineBusy(true)
-    const { error: lineError, redirected } = await signInWithLine()
+    const returnPath = fromPath ?? consumeReturnTo('/login')
+    const { error: lineError, redirected } = await startLineLogin(returnPath)
     if (redirected) return
     setLineBusy(false)
     if (lineError) setError(lineError)
     else goAfterAuth()
   }
+
+  const inLineApp = isInLineClient()
+  const lineButtonLabel = lineBusy
+    ? 'Connecting…'
+    : inLineApp
+      ? 'Continue with LINE'
+      : isMobileWeb()
+        ? 'Open LINE app to sign in'
+        : 'Open in LINE to sign in'
 
   const switchMode = (next: AuthMode) => {
     setMode(next)
@@ -226,8 +236,13 @@ export function Login() {
               onClick={() => void handleLineLogin()}
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#06C755] py-2.5 text-sm font-semibold text-white disabled:opacity-60"
             >
-              {lineBusy ? 'Connecting…' : 'Continue with LINE'}
+              {lineButtonLabel}
             </button>
+            {!inLineApp && (
+              <p className="text-center text-xs text-brand-muted">
+                Opens LINE on your phone — tap Allow, then you&apos;re in.
+              </p>
+            )}
             <p className="text-center text-xs text-brand-muted">or use email</p>
           </div>
         )}

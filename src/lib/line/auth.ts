@@ -1,16 +1,56 @@
 import { syncProfileForUser } from '../authProfile'
 import { supabase } from '../supabaseClient'
-import { getLineIdToken, hasLiffId, initLiff, isLineLoggedIn, lineLoginRedirect } from './liff'
+import {
+  getLineIdToken,
+  hasLiffId,
+  initLiff,
+  isInLineClient,
+  isLineLoggedIn,
+  lineAppEntryUrl,
+  lineLoginRedirect,
+} from './liff'
 
 export type LineSignInResult = {
   error: string | null
   redirected: boolean
 }
 
+export async function startLineLogin(returnPath = '/login'): Promise<LineSignInResult> {
+  if (!hasLiffId()) {
+    return {
+      error:
+        'LINE sign-in is not connected yet. Use email for now, or ask your admin to finish LINE setup.',
+      redirected: false,
+    }
+  }
+
+  await initLiff()
+
+  if (!isInLineClient()) {
+    const path =
+      returnPath && returnPath !== '/login' && !returnPath.startsWith('/auth/')
+        ? returnPath
+        : '/login'
+    const url = lineAppEntryUrl(path)
+    if (!url) {
+      return {
+        error:
+          'LINE sign-in is not connected yet. Use email for now, or ask your admin to finish LINE setup.',
+        redirected: false,
+      }
+    }
+    window.location.assign(url)
+    return { error: null, redirected: true }
+  }
+
+  return signInWithLine()
+}
+
 export async function signInWithLine(): Promise<LineSignInResult> {
   if (!hasLiffId()) {
     return {
-      error: 'LINE login is not set up on this site yet. Add VITE_LIFF_ID and redeploy.',
+      error:
+        'LINE sign-in is not connected yet. Use email for now, or ask your admin to finish LINE setup.',
       redirected: false,
     }
   }
