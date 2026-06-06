@@ -23,11 +23,38 @@ const titles: Record<AuthMode, string> = {
   forgot: 'Reset password',
 }
 
+function SigningInScreen({ message }: { message: string }) {
+  return (
+    <div className="game-bg flex h-full min-h-0 w-full flex-col items-center justify-center px-6">
+      <img
+        src="/brand/logo-padel.webp"
+        alt="Success Padel"
+        className="mb-6 h-14 w-auto max-w-[min(100%,11rem)]"
+      />
+      <p className="font-display text-lg font-semibold text-brand-primary">{message}</p>
+    </div>
+  )
+}
+
 export function Login() {
   const navigate = useNavigate()
   const location = useLocation()
   const { session, loading } = useAuth()
   const fromPath = (location.state as { from?: string } | null)?.from
+  const lineEnabled = isLineLoginConfigured()
+  const inLineApp = isInLineClient()
+
+  const [showEmail, setShowEmail] = useState(!lineEnabled)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [displayName, setDisplayName] = useState('')
+  const [showPassword] = useState(false)
+  const [mode, setMode] = useState<AuthMode>('sign-in')
+  const [error, setError] = useState<string | null>(null)
+  const [info, setInfo] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [lineBusy, setLineBusy] = useState(false)
 
   useEffect(() => {
     if (fromPath) saveReturnTo(fromPath)
@@ -42,18 +69,6 @@ export function Login() {
   const goAfterAuth = () => {
     navigate(fromPath ?? consumeReturnTo('/'), { replace: true })
   }
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [displayName, setDisplayName] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [mode, setMode] = useState<AuthMode>('sign-in')
-  const [error, setError] = useState<string | null>(null)
-  const [info, setInfo] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
-  const [lineBusy, setLineBusy] = useState(false)
-  const lineEnabled = isLineLoginConfigured()
-  const inLineApp = isInLineClient()
 
   useEffect(() => {
     if (!hasLiffId() || !inLineApp) return
@@ -102,15 +117,11 @@ export function Login() {
         redirectTo: authRedirectUrl('/auth/callback'),
       })
       setBusy(false)
-
       if (err) {
         setError(authErrorMessage(err.message))
         return
       }
-
-      setInfo(
-        `Reset email sent. Open the link on this device at ${window.location.origin} — not localhost.`,
-      )
+      setInfo(`Reset email sent. Open the link on this device at ${window.location.origin}.`)
       return
     }
 
@@ -149,10 +160,7 @@ export function Login() {
       }
 
       if (fromPath) saveReturnTo(fromPath)
-
-      setInfo(
-        `Check your email to confirm your account. Open the link on this device at ${window.location.origin}.`,
-      )
+      setInfo(`Check your email to confirm your account.`)
       return
     }
 
@@ -177,8 +185,55 @@ export function Login() {
     }
   }
 
+  if (lineBusy && !error) {
+    return <SigningInScreen message={inLineApp ? 'Signing you in…' : 'Opening LINE…'} />
+  }
+
+  if (!showEmail && lineEnabled) {
+    return (
+      <div className="game-bg flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden">
+        <div className="login-panel mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col justify-center px-4 py-8">
+          <div className="mb-10 text-center">
+            <img
+              src="/brand/logo-padel.webp"
+              alt="Success Padel"
+              className="mx-auto h-16 w-auto max-w-[min(100%,12rem)]"
+            />
+            <h1 className="font-display mt-4 text-2xl font-semibold text-brand-primary">Success Padel</h1>
+            <p className="mt-2 text-sm text-brand-muted">Tap below to sign in</p>
+          </div>
+
+          <button
+            type="button"
+            disabled={lineBusy}
+            onClick={() => void handleLineLogin()}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#06C755] py-3.5 text-base font-semibold text-white disabled:opacity-60"
+          >
+            Continue with LINE
+          </button>
+
+          <p className="mt-3 text-center text-xs text-brand-muted">
+            LINE opens → tap Allow → you&apos;re in
+          </p>
+
+          <button
+            type="button"
+            onClick={() => {
+              setShowEmail(true)
+              setError(null)
+            }}
+            className="brand-link mt-8 block w-full text-center text-xs"
+          >
+            Sign in with email instead
+          </button>
+
+          {error && <p className="mt-4 text-center text-sm text-red-600">{error}</p>}
+        </div>
+      </div>
+    )
+  }
+
   const showPasswordFields = mode === 'sign-in' || mode === 'sign-up'
-  const showLine = mode === 'sign-in' || mode === 'sign-up'
 
   return (
     <div className="game-bg flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden">
@@ -186,27 +241,30 @@ export function Login() {
         data-scroll-y
         className="scroll-y login-panel mx-auto min-h-0 w-full max-w-md flex-1 py-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]"
       >
+        {lineEnabled && (
+          <button
+            type="button"
+            onClick={() => {
+              setShowEmail(false)
+              setError(null)
+              setInfo(null)
+            }}
+            className="mb-4 text-sm font-medium text-brand-accent"
+          >
+            ← Back to LINE
+          </button>
+        )}
+
         <div className="mb-5 text-center">
-          <img
-            src="/brand/logo-padel.webp"
-            alt="Success Padel"
-            className="mx-auto h-14 w-auto max-w-[min(100%,11rem)]"
-          />
-          <h1 className="font-display mt-3 text-xl font-semibold text-brand-primary">{titles[mode]}</h1>
+          <h1 className="font-display text-xl font-semibold text-brand-primary">{titles[mode]}</h1>
         </div>
 
         {mode !== 'forgot' && (
-          <div
-            className="mb-5 flex rounded-xl border border-brand-border bg-brand-surface p-1"
-            role="tablist"
-            aria-label="Sign in or sign up"
-          >
+          <div className="mb-5 flex rounded-xl border border-brand-border bg-brand-surface p-1">
             {(['sign-in', 'sign-up'] as const).map((tab) => (
               <button
                 key={tab}
                 type="button"
-                role="tab"
-                aria-selected={mode === tab}
                 onClick={() => switchMode(tab)}
                 className={`flex-1 rounded-lg py-2 text-sm font-semibold transition ${
                   mode === tab
@@ -220,20 +278,6 @@ export function Login() {
           </div>
         )}
 
-        {lineEnabled && showLine && (
-          <div className="mb-4 space-y-3">
-            <button
-              type="button"
-              disabled={busy || lineBusy}
-              onClick={() => void handleLineLogin()}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#06C755] py-2.5 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              {lineBusy ? 'Connecting…' : 'Continue with LINE'}
-            </button>
-            <p className="text-center text-xs text-brand-muted">or use email</p>
-          </div>
-        )}
-
         <form onSubmit={submit} className="w-full min-w-0 space-y-3">
           {mode === 'sign-up' && (
             <input
@@ -242,9 +286,7 @@ export function Login() {
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="Your name"
               className="brand-input"
-              aria-label="Your name"
               autoComplete="name"
-              autoCapitalize="words"
             />
           )}
           <input
@@ -253,37 +295,20 @@ export function Login() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Email"
             className="brand-input"
-            aria-label="Email"
             autoComplete="email"
-            autoCapitalize="none"
-            autoCorrect="off"
-            spellCheck={false}
             inputMode="email"
             required
           />
           {showPasswordFields && (
-            <div className="box-border flex w-full min-w-0 items-stretch overflow-hidden rounded-xl border border-brand-border bg-brand-surface">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                className="min-w-0 flex-1 border-0 bg-transparent px-3 py-2.5 text-base text-brand-text outline-none placeholder:text-brand-muted"
-                aria-label="Password"
-                autoComplete={mode === 'sign-up' ? 'new-password' : 'current-password'}
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                className="shrink-0 px-3 text-xs font-medium text-brand-muted"
-              >
-                {showPassword ? 'Hide' : 'Show'}
-              </button>
-            </div>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              className="brand-input"
+              autoComplete={mode === 'sign-up' ? 'new-password' : 'current-password'}
+              required
+            />
           )}
           {mode === 'sign-up' && (
             <input
@@ -292,11 +317,7 @@ export function Login() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Confirm password"
               className="brand-input"
-              aria-label="Confirm password"
               autoComplete="new-password"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
               required
             />
           )}
@@ -305,13 +326,11 @@ export function Login() {
           </button>
         </form>
 
-        <div className="mt-4 space-y-2 text-center text-sm">
+        <div className="mt-4 text-center text-sm">
           {mode === 'sign-in' && (
-            <p>
-              <button type="button" onClick={() => switchMode('forgot')} className="brand-link">
-                Forgot password?
-              </button>
-            </p>
+            <button type="button" onClick={() => switchMode('forgot')} className="brand-link">
+              Forgot password?
+            </button>
           )}
           {mode === 'forgot' && (
             <button type="button" onClick={() => switchMode('sign-in')} className="brand-link">
@@ -320,8 +339,8 @@ export function Login() {
           )}
         </div>
 
-        {error && <p className="mt-4 break-words text-center text-sm text-red-600">{error}</p>}
-        {info && <p className="mt-4 break-words text-center text-sm text-brand-primary">{info}</p>}
+        {error && <p className="mt-4 text-center text-sm text-red-600">{error}</p>}
+        {info && <p className="mt-4 text-center text-sm text-brand-primary">{info}</p>}
       </div>
     </div>
   )
