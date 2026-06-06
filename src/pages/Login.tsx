@@ -6,6 +6,7 @@ import { consumeReturnTo, saveReturnTo } from '../lib/authReturnTo'
 import { syncProfileForUser } from '../lib/authProfile'
 import { isLineLoginConfigured, signInWithLine, startLineLogin } from '../lib/line/auth'
 import { hasLiffId, isInLineClient } from '../lib/line/liff'
+import { completeLineOAuthFromUrl, lineOAuthCallbackCode } from '../lib/line/oauth'
 import { supabase } from '../lib/supabaseClient'
 
 type AuthMode = 'sign-in' | 'sign-up' | 'forgot'
@@ -59,6 +60,29 @@ export function Login() {
   useEffect(() => {
     if (fromPath) saveReturnTo(fromPath)
   }, [fromPath])
+
+  useEffect(() => {
+    const code = lineOAuthCallbackCode(location.search)
+    if (!code) return
+
+    let active = true
+    setLineBusy(true)
+    void (async () => {
+      const err = await completeLineOAuthFromUrl(location.search)
+      if (!active) return
+      if (err) {
+        setLineBusy(false)
+        setError(err)
+        navigate('/login', { replace: true })
+        return
+      }
+      navigate(fromPath ?? consumeReturnTo('/'), { replace: true })
+    })()
+
+    return () => {
+      active = false
+    }
+  }, [location.search, fromPath, navigate])
 
   useEffect(() => {
     if (!loading && session) {
