@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/webp" href="/brand/favicon.webp" />
+    <link rel="apple-touch-icon" href="/brand/favicon.webp" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&family=Roboto+Slab:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, shrink-to-fit=no"
+    />
+    <script>
+      ;(function () {
+        function lockWidth() {
+          var w = (window.visualViewport && window.visualViewport.width) || window.innerWidth
+          var h = (window.visualViewport && window.visualViewport.height) || window.innerHeight
+          var wpx = Math.round(w) + 'px'
+          var hpx = Math.round(h) + 'px'
+          var html = document.documentElement
+          html.style.setProperty('--app-width', wpx)
+          html.style.setProperty('--app-height', hpx)
+          html.style.overflow = 'hidden'
+          html.style.position = 'fixed'
+          if (document.body) {
+            document.body.style.overflow = 'hidden'
+            document.body.style.position = 'fixed'
+          }
+        }
+        lockWidth()
+        window.addEventListener('resize', lockWidth)
+        window.addEventListener('orientationchange', lockWidth)
+        if (window.visualViewport) window.visualViewport.addEventListener('resize', lockWidth)
+      })()
+    </script>
+    <meta name="theme-color" content="#FDFAF5" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>Success Padel</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

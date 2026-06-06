@@ -1,0 +1,102 @@
+export const CLUB_TIMEZONE = 'Asia/Bangkok'
+export const OPEN_HOUR = 6
+export const CLOSE_HOUR = 22
+export const LAST_SLOT_START_HOUR = 21
+export const PLAYERS_PER_COURT = 4
+
+export type HourBlock = {
+  index: number
+  startsAt: Date
+  endsAt: Date
+  label: string
+}
+
+export function formatDateInput(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+export function parseClubDate(dateStr: string): Date {
+  return new Date(`${dateStr}T00:00:00`)
+}
+
+export function clubHourToDate(dateStr: string, hour: number): Date {
+  const d = parseClubDate(dateStr)
+  d.setHours(hour, 0, 0, 0)
+  return d
+}
+
+export function formatClubTime(d: Date): string {
+  return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })
+}
+
+export function formatClubDateShort(d: Date): string {
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+}
+
+export function buildHourBlocks(start: Date, hours: number): HourBlock[] {
+  return Array.from({ length: hours }, (_, i) => {
+    const startsAt = new Date(start.getTime() + i * 60 * 60 * 1000)
+    const endsAt = new Date(startsAt.getTime() + 60 * 60 * 1000)
+    return {
+      index: i,
+      startsAt,
+      endsAt,
+      label: `${formatClubTime(startsAt)} – ${formatClubTime(endsAt)}`,
+    }
+  })
+}
+
+export function availableStartHours(_dateStr?: string): number[] {
+  const hours: number[] = []
+  for (let h = OPEN_HOUR; h <= LAST_SLOT_START_HOUR; h++) hours.push(h)
+  return hours
+}
+
+export function maxDurationFromStart(startHour: number): number {
+  return Math.max(0, CLOSE_HOUR - startHour)
+}
+
+export function maxConsecutiveHours(startHour: number, availableHours: number[]): number {
+  const set = new Set(availableHours)
+  let count = 0
+  while (set.has(startHour + count) && startHour + count < CLOSE_HOUR) count++
+  return Math.max(count, 1)
+}
+
+export function formatHourLabel(hour: number): string {
+  return `${String(hour).padStart(2, '0')}:00`
+}
+
+export function scheduleGridHours(): number[] {
+  const hours: number[] = []
+  for (let h = OPEN_HOUR; h <= LAST_SLOT_START_HOUR; h++) hours.push(h)
+  return hours
+}
+
+export function rangesOverlap(
+  aStart: Date,
+  aEnd: Date,
+  bStart: Date,
+  bEnd: Date,
+): boolean {
+  return aStart < bEnd && bStart < aEnd
+}
+
+export function toIsoTimestamp(dateStr: string, hour: number): string {
+  const hh = String(hour).padStart(2, '0')
+  return `${dateStr}T${hh}:00:00+07:00`
+}
+
+export function bangkokHour(iso: string): number {
+  return parseInt(
+    new Intl.DateTimeFormat('en-GB', {
+      hour: 'numeric',
+      hour12: false,
+      timeZone: CLUB_TIMEZONE,
+    }).format(new Date(iso)),
+    10,
+  )
+}

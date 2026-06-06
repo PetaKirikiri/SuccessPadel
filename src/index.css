@@ -1,0 +1,202 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Roboto', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Roboto Slab', ui-serif, Georgia, serif;
+
+  --color-brand-primary: #602d24;
+  --color-brand-accent: #b85a1e;
+  --color-brand-accent-light: #bc945f;
+  --color-brand-bg: #fdfaf5;
+  --color-brand-bg-alt: #fff3da;
+  --color-brand-surface: #ffffff;
+  --color-brand-border: #dddcd0;
+  --color-brand-muted: #7a7a7a;
+  --color-brand-text: #3a3a3a;
+  --color-brand-sage: #5f7370;
+  --color-brand-tan: #bc9080;
+  --color-brand-gold: #c9a227;
+  --color-brand-gold-light: #f2d98b;
+  --color-brand-gold-dark: #8f6f14;
+  --color-brand-fun: #22a04a;
+  --color-brand-fun-light: #b8e6c8;
+}
+
+html {
+  @apply m-0 bg-brand-bg;
+  position: fixed;
+  inset: 0;
+  width: var(--app-width, 100%);
+  max-width: var(--app-width, 100%);
+  height: var(--app-height, 100dvh);
+  max-height: var(--app-height, 100dvh);
+  overflow: hidden;
+}
+
+body {
+  @apply m-0 bg-brand-bg font-sans text-brand-text antialiased;
+  position: fixed;
+  inset: 0;
+  width: var(--app-width, 100%);
+  max-width: var(--app-width, 100%);
+  height: var(--app-height, 100dvh);
+  max-height: var(--app-height, 100dvh);
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+#root {
+  @apply m-0 flex min-w-0 flex-col;
+  width: var(--app-width, 100%);
+  max-width: var(--app-width, 100%);
+  height: var(--app-height, 100dvh);
+  max-height: var(--app-height, 100dvh);
+  overflow: hidden;
+}
+
+.viewport-lock {
+  position: fixed;
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  display: flex;
+  width: var(--app-width, 100%);
+  max-width: var(--app-width, 100%);
+  height: var(--app-height, 100dvh);
+  max-height: var(--app-height, 100dvh);
+  flex-direction: column;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  @apply bg-brand-bg;
+}
+
+.scroll-y {
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+.app-shell {
+  @apply flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden;
+  width: 100%;
+  max-width: 100%;
+}
+
+.game-bg {
+  @apply min-w-0 max-w-full overflow-hidden;
+  background:
+    radial-gradient(ellipse 90% 45% at 50% -5%, rgb(184 90 30 / 0.1), transparent),
+    radial-gradient(ellipse 70% 35% at 100% 100%, rgb(95 115 112 / 0.08), transparent),
+    linear-gradient(180deg, var(--color-brand-bg) 0%, var(--color-brand-bg-alt) 100%);
+}
+
+.game-dock {
+  @apply shrink-0 px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))];
+}
+
+.game-dock-inner {
+  @apply flex min-w-0 max-w-full gap-1 overflow-hidden rounded-2xl border border-brand-border bg-brand-surface/95 p-1 shadow-sm;
+}
+
+.game-tab {
+  @apply flex min-h-[2.75rem] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl border-2 border-transparent px-0.5 py-1.5 text-center transition;
+}
+
+.game-tab-active {
+  @apply bg-gradient-to-b from-brand-accent to-brand-accent-light font-semibold text-white;
+}
+
+.game-tab-idle {
+  @apply text-brand-muted;
+}
+
+.game-tab-fun {
+  background: linear-gradient(
+    180deg,
+    var(--color-brand-fun-light) 0%,
+    rgb(200 235 210 / 0.95) 100%
+  );
+  color: var(--color-brand-fun);
+}
+
+.game-tab-fun .game-tab-icon {
+  color: var(--color-brand-fun);
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.08));
+}
+
+.game-tab-fun.game-tab-selected {
+  border-color: var(--color-brand-fun);
+}
+
+.game-tab-rank {
+  background: linear-gradient(
+    180deg,
+    var(--color-brand-gold-light) 0%,
+    rgb(255 243 218 / 0.95) 100%
+  );
+  color: var(--color-brand-gold-dark);
+}
+
+.game-tab-rank .game-tab-icon {
+  color: var(--color-brand-gold);
+}
+
+.game-tab-rank.game-tab-selected {
+  border-color: var(--color-brand-gold);
+}
+
+.game-tab-competition {
+  @apply bg-brand-surface text-brand-text;
+}
+
+.game-tab-competition .game-tab-icon {
+  @apply text-brand-primary;
+}
+
+.game-tab-competition.game-tab-selected {
+  border-color: var(--color-brand-primary);
+}
+
+.game-tab-selected {
+  @apply font-semibold;
+}
+
+.game-card {
+  @apply w-full max-w-full min-w-0 rounded-2xl border border-brand-border bg-brand-surface p-4 shadow-sm;
+}
+
+.game-heading {
+  @apply font-display text-lg font-semibold tracking-wide text-brand-primary;
+}
+
+.game-subtle {
+  @apply text-sm text-brand-muted;
+}
+
+.brand-btn {
+  @apply rounded-xl bg-brand-accent py-2.5 text-sm font-medium text-white shadow-sm transition hover:brightness-95 disabled:opacity-50;
+}
+
+.brand-btn-outline {
+  @apply rounded-xl border border-brand-border bg-brand-surface py-2.5 text-sm font-medium text-brand-text;
+}
+
+.brand-link {
+  @apply text-brand-accent font-medium;
+}
+
+.brand-input {
+  @apply box-border w-full max-w-full rounded-xl border border-brand-border bg-brand-surface px-3 py-2.5 text-base text-brand-text placeholder:text-brand-muted;
+}
+
+.login-panel {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  padding-inline: 1rem;
+}
