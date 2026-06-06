@@ -21,11 +21,19 @@ export function isLineLoginConfigured(): boolean {
 }
 
 export async function startLineLogin(returnPath = '/login'): Promise<LineSignInResult> {
-  if (isInLineClient() && hasLiffId()) {
-    return signInWithLine()
+  if (hasLiffId()) {
+    await initLiff()
+    if (isInLineClient()) {
+      return signInWithLine()
+    }
   }
 
-  // LIFF opens the LINE app on phones (use instead of web OAuth when possible).
+  // Safari / Chrome: OAuth opens the LINE app on phones for Allow (LIFF URLs skip auth here).
+  if (hasLineOAuth()) {
+    startLineOAuthLogin(returnPath)
+    return { error: null, redirected: true }
+  }
+
   if (hasLiffId()) {
     const path =
       returnPath && !returnPath.startsWith('/auth/') && returnPath !== '/login'
@@ -36,11 +44,6 @@ export async function startLineLogin(returnPath = '/login'): Promise<LineSignInR
       window.location.assign(url)
       return { error: null, redirected: true }
     }
-  }
-
-  if (hasLineOAuth()) {
-    startLineOAuthLogin(returnPath)
-    return { error: null, redirected: true }
   }
 
   return {
@@ -88,7 +91,7 @@ export async function signInWithLine(): Promise<LineSignInResult> {
     return { error: 'Sign-in failed — no session returned.', redirected: false }
   }
 
-  const { data: sessionData, error: sessErr } = await supabase.auth.setSession({
+  const { error: sessErr } = await supabase.auth.setSession({
     access_token: payload.access_token,
     refresh_token: payload.refresh_token,
   })
@@ -97,9 +100,11 @@ export async function signInWithLine(): Promise<LineSignInResult> {
     return { error: sessErr.message, redirected: false }
   }
 
-  if (sessionData.user) {
-    await syncProfileForUser(sessionData.user)
+  const { data: confirmed } = await supabase.auth.getSession()
+  if (!confirmed.session?.user) {
+    return { error: 'Sign-in did not stick — try again.', redirected: false }
   }
 
+  await syncProfileForUser(confirmed.session.user)
   return { error: null, redirected: false }
 }

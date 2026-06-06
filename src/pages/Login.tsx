@@ -44,9 +44,7 @@ export function Login() {
   const fromPath = (location.state as { from?: string } | null)?.from
   const lineEnabled = isLineLoginConfigured()
   const [inLineApp, setInLineApp] = useState(false)
-  const lineReturnPath =
-    fromPath && !fromPath.startsWith('/auth/') && fromPath !== '/login' ? fromPath : '/login'
-  const lineOpenUrl = lineAppEntryUrl(lineReturnPath)
+  const lineShareUrl = lineAppEntryUrl('/')
 
   const adminEmail = new URLSearchParams(location.search).get('email') === '1'
   const [showEmail, setShowEmail] = useState(!lineEnabled || adminEmail)
@@ -236,35 +234,23 @@ export function Login() {
             <p className="mt-2 text-sm text-brand-muted">No email needed — we use your LINE name</p>
           </div>
 
-          {lineOpenUrl ? (
-            <a
-              href={lineOpenUrl}
-              onClick={() => saveReturnTo(fromPath ?? consumeReturnTo('/login'))}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#06C755] py-3.5 text-base font-semibold text-white no-underline"
-            >
-              Continue with LINE
-            </a>
-          ) : (
-            <button
-              type="button"
-              disabled={lineBusy}
-              onClick={() => void handleLineLogin()}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#06C755] py-3.5 text-base font-semibold text-white disabled:opacity-60"
-            >
-              Continue with LINE
-            </button>
-          )}
+          <button
+            type="button"
+            disabled={lineBusy}
+            onClick={() => void handleLineLogin()}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#06C755] py-3.5 text-base font-semibold text-white disabled:opacity-60"
+          >
+            Continue with LINE
+          </button>
 
           <p className="mt-3 text-center text-xs text-brand-muted">
-            Opens LINE → tap Allow → done
+            LINE opens → tap Allow → you&apos;re signed in
           </p>
 
-          {lineOpenUrl && (
-            <p className="mt-2 text-center text-[10px] text-brand-muted">
-              Didn&apos;t open?{' '}
-              <a href={lineOpenUrl} className="brand-link">
-                Tap here
-              </a>
+          {lineShareUrl && (
+            <p className="mt-4 text-center text-[10px] leading-relaxed text-brand-muted">
+              For LINE groups, share:{' '}
+              <span className="break-all font-mono text-[9px]">{lineShareUrl}</span>
             </p>
           )}
 

@@ -78,16 +78,18 @@ export async function completeLineOAuthFromUrl(search: string): Promise<string |
     return 'Sign-in failed — no session returned.'
   }
 
-  const { data: sessionData, error: sessErr } = await supabase.auth.setSession({
+  const { error: sessErr } = await supabase.auth.setSession({
     access_token: payload.access_token,
     refresh_token: payload.refresh_token,
   })
 
   if (sessErr) return sessErr.message
 
-  if (sessionData.user) {
-    await syncProfileForUser(sessionData.user)
+  const { data: confirmed } = await supabase.auth.getSession()
+  if (!confirmed.session?.user) {
+    return 'Sign-in did not stick — try again.'
   }
 
+  await syncProfileForUser(confirmed.session.user)
   return null
 }
