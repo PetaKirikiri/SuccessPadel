@@ -10,6 +10,7 @@ import { CourtGameForm } from './pages/CourtGameForm'
 import { AdminGames } from './pages/AdminGames'
 import { AdminSeasons } from './pages/AdminSeasons'
 import { AuthCallback } from './pages/AuthCallback'
+import { LineAuthCallback } from './pages/LineAuthCallback'
 import { CompetitionForm } from './pages/CompetitionForm'
 import { CompetitionRun } from './pages/CompetitionRun'
 import { Competitions } from './pages/Competitions'
@@ -59,6 +60,14 @@ export default function App() {
           element={
             <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
               <AuthCallback />
+            </div>
+          }
+        />
+        <Route
+          path="/auth/line/callback"
+          element={
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+              <LineAuthCallback />
             </div>
           }
         />

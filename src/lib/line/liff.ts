@@ -54,18 +54,6 @@ export function liffShareUrl(): string | null {
   return `https://liff.line.me/${liffId}`
 }
 
-/** Opens the app inside LINE (use from Safari/Chrome instead of liff.login on the web). */
-export function lineAppEntryUrl(path = '/login'): string | null {
-  if (!liffId) return null
-  const normalized = path.startsWith('/') ? path : `/${path}`
-  const suffix = normalized === '/' ? '' : normalized
-  return `https://liff.line.me/${liffId}${suffix}`
-}
-
-export function isMobileWeb(): boolean {
-  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-}
-
 export async function shareLeaderboardUrl(title: string, url: string): Promise<void> {
   await initLiff()
   if (!liff.isApiAvailable('shareTargetPicker')) return

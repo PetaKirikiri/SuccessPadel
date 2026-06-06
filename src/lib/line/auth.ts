@@ -6,53 +6,38 @@ import {
   initLiff,
   isInLineClient,
   isLineLoggedIn,
-  lineAppEntryUrl,
   lineLoginRedirect,
 } from './liff'
+import { hasLineOAuth, startLineOAuthLogin } from './oauth'
 
 export type LineSignInResult = {
   error: string | null
   redirected: boolean
 }
 
+export function isLineLoginConfigured(): boolean {
+  return hasLineOAuth() || hasLiffId()
+}
+
 export async function startLineLogin(returnPath = '/login'): Promise<LineSignInResult> {
-  if (!hasLiffId()) {
-    return {
-      error:
-        'LINE sign-in is not connected yet. Use email for now, or ask your admin to finish LINE setup.',
-      redirected: false,
-    }
-  }
-
-  await initLiff()
-
-  if (!isInLineClient()) {
-    const path =
-      returnPath && returnPath !== '/login' && !returnPath.startsWith('/auth/')
-        ? returnPath
-        : '/login'
-    const url = lineAppEntryUrl(path)
-    if (!url) {
-      return {
-        error:
-          'LINE sign-in is not connected yet. Use email for now, or ask your admin to finish LINE setup.',
-        redirected: false,
-      }
-    }
-    window.location.assign(url)
+  if (hasLineOAuth()) {
+    startLineOAuthLogin(returnPath)
     return { error: null, redirected: true }
   }
 
-  return signInWithLine()
+  if (hasLiffId() && isInLineClient()) {
+    return signInWithLine()
+  }
+
+  return {
+    error: 'LINE sign-in is not set up yet. Use email for now.',
+    redirected: false,
+  }
 }
 
 export async function signInWithLine(): Promise<LineSignInResult> {
   if (!hasLiffId()) {
-    return {
-      error:
-        'LINE sign-in is not connected yet. Use email for now, or ask your admin to finish LINE setup.',
-      redirected: false,
-    }
+    return { error: 'LINE sign-in is not set up yet.', redirected: false }
   }
 
   await initLiff()
