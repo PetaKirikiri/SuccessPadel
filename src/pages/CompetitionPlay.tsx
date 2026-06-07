@@ -134,7 +134,7 @@ export function CompetitionPlay() {
 
   return (
     <div className="game-bg flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden">
-      <header className="flex shrink-0 items-center justify-between gap-2 px-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))]">
+      <header className="relative flex shrink-0 items-center px-3 pb-2 pr-32 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <div className="flex min-w-0 items-center gap-2">
           <button
             type="button"
@@ -150,7 +150,7 @@ export function CompetitionPlay() {
             className="h-8 w-auto max-w-[7rem] shrink-0"
           />
         </div>
-        <div className="flex min-w-0 shrink-0 items-center gap-2">
+        <div className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] flex min-w-0 shrink-0 items-center gap-2">
           {showProfileChip ? (
             <button
               type="button"

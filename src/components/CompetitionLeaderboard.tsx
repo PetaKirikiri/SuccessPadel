@@ -115,7 +115,8 @@ export function CompetitionLeaderboard({
 
   const displayEntries = compactLeaderboardDisplayNames(entries)
   const winner = displayEntries[0]
-  const showActionColumn = displayEntries.some((entry) => isClaimableGuest(entry) && !currentUserId)
+  const showActionColumn =
+    !currentUserId && displayEntries.some((entry) => isClaimableGuest(entry))
 
   const showHeader = Boolean(headerTitle || headerSubtitle || compact)
 

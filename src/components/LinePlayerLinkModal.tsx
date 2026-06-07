@@ -84,6 +84,26 @@ export function LinePlayerLinkModal({
             </button>
           </div>
         ) : request ? (
+          <>
+          <ol className="space-y-1.5 text-left text-xs text-brand-muted">
+            <li>
+              <span className="font-semibold text-brand-text">1.</span> Tap{' '}
+              <span className="font-medium text-brand-text">Save QR code</span> (or screenshot it).
+            </li>
+            <li>
+              <span className="font-semibold text-brand-text">2.</span> Open the{' '}
+              <span className="font-medium text-brand-text">LINE</span> app.
+            </li>
+            <li>
+              <span className="font-semibold text-brand-text">3.</span> Tap the{' '}
+              <span className="font-medium text-brand-text">QR scanner</span> in the search bar
+              (see right).
+            </li>
+            <li>
+              <span className="font-semibold text-brand-text">4.</span> Scan the saved QR, then tap{' '}
+              <span className="font-medium text-brand-text">Allow</span>.
+            </li>
+          </ol>
           <div className="grid grid-cols-2 items-center gap-3">
             <div className="space-y-2">
               <LineSignUpQr url={request.qrUrl} onDataUrl={setQrDataUrl} />
@@ -104,6 +124,7 @@ export function LinePlayerLinkModal({
               className="h-auto max-h-[78vh] w-full rounded-2xl border border-brand-border object-contain"
             />
           </div>
+          </>
         ) : null}
       </div>
     </div>,

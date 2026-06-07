@@ -17,6 +17,7 @@ export function normalizeLeaderboardEntries(rows: LeaderboardEntry[]): Leaderboa
 }
 
 export function isClaimableGuest(e: LeaderboardEntry): boolean {
+  if (e.member_profile_id) return false
   return Boolean(e.is_guest && e.padel_player_id)
 }
 
@@ -44,26 +45,50 @@ export function compactLeaderboardDisplayNames(entries: LeaderboardEntry[]): Lea
   })
 }
 
-/** Fill missing avatars from RPC leaderboard rows (live standings omit photos until roster refresh). */
+function leaderboardSourceMaps(sources: LeaderboardEntry[]) {
+  const byProfile = new Map<string, LeaderboardEntry>()
+  const byPadel = new Map<string, LeaderboardEntry>()
+  for (const row of sources) {
+    byProfile.set(row.profile_id, row)
+    if (row.member_profile_id) byProfile.set(row.member_profile_id, row)
+    if (row.padel_player_id) byPadel.set(row.padel_player_id, row)
+  }
+  return { byProfile, byPadel }
+}
+
+function matchLeaderboardSource(
+  entry: LeaderboardEntry,
+  byProfile: Map<string, LeaderboardEntry>,
+  byPadel: Map<string, LeaderboardEntry>,
+): LeaderboardEntry | undefined {
+  return (
+    (entry.member_profile_id ? byProfile.get(entry.member_profile_id) : undefined) ??
+    (entry.padel_player_id ? byPadel.get(entry.padel_player_id) : undefined) ??
+    byProfile.get(entry.profile_id)
+  )
+}
+
+/** Merge LINE name, photo, and link state from RPC leaderboard into live standings. */
 export function enrichStandingsWithAvatars(
   standings: LeaderboardEntry[],
   sources: LeaderboardEntry[],
 ): LeaderboardEntry[] {
-  const byProfile = new Map<string, string>()
-  const byPadel = new Map<string, string>()
-  for (const row of sources) {
-    if (!row.avatar_url) continue
-    byProfile.set(row.profile_id, row.avatar_url)
-    if (row.member_profile_id) byProfile.set(row.member_profile_id, row.avatar_url)
-    if (row.padel_player_id) byPadel.set(row.padel_player_id, row.avatar_url)
-  }
-  return standings.map((entry) => ({
-    ...entry,
-    avatar_url:
-      entry.avatar_url ??
-      (entry.member_profile_id ? byProfile.get(entry.member_profile_id) : undefined) ??
-      (entry.padel_player_id ? byPadel.get(entry.padel_player_id) : undefined) ??
-      byProfile.get(entry.profile_id) ??
-      null,
-  }))
+  const { byProfile, byPadel } = leaderboardSourceMaps(sources)
+  return standings.map((entry) => {
+    const source = matchLeaderboardSource(entry, byProfile, byPadel)
+    const linked = Boolean(source?.member_profile_id ?? entry.member_profile_id)
+    return {
+      ...entry,
+      member_profile_id: entry.member_profile_id ?? source?.member_profile_id ?? null,
+      is_guest: linked ? false : (source?.is_guest ?? entry.is_guest),
+      display_name: source?.display_name ?? entry.display_name,
+      avatar_url:
+        entry.avatar_url ??
+        source?.avatar_url ??
+        (entry.member_profile_id ? byProfile.get(entry.member_profile_id)?.avatar_url : undefined) ??
+        (entry.padel_player_id ? byPadel.get(entry.padel_player_id)?.avatar_url : undefined) ??
+        byProfile.get(entry.profile_id)?.avatar_url ??
+        null,
+    }
+  })
 }
