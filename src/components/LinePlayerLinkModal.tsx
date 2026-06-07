@@ -53,11 +53,11 @@ export function LinePlayerLinkModal({
   const copyUrl = async () => {
     if (!request) return
     try {
-      await navigator.clipboard.writeText(request.authorizeUrl)
+      await navigator.clipboard.writeText(request.qrUrl)
       setCopied(true)
       window.setTimeout(() => setCopied(false), 2000)
     } catch {
-      window.prompt('Copy this LINE login link:', request.authorizeUrl)
+      window.prompt('Copy this link:', request.qrUrl)
     }
   }
 
@@ -100,10 +100,22 @@ export function LinePlayerLinkModal({
         ) : request ? (
           <div className="space-y-3">
             {inLineBrowser ? (
-              <p className="text-sm text-brand-muted">
-                Long-press the competition link in LINE → <strong>Open in Safari</strong>, then tap
-                LINE next to {playerName} again.
-              </p>
+              <button
+                type="button"
+                disabled={lineBusy}
+                onClick={() => {
+                  setLineBusy(true)
+                  void startLinePlayerLink(competitionId, padelPlayerId).then((err) => {
+                    if (err) {
+                      setError(err)
+                      setLineBusy(false)
+                    }
+                  })
+                }}
+                className="w-full rounded-xl bg-[#06C755] py-3 text-base font-semibold text-white disabled:opacity-60"
+              >
+                Link LINE to {playerName}
+              </button>
             ) : (
               <>
                 <button
@@ -122,16 +134,18 @@ export function LinePlayerLinkModal({
                 >
                   Continue with LINE
                 </button>
-                <p className="text-xs text-brand-muted">Or scan this QR on another phone</p>
+                <p className="text-xs text-brand-muted">
+                  Or scan this QR with the LINE app (Home → QR code)
+                </p>
               </>
             )}
-            <LineSignUpQr url={request.authorizeUrl} />
+            <LineSignUpQr url={request.qrUrl} />
             <button
               type="button"
               onClick={() => void copyUrl()}
               className="brand-btn-outline w-full py-2 text-sm font-semibold"
             >
-              {copied ? 'Link copied!' : 'Copy login link'}
+              {copied ? 'Link copied!' : 'Copy link'}
             </button>
           </div>
         ) : null}

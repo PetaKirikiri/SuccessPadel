@@ -1,6 +1,16 @@
 import { FunctionsHttpError } from '@supabase/supabase-js'
 import { Browser } from '@capacitor/browser'
-import { isLineLiffBrowser } from './liff'
+import {
+  getLineAccessToken,
+  getLineIdToken,
+  hasLiffId,
+  initLiff,
+  isLineLoggedIn,
+  isLineLiffBrowser,
+  lineAppEntryUrl,
+  lineLoginRedirect,
+} from './liff'
+import { readLineProfilePatch } from './profileSync'
 import { lineOAuthRedirectUri } from './oauth'
 import { isNativeApp } from '../native/app'
 import { siteOrigin } from '../siteUrl'
@@ -35,7 +45,7 @@ async function edgeErrorMessage(error: unknown): Promise<string> {
   return 'LINE linking failed. Please try again.'
 }
 
-function buildLineAuthorizeUrl(linkToken: string): string {
+export function buildLineAuthorizeUrl(linkToken: string): string {
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: channelId!,
@@ -49,6 +59,48 @@ function buildLineAuthorizeUrl(linkToken: string): string {
 export type LinePlayerLinkRequest = {
   linkToken: string
   authorizeUrl: string
+  /** LIFF URL for LINE QR scanner — do not use raw OAuth URL in QR. */
+  qrUrl: string
+}
+
+export function linePlayerLinkQrUrl(linkToken: string): string {
+  const liffEntry = lineAppEntryUrl(`/login?lpl=${encodeURIComponent(linkToken)}`)
+  return liffEntry ?? buildLineAuthorizeUrl(linkToken)
+}
+
+export function linkTokenFromLocation(search = window.location.search): string | null {
+  const params = new URLSearchParams(search)
+  const oauthState = params.get('state')
+  if (oauthState?.startsWith('lpl_')) return oauthState
+
+  const direct = params.get('lpl')
+  if (direct?.startsWith('lpl_')) return direct
+
+  const liffState = params.get('liff.state')
+  if (liffState) {
+    try {
+      const decoded = decodeURIComponent(liffState)
+      const fromQuery = new URLSearchParams(decoded.includes('?') ? decoded.split('?')[1] : '').get(
+        'lpl',
+      )
+      if (fromQuery?.startsWith('lpl_')) return fromQuery
+      const match = decoded.match(/lpl_[a-f0-9]+/)
+      if (match) return match[0]
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return null
+}
+
+const ENTRY_PREFIX = 'sp_line_link_entry_'
+
+export function shouldProcessLineLinkEntry(linkToken: string): boolean {
+  const key = `${ENTRY_PREFIX}${linkToken}`
+  if (sessionStorage.getItem(key)) return false
+  sessionStorage.setItem(key, '1')
+  return true
 }
 
 /** Create a single-use link request for a player and build the LINE login URL (for a QR). No redirect. */
@@ -66,7 +118,76 @@ export async function createLinePlayerLinkRequest(
   if (error) return { error: error.message }
   if (!linkToken || typeof linkToken !== 'string') return { error: 'Could not start linking' }
 
-  return { request: { linkToken, authorizeUrl: buildLineAuthorizeUrl(linkToken) } }
+  return {
+    request: {
+      linkToken,
+      authorizeUrl: buildLineAuthorizeUrl(linkToken),
+      qrUrl: linePlayerLinkQrUrl(linkToken),
+    },
+  }
+}
+
+export async function completeLinePlayerLinkWithLiff(linkToken: string): Promise<{
+  competitionId: string | null
+  error?: string
+}> {
+  if (!hasLiffId()) {
+    return { competitionId: null, error: 'LINE app link is not configured' }
+  }
+
+  await initLiff()
+
+  if (!isLineLoggedIn()) {
+    lineLoginRedirect()
+    return { competitionId: null }
+  }
+
+  const idToken = await getLineIdToken()
+  if (!idToken) {
+    return { competitionId: null, error: 'Could not read your LINE session' }
+  }
+
+  const accessToken = await getLineAccessToken()
+  const profile = await readLineProfilePatch()
+
+  const { data, error: fnError } = await supabase.functions.invoke('line-liff-player-link', {
+    body: {
+      id_token: idToken,
+      access_token: accessToken ?? undefined,
+      profile: profile ?? undefined,
+      link_token: linkToken,
+    },
+  })
+
+  if (fnError) return { competitionId: null, error: await edgeErrorMessage(fnError) }
+
+  const payload = data as {
+    error?: string
+    access_token?: string
+    refresh_token?: string
+    competition_id?: string | null
+  }
+
+  if (payload.error) return { competitionId: null, error: payload.error }
+  if (!payload.access_token || !payload.refresh_token) {
+    return { competitionId: null, error: 'Link failed — no session returned' }
+  }
+
+  const { error: sessErr } = await supabase.auth.setSession({
+    access_token: payload.access_token,
+    refresh_token: payload.refresh_token,
+  })
+
+  if (sessErr) return { competitionId: null, error: sessErr.message }
+
+  const { data: confirmed } = await supabase.auth.getSession()
+  if (!confirmed.session?.user) {
+    return { competitionId: null, error: 'Session did not stick — try again' }
+  }
+
+  await syncProfileForUser(confirmed.session.user)
+
+  return { competitionId: payload.competition_id ?? null }
 }
 
 export async function startLinePlayerLink(
@@ -75,12 +196,19 @@ export async function startLinePlayerLink(
 ): Promise<string | null> {
   if (!channelId) return 'LINE login is not configured'
 
-  if (!isNativeApp() && isLineLiffBrowser()) {
-    return 'Open in Safari first: long-press the link in LINE → Open in Safari, then tap Link to my account again.'
-  }
-
   const { request, error } = await createLinePlayerLinkRequest(competitionId, padelPlayerId)
   if (error || !request) return error ?? 'Could not start linking'
+
+  if (!isNativeApp() && isLineLiffBrowser()) {
+    const { competitionId: linkedId, error: linkErr } = await completeLinePlayerLinkWithLiff(
+      request.linkToken,
+    )
+    if (linkErr) return linkErr
+    await initLiff()
+    if (!isLineLoggedIn()) return null
+    window.location.assign(competitionPathAfterLink(linkedId))
+    return null
+  }
 
   if (isNativeApp()) {
     await Browser.open({ url: request.authorizeUrl })

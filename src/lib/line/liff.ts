@@ -91,7 +91,7 @@ export function getDecodedLineClaims(): { sub?: string; name?: string; picture?:
 export function lineLoginRedirect(): void {
   if (!liffId) return
   const path = window.location.pathname.startsWith('/') ? window.location.pathname : '/login'
-  const redirectUri = `${window.location.origin}${path}`
+  const redirectUri = `${window.location.origin}${path}${window.location.search}`
   liff.login({ redirectUri })
 }
 
