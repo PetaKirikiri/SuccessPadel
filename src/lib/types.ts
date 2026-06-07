@@ -76,6 +76,7 @@ export type GameSession = {
   rules: string | null
   competition_started_at: string | null
   competition_ended_at: string | null
+  competition_concluded_at: string | null
 }
 
 export type GameSlot = {

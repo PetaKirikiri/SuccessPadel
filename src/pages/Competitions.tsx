@@ -1,25 +1,38 @@
 import { useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { CompetitionTable } from '../components/CompetitionTable'
 import { useAuth } from '../hooks/useAuth'
-import { useCompetitions } from '../hooks/useCompetitions'
+import { useCompetitionSetup } from '../hooks/useCompetitionSetup'
 import { linkGuestRostersByEmail } from '../lib/authProfile'
 
 export function Competitions() {
-  const { user, profile } = useAuth()
-  const { rows, loading, error, refresh } = useCompetitions(user?.id)
+  const { user, profile, loading: authLoading } = useAuth()
+  const { rows, loading, error, refresh } = useCompetitionSetup()
+  const isAdmin = Boolean(profile?.is_admin)
 
   useEffect(() => {
     if (user) void linkGuestRostersByEmail().then(() => refresh())
   }, [user, refresh])
 
   return (
-    <CompetitionTable
-      rows={rows}
-      loading={loading}
-      error={error}
-      isAdmin={Boolean(profile?.is_admin)}
-      userId={user?.id}
-      onRefresh={refresh}
-    />
+    <div className="relative w-full min-w-0">
+      {isAdmin && (
+        <Link
+          to="/competitions/new"
+          aria-label="Add competition"
+          className="fixed right-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-brand-accent text-2xl font-semibold leading-none text-white shadow-lg bottom-[calc(4.75rem+env(safe-area-inset-bottom))]"
+        >
+          +
+        </Link>
+      )}
+      <CompetitionTable
+        rows={rows}
+        loading={authLoading || loading}
+        error={error}
+        isAdmin={isAdmin}
+        userId={user?.id}
+        onRefresh={refresh}
+      />
+    </div>
   )
 }

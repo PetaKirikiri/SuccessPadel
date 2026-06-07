@@ -23,3 +23,12 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Capacitor / native tooling
+ios/App/Pods
+ios/App/build
+ios/DerivedData
+android/.gradle
+android/app/build
+android/build
+android/.idea

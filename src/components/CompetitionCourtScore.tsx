@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { AmericanoScoringUnit } from '../lib/competitionPresets'
+import { parseScoreField, scoreDigitsOnly } from '../lib/competitionScoreInput'
 import type { MatchTeam } from '../lib/types'
 import { supabase } from '../lib/supabaseClient'
 
@@ -16,27 +17,38 @@ type Props = {
   savedScore?: string
   savedTeamAPoints?: number
   savedTeamBPoints?: number
+  savedPlayedAt?: string
   savedWinner?: MatchTeam
   canLog: boolean
   showMargin: boolean
   compact?: boolean
+  large?: boolean
+  scoresOnly?: boolean
+  inline?: boolean
+  stacked?: boolean
   onSaved: () => void
+  onScoreChange?: (roundId: string, courtId: string, teamA: number, teamB: number) => void
+  autoSave?: boolean
 }
 
 function PickButton({
   selected,
   onClick,
+  large,
   children,
 }: {
   selected: boolean
   onClick: () => void
+  large?: boolean
   children: ReactNode
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex-1 rounded-xl border-2 px-3 py-3 text-sm font-medium transition-colors ${
+      className={`flex-1 rounded-xl border-2 font-medium transition-colors ${
+        large ? 'px-4 py-5 text-xl' : 'px-3 py-3 text-sm'
+      } ${
         selected
           ? 'border-brand-accent bg-brand-accent/15 text-brand-primary'
           : 'border-brand-border bg-brand-bg text-brand-text'
@@ -47,31 +59,71 @@ function PickButton({
   )
 }
 
+function TeamNames({ names, large }: { names: string; large?: boolean }) {
+  const parts = names.split(' · ')
+  if (large && parts.length > 1) {
+    return (
+      <div className="min-w-0 flex-1 space-y-1">
+        {parts.map((name) => (
+          <p key={name} className="text-2xl font-semibold leading-tight text-brand-text">
+            {name}
+          </p>
+        ))}
+      </div>
+    )
+  }
+  return (
+    <span
+      className={`min-w-0 flex-1 leading-snug text-brand-text ${
+        large ? 'text-2xl font-semibold' : 'text-base'
+      }`}
+    >
+      {names}
+    </span>
+  )
+}
+
+function scoreFieldLabel(scoreUnit: AmericanoScoringUnit): string {
+  if (scoreUnit === 'sets') return 'Sets'
+  if (scoreUnit === 'open') return 'Score'
+  return 'Pts'
+}
+
 function TeamPointsRow({
   names,
   value,
   onChange,
   scoreUnit = 'points',
+  large = false,
 }: {
   names: string
   value: string
   onChange: (v: string) => void
   scoreUnit?: AmericanoScoringUnit
+  large?: boolean
 }) {
-  const unitLabel =
-    scoreUnit === 'sets' ? 'Sets won' : scoreUnit === 'open' ? 'Score' : 'Points'
+  const fieldLabel = scoreFieldLabel(scoreUnit)
   return (
-    <div className="flex items-center gap-3">
-      <span className="min-w-0 flex-1 text-sm leading-snug text-brand-text">{names}</span>
-      <input
-        type="number"
-        inputMode="numeric"
-        min={0}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-[4.5rem] shrink-0 rounded-lg border border-brand-border bg-brand-bg px-2 py-2 text-center text-lg font-semibold tabular-nums text-brand-primary"
-        aria-label={`${unitLabel} for ${names}`}
-      />
+    <div className={`flex items-center ${large ? 'gap-4' : 'gap-3'}`}>
+      <TeamNames names={names} large={large} />
+      <div className={`flex shrink-0 items-center ${large ? 'gap-3' : 'gap-2'}`}>
+        <input
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={value}
+          onChange={(e) => onChange(scoreDigitsOnly(e.target.value))}
+          className={`rounded-lg border border-brand-border bg-brand-bg text-center font-semibold tabular-nums text-brand-primary ${
+            large ? 'w-24 px-3 py-4 text-4xl' : 'w-[4.5rem] px-2 py-2 text-xl'
+          }`}
+          aria-label={`${fieldLabel} for ${names}`}
+        />
+        <span
+          className={`font-semibold text-brand-muted ${large ? 'text-xl' : 'text-base'}`}
+        >
+          {fieldLabel}
+        </span>
+      </div>
     </div>
   )
 }
@@ -93,7 +145,13 @@ export function CompetitionCourtScore({
   canLog,
   showMargin,
   compact = false,
+  large = false,
+  scoresOnly = false,
+  inline = false,
+  stacked = false,
   onSaved,
+  onScoreChange,
+  autoSave = true,
 }: Props) {
   const [winner, setWinner] = useState<MatchTeam | null>(savedWinner ?? null)
   const [teamAPoints, setTeamAPoints] = useState('')
@@ -102,11 +160,13 @@ export function CompetitionCourtScore({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const savingRef = useRef(false)
+  const dirtyRef = useRef(false)
 
   useEffect(() => {
+    if (dirtyRef.current) return
     if (isAmericano) {
-      if (savedTeamAPoints != null) setTeamAPoints(String(savedTeamAPoints))
-      if (savedTeamBPoints != null) setTeamBPoints(String(savedTeamBPoints))
+      setTeamAPoints(savedTeamAPoints != null ? String(savedTeamAPoints) : '')
+      setTeamBPoints(savedTeamBPoints != null ? String(savedTeamBPoints) : '')
       return
     }
     if (savedWinner) setWinner(savedWinner)
@@ -119,22 +179,28 @@ export function CompetitionCourtScore({
   const theirLabel = playerTeam === 'b' ? teamALabel : teamBLabel
   const ourValue = playerTeam === 'b' ? teamBPoints : teamAPoints
   const theirValue = playerTeam === 'b' ? teamAPoints : teamBPoints
-  const setOurValue = (v: string) => (playerTeam === 'b' ? setTeamBPoints(v) : setTeamAPoints(v))
-  const setTheirValue = (v: string) => (playerTeam === 'b' ? setTeamAPoints(v) : setTeamBPoints(v))
 
-  const parsedA = Number(teamAPoints)
-  const parsedB = Number(teamBPoints)
+  const markDirty = (setter: (v: string) => void) => (v: string) => {
+    dirtyRef.current = true
+    setter(v)
+  }
+
+  const setOurValue = markDirty((v: string) =>
+    playerTeam === 'b' ? setTeamBPoints(v) : setTeamAPoints(v),
+  )
+  const setTheirValue = markDirty((v: string) =>
+    playerTeam === 'b' ? setTeamAPoints(v) : setTeamBPoints(v),
+  )
+
+  const parsedA = parseScoreField(teamAPoints)
+  const parsedB = parseScoreField(teamBPoints)
   const target = playTo ?? (scoreUnit === 'sets' ? 4 : 24)
   const sumLabel = scoreUnit === 'sets' ? 'Sets' : 'Scores'
-  const bothFilled = teamAPoints !== '' && teamBPoints !== ''
-  const scoresValid =
-    bothFilled &&
-    Number.isInteger(parsedA) &&
-    Number.isInteger(parsedB) &&
-    parsedA >= 0 &&
-    parsedB >= 0
+  const scoresValid = parsedA !== null && parsedB !== null
   const sumMatches = scoresValid && parsedA + parsedB === target
-  const readyToSave = scoreUnit === 'open' ? scoresValid : sumMatches
+  const readyToSave = scoresValid
+  const differsFromSaved =
+    savedTeamAPoints !== parsedA || savedTeamBPoints !== parsedB
 
   const saveAmericano = useCallback(
     async (a: number, b: number) => {
@@ -155,24 +221,30 @@ export function CompetitionCourtScore({
       savingRef.current = false
       setBusy(false)
       if (err) setError(err.message)
-      else onSaved()
+      else {
+        dirtyRef.current = false
+        onScoreChange?.(roundId, courtId, a, b)
+        onSaved()
+      }
     },
-    [courtId, marginBonus, onSaved, roundId],
+    [courtId, marginBonus, onSaved, onScoreChange, roundId],
   )
 
   useEffect(() => {
-    if (!isAmericano || !canLog || !readyToSave) return
-    if (savedTeamAPoints === parsedA && savedTeamBPoints === parsedB) return
+    if (!autoSave || !isAmericano || !canLog || !readyToSave || !differsFromSaved) return
+    if (parsedA === null || parsedB === null) return
     void saveAmericano(parsedA, parsedB)
   }, [
+    autoSave,
     isAmericano,
     canLog,
     readyToSave,
+    differsFromSaved,
     parsedA,
     parsedB,
-    savedTeamAPoints,
-    savedTeamBPoints,
     saveAmericano,
+    roundId,
+    courtId,
   ])
 
   const submitWinner = async () => {
@@ -193,15 +265,118 @@ export function CompetitionCourtScore({
     else onSaved()
   }
 
+  const scoreInputs = isAmericano && scoresOnly && (
+    <div className="flex items-center justify-center gap-1.5">
+      <input
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        value={teamAPoints}
+        onChange={(e) => markDirty(setTeamAPoints)(scoreDigitsOnly(e.target.value))}
+        className="w-10 rounded-lg border border-brand-border bg-brand-bg px-1 py-1.5 text-center text-sm font-semibold tabular-nums text-brand-primary"
+        aria-label={`Team A ${scoreUnit === 'sets' ? 'sets' : 'points'}`}
+      />
+      <span className="text-[10px] text-brand-muted">–</span>
+      <input
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        value={teamBPoints}
+        onChange={(e) => markDirty(setTeamBPoints)(scoreDigitsOnly(e.target.value))}
+        className="w-10 rounded-lg border border-brand-border bg-brand-bg px-1 py-1.5 text-center text-sm font-semibold tabular-nums text-brand-primary"
+        aria-label={`Team B ${scoreUnit === 'sets' ? 'sets' : 'points'}`}
+      />
+    </div>
+  )
+
+  if (inline && isAmericano && scoresOnly) {
+    const unit = scoreUnit === 'sets' ? 'sets' : 'points'
+    const fieldLabel = scoreFieldLabel(scoreUnit)
+    const teamRow = (
+      names: string[],
+      value: string,
+      onChange: (v: string) => void,
+      side: 'a' | 'b',
+    ) => (
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1 leading-tight">
+          <p className="truncate text-base font-medium text-brand-text">{names[0]}</p>
+          <p className="truncate text-base font-medium text-brand-text">{names[1]}</p>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={value}
+            onChange={(e) => onChange(scoreDigitsOnly(e.target.value))}
+            className="w-12 rounded border border-brand-border bg-brand-bg px-1 py-1.5 text-center text-base font-semibold tabular-nums text-brand-primary"
+            aria-label={`Team ${side.toUpperCase()} ${unit}`}
+          />
+          <span className="text-sm font-semibold text-brand-muted">{fieldLabel}</span>
+        </div>
+      </div>
+    )
+
+    const stackedBody = stacked ? (
+      <div className="space-y-1">
+        {teamRow(teamA, teamAPoints, markDirty(setTeamAPoints), 'a')}
+        <p className="text-center text-[9px] font-medium text-brand-muted">vs</p>
+        {teamRow(teamB, teamBPoints, markDirty(setTeamBPoints), 'b')}
+      </div>
+    ) : (
+      canLog && scoreInputs
+    )
+
+    return (
+      <>
+        {canLog ? stackedBody : savedScore ? (
+          stacked ? (
+            <div className="space-y-1 text-[10px] text-brand-accent">
+              <div className="flex items-center gap-1">
+                <div className="min-w-0 flex-1 leading-tight">
+                  <p className="truncate">{teamA[0]}</p>
+                  <p className="truncate">{teamA[1]}</p>
+                </div>
+                <span className="w-8 text-center font-semibold tabular-nums">
+                  {savedTeamAPoints ?? '—'}
+                </span>
+              </div>
+              <p className="text-center text-[9px] font-medium text-brand-muted">vs</p>
+              <div className="flex items-center gap-1">
+                <div className="min-w-0 flex-1 leading-tight">
+                  <p className="truncate">{teamB[0]}</p>
+                  <p className="truncate">{teamB[1]}</p>
+                </div>
+                <span className="w-8 text-center font-semibold tabular-nums">
+                  {savedTeamBPoints ?? '—'}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <p className="text-center text-[10px] font-medium text-brand-accent">{savedScore}</p>
+          )
+        ) : null}
+        {canLog && busy && <p className="text-center text-[10px] text-brand-muted">Saving…</p>}
+        {canLog && scoreUnit === 'points' && scoresValid && !sumMatches && (
+          <p className="text-center text-[10px] text-red-600">
+            {sumLabel} must add up to {target}
+          </p>
+        )}
+        {error && <p className="text-center text-[10px] text-red-600">{error}</p>}
+      </>
+    )
+  }
+
   return (
     <div className={compact ? 'space-y-3' : 'game-card space-y-3 px-3 py-3'}>
       {!compact && !isAmericano && (
         <>
-          <p className="text-sm font-medium text-brand-primary">{courtName}</p>
-          <p className="text-sm text-brand-text">
+          <p className="text-xl font-semibold text-brand-primary">{courtName}</p>
+          <p className="text-lg text-brand-text">
             <span className="text-brand-muted">A:</span> {teamALabel}
           </p>
-          <p className="text-sm text-brand-text">
+          <p className="text-lg text-brand-text">
             <span className="text-brand-muted">B:</span> {teamBLabel}
           </p>
         </>
@@ -210,23 +385,42 @@ export function CompetitionCourtScore({
       {savedScore && <p className="text-xs text-brand-accent">Logged: {savedScore}</p>}
 
       {canLog && (
-        <div className={`space-y-3 ${compact ? '' : 'border-t border-brand-border/50 pt-3'}`}>
+        <div
+          className={`${large ? 'space-y-5' : 'space-y-3'} ${compact ? '' : 'border-t border-brand-border/50 pt-3'}`}
+        >
           {isAmericano ? (
             <>
-              <div className="space-y-3">
-                {playerTeam ? (
+              <div
+                className={
+                  scoresOnly
+                    ? 'flex items-center justify-center gap-1.5'
+                    : large
+                      ? 'space-y-5'
+                      : 'space-y-3'
+                }
+              >
+                {scoresOnly ? (
+                  scoreInputs
+                ) : playerTeam ? (
                   <>
                     <TeamPointsRow
                       names={ourLabel}
                       value={ourValue}
                       onChange={setOurValue}
                       scoreUnit={scoreUnit}
+                      large={large}
                     />
+                    {large && (
+                      <p className="text-center text-lg font-bold uppercase tracking-wide text-brand-muted">
+                        vs
+                      </p>
+                    )}
                     <TeamPointsRow
                       names={theirLabel}
                       value={theirValue}
                       onChange={setTheirValue}
                       scoreUnit={scoreUnit}
+                      large={large}
                     />
                   </>
                 ) : (
@@ -234,35 +428,43 @@ export function CompetitionCourtScore({
                     <TeamPointsRow
                       names={teamALabel}
                       value={teamAPoints}
-                      onChange={setTeamAPoints}
+                      onChange={markDirty(setTeamAPoints)}
                       scoreUnit={scoreUnit}
+                      large={large}
                     />
                     <TeamPointsRow
                       names={teamBLabel}
                       value={teamBPoints}
-                      onChange={setTeamBPoints}
+                      onChange={markDirty(setTeamBPoints)}
                       scoreUnit={scoreUnit}
+                      large={large}
                     />
                   </>
                 )}
               </div>
-              {busy && <p className="text-xs text-brand-muted">Saving…</p>}
-              {scoreUnit !== 'open' && scoresValid && !sumMatches && (
-                <p className="text-xs text-red-600">
+              {busy && (
+                <p className={`text-brand-muted ${large ? 'text-base' : 'text-xs'}`}>Saving…</p>
+              )}
+              {scoreUnit === 'points' && scoresValid && !sumMatches && (
+                <p className={`text-red-600 ${large ? 'text-base' : 'text-xs'}`}>
                   {sumLabel} must add up to {target}
                 </p>
               )}
             </>
           ) : (
-            <div className="space-y-1">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-muted">
+            <div className={large ? 'space-y-3' : 'space-y-1'}>
+              <p
+                className={`font-semibold uppercase tracking-wide text-brand-muted ${
+                  large ? 'text-sm' : 'text-[10px]'
+                }`}
+              >
                 Who won?
               </p>
               <div className="flex gap-2">
-                <PickButton selected={winner === 'a'} onClick={() => setWinner('a')}>
+                <PickButton large={large} selected={winner === 'a'} onClick={() => setWinner('a')}>
                   {teamALabel}
                 </PickButton>
-                <PickButton selected={winner === 'b'} onClick={() => setWinner('b')}>
+                <PickButton large={large} selected={winner === 'b'} onClick={() => setWinner('b')}>
                   {teamBLabel}
                 </PickButton>
               </div>
@@ -291,7 +493,7 @@ export function CompetitionCourtScore({
               {busy ? 'Saving…' : savedScore ? 'Update score' : 'Submit score'}
             </button>
           )}
-          {error && <p className="text-xs text-red-600">{error}</p>}
+          {error && <p className={`text-red-600 ${large ? 'text-base' : 'text-xs'}`}>{error}</p>}
         </div>
       )}
     </div>

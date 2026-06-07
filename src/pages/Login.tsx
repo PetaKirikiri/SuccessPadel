@@ -4,9 +4,16 @@ import { useAuth } from '../hooks/useAuth'
 import { authRedirectUrl } from '../lib/authRedirect'
 import { consumeReturnTo, saveReturnTo } from '../lib/authReturnTo'
 import { syncProfileForUser } from '../lib/authProfile'
-import { isLineLoginConfigured, signInWithLine, startLineLogin } from '../lib/line/auth'
-import { detectInLineClient, hasLiffId, lineAppEntryUrl } from '../lib/line/liff'
-import { completeLineOAuthFromUrl, lineOAuthCallbackCode } from '../lib/line/oauth'
+import { LineBrowserLoginPanel } from '../components/LineBrowserLoginPanel'
+import { LineNativeLoginPanel } from '../components/LineNativeLoginPanel'
+import {
+  isBrowserLineLoginConfigured,
+  isLineLoginConfigured,
+  startLineLogin,
+} from '../lib/line/auth'
+import { isNativeApp } from '../lib/native/app'
+import { lineOAuthCallbackCode } from '../lib/line/oauth'
+import { siteOrigin } from '../lib/siteUrl'
 import { supabase } from '../lib/supabaseClient'
 
 type AuthMode = 'sign-in' | 'sign-up' | 'forgot'
@@ -24,98 +31,53 @@ const titles: Record<AuthMode, string> = {
   forgot: 'Reset password',
 }
 
-function SigningInScreen({ message }: { message: string }) {
-  return (
-    <div className="game-bg flex h-full min-h-0 w-full flex-col items-center justify-center px-6">
-      <img
-        src="/brand/logo-padel.webp"
-        alt="Success Padel"
-        className="mb-6 h-14 w-auto max-w-[min(100%,11rem)]"
-      />
-      <p className="font-display text-lg font-semibold text-brand-primary">{message}</p>
-    </div>
-  )
-}
-
 export function Login() {
   const navigate = useNavigate()
   const location = useLocation()
   const { session, loading } = useAuth()
-  const fromPath = (location.state as { from?: string } | null)?.from
+  const signupUrl = `${siteOrigin()}/login`
+  const loginState = (location.state as { from?: string } | null) ?? {}
+  const fromPath = loginState.from
+  const searchParams = new URLSearchParams(location.search)
+  const forceEmail = searchParams.get('email') === '1'
+  const nativeApp = isNativeApp()
   const lineEnabled = isLineLoginConfigured()
-  const [inLineApp, setInLineApp] = useState(false)
-  const lineShareUrl = lineAppEntryUrl('/')
+  const browserLineLogin = isBrowserLineLoginConfigured() && !nativeApp
 
-  const adminEmail = new URLSearchParams(location.search).get('email') === '1'
-  const [showEmail, setShowEmail] = useState(!lineEnabled || adminEmail)
+  const [showEmail, setShowEmail] = useState(forceEmail && !nativeApp)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
-  const [showPassword] = useState(false)
   const [mode, setMode] = useState<AuthMode>('sign-in')
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [lineBusy, setLineBusy] = useState(false)
+  const oauthReturning = Boolean(lineOAuthCallbackCode(location.search))
 
   useEffect(() => {
     if (fromPath) saveReturnTo(fromPath)
   }, [fromPath])
 
   useEffect(() => {
-    const code = lineOAuthCallbackCode(location.search)
-    if (!code) return
-
-    let active = true
-    setLineBusy(true)
-    void (async () => {
-      const err = await completeLineOAuthFromUrl(location.search)
-      if (!active) return
-      if (err) {
-        setLineBusy(false)
-        setError(err)
-        navigate('/login', { replace: true })
-        return
-      }
-      navigate(fromPath ?? consumeReturnTo('/'), { replace: true })
-    })()
-
-    return () => {
-      active = false
-    }
-  }, [location.search, fromPath, navigate])
+    const lineError = (location.state as { lineError?: string } | null)?.lineError
+    if (lineError) setError(lineError)
+  }, [location.state])
 
   useEffect(() => {
-    if (!loading && session) {
+    setShowEmail(forceEmail)
+  }, [forceEmail])
+
+  useEffect(() => {
+    if (!loading && session && !oauthReturning) {
       navigate(fromPath ?? consumeReturnTo('/'), { replace: true })
     }
-  }, [loading, session, fromPath, navigate])
+  }, [loading, session, fromPath, navigate, oauthReturning])
 
   const goAfterAuth = () => {
     navigate(fromPath ?? consumeReturnTo('/'), { replace: true })
   }
-
-  useEffect(() => {
-    if (!hasLiffId()) return
-    let cancelled = false
-    void (async () => {
-      const insideLine = await detectInLineClient()
-      if (cancelled) return
-      setInLineApp(insideLine)
-      if (!insideLine) return
-
-      setLineBusy(true)
-      const { error: lineError, redirected } = await signInWithLine()
-      if (cancelled || redirected) return
-      setLineBusy(false)
-      if (lineError) setError(lineError)
-      else goAfterAuth()
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [])
 
   const handleLineLogin = async () => {
     setError(null)
@@ -191,7 +153,7 @@ export function Login() {
       }
 
       if (fromPath) saveReturnTo(fromPath)
-      setInfo(`Check your email to confirm your account.`)
+      setInfo('Check your email to confirm your account.')
       return
     }
 
@@ -216,45 +178,39 @@ export function Login() {
     }
   }
 
-  if (lineBusy && !error) {
-    return <SigningInScreen message={inLineApp ? 'Signing you in…' : 'Opening LINE…'} />
-  }
+  if (oauthReturning) return null
 
-  if (!showEmail && lineEnabled) {
+  if (!showEmail) {
     return (
       <div className="game-bg flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden">
         <div className="login-panel mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col justify-center px-4 py-8">
-          <div className="mb-10 text-center">
-            <img
-              src="/brand/logo-padel.webp"
-              alt="Success Padel"
-              className="mx-auto h-16 w-auto max-w-[min(100%,12rem)]"
-            />
-            <h1 className="font-display mt-4 text-2xl font-semibold text-brand-primary">Success Padel</h1>
-            <p className="mt-2 text-sm text-brand-muted">No email needed — we use your LINE name</p>
-          </div>
-
-          <button
-            type="button"
-            disabled={lineBusy}
-            onClick={() => void handleLineLogin()}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#06C755] py-3.5 text-base font-semibold text-white disabled:opacity-60"
-          >
-            Continue with LINE
-          </button>
-
-          <p className="mt-3 text-center text-xs text-brand-muted">
-            LINE opens → tap Allow → you&apos;re signed in
-          </p>
-
-          {lineShareUrl && (
-            <p className="mt-4 text-center text-[10px] leading-relaxed text-brand-muted">
-              For LINE groups, share:{' '}
-              <span className="break-all font-mono text-[9px]">{lineShareUrl}</span>
+          {!lineEnabled && (
+            <p className="mb-6 text-center text-sm text-red-600">
+              LINE is not configured — set <code className="text-xs">VITE_LINE_CHANNEL_ID</code> in{' '}
+              <code className="text-xs">.env.local</code> and restart the dev server.
             </p>
           )}
 
-          {error && <p className="mt-4 text-center text-sm text-red-600">{error}</p>}
+          {nativeApp ? (
+            <LineNativeLoginPanel busy={lineBusy} onContinue={() => void handleLineLogin()} />
+          ) : browserLineLogin ? (
+            <LineBrowserLoginPanel
+              busy={lineBusy}
+              signupUrl={signupUrl}
+              onContinue={() => void handleLineLogin()}
+            />
+          ) : (
+            <button
+              type="button"
+              disabled={lineBusy}
+              onClick={() => void handleLineLogin()}
+              className="rounded-xl bg-[#06C755] px-8 py-3 text-base font-semibold text-white disabled:opacity-60"
+            >
+              Continue with LINE
+            </button>
+          )}
+
+          {error && <p className="mt-6 text-center text-sm text-red-600">{error}</p>}
         </div>
       </div>
     )
@@ -268,21 +224,12 @@ export function Login() {
         data-scroll-y
         className="scroll-y login-panel mx-auto min-h-0 w-full max-w-md flex-1 py-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]"
       >
-        {lineEnabled && (
-          <button
-            type="button"
-            onClick={() => {
-              setShowEmail(false)
-              setError(null)
-              setInfo(null)
-            }}
-            className="mb-4 text-sm font-medium text-brand-accent"
-          >
-            ← Back to LINE
-          </button>
-        )}
-
         <div className="mb-5 text-center">
+          <img
+            src="/brand/logo-padel.webp"
+            alt="Success Padel"
+            className="mx-auto mb-3 h-12 w-auto max-w-[min(100%,10rem)]"
+          />
           <h1 className="font-display text-xl font-semibold text-brand-primary">{titles[mode]}</h1>
         </div>
 
@@ -328,7 +275,7 @@ export function Login() {
           />
           {showPasswordFields && (
             <input
-              type={showPassword ? 'text' : 'password'}
+              type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
@@ -339,7 +286,7 @@ export function Login() {
           )}
           {mode === 'sign-up' && (
             <input
-              type={showPassword ? 'text' : 'password'}
+              type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Confirm password"
@@ -365,6 +312,20 @@ export function Login() {
             </button>
           )}
         </div>
+
+        {lineEnabled && (
+          <button
+            type="button"
+            onClick={() => {
+              setShowEmail(false)
+              setError(null)
+              setInfo(null)
+            }}
+            className="mt-6 w-full text-center text-sm font-medium text-[#06C755]"
+          >
+            Sign in with LINE
+          </button>
+        )}
 
         {error && <p className="mt-4 text-center text-sm text-red-600">{error}</p>}
         {info && <p className="mt-4 text-center text-sm text-brand-primary">{info}</p>}

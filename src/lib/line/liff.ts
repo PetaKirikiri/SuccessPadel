@@ -1,6 +1,6 @@
 import liff from '@line/liff'
 
-const liffId = import.meta.env.VITE_LIFF_ID as string | undefined
+const liffId = (import.meta.env.VITE_LIFF_ID as string | undefined)?.trim() || undefined
 
 let initPromise: Promise<void> | null = null
 
@@ -8,8 +8,22 @@ export function hasLiffId(): boolean {
   return Boolean(liffId)
 }
 
+export function isLineLiffBrowser(): boolean {
+  return /Line\//i.test(navigator.userAgent) || document.referrer.includes('liff.line.me')
+}
+
+function canInitLiffOnThisPage(): boolean {
+  return Boolean(liffId)
+}
+
+const PROFILE_RECONSENT_KEY = 'sp-liff-profile-reconsent'
+
+export function clearLineProfileReconsentFlag(): void {
+  sessionStorage.removeItem(PROFILE_RECONSENT_KEY)
+}
+
 export async function initLiff(): Promise<void> {
-  if (!liffId) return
+  if (!liffId || !canInitLiffOnThisPage()) return
   if (!initPromise) {
     initPromise = liff.init({ liffId })
   }
@@ -54,9 +68,55 @@ export async function getLineIdToken(): Promise<string | null> {
   return liff.getIDToken()
 }
 
+export async function getLineAccessToken(): Promise<string | null> {
+  await initLiff()
+  if (!liff.isLoggedIn()) return null
+  return liff.getAccessToken()
+}
+
+export function getDecodedLineClaims(): { sub?: string; name?: string; picture?: string } | null {
+  try {
+    const decoded = liff.getDecodedIDToken()
+    if (!decoded) return null
+    return {
+      sub: decoded.sub,
+      name: typeof decoded.name === 'string' ? decoded.name : undefined,
+      picture: typeof decoded.picture === 'string' ? decoded.picture : undefined,
+    }
+  } catch {
+    return null
+  }
+}
+
 export function lineLoginRedirect(): void {
   if (!liffId) return
-  liff.login({ redirectUri: window.location.href })
+  const path = window.location.pathname.startsWith('/') ? window.location.pathname : '/login'
+  const redirectUri = `${window.location.origin}${path}`
+  liff.login({ redirectUri })
+}
+
+/** Re-prompt LINE Allow when profile scope was added after an old LIFF session. */
+export async function ensureLineProfileConsent(): Promise<'ok' | 'redirected'> {
+  await initLiff()
+  if (!isLineLoggedIn()) return 'ok'
+
+  try {
+    const profile = await liff.getProfile()
+    if (profile?.displayName?.trim()) {
+      clearLineProfileReconsentFlag()
+      return 'ok'
+    }
+  } catch {
+    /* may still succeed via access token on server */
+  }
+
+  const decoded = getDecodedLineClaims()
+  if (decoded?.name?.trim()) {
+    clearLineProfileReconsentFlag()
+    return 'ok'
+  }
+
+  return 'ok'
 }
 
 export function liffShareUrl(): string | null {
@@ -64,6 +124,7 @@ export function liffShareUrl(): string | null {
   return `https://liff.line.me/${liffId}`
 }
 
+/** URL for QR / Open in LINE — always production LIFF (opens Vercel endpoint). */
 export function lineAppEntryUrl(path = '/login'): string | null {
   if (!liffId) return null
   const normalized = path.startsWith('/') ? path : `/${path}`

@@ -21,7 +21,9 @@ type Props = {
 }
 
 function myCourtGroup(players: RoundPlayer[], userId: string) {
-  const mine = players.find((p) => p.session_players?.profile_id === userId)
+  const mine = players.find(
+    (p) => p.profile_id === userId || p.session_players?.profile_id === userId,
+  )
   if (!mine) return null
 
   const courtId = mine.court_id
@@ -57,7 +59,7 @@ export function CompetitionMyCourt({
 
   if (!court) {
     return (
-      <p className="px-3 py-8 text-center text-sm text-brand-muted">You are not on court this round.</p>
+      <p className="px-3 py-8 text-center text-lg text-brand-muted">You are not on court this round.</p>
     )
   }
 
@@ -74,14 +76,14 @@ export function CompetitionMyCourt({
     })()
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-1 text-center">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
+    <div className="space-y-5">
+      <div className="space-y-2 text-center">
+        <p className="text-sm font-semibold uppercase tracking-wide text-brand-muted">
           {activeRound.is_final ? 'Final round' : `Round ${activeRound.round_number}`}
         </p>
         {timeLeft != null && (
           <p
-            className={`font-display text-5xl font-semibold tabular-nums ${
+            className={`font-display text-6xl font-semibold tabular-nums ${
               urgent ? 'text-amber-600' : 'text-brand-primary'
             }`}
           >
@@ -89,25 +91,22 @@ export function CompetitionMyCourt({
           </p>
         )}
         {eventTimeLeft != null && (
-          <p className="text-xs text-brand-muted">Event ends in {eventTimeLeft}</p>
+          <p className="text-base text-brand-muted">Event ends in {eventTimeLeft}</p>
         )}
       </div>
 
-      <div className="game-card space-y-2 px-4 py-5 text-center">
-        <p className="font-display text-3xl font-semibold text-brand-primary">{court.courtName}</p>
-        <p className="text-base text-brand-text">
-          <span className="text-brand-muted">Partner</span> {court.partner}
-        </p>
-        <p className="text-base text-brand-text">
-          <span className="text-brand-muted">Vs</span> {court.opponents.join(' · ') || '—'}
+      <div className="game-card px-4 py-10 text-center">
+        <p className="text-base font-semibold uppercase tracking-wide text-brand-muted">Your court</p>
+        <p className="mt-2 font-display text-7xl font-semibold leading-none text-brand-primary">
+          {court.courtName}
         </p>
       </div>
 
       {urgent && (
-        <p className="text-center text-sm text-amber-700">Enter your score when the game ends.</p>
+        <p className="text-center text-lg text-amber-700">Enter your score when the game ends.</p>
       )}
 
-      <div className="game-card px-3 py-3">
+      <div className="game-card px-4 py-5">
         <CompetitionCourtScore
           roundId={activeRound.id}
           courtId={court.courtId}
@@ -125,6 +124,7 @@ export function CompetitionMyCourt({
           canLog
           showMargin={marginBonus && !isAmericano}
           compact
+          large
           onSaved={onSaved}
         />
       </div>

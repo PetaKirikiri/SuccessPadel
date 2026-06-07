@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
+import { installLoginWithAppLifecycleDebug } from '../lib/debug/loginWithAppDebug'
 import { syncProfileForUser } from '../lib/authProfile'
 import { supabase } from '../lib/supabaseClient'
 import type { Profile } from '../lib/types'
@@ -33,6 +34,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const next = await syncProfileForUser(authUser)
     setProfile(next)
   }, [])
+
+  useEffect(() => {
+    installLoginWithAppLifecycleDebug()
+  }, [])
+
+  useEffect(() => {
+    const onProfileSynced = () => {
+      if (user) void loadProfile(user)
+    }
+    window.addEventListener('successpadel:profile-synced', onProfileSynced)
+    return () => window.removeEventListener('successpadel:profile-synced', onProfileSynced)
+  }, [user, loadProfile])
 
   useEffect(() => {
     let active = true

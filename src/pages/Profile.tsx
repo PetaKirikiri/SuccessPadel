@@ -1,9 +1,12 @@
 import { useEffect } from 'react'
+import { LineAppBookmark } from '../components/LineAppBookmark'
 import { ProfileDetailsForm } from '../components/ProfileDetailsForm'
 import { useAuth } from '../hooks/useAuth'
+import { useLineClientProfile } from '../hooks/useLineClientProfile'
 
 export function Profile() {
   const { profile, signOut, refreshProfile } = useAuth()
+  const { inClient } = useLineClientProfile()
 
   useEffect(() => {
     void refreshProfile()
@@ -16,6 +19,7 @@ export function Profile() {
 
   return (
     <div className="space-y-4 pb-8">
+      {inClient ? <LineAppBookmark /> : null}
       <ProfileDetailsForm profile={profile} onSaved={() => void refreshProfile()} />
 
       <button

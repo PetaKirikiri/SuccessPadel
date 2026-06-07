@@ -1,26 +1,33 @@
+import { FunctionsHttpError } from '@supabase/supabase-js'
+import { Browser } from '@capacitor/browser'
 import { saveReturnTo } from '../authReturnTo'
 import { syncProfileForUser } from '../authProfile'
+import { claimPendingPadelPlayer } from '../claimPadelPlayer'
+import { isNativeApp, NATIVE_LINE_REDIRECT_URI } from '../native/app'
+import { siteOrigin } from '../siteUrl'
 import { supabase } from '../supabaseClient'
 
-const channelId = import.meta.env.VITE_LINE_CHANNEL_ID as string | undefined
-const configuredRedirect = import.meta.env.VITE_LINE_REDIRECT_URI as string | undefined
+const channelId = (import.meta.env.VITE_LINE_CHANNEL_ID as string | undefined)?.trim() || undefined
+const configuredRedirect =
+  (import.meta.env.VITE_LINE_REDIRECT_URI as string | undefined)?.trim() || undefined
 const STATE_KEY = 'line_oauth_state'
 
 export function hasLineOAuth(): boolean {
   return Boolean(channelId)
 }
 
-/** Must match a Callback URL in LINE Developers exactly (no trailing slash). */
+/** Must match a Callback URL in LINE Developers exactly. */
 export function lineOAuthRedirectUri(): string {
   if (configuredRedirect) return configuredRedirect
-  return `${window.location.origin}/login`
+  if (isNativeApp()) return NATIVE_LINE_REDIRECT_URI
+  return `${siteOrigin()}/login`
 }
 
 export function lineOAuthCallbackCode(search: string): string | null {
   return new URLSearchParams(search).get('code')
 }
 
-export function startLineOAuthLogin(returnPath: string): void {
+export async function startLineOAuthLogin(returnPath: string): Promise<void> {
   if (!channelId) return
 
   saveReturnTo(returnPath)
@@ -33,15 +40,36 @@ export function startLineOAuthLogin(returnPath: string): void {
     redirect_uri: lineOAuthRedirectUri(),
     state,
     scope: 'profile openid',
+    disable_auto_login: 'true',
   })
 
-  window.location.assign(`https://access.line.me/oauth2/v2.1/authorize?${params}`)
+  const authorizeUrl = `https://access.line.me/oauth2/v2.1/authorize?${params}`
+
+  if (isNativeApp()) {
+    await Browser.open({ url: authorizeUrl })
+    return
+  }
+
+  window.location.assign(authorizeUrl)
 }
 
 export function consumeLineOAuthState(received: string | null): boolean {
   const expected = sessionStorage.getItem(STATE_KEY)
   sessionStorage.removeItem(STATE_KEY)
   return Boolean(received && expected && received === expected)
+}
+
+async function oauthFunctionErrorMessage(error: unknown): Promise<string> {
+  if (error instanceof FunctionsHttpError) {
+    try {
+      const body = (await error.context.json()) as { error?: string }
+      if (body.error) return body.error
+    } catch {
+      /* ignore */
+    }
+  }
+  if (error instanceof Error) return error.message
+  return 'LINE sign-in failed. Please try again.'
 }
 
 export async function completeLineOAuthFromUrl(search: string): Promise<string | null> {
@@ -60,7 +88,7 @@ export async function completeLineOAuthFromUrl(search: string): Promise<string |
     body: { code, redirect_uri: redirectUri },
   })
 
-  if (fnError) return fnError.message
+  if (fnError) return oauthFunctionErrorMessage(fnError)
 
   const payload = data as {
     error?: string
@@ -69,8 +97,8 @@ export async function completeLineOAuthFromUrl(search: string): Promise<string |
   }
 
   if (payload.error) {
-    if (/LINE channel not configured/i.test(payload.error)) {
-      return 'LINE login is not fully set up on the server yet. Ask your admin.'
+    if (/LINE_CHANNEL_SECRET|LINE channel not configured|Supabase secret missing/i.test(payload.error)) {
+      return 'Server setup incomplete — LINE channel secret must be added to Supabase (see .env.example).'
     }
     return payload.error
   }
@@ -91,5 +119,6 @@ export async function completeLineOAuthFromUrl(search: string): Promise<string |
   }
 
   await syncProfileForUser(confirmed.session.user)
+  await claimPendingPadelPlayer()
   return null
 }

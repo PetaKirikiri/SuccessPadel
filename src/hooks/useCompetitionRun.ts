@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import type { LeaderboardEntry } from '../components/CompetitionLeaderboard'
+import { normalizeLeaderboardEntries } from '../lib/leaderboardEntries'
 import type { CompetitionPlayer } from './useCompetitions'
 import type { GameSession } from '../lib/types'
 
@@ -9,9 +10,11 @@ export type RoundPlayer = {
   team: 'a' | 'b'
   roster_entry_id: string
   profile_id: string | null
+  padel_player_id: string | null
   session_players: {
     guest_name: string | null
     profile_id: string | null
+    padel_player_id: string | null
     profiles: { id: string; display_name: string } | null
   } | null
   courts: { id: string; name: string } | null
@@ -40,8 +43,11 @@ export type CourtMatch = {
   competition_round_id: string
   court_id: string
   score_summary: string
+  played_at?: string
   match_players: { team: 'a' | 'b'; is_winner: boolean }[]
 }
+
+export type ClubCourt = { id: string; name: string; sort_order: number }
 
 export function matchWinnerTeam(m: CourtMatch): 'a' | 'b' | undefined {
   const w = m.match_players.find((p) => p.is_winner)
@@ -54,6 +60,7 @@ export function useCompetitionRun(sessionId: string | undefined) {
   const [courtMatches, setCourtMatches] = useState<CourtMatch[]>([])
   const [roster, setRoster] = useState<CompetitionPlayer[]>([])
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
+  const [clubCourts, setClubCourts] = useState<ClubCourt[]>([])
   const [onRoster, setOnRoster] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -62,7 +69,8 @@ export function useCompetitionRun(sessionId: string | undefined) {
     if (!silent) setLoading(true)
     setError(null)
 
-    const [sessionRes, roundsRes, matchesRes, rosterRes, leaderboardRes] = await Promise.all([
+    const [sessionRes, roundsRes, matchesRes, rosterRes, leaderboardRes, courtsRes] =
+      await Promise.all([
       supabase.from('game_sessions').select('*').eq('id', sessionId).single(),
       supabase
         .from('competition_rounds')
@@ -81,9 +89,12 @@ export function useCompetitionRun(sessionId: string | undefined) {
         .not('competition_round_id', 'is', null),
       supabase
         .from('session_players')
-        .select('id, profile_id, guest_name, guest_email, profiles(id, display_name)')
-        .eq('session_id', sessionId),
+        .select('id, profile_id, guest_name, guest_email, rank_order, profiles(id, display_name)')
+        .eq('session_id', sessionId)
+        .order('rank_order')
+        .order('id'),
       supabase.rpc('get_competition_leaderboard', { p_session_id: sessionId }),
+      supabase.from('courts').select('id, name, sort_order').eq('is_active', true).order('sort_order'),
     ])
 
     if (sessionRes.error) setError(sessionRes.error.message)
@@ -98,7 +109,11 @@ export function useCompetitionRun(sessionId: string | undefined) {
     setRoster((rosterRes.data as unknown as CompetitionPlayer[]) ?? [])
 
     if (!leaderboardRes.error && leaderboardRes.data) {
-      setLeaderboard(leaderboardRes.data as LeaderboardEntry[])
+      setLeaderboard(normalizeLeaderboardEntries(leaderboardRes.data as LeaderboardEntry[]))
+    }
+
+    if (!courtsRes.error && courtsRes.data) {
+      setClubCourts(courtsRes.data as ClubCourt[])
     }
 
     const { data: authData } = await supabase.auth.getUser()
@@ -153,6 +168,7 @@ export function useCompetitionRun(sessionId: string | undefined) {
     activeRound,
     courtMatches,
     roster,
+    clubCourts,
     leaderboard,
     onRoster,
     loading,

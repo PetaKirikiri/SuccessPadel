@@ -11,15 +11,39 @@ async function lineUserFromAccessToken(accessToken: string): Promise<LineUser | 
   const profileRes = await fetch('https://api.line.me/v2/profile', {
     headers: { Authorization: `Bearer ${accessToken}` },
   })
-  if (!profileRes.ok) return null
-
-  const p = (await profileRes.json()) as {
-    userId?: string
-    displayName?: string
-    pictureUrl?: string
+  if (profileRes.ok) {
+    const p = (await profileRes.json()) as {
+      userId?: string
+      displayName?: string
+      pictureUrl?: string
+    }
+    if (p.userId) {
+      return { sub: p.userId, name: p.displayName, picture: p.pictureUrl }
+    }
   }
-  if (!p.userId) return null
-  return { sub: p.userId, name: p.displayName, picture: p.pictureUrl }
+
+  const userinfoRes = await fetch('https://api.line.me/oauth2/v2.1/userinfo', {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!userinfoRes.ok) return null
+
+  const u = (await userinfoRes.json()) as { sub?: string; name?: string; picture?: string }
+  if (!u.sub) return null
+  return { sub: u.sub, name: u.name, picture: u.picture }
+}
+
+async function findAuthUserIdByEmail(
+  admin: ReturnType<typeof createClient>,
+  email: string,
+): Promise<string | undefined> {
+  for (let page = 1; page <= 20; page++) {
+    const { data: list, error } = await admin.auth.admin.listUsers({ page, perPage: 200 })
+    if (error) throw error
+    const found = list.users.find((u) => u.email === email)
+    if (found?.id) return found.id
+    if (list.users.length < 200) break
+  }
+  return undefined
 }
 
 async function sessionForLineUser(admin: ReturnType<typeof createClient>, lineUser: LineUser) {
@@ -27,7 +51,7 @@ async function sessionForLineUser(admin: ReturnType<typeof createClient>, lineUs
 
   const { data: existing } = await admin
     .from('profiles')
-    .select('id')
+    .select('id, display_name, avatar_url')
     .eq('line_user_id', lineUser.sub)
     .maybeSingle()
 
@@ -44,23 +68,24 @@ async function sessionForLineUser(admin: ReturnType<typeof createClient>, lineUs
       },
     })
     if (error) {
-      const { data: list } = await admin.auth.admin.listUsers()
-      const found = list.users.find(
-        (u) => u.email === email || u.user_metadata?.line_user_id === lineUser.sub,
-      )
-      userId = found?.id
+      userId = await findAuthUserIdByEmail(admin, email)
       if (!userId) throw error
     } else {
       userId = created.user.id
     }
   }
 
-  await admin.from('profiles').upsert({
+  const profilePatch: Record<string, string | null> = {
     id: userId,
-    display_name: lineUser.name ?? 'Player',
-    avatar_url: lineUser.picture ?? null,
     line_user_id: lineUser.sub,
-  })
+    display_name: lineUser.name ?? existing?.display_name ?? 'Player',
+    avatar_url: lineUser.picture ?? existing?.avatar_url ?? null,
+  }
+
+  const { error: profileErr } = existing
+    ? await admin.from('profiles').update(profilePatch).eq('id', userId)
+    : await admin.from('profiles').upsert(profilePatch)
+  if (profileErr) throw profileErr
 
   const { data: link, error: linkErr } = await admin.auth.admin.generateLink({
     type: 'magiclink',
@@ -69,6 +94,8 @@ async function sessionForLineUser(admin: ReturnType<typeof createClient>, lineUs
   if (linkErr) throw linkErr
 
   const tokenHash = link.properties?.hashed_token
+  if (!tokenHash) throw new Error('No session token from auth')
+
   const { data: session, error: sessErr } = await admin.auth.verifyOtp({
     token_hash: tokenHash,
     type: 'email',
@@ -96,10 +123,19 @@ Deno.serve(async (req) => {
     const channelId = Deno.env.get('LINE_CHANNEL_ID') ?? ''
     const channelSecret = Deno.env.get('LINE_CHANNEL_SECRET') ?? ''
     if (!channelId || !channelSecret) {
-      return new Response(JSON.stringify({ error: 'LINE channel not configured on server' }), {
-        status: 500,
-        headers: { ...cors, 'Content-Type': 'application/json' },
-      })
+      const missing = [
+        !channelId ? 'LINE_CHANNEL_ID' : null,
+        !channelSecret ? 'LINE_CHANNEL_SECRET' : null,
+      ].filter(Boolean)
+      return new Response(
+        JSON.stringify({
+          error: `Supabase secret missing: ${missing.join(', ')}. Add in Dashboard → Edge Functions → Secrets (Channel secret from developers.line.biz).`,
+        }),
+        {
+          status: 500,
+          headers: { ...cors, 'Content-Type': 'application/json' },
+        },
+      )
     }
 
     const tokenRes = await fetch('https://api.line.me/oauth2/v2.1/token', {

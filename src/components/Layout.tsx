@@ -1,26 +1,11 @@
 import type React from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { LineBookmarkBanner } from './LineBookmarkBanner'
+import { useLineClientProfile } from '../hooks/useLineClientProfile'
 import { saveReturnTo } from '../lib/authReturnTo'
 
 type NavIconProps = { className?: string }
-
-function IconFun({ className }: NavIconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" aria-hidden>
-      <circle cx="12" cy="12" r="10" fill="var(--color-brand-fun)" />
-      <circle cx="8.75" cy="10" r="1.35" fill="#fff" />
-      <circle cx="15.25" cy="10" r="1.35" fill="#fff" />
-      <path
-        d="M8.25 14.25c1.1 1.65 2.35 2.5 3.75 2.5s2.65-.85 3.75-2.5"
-        fill="none"
-        stroke="#fff"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
-    </svg>
-  )
-}
 
 function IconRank({ className }: NavIconProps) {
   return (
@@ -94,7 +79,7 @@ function IconCompetition({ className }: NavIconProps) {
   )
 }
 
-type NavVariant = 'fun' | 'rank' | 'competition'
+type NavVariant = 'rank' | 'competition'
 
 const nav: {
   to: string
@@ -103,20 +88,13 @@ const nav: {
   variant: NavVariant
   match: RegExp
 }[] = [
-  {
-    to: '/fun',
-    label: 'Fun',
-    Icon: IconFun,
-    variant: 'fun',
-    match: /^\/(fun|find|week|make|admin\/games)/,
-  },
-  { to: '/', label: 'Rank', Icon: IconRank, variant: 'rank', match: /^\/$/ },
+  { to: '/', label: 'Leaderboard', Icon: IconRank, variant: 'rank', match: /^\/$/ },
   {
     to: '/competitions',
     label: 'Competition',
     Icon: IconCompetition,
     variant: 'competition',
-    match: /^\/(competitions|admin\/seasons)/,
+    match: /^\/competitions/,
   },
 ]
 
@@ -130,15 +108,23 @@ function tabClass(active: boolean, variant: NavVariant) {
 
 export function Layout() {
   const { profile, user } = useAuth()
+  const lineClient = useLineClientProfile()
   const loc = useLocation()
   const navigate = useNavigate()
   const onProfile = loc.pathname === '/profile'
+
+  const headerName =
+    profile?.display_name ??
+    lineClient.displayName ??
+    (lineClient.lineLoggedIn ? 'LINE connected' : user ? 'Profile' : 'Sign in')
+
+  const headerAvatar = profile?.avatar_url ?? lineClient.pictureUrl ?? null
 
   const openProfile = () => {
     if (onProfile) return
     if (!user) {
       saveReturnTo('/profile')
-      navigate('/login', { state: { from: '/profile' } })
+      navigate('/login', { replace: true, state: { from: '/profile' } })
       return
     }
     navigate('/profile')
@@ -170,9 +156,16 @@ export function Layout() {
             <button
               type="button"
               onClick={openProfile}
-              className="max-w-[45%] truncate rounded-full border border-brand-border bg-brand-surface px-3 py-1.5 text-xs font-medium text-brand-primary"
+              className="flex max-w-[45%] items-center gap-2 truncate rounded-full border border-brand-border bg-brand-surface py-1.5 pl-1.5 pr-3 text-xs font-medium text-brand-primary"
             >
-              {profile?.display_name ?? (user ? 'Profile' : 'Sign in')}
+              {headerAvatar ? (
+                <img
+                  src={headerAvatar}
+                  alt=""
+                  className="h-6 w-6 shrink-0 rounded-full object-cover"
+                />
+              ) : null}
+              <span className="truncate">{headerName}</span>
             </button>
           </>
         )}
@@ -180,6 +173,7 @@ export function Layout() {
 
       <main data-scroll-y className="scroll-y min-h-0 min-w-0 flex-1 px-3 pb-2 pt-1">
         <div className="w-full min-w-0 max-w-full">
+          <LineBookmarkBanner />
           <Outlet />
         </div>
       </main>
