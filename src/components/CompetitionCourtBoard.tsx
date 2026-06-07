@@ -6,6 +6,7 @@ import { RANKED_GAME_MINUTES } from '../lib/competitionLayout'
 import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
 import { parseScoreField, scoreDigitsOnly } from '../lib/competitionScoreInput'
 import { compactDisplayNames } from '../lib/leaderboardEntries'
+import type { CourtPlayer } from '../lib/americanoSchedule'
 import type { MatchTeam } from '../lib/types'
 
 type LiveCourt = {
@@ -14,10 +15,8 @@ type LiveCourt = {
   teamA: string[]
   teamB: string[]
   playerIds: string[]
-  teamAIds?: (string | null)[]
-  teamBIds?: (string | null)[]
-  teamAAvatars?: (string | null)[]
-  teamBAvatars?: (string | null)[]
+  teamAPlayers?: CourtPlayer[]
+  teamBPlayers?: CourtPlayer[]
 }
 
 type Props = {
@@ -99,10 +98,8 @@ function CourtMatchCell({
   onScoreA,
   onScoreB,
   disabled = false,
-  teamAIds,
-  teamBIds,
-  teamAAvatars,
-  teamBAvatars,
+  teamAPlayers,
+  teamBPlayers,
   currentUserId,
   currentUserAvatarUrl,
 }: {
@@ -114,18 +111,27 @@ function CourtMatchCell({
   onScoreA?: (v: string) => void
   onScoreB?: (v: string) => void
   disabled?: boolean
-  teamAIds?: (string | null)[]
-  teamBIds?: (string | null)[]
-  teamAAvatars?: (string | null)[]
-  teamBAvatars?: (string | null)[]
+  teamAPlayers?: CourtPlayer[]
+  teamBPlayers?: CourtPlayer[]
   currentUserId?: string | null
   currentUserAvatarUrl?: string | null
 }) {
   const fieldLabel = scoreUnit === 'sets' ? 'Sets' : scoreUnit === 'open' ? 'Score' : 'Pts'
   const editable = Boolean(onScoreA && onScoreB && !disabled)
-  const names = compactDisplayNames([teamA[0] ?? '', teamA[1] ?? '', teamB[0] ?? '', teamB[1] ?? ''])
-  const teamADisplay = [names[0] ?? '', names[1] ?? '']
-  const teamBDisplay = [names[2] ?? '', names[3] ?? '']
+  const fallbackNames = compactDisplayNames([
+    teamA[0] ?? '',
+    teamA[1] ?? '',
+    teamB[0] ?? '',
+    teamB[1] ?? '',
+  ])
+  const teamAPlayerList: CourtPlayer[] = [
+    teamAPlayers?.[0] ?? { id: null, name: fallbackNames[0] ?? '', avatarUrl: null },
+    teamAPlayers?.[1] ?? { id: null, name: fallbackNames[1] ?? '', avatarUrl: null },
+  ]
+  const teamBPlayerList: CourtPlayer[] = [
+    teamBPlayers?.[0] ?? { id: null, name: fallbackNames[2] ?? '', avatarUrl: null },
+    teamBPlayers?.[1] ?? { id: null, name: fallbackNames[3] ?? '', avatarUrl: null },
+  ]
   const playerClass = (isCurrent: boolean, align: 'left' | 'right') =>
     `flex min-w-0 items-center gap-1.5 rounded px-1 py-0.5 ${
       align === 'right' ? 'justify-end' : ''
@@ -164,13 +170,10 @@ function CourtMatchCell({
     <span className="text-xs font-medium tabular-nums text-brand-muted">{scoreB || '—'}</span>
   )
 
-  const playerEl = (
-    name: string,
-    avatarUrl: string | null | undefined,
-    isCurrent: boolean,
-    align: 'left' | 'right',
-  ) => {
-    const displayAvatarUrl = avatarUrl ?? (isCurrent ? currentUserAvatarUrl : null)
+  const playerEl = (player: CourtPlayer, align: 'left' | 'right') => {
+    const isCurrent = Boolean(currentUserId && player.id === currentUserId)
+    const displayAvatarUrl = player.avatarUrl ?? (isCurrent ? currentUserAvatarUrl : null)
+    const [displayName] = compactDisplayNames([player.name])
     return (
     <p className={playerClass(isCurrent, align)}>
       {displayAvatarUrl ? (
@@ -181,10 +184,10 @@ function CourtMatchCell({
         />
       ) : (
         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-bg-alt text-[10px] font-semibold text-brand-muted ring-1 ring-brand-border/40">
-          {name.trim()[0]?.toUpperCase() ?? '?'}
+          {displayName.trim()[0]?.toUpperCase() ?? '?'}
         </span>
       )}
-      <span className="truncate text-lg font-semibold leading-tight">{name}</span>
+      <span className="truncate text-lg font-semibold leading-tight">{displayName}</span>
     </p>
     )
   }
@@ -195,18 +198,8 @@ function CourtMatchCell({
       aria-label={`${teamA[0]} and ${teamA[1]} against ${teamB[0]} and ${teamB[1]}`}
     >
       <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 border-r border-brand-border/60 px-2.5 py-2">
-        {playerEl(
-          teamADisplay[0],
-          teamAAvatars?.[0],
-          Boolean(currentUserId && teamAIds?.[0] === currentUserId),
-          'left',
-        )}
-        {playerEl(
-          teamADisplay[1],
-          teamAAvatars?.[1],
-          Boolean(currentUserId && teamAIds?.[1] === currentUserId),
-          'left',
-        )}
+        {playerEl(teamAPlayerList[0]!, 'left')}
+        {playerEl(teamAPlayerList[1]!, 'left')}
       </div>
 
       <div className="flex shrink-0 items-center gap-1 px-2 tabular-nums">
@@ -216,18 +209,8 @@ function CourtMatchCell({
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 border-l border-brand-border/60 px-2.5 py-2 text-right">
-        {playerEl(
-          teamBDisplay[0],
-          teamBAvatars?.[0],
-          Boolean(currentUserId && teamBIds?.[0] === currentUserId),
-          'right',
-        )}
-        {playerEl(
-          teamBDisplay[1],
-          teamBAvatars?.[1],
-          Boolean(currentUserId && teamBIds?.[1] === currentUserId),
-          'right',
-        )}
+        {playerEl(teamBPlayerList[0]!, 'right')}
+        {playerEl(teamBPlayerList[1]!, 'right')}
       </div>
     </div>
   )
@@ -400,10 +383,8 @@ function GameScoringCourts({
         const courtId = courtIdForLabel(court.courtLabel, courtsForGame, courtIdByLabel)
         const teamA = liveCourt?.teamA ?? court.teamA
         const teamB = liveCourt?.teamB ?? court.teamB
-        const teamAIds = liveCourt?.teamAIds
-        const teamBIds = liveCourt?.teamBIds
-        const teamAAvatars = liveCourt?.teamAAvatars
-        const teamBAvatars = liveCourt?.teamBAvatars
+        const teamAPlayers = liveCourt?.teamAPlayers ?? court.teamAPlayers
+        const teamBPlayers = liveCourt?.teamBPlayers ?? court.teamBPlayers
         const saved = gameRoundId && courtId ? matchForCourt(gameRoundId, courtId) : undefined
         const draft = courtId ? drafts[courtId] : undefined
 
@@ -414,10 +395,8 @@ function GameScoringCourts({
               <CourtMatchCell
                 teamA={teamA}
                 teamB={teamB}
-                teamAIds={teamAIds}
-                teamBIds={teamBIds}
-                teamAAvatars={teamAAvatars}
-                teamBAvatars={teamBAvatars}
+                teamAPlayers={teamAPlayers}
+                teamBPlayers={teamBPlayers}
                 scoreUnit={scoreUnit}
                 scoreA={
                   canEdit
@@ -536,7 +515,13 @@ function ScoringGameCard({
   })
 
   const isMyGame = Boolean(
-    currentUserId && courtsForGame.some((court) => court.playerIds.includes(currentUserId)),
+    currentUserId &&
+      courtsForGame.some(
+        (court) =>
+          court.teamAPlayers?.some((player) => player.id === currentUserId) ||
+          court.teamBPlayers?.some((player) => player.id === currentUserId) ||
+          court.playerIds.includes(currentUserId),
+      ),
   )
 
   return (
@@ -689,10 +674,8 @@ export function CompetitionCourtBoard({
                         <CourtMatchCell
                           teamA={liveCourt?.teamA ?? court.teamA}
                           teamB={liveCourt?.teamB ?? court.teamB}
-                          teamAIds={liveCourt?.teamAIds}
-                          teamBIds={liveCourt?.teamBIds}
-                          teamAAvatars={liveCourt?.teamAAvatars}
-                          teamBAvatars={liveCourt?.teamBAvatars}
+                          teamAPlayers={liveCourt?.teamAPlayers ?? court.teamAPlayers}
+                          teamBPlayers={liveCourt?.teamBPlayers ?? court.teamBPlayers}
                           scoreUnit={scoreUnit}
                           scoreA={
                             saved?.teamAPoints != null ? String(saved.teamAPoints) : undefined

@@ -13,11 +13,19 @@ export type GameMatch = {
   courtLabel: string
   teamA: [string, string]
   teamB: [string, string]
+  teamAPlayers?: [CourtPlayer, CourtPlayer]
+  teamBPlayers?: [CourtPlayer, CourtPlayer]
 }
 
 export type GameRound = {
   gameNumber: number
   matches: GameMatch[]
+}
+
+export type CourtPlayer = {
+  id: string | null
+  name: string
+  avatarUrl: string | null
 }
 
 function partnerCount(

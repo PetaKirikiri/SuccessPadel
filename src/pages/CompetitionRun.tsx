@@ -30,6 +30,7 @@ import {
   sortRosterByRank,
   type StoredScheduleRound,
 } from '../lib/rankedSchedule'
+import type { CourtPlayer } from '../lib/americanoSchedule'
 import { formatClubTime } from '../lib/courtSchedule'
 import { linkGuestRostersByEmail } from '../lib/authProfile'
 import { competitionPlayUrl } from '../lib/siteUrl'
@@ -48,10 +49,8 @@ type CourtGroup = {
   a: string[]
   b: string[]
   playerIds: string[]
-  teamAIds: (string | null)[]
-  teamBIds: (string | null)[]
-  teamAAvatars: (string | null)[]
-  teamBAvatars: (string | null)[]
+  teamAPlayers: CourtPlayer[]
+  teamBPlayers: CourtPlayer[]
 }
 
 function groupByCourt(players: RoundPlayer[]): CourtGroup[] {
@@ -66,22 +65,19 @@ function groupByCourt(players: RoundPlayer[]): CourtGroup[] {
         a: [],
         b: [],
         playerIds: [],
-        teamAIds: [],
-        teamBIds: [],
-        teamAAvatars: [],
-        teamBAvatars: [],
+        teamAPlayers: [],
+        teamBPlayers: [],
       } satisfies CourtGroup)
     const label = roundPlayerName(p)
     const pid = p.profile_id ?? p.session_players?.profile_id
     const avatarUrl = p.session_players?.profiles?.avatar_url ?? null
+    const player = { id: pid ?? null, name: label, avatarUrl } satisfies CourtPlayer
     if (p.team === 'a') {
       row.a.push(label)
-      row.teamAIds.push(pid ?? null)
-      row.teamAAvatars.push(avatarUrl)
+      row.teamAPlayers.push(player)
     } else {
       row.b.push(label)
-      row.teamBIds.push(pid ?? null)
-      row.teamBAvatars.push(avatarUrl)
+      row.teamBPlayers.push(player)
     }
     if (pid) row.playerIds.push(pid)
     map.set(p.court_id, row)
@@ -192,10 +188,8 @@ export function CompetitionRun() {
         teamA: string[]
         teamB: string[]
         playerIds: string[]
-        teamAIds: (string | null)[]
-        teamBIds: (string | null)[]
-        teamAAvatars: (string | null)[]
-        teamBAvatars: (string | null)[]
+        teamAPlayers: CourtPlayer[]
+        teamBPlayers: CourtPlayer[]
       }[]
     >()
     for (const round of rounds) {
@@ -209,10 +203,8 @@ export function CompetitionRun() {
           teamA: c.a,
           teamB: c.b,
           playerIds: c.playerIds,
-          teamAIds: c.teamAIds,
-          teamBIds: c.teamBIds,
-          teamAAvatars: c.teamAAvatars,
-          teamBAvatars: c.teamBAvatars,
+          teamAPlayers: c.teamAPlayers,
+          teamBPlayers: c.teamBPlayers,
         })),
       )
     }

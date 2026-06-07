@@ -17,7 +17,7 @@ import {
   sortRosterByRank,
   storedScheduleFromConfig,
 } from '../lib/rankedSchedule'
-import type { GameRound } from '../lib/americanoSchedule'
+import type { CourtPlayer, GameRound } from '../lib/americanoSchedule'
 import { pivotScheduleByCourt, type CourtColumn } from '../lib/competitionCourtBoard'
 import type { CompetitionPlayer } from './useCompetitions'
 import {
@@ -36,10 +36,8 @@ type LiveCourt = {
   teamA: string[]
   teamB: string[]
   playerIds: string[]
-  teamAIds: (string | null)[]
-  teamBIds: (string | null)[]
-  teamAAvatars: (string | null)[]
-  teamBAvatars: (string | null)[]
+  teamAPlayers: CourtPlayer[]
+  teamBPlayers: CourtPlayer[]
 }
 
 function groupLiveCourts(players: RoundPlayer[]): LiveCourt[] {
@@ -53,22 +51,19 @@ function groupLiveCourts(players: RoundPlayer[]): LiveCourt[] {
         teamA: [],
         teamB: [],
         playerIds: [],
-        teamAIds: [],
-        teamBIds: [],
-        teamAAvatars: [],
-        teamBAvatars: [],
+        teamAPlayers: [],
+        teamBPlayers: [],
       } satisfies LiveCourt)
     const label = roundPlayerName(p)
     const pid = p.profile_id ?? p.session_players?.profile_id
     const avatarUrl = p.session_players?.profiles?.avatar_url ?? null
+    const player = { id: pid ?? null, name: label, avatarUrl } satisfies CourtPlayer
     if (p.team === 'a') {
       row.teamA.push(label)
-      row.teamAIds.push(pid ?? null)
-      row.teamAAvatars.push(avatarUrl)
+      row.teamAPlayers.push(player)
     } else {
       row.teamB.push(label)
-      row.teamBIds.push(pid ?? null)
-      row.teamBAvatars.push(avatarUrl)
+      row.teamBPlayers.push(player)
     }
     if (pid) row.playerIds.push(pid)
     map.set(p.court_id, row)
@@ -91,6 +86,14 @@ export function gamesFromDbRounds(rounds: CompetitionRound[], clubCourts: ClubCo
           courtLabel: c.courtName,
           teamA: [c.teamA[0] ?? '', c.teamA[1] ?? ''] as [string, string],
           teamB: [c.teamB[0] ?? '', c.teamB[1] ?? ''] as [string, string],
+          teamAPlayers: [
+            c.teamAPlayers[0] ?? { id: null, name: c.teamA[0] ?? '', avatarUrl: null },
+            c.teamAPlayers[1] ?? { id: null, name: c.teamA[1] ?? '', avatarUrl: null },
+          ] as [CourtPlayer, CourtPlayer],
+          teamBPlayers: [
+            c.teamBPlayers[0] ?? { id: null, name: c.teamB[0] ?? '', avatarUrl: null },
+            c.teamBPlayers[1] ?? { id: null, name: c.teamB[1] ?? '', avatarUrl: null },
+          ] as [CourtPlayer, CourtPlayer],
         })),
       }
     })

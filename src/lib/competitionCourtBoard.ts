@@ -1,4 +1,4 @@
-import type { GameRound } from './americanoSchedule'
+import type { CourtPlayer, GameRound } from './americanoSchedule'
 import { gameSlotTimes } from './competitionLayout'
 import { formatClubTime } from './courtSchedule'
 
@@ -7,6 +7,8 @@ export type CourtGameCell = {
   timeLabel: string
   teamA: [string, string]
   teamB: [string, string]
+  teamAPlayers?: [CourtPlayer, CourtPlayer]
+  teamBPlayers?: [CourtPlayer, CourtPlayer]
 }
 
 export type CourtColumn = {
@@ -61,6 +63,8 @@ export function pivotScheduleByCourt(
         timeLabel,
         teamA: match.teamA,
         teamB: match.teamB,
+        teamAPlayers: match.teamAPlayers,
+        teamBPlayers: match.teamBPlayers,
       })
     }
   }
