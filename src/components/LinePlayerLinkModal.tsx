@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
-import { isLineLiffBrowser } from '../lib/line/liff'
+import { createPortal } from 'react-dom'
 import {
   createLinePlayerLinkRequest,
-  startLinePlayerLink,
   type LinePlayerLinkRequest,
 } from '../lib/line/playerLink'
 import { LineSignUpQr } from './LineSignUpQr'
@@ -12,6 +11,7 @@ type Props = {
   padelPlayerId: string
   playerName: string
   onClose: () => void
+  onClaim?: () => void
 }
 
 export function LinePlayerLinkModal({
@@ -19,14 +19,13 @@ export function LinePlayerLinkModal({
   padelPlayerId,
   playerName,
   onClose,
+  onClaim,
 }: Props) {
   const [request, setRequest] = useState<LinePlayerLinkRequest | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
   const [attempt, setAttempt] = useState(0)
-  const [lineBusy, setLineBusy] = useState(false)
-  const inLineBrowser = isLineLiffBrowser()
 
   useEffect(() => {
     let active = true
@@ -61,9 +60,9 @@ export function LinePlayerLinkModal({
     }
   }
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 px-4"
       onClick={onClose}
     >
       <div
@@ -99,28 +98,7 @@ export function LinePlayerLinkModal({
           </div>
         ) : request ? (
           <div className="space-y-3">
-            {inLineBrowser ? (
-              <button
-                type="button"
-                disabled={lineBusy}
-                onClick={() => {
-                  setLineBusy(true)
-                  void startLinePlayerLink(competitionId, padelPlayerId).then((err) => {
-                    if (err) {
-                      setError(err)
-                      setLineBusy(false)
-                    }
-                  })
-                }}
-                className="w-full rounded-xl bg-[#06C755] py-3 text-base font-semibold text-white disabled:opacity-60"
-              >
-                Link LINE to {playerName}
-              </button>
-            ) : (
-              <p className="text-xs text-brand-muted">
-                Scan with LINE (Home → QR code)
-              </p>
-            )}
+            <p className="text-xs text-brand-muted">Scan with LINE (Home → QR code)</p>
             <LineSignUpQr url={request.qrUrl} />
             <button
               type="button"
@@ -129,9 +107,22 @@ export function LinePlayerLinkModal({
             >
               {copied ? 'Link copied!' : 'Copy link'}
             </button>
+            {onClaim ? (
+              <button
+                type="button"
+                onClick={() => {
+                  onClaim()
+                  onClose()
+                }}
+                className="w-full text-xs text-brand-muted underline"
+              >
+                This is me — link to my account
+              </button>
+            ) : null}
           </div>
         ) : null}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

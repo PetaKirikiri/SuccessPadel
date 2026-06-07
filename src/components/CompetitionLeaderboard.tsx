@@ -152,11 +152,7 @@ export function CompetitionLeaderboard({
               onGuestAction={
                 showGuestAction
                   ? () => {
-                      if (currentUserId) {
-                        onGuestClaim?.(e.padel_player_id!)
-                      } else {
-                        setLinkTarget({ id: e.padel_player_id!, name: e.display_name })
-                      }
+                      setLinkTarget({ id: e.padel_player_id!, name: e.display_name })
                     }
                   : undefined
               }
@@ -175,6 +171,11 @@ export function CompetitionLeaderboard({
           padelPlayerId={linkTarget.id}
           playerName={linkTarget.name}
           onClose={() => setLinkTarget(null)}
+          onClaim={
+            currentUserId && onGuestClaim
+              ? () => onGuestClaim(linkTarget.id)
+              : undefined
+          }
         />
       )}
     </div>

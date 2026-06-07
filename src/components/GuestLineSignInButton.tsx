@@ -8,14 +8,17 @@ export function GuestLineSignInButton({ signedIn, onClick, compact = false }: Pr
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={(e) => {
+        e.stopPropagation()
+        onClick()
+      }}
       className={
         compact
           ? 'shrink-0 rounded-lg bg-[#06C755] px-2.5 py-1.5 text-xs font-semibold leading-tight text-white'
           : 'mt-1 rounded-lg bg-[#06C755] px-2.5 py-1 text-[11px] font-semibold leading-tight text-white'
       }
     >
-      {signedIn ? (compact ? 'Link' : 'Link to my account') : compact ? 'Add Line' : 'Link with LINE'}
+      {compact ? 'Add Line' : 'Link with LINE'}
     </button>
   )
 }
