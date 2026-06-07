@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from '../hooks/useTranslation'
 import { consumeReturnTo } from '../lib/authReturnTo'
 import { completeLineOAuthFromUrl, lineOAuthCallbackCode } from '../lib/line/oauth'
 import { LineLinkReturnFlow } from './LineLinkReturnFlow'
@@ -7,6 +8,7 @@ import { LineSigningInScreen } from './LineSigningInScreen'
 
 /** Finish browser LINE Login when LINE redirects back with ?code= */
 export function LineOAuthReturnHandler() {
+  const { t } = useTranslation()
   const { search } = useLocation()
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
@@ -45,5 +47,5 @@ export function LineOAuthReturnHandler() {
   if (!hasCode) return null
   if (error) return null
 
-  return <LineSigningInScreen message="Signing in with LINE…" />
+  return <LineSigningInScreen message={t('lineLink.signingInLine')} />
 }

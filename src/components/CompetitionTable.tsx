@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from '../hooks/useTranslation'
+import type { TranslateFn } from '../i18n'
 import { competitionJoinUrl } from '../lib/siteUrl'
 import { canJoinGame, rosterLabel } from '../lib/playerCaps'
 import { supabase } from '../lib/supabaseClient'
@@ -34,11 +36,13 @@ function ListTabs({
   onTab,
   currentCount,
   pastCount,
+  t,
 }: {
   tab: ListTab
   onTab: (t: ListTab) => void
   currentCount: number
   pastCount: number
+  t: TranslateFn
 }) {
   return (
     <div className="game-dock-inner">
@@ -48,7 +52,8 @@ function ListTabs({
         className={`game-tab game-tab-competition ${tab === 'current' ? 'game-tab-selected' : ''}`}
       >
         <span className="font-display text-sm leading-tight">
-          Current Games{currentCount > 0 ? ` (${currentCount})` : ''}
+          {t('competition.currentGames')}
+          {currentCount > 0 ? ` (${currentCount})` : ''}
         </span>
       </button>
       <button
@@ -57,7 +62,8 @@ function ListTabs({
         className={`game-tab game-tab-rank ${tab === 'past' ? 'game-tab-selected' : ''}`}
       >
         <span className="font-display text-sm leading-tight">
-          Past Games{pastCount > 0 ? ` (${pastCount})` : ''}
+          {t('competition.pastGames')}
+          {pastCount > 0 ? ` (${pastCount})` : ''}
         </span>
       </button>
     </div>
@@ -72,6 +78,7 @@ function CompetitionCard({
   onToggle,
   onRefresh,
   past,
+  t,
 }: {
   row: CompetitionRow
   userId?: string
@@ -80,6 +87,7 @@ function CompetitionCard({
   onToggle: () => void
   onRefresh: () => void
   past: boolean
+  t: TranslateFn
 }) {
   const [busy, setBusy] = useState(false)
   const [joinError, setJoinError] = useState<string | null>(null)
@@ -110,8 +118,8 @@ function CompetitionCard({
 
   const remove = async () => {
     const warning = isLive
-      ? `"${row.title}" is live. Delete anyway? Scores and roster will be lost.`
-      : `Delete "${row.title}"? This cannot be undone.`
+      ? t('competition.deleteLiveConfirm', { title: row.title })
+      : t('competition.deleteConfirm', { title: row.title })
     if (!window.confirm(warning)) return
 
     setBusy(true)
@@ -130,16 +138,20 @@ function CompetitionCard({
         <p className="font-display text-sm font-semibold leading-snug text-brand-primary">
           {row.title}
         </p>
-        {past && playedOn && <p className="text-[11px] text-brand-muted">Played {playedOn}</p>}
+        {past && playedOn && (
+          <p className="text-[11px] text-brand-muted">
+            {t('competition.playedOn', { date: playedOn })}
+          </p>
+        )}
         <div className="flex flex-wrap gap-1.5">
             {isLive && (
               <span className="rounded-full bg-brand-accent px-2 py-0.5 text-[10px] font-semibold text-white">
-                Live
+                {t('competition.live')}
               </span>
             )}
             {isComplete && (
               <span className="rounded-full border border-brand-border px-2 py-0.5 text-[10px] font-medium text-brand-muted">
-                Done
+                {t('competition.done')}
               </span>
             )}
             {row.skill_level && (
@@ -202,7 +214,7 @@ function CompetitionCard({
               className="brand-btn block w-full py-2 text-center"
               onClick={(e) => e.stopPropagation()}
             >
-              Review scores
+              {t('competition.reviewScores')}
             </Link>
           )}
 
@@ -212,12 +224,12 @@ function CompetitionCard({
               className="brand-btn block w-full py-2 text-center"
               onClick={(e) => e.stopPropagation()}
             >
-              Play
+              {t('competition.play')}
             </Link>
           )}
 
           {!isAdmin && !isLive && joined && (
-            <p className="text-center text-sm text-brand-muted">You&apos;re on the roster</p>
+            <p className="text-center text-sm text-brand-muted">{t('competition.onRoster')}</p>
           )}
 
           {expanded && canJoin && !isAdmin && (
@@ -230,7 +242,7 @@ function CompetitionCard({
               }}
               className="brand-btn w-full py-2"
             >
-              Join
+              {t('competition.join')}
             </button>
           )}
 
@@ -240,7 +252,7 @@ function CompetitionCard({
               className="brand-btn block w-full py-2 text-center"
               onClick={(e) => e.stopPropagation()}
             >
-              {userId ? 'Add yourself' : 'Sign up to join'}
+              {userId ? t('competition.addYourself') : t('competition.signUpToJoin')}
             </a>
           )}
 
@@ -265,7 +277,7 @@ function CompetitionCard({
               }}
               className="w-full rounded-lg border border-red-200 py-2 text-sm font-medium text-red-600 disabled:opacity-50"
             >
-              Delete competition
+              {t('competition.deleteCompetition')}
             </button>
           )}
 
@@ -285,6 +297,7 @@ export function CompetitionTable({
   userId,
   onRefresh,
 }: Props) {
+  const { t } = useTranslation()
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [tab, setTab] = useState<ListTab>('current')
   const didDefaultTab = useRef(false)
@@ -319,26 +332,27 @@ export function CompetitionTable({
         onTab={setTab}
         currentCount={currentRows.length}
         pastCount={pastRows.length}
+        t={t}
       />
 
       {error && <p className="px-1 text-center text-xs text-red-600">{error}</p>}
 
       {loading ? (
-        <p className="py-6 text-center text-xs text-brand-muted">Loading…</p>
+        <p className="py-6 text-center text-xs text-brand-muted">{t('common.loading')}</p>
       ) : visibleRows.length === 0 ? (
         <div className="game-card space-y-2 px-4 py-5 text-center">
           <p className="text-sm text-brand-text">
-            {tab === 'past' ? 'No past games yet.' : 'No current games.'}
+            {tab === 'past' ? t('competition.noPastGames') : t('competition.noCurrentGames')}
           </p>
           {tab === 'current' && isAdmin ? (
             <>
               <Link to="/competitions/new" className="brand-btn inline-block px-6 py-2">
-                Add competition
+                {t('competition.addCompetition')}
               </Link>
-              <p className="text-xs text-brand-muted">Or tap + in the corner.</p>
+              <p className="text-xs text-brand-muted">{t('competition.tapPlusHint')}</p>
             </>
           ) : tab === 'current' ? (
-            <p className="text-xs text-brand-muted">Check back when the organiser posts one.</p>
+            <p className="text-xs text-brand-muted">{t('competition.checkBackHint')}</p>
           ) : null}
         </div>
       ) : tab === 'current' ? (
@@ -361,6 +375,7 @@ export function CompetitionTable({
             expanded={expandedId === row.id}
             onToggle={() => setExpandedId((id) => (id === row.id ? null : row.id))}
             onRefresh={onRefresh}
+            t={t}
           />
         ))
       )}

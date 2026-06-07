@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from '../hooks/useTranslation'
 import {
   dismissLineBookmarkPrompt,
   lineBookmarkUrl,
@@ -11,6 +12,7 @@ type Props = {
 }
 
 export function LineAppBookmark({ variant = 'card', onDone }: Props) {
+  const { t } = useTranslation()
   const [copied, setCopied] = useState(false)
   const url = lineBookmarkUrl('/login')
 
@@ -21,7 +23,7 @@ export function LineAppBookmark({ variant = 'card', onDone }: Props) {
       setCopied(true)
       window.setTimeout(() => setCopied(false), 2000)
     } catch {
-      window.prompt('Copy this link:', url)
+      window.prompt(t('common.copyBrowserLinkPrompt'), url)
     }
   }
 
@@ -32,17 +34,14 @@ export function LineAppBookmark({ variant = 'card', onDone }: Props) {
 
   return (
     <div className={shell}>
-      <p className="text-sm font-semibold text-brand-primary">Bookmark in your browser</p>
-      <p className="mt-1 text-xs text-brand-muted">
-        Save this link in Safari — not inside LINE. From a LINE chat, long-press the link and choose
-        Open in Safari.
-      </p>
+      <p className="text-sm font-semibold text-brand-primary">{t('profile.bookmarkTitle')}</p>
+      <p className="mt-1 text-xs text-brand-muted">{t('profile.bookmarkHint')}</p>
       <button
         type="button"
         onClick={() => void copyLink()}
         className="mt-2 w-full brand-btn py-2 text-sm font-semibold"
       >
-        {copied ? 'Link copied!' : 'Copy browser link'}
+        {copied ? t('lineLink.copied') : t('lineLink.copyBrowserLink')}
       </button>
       {variant === 'banner' ? (
         <button
@@ -53,7 +52,7 @@ export function LineAppBookmark({ variant = 'card', onDone }: Props) {
           }}
           className="mt-2 text-xs text-brand-muted underline"
         >
-          Got it
+          {t('profile.gotIt')}
         </button>
       ) : null}
     </div>

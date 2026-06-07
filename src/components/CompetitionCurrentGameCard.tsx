@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from '../hooks/useTranslation'
+import { translateCountdownLabel, translatePhaseBadge } from '../i18n/competitionLabels'
 import type { CompetitionRow } from '../hooks/useCompetitions'
 import {
   competitionCardPhase,
   competitionCountdown,
   competitionIsLiveByTime,
   competitionLayoutSpiel,
-  competitionPhaseBadge,
   competitionScheduledLabel,
 } from '../lib/competitionListCard'
 import { rosterLabel } from '../lib/playerCaps'
@@ -19,6 +20,7 @@ type Props = {
 }
 
 export function CompetitionCurrentGameCard({ row, isAdmin = false, onRefresh }: Props) {
+  const { t } = useTranslation()
   const [busy, setBusy] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [now, setNow] = useState(Date.now())
@@ -32,7 +34,7 @@ export function CompetitionCurrentGameCard({ row, isAdmin = false, onRefresh }: 
   const countdown = useMemo(() => competitionCountdown(row, now), [row, now])
   const scheduled = useMemo(() => competitionScheduledLabel(row), [row])
   const spiel = useMemo(() => competitionLayoutSpiel(row), [row])
-  const badge = competitionPhaseBadge(phase)
+  const badge = translatePhaseBadge(t, phase)
   const isLive = competitionIsLiveByTime(row, now)
 
   const rosterCount = row.session_players?.length ?? 0
@@ -46,8 +48,8 @@ export function CompetitionCurrentGameCard({ row, isAdmin = false, onRefresh }: 
 
   const remove = async () => {
     const warning = isLive
-      ? `"${row.title}" is live. Delete anyway? Scores and roster will be lost.`
-      : `Delete "${row.title}"? This cannot be undone.`
+      ? t('competition.deleteLiveConfirm', { title: row.title })
+      : t('competition.deleteConfirm', { title: row.title })
     if (!window.confirm(warning)) return
 
     setBusy(true)
@@ -77,7 +79,7 @@ export function CompetitionCurrentGameCard({ row, isAdmin = false, onRefresh }: 
               </p>
               {countdown && (
                 <p className="mt-0.5 text-[11px] tabular-nums text-brand-muted">
-                  {countdown.label} {countdown.value}
+                  {translateCountdownLabel(t, countdown.label)} {countdown.value}
                 </p>
               )}
               <p className="mt-1 text-[11px] leading-snug text-brand-muted">{spiel}</p>
@@ -93,7 +95,7 @@ export function CompetitionCurrentGameCard({ row, isAdmin = false, onRefresh }: 
             to={`/competitions/${row.id}/edit`}
             className="brand-btn-outline flex-1 py-2 text-center text-sm"
           >
-            Edit
+            {t('competition.edit')}
           </Link>
           <button
             type="button"
@@ -101,7 +103,7 @@ export function CompetitionCurrentGameCard({ row, isAdmin = false, onRefresh }: 
             onClick={() => void remove()}
             className="flex-1 rounded-xl border border-brand-border py-2 text-sm font-medium text-brand-muted disabled:opacity-50"
           >
-            Delete
+            {t('competition.delete')}
           </button>
         </div>
       ) : null}

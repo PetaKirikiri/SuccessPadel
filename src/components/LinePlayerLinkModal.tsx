@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useTranslation } from '../hooks/useTranslation'
 import { createLinePlayerLinkRequest, type LinePlayerLinkRequest } from '../lib/line/playerLink'
 import { LineSignUpQr } from './LineSignUpQr'
 
@@ -12,12 +13,33 @@ type Props = {
   onClose: () => void
 }
 
+function LinkStep({
+  n,
+  prefix,
+  bold,
+  suffix,
+}: {
+  n: number
+  prefix: string
+  bold: string
+  suffix: string
+}) {
+  return (
+    <li>
+      <span className="font-semibold text-brand-text">{n}.</span> {prefix}
+      <span className="font-medium text-brand-text">{bold}</span>
+      {suffix}
+    </li>
+  )
+}
+
 export function LinePlayerLinkModal({
   competitionId,
   padelPlayerId,
   playerName,
   onClose,
 }: Props) {
+  const { t } = useTranslation()
   const [request, setRequest] = useState<LinePlayerLinkRequest | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -36,7 +58,7 @@ export function LinePlayerLinkModal({
       )
       if (!active) return
       if (err || !req) {
-        setError(err ?? 'Could not start linking')
+        setError(err ?? t('lineLink.couldNotStart'))
       } else {
         setRequest(req)
       }
@@ -58,12 +80,12 @@ export function LinePlayerLinkModal({
       >
         <div className="flex items-start justify-between gap-2">
           <p className="font-display text-base font-semibold text-brand-primary">
-            Add LINE to {playerName}
+            {t('lineLink.title', { name: playerName })}
           </p>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t('common.close')}
             className="shrink-0 text-lg leading-none text-brand-muted"
           >
             ✕
@@ -80,50 +102,57 @@ export function LinePlayerLinkModal({
               onClick={() => setAttempt((n) => n + 1)}
               className="brand-btn w-full py-2 text-sm font-semibold"
             >
-              Try again
+              {t('common.tryAgain')}
             </button>
           </div>
         ) : request ? (
           <>
-          <ol className="space-y-1.5 text-left text-xs text-brand-muted">
-            <li>
-              <span className="font-semibold text-brand-text">1.</span> Tap{' '}
-              <span className="font-medium text-brand-text">Save QR code</span> (or screenshot it).
-            </li>
-            <li>
-              <span className="font-semibold text-brand-text">2.</span> Open the{' '}
-              <span className="font-medium text-brand-text">LINE</span> app.
-            </li>
-            <li>
-              <span className="font-semibold text-brand-text">3.</span> Tap the{' '}
-              <span className="font-medium text-brand-text">QR scanner</span> in the search bar
-              (see right).
-            </li>
-            <li>
-              <span className="font-semibold text-brand-text">4.</span> Scan the saved QR, then tap{' '}
-              <span className="font-medium text-brand-text">Allow</span>.
-            </li>
-          </ol>
-          <div className="grid grid-cols-2 items-center gap-3">
-            <div className="space-y-2">
-              <LineSignUpQr url={request.qrUrl} onDataUrl={setQrDataUrl} />
-              {qrDataUrl ? (
-                <a
-                  href={qrDataUrl}
-                  download={`${playerName.trim() || 'player'}-line-qr.png`}
-                  className="brand-btn-outline block w-full py-2 text-sm font-semibold"
-                >
-                  Save QR code
-                </a>
-              ) : null}
+            <ol className="space-y-1.5 text-left text-xs text-brand-muted">
+              <LinkStep
+                n={1}
+                prefix={t('lineLink.step1Prefix')}
+                bold={t('lineLink.step1Bold')}
+                suffix={t('lineLink.step1Suffix')}
+              />
+              <LinkStep
+                n={2}
+                prefix={t('lineLink.step2Prefix')}
+                bold={t('lineLink.step2Bold')}
+                suffix={t('lineLink.step2Suffix')}
+              />
+              <LinkStep
+                n={3}
+                prefix={t('lineLink.step3Prefix')}
+                bold={t('lineLink.step3Bold')}
+                suffix={t('lineLink.step3Suffix')}
+              />
+              <LinkStep
+                n={4}
+                prefix={t('lineLink.step4Prefix')}
+                bold={t('lineLink.step4Bold')}
+                suffix={t('lineLink.step4Suffix')}
+              />
+            </ol>
+            <div className="grid grid-cols-2 items-center gap-3">
+              <div className="space-y-2">
+                <LineSignUpQr url={request.qrUrl} onDataUrl={setQrDataUrl} />
+                {qrDataUrl ? (
+                  <a
+                    href={qrDataUrl}
+                    download={`${playerName.trim() || 'player'}-line-qr.png`}
+                    className="brand-btn-outline block w-full py-2 text-sm font-semibold"
+                  >
+                    {t('lineLink.saveQr')}
+                  </a>
+                ) : null}
+              </div>
+              <img
+                src={LINE_ADD_FRIEND_GUIDE_SRC}
+                alt=""
+                aria-hidden
+                className="h-auto max-h-[78vh] w-full rounded-2xl border border-brand-border object-contain"
+              />
             </div>
-            <img
-              src={LINE_ADD_FRIEND_GUIDE_SRC}
-              alt=""
-              aria-hidden
-              className="h-auto max-h-[78vh] w-full rounded-2xl border border-brand-border object-contain"
-            />
-          </div>
           </>
         ) : null}
       </div>

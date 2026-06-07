@@ -2,9 +2,11 @@ import { useEffect } from 'react'
 import { LineAppBookmark } from '../components/LineAppBookmark'
 import { ProfileDetailsForm } from '../components/ProfileDetailsForm'
 import { useAuth } from '../hooks/useAuth'
+import { useTranslation } from '../hooks/useTranslation'
 import { useLineClientProfile } from '../hooks/useLineClientProfile'
 
 export function Profile() {
+  const { t } = useTranslation()
   const { profile, signOut, refreshProfile } = useAuth()
   const { inClient } = useLineClientProfile()
 
@@ -27,7 +29,7 @@ export function Profile() {
         onClick={() => void signOut()}
         className="block w-full py-2 text-center text-xs text-brand-muted"
       >
-        Sign out
+        {t('profile.signOut')}
       </button>
     </div>
   )

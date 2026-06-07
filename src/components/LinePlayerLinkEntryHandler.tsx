@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
+import { useTranslation } from '../hooks/useTranslation'
 import { scheduleForceExternalOpen } from '../lib/line/forceExternalBrowser'
 import { lineOAuthCallbackCode } from '../lib/line/oauth'
 import {
@@ -21,6 +22,7 @@ type Phase = 'working' | 'success' | 'error'
  * 3. Success screen, then force-open scoreboard in phone browser
  */
 export function LinePlayerLinkEntryHandler() {
+  const { t } = useTranslation()
   const { search } = useLocation()
   const oauthStarted = useRef(false)
   const linking = useRef(false)
@@ -60,7 +62,7 @@ export function LinePlayerLinkEntryHandler() {
         if (!active) return
         if (redirected) return
         if (linkErr || !handoffToken) {
-          setError(linkErr ?? 'Linking failed')
+          setError(linkErr ?? t('lineLink.linkingFailed'))
           setPhase('error')
           linking.current = false
           return
@@ -96,18 +98,16 @@ export function LinePlayerLinkEntryHandler() {
   if (phase === 'success') {
     return (
       <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-3 bg-white px-6">
-        <p className="font-display text-lg font-semibold text-[#06C755]">Successfully linked!</p>
-        <p className="text-center text-sm text-neutral-500">
-          Opening the scoreboard in your browser…
-        </p>
-        <p className="text-center text-xs text-neutral-400">Tap anywhere if it does not open</p>
+        <p className="font-display text-lg font-semibold text-[#06C755]">{t('lineLink.linkSuccess')}</p>
+        <p className="text-center text-sm text-neutral-500">{t('lineLink.openingScoreboard')}</p>
+        <p className="text-center text-xs text-neutral-400">{t('lineLink.tapIfNotOpen')}</p>
       </div>
     )
   }
 
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-white px-6">
-      <p className="text-center text-sm text-neutral-400">One moment…</p>
+      <p className="text-center text-sm text-neutral-400">{t('lineLink.oneMoment')}</p>
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useTranslation } from '../hooks/useTranslation'
 import { isLineLiffBrowser } from '../lib/line/liff'
 import { beginLineLinkOAuth, finishLineLinkOAuth } from '../lib/line/linkOAuthGuard'
 import {
@@ -16,6 +17,7 @@ type Props = {
 }
 
 export function LineLinkReturnFlow({ search }: Props) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
   const [handoffUrl, setHandoffUrl] = useState<string | null>(null)
@@ -28,7 +30,7 @@ export function LineLinkReturnFlow({ search }: Props) {
       setCopied(true)
       window.setTimeout(() => setCopied(false), 2000)
     } catch {
-      window.prompt('Copy this link and open it in your browser:', handoffUrl)
+      window.prompt(t('common.copyLinkPrompt'), handoffUrl)
     }
   }
 
@@ -44,7 +46,7 @@ export function LineLinkReturnFlow({ search }: Props) {
         const { result, error: linkErr } = await completeLinePlayerLinkFromUrl(search)
 
         if (linkErr || !result) {
-          if (active) setError(linkErr ?? 'LINE linking failed. Please try again.')
+          if (active) setError(linkErr ?? t('lineLink.linkingFailed'))
           return
         }
 
@@ -75,19 +77,16 @@ export function LineLinkReturnFlow({ search }: Props) {
     return () => {
       active = false
     }
-  }, [search, navigate])
+  }, [search, navigate, t])
 
   if (error) {
     return (
       <div className="game-bg flex h-full min-h-0 w-full items-center justify-center px-4">
         <div className="login-panel max-w-sm space-y-3 text-center">
           <p className="text-sm text-red-600">{error}</p>
-          <p className="text-xs text-brand-muted">
-            Open the app in <strong>Safari</strong> (not inside LINE), then tap &ldquo;Link to my
-            account&rdquo; again.
-          </p>
+          <p className="text-xs text-brand-muted">{t('lineLink.safariHint')}</p>
           <Link to="/" className="brand-link text-sm">
-            Back to app
+            {t('lineLink.backToApp')}
           </Link>
         </div>
       </div>
@@ -98,27 +97,29 @@ export function LineLinkReturnFlow({ search }: Props) {
     return (
       <div className="game-bg flex h-full min-h-0 w-full items-center justify-center px-4">
         <div className="login-panel max-w-sm space-y-4 text-center">
-          <p className="font-display text-lg font-semibold text-brand-primary">Account linked</p>
-          <p className="text-sm text-brand-muted">Tap below to open the app and finish signing in.</p>
+          <p className="font-display text-lg font-semibold text-brand-primary">
+            {t('lineLink.accountLinked')}
+          </p>
+          <p className="text-sm text-brand-muted">{t('lineLink.accountLinkedHint')}</p>
           <a
             href={handoffUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="brand-btn block w-full py-3 text-base font-semibold"
           >
-            Open app in browser
+            {t('lineLink.openInBrowser')}
           </a>
           <button
             type="button"
             onClick={() => void copyHandoff()}
             className="w-full break-all text-xs text-brand-muted underline"
           >
-            {copied ? 'Link copied!' : 'or copy this link to open in your browser'}
+            {copied ? t('lineLink.copied') : t('lineLink.copyHandoff')}
           </button>
         </div>
       </div>
     )
   }
 
-  return <LineSigningInScreen message="Linking your LINE account…" />
+  return <LineSigningInScreen message={t('lineLink.linkingAccount')} />
 }

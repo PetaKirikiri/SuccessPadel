@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useTranslation } from '../hooks/useTranslation'
+import type { TranslateFn } from '../i18n'
 import type { AmericanoScoringUnit } from '../lib/competitionPresets'
 import { pivotScheduleByGame, type CourtColumn } from '../lib/competitionCourtBoard'
 import { playTwoMinuteAlarm, TWO_MINUTES_MS } from '../lib/gameCountdownAlarm'
@@ -102,11 +104,17 @@ function countdownState(
   return 'finished'
 }
 
-function countdownLabel(state: CountdownState): string {
-  if (state === 'starts') return 'Starts in'
-  if (state === 'playing') return 'Time left'
-  if (state === 'finished') return 'Finished'
-  return 'Game time'
+function countdownLabel(state: CountdownState, t: TranslateFn): string {
+  if (state === 'starts') return t('competition.startsIn')
+  if (state === 'playing') return t('competition.timeLeft')
+  if (state === 'finished') return t('competition.finished')
+  return t('competition.gameTime')
+}
+
+function scoreFieldLabel(scoreUnit: AmericanoScoringUnit, t: TranslateFn): string {
+  if (scoreUnit === 'sets') return t('competition.scoreSets')
+  if (scoreUnit === 'open') return t('competition.scoreOpen')
+  return t('competition.scorePts')
 }
 
 function courtHasCurrentUser(
@@ -138,6 +146,7 @@ function CourtMatchCell({
   teamBPlayers,
   currentUserId,
   currentUserAvatarUrl,
+  t,
 }: {
   teamA: string[]
   teamB: string[]
@@ -151,8 +160,9 @@ function CourtMatchCell({
   teamBPlayers?: CourtPlayer[]
   currentUserId?: string | null
   currentUserAvatarUrl?: string | null
+  t: TranslateFn
 }) {
-  const fieldLabel = scoreUnit === 'sets' ? 'Sets' : scoreUnit === 'open' ? 'Score' : 'Pts'
+  const fieldLabel = scoreFieldLabel(scoreUnit, t)
   const editable = Boolean(onScoreA && onScoreB && !disabled)
   const fallbackNames = compactDisplayNames([
     teamA[0] ?? '',
@@ -185,7 +195,7 @@ function CourtMatchCell({
       placeholder="0"
       onChange={(e) => onScoreA?.(e.target.value.replace(/\D/g, ''))}
       className={scoreInputClass}
-      aria-label={`Team A ${fieldLabel}`}
+      aria-label={t('aria.teamAScore', { unit: fieldLabel })}
     />
   ) : (
     <span className="text-xs font-medium tabular-nums text-brand-muted">{scoreA || '—'}</span>
@@ -200,7 +210,7 @@ function CourtMatchCell({
       placeholder="0"
       onChange={(e) => onScoreB?.(e.target.value.replace(/\D/g, ''))}
       className={scoreInputClass}
-      aria-label={`Team B ${fieldLabel}`}
+      aria-label={t('aria.teamBScore', { unit: fieldLabel })}
     />
   ) : (
     <span className="text-xs font-medium tabular-nums text-brand-muted">{scoreB || '—'}</span>
@@ -281,6 +291,7 @@ function useGameScoring({
   canEdit,
   onSubmitScores,
   onSaved,
+  t,
 }: {
   game: ScoringGame
   gameRoundId?: string
@@ -291,6 +302,7 @@ function useGameScoring({
   canEdit: boolean
   onSubmitScores?: (entries: CourtScoreSubmit[]) => Promise<void>
   onSaved?: () => void
+  t: TranslateFn
 }) {
   const [drafts, setDrafts] = useState<Record<string, CourtDraft>>({})
   const [dirty, setDirty] = useState(false)
@@ -368,7 +380,7 @@ function useGameScoring({
       setDirty(false)
       onSaved?.()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Submit failed')
+      setError(e instanceof Error ? e.message : t('common.submitFailed'))
     } finally {
       setBusy(false)
     }
@@ -382,7 +394,7 @@ function useGameScoring({
         onClick={() => void submitGame()}
         className="shrink-0 rounded border border-brand-border/70 px-1.5 py-0.5 text-[10px] font-normal text-brand-muted/80 disabled:opacity-25"
       >
-        {busy ? '…' : 'Submit'}
+        {busy ? '…' : t('common.submit')}
       </button>
     ) : null
 
@@ -402,6 +414,7 @@ function GameScoringCourts({
   currentUserId,
   currentUserAvatarUrl,
   highlightCurrentCourt,
+  t,
 }: {
   game: ScoringGame
   gameRoundId?: string
@@ -415,6 +428,7 @@ function GameScoringCourts({
   currentUserId?: string | null
   currentUserAvatarUrl?: string | null
   highlightCurrentCourt?: boolean
+  t: TranslateFn
 }) {
   return (
     <div className="space-y-2">
@@ -471,6 +485,7 @@ function GameScoringCourts({
                 disabled={!canEdit}
                 currentUserId={currentUserId}
                 currentUserAvatarUrl={currentUserAvatarUrl}
+                t={t}
               />
             </div>
           </div>
@@ -490,6 +505,7 @@ function GameCardHeader({
   collapsed,
   onToggleCollapsed,
   submit,
+  t,
 }: {
   gameNumber: number
   isLiveNow?: boolean
@@ -500,6 +516,7 @@ function GameCardHeader({
   collapsed: boolean
   onToggleCollapsed: () => void
   submit?: ReactNode
+  t: TranslateFn
 }) {
   return (
     <div className="flex items-center gap-2 border-b border-brand-border/60 px-3 py-3">
@@ -512,11 +529,15 @@ function GameCardHeader({
         <span className="shrink-0 text-sm text-brand-muted">{collapsed ? '▸' : '▾'}</span>
         <span className="min-w-0 flex-1">
           <span className="block font-display text-2xl font-bold leading-none text-brand-primary">
-            Game {gameNumber}
+            {t('competition.game', { number: gameNumber })}
             {isLiveNow ? (
-              <span className="ml-1.5 text-sm font-medium text-brand-accent">· Live</span>
+              <span className="ml-1.5 text-sm font-medium text-brand-accent">
+                · {t('competition.live')}
+              </span>
             ) : finished ? (
-              <span className="ml-1.5 text-sm font-medium text-brand-muted">· Done</span>
+              <span className="ml-1.5 text-sm font-medium text-brand-muted">
+                · {t('competition.done')}
+              </span>
             ) : null}
           </span>
           {timeLabel && (
@@ -561,6 +582,7 @@ function ScoringGameCard({
   onToggleCollapsed,
   currentUserId,
   currentUserAvatarUrl,
+  t,
 }: {
   game: ScoringGame
   gameRoundId?: string
@@ -581,6 +603,7 @@ function ScoringGameCard({
   onToggleCollapsed: () => void
   currentUserId?: string | null
   currentUserAvatarUrl?: string | null
+  t: TranslateFn
 }) {
   const { drafts, setDraft, submitButton, error, canEdit: editable } = useGameScoring({
     game,
@@ -592,6 +615,7 @@ function ScoringGameCard({
     canEdit,
     onSubmitScores,
     onSaved,
+    t,
   })
 
   const isMyGame = Boolean(
@@ -620,6 +644,7 @@ function ScoringGameCard({
         collapsed={collapsed}
         onToggleCollapsed={onToggleCollapsed}
         submit={submitButton}
+        t={t}
       />
       {error && <p className="px-3 pb-1 text-right text-[10px] text-red-600">{error}</p>}
       {!collapsed && <div className="px-1 pb-2 pt-2">
@@ -636,6 +661,7 @@ function ScoringGameCard({
           currentUserId={currentUserId}
           currentUserAvatarUrl={currentUserAvatarUrl}
           highlightCurrentCourt={isCurrentGame}
+          t={t}
         />
       </div>}
     </div>
@@ -662,6 +688,7 @@ export function CompetitionCourtBoard({
   currentUserId,
   currentUserAvatarUrl,
 }: Props) {
+  const { t } = useTranslation()
   const games = useMemo(() => pivotScheduleByGame(columns), [columns])
   const [tick, setTick] = useState(() => Date.now())
   const [collapsedGames, setCollapsedGames] = useState<Record<number, boolean>>({})
@@ -767,12 +794,13 @@ export function CompetitionCourtBoard({
               isLiveNow={isLiveNow}
               isCurrentGame={isCurrentGame}
               countdown={countdown}
-              countdownLabelText={countdownLabel(state)}
+              countdownLabelText={countdownLabel(state, t)}
               finished={finished}
               collapsed={collapsed}
               onToggleCollapsed={() => toggleCollapsed(game.gameNumber, finished)}
               currentUserId={currentUserId}
               currentUserAvatarUrl={currentUserAvatarUrl}
+              t={t}
             />
           )
         }
@@ -789,10 +817,11 @@ export function CompetitionCourtBoard({
               isLiveNow={isLiveNow}
               timeLabel={game.timeLabel}
               countdown={countdown}
-              countdownLabelText={countdownLabel(state)}
+              countdownLabelText={countdownLabel(state, t)}
               finished={finished}
               collapsed={collapsed}
               onToggleCollapsed={() => toggleCollapsed(game.gameNumber, finished)}
+              t={t}
             />
             {!collapsed && <div className="px-1 pb-2 pt-2">
               <div className="space-y-2">
@@ -833,6 +862,7 @@ export function CompetitionCourtBoard({
                           disabled
                           currentUserId={currentUserId}
                           currentUserAvatarUrl={currentUserAvatarUrl}
+                          t={t}
                         />
                       </div>
                     </div>

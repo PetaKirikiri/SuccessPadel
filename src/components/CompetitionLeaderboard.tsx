@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from '../hooks/useTranslation'
 import type { AmericanoScoringUnit } from '../lib/competitionPresets'
 import { compactLeaderboardDisplayNames, isClaimableGuest } from '../lib/leaderboardEntries'
 import { LinePlayerLinkModal } from './LinePlayerLinkModal'
@@ -45,6 +46,7 @@ function LeaderboardRow({
   showGuestAction,
   showActionColumn,
   onGuestAction,
+  addLineLabel,
 }: {
   rank: number
   entry: LeaderboardEntry
@@ -52,6 +54,7 @@ function LeaderboardRow({
   showGuestAction: boolean
   showActionColumn: boolean
   onGuestAction?: () => void
+  addLineLabel: string
 }) {
   return (
     <li
@@ -88,7 +91,7 @@ function LeaderboardRow({
             }}
             className="shrink-0 rounded-lg bg-[#06C755] px-2.5 py-1.5 text-xs font-semibold leading-tight text-white"
           >
-            Add Line
+            {addLineLabel}
           </button>
         ) : null}
       </div> : null}
@@ -109,8 +112,9 @@ export function CompetitionLeaderboard({
   currentUserId = null,
   competitionId = null,
 }: Props) {
+  const { t } = useTranslation()
   const [linkTarget, setLinkTarget] = useState<{ id: string; name: string } | null>(null)
-  const unit = scoreUnit === 'sets' ? 'sets' : 'pts'
+  const unit = scoreUnit === 'sets' ? t('leaderboard.sets') : t('leaderboard.pts')
   if (entries.length === 0) return null
 
   const displayEntries = compactLeaderboardDisplayNames(entries)
@@ -128,7 +132,7 @@ export function CompetitionLeaderboard({
             <p className="font-display text-base font-semibold text-brand-primary">{headerTitle}</p>
           ) : compact ? (
             <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-              Standings
+              {t('leaderboard.standings')}
             </p>
           ) : null}
           {headerSubtitle && <p className="text-xs text-brand-muted">{headerSubtitle}</p>}
@@ -139,7 +143,7 @@ export function CompetitionLeaderboard({
       >
         <span className="text-center">#</span>
         <span aria-hidden />
-        <span>Player</span>
+        <span>{t('leaderboard.player')}</span>
         {showActionColumn ? <span aria-hidden /> : null}
         <span className="pl-1 text-right">{unit}</span>
       </div>
@@ -167,13 +171,18 @@ export function CompetitionLeaderboard({
                     }
                   : undefined
               }
+              addLineLabel={t('leaderboard.addLine')}
             />
           )
         })}
       </ol>
       {!compact && showLeaderFooter && winner && (
         <p className="border-t border-brand-border/60 px-3 py-2 text-center text-xs text-brand-muted">
-          Leader: {winner.display_name} ({winner.total_points} {unit})
+          {t('leaderboard.leaderFooter', {
+            name: winner.display_name,
+            points: winner.total_points,
+            unit,
+          })}
         </p>
       )}
       {linkTarget && (

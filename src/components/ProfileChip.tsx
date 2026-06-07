@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { useTranslation } from '../hooks/useTranslation'
 import { useLineClientProfile } from '../hooks/useLineClientProfile'
 import { saveReturnTo } from '../lib/authReturnTo'
 import { firstDisplayName } from '../lib/leaderboardEntries'
@@ -10,6 +11,7 @@ type Props = {
 }
 
 export function ProfileChip({ returnTo, className = '' }: Props) {
+  const { t } = useTranslation()
   const { profile, user } = useAuth()
   const lineClient = useLineClientProfile()
   const navigate = useNavigate()
@@ -18,7 +20,7 @@ export function ProfileChip({ returnTo, className = '' }: Props) {
   const isSignedIn = Boolean(user)
   const name = isSignedIn
     ? firstDisplayName(profile?.display_name ?? lineClient.displayName)
-    : 'Guest'
+    : t('common.guest')
   const avatarUrl = isSignedIn ? (profile?.avatar_url ?? lineClient.pictureUrl ?? null) : null
 
   const openProfile = () => {

@@ -1,6 +1,7 @@
 import type React from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { useTranslation } from '../hooks/useTranslation'
 import { AppTopBar } from './AppTopBar'
 import { LineBookmarkBanner } from './LineBookmarkBanner'
 import { firstDisplayName } from '../lib/leaderboardEntries'
@@ -81,24 +82,24 @@ function IconCompetition({ className }: NavIconProps) {
 
 type NavVariant = 'rank' | 'competition'
 
-const nav: {
+const navItems: {
   to: string
-  label: string
+  labelKey: 'nav.leaderboard' | 'nav.competition'
   Icon: (props: NavIconProps) => React.ReactElement
   variant: NavVariant
   match: RegExp
 }[] = [
-  { to: '/', label: 'Leaderboard', Icon: IconRank, variant: 'rank', match: /^\/$/ },
+  { to: '/', labelKey: 'nav.leaderboard', Icon: IconRank, variant: 'rank', match: /^\/$/ },
   {
     to: '/competitions',
-    label: 'Competition',
+    labelKey: 'nav.competition',
     Icon: IconCompetition,
     variant: 'competition',
     match: /^\/competitions/,
   },
 ]
 
-function isActive(path: string, item: (typeof nav)[number]) {
+function isActive(path: string, item: (typeof navItems)[number]) {
   return item.match.test(path)
 }
 
@@ -108,6 +109,7 @@ function tabClass(active: boolean, variant: NavVariant) {
 
 export function Layout() {
   const { profile } = useAuth()
+  const { t } = useTranslation()
   const loc = useLocation()
   const navigate = useNavigate()
   const onProfile = loc.pathname === '/profile'
@@ -122,7 +124,7 @@ export function Layout() {
               onClick={() => navigate('/')}
               className="text-sm font-medium text-brand-accent"
             >
-              ← Back
+              {t('common.back')}
             </button>
             <p className="min-w-0 truncate text-sm font-medium text-brand-primary">
               {firstDisplayName(profile?.display_name)}
@@ -131,7 +133,7 @@ export function Layout() {
         ) : (
           <img
             src="/brand/logo-padel.webp"
-            alt="Success Padel"
+            alt={t('common.brandAlt')}
             className="h-8 w-auto max-w-[7rem] shrink-0"
           />
         )}
@@ -146,17 +148,17 @@ export function Layout() {
 
       <nav
         className={`game-dock w-full min-w-0 shrink-0 ${onProfile ? 'hidden' : ''}`}
-        aria-label="Play modes"
+        aria-label={t('aria.playModes')}
       >
         <div className="game-dock-inner min-w-0 max-w-full">
-          {nav.map((item) => {
+          {navItems.map((item) => {
             const active = isActive(loc.pathname, item)
             const iconSize = 'h-5 w-5'
             return (
               <Link key={item.to} to={item.to} className={tabClass(active, item.variant)}>
                 <item.Icon className={`game-tab-icon shrink-0 ${iconSize}`} />
                 <span className="max-w-full truncate font-display text-[11px] leading-tight">
-                  {item.label}
+                  {t(item.labelKey)}
                 </span>
               </Link>
             )

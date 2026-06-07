@@ -10,12 +10,21 @@ import { americanoScheduleFromSession, gameSlotTimes } from '../lib/competitionL
 import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
 import { computeAmericanoStandings } from '../lib/competitionStandings'
 import { AppTopBar } from '../components/AppTopBar'
+import { useTranslation } from '../hooks/useTranslation'
 import { enrichStandingsWithAvatars } from '../lib/leaderboardEntries'
 import { supabase } from '../lib/supabaseClient'
 
 type PlayTab = 'games' | 'leaderboard'
 
-function PlayTabs({ tab, onTab }: { tab: PlayTab; onTab: (t: PlayTab) => void }) {
+function PlayTabs({
+  tab,
+  onTab,
+  t,
+}: {
+  tab: PlayTab
+  onTab: (t: PlayTab) => void
+  t: (key: string) => string
+}) {
   return (
     <div className="game-dock-inner">
       <button
@@ -23,14 +32,14 @@ function PlayTabs({ tab, onTab }: { tab: PlayTab; onTab: (t: PlayTab) => void })
         onClick={() => onTab('games')}
         className={`game-tab game-tab-competition ${tab === 'games' ? 'game-tab-selected' : ''}`}
       >
-        <span className="font-display text-sm leading-tight">Games</span>
+        <span className="font-display text-sm leading-tight">{t('competition.games')}</span>
       </button>
       <button
         type="button"
         onClick={() => onTab('leaderboard')}
         className={`game-tab game-tab-rank ${tab === 'leaderboard' ? 'game-tab-selected' : ''}`}
       >
-        <span className="font-display text-sm leading-tight">Leaderboard</span>
+        <span className="font-display text-sm leading-tight">{t('competition.leaderboard')}</span>
       </button>
     </div>
   )
@@ -39,6 +48,7 @@ function PlayTabs({ tab, onTab }: { tab: PlayTab; onTab: (t: PlayTab) => void })
 export function CompetitionPlay() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const { profile, user } = useAuth()
   const lineClient = useLineClientProfile()
   const headerAvatar = profile?.avatar_url ?? lineClient.pictureUrl ?? null
@@ -138,14 +148,14 @@ export function CompetitionPlay() {
           <button
             type="button"
             onClick={() => navigate('/competitions')}
-            aria-label="Back"
+            aria-label={t('aria.back')}
             className="shrink-0 text-xl font-medium leading-none text-brand-accent"
           >
             ←
           </button>
           <img
             src="/brand/logo-padel.webp"
-            alt="Success Padel"
+            alt={t('common.brandAlt')}
             className="h-8 w-auto max-w-[7rem] shrink-0"
           />
         </div>
@@ -154,17 +164,19 @@ export function CompetitionPlay() {
       <main data-scroll-y className="scroll-y min-h-0 min-w-0 flex-1 px-3 pb-2">
         <div className="mx-auto w-full max-w-full space-y-3">
           {loading && !session ? (
-            <p className="py-6 text-center text-xs text-brand-muted">Loading…</p>
+            <p className="py-6 text-center text-xs text-brand-muted">{t('common.loading')}</p>
           ) : !session ? (
-            <p className="py-6 text-center text-sm text-red-600">{error ?? 'Competition not found'}</p>
+            <p className="py-6 text-center text-sm text-red-600">
+              {error ?? t('competition.notFound')}
+            </p>
           ) : null}
           {session && !started ? (
             <p className="py-6 text-center text-sm text-brand-muted">
-              Waiting for the organiser to publish.
+              {t('competition.waitingOrganiser')}
             </p>
           ) : finished ? (
             <p className="game-card px-3 py-2 text-center text-sm text-brand-muted">
-              Competition complete — scores are read-only.
+              {t('competition.completeReadOnly')}
             </p>
           ) : null}
           {started && tab === 'games' ? (
@@ -190,7 +202,9 @@ export function CompetitionPlay() {
                 currentUserAvatarUrl={headerAvatar}
               />
             ) : (
-              <p className="game-card px-3 py-4 text-sm text-brand-muted">Court layout not ready yet.</p>
+              <p className="game-card px-3 py-4 text-sm text-brand-muted">
+                {t('competition.courtLayoutNotReady')}
+              </p>
             )
           ) : started ? (
             <CompetitionLeaderboard
@@ -205,8 +219,8 @@ export function CompetitionPlay() {
         </div>
       </main>
 
-      <nav className="game-dock w-full min-w-0 shrink-0" aria-label="Competition views">
-        <PlayTabs tab={tab} onTab={setTab} />
+      <nav className="game-dock w-full min-w-0 shrink-0" aria-label={t('aria.competitionViews')}>
+        <PlayTabs tab={tab} onTab={setTab} t={t} />
       </nav>
     </div>
   )

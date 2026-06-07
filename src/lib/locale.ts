@@ -1,11 +1,11 @@
-export type AppLocale = 'en' | 'th' | 'fr'
+export type AppLocale = 'en' | 'th' | 'fr' | 'ru'
 
 export const LOCALE_STORAGE_KEY = 'sp-locale'
 
 export function readStoredLocale(): AppLocale {
   try {
     const stored = localStorage.getItem(LOCALE_STORAGE_KEY)
-    if (stored === 'th' || stored === 'en' || stored === 'fr') return stored
+    if (stored === 'th' || stored === 'en' || stored === 'fr' || stored === 'ru') return stored
   } catch {
     /* ignore */
   }
