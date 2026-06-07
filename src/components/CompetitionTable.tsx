@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { competitionJoinUrl } from '../lib/siteUrl'
 import { canJoinGame, rosterLabel } from '../lib/playerCaps'
@@ -286,6 +286,7 @@ export function CompetitionTable({
 }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [tab, setTab] = useState<ListTab>('current')
+  const didDefaultTab = useRef(false)
 
   const { currentRows, pastRows } = useMemo(() => {
     const current: CompetitionRow[] = []
@@ -305,11 +306,10 @@ export function CompetitionTable({
   const visibleRows = tab === 'past' ? pastRows : currentRows
 
   useEffect(() => {
-    if (loading) return
-    if (tab === 'current' && currentRows.length === 0 && pastRows.length > 0) {
-      setTab('past')
-    }
-  }, [loading, tab, currentRows.length, pastRows.length])
+    if (loading || didDefaultTab.current) return
+    didDefaultTab.current = true
+    if (currentRows.length === 0 && pastRows.length > 0) setTab('past')
+  }, [loading, currentRows.length, pastRows.length])
 
   return (
     <div className="space-y-3">
