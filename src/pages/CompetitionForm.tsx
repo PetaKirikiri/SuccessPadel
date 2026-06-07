@@ -118,6 +118,7 @@ export function CompetitionForm() {
   const [courtNames, setCourtNames] = useState<string[]>([])
   const [previewSeed, setPreviewSeed] = useState(0)
   const [editHydrated, setEditHydrated] = useState(!id)
+  const [wasStarted, setWasStarted] = useState(false)
 
   const draftScope = id ?? 'new'
   const applyDraft = useCallback((draft: CompetitionFormDraft) => {
@@ -316,6 +317,7 @@ export function CompetitionForm() {
           setEditHydrated(true)
           return
         }
+        setWasStarted(Boolean(g.competition_started_at) || g.status === 'locked')
         if (g.season_id) setSeasonId(g.season_id)
         if (g.skill_level && SKILL_LEVELS.includes(g.skill_level as SkillLevel)) {
           setSkillLevel(g.skill_level as SkillLevel)
@@ -517,6 +519,17 @@ export function CompetitionForm() {
       if (cfgErr) {
         setBusy(false)
         setError(cfgErr.message)
+        return
+      }
+    }
+
+    if (!wasStarted) {
+      const { error: startErr } = await supabase.rpc('start_competition', {
+        p_session_id: sessionId,
+      })
+      if (startErr) {
+        setBusy(false)
+        setError(startErr.message)
         return
       }
     }
