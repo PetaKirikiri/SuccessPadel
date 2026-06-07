@@ -1,6 +1,5 @@
-import { useState } from 'react'
 import { CompetitionLeaderboard } from '../components/CompetitionLeaderboard'
-import { useGuestPlayerClaim } from '../hooks/useGuestPlayerClaim'
+import { useAuth } from '../hooks/useAuth'
 import { useSeasonLeaderboard } from '../hooks/useSeasonLeaderboard'
 
 function weeksLeftLabel(weeksLeft: number): string {
@@ -9,31 +8,14 @@ function weeksLeftLabel(weeksLeft: number): string {
 }
 
 export function Leaderboard() {
-  const { season, entries, loading, error, refresh } = useSeasonLeaderboard()
-  const [claimError, setClaimError] = useState<string | null>(null)
-  const { userId, claimNow, signInToClaim } = useGuestPlayerClaim({
-    competitionId: null,
-    onClaimed: () => {
-      setClaimError(null)
-      void refresh(true)
-    },
-  })
-
-  const handleGuestClaim = async (padelPlayerId: string) => {
-    try {
-      setClaimError(null)
-      await claimNow(padelPlayerId)
-    } catch (e) {
-      setClaimError(e instanceof Error ? e.message : 'Could not link scores')
-    }
-  }
+  const { season, entries, loading, error } = useSeasonLeaderboard()
+  const { user } = useAuth()
 
   if (loading) return <p className="game-subtle">Loading…</p>
 
   return (
     <div className="w-full min-w-0 max-w-full space-y-2">
       {error && <p className="text-sm text-red-600">{error}</p>}
-      {claimError && <p className="text-sm text-red-600">{claimError}</p>}
       {!season ? (
         <div className="game-card px-4 py-6 text-center">
           <p className="text-sm text-brand-text">No season standings yet.</p>
@@ -48,14 +30,8 @@ export function Leaderboard() {
               headerTitle={season.name}
               headerSubtitle={weeksLeftLabel(season.weeks_left)}
               showLeaderFooter={false}
-              currentUserId={userId}
+              currentUserId={user?.id ?? null}
               competitionId={null}
-              onGuestClaim={(id) => void handleGuestClaim(id)}
-              onGuestSignIn={(id) => {
-                void signInToClaim(id).catch((e) => {
-                  setClaimError(e instanceof Error ? e.message : 'Could not start LINE login')
-                })
-              }}
             />
       ) : (
         <div className="game-card px-4 py-6 text-center">

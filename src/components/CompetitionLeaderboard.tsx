@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import type { AmericanoScoringUnit } from '../lib/competitionPresets'
 import { isClaimableGuest } from '../lib/leaderboardEntries'
-import { GuestLineSignInButton } from './GuestLineSignInButton'
 import { LinePlayerLinkModal } from './LinePlayerLinkModal'
 
 export type LeaderboardEntry = {
@@ -24,8 +23,6 @@ type Props = {
   showLeaderFooter?: boolean
   currentUserId?: string | null
   competitionId?: string | null
-  onGuestClaim?: (padelPlayerId: string) => void
-  onGuestSignIn?: (padelPlayerId: string) => void
 }
 
 function playerInitial(name: string): string {
@@ -41,14 +38,12 @@ function LeaderboardRow({
   entry,
   isMe,
   showGuestAction,
-  signedIn,
   onGuestAction,
 }: {
   rank: number
   entry: LeaderboardEntry
   isMe: boolean
   showGuestAction: boolean
-  signedIn: boolean
   onGuestAction?: () => void
 }) {
   return (
@@ -82,7 +77,16 @@ function LeaderboardRow({
       </span>
       <div className="flex justify-end">
         {showGuestAction && onGuestAction ? (
-          <GuestLineSignInButton signedIn={signedIn} onClick={onGuestAction} compact />
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              onGuestAction()
+            }}
+            className="shrink-0 rounded-lg bg-[#06C755] px-2.5 py-1.5 text-xs font-semibold leading-tight text-white"
+          >
+            Add Line
+          </button>
         ) : null}
       </div>
     </li>
@@ -98,8 +102,6 @@ export function CompetitionLeaderboard({
   showLeaderFooter = true,
   currentUserId = null,
   competitionId = null,
-  onGuestClaim,
-  onGuestSignIn,
 }: Props) {
   const [linkTarget, setLinkTarget] = useState<{ id: string; name: string } | null>(null)
   const unit = scoreUnit === 'sets' ? 'sets' : 'pts'
@@ -148,7 +150,6 @@ export function CompetitionLeaderboard({
               entry={e}
               isMe={isMe}
               showGuestAction={showGuestAction}
-              signedIn={Boolean(currentUserId)}
               onGuestAction={
                 showGuestAction
                   ? () => {
@@ -171,11 +172,6 @@ export function CompetitionLeaderboard({
           padelPlayerId={linkTarget.id}
           playerName={linkTarget.name}
           onClose={() => setLinkTarget(null)}
-          onClaim={
-            currentUserId && onGuestClaim
-              ? () => onGuestClaim(linkTarget.id)
-              : undefined
-          }
         />
       )}
     </div>

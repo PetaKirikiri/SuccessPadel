@@ -4,7 +4,6 @@ import { CompetitionCourtBoard } from '../components/CompetitionCourtBoard'
 import { CompetitionLeaderboard } from '../components/CompetitionLeaderboard'
 import { useAuth } from '../hooks/useAuth'
 import { useCompetitionBoard } from '../hooks/useCompetitionBoard'
-import { useGuestPlayerClaim } from '../hooks/useGuestPlayerClaim'
 import { useLineClientProfile } from '../hooks/useLineClientProfile'
 import { usePublicCompetition } from '../hooks/usePublicCompetition'
 import { saveReturnTo } from '../lib/authReturnTo'
@@ -73,24 +72,6 @@ export function CompetitionPlay() {
     useCompetitionBoard(session, rounds, roster, clubCourts, courtMatches)
   const [tab, setTab] = useState<PlayTab>('games')
   const [now, setNow] = useState(Date.now())
-  const [claimError, setClaimError] = useState<string | null>(null)
-  const { userId, claimNow, signInToClaim } = useGuestPlayerClaim({
-    competitionId: id ?? null,
-    onClaimed: () => {
-      setClaimError(null)
-      void refresh(true)
-    },
-  })
-
-  const handleGuestClaim = async (padelPlayerId: string) => {
-    try {
-      setClaimError(null)
-      await claimNow(padelPlayerId)
-    } catch (e) {
-      setClaimError(e instanceof Error ? e.message : 'Could not link scores')
-    }
-  }
-
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(t)
@@ -232,18 +213,11 @@ export function CompetitionPlay() {
             <CompetitionLeaderboard
               entries={standings}
               scoreUnit={scoreUnit}
-              currentUserId={userId}
+              currentUserId={user?.id ?? null}
               competitionId={id ?? null}
-              onGuestClaim={(playerId) => void handleGuestClaim(playerId)}
-              onGuestSignIn={(playerId) => {
-                void signInToClaim(playerId).catch((e) => {
-                  setClaimError(e instanceof Error ? e.message : 'Could not start LINE login')
-                })
-              }}
             />
           ) : null}
 
-          {claimError && <p className="text-center text-sm text-red-600">{claimError}</p>}
           {error && <p className="text-center text-sm text-red-600">{error}</p>}
         </div>
       </main>

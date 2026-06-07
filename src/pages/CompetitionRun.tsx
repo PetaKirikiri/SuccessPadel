@@ -10,7 +10,6 @@ import { pivotScheduleByCourt } from '../lib/competitionCourtBoard'
 import { CompetitionLeaderboard } from '../components/CompetitionLeaderboard'
 import { CompetitionMyCourt } from '../components/CompetitionMyCourt'
 import { gamesFromDbRounds } from '../hooks/useCompetitionBoard'
-import { useGuestPlayerClaim } from '../hooks/useGuestPlayerClaim'
 import {
   americanoScoringUnit,
   americanoTargetPoints,
@@ -112,33 +111,9 @@ export function CompetitionRun() {
   const finished = session?.status === 'complete'
   const userId = user?.id
   const isAmericano = session ? usesAmericanoScoring(session) : false
-  const [claimError, setClaimError] = useState<string | null>(null)
-  const { userId: claimUserId, claimNow, signInToClaim } = useGuestPlayerClaim({
-    competitionId: id ?? null,
-    onClaimed: () => {
-      setClaimError(null)
-      void refresh(true)
-    },
-  })
-
-  const handleGuestClaim = async (padelPlayerId: string) => {
-    try {
-      setClaimError(null)
-      await claimNow(padelPlayerId)
-    } catch (e) {
-      setClaimError(e instanceof Error ? e.message : 'Could not link scores')
-    }
-  }
-
   const guestLeaderboardProps = {
-    currentUserId: claimUserId,
+    currentUserId: userId ?? null,
     competitionId: id ?? null,
-    onGuestClaim: (padelId: string) => void handleGuestClaim(padelId),
-    onGuestSignIn: (padelId: string) => {
-      void signInToClaim(padelId).catch((e) => {
-        setClaimError(e instanceof Error ? e.message : 'Could not start LINE login')
-      })
-    },
   }
 
   useEffect(() => {
@@ -678,8 +653,8 @@ export function CompetitionRun() {
         </div>
       )}
 
-      {(error || actionError || claimError) && (
-        <p className="text-center text-sm text-red-600">{claimError ?? actionError ?? error}</p>
+      {(error || actionError) && (
+        <p className="text-center text-sm text-red-600">{actionError ?? error}</p>
       )}
     </div>
   )
