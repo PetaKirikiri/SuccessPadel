@@ -1,16 +1,7 @@
 import { FunctionsHttpError } from '@supabase/supabase-js'
-import {
-  getLineAccessToken,
-  getLineIdToken,
-  hasLiffId,
-  initLiff,
-  isLineLoggedIn,
-  lineAppEntryUrl,
-  lineLoginRedirect,
-} from './liff'
-import { readLineProfilePatch } from './profileSync'
+import { hasLiffId, lineAppEntryUrl } from './liff'
 import { lineOAuthRedirectUri } from './oauth'
-import { siteOrigin } from '../siteUrl'
+import { shareSiteOrigin, siteOrigin } from '../siteUrl'
 import { supabase } from '../supabaseClient'
 import { syncProfileForUser } from '../authProfile'
 
@@ -48,8 +39,31 @@ export type LinePlayerLinkRequest = {
   qrUrl: string
 }
 
+/** LIFF entry — LINE QR scanner opens this inside the LINE app. */
 export function linePlayerLinkQrUrl(linkToken: string): string | null {
   return lineAppEntryUrl(`/login?lpl=${encodeURIComponent(linkToken)}`)
+}
+
+/** Safari / default browser URL handed off from LINE (never use in QR directly). */
+export function playerLinkBrowserUrl(linkToken: string): string {
+  return `${shareSiteOrigin()}/login?lpl=${encodeURIComponent(linkToken)}`
+}
+
+function buildLineAuthorizeUrl(linkToken: string): string {
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: channelId!,
+    redirect_uri: linePlayerLinkRedirectUri(),
+    state: linkToken,
+    scope: 'profile openid',
+  })
+  return `https://access.line.me/oauth2/v2.1/authorize?${params}`
+}
+
+/** External browser only — starts LINE OAuth for player link. No LIFF. */
+export function startPlayerLinkOAuth(linkToken: string): void {
+  if (!channelId) return
+  window.location.assign(buildLineAuthorizeUrl(linkToken))
 }
 
 export function linkTokenFromLocation(search = window.location.search): string | null {
@@ -78,15 +92,6 @@ export function linkTokenFromLocation(search = window.location.search): string |
   return null
 }
 
-const ENTRY_PREFIX = 'sp_line_link_entry_'
-
-export function shouldProcessLineLinkEntry(linkToken: string): boolean {
-  const key = `${ENTRY_PREFIX}${linkToken}`
-  if (sessionStorage.getItem(key)) return false
-  sessionStorage.setItem(key, '1')
-  return true
-}
-
 /** Create a single-use link request for QR display. Never redirects. */
 export async function createLinePlayerLinkRequest(
   competitionId: string | null,
@@ -112,70 +117,6 @@ export async function createLinePlayerLinkRequest(
       qrUrl: resolvedQrUrl,
     },
   }
-}
-
-/** Guest scanned QR and opened inside LINE — complete link via LIFF session. */
-export async function completeLinePlayerLinkWithLiff(linkToken: string): Promise<{
-  competitionId: string | null
-  error?: string
-}> {
-  if (!hasLiffId()) {
-    return { competitionId: null, error: 'LINE app link is not configured' }
-  }
-
-  await initLiff()
-
-  if (!isLineLoggedIn()) {
-    lineLoginRedirect()
-    return { competitionId: null }
-  }
-
-  const idToken = await getLineIdToken()
-  if (!idToken) {
-    return { competitionId: null, error: 'Could not read your LINE session' }
-  }
-
-  const accessToken = await getLineAccessToken()
-  const profile = await readLineProfilePatch()
-
-  const { data, error: fnError } = await supabase.functions.invoke('line-liff-player-link', {
-    body: {
-      id_token: idToken,
-      access_token: accessToken ?? undefined,
-      profile: profile ?? undefined,
-      link_token: linkToken,
-    },
-  })
-
-  if (fnError) return { competitionId: null, error: await edgeErrorMessage(fnError) }
-
-  const payload = data as {
-    error?: string
-    access_token?: string
-    refresh_token?: string
-    competition_id?: string | null
-  }
-
-  if (payload.error) return { competitionId: null, error: payload.error }
-  if (!payload.access_token || !payload.refresh_token) {
-    return { competitionId: null, error: 'Link failed — no session returned' }
-  }
-
-  const { error: sessErr } = await supabase.auth.setSession({
-    access_token: payload.access_token,
-    refresh_token: payload.refresh_token,
-  })
-
-  if (sessErr) return { competitionId: null, error: sessErr.message }
-
-  const { data: confirmed } = await supabase.auth.getSession()
-  if (!confirmed.session?.user) {
-    return { competitionId: null, error: 'Session did not stick — try again' }
-  }
-
-  await syncProfileForUser(confirmed.session.user)
-
-  return { competitionId: payload.competition_id ?? null }
 }
 
 export type LineLinkResult = {

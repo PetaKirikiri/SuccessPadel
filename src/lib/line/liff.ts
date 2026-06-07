@@ -136,6 +136,20 @@ export function isMobileWeb(): boolean {
   return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
 }
 
+/** Open a URL in the device default browser (Safari / Chrome). LINE in-app only. */
+export async function openLineExternalUrl(url: string): Promise<boolean> {
+  if (!liffId) return false
+  try {
+    await initLiff()
+    if (!liff.isInClient()) return false
+    if (!liff.isApiAvailable('openWindow')) return false
+    liff.openWindow({ url, external: true })
+    return true
+  } catch {
+    return false
+  }
+}
+
 export async function shareLeaderboardUrl(title: string, url: string): Promise<void> {
   await initLiff()
   if (!liff.isApiAvailable('shareTargetPicker')) return

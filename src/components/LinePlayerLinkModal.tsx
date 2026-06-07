@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
   createLinePlayerLinkRequest,
+  playerLinkBrowserUrl,
   type LinePlayerLinkRequest,
 } from '../lib/line/playerLink'
 import { LineSignUpQr } from './LineSignUpQr'
@@ -50,11 +51,11 @@ export function LinePlayerLinkModal({
   const copyUrl = async () => {
     if (!request) return
     try {
-      await navigator.clipboard.writeText(request.qrUrl)
+      await navigator.clipboard.writeText(playerLinkBrowserUrl(request.linkToken))
       setCopied(true)
       window.setTimeout(() => setCopied(false), 2000)
     } catch {
-      window.prompt('Copy this link:', request.qrUrl)
+      window.prompt('Copy this link for Safari:', playerLinkBrowserUrl(request.linkToken))
     }
   }
 
@@ -96,14 +97,17 @@ export function LinePlayerLinkModal({
           </div>
         ) : request ? (
           <div className="space-y-3">
-            <p className="text-xs text-brand-muted">Scan with LINE (Home → QR code)</p>
+            <p className="text-xs text-brand-muted">
+              Scan with LINE (Home → QR code). You&apos;ll be asked to open Safari — not LINE&apos;s
+              browser.
+            </p>
             <LineSignUpQr url={request.qrUrl} />
             <button
               type="button"
               onClick={() => void copyUrl()}
               className="brand-btn-outline w-full py-2 text-sm font-semibold"
             >
-              {copied ? 'Link copied!' : 'Copy link'}
+              {copied ? 'Link copied!' : 'Copy Safari link'}
             </button>
           </div>
         ) : null}
