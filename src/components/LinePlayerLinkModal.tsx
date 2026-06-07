@@ -117,27 +117,9 @@ export function LinePlayerLinkModal({
                 Link LINE to {playerName}
               </button>
             ) : (
-              <>
-                <button
-                  type="button"
-                  disabled={lineBusy}
-                  onClick={() => {
-                    setLineBusy(true)
-                    void startLinePlayerLink(competitionId, padelPlayerId).then((err) => {
-                      if (err) {
-                        setError(err)
-                        setLineBusy(false)
-                      }
-                    })
-                  }}
-                  className="w-full rounded-xl bg-[#06C755] py-3 text-base font-semibold text-white disabled:opacity-60"
-                >
-                  Continue with LINE
-                </button>
-                <p className="text-xs text-brand-muted">
-                  Or scan this QR with the LINE app (Home → QR code)
-                </p>
-              </>
+              <p className="text-xs text-brand-muted">
+                Scan with LINE (Home → QR code)
+              </p>
             )}
             <LineSignUpQr url={request.qrUrl} />
             <button

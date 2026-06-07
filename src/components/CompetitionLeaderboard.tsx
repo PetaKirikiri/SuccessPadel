@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import type { AmericanoScoringUnit } from '../lib/competitionPresets'
-import { isLineLiffBrowser } from '../lib/line/liff'
 import { isClaimableGuest } from '../lib/leaderboardEntries'
 import { GuestLineSignInButton } from './GuestLineSignInButton'
 import { LinePlayerLinkModal } from './LinePlayerLinkModal'
@@ -155,10 +154,8 @@ export function CompetitionLeaderboard({
                   ? () => {
                       if (currentUserId) {
                         onGuestClaim?.(e.padel_player_id!)
-                      } else if (isLineLiffBrowser()) {
-                        setLinkTarget({ id: e.padel_player_id!, name: e.display_name })
                       } else {
-                        onGuestSignIn?.(e.padel_player_id!)
+                        setLinkTarget({ id: e.padel_player_id!, name: e.display_name })
                       }
                     }
                   : undefined
