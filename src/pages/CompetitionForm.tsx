@@ -32,17 +32,32 @@ import {
   toIsoTimestamp,
 } from '../lib/courtSchedule'
 import { useAuth } from '../hooks/useAuth'
+import type { CompetitionPlayer } from '../hooks/useCompetitions'
+import { CompetitionLayoutPreview } from '../components/CompetitionLayoutPreview'
+import { CompetitionPlayerSlots } from '../components/CompetitionPlayerSlots'
 import { CompetitionSchedulePreview } from '../components/CompetitionSchedulePreview'
+import { solveBalancedSchedule } from '../lib/balancedSchedule'
 import {
   AMERICANO_GAME_COUNTS,
   americanoGamesFromConfig,
   breakMinutesFromConfig,
+  courtsNeeded,
   gameMinutesFromConfig,
+  isValidCourtLayout,
   planAmericanoSchedule,
   totalScheduleMinutes,
 } from '../lib/competitionLayout'
+import { rosterFromNames } from '../lib/rosterPreview'
+import {
+  buildStoredSchedule,
+  planRankedSchedule,
+  RANKED_SCHEDULE_VERSION,
+  sortRosterByRank,
+} from '../lib/rankedSchedule'
 import { supabase } from '../lib/supabaseClient'
 import type { GameSession } from '../lib/types'
+
+type FormStep = 'settings' | 'players' | 'preview'
 
 function Chip({
   active,
@@ -96,6 +111,10 @@ export function CompetitionForm() {
   const [seasonError, setSeasonError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [step, setStep] = useState<FormStep>('settings')
+  const [playerSlots, setPlayerSlots] = useState<string[]>(() => Array(8).fill(''))
+  const [courtNames, setCourtNames] = useState<string[]>([])
+  const [previewSeed, setPreviewSeed] = useState(0)
 
   const hours = scheduleGridHours()
   const maxDuration = useMemo(() => Math.min(3, maxDurationFromStart(startHour)), [startHour])
@@ -112,10 +131,76 @@ export function CompetitionForm() {
     )
   }, [ruleFormat, startsAtIso, gameCount, gameMinutes, breakMinutes, eventMinutes])
   const scheduleFits = schedulePlan?.fits ?? true
+  const trimmedSlots = useMemo(() => playerSlots.map((s) => s.trim()), [playerSlots])
+  const allNamesFilled = trimmedSlots.length === targetPlayers && trimmedSlots.every(Boolean)
+  const previewRoster = useMemo(() => rosterFromNames(trimmedSlots), [trimmedSlots])
+  const previewGames = useMemo(() => {
+    if (ruleFormat !== 'americano' || !allNamesFilled || !isValidCourtLayout(previewRoster.length)) {
+      return null
+    }
+    return planRankedSchedule(
+      previewRoster,
+      courtNames.slice(0, courtsNeeded(previewRoster.length)),
+      gameCount,
+      previewSeed,
+    )
+  }, [
+    ruleFormat,
+    allNamesFilled,
+    previewRoster,
+    courtNames,
+    gameCount,
+    previewSeed,
+  ])
+  const previewSession = useMemo(
+    (): Pick<GameSession, 'partnership_mode' | 'rules' | 'scoring_config'> => ({
+      partnership_mode: 'americano',
+      rules: buildRulesText('americano', null, {
+        target:
+          americanoScoring === 'open'
+            ? undefined
+            : americanoScoring === 4
+              ? 4
+              : americanoScoring,
+        unit: americanoScoring === 'open' ? 'open' : americanoScoring === 4 ? 'sets' : 'points',
+      }),
+      scoring_config: buildAmericanoScoringConfig(americanoScoring, {
+        games: gameCount,
+        breakMinutes,
+        gameMinutes,
+      }),
+    }),
+    [americanoScoring, gameCount, breakMinutes, gameMinutes],
+  )
 
   useEffect(() => {
     if (duration > maxDuration) setDuration(maxDuration)
   }, [duration, maxDuration])
+
+  useEffect(() => {
+    setPlayerSlots((prev) => {
+      const next = Array(targetPlayers).fill('')
+      for (let i = 0; i < Math.min(prev.length, targetPlayers); i++) next[i] = prev[i]
+      return next
+    })
+  }, [targetPlayers])
+
+  useEffect(() => {
+    let active = true
+    void (async () => {
+      const { data } = await supabase.rpc('list_setup_courts')
+      if (active && Array.isArray(data)) {
+        setCourtNames(
+          (data as { name: string; sort_order: number }[])
+            .sort((a, b) => a.sort_order - b.sort_order)
+            .map((c) => c.name),
+        )
+      }
+    })()
+    return () => {
+      active = false
+    }
+  }, [])
 
   useEffect(() => {
     setSeasonLoading(true)
@@ -200,15 +285,45 @@ export function CompetitionForm() {
           setDay(g.starts_on)
         }
       })
-  }, [id])
+
+    void supabase
+      .from('session_players')
+      .select('guest_name, rank_order, profiles(display_name)')
+      .eq('session_id', id)
+      .order('rank_order')
+      .then(({ data }) => {
+        if (!data?.length) return
+        const next = Array(targetPlayers).fill('')
+        for (const row of data) {
+          const r = row as unknown as {
+            guest_name: string | null
+            rank_order: number | null
+            profiles: { display_name: string } | null
+          }
+          const idx = r.rank_order ?? 0
+          if (idx >= 0 && idx < next.length) {
+            next[idx] = r.profiles?.display_name ?? r.guest_name ?? ''
+          }
+        }
+        setPlayerSlots(next)
+      })
+  }, [id, targetPlayers])
 
   const save = async () => {
     if (!seasonId) {
       setError('No active season.')
       return
     }
+    if (!allNamesFilled) {
+      setError('Enter every player name.')
+      return
+    }
     if (ruleFormat === 'americano' && !scheduleFits) {
       setError('Schedule does not fit in the session time.')
+      return
+    }
+    if (ruleFormat === 'americano' && !previewGames?.length) {
+      setError('Preview the game layout first.')
       return
     }
     setBusy(true)
@@ -262,27 +377,90 @@ export function CompetitionForm() {
       created_by: user?.id ?? null,
     }
 
-    const { error: err } = id
-      ? await supabase.from('game_sessions').update(payload).eq('id', id)
-      : await supabase.from('game_sessions').insert(payload).select('id').single()
+    let sessionId = id
+    if (id) {
+      const { error: err } = await supabase.from('game_sessions').update(payload).eq('id', id)
+      if (err) {
+        setBusy(false)
+        setError(err.message)
+        return
+      }
+    } else {
+      const { data, error: err } = await supabase
+        .from('game_sessions')
+        .insert(payload)
+        .select('id')
+        .single()
+      if (err || !data) {
+        setBusy(false)
+        setError(err?.message ?? 'Could not create competition')
+        return
+      }
+      sessionId = data.id
+    }
 
-    setBusy(false)
-    if (err) {
-      setError(err.message)
+    const { error: rosterErr } = await supabase.rpc('sync_competition_roster_slots', {
+      p_session_id: sessionId,
+      p_names: trimmedSlots,
+    })
+    if (rosterErr) {
+      setBusy(false)
+      setError(rosterErr.message)
       return
     }
+
+    if (ruleFormat === 'americano' && previewGames?.length) {
+      const { data: rosterRows, error: rosterLoadErr } = await supabase
+        .from('session_players')
+        .select('id, guest_name, rank_order, profile_id, profiles(display_name)')
+        .eq('session_id', sessionId)
+        .order('rank_order')
+      if (rosterLoadErr || !rosterRows?.length) {
+        setBusy(false)
+        setError(rosterLoadErr?.message ?? 'Could not load roster')
+        return
+      }
+      const ranked = sortRosterByRank(rosterRows as unknown as CompetitionPlayer[])
+      const schedule = buildStoredSchedule(
+        ranked,
+        solveBalancedSchedule(ranked.length, gameCount, previewSeed),
+      )
+      const nextConfig = {
+        ...(americanoConfig ?? {}),
+        schedule_seed: previewSeed,
+        schedule_version: RANKED_SCHEDULE_VERSION,
+        schedule,
+      }
+      const { error: cfgErr } = await supabase.rpc('save_competition_scoring_config', {
+        p_session_id: sessionId,
+        p_scoring_config: nextConfig,
+      })
+      if (cfgErr) {
+        setBusy(false)
+        setError(cfgErr.message)
+        return
+      }
+    }
+
+    setBusy(false)
     navigate('/competitions')
   }
+
+  const stepLabel =
+    step === 'settings' ? '1. Settings' : step === 'players' ? '2. Players' : '3. Preview'
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div data-scroll-y className="scroll-y min-h-0 flex-1 space-y-3 pb-24">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <Link to="/competitions" className="text-sm font-medium text-brand-accent">
             ← Back
           </Link>
+          <span className="text-xs font-medium text-brand-muted">{stepLabel}</span>
         </div>
 
+        {step === 'settings' && (
+        <>
         <section className="game-card space-y-3">
           <label className="block space-y-1">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">Day</span>
@@ -439,15 +617,6 @@ export function CompetitionForm() {
                 Uses {totalScheduleMinutes(gameCount, gameMinutes, breakMinutes)} / {eventMinutes}{' '}
                 min
               </p>
-
-              <CompetitionSchedulePreview
-                startsAtIso={startsAtIso}
-                eventMinutes={eventMinutes}
-                gameCount={gameCount}
-                gameMinutes={gameMinutes}
-                breakMinutes={breakMinutes}
-                playerCount={targetPlayers}
-              />
             </>
           )}
 
@@ -479,6 +648,58 @@ export function CompetitionForm() {
             />
           </label>
         </section>
+        </>
+        )}
+
+        {step === 'players' && (
+          <section className="game-card space-y-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
+              Player names
+            </p>
+            <CompetitionPlayerSlots
+              count={targetPlayers}
+              slots={playerSlots}
+              onChange={setPlayerSlots}
+              disabled={busy}
+            />
+            {!allNamesFilled && (
+              <p className="text-xs text-brand-muted">Fill all {targetPlayers} names to continue.</p>
+            )}
+          </section>
+        )}
+
+        {step === 'preview' && ruleFormat === 'americano' && (
+          <div className="space-y-3">
+            <CompetitionSchedulePreview
+              startsAtIso={startsAtIso}
+              eventMinutes={eventMinutes}
+              gameCount={gameCount}
+              gameMinutes={gameMinutes}
+              breakMinutes={breakMinutes}
+              playerCount={targetPlayers}
+            />
+            {previewGames && previewGames.length > 0 ? (
+              <div className="game-card overflow-hidden px-1 py-2">
+                <CompetitionLayoutPreview
+                  session={previewSession}
+                  games={previewGames}
+                  eventStartsAt={startsAtIso}
+                  gameMinutes={gameMinutes}
+                />
+              </div>
+            ) : (
+              <p className="text-sm text-brand-muted">Could not build layout — check player count.</p>
+            )}
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setPreviewSeed((s) => s + 1)}
+              className="brand-btn-outline w-full py-2 text-sm font-semibold"
+            >
+              Shuffle match-ups
+            </button>
+          </div>
+        )}
 
         {error && <p className="text-sm text-red-600">{error}</p>}
       </div>
@@ -487,14 +708,74 @@ export function CompetitionForm() {
         {(seasonError || error) && (
           <p className="mb-2 text-center text-xs text-red-600">{error ?? seasonError}</p>
         )}
-        <button
-          type="button"
-          disabled={busy || seasonLoading || !seasonId || (ruleFormat === 'americano' && !scheduleFits)}
-          onClick={() => void save()}
-          className="brand-btn w-full text-sm font-semibold disabled:opacity-50"
-        >
-          {busy ? 'Saving…' : seasonLoading ? 'Loading…' : id ? 'Save' : 'Add'}
-        </button>
+        {step === 'settings' && (
+          <button
+            type="button"
+            disabled={
+              busy ||
+              seasonLoading ||
+              !seasonId ||
+              (ruleFormat === 'americano' && !scheduleFits)
+            }
+            onClick={() => {
+              setError(null)
+              setStep('players')
+            }}
+            className="brand-btn w-full text-sm font-semibold disabled:opacity-50"
+          >
+            Next — add players
+          </button>
+        )}
+        {step === 'players' && (
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setStep('settings')}
+              className="brand-btn-outline flex-1 py-2 text-sm font-semibold"
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              disabled={busy || !allNamesFilled}
+              onClick={() => {
+                setError(null)
+                if (ruleFormat === 'americano') setStep('preview')
+                else void save()
+              }}
+              className="brand-btn flex-[2] py-2 text-sm font-semibold disabled:opacity-50"
+            >
+              {ruleFormat === 'americano' ? 'Preview layout' : busy ? 'Saving…' : 'Accept'}
+            </button>
+          </div>
+        )}
+        {step === 'preview' && (
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setStep('players')}
+              className="brand-btn-outline flex-1 py-2 text-sm font-semibold"
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              disabled={
+                busy ||
+                seasonLoading ||
+                !seasonId ||
+                !scheduleFits ||
+                !previewGames?.length
+              }
+              onClick={() => void save()}
+              className="brand-btn flex-[2] py-2 text-sm font-semibold disabled:opacity-50"
+            >
+              {busy ? 'Saving…' : 'Accept'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -6,7 +6,7 @@ import type { GameSession } from '../lib/types'
 import { CompetitionCourtBoard } from './CompetitionCourtBoard'
 
 type Props = {
-  session: GameSession
+  session: Pick<GameSession, 'partnership_mode' | 'rules' | 'scoring_config'>
   games: GameRound[]
   eventStartsAt?: string
   gameMinutes: number
