@@ -132,13 +132,13 @@ function CourtMatchCell({
     teamBPlayers?.[0] ?? { id: null, name: fallbackNames[2] ?? '', avatarUrl: null },
     teamBPlayers?.[1] ?? { id: null, name: fallbackNames[3] ?? '', avatarUrl: null },
   ]
-  const playerClass = (isCurrent: boolean, align: 'left' | 'right') =>
-    `flex min-w-0 items-center gap-1.5 rounded py-0.5 ${isCurrent ? 'px-1' : 'px-0'} ${
-      align === 'right' ? 'justify-end' : ''
-    } ${isCurrent ? 'bg-brand-bg-alt text-brand-accent' : 'text-brand-text'}`
+  const playerClass = (isCurrent: boolean) =>
+    `flex min-w-0 items-center gap-1.5 rounded py-0.5 ${
+      isCurrent ? 'bg-brand-bg-alt px-1 text-brand-accent' : 'px-0 text-brand-text'
+    }`
 
   const scoreInputClass =
-    'w-7 rounded border border-brand-border/80 bg-brand-surface px-0.5 py-0.5 text-center text-xs font-medium tabular-nums text-brand-muted disabled:text-brand-muted/60'
+    'h-9 w-9 rounded-lg border border-brand-border/80 bg-brand-surface px-0.5 py-0.5 text-center text-base font-semibold tabular-nums text-brand-primary disabled:text-brand-muted/60'
 
   const scoreAEl = editable ? (
     <input
@@ -170,12 +170,12 @@ function CourtMatchCell({
     <span className="text-xs font-medium tabular-nums text-brand-muted">{scoreB || '—'}</span>
   )
 
-  const playerEl = (player: CourtPlayer, align: 'left' | 'right') => {
+  const playerEl = (player: CourtPlayer) => {
     const isCurrent = Boolean(currentUserId && player.id === currentUserId)
     const displayAvatarUrl = player.avatarUrl ?? (isCurrent ? currentUserAvatarUrl : null)
     const [displayName] = compactDisplayNames([player.name])
     return (
-      <p className={playerClass(isCurrent, align)}>
+      <p className={playerClass(isCurrent)}>
         {displayAvatarUrl ? (
           <img
             src={displayAvatarUrl}
@@ -197,21 +197,20 @@ function CourtMatchCell({
       className="overflow-hidden rounded-lg border border-brand-border/60 bg-brand-surface"
       aria-label={`${teamA[0]} and ${teamA[1]} against ${teamB[0]} and ${teamB[1]}`}
     >
-      <div className="grid grid-cols-2 gap-2 px-1 py-2">
+      <div className="grid grid-cols-[minmax(0,1fr)_5.25rem_minmax(0,1fr)] items-stretch gap-1 px-1 py-2">
         <div className="min-w-0 space-y-1">
-          {playerEl(teamAPlayerList[0]!, 'left')}
-          {playerEl(teamAPlayerList[1]!, 'left')}
+          {playerEl(teamAPlayerList[0]!)}
+          {playerEl(teamAPlayerList[1]!)}
         </div>
-        <div className="min-w-0 space-y-1 text-right">
-          {playerEl(teamBPlayerList[0]!, 'right')}
-          {playerEl(teamBPlayerList[1]!, 'right')}
+        <div className="flex items-center justify-center gap-1 border-x border-brand-border/60 px-1 tabular-nums">
+          {scoreAEl}
+          <span className="text-sm text-brand-muted">–</span>
+          {scoreBEl}
         </div>
-      </div>
-
-      <div className="flex items-center justify-center gap-1 border-t border-brand-border/60 px-2 py-1.5 tabular-nums">
-        {scoreAEl}
-        <span className="text-xs text-brand-muted">–</span>
-        {scoreBEl}
+        <div className="min-w-0 space-y-1">
+          {playerEl(teamBPlayerList[0]!)}
+          {playerEl(teamBPlayerList[1]!)}
+        </div>
       </div>
     </div>
   )
