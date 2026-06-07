@@ -51,6 +51,7 @@ type Props = {
 }
 
 type RoundStatus = 'pending' | 'active' | 'complete'
+type CountdownState = 'starts' | 'playing' | 'finished' | 'scheduled'
 
 function isGameFinished(
   gameNumber: number,
@@ -85,8 +86,43 @@ function gameCountdown(
   const fullMs = gameMinutes * 60000
   if (!times) return formatCountdown(fullMs)
   if (now >= times.endsAt) return '0:00'
-  if (now < times.startsAt) return formatCountdown(fullMs)
+  if (now < times.startsAt) return formatCountdown(times.startsAt - now)
   return formatCountdown(times.endsAt - now)
+}
+
+function countdownState(
+  now: number,
+  times: { startsAt: number; endsAt: number } | undefined,
+  finished: boolean,
+): CountdownState {
+  if (finished) return 'finished'
+  if (!times) return 'scheduled'
+  if (now < times.startsAt) return 'starts'
+  if (now < times.endsAt) return 'playing'
+  return 'finished'
+}
+
+function countdownLabel(state: CountdownState): string {
+  if (state === 'starts') return 'Starts in'
+  if (state === 'playing') return 'Time left'
+  if (state === 'finished') return 'Finished'
+  return 'Game time'
+}
+
+function courtHasCurrentUser(
+  currentUserId: string | null | undefined,
+  court: {
+    playerIds?: string[]
+    teamAPlayers?: CourtPlayer[]
+    teamBPlayers?: CourtPlayer[]
+  },
+): boolean {
+  if (!currentUserId) return false
+  return Boolean(
+    court.teamAPlayers?.some((player) => player.id === currentUserId) ||
+      court.teamBPlayers?.some((player) => player.id === currentUserId) ||
+      court.playerIds?.includes(currentUserId),
+  )
 }
 
 function CourtMatchCell({
@@ -134,7 +170,7 @@ function CourtMatchCell({
   ]
   const playerClass = (isCurrent: boolean) =>
     `flex min-w-0 items-center gap-1 rounded py-0.5 ${
-      isCurrent ? 'bg-brand-bg-alt px-1 text-brand-accent' : 'px-0 text-brand-text'
+      isCurrent ? 'animate-pulse bg-brand-bg-alt px-1 text-brand-accent' : 'px-0 text-brand-text'
     }`
 
   const scoreInputClass =
@@ -365,6 +401,7 @@ function GameScoringCourts({
   canEdit,
   currentUserId,
   currentUserAvatarUrl,
+  highlightCurrentCourt,
 }: {
   game: ScoringGame
   gameRoundId?: string
@@ -377,6 +414,7 @@ function GameScoringCourts({
   canEdit: boolean
   currentUserId?: string | null
   currentUserAvatarUrl?: string | null
+  highlightCurrentCourt?: boolean
 }) {
   return (
     <div className="space-y-2">
@@ -392,7 +430,15 @@ function GameScoringCourts({
 
         return (
           <div key={court.courtLabel} className="space-y-1">
-            <p className={COURT_LABEL_CLASS}>{court.courtLabel}</p>
+            <p
+              className={`${COURT_LABEL_CLASS} ${
+                highlightCurrentCourt && courtHasCurrentUser(currentUserId, liveCourt ?? court)
+                  ? 'animate-pulse rounded bg-brand-bg-alt px-1 text-brand-accent'
+                  : ''
+              }`}
+            >
+              {court.courtLabel}
+            </p>
             <div>
               <CourtMatchCell
                 teamA={teamA}
@@ -439,34 +485,56 @@ function GameCardHeader({
   isLiveNow,
   timeLabel,
   countdown,
+  countdownLabelText,
+  finished,
+  collapsed,
+  onToggleCollapsed,
   submit,
 }: {
   gameNumber: number
   isLiveNow?: boolean
   timeLabel?: string
   countdown?: string | null
+  countdownLabelText: string
+  finished: boolean
+  collapsed: boolean
+  onToggleCollapsed: () => void
   submit?: ReactNode
 }) {
   return (
     <div className="flex items-center gap-2 border-b border-brand-border/60 px-3 py-3">
-      <div className="min-w-0 flex-1">
-        <p className="font-display text-2xl font-bold leading-none text-brand-primary">
-          Game {gameNumber}
-          {isLiveNow ? (
-            <span className="ml-1.5 text-sm font-medium text-brand-muted">· Live</span>
-          ) : null}
-        </p>
-        {timeLabel && (
-          <p className="mt-1 text-[11px] tabular-nums text-brand-muted">{timeLabel}</p>
-        )}
-      </div>
+      <button
+        type="button"
+        onClick={onToggleCollapsed}
+        className="flex min-w-0 flex-1 items-center gap-2 text-left"
+        aria-expanded={!collapsed}
+      >
+        <span className="shrink-0 text-sm text-brand-muted">{collapsed ? '▸' : '▾'}</span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-display text-2xl font-bold leading-none text-brand-primary">
+            Game {gameNumber}
+            {isLiveNow ? (
+              <span className="ml-1.5 text-sm font-medium text-brand-accent">· Live</span>
+            ) : finished ? (
+              <span className="ml-1.5 text-sm font-medium text-brand-muted">· Done</span>
+            ) : null}
+          </span>
+          {timeLabel && (
+            <span className="mt-1 block text-[11px] tabular-nums text-brand-muted">
+              {timeLabel}
+            </span>
+          )}
+        </span>
+      </button>
       {countdown && (
-        <p
-          className="shrink-0 font-display text-3xl font-bold leading-none tabular-nums text-brand-text"
-          aria-live="polite"
-        >
-          {countdown}
-        </p>
+        <div className="shrink-0 text-right" aria-live="polite">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-muted">
+            {countdownLabelText}
+          </p>
+          <p className="font-display text-3xl font-bold leading-none tabular-nums text-brand-text">
+            {countdown}
+          </p>
+        </div>
       )}
       {submit}
     </div>
@@ -485,7 +553,12 @@ function ScoringGameCard({
   onSubmitScores,
   onSaved,
   isLiveNow,
+  isCurrentGame,
   countdown,
+  countdownLabelText,
+  finished,
+  collapsed,
+  onToggleCollapsed,
   currentUserId,
   currentUserAvatarUrl,
 }: {
@@ -500,7 +573,12 @@ function ScoringGameCard({
   onSubmitScores?: (entries: CourtScoreSubmit[]) => Promise<void>
   onSaved?: () => void
   isLiveNow: boolean
+  isCurrentGame: boolean
   countdown?: string | null
+  countdownLabelText: string
+  finished: boolean
+  collapsed: boolean
+  onToggleCollapsed: () => void
   currentUserId?: string | null
   currentUserAvatarUrl?: string | null
 }) {
@@ -527,16 +605,24 @@ function ScoringGameCard({
   )
 
   return (
-    <div className={`game-card overflow-hidden p-0 ${isMyGame ? 'ring-2 ring-brand-accent/70' : ''}`}>
+    <div
+      className={`game-card overflow-hidden p-0 ${
+        isCurrentGame ? 'border-2 border-brand-accent ring-2 ring-brand-accent/30' : ''
+      } ${isMyGame ? 'ring-2 ring-brand-accent/70' : ''}`}
+    >
       <GameCardHeader
         gameNumber={game.gameNumber}
         isLiveNow={isLiveNow}
         timeLabel={game.timeLabel}
         countdown={countdown}
+        countdownLabelText={countdownLabelText}
+        finished={finished}
+        collapsed={collapsed}
+        onToggleCollapsed={onToggleCollapsed}
         submit={submitButton}
       />
       {error && <p className="px-3 pb-1 text-right text-[10px] text-red-600">{error}</p>}
-      <div className="px-1 pb-2 pt-2">
+      {!collapsed && <div className="px-1 pb-2 pt-2">
         <GameScoringCourts
           game={game}
           gameRoundId={gameRoundId}
@@ -549,8 +635,9 @@ function ScoringGameCard({
           canEdit={editable}
           currentUserId={currentUserId}
           currentUserAvatarUrl={currentUserAvatarUrl}
+          highlightCurrentCourt={isCurrentGame}
         />
-      </div>
+      </div>}
     </div>
   )
 }
@@ -577,6 +664,7 @@ export function CompetitionCourtBoard({
 }: Props) {
   const games = useMemo(() => pivotScheduleByGame(columns), [columns])
   const [tick, setTick] = useState(() => Date.now())
+  const [collapsedGames, setCollapsedGames] = useState<Record<number, boolean>>({})
 
   useEffect(() => {
     if (mode !== 'scoring') return
@@ -608,9 +696,41 @@ export function CompetitionCourtBoard({
     }
   }, [clock, games, mode, roundStatusByGame, roundTimesByGame])
 
+  const orderedGames = useMemo(
+    () =>
+      [...games].sort((a, b) => {
+        const aTimes = roundTimesByGame?.get(a.gameNumber)
+        const bTimes = roundTimesByGame?.get(b.gameNumber)
+        const aFinished = isGameFinished(a.gameNumber, clock, roundTimesByGame, roundStatusByGame)
+        const bFinished = isGameFinished(b.gameNumber, clock, roundTimesByGame, roundStatusByGame)
+        const aLive = isGameLive(clock, aTimes)
+        const bLive = isGameLive(clock, bTimes)
+        const aCurrent = !aFinished && (aLive || activeGameNumber === a.gameNumber)
+        const bCurrent = !bFinished && (bLive || activeGameNumber === b.gameNumber)
+        const rank = (isCurrent: boolean, isFinished: boolean, times?: { startsAt: number }) => {
+          if (isCurrent) return 0
+          if (isFinished) return 3
+          if (times && clock < times.startsAt) return 1
+          return 2
+        }
+        const aRank = rank(aCurrent, aFinished, aTimes)
+        const bRank = rank(bCurrent, bFinished, bTimes)
+        if (aRank !== bRank) return aRank - bRank
+        return (aTimes?.startsAt ?? a.gameNumber) - (bTimes?.startsAt ?? b.gameNumber)
+      }),
+    [activeGameNumber, clock, games, roundStatusByGame, roundTimesByGame],
+  )
+
+  const toggleCollapsed = (gameNumber: number, defaultCollapsed: boolean) => {
+    setCollapsedGames((prev) => ({
+      ...prev,
+      [gameNumber]: !(prev[gameNumber] ?? defaultCollapsed),
+    }))
+  }
+
   return (
     <div className="space-y-4">
-      {games.map((game) => {
+      {orderedGames.map((game) => {
         const isActive = activeGameNumber === game.gameNumber
         const times = roundTimesByGame?.get(game.gameNumber)
         const isLiveNow = mode === 'scoring' && isGameLive(clock, times)
@@ -624,6 +744,9 @@ export function CompetitionCourtBoard({
           mode === 'scoring' && !finished
             ? gameCountdown(clock, times, gameMinutes)
             : null
+        const state = countdownState(clock, times, finished)
+        const collapsed = collapsedGames[game.gameNumber] ?? finished
+        const isCurrentGame = !finished && (isLiveNow || isActive)
 
         if (mode === 'scoring' && matchForCourt) {
           return (
@@ -642,7 +765,12 @@ export function CompetitionCourtBoard({
               onSubmitScores={onSubmitScores}
               onSaved={onSaved}
               isLiveNow={isLiveNow}
+              isCurrentGame={isCurrentGame}
               countdown={countdown}
+              countdownLabelText={countdownLabel(state)}
+              finished={finished}
+              collapsed={collapsed}
+              onToggleCollapsed={() => toggleCollapsed(game.gameNumber, finished)}
               currentUserId={currentUserId}
               currentUserAvatarUrl={currentUserAvatarUrl}
             />
@@ -650,14 +778,23 @@ export function CompetitionCourtBoard({
         }
 
         return (
-          <div key={game.gameNumber} className="game-card overflow-hidden p-0">
+          <div
+            key={game.gameNumber}
+            className={`game-card overflow-hidden p-0 ${
+              isCurrentGame ? 'border-2 border-brand-accent ring-2 ring-brand-accent/30' : ''
+            }`}
+          >
             <GameCardHeader
               gameNumber={game.gameNumber}
               isLiveNow={isLiveNow}
               timeLabel={game.timeLabel}
               countdown={countdown}
+              countdownLabelText={countdownLabel(state)}
+              finished={finished}
+              collapsed={collapsed}
+              onToggleCollapsed={() => toggleCollapsed(game.gameNumber, finished)}
             />
-            <div className="px-1 pb-2 pt-2">
+            {!collapsed && <div className="px-1 pb-2 pt-2">
               <div className="space-y-2">
                 {game.courts.map((court) => {
                   const gameRoundId =
@@ -671,7 +808,15 @@ export function CompetitionCourtBoard({
                       : undefined
                   return (
                     <div key={court.courtLabel} className="space-y-1">
-                      <p className={COURT_LABEL_CLASS}>{court.courtLabel}</p>
+                      <p
+                        className={`${COURT_LABEL_CLASS} ${
+                          isCurrentGame && courtHasCurrentUser(currentUserId, liveCourt ?? court)
+                            ? 'animate-pulse rounded bg-brand-bg-alt px-1 text-brand-accent'
+                            : ''
+                        }`}
+                      >
+                        {court.courtLabel}
+                      </p>
                       <div>
                         <CourtMatchCell
                           teamA={liveCourt?.teamA ?? court.teamA}
@@ -694,7 +839,7 @@ export function CompetitionCourtBoard({
                   )
                 })}
               </div>
-            </div>
+            </div>}
           </div>
         )
       })}

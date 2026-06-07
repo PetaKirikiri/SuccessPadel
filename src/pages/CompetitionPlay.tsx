@@ -59,7 +59,7 @@ export function CompetitionPlay() {
   } = usePublicCompetition(id)
   const { columns, liveCourtsByGame, roundIdForGame, courtIdByLabel, scoreUnit, playTo, matchForCourt } =
     useCompetitionBoard(session, rounds, roster, clubCourts, courtMatches)
-  const [tab, setTab] = useState<PlayTab>('games')
+  const [tab, setTab] = useState<PlayTab>('leaderboard')
   const [now, setNow] = useState(Date.now())
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000)
