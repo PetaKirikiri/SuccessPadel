@@ -139,7 +139,7 @@ export function CompetitionLeaderboard({
             currentUserId &&
               (e.member_profile_id === currentUserId || e.profile_id === currentUserId),
           )
-          const showGuestAction = isClaimableGuest(e)
+          const showGuestAction = isClaimableGuest(e) && !currentUserId
 
           return (
             <LeaderboardRow
