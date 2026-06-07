@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { AmericanoScoringUnit } from '../lib/competitionPresets'
-import { isClaimableGuest } from '../lib/leaderboardEntries'
+import { compactLeaderboardDisplayNames, isClaimableGuest } from '../lib/leaderboardEntries'
 import { LinePlayerLinkModal } from './LinePlayerLinkModal'
 
 export type LeaderboardEntry = {
@@ -107,7 +107,8 @@ export function CompetitionLeaderboard({
   const unit = scoreUnit === 'sets' ? 'sets' : 'pts'
   if (entries.length === 0) return null
 
-  const winner = entries[0]
+  const displayEntries = compactLeaderboardDisplayNames(entries)
+  const winner = displayEntries[0]
 
   const showHeader = Boolean(headerTitle || headerSubtitle || compact)
 
@@ -136,7 +137,8 @@ export function CompetitionLeaderboard({
         <span aria-hidden />
       </div>
       <ol className="m-0 list-none p-0">
-        {entries.map((e, i) => {
+        {displayEntries.map((e, i) => {
+          const source = entries[i]!
           const isMe = Boolean(
             currentUserId &&
               (e.member_profile_id === currentUserId || e.profile_id === currentUserId),
@@ -153,7 +155,7 @@ export function CompetitionLeaderboard({
               onGuestAction={
                 showGuestAction
                   ? () => {
-                      setLinkTarget({ id: e.padel_player_id!, name: e.display_name })
+                      setLinkTarget({ id: e.padel_player_id!, name: source.display_name })
                     }
                   : undefined
               }

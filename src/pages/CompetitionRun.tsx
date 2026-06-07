@@ -48,6 +48,8 @@ type CourtGroup = {
   a: string[]
   b: string[]
   playerIds: string[]
+  teamAIds: string[]
+  teamBIds: string[]
 }
 
 function groupByCourt(players: RoundPlayer[]): CourtGroup[] {
@@ -56,11 +58,24 @@ function groupByCourt(players: RoundPlayer[]): CourtGroup[] {
     const name = p.courts?.name ?? 'Court'
     const row =
       map.get(p.court_id) ??
-      ({ courtId: p.court_id, courtName: name, a: [], b: [], playerIds: [] } satisfies CourtGroup)
+      ({
+        courtId: p.court_id,
+        courtName: name,
+        a: [],
+        b: [],
+        playerIds: [],
+        teamAIds: [],
+        teamBIds: [],
+      } satisfies CourtGroup)
     const label = roundPlayerName(p)
-    if (p.team === 'a') row.a.push(label)
-    else row.b.push(label)
     const pid = p.profile_id ?? p.session_players?.profile_id
+    if (p.team === 'a') {
+      row.a.push(label)
+      if (pid) row.teamAIds.push(pid)
+    } else {
+      row.b.push(label)
+      if (pid) row.teamBIds.push(pid)
+    }
     if (pid) row.playerIds.push(pid)
     map.set(p.court_id, row)
   }
@@ -170,6 +185,8 @@ export function CompetitionRun() {
         teamA: string[]
         teamB: string[]
         playerIds: string[]
+        teamAIds: string[]
+        teamBIds: string[]
       }[]
     >()
     for (const round of rounds) {
@@ -183,6 +200,8 @@ export function CompetitionRun() {
           teamA: c.a,
           teamB: c.b,
           playerIds: c.playerIds,
+          teamAIds: c.teamAIds,
+          teamBIds: c.teamBIds,
         })),
       )
     }
@@ -511,6 +530,7 @@ export function CompetitionRun() {
                 }}
                 onSaved={() => void refresh()}
                 gameMinutes={gameMinutes}
+                currentUserId={userId ?? null}
               />
             </div>
           ) : (
@@ -624,6 +644,7 @@ export function CompetitionRun() {
                 gameMinutes={gameMinutes}
                 roundTimesByGame={roundTimesByGame}
                 roundStatusByGame={roundStatusByGame}
+                currentUserId={userId ?? null}
               />
             </div>
           )}

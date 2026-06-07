@@ -9,6 +9,7 @@ import { usePublicCompetition } from '../hooks/usePublicCompetition'
 import { americanoScheduleFromSession, gameSlotTimes } from '../lib/competitionLayout'
 import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
 import { computeAmericanoStandings } from '../lib/competitionStandings'
+import { enrichStandingsWithAvatars, firstDisplayName } from '../lib/leaderboardEntries'
 import { supabase } from '../lib/supabaseClient'
 
 type PlayTab = 'games' | 'leaderboard'
@@ -39,7 +40,7 @@ export function CompetitionPlay() {
   const navigate = useNavigate()
   const { profile, user } = useAuth()
   const lineClient = useLineClientProfile()
-  const headerName = profile?.display_name ?? lineClient.displayName ?? 'Profile'
+  const headerName = firstDisplayName(profile?.display_name ?? lineClient.displayName)
   const headerAvatar = profile?.avatar_url ?? lineClient.pictureUrl ?? null
   const showProfileChip = Boolean(user)
 
@@ -68,8 +69,12 @@ export function CompetitionPlay() {
   const schedule = useMemo(() => americanoScheduleFromSession(session), [session])
 
   const liveStandings = useMemo(
-    () => computeAmericanoStandings(roster, rounds, courtMatches),
-    [roster, rounds, courtMatches],
+    () =>
+      enrichStandingsWithAvatars(
+        computeAmericanoStandings(roster, rounds, courtMatches),
+        leaderboard,
+      ),
+    [roster, rounds, courtMatches, leaderboard],
   )
 
   const roundTimesByGame = useMemo(() => {
@@ -129,18 +134,23 @@ export function CompetitionPlay() {
 
   return (
     <div className="game-bg flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden">
-      <header className="flex shrink-0 items-center gap-2 px-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <p className="min-w-0 flex-1 truncate font-display text-sm font-semibold text-brand-primary">
-          {session?.title ?? 'Competition'}
-        </p>
-        <div className="flex shrink-0 items-center gap-2">
+      <header className="flex shrink-0 items-center justify-between gap-2 px-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))]">
+        <div className="flex min-w-0 items-center gap-2">
           <button
             type="button"
             onClick={() => navigate('/competitions')}
-            className="shrink-0 text-sm font-medium text-brand-accent"
+            aria-label="Back"
+            className="shrink-0 text-xl font-medium leading-none text-brand-accent"
           >
-            ← Back
+            ←
           </button>
+          <img
+            src="/brand/logo-padel.webp"
+            alt="Success Padel"
+            className="h-8 w-auto max-w-[7rem] shrink-0"
+          />
+        </div>
+        <div className="flex min-w-0 shrink-0 items-center gap-2">
           {showProfileChip ? (
             <button
               type="button"
@@ -195,6 +205,7 @@ export function CompetitionPlay() {
                 gameMinutes={schedule.gameMinutes}
                 roundTimesByGame={roundTimesByGame}
                 roundStatusByGame={roundStatusByGame}
+                currentUserId={user?.id ?? null}
               />
             ) : (
               <p className="game-card px-3 py-4 text-sm text-brand-muted">Court layout not ready yet.</p>

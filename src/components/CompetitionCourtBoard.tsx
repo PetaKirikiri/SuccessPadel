@@ -5,6 +5,7 @@ import { playTwoMinuteAlarm, TWO_MINUTES_MS } from '../lib/gameCountdownAlarm'
 import { RANKED_GAME_MINUTES } from '../lib/competitionLayout'
 import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
 import { parseScoreField, scoreDigitsOnly } from '../lib/competitionScoreInput'
+import { compactDisplayNames } from '../lib/leaderboardEntries'
 import type { MatchTeam } from '../lib/types'
 
 type LiveCourt = {
@@ -13,6 +14,8 @@ type LiveCourt = {
   teamA: string[]
   teamB: string[]
   playerIds: string[]
+  teamAIds?: string[]
+  teamBIds?: string[]
 }
 
 type Props = {
@@ -42,6 +45,7 @@ type Props = {
   gameMinutes?: number
   roundTimesByGame?: Map<number, { startsAt: number; endsAt: number }>
   roundStatusByGame?: Map<number, 'pending' | 'active' | 'complete'>
+  currentUserId?: string | null
 }
 
 type RoundStatus = 'pending' | 'active' | 'complete'
@@ -92,6 +96,9 @@ function CourtMatchCell({
   onScoreA,
   onScoreB,
   disabled = false,
+  teamAIds,
+  teamBIds,
+  currentUserId,
 }: {
   teamA: string[]
   teamB: string[]
@@ -101,10 +108,19 @@ function CourtMatchCell({
   onScoreA?: (v: string) => void
   onScoreB?: (v: string) => void
   disabled?: boolean
+  teamAIds?: string[]
+  teamBIds?: string[]
+  currentUserId?: string | null
 }) {
   const fieldLabel = scoreUnit === 'sets' ? 'Sets' : scoreUnit === 'open' ? 'Score' : 'Pts'
   const editable = Boolean(onScoreA && onScoreB && !disabled)
-  const nameClass = 'truncate text-lg font-semibold leading-tight text-brand-text'
+  const names = compactDisplayNames([teamA[0] ?? '', teamA[1] ?? '', teamB[0] ?? '', teamB[1] ?? ''])
+  const teamADisplay = [names[0] ?? '', names[1] ?? '']
+  const teamBDisplay = [names[2] ?? '', names[3] ?? '']
+  const nameClass = (isCurrent: boolean) =>
+    `truncate rounded px-1 text-lg font-semibold leading-tight ${
+      isCurrent ? 'bg-brand-bg-alt text-brand-accent' : 'text-brand-text'
+    }`
 
   const scoreInputClass =
     'w-7 rounded border border-brand-border/80 bg-brand-surface px-0.5 py-0.5 text-center text-xs font-medium tabular-nums text-brand-muted disabled:text-brand-muted/60'
@@ -145,8 +161,12 @@ function CourtMatchCell({
       aria-label={`${teamA[0]} and ${teamA[1]} against ${teamB[0]} and ${teamB[1]}`}
     >
       <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 border-r border-brand-border/60 px-2.5 py-2">
-        <p className={nameClass}>{teamA[0]}</p>
-        <p className={nameClass}>{teamA[1]}</p>
+        <p className={nameClass(Boolean(currentUserId && teamAIds?.[0] === currentUserId))}>
+          {teamADisplay[0]}
+        </p>
+        <p className={nameClass(Boolean(currentUserId && teamAIds?.[1] === currentUserId))}>
+          {teamADisplay[1]}
+        </p>
       </div>
 
       <div className="flex shrink-0 items-center gap-1 px-2 tabular-nums">
@@ -156,8 +176,12 @@ function CourtMatchCell({
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 border-l border-brand-border/60 px-2.5 py-2 text-right">
-        <p className={nameClass}>{teamB[0]}</p>
-        <p className={nameClass}>{teamB[1]}</p>
+        <p className={nameClass(Boolean(currentUserId && teamBIds?.[0] === currentUserId))}>
+          {teamBDisplay[0]}
+        </p>
+        <p className={nameClass(Boolean(currentUserId && teamBIds?.[1] === currentUserId))}>
+          {teamBDisplay[1]}
+        </p>
       </div>
     </div>
   )
@@ -308,6 +332,7 @@ function GameScoringCourts({
   drafts,
   setDraft,
   canEdit,
+  currentUserId,
 }: {
   game: ScoringGame
   gameRoundId?: string
@@ -318,6 +343,7 @@ function GameScoringCourts({
   drafts: Record<string, CourtDraft>
   setDraft: (courtId: string, side: 'teamA' | 'teamB', value: string) => void
   canEdit: boolean
+  currentUserId?: string | null
 }) {
   return (
     <div className="space-y-2">
@@ -326,6 +352,8 @@ function GameScoringCourts({
         const courtId = courtIdForLabel(court.courtLabel, courtsForGame, courtIdByLabel)
         const teamA = liveCourt?.teamA ?? court.teamA
         const teamB = liveCourt?.teamB ?? court.teamB
+        const teamAIds = liveCourt?.teamAIds
+        const teamBIds = liveCourt?.teamBIds
         const saved = gameRoundId && courtId ? matchForCourt(gameRoundId, courtId) : undefined
         const draft = courtId ? drafts[courtId] : undefined
 
@@ -336,6 +364,8 @@ function GameScoringCourts({
               <CourtMatchCell
                 teamA={teamA}
                 teamB={teamB}
+                teamAIds={teamAIds}
+                teamBIds={teamBIds}
                 scoreUnit={scoreUnit}
                 scoreA={
                   canEdit
@@ -360,6 +390,7 @@ function GameScoringCourts({
                   canEdit && courtId ? (v) => setDraft(courtId, 'teamB', v) : undefined
                 }
                 disabled={!canEdit}
+                currentUserId={currentUserId}
               />
             </div>
           </div>
@@ -421,6 +452,7 @@ function ScoringGameCard({
   onSaved,
   isLiveNow,
   countdown,
+  currentUserId,
 }: {
   game: ScoringGame
   gameRoundId?: string
@@ -434,6 +466,7 @@ function ScoringGameCard({
   onSaved?: () => void
   isLiveNow: boolean
   countdown?: string | null
+  currentUserId?: string | null
 }) {
   const { drafts, setDraft, submitButton, error, canEdit: editable } = useGameScoring({
     game,
@@ -468,6 +501,7 @@ function ScoringGameCard({
           drafts={drafts}
           setDraft={setDraft}
           canEdit={editable}
+          currentUserId={currentUserId}
         />
       </div>
     </div>
@@ -491,6 +525,7 @@ export function CompetitionCourtBoard({
   gameMinutes = RANKED_GAME_MINUTES,
   roundTimesByGame,
   roundStatusByGame,
+  currentUserId,
 }: Props) {
   const games = useMemo(() => pivotScheduleByGame(columns), [columns])
   const [tick, setTick] = useState(() => Date.now())
@@ -560,6 +595,7 @@ export function CompetitionCourtBoard({
               onSaved={onSaved}
               isLiveNow={isLiveNow}
               countdown={countdown}
+              currentUserId={currentUserId}
             />
           )
         }
@@ -591,6 +627,8 @@ export function CompetitionCourtBoard({
                         <CourtMatchCell
                           teamA={liveCourt?.teamA ?? court.teamA}
                           teamB={liveCourt?.teamB ?? court.teamB}
+                          teamAIds={liveCourt?.teamAIds}
+                          teamBIds={liveCourt?.teamBIds}
                           scoreUnit={scoreUnit}
                           scoreA={
                             saved?.teamAPoints != null ? String(saved.teamAPoints) : undefined
@@ -599,6 +637,7 @@ export function CompetitionCourtBoard({
                             saved?.teamBPoints != null ? String(saved.teamBPoints) : undefined
                           }
                           disabled
+                          currentUserId={currentUserId}
                         />
                       </div>
                     </div>

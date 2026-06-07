@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { LineBookmarkBanner } from './LineBookmarkBanner'
 import { useLineClientProfile } from '../hooks/useLineClientProfile'
+import { firstDisplayName } from '../lib/leaderboardEntries'
 
 type NavIconProps = { className?: string }
 
@@ -112,7 +113,7 @@ export function Layout() {
   const navigate = useNavigate()
   const onProfile = loc.pathname === '/profile'
 
-  const headerName = profile?.display_name ?? lineClient.displayName ?? 'Profile'
+  const headerName = firstDisplayName(profile?.display_name ?? lineClient.displayName)
   const headerAvatar = profile?.avatar_url ?? lineClient.pictureUrl ?? null
   const showProfileChip = Boolean(user)
 
@@ -134,7 +135,7 @@ export function Layout() {
               ← Back
             </button>
             <p className="min-w-0 truncate text-sm font-medium text-brand-primary">
-              {profile?.display_name ?? 'Profile'}
+              {firstDisplayName(profile?.display_name)}
             </p>
           </>
         ) : (
