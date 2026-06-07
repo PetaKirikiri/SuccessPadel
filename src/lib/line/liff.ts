@@ -1,4 +1,5 @@
 import liff from '@line/liff'
+import { forceOpenInSystemBrowser } from './forceExternalBrowser'
 
 const liffId = (import.meta.env.VITE_LIFF_ID as string | undefined)?.trim() || undefined
 
@@ -25,7 +26,7 @@ export function clearLineProfileReconsentFlag(): void {
 export async function initLiff(): Promise<void> {
   if (!liffId || !canInitLiffOnThisPage()) return
   if (!initPromise) {
-    initPromise = liff.init({ liffId })
+    initPromise = liff.init({ liffId, withLoginOnExternalBrowser: false })
   }
   await initPromise
 }
@@ -136,26 +137,10 @@ export function isMobileWeb(): boolean {
   return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
 }
 
-/** Open a URL in the device default browser (Safari / Chrome). */
+/** @deprecated Use forceOpenInSystemBrowser from ./forceExternalBrowser */
 export async function openLineExternalUrl(url: string): Promise<boolean> {
-  if (/^https:\/\/liff\.line\.me/i.test(url)) return false
-
-  try {
-    if (liffId) {
-      await initLiff()
-      if (liff.isInClient() && liff.isApiAvailable('openWindow')) {
-        liff.openWindow({ url, external: true })
-        return true
-      }
-    }
-  } catch {
-    /* fall through */
-  }
-
-  if (isLineLiffBrowser()) return false
-
-  window.location.replace(url)
-  return true
+  const { forceOpenInSystemBrowser } = await import('./forceExternalBrowser')
+  return forceOpenInSystemBrowser(url)
 }
 
 export async function shareLeaderboardUrl(title: string, url: string): Promise<void> {
