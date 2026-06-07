@@ -109,50 +109,63 @@ function CourtMatchCell({
   const scoreInputClass =
     'w-9 rounded border border-brand-border bg-brand-bg px-0.5 py-1 text-center text-lg font-bold tabular-nums text-brand-primary disabled:bg-brand-bg/50 disabled:text-brand-muted'
 
+  const scoreBlock = editable ? (
+    <div className="flex items-center gap-1">
+      <input
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        value={scoreA ?? ''}
+        placeholder="—"
+        onChange={(e) => onScoreA?.(e.target.value.replace(/\D/g, ''))}
+        className={scoreInputClass}
+        aria-label={`Near side ${fieldLabel}`}
+      />
+      <span className="text-xs font-semibold text-brand-muted">–</span>
+      <input
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        value={scoreB ?? ''}
+        placeholder="—"
+        onChange={(e) => onScoreB?.(e.target.value.replace(/\D/g, ''))}
+        className={scoreInputClass}
+        aria-label={`Far side ${fieldLabel}`}
+      />
+    </div>
+  ) : (
+    <div className="flex items-baseline gap-1 tabular-nums">
+      <span className="text-xl font-bold text-brand-primary">{scoreA || '—'}</span>
+      <span className="text-sm font-semibold text-brand-muted">–</span>
+      <span className="text-xl font-bold text-brand-primary">{scoreB || '—'}</span>
+    </div>
+  )
+
   return (
-    <div className="grid min-h-[3.5rem] grid-cols-[1fr_auto_1fr] items-center gap-1">
-      <div className="flex min-w-0 flex-col items-end justify-center gap-0.5 border-r-2 border-brand-accent/25 pr-2 text-right">
-        <p className={`${nameClass} w-full`}>{teamA[0]}</p>
-        <p className={`${nameClass} w-full`}>{teamA[1]}</p>
+    <div className="grid min-h-[4rem] grid-cols-[1fr_auto_1fr] items-stretch gap-2">
+      <div
+        className="flex min-w-0 flex-col justify-center rounded-lg border-2 border-brand-accent/45 bg-brand-accent/10 px-2 py-1.5"
+        aria-label={`Team: ${teamA[0]} and ${teamA[1]}`}
+      >
+        <p className={nameClass}>{teamA[0]}</p>
+        <p className="text-center text-[10px] font-bold leading-none text-brand-accent">&</p>
+        <p className={nameClass}>{teamA[1]}</p>
       </div>
 
-      <div className="flex flex-col items-center justify-center px-1">
-        {editable ? (
-          <div className="flex items-center gap-1">
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={scoreA ?? ''}
-              placeholder="—"
-              onChange={(e) => onScoreA?.(e.target.value.replace(/\D/g, ''))}
-              className={scoreInputClass}
-              aria-label={`Team A ${fieldLabel}`}
-            />
-            <span className="text-xs font-semibold text-brand-muted">–</span>
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={scoreB ?? ''}
-              placeholder="—"
-              onChange={(e) => onScoreB?.(e.target.value.replace(/\D/g, ''))}
-              className={scoreInputClass}
-              aria-label={`Team B ${fieldLabel}`}
-            />
-          </div>
-        ) : (
-          <div className="flex items-baseline gap-1 tabular-nums">
-            <span className="text-xl font-bold text-brand-primary">{scoreA || '—'}</span>
-            <span className="text-sm font-semibold text-brand-muted">–</span>
-            <span className="text-xl font-bold text-brand-primary">{scoreB || '—'}</span>
-          </div>
-        )}
+      <div className="flex min-w-[2.75rem] flex-col items-center justify-center gap-1 px-0.5">
+        <span className="font-display text-[10px] font-bold uppercase tracking-wide text-brand-muted">
+          vs
+        </span>
+        {scoreBlock}
       </div>
 
-      <div className="flex min-w-0 flex-col items-start justify-center gap-0.5 border-l-2 border-brand-accent/25 pl-2 text-left">
-        <p className={`${nameClass} w-full`}>{teamB[0]}</p>
-        <p className={`${nameClass} w-full`}>{teamB[1]}</p>
+      <div
+        className="flex min-w-0 flex-col justify-center rounded-lg border-2 border-brand-sage/45 bg-brand-sage/10 px-2 py-1.5 text-right"
+        aria-label={`Team: ${teamB[0]} and ${teamB[1]}`}
+      >
+        <p className={nameClass}>{teamB[0]}</p>
+        <p className="text-center text-[10px] font-bold leading-none text-brand-sage">&</p>
+        <p className={nameClass}>{teamB[1]}</p>
       </div>
     </div>
   )
