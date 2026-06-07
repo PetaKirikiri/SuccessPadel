@@ -107,70 +107,72 @@ function CourtMatchCell({
   const nameClass = 'truncate text-base font-semibold leading-tight text-brand-text'
 
   const scoreInputClass =
-    'w-9 rounded border border-brand-border bg-brand-bg px-0.5 py-1 text-center text-lg font-bold tabular-nums text-brand-primary disabled:bg-brand-bg/50 disabled:text-brand-muted'
+    'w-10 rounded border border-black/10 bg-white/80 px-0.5 py-1 text-center text-lg font-bold tabular-nums text-brand-primary disabled:bg-white/40 disabled:text-brand-muted dark:border-white/15 dark:bg-black/20'
 
-  const scoreBlock = editable ? (
-    <div className="flex items-center gap-1">
-      <input
-        type="text"
-        inputMode="numeric"
-        pattern="[0-9]*"
-        value={scoreA ?? ''}
-        placeholder="—"
-        onChange={(e) => onScoreA?.(e.target.value.replace(/\D/g, ''))}
-        className={scoreInputClass}
-        aria-label={`Red ${fieldLabel}`}
-      />
+  const redScore = editable ? (
+    <input
+      type="text"
+      inputMode="numeric"
+      pattern="[0-9]*"
+      value={scoreA ?? ''}
+      placeholder="—"
+      onChange={(e) => onScoreA?.(e.target.value.replace(/\D/g, ''))}
+      className={scoreInputClass}
+      aria-label={`Red ${fieldLabel}`}
+    />
+  ) : (
+    <span className="text-xl font-bold tabular-nums text-red-800 dark:text-red-200">{scoreA || '—'}</span>
+  )
+
+  const blueScore = editable ? (
+    <input
+      type="text"
+      inputMode="numeric"
+      pattern="[0-9]*"
+      value={scoreB ?? ''}
+      placeholder="—"
+      onChange={(e) => onScoreB?.(e.target.value.replace(/\D/g, ''))}
+      className={scoreInputClass}
+      aria-label={`Blue ${fieldLabel}`}
+    />
+  ) : (
+    <span className="text-xl font-bold tabular-nums text-blue-800 dark:text-blue-200">{scoreB || '—'}</span>
+  )
+
+  const scoreStrip = editable ? (
+    <div className="flex items-center gap-0.5">
+      <div className="rounded bg-red-500/40 px-1 py-0.5 dark:bg-red-500/50">{redScore}</div>
       <span className="text-xs font-semibold text-brand-muted">–</span>
-      <input
-        type="text"
-        inputMode="numeric"
-        pattern="[0-9]*"
-        value={scoreB ?? ''}
-        placeholder="—"
-        onChange={(e) => onScoreB?.(e.target.value.replace(/\D/g, ''))}
-        className={scoreInputClass}
-        aria-label={`Blue ${fieldLabel}`}
-      />
+      <div className="rounded bg-blue-500/40 px-1 py-0.5 dark:bg-blue-500/50">{blueScore}</div>
     </div>
   ) : (
-    <div className="flex items-baseline gap-1 tabular-nums">
-      <span className="text-xl font-bold text-red-600 dark:text-red-400">{scoreA || '—'}</span>
+    <div className="flex items-baseline gap-0.5 tabular-nums">
+      <div className="rounded bg-red-500/40 px-1.5 py-0.5 dark:bg-red-500/50">
+        <span className="text-xl font-bold text-red-950 dark:text-red-50">{scoreA || '—'}</span>
+      </div>
       <span className="text-sm font-semibold text-brand-muted">–</span>
-      <span className="text-xl font-bold text-blue-600 dark:text-blue-400">{scoreB || '—'}</span>
+      <div className="rounded bg-blue-500/40 px-1.5 py-0.5 dark:bg-blue-500/50">
+        <span className="text-xl font-bold text-blue-950 dark:text-blue-50">{scoreB || '—'}</span>
+      </div>
     </div>
   )
 
   return (
     <div
-      className="grid min-h-[4rem] grid-cols-[1fr_auto_1fr] grid-rows-2 overflow-hidden rounded-lg border border-brand-border/60"
+      className="flex min-h-[3.25rem] overflow-hidden rounded-lg border border-brand-border/60"
       aria-label={`${teamA[0]} and ${teamA[1]} against ${teamB[0]} and ${teamB[1]}`}
     >
-      <p
-        className={`${nameClass} col-start-1 row-start-1 flex items-center bg-red-500/20 px-2 py-1 text-red-950 dark:bg-red-500/30 dark:text-red-50`}
-      >
-        {teamA[0]}
-      </p>
-      <p
-        className={`${nameClass} col-start-1 row-start-2 flex items-center bg-red-500/20 px-2 py-1 text-red-950 dark:bg-red-500/30 dark:text-red-50`}
-      >
-        {teamA[1]}
-      </p>
-
-      <div className="col-start-2 row-start-1 row-span-2 flex items-center justify-center border-x border-brand-border/40 bg-brand-surface px-1.5">
-        {scoreBlock}
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 bg-red-500/25 px-2 py-1 dark:bg-red-500/35">
+        <p className={`${nameClass} text-red-950 dark:text-red-50`}>{teamA[0]}</p>
+        <p className={`${nameClass} text-red-950 dark:text-red-50`}>{teamA[1]}</p>
       </div>
 
-      <p
-        className={`${nameClass} col-start-3 row-start-1 flex items-center justify-end bg-blue-500/20 px-2 py-1 text-right text-blue-950 dark:bg-blue-500/30 dark:text-blue-50`}
-      >
-        {teamB[0]}
-      </p>
-      <p
-        className={`${nameClass} col-start-3 row-start-2 flex items-center justify-end bg-blue-500/20 px-2 py-1 text-right text-blue-950 dark:bg-blue-500/30 dark:text-blue-50`}
-      >
-        {teamB[1]}
-      </p>
+      <div className="flex shrink-0 items-center justify-center px-1">{scoreStrip}</div>
+
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 bg-blue-500/25 px-2 py-1 text-right dark:bg-blue-500/35">
+        <p className={`${nameClass} text-blue-950 dark:text-blue-50`}>{teamB[0]}</p>
+        <p className={`${nameClass} text-blue-950 dark:text-blue-50`}>{teamB[1]}</p>
+      </div>
     </div>
   )
 }
