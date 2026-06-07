@@ -33,7 +33,7 @@ function playerInitial(name: string): string {
 function rowGrid(showActionColumn: boolean): string {
   return `grid ${
     showActionColumn
-      ? 'grid-cols-[1.25rem_1.75rem_minmax(0,1fr)_2.5rem_4rem]'
+      ? 'grid-cols-[1.25rem_1.75rem_minmax(0,1fr)_4rem_2.5rem]'
       : 'grid-cols-[1.25rem_1.75rem_minmax(0,1fr)_2.5rem]'
   } items-center gap-x-2 px-1.5`
 }
@@ -78,10 +78,7 @@ function LeaderboardRow({
         </div>
       )}
       <span className="truncate text-sm font-medium text-brand-text">{entry.display_name}</span>
-      <span className="pl-1 text-right text-sm font-semibold tabular-nums text-brand-accent">
-        {entry.total_points}
-      </span>
-      {showActionColumn ? <div className="flex justify-end">
+      {showActionColumn ? <div className="flex justify-start">
         {showGuestAction && onGuestAction ? (
           <button
             type="button"
@@ -95,6 +92,9 @@ function LeaderboardRow({
           </button>
         ) : null}
       </div> : null}
+      <span className="pl-1 text-right text-sm font-semibold tabular-nums text-brand-accent">
+        {entry.total_points}
+      </span>
     </li>
   )
 }
@@ -139,8 +139,8 @@ export function CompetitionLeaderboard({
         <span className="text-center">#</span>
         <span aria-hidden />
         <span>Player</span>
-        <span className="pl-1 text-right">{unit}</span>
         {showActionColumn ? <span aria-hidden /> : null}
+        <span className="pl-1 text-right">{unit}</span>
       </div>
       <ol className="m-0 list-none p-0">
         {displayEntries.map((e, i) => {
