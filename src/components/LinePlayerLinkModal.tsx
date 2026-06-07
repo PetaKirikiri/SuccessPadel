@@ -71,7 +71,7 @@ export function LinePlayerLinkModal({
       >
         <div className="flex items-start justify-between gap-2">
           <p className="font-display text-base font-semibold text-brand-primary">
-            Link LINE to {playerName}
+            Add LINE to {playerName}
           </p>
           <button
             type="button"

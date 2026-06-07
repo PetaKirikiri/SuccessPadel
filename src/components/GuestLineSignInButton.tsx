@@ -18,7 +18,7 @@ export function GuestLineSignInButton({ signedIn, onClick, compact = false }: Pr
           : 'mt-1 rounded-lg bg-[#06C755] px-2.5 py-1 text-[11px] font-semibold leading-tight text-white'
       }
     >
-      {compact ? 'Add Line' : 'Link with LINE'}
+      Add Line
     </button>
   )
 }
