@@ -1,5 +1,4 @@
 import liff from '@line/liff'
-import { forceOpenInSystemBrowser } from './forceExternalBrowser'
 
 const liffId = (import.meta.env.VITE_LIFF_ID as string | undefined)?.trim() || undefined
 
