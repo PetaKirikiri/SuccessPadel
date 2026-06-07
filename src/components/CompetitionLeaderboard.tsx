@@ -35,7 +35,7 @@ function playerInitial(name: string): string {
 }
 
 const ROW_GRID =
-  'grid grid-cols-[1.75rem_2rem_minmax(0,1fr)_2.25rem_3rem] items-center gap-x-2 px-3'
+  'grid grid-cols-[1.75rem_2rem_minmax(0,1fr)_2rem_2.5rem_4.75rem] items-center gap-x-2 px-3'
 
 function LeaderboardRow({
   rank,
@@ -76,16 +76,16 @@ function LeaderboardRow({
           {playerInitial(entry.display_name)}
         </div>
       )}
-      <div className="flex min-w-0 items-center gap-1.5 overflow-hidden">
-        <span className="truncate text-sm font-medium text-brand-text">{entry.display_name}</span>
-        {showGuestAction && onGuestAction && (
-          <GuestLineSignInButton signedIn={signedIn} onClick={onGuestAction} compact />
-        )}
-      </div>
+      <span className="truncate text-sm font-medium text-brand-text">{entry.display_name}</span>
       <span className="text-center text-xs tabular-nums text-brand-muted">{entry.games}</span>
       <span className="text-right text-sm font-semibold tabular-nums text-brand-accent">
         {entry.total_points}
       </span>
+      <div className="flex justify-end">
+        {showGuestAction && onGuestAction ? (
+          <GuestLineSignInButton signedIn={signedIn} onClick={onGuestAction} compact />
+        ) : null}
+      </div>
     </li>
   )
 }
@@ -132,6 +132,7 @@ export function CompetitionLeaderboard({
         <span>Player</span>
         <span className="text-center">G</span>
         <span className="text-right">{unit}</span>
+        <span aria-hidden />
       </div>
       <ol className="m-0 list-none p-0">
         {entries.map((e, i) => {
