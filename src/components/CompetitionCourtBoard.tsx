@@ -133,12 +133,12 @@ function CourtMatchCell({
     teamBPlayers?.[1] ?? { id: null, name: fallbackNames[3] ?? '', avatarUrl: null },
   ]
   const playerClass = (isCurrent: boolean) =>
-    `flex min-w-0 items-center gap-1.5 rounded py-0.5 ${
+    `flex min-w-0 items-center gap-1 rounded py-0.5 ${
       isCurrent ? 'bg-brand-bg-alt px-1 text-brand-accent' : 'px-0 text-brand-text'
     }`
 
   const scoreInputClass =
-    'h-9 w-9 rounded-lg border border-brand-border/80 bg-brand-surface px-0.5 py-0.5 text-center text-base font-semibold tabular-nums text-brand-primary disabled:text-brand-muted/60'
+    'h-8 w-8 rounded-lg border border-brand-border/80 bg-brand-surface px-0.5 py-0.5 text-center text-sm font-semibold tabular-nums text-brand-primary disabled:text-brand-muted/60'
 
   const scoreAEl = editable ? (
     <input
@@ -180,14 +180,14 @@ function CourtMatchCell({
           <img
             src={displayAvatarUrl}
             alt=""
-            className="h-6 w-6 shrink-0 rounded-full object-cover ring-1 ring-brand-border/60"
+            className="h-5 w-5 shrink-0 rounded-full object-cover ring-1 ring-brand-border/60"
           />
         ) : (
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-bg-alt text-[10px] font-semibold text-brand-muted ring-1 ring-brand-border/40">
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-bg-alt text-[9px] font-semibold text-brand-muted ring-1 ring-brand-border/40">
             {displayName.trim()[0]?.toUpperCase() ?? '?'}
           </span>
         )}
-        <span className="truncate text-lg font-semibold leading-tight">{displayName}</span>
+        <span className="truncate text-base font-semibold leading-tight">{displayName}</span>
       </p>
     )
   }
@@ -197,12 +197,12 @@ function CourtMatchCell({
       className="overflow-hidden rounded-lg border border-brand-border/60 bg-brand-surface"
       aria-label={`${teamA[0]} and ${teamA[1]} against ${teamB[0]} and ${teamB[1]}`}
     >
-      <div className="grid grid-cols-[minmax(0,1fr)_5.75rem_minmax(0,1fr)] items-stretch gap-2 px-1 py-2">
+      <div className="grid grid-cols-[minmax(0,1fr)_4.75rem_minmax(0,1fr)] items-stretch gap-1.5 px-1 py-2">
         <div className="min-w-0 space-y-1">
           {playerEl(teamAPlayerList[0]!)}
           {playerEl(teamAPlayerList[1]!)}
         </div>
-        <div className="flex items-center justify-center gap-1.5 border-x border-brand-border/60 px-1.5 tabular-nums">
+        <div className="flex items-center justify-center gap-1 border-x border-brand-border/60 px-0.5 tabular-nums">
           {scoreAEl}
           <span className="text-sm text-brand-muted">–</span>
           {scoreBEl}
@@ -534,7 +534,7 @@ function ScoringGameCard({
         submit={submitButton}
       />
       {error && <p className="px-3 pb-1 text-right text-[10px] text-red-600">{error}</p>}
-      <div className="px-2 pb-2 pt-2">
+      <div className="px-1 pb-2 pt-2">
         <GameScoringCourts
           game={game}
           gameRoundId={gameRoundId}
@@ -655,7 +655,7 @@ export function CompetitionCourtBoard({
               timeLabel={game.timeLabel}
               countdown={countdown}
             />
-            <div className="px-2 pb-2 pt-2">
+            <div className="px-1 pb-2 pt-2">
               <div className="space-y-2">
                 {game.courts.map((court) => {
                   const gameRoundId =
