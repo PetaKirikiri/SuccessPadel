@@ -197,12 +197,12 @@ function CourtMatchCell({
       className="overflow-hidden rounded-lg border border-brand-border/60 bg-brand-surface"
       aria-label={`${teamA[0]} and ${teamA[1]} against ${teamB[0]} and ${teamB[1]}`}
     >
-      <div className="grid grid-cols-[minmax(0,1fr)_5.25rem_minmax(0,1fr)] items-stretch gap-1 px-1 py-2">
+      <div className="grid grid-cols-[minmax(0,1fr)_5.75rem_minmax(0,1fr)] items-stretch gap-2 px-1 py-2">
         <div className="min-w-0 space-y-1">
           {playerEl(teamAPlayerList[0]!)}
           {playerEl(teamAPlayerList[1]!)}
         </div>
-        <div className="flex items-center justify-center gap-1 border-x border-brand-border/60 px-1 tabular-nums">
+        <div className="flex items-center justify-center gap-1.5 border-x border-brand-border/60 px-1.5 tabular-nums">
           {scoreAEl}
           <span className="text-sm text-brand-muted">–</span>
           {scoreBEl}
