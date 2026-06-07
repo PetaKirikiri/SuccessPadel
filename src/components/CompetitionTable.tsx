@@ -342,7 +342,14 @@ export function CompetitionTable({
           ) : null}
         </div>
       ) : tab === 'current' ? (
-        visibleRows.map((row) => <CompetitionCurrentGameCard key={row.id} row={row} />)
+        visibleRows.map((row) => (
+          <CompetitionCurrentGameCard
+            key={row.id}
+            row={row}
+            isAdmin={isAdmin}
+            onRefresh={onRefresh}
+          />
+        ))
       ) : (
         visibleRows.map((row) => (
           <CompetitionCard
