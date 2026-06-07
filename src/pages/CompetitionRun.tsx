@@ -542,6 +542,7 @@ export function CompetitionRun() {
                 onSaved={() => void refresh()}
                 gameMinutes={gameMinutes}
                 currentUserId={userId ?? null}
+                currentUserAvatarUrl={profile?.avatar_url ?? null}
               />
             </div>
           ) : (
@@ -656,6 +657,7 @@ export function CompetitionRun() {
                 roundTimesByGame={roundTimesByGame}
                 roundStatusByGame={roundStatusByGame}
                 currentUserId={userId ?? null}
+                currentUserAvatarUrl={profile?.avatar_url ?? null}
               />
             </div>
           )}

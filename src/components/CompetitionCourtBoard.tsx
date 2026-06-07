@@ -48,6 +48,7 @@ type Props = {
   roundTimesByGame?: Map<number, { startsAt: number; endsAt: number }>
   roundStatusByGame?: Map<number, 'pending' | 'active' | 'complete'>
   currentUserId?: string | null
+  currentUserAvatarUrl?: string | null
 }
 
 type RoundStatus = 'pending' | 'active' | 'complete'
@@ -103,6 +104,7 @@ function CourtMatchCell({
   teamAAvatars,
   teamBAvatars,
   currentUserId,
+  currentUserAvatarUrl,
 }: {
   teamA: string[]
   teamB: string[]
@@ -117,6 +119,7 @@ function CourtMatchCell({
   teamAAvatars?: (string | null)[]
   teamBAvatars?: (string | null)[]
   currentUserId?: string | null
+  currentUserAvatarUrl?: string | null
 }) {
   const fieldLabel = scoreUnit === 'sets' ? 'Sets' : scoreUnit === 'open' ? 'Score' : 'Pts'
   const editable = Boolean(onScoreA && onScoreB && !disabled)
@@ -166,11 +169,13 @@ function CourtMatchCell({
     avatarUrl: string | null | undefined,
     isCurrent: boolean,
     align: 'left' | 'right',
-  ) => (
+  ) => {
+    const displayAvatarUrl = avatarUrl ?? (isCurrent ? currentUserAvatarUrl : null)
+    return (
     <p className={playerClass(isCurrent, align)}>
-      {avatarUrl ? (
+      {displayAvatarUrl ? (
         <img
-          src={avatarUrl}
+          src={displayAvatarUrl}
           alt=""
           className="h-6 w-6 shrink-0 rounded-full object-cover ring-1 ring-brand-border/60"
         />
@@ -181,7 +186,8 @@ function CourtMatchCell({
       )}
       <span className="truncate text-lg font-semibold leading-tight">{name}</span>
     </p>
-  )
+    )
+  }
 
   return (
     <div
@@ -373,6 +379,7 @@ function GameScoringCourts({
   setDraft,
   canEdit,
   currentUserId,
+  currentUserAvatarUrl,
 }: {
   game: ScoringGame
   gameRoundId?: string
@@ -384,6 +391,7 @@ function GameScoringCourts({
   setDraft: (courtId: string, side: 'teamA' | 'teamB', value: string) => void
   canEdit: boolean
   currentUserId?: string | null
+  currentUserAvatarUrl?: string | null
 }) {
   return (
     <div className="space-y-2">
@@ -435,6 +443,7 @@ function GameScoringCourts({
                 }
                 disabled={!canEdit}
                 currentUserId={currentUserId}
+                currentUserAvatarUrl={currentUserAvatarUrl}
               />
             </div>
           </div>
@@ -497,6 +506,7 @@ function ScoringGameCard({
   isLiveNow,
   countdown,
   currentUserId,
+  currentUserAvatarUrl,
 }: {
   game: ScoringGame
   gameRoundId?: string
@@ -511,6 +521,7 @@ function ScoringGameCard({
   isLiveNow: boolean
   countdown?: string | null
   currentUserId?: string | null
+  currentUserAvatarUrl?: string | null
 }) {
   const { drafts, setDraft, submitButton, error, canEdit: editable } = useGameScoring({
     game,
@@ -524,8 +535,12 @@ function ScoringGameCard({
     onSaved,
   })
 
+  const isMyGame = Boolean(
+    currentUserId && courtsForGame.some((court) => court.playerIds.includes(currentUserId)),
+  )
+
   return (
-    <div className="game-card overflow-hidden p-0">
+    <div className={`game-card overflow-hidden p-0 ${isMyGame ? 'ring-2 ring-brand-accent/70' : ''}`}>
       <GameCardHeader
         gameNumber={game.gameNumber}
         isLiveNow={isLiveNow}
@@ -546,6 +561,7 @@ function ScoringGameCard({
           setDraft={setDraft}
           canEdit={editable}
           currentUserId={currentUserId}
+          currentUserAvatarUrl={currentUserAvatarUrl}
         />
       </div>
     </div>
@@ -570,6 +586,7 @@ export function CompetitionCourtBoard({
   roundTimesByGame,
   roundStatusByGame,
   currentUserId,
+  currentUserAvatarUrl,
 }: Props) {
   const games = useMemo(() => pivotScheduleByGame(columns), [columns])
   const [tick, setTick] = useState(() => Date.now())
@@ -640,6 +657,7 @@ export function CompetitionCourtBoard({
               isLiveNow={isLiveNow}
               countdown={countdown}
               currentUserId={currentUserId}
+              currentUserAvatarUrl={currentUserAvatarUrl}
             />
           )
         }
@@ -684,6 +702,7 @@ export function CompetitionCourtBoard({
                           }
                           disabled
                           currentUserId={currentUserId}
+                          currentUserAvatarUrl={currentUserAvatarUrl}
                         />
                       </div>
                     </div>

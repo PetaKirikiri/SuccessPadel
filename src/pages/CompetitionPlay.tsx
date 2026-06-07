@@ -206,6 +206,7 @@ export function CompetitionPlay() {
                 roundTimesByGame={roundTimesByGame}
                 roundStatusByGame={roundStatusByGame}
                 currentUserId={user?.id ?? null}
+                currentUserAvatarUrl={headerAvatar}
               />
             ) : (
               <p className="game-card px-3 py-4 text-sm text-brand-muted">Court layout not ready yet.</p>
