@@ -107,7 +107,7 @@ function CourtMatchCell({
   const nameClass = 'truncate text-lg font-semibold leading-tight text-brand-text'
 
   const scoreInputClass =
-    'w-9 rounded border border-brand-border bg-brand-surface px-0.5 py-0.5 text-center text-sm font-semibold tabular-nums text-brand-text disabled:text-brand-muted'
+    'w-7 rounded border border-brand-border/80 bg-brand-surface px-0.5 py-0.5 text-center text-xs font-medium tabular-nums text-brand-muted disabled:text-brand-muted/60'
 
   const scoreAEl = editable ? (
     <input
@@ -121,7 +121,7 @@ function CourtMatchCell({
       aria-label={`Team A ${fieldLabel}`}
     />
   ) : (
-    <span className="text-sm font-semibold tabular-nums text-brand-text">{scoreA || '—'}</span>
+    <span className="text-xs font-medium tabular-nums text-brand-muted">{scoreA || '—'}</span>
   )
 
   const scoreBEl = editable ? (
@@ -136,7 +136,7 @@ function CourtMatchCell({
       aria-label={`Team B ${fieldLabel}`}
     />
   ) : (
-    <span className="text-sm font-semibold tabular-nums text-brand-text">{scoreB || '—'}</span>
+    <span className="text-xs font-medium tabular-nums text-brand-muted">{scoreB || '—'}</span>
   )
 
   return (
@@ -331,24 +331,23 @@ function GameScoringSection({
       })}
 
       {scoringOpen && onSubmitScores && (
-        <div className="space-y-1.5 border-t border-brand-border/50 pt-2">
-          <button
-            type="button"
-            disabled={busy || !gameRoundId || !canEdit || pendingEntries.length === 0}
-            onClick={() => void submitGame()}
-            className="brand-btn w-full py-2.5 text-sm font-semibold disabled:opacity-50"
-          >
-            {busy ? 'Submitting…' : 'Submit scores'}
-          </button>
-          {!gameRoundId && (
-            <p className="text-center text-xs text-brand-muted">Scores open when this game starts.</p>
-          )}
-          {gameRoundId && pendingEntries.length === 0 && !busy && (
-            <p className="text-center text-xs text-brand-muted">
-              Enter both scores for each court, then submit.
-            </p>
-          )}
-          {error && <p className="text-center text-xs text-red-600">{error}</p>}
+        <div className="border-t border-brand-border/50 pt-1.5">
+          <div className="flex items-center justify-end gap-2">
+            {!gameRoundId ? (
+              <p className="mr-auto text-[10px] text-brand-muted">Opens when game starts</p>
+            ) : pendingEntries.length === 0 && !busy ? (
+              <p className="mr-auto text-[10px] text-brand-muted">Enter court scores</p>
+            ) : null}
+            <button
+              type="button"
+              disabled={busy || !gameRoundId || !canEdit || pendingEntries.length === 0}
+              onClick={() => void submitGame()}
+              className="shrink-0 rounded-lg border border-brand-border px-2.5 py-1 text-[11px] font-medium text-brand-muted disabled:opacity-40"
+            >
+              {busy ? '…' : 'Submit'}
+            </button>
+          </div>
+          {error && <p className="mt-1 text-right text-[10px] text-red-600">{error}</p>}
         </div>
       )}
     </div>
@@ -425,21 +424,21 @@ export function CompetitionCourtBoard({
 
         return (
           <div key={game.gameNumber} className="game-card overflow-hidden p-0">
-            <div className="flex items-baseline justify-between gap-2 border-b border-brand-border/60 px-3 py-2">
+            <div className="flex items-baseline justify-between gap-3 border-b border-brand-border/60 px-3 py-2.5">
               <div className="min-w-0">
-                <p className="font-display text-sm font-semibold text-brand-primary">
+                <p className="font-display text-lg font-semibold leading-none text-brand-primary">
                   Game {game.gameNumber}
                   {isLiveNow ? (
-                    <span className="ml-1.5 text-[10px] font-medium text-brand-muted">· Live</span>
+                    <span className="ml-1.5 text-xs font-medium text-brand-muted">· Live</span>
                   ) : null}
                 </p>
                 {game.timeLabel && (
-                  <p className="text-[10px] tabular-nums text-brand-muted">{game.timeLabel}</p>
+                  <p className="mt-1 text-[11px] tabular-nums text-brand-muted">{game.timeLabel}</p>
                 )}
               </div>
               {countdown && (
                 <p
-                  className="shrink-0 font-display text-base font-semibold tabular-nums text-brand-text"
+                  className="shrink-0 font-display text-2xl font-semibold leading-none tabular-nums text-brand-text"
                   aria-live="polite"
                 >
                   {countdown}
