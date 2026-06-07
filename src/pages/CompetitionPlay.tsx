@@ -9,6 +9,7 @@ import { usePublicCompetition } from '../hooks/usePublicCompetition'
 import { americanoScheduleFromSession, gameSlotTimes } from '../lib/competitionLayout'
 import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
 import { computeAmericanoStandings } from '../lib/competitionStandings'
+import { saveReturnTo } from '../lib/authReturnTo'
 import { enrichStandingsWithAvatars, firstDisplayName } from '../lib/leaderboardEntries'
 import { supabase } from '../lib/supabaseClient'
 
@@ -40,9 +41,20 @@ export function CompetitionPlay() {
   const navigate = useNavigate()
   const { profile, user } = useAuth()
   const lineClient = useLineClientProfile()
-  const headerName = firstDisplayName(profile?.display_name ?? lineClient.displayName)
-  const headerAvatar = profile?.avatar_url ?? lineClient.pictureUrl ?? null
-  const showProfileChip = Boolean(user)
+  const isSignedIn = Boolean(user)
+  const headerName = isSignedIn
+    ? firstDisplayName(profile?.display_name ?? lineClient.displayName)
+    : 'Guest'
+  const headerAvatar = isSignedIn ? (profile?.avatar_url ?? lineClient.pictureUrl ?? null) : null
+
+  const openHeaderProfile = () => {
+    if (isSignedIn) {
+      navigate('/profile')
+      return
+    }
+    if (id) saveReturnTo(`/competitions/${id}`)
+    navigate('/login')
+  }
 
   const {
     session,
@@ -151,22 +163,24 @@ export function CompetitionPlay() {
           />
         </div>
         <div className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] flex min-w-0 shrink-0 items-center gap-2">
-          {showProfileChip ? (
-            <button
-              type="button"
-              onClick={() => navigate('/profile')}
-              className="flex max-w-[8.5rem] items-center gap-1.5 truncate rounded-full border border-brand-border bg-brand-surface py-1.5 pl-1.5 pr-2.5 text-xs font-medium text-brand-primary"
-            >
-              {headerAvatar ? (
-                <img
-                  src={headerAvatar}
-                  alt=""
-                  className="h-6 w-6 shrink-0 rounded-full object-cover"
-                />
-              ) : null}
-              <span className="truncate">{headerName}</span>
-            </button>
-          ) : null}
+          <button
+            type="button"
+            onClick={openHeaderProfile}
+            className="flex max-w-[8.5rem] items-center gap-1.5 truncate rounded-full border border-brand-border bg-brand-surface py-1.5 pl-1.5 pr-2.5 text-xs font-medium text-brand-primary"
+          >
+            {headerAvatar ? (
+              <img
+                src={headerAvatar}
+                alt=""
+                className="h-6 w-6 shrink-0 rounded-full object-cover"
+              />
+            ) : (
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-bg-alt text-[10px] font-semibold text-brand-muted">
+                {isSignedIn ? headerName.trim()[0]?.toUpperCase() ?? '?' : 'G'}
+              </span>
+            )}
+            <span className="truncate">{headerName}</span>
+          </button>
         </div>
       </header>
 
