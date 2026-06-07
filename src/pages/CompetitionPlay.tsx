@@ -74,7 +74,7 @@ export function CompetitionPlay() {
   const [tab, setTab] = useState<PlayTab>('games')
   const [now, setNow] = useState(Date.now())
   const [claimError, setClaimError] = useState<string | null>(null)
-  const { userId, claimNow } = useGuestPlayerClaim({
+  const { userId, claimNow, signInToClaim } = useGuestPlayerClaim({
     competitionId: id ?? null,
     onClaimed: () => {
       setClaimError(null)
@@ -234,7 +234,12 @@ export function CompetitionPlay() {
               scoreUnit={scoreUnit}
               currentUserId={userId}
               competitionId={id ?? null}
-              onGuestClaim={(id) => void handleGuestClaim(id)}
+              onGuestClaim={(playerId) => void handleGuestClaim(playerId)}
+              onGuestSignIn={(playerId) => {
+                void signInToClaim(playerId).catch((e) => {
+                  setClaimError(e instanceof Error ? e.message : 'Could not start LINE login')
+                })
+              }}
             />
           ) : null}
 

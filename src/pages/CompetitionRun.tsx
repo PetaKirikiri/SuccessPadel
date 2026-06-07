@@ -113,7 +113,7 @@ export function CompetitionRun() {
   const userId = user?.id
   const isAmericano = session ? usesAmericanoScoring(session) : false
   const [claimError, setClaimError] = useState<string | null>(null)
-  const { userId: claimUserId, claimNow } = useGuestPlayerClaim({
+  const { userId: claimUserId, claimNow, signInToClaim } = useGuestPlayerClaim({
     competitionId: id ?? null,
     onClaimed: () => {
       setClaimError(null)
@@ -134,6 +134,11 @@ export function CompetitionRun() {
     currentUserId: claimUserId,
     competitionId: id ?? null,
     onGuestClaim: (padelId: string) => void handleGuestClaim(padelId),
+    onGuestSignIn: (padelId: string) => {
+      void signInToClaim(padelId).catch((e) => {
+        setClaimError(e instanceof Error ? e.message : 'Could not start LINE login')
+      })
+    },
   }
 
   useEffect(() => {

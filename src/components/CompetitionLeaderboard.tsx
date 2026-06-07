@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { AmericanoScoringUnit } from '../lib/competitionPresets'
+import { isLineLiffBrowser } from '../lib/line/liff'
 import { isClaimableGuest } from '../lib/leaderboardEntries'
 import { GuestLineSignInButton } from './GuestLineSignInButton'
 import { LinePlayerLinkModal } from './LinePlayerLinkModal'
@@ -25,6 +26,7 @@ type Props = {
   currentUserId?: string | null
   competitionId?: string | null
   onGuestClaim?: (padelPlayerId: string) => void
+  onGuestSignIn?: (padelPlayerId: string) => void
 }
 
 function playerInitial(name: string): string {
@@ -98,6 +100,7 @@ export function CompetitionLeaderboard({
   currentUserId = null,
   competitionId = null,
   onGuestClaim,
+  onGuestSignIn,
 }: Props) {
   const [linkTarget, setLinkTarget] = useState<{ id: string; name: string } | null>(null)
   const unit = scoreUnit === 'sets' ? 'sets' : 'pts'
@@ -151,8 +154,10 @@ export function CompetitionLeaderboard({
                   ? () => {
                       if (currentUserId) {
                         onGuestClaim?.(e.padel_player_id!)
-                      } else {
+                      } else if (isLineLiffBrowser()) {
                         setLinkTarget({ id: e.padel_player_id!, name: e.display_name })
+                      } else {
+                        onGuestSignIn?.(e.padel_player_id!)
                       }
                     }
                   : undefined

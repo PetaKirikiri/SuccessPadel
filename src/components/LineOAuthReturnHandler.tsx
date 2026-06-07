@@ -35,7 +35,11 @@ export function LineOAuthReturnHandler() {
   }, [hasCode, isPlayerLink, search, navigate])
 
   if (hasCode && isPlayerLink) {
-    return <LineLinkReturnFlow search={search} />
+    return (
+      <div className="fixed inset-0 z-[100]">
+        <LineLinkReturnFlow search={search} />
+      </div>
+    )
   }
 
   if (!hasCode) return null

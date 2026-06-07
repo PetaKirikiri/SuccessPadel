@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { isLineLiffBrowser } from '../lib/line/liff'
+import { shouldProcessLineLinkOAuth } from '../lib/line/linkOAuthGuard'
 import {
   completeLinePlayerLinkFromUrl,
   competitionPathAfterLink,
@@ -14,6 +16,7 @@ type Props = {
 }
 
 export function LineLinkReturnFlow({ search }: Props) {
+  const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
   const [handoffUrl, setHandoffUrl] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
@@ -30,6 +33,8 @@ export function LineLinkReturnFlow({ search }: Props) {
   }
 
   useEffect(() => {
+    if (!shouldProcessLineLinkOAuth(search)) return
+
     let active = true
 
     void (async () => {
@@ -41,14 +46,15 @@ export function LineLinkReturnFlow({ search }: Props) {
         return
       }
 
-      if (isNativeApp()) {
+      const finishInBrowser = isNativeApp() || !isLineLiffBrowser()
+      if (finishInBrowser) {
         const { error: handoffErr } = await consumeLineHandoffToken(result.handoffToken)
         if (!active) return
         if (handoffErr) {
           setError(handoffErr)
           return
         }
-        window.location.replace(competitionPathAfterLink(result.competitionId))
+        navigate(competitionPathAfterLink(result.competitionId), { replace: true })
         return
       }
 
@@ -58,7 +64,7 @@ export function LineLinkReturnFlow({ search }: Props) {
     return () => {
       active = false
     }
-  }, [search])
+  }, [search, navigate])
 
   if (error) {
     return (

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
+import { isLineLiffBrowser } from '../lib/line/liff'
 import {
   createLinePlayerLinkRequest,
+  startLinePlayerLink,
   type LinePlayerLinkRequest,
 } from '../lib/line/playerLink'
 import { LineSignUpQr } from './LineSignUpQr'
@@ -23,6 +25,8 @@ export function LinePlayerLinkModal({
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
   const [attempt, setAttempt] = useState(0)
+  const [lineBusy, setLineBusy] = useState(false)
+  const inLineBrowser = isLineLiffBrowser()
 
   useEffect(() => {
     let active = true
@@ -95,11 +99,33 @@ export function LinePlayerLinkModal({
           </div>
         ) : request ? (
           <div className="space-y-3">
+            {inLineBrowser ? (
+              <p className="text-sm text-brand-muted">
+                Long-press the competition link in LINE → <strong>Open in Safari</strong>, then tap
+                LINE next to {playerName} again.
+              </p>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  disabled={lineBusy}
+                  onClick={() => {
+                    setLineBusy(true)
+                    void startLinePlayerLink(competitionId, padelPlayerId).then((err) => {
+                      if (err) {
+                        setError(err)
+                        setLineBusy(false)
+                      }
+                    })
+                  }}
+                  className="w-full rounded-xl bg-[#06C755] py-3 text-base font-semibold text-white disabled:opacity-60"
+                >
+                  Continue with LINE
+                </button>
+                <p className="text-xs text-brand-muted">Or scan this QR on another phone</p>
+              </>
+            )}
             <LineSignUpQr url={request.authorizeUrl} />
-            <p className="text-sm text-brand-muted">
-              Screenshot this QR, open <strong className="text-brand-text">LINE</strong>, and scan
-              it from your photos to sign in and link {playerName}.
-            </p>
             <button
               type="button"
               onClick={() => void copyUrl()}

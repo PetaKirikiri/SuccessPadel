@@ -11,7 +11,7 @@ function weeksLeftLabel(weeksLeft: number): string {
 export function Leaderboard() {
   const { season, entries, loading, error, refresh } = useSeasonLeaderboard()
   const [claimError, setClaimError] = useState<string | null>(null)
-  const { userId, claimNow } = useGuestPlayerClaim({
+  const { userId, claimNow, signInToClaim } = useGuestPlayerClaim({
     competitionId: null,
     onClaimed: () => {
       setClaimError(null)
@@ -51,6 +51,11 @@ export function Leaderboard() {
               currentUserId={userId}
               competitionId={null}
               onGuestClaim={(id) => void handleGuestClaim(id)}
+              onGuestSignIn={(id) => {
+                void signInToClaim(id).catch((e) => {
+                  setClaimError(e instanceof Error ? e.message : 'Could not start LINE login')
+                })
+              }}
             />
       ) : (
         <div className="game-card px-4 py-6 text-center">
