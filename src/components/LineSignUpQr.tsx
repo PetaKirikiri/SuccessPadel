@@ -3,9 +3,10 @@ import { useEffect, useState } from 'react'
 
 type Props = {
   url: string
+  onDataUrl?: (dataUrl: string) => void
 }
 
-export function LineSignUpQr({ url }: Props) {
+export function LineSignUpQr({ url, onDataUrl }: Props) {
   const [src, setSrc] = useState<string | null>(null)
 
   useEffect(() => {
@@ -17,13 +18,15 @@ export function LineSignUpQr({ url }: Props) {
       color: { dark: '#000000', light: '#ffffff' },
     }).then(
       (dataUrl) => {
-        if (active) setSrc(dataUrl)
+        if (!active) return
+        setSrc(dataUrl)
+        onDataUrl?.(dataUrl)
       },
     )
     return () => {
       active = false
     }
-  }, [url])
+  }, [onDataUrl, url])
 
   if (!src) {
     return <div className="mx-auto h-[280px] w-[280px] max-w-full animate-pulse rounded-2xl bg-brand-border" />

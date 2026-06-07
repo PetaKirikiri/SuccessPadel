@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import {
-  createLinePlayerLinkRequest,
-  playerLinkBrowserUrl,
-  type LinePlayerLinkRequest,
-} from '../lib/line/playerLink'
+import { createLinePlayerLinkRequest, type LinePlayerLinkRequest } from '../lib/line/playerLink'
 import { LineSignUpQr } from './LineSignUpQr'
+
+const LINE_ADD_FRIEND_GUIDE_SRC = '/assets/line-add-friend-guide.png'
 
 type Props = {
   competitionId: string | null
@@ -23,13 +21,14 @@ export function LinePlayerLinkModal({
   const [request, setRequest] = useState<LinePlayerLinkRequest | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [copied, setCopied] = useState(false)
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     let active = true
     setLoading(true)
     setError(null)
+    setQrDataUrl(null)
     void (async () => {
       const { request: req, error: err } = await createLinePlayerLinkRequest(
         competitionId,
@@ -48,24 +47,13 @@ export function LinePlayerLinkModal({
     }
   }, [competitionId, padelPlayerId, attempt])
 
-  const copyUrl = async () => {
-    if (!request) return
-    try {
-      await navigator.clipboard.writeText(playerLinkBrowserUrl(request.linkToken, competitionId))
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 2000)
-    } catch {
-      window.prompt('Copy this link for Safari:', playerLinkBrowserUrl(request.linkToken, competitionId))
-    }
-  }
-
   return createPortal(
     <div
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 px-4"
       onClick={onClose}
     >
       <div
-        className="login-panel w-full max-w-sm space-y-4 rounded-2xl bg-brand-surface p-5 text-center"
+        className="login-panel max-h-[94vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-2xl bg-brand-surface p-5 text-center"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-2">
@@ -96,21 +84,25 @@ export function LinePlayerLinkModal({
             </button>
           </div>
         ) : request ? (
-          <div className="space-y-3">
-            <p className="text-xs text-brand-muted">
-              Guest scans with LINE → taps Allow → sees success → scoreboard opens in their browser.
-            </p>
-            <LineSignUpQr url={request.qrUrl} />
-            <p className="break-all text-[10px] text-brand-muted">
-              {playerLinkBrowserUrl(request.linkToken, competitionId)}
-            </p>
-            <button
-              type="button"
-              onClick={() => void copyUrl()}
-              className="brand-btn-outline w-full py-2 text-sm font-semibold"
-            >
-              {copied ? 'Link copied!' : 'Copy link for guest (backup)'}
-            </button>
+          <div className="grid grid-cols-2 items-center gap-3">
+            <div className="space-y-2">
+              <LineSignUpQr url={request.qrUrl} onDataUrl={setQrDataUrl} />
+              {qrDataUrl ? (
+                <a
+                  href={qrDataUrl}
+                  download={`${playerName.trim() || 'player'}-line-qr.png`}
+                  className="brand-btn-outline block w-full py-2 text-sm font-semibold"
+                >
+                  Save QR code
+                </a>
+              ) : null}
+            </div>
+            <img
+              src={LINE_ADD_FRIEND_GUIDE_SRC}
+              alt=""
+              aria-hidden
+              className="h-auto max-h-[78vh] w-full rounded-2xl border border-brand-border object-contain"
+            />
           </div>
         ) : null}
       </div>

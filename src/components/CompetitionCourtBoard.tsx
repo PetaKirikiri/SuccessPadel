@@ -146,7 +146,7 @@ function CourtMatchCell({
       inputMode="numeric"
       pattern="[0-9]*"
       value={scoreA ?? ''}
-      placeholder="—"
+      placeholder="0"
       onChange={(e) => onScoreA?.(e.target.value.replace(/\D/g, ''))}
       className={scoreInputClass}
       aria-label={`Team A ${fieldLabel}`}
@@ -161,7 +161,7 @@ function CourtMatchCell({
       inputMode="numeric"
       pattern="[0-9]*"
       value={scoreB ?? ''}
-      placeholder="—"
+      placeholder="0"
       onChange={(e) => onScoreB?.(e.target.value.replace(/\D/g, ''))}
       className={scoreInputClass}
       aria-label={`Team B ${fieldLabel}`}
@@ -197,19 +197,21 @@ function CourtMatchCell({
       className="overflow-hidden rounded-lg border border-brand-border/60 bg-brand-surface"
       aria-label={`${teamA[0]} and ${teamA[1]} against ${teamB[0]} and ${teamB[1]}`}
     >
-      <div className="grid grid-cols-[minmax(0,1fr)_4.75rem_minmax(0,1fr)] items-stretch gap-1.5 px-1 py-2">
+      <div className="grid grid-cols-[minmax(0,1fr)_2rem_1px_minmax(0,1fr)_2rem] items-stretch gap-1.5 px-1 py-2">
         <div className="min-w-0 space-y-1">
           {playerEl(teamAPlayerList[0]!)}
           {playerEl(teamAPlayerList[1]!)}
         </div>
-        <div className="flex items-center justify-center gap-1 border-x border-brand-border/60 px-0.5 tabular-nums">
+        <div className="flex items-center justify-center tabular-nums">
           {scoreAEl}
-          <span className="text-sm text-brand-muted">–</span>
-          {scoreBEl}
         </div>
+        <span className="h-full w-px bg-brand-border/60" aria-hidden="true" />
         <div className="min-w-0 space-y-1">
           {playerEl(teamBPlayerList[0]!)}
           {playerEl(teamBPlayerList[1]!)}
+        </div>
+        <div className="flex items-center justify-center tabular-nums">
+          {scoreBEl}
         </div>
       </div>
     </div>
