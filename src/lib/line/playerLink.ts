@@ -91,24 +91,35 @@ function buildLineAuthorizeUrl(linkToken: string): string {
   return `https://access.line.me/oauth2/v2.1/authorize?${params}`
 }
 
-/** Finish player link inside LINE in-app browser (LIFF) — no Safari handoff. */
+export type LinePlayerLinkLiffResult = {
+  handoffToken: string
+  competitionId: string | null
+  redirected?: boolean
+  error?: string
+}
+
+/** Finish link inside LINE in-app browser after Allow — Supabase stores everything. */
 export async function completeLinePlayerLinkInLiff(
   linkToken: string,
-): Promise<{ competitionId: string | null; redirected?: boolean; error?: string }> {
+): Promise<LinePlayerLinkLiffResult> {
   if (!hasLiffId()) {
-    return { competitionId: null, error: 'LINE app link is not configured' }
+    return { handoffToken: '', competitionId: null, error: 'LINE app link is not configured' }
   }
 
   await initLiff()
 
   if (!isLineLoggedIn()) {
     lineLoginRedirect()
-    return { competitionId: null, redirected: true }
+    return { handoffToken: '', competitionId: null, redirected: true }
   }
 
   const idToken = await getLineIdToken()
   if (!idToken) {
-    return { competitionId: null, error: 'Could not read your LINE session. Tap Allow when prompted.' }
+    return {
+      handoffToken: '',
+      competitionId: null,
+      error: 'Could not read your LINE session. Tap Allow when prompted.',
+    }
   }
 
   const accessToken = await getLineAccessToken()
@@ -123,35 +134,32 @@ export async function completeLinePlayerLinkInLiff(
     },
   })
 
-  if (fnError) return { competitionId: null, error: await edgeErrorMessage(fnError) }
+  if (fnError) {
+    return { handoffToken: '', competitionId: null, error: await edgeErrorMessage(fnError) }
+  }
 
   const payload = data as {
     error?: string
-    access_token?: string
-    refresh_token?: string
+    handoff_token?: string
     competition_id?: string | null
   }
 
-  if (payload.error) return { competitionId: null, error: payload.error }
-  if (!payload.access_token || !payload.refresh_token) {
-    return { competitionId: null, error: 'Link failed — no session returned.' }
+  if (payload.error) {
+    return { handoffToken: '', competitionId: null, error: payload.error }
+  }
+  if (!payload.handoff_token) {
+    return { handoffToken: '', competitionId: null, error: 'Link failed — no handoff token.' }
   }
 
-  const { error: sessErr } = await supabase.auth.setSession({
-    access_token: payload.access_token,
-    refresh_token: payload.refresh_token,
-  })
-
-  if (sessErr) return { competitionId: null, error: sessErr.message }
-
-  const { data: confirmed } = await supabase.auth.getSession()
-  if (!confirmed.session?.user) {
-    return { competitionId: null, error: 'Session did not stick — try again.' }
+  return {
+    handoffToken: payload.handoff_token,
+    competitionId: payload.competition_id ?? null,
   }
+}
 
-  await syncProfileForUser(confirmed.session.user)
-
-  return { competitionId: payload.competition_id ?? null }
+/** Safari URL: sign in + land on the competition scoreboard. */
+export function playerLinkScoreboardHandoffUrl(handoffToken: string): string {
+  return lineHandoffCompleteUrl(handoffToken)
 }
 
 /** External browser only — starts LINE OAuth for player link. */

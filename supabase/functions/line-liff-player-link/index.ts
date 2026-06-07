@@ -185,13 +185,41 @@ Deno.serve(async (req) => {
       })
     }
 
-    const linkRow = (linkRows as { competition_id: string | null }[])?.[0]
+    const linkRow = (linkRows as {
+      competition_id: string | null
+      padel_player_id: string
+      handoff_token: string
+    }[])?.[0]
+
+    if (!linkRow?.handoff_token) {
+      return new Response(JSON.stringify({ error: 'Link failed' }), {
+        status: 500,
+        headers: { ...cors, 'Content-Type': 'application/json' },
+      })
+    }
+
+    const { error: storeErr } = await admin.rpc('store_player_line_handoff', {
+      p_handoff_token: linkRow.handoff_token,
+      p_competition_id: linkRow.competition_id,
+      p_padel_player_id: linkRow.padel_player_id,
+      p_line_user_id: lineUser.sub,
+      p_access_token: session.access_token,
+      p_refresh_token: session.refresh_token,
+    })
+
+    if (storeErr) {
+      return new Response(JSON.stringify({ error: storeErr.message }), {
+        status: 500,
+        headers: { ...cors, 'Content-Type': 'application/json' },
+      })
+    }
 
     return new Response(
       JSON.stringify({
-        access_token: session.access_token,
-        refresh_token: session.refresh_token,
-        competition_id: linkRow?.competition_id ?? null,
+        handoff_token: linkRow.handoff_token,
+        competition_id: linkRow.competition_id,
+        padel_player_id: linkRow.padel_player_id,
+        line_user_id: lineUser.sub,
       }),
       { headers: { ...cors, 'Content-Type': 'application/json' } },
     )
