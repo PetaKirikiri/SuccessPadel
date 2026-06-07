@@ -1,8 +1,8 @@
 import type React from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { AppTopBar } from './AppTopBar'
 import { LineBookmarkBanner } from './LineBookmarkBanner'
-import { useLineClientProfile } from '../hooks/useLineClientProfile'
 import { firstDisplayName } from '../lib/leaderboardEntries'
 
 type NavIconProps = { className?: string }
@@ -107,24 +107,14 @@ function tabClass(active: boolean, variant: NavVariant) {
 }
 
 export function Layout() {
-  const { profile, user } = useAuth()
-  const lineClient = useLineClientProfile()
+  const { profile } = useAuth()
   const loc = useLocation()
   const navigate = useNavigate()
   const onProfile = loc.pathname === '/profile'
 
-  const headerName = firstDisplayName(profile?.display_name ?? lineClient.displayName)
-  const headerAvatar = profile?.avatar_url ?? lineClient.pictureUrl ?? null
-  const showProfileChip = Boolean(user)
-
-  const openProfile = () => {
-    if (onProfile || !user) return
-    navigate('/profile')
-  }
-
   return (
     <div className="game-bg flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden">
-      <header className="flex shrink-0 items-center justify-between gap-3 px-3 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+      <AppTopBar className="py-3">
         {onProfile ? (
           <>
             <button
@@ -139,31 +129,13 @@ export function Layout() {
             </p>
           </>
         ) : (
-          <>
-            <img
-              src="/brand/logo-padel.webp"
-              alt="Success Padel"
-              className="h-8 w-auto max-w-[7rem] shrink-0"
-            />
-            {showProfileChip ? (
-              <button
-                type="button"
-                onClick={openProfile}
-                className="flex max-w-[45%] items-center gap-2 truncate rounded-full border border-brand-border bg-brand-surface py-1.5 pl-1.5 pr-3 text-xs font-medium text-brand-primary"
-              >
-                {headerAvatar ? (
-                  <img
-                    src={headerAvatar}
-                    alt=""
-                    className="h-6 w-6 shrink-0 rounded-full object-cover"
-                  />
-                ) : null}
-                <span className="truncate">{headerName}</span>
-              </button>
-            ) : null}
-          </>
+          <img
+            src="/brand/logo-padel.webp"
+            alt="Success Padel"
+            className="h-8 w-auto max-w-[7rem] shrink-0"
+          />
         )}
-      </header>
+      </AppTopBar>
 
       <main data-scroll-y className="scroll-y min-h-0 min-w-0 flex-1 px-3 pb-2 pt-1">
         <div className="w-full min-w-0 max-w-full">

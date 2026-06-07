@@ -16,7 +16,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (!session) {
     saveReturnTo(loc.pathname)
     return (
-      <Navigate to="/login?email=1" state={{ from: loc.pathname }} replace />
+      <Navigate to="/login" state={{ from: loc.pathname }} replace />
     )
   }
   return children

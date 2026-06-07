@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { usePublicCompetition } from '../hooks/usePublicCompetition'
 import { rosterDisplayName } from '../hooks/useCompetitions'
+import { AppTopBar } from '../components/AppTopBar'
 import { supabase } from '../lib/supabaseClient'
 
 export function CompetitionJoin() {
@@ -72,13 +73,13 @@ export function CompetitionJoin() {
 
   return (
     <div className="game-bg flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden">
-      <header className="flex shrink-0 items-center justify-center px-3 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+      <AppTopBar className="py-3">
         <img
           src="/brand/logo-padel.webp"
           alt="Success Padel"
           className="h-8 w-auto max-w-[10rem]"
         />
-      </header>
+      </AppTopBar>
 
       <main
         data-scroll-y

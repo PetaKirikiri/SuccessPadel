@@ -6,6 +6,7 @@ import { SetupNotice } from './components/SetupNotice'
 import { useAuth } from './hooks/useAuth'
 import { useLockViewport } from './hooks/useLockViewport'
 import { AuthProvider } from './providers/AuthProvider'
+import { LocaleProvider } from './providers/LocaleProvider'
 import { AdminGameForm } from './pages/AdminGameForm'
 import { CourtGameForm } from './pages/CourtGameForm'
 import { AdminGames } from './pages/AdminGames'
@@ -216,11 +217,12 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <AppShell>
-          <NativeDeepLinkHandler />
-          <div className="viewport-lock flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-            <Routes>
+      <LocaleProvider>
+        <AuthProvider>
+          <AppShell>
+            <NativeDeepLinkHandler />
+            <div className="viewport-lock flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+              <Routes>
               <Route
                 path="/competitions/:id/join"
                 element={
@@ -266,10 +268,11 @@ export default function App() {
                   </AppFrame>
                 }
               />
-            </Routes>
-          </div>
-        </AppShell>
-      </AuthProvider>
+              </Routes>
+            </div>
+          </AppShell>
+        </AuthProvider>
+      </LocaleProvider>
     </BrowserRouter>
   )
 }
