@@ -27,17 +27,27 @@ export function devPublicOrigin(): string {
 
 /** App origin for in-app navigation. */
 export function siteOrigin(): string {
+  return configuredSiteOrigin() ?? window.location.origin
+}
+
+function configuredSiteOrigin(): string | null {
   const configured = import.meta.env.VITE_SITE_URL as string | undefined
-  if (configured?.trim()) return configured.trim().replace(/\/$/, '')
-  return window.location.origin
+  return configured?.trim() ? configured.trim().replace(/\/$/, '') : null
+}
+
+function isLineHostedPage(): boolean {
+  const host = window.location.hostname
+  return host === 'liff.line.me' || host.endsWith('.line.me')
 }
 
 /** Origin for share/publish links — always production when developing locally. */
 export function shareSiteOrigin(): string {
-  const configured = import.meta.env.VITE_SITE_URL as string | undefined
-  if (configured?.trim()) return configured.trim().replace(/\/$/, '')
-  if (isLocalDev()) return PRODUCTION_ORIGIN
-  return window.location.origin
+  return configuredSiteOrigin() ?? (isLocalDev() ? PRODUCTION_ORIGIN : window.location.origin)
+}
+
+/** Safari handshake must never target liff.line.me — only the real site origin. */
+export function handshakeSiteOrigin(): string {
+  return configuredSiteOrigin() ?? (isLineHostedPage() || isLocalDev() ? PRODUCTION_ORIGIN : window.location.origin)
 }
 
 export function competitionPlayUrl(sessionId: string): string {

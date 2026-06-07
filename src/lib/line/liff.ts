@@ -138,6 +138,8 @@ export function isMobileWeb(): boolean {
 
 /** Open a URL in the device default browser (Safari / Chrome). */
 export async function openLineExternalUrl(url: string): Promise<boolean> {
+  if (/^https:\/\/liff\.line\.me/i.test(url)) return false
+
   try {
     if (liffId) {
       await initLiff()
@@ -147,18 +149,13 @@ export async function openLineExternalUrl(url: string): Promise<boolean> {
       }
     }
   } catch {
-    /* try fallbacks */
+    /* fall through */
   }
 
-  try {
-    const opened = window.open(url, '_blank', 'noopener,noreferrer')
-    if (opened) return true
-  } catch {
-    /* ignore */
-  }
+  if (isLineLiffBrowser()) return false
 
-  window.location.assign(url)
-  return !isLineLiffBrowser()
+  window.location.replace(url)
+  return true
 }
 
 export async function shareLeaderboardUrl(title: string, url: string): Promise<void> {

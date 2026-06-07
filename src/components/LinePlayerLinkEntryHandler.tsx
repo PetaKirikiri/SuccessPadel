@@ -33,13 +33,18 @@ export function LinePlayerLinkEntryHandler() {
     let active = true
 
     void (async () => {
-      try {
-        await initLiff()
-      } catch {
-        /* external browser */
+      const inLineWebview = isLineLiffBrowser()
+
+      if (inLineWebview) {
+        try {
+          await initLiff()
+        } catch {
+          /* show link only */
+        }
       }
 
-      const inLine = isLineLiffBrowser() || isInLineClient() || (await detectInLineClient())
+      const inLineClient = inLineWebview && isInLineClient()
+      const inLine = inLineClient || (inLineWebview && (await detectInLineClient()))
       if (!active) return
 
       if (linkToken && competitionId) {

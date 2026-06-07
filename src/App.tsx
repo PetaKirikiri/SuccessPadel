@@ -45,6 +45,7 @@ function MainAppRoutes() {
   return (
     <Routes>
       <Route path="/login/login" element={<Navigate to="/login" replace />} />
+      <Route path="/link" element={null} />
       <Route
         path="/login"
         element={

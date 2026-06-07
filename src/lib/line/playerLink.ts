@@ -2,7 +2,7 @@ import { FunctionsHttpError } from '@supabase/supabase-js'
 import { saveReturnTo } from '../authReturnTo'
 import { hasLiffId, lineAppEntryUrl } from './liff'
 import { lineOAuthRedirectUri } from './oauth'
-import { shareSiteOrigin, siteOrigin } from '../siteUrl'
+import { handshakeSiteOrigin, siteOrigin } from '../siteUrl'
 import { supabase } from '../supabaseClient'
 import { syncProfileForUser } from '../authProfile'
 
@@ -45,8 +45,8 @@ export type LinePlayerLinkRequest = {
 }
 
 /** LIFF entry — LINE QR scanner opens this inside the LINE app. */
-export function linePlayerLinkQrUrl(linkToken: string): string | null {
-  return lineAppEntryUrl(`/login?lpl=${encodeURIComponent(linkToken)}`)
+export function linePlayerLinkQrUrl(linkToken: string, competitionId: string | null = null): string | null {
+  return lineAppEntryUrl(`${PLAYER_LINK_HANDOFF_PATH}?${playerLinkLoginQuery(linkToken, competitionId)}`)
 }
 
 function playerLinkLoginQuery(linkToken: string, competitionId: string | null): string {
@@ -64,9 +64,11 @@ export function rememberPlayerLinkCompetition(
   saveReturnTo(`/competitions/${competitionId}`)
 }
 
-/** Safari / default browser URL handed off from LINE (never use in QR directly). */
+export const PLAYER_LINK_HANDOFF_PATH = '/link'
+
+/** Safari / default browser URL — always Vercel origin, never liff.line.me. */
 export function playerLinkBrowserUrl(linkToken: string, competitionId: string | null = null): string {
-  return `${shareSiteOrigin()}/login?${playerLinkLoginQuery(linkToken, competitionId)}`
+  return `${handshakeSiteOrigin()}${PLAYER_LINK_HANDOFF_PATH}?${playerLinkLoginQuery(linkToken, competitionId)}`
 }
 
 function buildLineAuthorizeUrl(linkToken: string): string {
@@ -161,8 +163,8 @@ export async function createLinePlayerLinkRequest(
 
   rememberPlayerLinkCompetition(linkToken, competitionId)
 
-  const loginPath = `/login?${playerLinkLoginQuery(linkToken, competitionId)}`
-  const resolvedQrUrl = lineAppEntryUrl(loginPath)
+  const liffEntryPath = `${PLAYER_LINK_HANDOFF_PATH}?${playerLinkLoginQuery(linkToken, competitionId)}`
+  const resolvedQrUrl = lineAppEntryUrl(liffEntryPath)
   if (!resolvedQrUrl) return { error: 'LINE app link is not configured' }
 
   return {
