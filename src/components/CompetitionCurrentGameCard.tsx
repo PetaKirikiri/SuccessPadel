@@ -1,6 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { CompetitionRow } from '../hooks/useCompetitions'
+import {
+  competitionCardPhase,
+  competitionCountdown,
+  competitionIsLiveByTime,
+  competitionLayoutSpiel,
+  competitionPhaseBadge,
+  competitionScheduledLabel,
+} from '../lib/competitionListCard'
 import { rosterLabel } from '../lib/playerCaps'
 import { supabase } from '../lib/supabaseClient'
 
@@ -13,7 +21,20 @@ type Props = {
 export function CompetitionCurrentGameCard({ row, isAdmin = false, onRefresh }: Props) {
   const [busy, setBusy] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
-  const isLive = Boolean(row.competition_started_at) && row.status !== 'complete'
+  const [now, setNow] = useState(Date.now())
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [])
+
+  const phase = useMemo(() => competitionCardPhase(row, now), [row, now])
+  const countdown = useMemo(() => competitionCountdown(row, now), [row, now])
+  const scheduled = useMemo(() => competitionScheduledLabel(row), [row])
+  const spiel = useMemo(() => competitionLayoutSpiel(row), [row])
+  const badge = competitionPhaseBadge(phase)
+  const isLive = competitionIsLiveByTime(row, now)
+
   const rosterCount = row.session_players?.length ?? 0
   const target = row.target_players ?? row.max_players ?? null
   const spots =
@@ -43,38 +64,57 @@ export function CompetitionCurrentGameCard({ row, isAdmin = false, onRefresh }: 
         to={`/competitions/${row.id}`}
         className="block transition-opacity active:opacity-80"
       >
-        <div className="flex w-full min-w-0 items-start gap-2 px-3 py-3">
-          <div className="min-w-0 flex-1 space-y-1">
-            <p className="font-display text-sm font-semibold leading-snug text-brand-primary">
-              {row.title}
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {isLive && (
-                <span className="rounded-full bg-brand-accent px-2 py-0.5 text-[10px] font-semibold text-white">
-                  Live
-                </span>
-              )}
-              {!isLive && row.status === 'open' && (
-                <span className="rounded-full border border-brand-border px-2 py-0.5 text-[10px] font-medium text-brand-muted">
-                  Upcoming
-                </span>
-              )}
-              {row.skill_level && (
-                <span className="rounded-full bg-brand-bg-alt px-2 py-0.5 text-[10px] font-semibold text-brand-accent">
-                  {row.skill_level}
-                </span>
-              )}
-              {row.gender && (
-                <span className="rounded-full border border-brand-border px-2 py-0.5 text-[10px] font-semibold text-brand-sage">
-                  {row.gender}
-                </span>
-              )}
-              <span className="rounded-full border border-brand-border px-2 py-0.5 text-[10px] font-medium text-brand-muted">
-                {spots}
+        <div className="space-y-2 px-3 py-3">
+          <div className="flex min-w-0 items-start gap-2">
+            <div className="min-w-0 flex-1 space-y-1">
+              <p className="font-display text-sm font-semibold leading-snug text-brand-primary">
+                {row.title}
+              </p>
+              {scheduled && <p className="text-[11px] text-brand-muted">{scheduled}</p>}
+            </div>
+            <span className="shrink-0 text-lg leading-none text-brand-muted">›</span>
+          </div>
+
+          {countdown && (
+            <div className="flex items-baseline justify-between gap-2 rounded-lg bg-brand-bg-alt/80 px-2.5 py-2">
+              <span className="text-[11px] font-medium text-brand-muted">{countdown.label}</span>
+              <span className="font-display text-lg font-semibold tabular-nums text-brand-accent">
+                {countdown.value}
               </span>
             </div>
+          )}
+
+          <div className="flex flex-wrap gap-1.5">
+            {badge && (
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                  phase === 'live'
+                    ? 'bg-brand-accent text-white'
+                    : 'border border-brand-border text-brand-muted'
+                }`}
+              >
+                {badge}
+              </span>
+            )}
+            {row.skill_level && (
+              <span className="rounded-full bg-brand-bg-alt px-2 py-0.5 text-[10px] font-semibold text-brand-accent">
+                {row.skill_level}
+              </span>
+            )}
+            {row.gender && (
+              <span className="rounded-full border border-brand-border px-2 py-0.5 text-[10px] font-semibold text-brand-sage">
+                {row.gender}
+              </span>
+            )}
+            <span className="rounded-full border border-brand-border px-2 py-0.5 text-[10px] font-medium text-brand-muted">
+              {spots}
+            </span>
           </div>
-          <span className="shrink-0 pt-0.5 text-lg leading-none text-brand-muted">›</span>
+
+          <p className="text-[11px] leading-relaxed text-brand-text">{spiel}</p>
+          {row.rules?.trim() && !spiel.includes(row.rules.trim()) && (
+            <p className="text-[11px] leading-relaxed text-brand-muted">{row.rules.trim()}</p>
+          )}
         </div>
       </Link>
 
