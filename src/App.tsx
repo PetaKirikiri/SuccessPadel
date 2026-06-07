@@ -229,6 +229,27 @@ export default function App() {
                 }
               />
               <Route
+                path="/competitions/new"
+                element={
+                  <AppFrame>
+                    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+                      <Layout />
+                    </div>
+                  </AppFrame>
+                }
+              >
+                <Route
+                  index
+                  element={
+                    <AdminRoute>
+                      <AdminOnly>
+                        <CompetitionForm />
+                      </AdminOnly>
+                    </AdminRoute>
+                  }
+                />
+              </Route>
+              <Route
                 path="/competitions/:id"
                 element={
                   <AppFrame>
