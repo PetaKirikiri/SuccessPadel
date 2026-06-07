@@ -30,25 +30,32 @@ function playerInitial(name: string): string {
   return t ? t[0]!.toUpperCase() : '?'
 }
 
-const ROW_GRID =
-  'grid grid-cols-[1.75rem_2rem_minmax(0,1fr)_2rem_2.5rem_4.75rem] items-center gap-x-2 px-3'
+function rowGrid(showActionColumn: boolean): string {
+  return `grid ${
+    showActionColumn
+      ? 'grid-cols-[1.25rem_1.75rem_minmax(0,1fr)_1.5rem_2rem_4rem]'
+      : 'grid-cols-[1.25rem_1.75rem_minmax(0,1fr)_1.5rem_2rem]'
+  } items-center gap-x-1.5 px-1.5`
+}
 
 function LeaderboardRow({
   rank,
   entry,
   isMe,
   showGuestAction,
+  showActionColumn,
   onGuestAction,
 }: {
   rank: number
   entry: LeaderboardEntry
   isMe: boolean
   showGuestAction: boolean
+  showActionColumn: boolean
   onGuestAction?: () => void
 }) {
   return (
     <li
-      className={`${ROW_GRID} border-b border-brand-border/60 py-2.5 last:border-0 ${
+      className={`${rowGrid(showActionColumn)} border-b border-brand-border/60 py-2.5 last:border-0 ${
         isMe ? 'bg-brand-bg-alt' : ''
       }`}
     >
@@ -63,10 +70,10 @@ function LeaderboardRow({
         <img
           src={entry.avatar_url}
           alt=""
-          className="h-8 w-8 rounded-full object-cover ring-1 ring-brand-border/60"
+          className="h-7 w-7 rounded-full object-cover ring-1 ring-brand-border/60"
         />
       ) : (
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-bg-alt text-xs font-semibold text-brand-muted ring-1 ring-brand-border/40">
+        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-bg-alt text-xs font-semibold text-brand-muted ring-1 ring-brand-border/40">
           {playerInitial(entry.display_name)}
         </div>
       )}
@@ -75,7 +82,7 @@ function LeaderboardRow({
       <span className="text-right text-sm font-semibold tabular-nums text-brand-accent">
         {entry.total_points}
       </span>
-      <div className="flex justify-end">
+      {showActionColumn ? <div className="flex justify-end">
         {showGuestAction && onGuestAction ? (
           <button
             type="button"
@@ -88,7 +95,7 @@ function LeaderboardRow({
             Add Line
           </button>
         ) : null}
-      </div>
+      </div> : null}
     </li>
   )
 }
@@ -109,6 +116,7 @@ export function CompetitionLeaderboard({
 
   const displayEntries = compactLeaderboardDisplayNames(entries)
   const winner = displayEntries[0]
+  const showActionColumn = displayEntries.some((entry) => isClaimableGuest(entry) && !currentUserId)
 
   const showHeader = Boolean(headerTitle || headerSubtitle || compact)
 
@@ -127,14 +135,14 @@ export function CompetitionLeaderboard({
         </div>
       )}
       <div
-        className={`${ROW_GRID} border-b border-brand-border/60 py-2 text-[10px] font-semibold uppercase tracking-wide text-brand-muted`}
+        className={`${rowGrid(showActionColumn)} border-b border-brand-border/60 py-2 text-[10px] font-semibold uppercase tracking-wide text-brand-muted`}
       >
         <span className="text-center">#</span>
         <span aria-hidden />
         <span>Player</span>
         <span className="text-center">G</span>
         <span className="text-right">{unit}</span>
-        <span aria-hidden />
+        {showActionColumn ? <span aria-hidden /> : null}
       </div>
       <ol className="m-0 list-none p-0">
         {displayEntries.map((e, i) => {
@@ -152,6 +160,7 @@ export function CompetitionLeaderboard({
               entry={e}
               isMe={isMe}
               showGuestAction={showGuestAction}
+              showActionColumn={showActionColumn}
               onGuestAction={
                 showGuestAction
                   ? () => {
