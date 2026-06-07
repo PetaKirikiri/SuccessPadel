@@ -98,8 +98,7 @@ export function LinePlayerLinkModal({
         ) : request ? (
           <div className="space-y-3">
             <p className="text-xs text-brand-muted">
-              Guest scans with LINE (Home → QR). They&apos;ll see <strong>Open in Safari</strong> — not
-              sign-in inside LINE.
+              Guest scans with LINE (Home → QR). Linking finishes inside LINE — tap Allow when asked.
             </p>
             <LineSignUpQr url={request.qrUrl} />
             <p className="break-all text-[10px] text-brand-muted">

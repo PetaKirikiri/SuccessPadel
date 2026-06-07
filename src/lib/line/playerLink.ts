@@ -1,6 +1,15 @@
 import { FunctionsHttpError } from '@supabase/supabase-js'
 import { saveReturnTo } from '../authReturnTo'
-import { hasLiffId, lineAppEntryUrl } from './liff'
+import {
+  getLineAccessToken,
+  getLineIdToken,
+  hasLiffId,
+  initLiff,
+  isLineLoggedIn,
+  lineAppEntryUrl,
+  lineLoginRedirect,
+} from './liff'
+import { readLineProfilePatch } from './profileSync'
 import { lineOAuthRedirectUri } from './oauth'
 import { handshakeSiteOrigin, siteOrigin } from '../siteUrl'
 import { supabase } from '../supabaseClient'
@@ -82,7 +91,70 @@ function buildLineAuthorizeUrl(linkToken: string): string {
   return `https://access.line.me/oauth2/v2.1/authorize?${params}`
 }
 
-/** External browser only — starts LINE OAuth for player link. No LIFF. */
+/** Finish player link inside LINE in-app browser (LIFF) — no Safari handoff. */
+export async function completeLinePlayerLinkInLiff(
+  linkToken: string,
+): Promise<{ competitionId: string | null; redirected?: boolean; error?: string }> {
+  if (!hasLiffId()) {
+    return { competitionId: null, error: 'LINE app link is not configured' }
+  }
+
+  await initLiff()
+
+  if (!isLineLoggedIn()) {
+    lineLoginRedirect()
+    return { competitionId: null, redirected: true }
+  }
+
+  const idToken = await getLineIdToken()
+  if (!idToken) {
+    return { competitionId: null, error: 'Could not read your LINE session. Tap Allow when prompted.' }
+  }
+
+  const accessToken = await getLineAccessToken()
+  const profile = await readLineProfilePatch()
+
+  const { data, error: fnError } = await supabase.functions.invoke('line-liff-player-link', {
+    body: {
+      id_token: idToken,
+      access_token: accessToken ?? undefined,
+      profile: profile ?? undefined,
+      link_token: linkToken,
+    },
+  })
+
+  if (fnError) return { competitionId: null, error: await edgeErrorMessage(fnError) }
+
+  const payload = data as {
+    error?: string
+    access_token?: string
+    refresh_token?: string
+    competition_id?: string | null
+  }
+
+  if (payload.error) return { competitionId: null, error: payload.error }
+  if (!payload.access_token || !payload.refresh_token) {
+    return { competitionId: null, error: 'Link failed — no session returned.' }
+  }
+
+  const { error: sessErr } = await supabase.auth.setSession({
+    access_token: payload.access_token,
+    refresh_token: payload.refresh_token,
+  })
+
+  if (sessErr) return { competitionId: null, error: sessErr.message }
+
+  const { data: confirmed } = await supabase.auth.getSession()
+  if (!confirmed.session?.user) {
+    return { competitionId: null, error: 'Session did not stick — try again.' }
+  }
+
+  await syncProfileForUser(confirmed.session.user)
+
+  return { competitionId: payload.competition_id ?? null }
+}
+
+/** External browser only — starts LINE OAuth for player link. */
 export function startPlayerLinkOAuth(linkToken: string): void {
   if (!channelId) return
   const stored = sessionStorage.getItem(`${COMPETITION_ID_KEY_PREFIX}${linkToken}`)
