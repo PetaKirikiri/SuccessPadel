@@ -119,7 +119,7 @@ function CourtMatchCell({
         placeholder="—"
         onChange={(e) => onScoreA?.(e.target.value.replace(/\D/g, ''))}
         className={scoreInputClass}
-        aria-label={`Near side ${fieldLabel}`}
+        aria-label={`Red ${fieldLabel}`}
       />
       <span className="text-xs font-semibold text-brand-muted">–</span>
       <input
@@ -130,43 +130,43 @@ function CourtMatchCell({
         placeholder="—"
         onChange={(e) => onScoreB?.(e.target.value.replace(/\D/g, ''))}
         className={scoreInputClass}
-        aria-label={`Far side ${fieldLabel}`}
+        aria-label={`Blue ${fieldLabel}`}
       />
     </div>
   ) : (
     <div className="flex items-baseline gap-1 tabular-nums">
-      <span className="text-xl font-bold text-brand-primary">{scoreA || '—'}</span>
+      <span className="text-xl font-bold text-red-600 dark:text-red-400">{scoreA || '—'}</span>
       <span className="text-sm font-semibold text-brand-muted">–</span>
-      <span className="text-xl font-bold text-brand-primary">{scoreB || '—'}</span>
+      <span className="text-xl font-bold text-blue-600 dark:text-blue-400">{scoreB || '—'}</span>
     </div>
   )
 
   return (
-    <div className="grid min-h-[4rem] grid-cols-[1fr_auto_1fr] items-stretch gap-2">
-      <div
-        className="flex min-w-0 flex-col justify-center rounded-lg border-2 border-brand-accent/45 bg-brand-accent/10 px-2 py-1.5"
-        aria-label={`Team: ${teamA[0]} and ${teamA[1]}`}
+    <div
+      className="grid min-h-[4rem] grid-cols-2 overflow-hidden rounded-lg border border-brand-border/60"
+      aria-label={`${teamA[0]} and ${teamA[1]} against ${teamB[0]} and ${teamB[1]}`}
+    >
+      <p className={`${nameClass} bg-red-500/20 px-2 py-1.5 text-red-950 dark:bg-red-500/30 dark:text-red-50`}>
+        {teamA[0]}
+      </p>
+      <p
+        className={`${nameClass} bg-blue-500/20 px-2 py-1.5 text-right text-blue-950 dark:bg-blue-500/30 dark:text-blue-50`}
       >
-        <p className={nameClass}>{teamA[0]}</p>
-        <p className="text-center text-[10px] font-bold leading-none text-brand-accent">&</p>
-        <p className={nameClass}>{teamA[1]}</p>
-      </div>
+        {teamB[0]}
+      </p>
 
-      <div className="flex min-w-[2.75rem] flex-col items-center justify-center gap-1 px-0.5">
-        <span className="font-display text-[10px] font-bold uppercase tracking-wide text-brand-muted">
-          vs
-        </span>
+      <div className="col-span-2 flex items-center justify-center border-y border-brand-border/50 bg-brand-surface px-2 py-1">
         {scoreBlock}
       </div>
 
-      <div
-        className="flex min-w-0 flex-col justify-center rounded-lg border-2 border-brand-sage/45 bg-brand-sage/10 px-2 py-1.5 text-right"
-        aria-label={`Team: ${teamB[0]} and ${teamB[1]}`}
+      <p className={`${nameClass} bg-red-500/20 px-2 py-1.5 text-red-950 dark:bg-red-500/30 dark:text-red-50`}>
+        {teamA[1]}
+      </p>
+      <p
+        className={`${nameClass} bg-blue-500/20 px-2 py-1.5 text-right text-blue-950 dark:bg-blue-500/30 dark:text-blue-50`}
       >
-        <p className={nameClass}>{teamB[0]}</p>
-        <p className="text-center text-[10px] font-bold leading-none text-brand-sage">&</p>
-        <p className={nameClass}>{teamB[1]}</p>
-      </div>
+        {teamB[1]}
+      </p>
     </div>
   )
 }
