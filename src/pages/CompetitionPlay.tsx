@@ -139,20 +139,26 @@ export function CompetitionPlay() {
 
   return (
     <div className="game-bg flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden">
-      <div className="shrink-0 px-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <PlayTabs tab={tab} onTab={setTab} />
-      </div>
+      <header className="shrink-0 px-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))]">
+        {session?.title ? (
+          <p className="text-center font-display text-sm font-semibold text-brand-primary">
+            {session.title}
+          </p>
+        ) : (
+          <img
+            src="/brand/logo-padel.webp"
+            alt="Success Padel"
+            className="mx-auto h-8 w-auto max-w-[10rem]"
+          />
+        )}
+      </header>
 
-      <main data-scroll-y className="scroll-y min-h-0 min-w-0 flex-1 px-3 pb-6">
+      <main data-scroll-y className="scroll-y min-h-0 min-w-0 flex-1 px-3 pb-2">
         <div className="mx-auto w-full max-w-full space-y-3">
           {loading && !session ? (
             <p className="py-6 text-center text-xs text-brand-muted">Loading…</p>
           ) : !session ? (
             <p className="py-6 text-center text-sm text-red-600">{error ?? 'Competition not found'}</p>
-          ) : session.title ? (
-            <p className="game-card px-3 py-2 text-center font-display text-sm font-semibold text-brand-primary">
-              {session.title}
-            </p>
           ) : null}
           {session && !started ? (
             <p className="py-6 text-center text-sm text-brand-muted">
@@ -200,6 +206,10 @@ export function CompetitionPlay() {
           {error && <p className="text-center text-sm text-red-600">{error}</p>}
         </div>
       </main>
+
+      <nav className="game-dock w-full min-w-0 shrink-0" aria-label="Competition views">
+        <PlayTabs tab={tab} onTab={setTab} />
+      </nav>
     </div>
   )
 }
