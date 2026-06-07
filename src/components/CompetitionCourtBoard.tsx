@@ -175,42 +175,43 @@ function CourtMatchCell({
     const displayAvatarUrl = player.avatarUrl ?? (isCurrent ? currentUserAvatarUrl : null)
     const [displayName] = compactDisplayNames([player.name])
     return (
-    <p className={playerClass(isCurrent, align)}>
-      {displayAvatarUrl ? (
-        <img
-          src={displayAvatarUrl}
-          alt=""
-          className="h-6 w-6 shrink-0 rounded-full object-cover ring-1 ring-brand-border/60"
-        />
-      ) : (
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-bg-alt text-[10px] font-semibold text-brand-muted ring-1 ring-brand-border/40">
-          {displayName.trim()[0]?.toUpperCase() ?? '?'}
-        </span>
-      )}
-      <span className="truncate text-lg font-semibold leading-tight">{displayName}</span>
-    </p>
+      <p className={playerClass(isCurrent, align)}>
+        {displayAvatarUrl ? (
+          <img
+            src={displayAvatarUrl}
+            alt=""
+            className="h-6 w-6 shrink-0 rounded-full object-cover ring-1 ring-brand-border/60"
+          />
+        ) : (
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-bg-alt text-[10px] font-semibold text-brand-muted ring-1 ring-brand-border/40">
+            {displayName.trim()[0]?.toUpperCase() ?? '?'}
+          </span>
+        )}
+        <span className="truncate text-lg font-semibold leading-tight">{displayName}</span>
+      </p>
     )
   }
 
   return (
     <div
-      className="flex min-h-[4.5rem] items-stretch overflow-hidden rounded-lg border border-brand-border/60 bg-brand-surface"
+      className="overflow-hidden rounded-lg border border-brand-border/60 bg-brand-surface"
       aria-label={`${teamA[0]} and ${teamA[1]} against ${teamB[0]} and ${teamB[1]}`}
     >
-      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 border-r border-brand-border/60 px-2.5 py-2">
-        {playerEl(teamAPlayerList[0]!, 'left')}
-        {playerEl(teamAPlayerList[1]!, 'left')}
+      <div className="grid grid-cols-2 gap-2 px-2.5 py-2">
+        <div className="min-w-0 space-y-1">
+          {playerEl(teamAPlayerList[0]!, 'left')}
+          {playerEl(teamAPlayerList[1]!, 'left')}
+        </div>
+        <div className="min-w-0 space-y-1 text-right">
+          {playerEl(teamBPlayerList[0]!, 'right')}
+          {playerEl(teamBPlayerList[1]!, 'right')}
+        </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-1 px-2 tabular-nums">
+      <div className="flex items-center justify-center gap-1 border-t border-brand-border/60 px-2 py-1.5 tabular-nums">
         {scoreAEl}
         <span className="text-xs text-brand-muted">–</span>
         {scoreBEl}
-      </div>
-
-      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 border-l border-brand-border/60 px-2.5 py-2 text-right">
-        {playerEl(teamBPlayerList[0]!, 'right')}
-        {playerEl(teamBPlayerList[1]!, 'right')}
       </div>
     </div>
   )
