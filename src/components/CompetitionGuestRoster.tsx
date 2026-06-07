@@ -107,14 +107,6 @@ export function CompetitionGuestRoster({ sessionId, session, roster, isAdmin, on
     swapSlots(swapFrom, index)
   }
 
-  useEffect(() => {
-    if (!canManageRoster) return
-    const t = setTimeout(() => {
-      if (!editingRef.current) void saveSlots(slotsRef.current)
-    }, 600)
-    return () => clearTimeout(t)
-  }, [slots, canManageRoster, saveSlots])
-
   return (
     <div className="game-card space-y-2 px-3 py-3">
       <div className="flex items-center justify-between gap-2">

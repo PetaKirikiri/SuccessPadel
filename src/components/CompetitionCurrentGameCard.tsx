@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CompetitionCourtBoard } from './CompetitionCourtBoard'
 import { useCompetitionBoard } from '../hooks/useCompetitionBoard'
 import { usePublicCompetition } from '../hooks/usePublicCompetition'
-import { competitionIsIn } from '../lib/competitionState'
 import { americanoScheduleFromSession, gameSlotTimes } from '../lib/competitionLayout'
 import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
 import { supabase } from '../lib/supabaseClient'
@@ -10,7 +9,6 @@ import { supabase } from '../lib/supabaseClient'
 type Props = {
   sessionId: string
   title: string
-  isLive: boolean
   isAdmin?: boolean
   onListRefresh?: () => void
 }
@@ -18,7 +16,6 @@ type Props = {
 export function CompetitionCurrentGameCard({
   sessionId,
   title,
-  isLive,
   isAdmin = false,
   onListRefresh,
 }: Props) {
@@ -53,15 +50,14 @@ export function CompetitionCurrentGameCard({
     return () => clearInterval(t)
   }, [])
 
-  const gameIn = useMemo(
-    () => (session ? competitionIsIn({ ...session, session_players: roster }) : false),
-    [session, roster],
-  )
-
-  const needsStart = gameIn && session && !session.competition_started_at && session.status === 'open'
+  const needsStart =
+    isAdmin &&
+    session?.status === 'open' &&
+    !session.competition_started_at &&
+    roster.length >= 4
 
   useEffect(() => {
-    if (!needsStart || !isAdmin || startingRef.current) return
+    if (!needsStart || startingRef.current) return
     startingRef.current = true
     void (async () => {
       try {
@@ -72,7 +68,7 @@ export function CompetitionCurrentGameCard({
         startingRef.current = false
       }
     })()
-  }, [needsStart, isAdmin, sessionId, refresh, onListRefresh])
+  }, [needsStart, sessionId, refresh, onListRefresh])
 
   const schedule = useMemo(() => americanoScheduleFromSession(session), [session])
 
@@ -125,9 +121,10 @@ export function CompetitionCurrentGameCard({
     [applyMatchScore],
   )
 
+  const started = Boolean(session?.competition_started_at)
   const finished = session?.status === 'complete'
   const hasRounds = rounds.length > 0
-  const canScore = gameIn && !finished && hasRounds
+  const canScore = started && !finished && hasRounds
   const showBoard = columns.length > 0
 
   const handleSaved = useCallback(() => {
@@ -153,14 +150,7 @@ export function CompetitionCurrentGameCard({
 
   return (
     <div className="space-y-2">
-      {isLive && (
-        <p className="px-1 font-display text-sm font-semibold text-brand-primary">
-          {title}
-          <span className="ml-2 rounded-full bg-brand-accent px-2 py-0.5 text-[10px] font-semibold text-white">
-            Live
-          </span>
-        </p>
-      )}
+      <p className="px-1 font-display text-sm font-semibold text-brand-primary">{title}</p>
 
       <CompetitionCourtBoard
         columns={columns}

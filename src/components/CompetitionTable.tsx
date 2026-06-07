@@ -7,7 +7,6 @@ import { CompetitionCurrentGameCard } from './CompetitionCurrentGameCard'
 import { CompetitionGuestRoster } from './CompetitionGuestRoster'
 import { CompetitionSetupPanel } from './CompetitionSetupPanel'
 import type { CompetitionRow } from '../hooks/useCompetitions'
-import { competitionIsIn } from '../lib/competitionState'
 
 type ListTab = 'current' | 'past'
 
@@ -85,7 +84,7 @@ function CompetitionCard({
   const [busy, setBusy] = useState(false)
   const [joinError, setJoinError] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
-  const isLive = competitionIsIn(row)
+  const isLive = Boolean(row.competition_started_at) && row.status !== 'complete'
   const isComplete = row.status === 'complete'
   const roster = row.session_players ?? []
   const playedOn = formatPastDate(row.competition_started_at ?? row.starts_at)
@@ -343,35 +342,15 @@ export function CompetitionTable({
           ) : null}
         </div>
       ) : tab === 'current' ? (
-        (() => {
-          const inRows = visibleRows.filter((row) => competitionIsIn(row))
-          if (inRows.length === 0) {
-            return (
-              <div className="game-card space-y-2 px-4 py-5 text-center">
-                <p className="text-sm text-brand-text">No games in progress.</p>
-                {isAdmin && (
-                  <p className="text-xs text-brand-muted">
-                    Tap + to add players and accept — that puts the game in.
-                  </p>
-                )}
-              </div>
-            )
-          }
-          return (
-            <>
-              {inRows.map((row) => (
-                <CompetitionCurrentGameCard
-                  key={row.id}
-                  sessionId={row.id}
-                  title={row.title}
-                  isLive={competitionIsIn(row)}
-                  isAdmin={isAdmin}
-                  onListRefresh={onRefresh}
-                />
-              ))}
-            </>
-          )
-        })()
+        visibleRows.map((row) => (
+          <CompetitionCurrentGameCard
+            key={row.id}
+            sessionId={row.id}
+            title={row.title}
+            isAdmin={isAdmin}
+            onListRefresh={onRefresh}
+          />
+        ))
       ) : (
         visibleRows.map((row) => (
           <CompetitionCard
