@@ -1,9 +1,14 @@
 import { FunctionsHttpError } from '@supabase/supabase-js'
+import { saveReturnTo } from '../authReturnTo'
 import { hasLiffId, lineAppEntryUrl } from './liff'
 import { lineOAuthRedirectUri } from './oauth'
 import { shareSiteOrigin, siteOrigin } from '../siteUrl'
 import { supabase } from '../supabaseClient'
 import { syncProfileForUser } from '../authProfile'
+
+const COMPETITION_ID_KEY_PREFIX = 'sp_lpl_cid_'
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 const channelId = (import.meta.env.VITE_LINE_CHANNEL_ID as string | undefined)?.trim() || undefined
 
@@ -44,9 +49,24 @@ export function linePlayerLinkQrUrl(linkToken: string): string | null {
   return lineAppEntryUrl(`/login?lpl=${encodeURIComponent(linkToken)}`)
 }
 
+function playerLinkLoginQuery(linkToken: string, competitionId: string | null): string {
+  const params = new URLSearchParams({ lpl: linkToken })
+  if (competitionId) params.set('cid', competitionId)
+  return params.toString()
+}
+
+export function rememberPlayerLinkCompetition(
+  linkToken: string,
+  competitionId: string | null,
+): void {
+  if (!competitionId) return
+  sessionStorage.setItem(`${COMPETITION_ID_KEY_PREFIX}${linkToken}`, competitionId)
+  saveReturnTo(`/competitions/${competitionId}`)
+}
+
 /** Safari / default browser URL handed off from LINE (never use in QR directly). */
-export function playerLinkBrowserUrl(linkToken: string): string {
-  return `${shareSiteOrigin()}/login?lpl=${encodeURIComponent(linkToken)}`
+export function playerLinkBrowserUrl(linkToken: string, competitionId: string | null = null): string {
+  return `${shareSiteOrigin()}/login?${playerLinkLoginQuery(linkToken, competitionId)}`
 }
 
 function buildLineAuthorizeUrl(linkToken: string): string {
@@ -63,11 +83,12 @@ function buildLineAuthorizeUrl(linkToken: string): string {
 /** External browser only — starts LINE OAuth for player link. No LIFF. */
 export function startPlayerLinkOAuth(linkToken: string): void {
   if (!channelId) return
+  const stored = sessionStorage.getItem(`${COMPETITION_ID_KEY_PREFIX}${linkToken}`)
+  if (stored) saveReturnTo(`/competitions/${stored}`)
   window.location.assign(buildLineAuthorizeUrl(linkToken))
 }
 
-export function linkTokenFromLocation(search = window.location.search): string | null {
-  const params = new URLSearchParams(search)
+function linkTokenFromParams(params: URLSearchParams): string | null {
   const oauthState = params.get('state')
   if (oauthState?.startsWith('lpl_')) return oauthState
 
@@ -82,7 +103,7 @@ export function linkTokenFromLocation(search = window.location.search): string |
         'lpl',
       )
       if (fromQuery?.startsWith('lpl_')) return fromQuery
-      const match = decoded.match(/lpl_[a-f0-9]+/)
+      const match = decoded.match(/lpl_[a-f0-9-]+/)
       if (match) return match[0]
     } catch {
       /* ignore */
@@ -90,6 +111,36 @@ export function linkTokenFromLocation(search = window.location.search): string |
   }
 
   return null
+}
+
+export function linkTokenFromLocation(
+  search = window.location.search,
+  hash = window.location.hash,
+): string | null {
+  const fromSearch = linkTokenFromParams(new URLSearchParams(search))
+  if (fromSearch) return fromSearch
+
+  if (hash) {
+    const hashBody = hash.replace(/^#\/?/, '')
+    const fromHash = linkTokenFromParams(
+      new URLSearchParams(hashBody.includes('?') ? hashBody.split('?')[1] : hashBody),
+    )
+    if (fromHash) return fromHash
+  }
+
+  const hrefMatch = window.location.href.match(/lpl_[a-f0-9-]+/)
+  return hrefMatch?.[0] ?? null
+}
+
+export function competitionIdFromPlayerLinkSearch(search: string): string | null {
+  const cid = new URLSearchParams(search).get('cid')
+  if (cid && UUID_RE.test(cid)) return cid
+
+  const token = linkTokenFromLocation(search)
+  if (!token) return null
+
+  const stored = sessionStorage.getItem(`${COMPETITION_ID_KEY_PREFIX}${token}`)
+  return stored && UUID_RE.test(stored) ? stored : null
 }
 
 /** Create a single-use link request for QR display. Never redirects. */
@@ -108,7 +159,10 @@ export async function createLinePlayerLinkRequest(
   if (error) return { error: error.message }
   if (!linkToken || typeof linkToken !== 'string') return { error: 'Could not start linking' }
 
-  const resolvedQrUrl = linePlayerLinkQrUrl(linkToken)
+  rememberPlayerLinkCompetition(linkToken, competitionId)
+
+  const loginPath = `/login?${playerLinkLoginQuery(linkToken, competitionId)}`
+  const resolvedQrUrl = lineAppEntryUrl(loginPath)
   if (!resolvedQrUrl) return { error: 'LINE app link is not configured' }
 
   return {
@@ -213,4 +267,11 @@ export async function consumeLineHandoffToken(handoffToken: string): Promise<{
 
 export function competitionPathAfterLink(competitionId: string | null): string {
   return competitionId ? `/competitions/${competitionId}` : '/'
+}
+
+export function resolveCompetitionPathAfterLink(
+  competitionId: string | null,
+  search = '',
+): string {
+  return competitionPathAfterLink(competitionId ?? competitionIdFromPlayerLinkSearch(search))
 }

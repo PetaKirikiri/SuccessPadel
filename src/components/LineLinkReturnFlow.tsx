@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { isLineLiffBrowser } from '../lib/line/liff'
-import { shouldProcessLineLinkOAuth } from '../lib/line/linkOAuthGuard'
+import { beginLineLinkOAuth, finishLineLinkOAuth } from '../lib/line/linkOAuthGuard'
 import {
   completeLinePlayerLinkFromUrl,
-  competitionPathAfterLink,
   consumeLineHandoffToken,
   lineHandoffCompleteUrl,
+  resolveCompetitionPathAfterLink,
 } from '../lib/line/playerLink'
 import { isNativeApp } from '../lib/native/app'
 import { LineSigningInScreen } from './LineSigningInScreen'
@@ -33,32 +33,43 @@ export function LineLinkReturnFlow({ search }: Props) {
   }
 
   useEffect(() => {
-    if (!shouldProcessLineLinkOAuth(search)) return
+    const oauthCode = beginLineLinkOAuth(search)
+    if (!oauthCode) return
 
     let active = true
 
     void (async () => {
-      const { result, error: linkErr } = await completeLinePlayerLinkFromUrl(search)
-      if (!active) return
+      let succeeded = false
+      try {
+        const { result, error: linkErr } = await completeLinePlayerLinkFromUrl(search)
 
-      if (linkErr || !result) {
-        setError(linkErr ?? 'LINE linking failed. Please try again.')
-        return
-      }
-
-      const finishInBrowser = isNativeApp() || !isLineLiffBrowser()
-      if (finishInBrowser) {
-        const { error: handoffErr } = await consumeLineHandoffToken(result.handoffToken)
-        if (!active) return
-        if (handoffErr) {
-          setError(handoffErr)
+        if (linkErr || !result) {
+          if (active) setError(linkErr ?? 'LINE linking failed. Please try again.')
           return
         }
-        navigate(competitionPathAfterLink(result.competitionId), { replace: true })
-        return
-      }
 
-      setHandoffUrl(lineHandoffCompleteUrl(result.handoffToken))
+        const finishInBrowser = isNativeApp() || !isLineLiffBrowser()
+        if (finishInBrowser) {
+          const { competitionId, error: handoffErr } = await consumeLineHandoffToken(
+            result.handoffToken,
+          )
+          if (handoffErr) {
+            if (active) setError(handoffErr)
+            return
+          }
+          succeeded = true
+          navigate(
+            resolveCompetitionPathAfterLink(competitionId ?? result.competitionId, search),
+            { replace: true },
+          )
+          return
+        }
+
+        if (active) setHandoffUrl(lineHandoffCompleteUrl(result.handoffToken))
+        succeeded = true
+      } finally {
+        finishLineLinkOAuth(oauthCode, succeeded)
+      }
     })()
 
     return () => {

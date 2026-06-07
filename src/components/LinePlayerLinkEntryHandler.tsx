@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import {
+  competitionIdFromPlayerLinkSearch,
   linkTokenFromLocation,
   playerLinkBrowserUrl,
+  rememberPlayerLinkCompetition,
   startPlayerLinkOAuth,
 } from '../lib/line/playerLink'
 import {
@@ -24,11 +26,13 @@ export function LinePlayerLinkEntryHandler() {
   const [phase, setPhase] = useState<'loading' | 'handoff' | 'oauth' | 'error'>('loading')
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [opening, setOpening] = useState(false)
   const oauthStarted = useRef(false)
 
   const linkToken = linkTokenFromLocation(search)
+  const competitionId = competitionIdFromPlayerLinkSearch(search)
   const hasOAuthCode = new URLSearchParams(search).has('code')
-  const browserUrl = linkToken ? playerLinkBrowserUrl(linkToken) : null
+  const browserUrl = linkToken ? playerLinkBrowserUrl(linkToken, competitionId) : null
 
   useEffect(() => {
     if (!linkToken || hasOAuthCode) return
@@ -50,6 +54,10 @@ export function LinePlayerLinkEntryHandler() {
         return
       }
 
+      if (linkToken && competitionId) {
+        rememberPlayerLinkCompetition(linkToken, competitionId)
+      }
+
       if (oauthStarted.current) return
       oauthStarted.current = true
       setPhase('oauth')
@@ -59,14 +67,16 @@ export function LinePlayerLinkEntryHandler() {
     return () => {
       active = false
     }
-  }, [linkToken, hasOAuthCode])
+  }, [linkToken, hasOAuthCode, competitionId])
 
   const openInBrowser = async () => {
     if (!browserUrl) return
     setError(null)
+    setOpening(true)
     const opened = await openLineExternalUrl(browserUrl)
+    setOpening(false)
     if (!opened) {
-      setError('Tap the menu (⋯) → Open in browser, or copy the link below.')
+      setError('Could not open Safari automatically. Use the link below or ⋯ → Open in browser.')
     }
   }
 
@@ -98,6 +108,20 @@ export function LinePlayerLinkEntryHandler() {
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-bg px-4">
         <div className="login-panel max-w-sm space-y-3 text-center">
           <p className="text-sm text-red-600">{error}</p>
+          {browserUrl && (
+            <a
+              href={browserUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="brand-btn block w-full py-3 text-base font-semibold"
+              onClick={(e) => {
+                e.preventDefault()
+                void openInBrowser()
+              }}
+            >
+              Open in Safari
+            </a>
+          )}
           <p className="text-xs text-brand-muted">
             Ask the organiser to show the QR again from the leaderboard.
           </p>
@@ -111,22 +135,29 @@ export function LinePlayerLinkEntryHandler() {
       <div className="login-panel w-full max-w-sm space-y-4 text-center">
         <p className="font-display text-lg font-semibold text-brand-primary">QR scanned</p>
         <p className="text-sm text-brand-muted">
-          You&apos;re in LINE&apos;s browser. Open <strong className="text-brand-text">Safari</strong>{' '}
-          to finish linking — do not sign in here.
+          You&apos;re in LINE&apos;s browser. Tap below to open <strong className="text-brand-text">Safari</strong>{' '}
+          and finish linking your account.
         </p>
-        <button
-          type="button"
-          onClick={() => void openInBrowser()}
-          className="brand-btn w-full py-3 text-base font-semibold"
-        >
-          Open in browser
-        </button>
+        {browserUrl && (
+          <a
+            href={browserUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="brand-btn block w-full py-3 text-base font-semibold"
+            onClick={(e) => {
+              e.preventDefault()
+              void openInBrowser()
+            }}
+          >
+            {opening ? 'Opening Safari…' : 'Open in Safari'}
+          </a>
+        )}
         <button
           type="button"
           onClick={() => void copyLink()}
           className="brand-btn-outline w-full py-2 text-sm font-semibold"
         >
-          {copied ? 'Link copied!' : 'Copy link for Safari'}
+          {copied ? 'Link copied!' : 'Copy link (if Safari did not open)'}
         </button>
         {error && <p className="text-xs text-red-600">{error}</p>}
       </div>

@@ -51,11 +51,11 @@ export function LinePlayerLinkModal({
   const copyUrl = async () => {
     if (!request) return
     try {
-      await navigator.clipboard.writeText(playerLinkBrowserUrl(request.linkToken))
+      await navigator.clipboard.writeText(playerLinkBrowserUrl(request.linkToken, competitionId))
       setCopied(true)
       window.setTimeout(() => setCopied(false), 2000)
     } catch {
-      window.prompt('Copy this link for Safari:', playerLinkBrowserUrl(request.linkToken))
+      window.prompt('Copy this link for Safari:', playerLinkBrowserUrl(request.linkToken, competitionId))
     }
   }
 
@@ -98,16 +98,19 @@ export function LinePlayerLinkModal({
         ) : request ? (
           <div className="space-y-3">
             <p className="text-xs text-brand-muted">
-              Scan with LINE (Home → QR code). You&apos;ll be asked to open Safari — not LINE&apos;s
-              browser.
+              Guest scans with LINE (Home → QR). They&apos;ll see <strong>Open in Safari</strong> — not
+              sign-in inside LINE.
             </p>
             <LineSignUpQr url={request.qrUrl} />
+            <p className="break-all text-[10px] text-brand-muted">
+              {playerLinkBrowserUrl(request.linkToken, competitionId)}
+            </p>
             <button
               type="button"
               onClick={() => void copyUrl()}
               className="brand-btn-outline w-full py-2 text-sm font-semibold"
             >
-              {copied ? 'Link copied!' : 'Copy Safari link'}
+              {copied ? 'Link copied!' : 'Copy link for guest (backup)'}
             </button>
           </div>
         ) : null}

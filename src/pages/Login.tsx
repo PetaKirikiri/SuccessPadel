@@ -48,7 +48,10 @@ export function Login() {
   const [info, setInfo] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [lineBusy, setLineBusy] = useState(false)
-  const oauthReturning = Boolean(lineOAuthCallbackCode(location.search))
+  const linkState = searchParams.get('state')
+  const isPlayerLinkReturn = Boolean(linkState?.startsWith('lpl_'))
+  const oauthReturning =
+    Boolean(lineOAuthCallbackCode(location.search)) || isPlayerLinkReturn
 
   useEffect(() => {
     if (fromPath) saveReturnTo(fromPath)

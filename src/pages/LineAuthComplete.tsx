@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { competitionPathAfterLink, consumeLineHandoffToken } from '../lib/line/playerLink'
+import { consumeLineHandoffToken, resolveCompetitionPathAfterLink } from '../lib/line/playerLink'
 
 export function LineAuthComplete() {
   const navigate = useNavigate()
@@ -26,7 +26,7 @@ export function LineAuthComplete() {
         setBusy(false)
         return
       }
-      navigate(competitionPathAfterLink(competitionId), { replace: true })
+      navigate(resolveCompetitionPathAfterLink(competitionId), { replace: true })
     })()
 
     return () => {
