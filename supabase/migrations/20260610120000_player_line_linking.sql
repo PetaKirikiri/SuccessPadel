@@ -150,31 +150,31 @@ begin
     raise exception 'Link request expired';
   end if;
 
-  update public.padel_players
+  update public.padel_players pp
   set profile_id = p_profile_id,
       line_user_id = p_line_user_id,
       line_display_name = p_line_display_name,
       line_picture_url = p_line_picture_url,
       linked_at = now(),
       updated_at = now()
-  where id = v_req.padel_player_id
-    and profile_id is null;
+  where pp.id = v_req.padel_player_id
+    and pp.profile_id is null;
 
   if not found then
     raise exception 'Player not found or already linked';
   end if;
 
-  update public.session_players
+  update public.session_players sp
   set profile_id = p_profile_id,
       guest_name = null,
       padel_player_id = v_req.padel_player_id
-  where padel_player_id = v_req.padel_player_id
-    and profile_id is null;
+  where sp.padel_player_id = v_req.padel_player_id
+    and sp.profile_id is null;
 
-  update public.match_players
+  update public.match_players mp
   set profile_id = p_profile_id
-  where padel_player_id = v_req.padel_player_id
-    and profile_id is null;
+  where mp.padel_player_id = v_req.padel_player_id
+    and mp.profile_id is null;
 
   update public.player_line_link_requests
   set used_at = now()
