@@ -41,6 +41,7 @@ export type ScoringConfig = {
   americano_unit?: 'points' | 'sets' | 'open'
   americano_games?: number
   break_minutes?: number
+  game_minutes?: number
 }
 
 export type Court = {

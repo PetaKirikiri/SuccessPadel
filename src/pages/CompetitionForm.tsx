@@ -32,13 +32,14 @@ import {
   toIsoTimestamp,
 } from '../lib/courtSchedule'
 import { useAuth } from '../hooks/useAuth'
+import { CompetitionSchedulePreview } from '../components/CompetitionSchedulePreview'
 import {
   AMERICANO_GAME_COUNTS,
   americanoGamesFromConfig,
   breakMinutesFromConfig,
-  BREAK_MINUTE_OPTIONS,
-  eventScheduleSummary,
-  gameDurationForEvent,
+  gameMinutesFromConfig,
+  planAmericanoSchedule,
+  totalScheduleMinutes,
 } from '../lib/competitionLayout'
 import { supabase } from '../lib/supabaseClient'
 import type { GameSession } from '../lib/types'
@@ -87,7 +88,8 @@ export function CompetitionForm() {
     AMERICANO_DEFAULT_TARGET,
   )
   const [gameCount, setGameCount] = useState<(typeof AMERICANO_GAME_COUNTS)[number]>(7)
-  const [breakMinutes, setBreakMinutes] = useState<(typeof BREAK_MINUTE_OPTIONS)[number]>(3)
+  const [gameMinutes, setGameMinutes] = useState(14)
+  const [breakMinutes, setBreakMinutes] = useState(3)
   const [title, setTitle] = useState('')
   const [seasonId, setSeasonId] = useState('')
   const [seasonLoading, setSeasonLoading] = useState(true)
@@ -97,18 +99,19 @@ export function CompetitionForm() {
 
   const hours = scheduleGridHours()
   const maxDuration = useMemo(() => Math.min(3, maxDurationFromStart(startHour)), [startHour])
-  const schedulePreview = useMemo(() => {
+  const startsAtIso = useMemo(() => toIsoTimestamp(day, startHour), [day, startHour])
+  const eventMinutes = duration * 60
+  const schedulePlan = useMemo(() => {
     if (ruleFormat !== 'americano') return null
-    const startsAtIso = toIsoTimestamp(day, startHour)
-    const startsAt = new Date(startsAtIso)
-    const endsAt = new Date(startsAt.getTime() + duration * 60 * 60 * 1000)
-    const eventMinutes = duration * 60
-    const playMinutes = gameDurationForEvent(eventMinutes, gameCount, breakMinutes)
-    return {
-      summary: eventScheduleSummary(startsAtIso, endsAt.toISOString(), gameCount, breakMinutes),
-      playMinutes,
-    }
-  }, [ruleFormat, day, startHour, duration, gameCount, breakMinutes])
+    return planAmericanoSchedule(
+      startsAtIso,
+      gameCount,
+      gameMinutes,
+      breakMinutes,
+      eventMinutes,
+    )
+  }, [ruleFormat, startsAtIso, gameCount, gameMinutes, breakMinutes, eventMinutes])
+  const scheduleFits = schedulePlan?.fits ?? true
 
   useEffect(() => {
     if (duration > maxDuration) setDuration(maxDuration)
@@ -164,10 +167,17 @@ export function CompetitionForm() {
         if (AMERICANO_GAME_COUNTS.includes(savedGames as (typeof AMERICANO_GAME_COUNTS)[number])) {
           setGameCount(savedGames as (typeof AMERICANO_GAME_COUNTS)[number])
         }
-        const savedBreak = breakMinutesFromConfig(g.scoring_config)
-        if (BREAK_MINUTE_OPTIONS.includes(savedBreak as (typeof BREAK_MINUTE_OPTIONS)[number])) {
-          setBreakMinutes(savedBreak as (typeof BREAK_MINUTE_OPTIONS)[number])
-        }
+        setBreakMinutes(breakMinutesFromConfig(g.scoring_config))
+        setGameMinutes(
+          gameMinutesFromConfig(
+            g.scoring_config,
+            g.starts_at && g.ends_at
+              ? (new Date(g.ends_at).getTime() - new Date(g.starts_at).getTime()) / 60000
+              : 0,
+            savedGames,
+            breakMinutesFromConfig(g.scoring_config),
+          ),
+        )
         if (g.starts_at) {
           setDay(bangkokDateFromIso(g.starts_at))
           setStartHour(
@@ -197,6 +207,10 @@ export function CompetitionForm() {
       setError('No active season.')
       return
     }
+    if (ruleFormat === 'americano' && !scheduleFits) {
+      setError('Schedule does not fit in the session time.')
+      return
+    }
     setBusy(true)
     setError(null)
 
@@ -208,7 +222,11 @@ export function CompetitionForm() {
     const partnershipMode = rulesToPartnershipMode(ruleFormat, partners)
     const americanoConfig =
       ruleFormat === 'americano'
-        ? buildAmericanoScoringConfig(americanoScoring, { games: gameCount, breakMinutes })
+        ? buildAmericanoScoringConfig(americanoScoring, {
+            games: gameCount,
+            breakMinutes,
+            gameMinutes,
+          })
         : null
 
     const payload = {
@@ -386,29 +404,50 @@ export function CompetitionForm() {
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-                  Break between games
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {BREAK_MINUTE_OPTIONS.map((n) => (
-                    <Chip key={n} active={breakMinutes === n} onClick={() => setBreakMinutes(n)}>
-                      {n} min
-                    </Chip>
-                  ))}
-                </div>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block space-y-1">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
+                    Game time (min)
+                  </span>
+                  <input
+                    type="number"
+                    min={8}
+                    max={30}
+                    value={gameMinutes}
+                    onChange={(e) => setGameMinutes(Math.max(8, Math.min(30, Number(e.target.value) || 14)))}
+                    className="brand-input"
+                  />
+                </label>
+                <label className="block space-y-1">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
+                    Rest (min)
+                  </span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={breakMinutes}
+                    onChange={(e) =>
+                      setBreakMinutes(Math.max(1, Math.min(10, Number(e.target.value) || 3)))
+                    }
+                    className="brand-input"
+                  />
+                </label>
               </div>
 
-              {schedulePreview && (
-                <p className="text-xs leading-relaxed text-brand-muted">
-                  {schedulePreview.summary}
-                  {schedulePreview.playMinutes < 12 && (
-                    <span className="mt-1 block text-amber-700">
-                      Games may feel rushed — try fewer games or a longer session.
-                    </span>
-                  )}
-                </p>
-              )}
+              <p className="text-xs text-brand-muted tabular-nums">
+                Uses {totalScheduleMinutes(gameCount, gameMinutes, breakMinutes)} / {eventMinutes}{' '}
+                min
+              </p>
+
+              <CompetitionSchedulePreview
+                startsAtIso={startsAtIso}
+                eventMinutes={eventMinutes}
+                gameCount={gameCount}
+                gameMinutes={gameMinutes}
+                breakMinutes={breakMinutes}
+                playerCount={targetPlayers}
+              />
             </>
           )}
 
@@ -450,7 +489,7 @@ export function CompetitionForm() {
         )}
         <button
           type="button"
-          disabled={busy || seasonLoading || !seasonId}
+          disabled={busy || seasonLoading || !seasonId || (ruleFormat === 'americano' && !scheduleFits)}
           onClick={() => void save()}
           className="brand-btn w-full text-sm font-semibold disabled:opacity-50"
         >

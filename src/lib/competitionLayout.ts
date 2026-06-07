@@ -7,8 +7,24 @@ export const DEFAULT_AMERICANO_GAMES = 7
 export const AMERICANO_GAME_COUNTS = [5, 6, 7, 8, 9, 10, 11] as const
 export const BREAK_MINUTE_OPTIONS = [2, 3, 4, 5] as const
 export const DEFAULT_BREAK_MINUTES = 3
+export const DEFAULT_GAME_MINUTES = 14
 export const COMPETITION_BREAK_MINUTES = DEFAULT_BREAK_MINUTES
 export { RANKED_AMERICANO_GAMES, RANKED_GAME_MINUTES } from './rankedSchedule'
+
+export type ScheduleSlot = {
+  gameNumber: number
+  startsAt: Date
+  endsAt: Date
+  breakMinutesAfter: number
+}
+
+export type SchedulePlan = {
+  slots: ScheduleSlot[]
+  usedMinutes: number
+  bufferMinutes: number
+  fits: boolean
+  finishAt: Date | null
+}
 
 export function americanoGamesFromConfig(config: ScoringConfig | null | undefined): number {
   const n = config?.americano_games
@@ -20,6 +36,61 @@ export function breakMinutesFromConfig(config: ScoringConfig | null | undefined)
   const n = config?.break_minutes
   if (typeof n === 'number' && n >= 0 && n <= 15) return Math.floor(n)
   return DEFAULT_BREAK_MINUTES
+}
+
+export function gameMinutesFromConfig(
+  config: ScoringConfig | null | undefined,
+  eventMinutes = 0,
+  totalGames = DEFAULT_AMERICANO_GAMES,
+  breakMinutes = DEFAULT_BREAK_MINUTES,
+): number {
+  const n = config?.game_minutes
+  if (typeof n === 'number' && n >= 1 && n <= 60) return Math.floor(n)
+  if (eventMinutes > 0 && totalGames > 0) {
+    return gameDurationForEvent(eventMinutes, totalGames, breakMinutes)
+  }
+  return DEFAULT_GAME_MINUTES
+}
+
+export function totalScheduleMinutes(
+  totalGames: number,
+  gameMinutes: number,
+  breakMinutes: number,
+): number {
+  if (totalGames <= 0 || gameMinutes <= 0) return 0
+  return totalGames * gameMinutes + Math.max(0, totalGames - 1) * breakMinutes
+}
+
+export function planAmericanoSchedule(
+  eventStartsAt: string,
+  totalGames: number,
+  gameMinutes: number,
+  breakMinutes: number,
+  eventMinutes: number,
+): SchedulePlan {
+  const usedMinutes = totalScheduleMinutes(totalGames, gameMinutes, breakMinutes)
+  const fits = usedMinutes <= eventMinutes
+  const slots: ScheduleSlot[] = []
+  const eventStart = new Date(eventStartsAt)
+
+  for (let g = 1; g <= totalGames; g++) {
+    const { startsAt, endsAt } = gameSlotTimes(eventStartsAt, g, gameMinutes, breakMinutes)
+    slots.push({
+      gameNumber: g,
+      startsAt,
+      endsAt,
+      breakMinutesAfter: g < totalGames ? breakMinutes : 0,
+    })
+  }
+
+  const last = slots[slots.length - 1]
+  return {
+    slots,
+    usedMinutes,
+    bufferMinutes: Math.max(0, eventMinutes - usedMinutes),
+    fits,
+    finishAt: last?.endsAt ?? eventStart,
+  }
 }
 
 export function americanoScheduleFromSession(
@@ -36,7 +107,12 @@ export function americanoScheduleFromSession(
     session?.starts_at && session?.ends_at
       ? eventDurationMinutes(session.starts_at, session.ends_at)
       : 0
-  const gameMinutes = gameDurationForEvent(eventMinutes, totalGames, breakMinutes)
+  const gameMinutes = gameMinutesFromConfig(
+    session?.scoring_config,
+    eventMinutes,
+    totalGames,
+    breakMinutes,
+  )
   return { totalGames, breakMinutes, gameMinutes, eventMinutes }
 }
 
