@@ -11,7 +11,6 @@ type Props = {
   padelPlayerId: string
   playerName: string
   onClose: () => void
-  onClaim?: () => void
 }
 
 export function LinePlayerLinkModal({
@@ -19,7 +18,6 @@ export function LinePlayerLinkModal({
   padelPlayerId,
   playerName,
   onClose,
-  onClaim,
 }: Props) {
   const [request, setRequest] = useState<LinePlayerLinkRequest | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -107,18 +105,6 @@ export function LinePlayerLinkModal({
             >
               {copied ? 'Link copied!' : 'Copy link'}
             </button>
-            {onClaim ? (
-              <button
-                type="button"
-                onClick={() => {
-                  onClaim()
-                  onClose()
-                }}
-                className="w-full text-xs text-brand-muted underline"
-              >
-                This is me — link to my account
-              </button>
-            ) : null}
           </div>
         ) : null}
       </div>

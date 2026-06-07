@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
-  buildLineAuthorizeUrl,
   competitionPathAfterLink,
   completeLinePlayerLinkWithLiff,
   linkTokenFromLocation,
@@ -10,7 +9,7 @@ import {
 import { detectInLineClient, initLiff, isInLineClient } from '../lib/line/liff'
 import { LineSigningInScreen } from './LineSigningInScreen'
 
-/** Opened from LINE QR (liff.line.me/...?lpl=) — link guest scores inside the LINE app. */
+/** Guest opened the QR LIFF URL inside LINE — complete the link. No OAuth fallback. */
 export function LinePlayerLinkEntryHandler() {
   const { search } = useLocation()
   const navigate = useNavigate()
@@ -29,24 +28,26 @@ export function LinePlayerLinkEntryHandler() {
       try {
         await initLiff()
       } catch {
-        /* Safari / external */
+        /* external browser */
       }
 
       const inClient = (await detectInLineClient()) || isInLineClient()
       if (!active) return
 
-      if (inClient) {
-        const { competitionId, error: linkErr } = await completeLinePlayerLinkWithLiff(linkToken)
-        if (!active) return
-        if (linkErr) {
-          setError(linkErr)
-          return
-        }
-        navigate(competitionPathAfterLink(competitionId), { replace: true })
+      if (!inClient) {
+        setError(
+          'Scan the QR code with the LINE app (Home → QR code). Opening this link in Safari will not work.',
+        )
         return
       }
 
-      window.location.assign(buildLineAuthorizeUrl(linkToken))
+      const { competitionId, error: linkErr } = await completeLinePlayerLinkWithLiff(linkToken)
+      if (!active) return
+      if (linkErr) {
+        setError(linkErr)
+        return
+      }
+      navigate(competitionPathAfterLink(competitionId), { replace: true })
     })()
 
     return () => {
@@ -61,7 +62,7 @@ export function LinePlayerLinkEntryHandler() {
         <div className="login-panel max-w-sm space-y-3 text-center">
           <p className="text-sm text-red-600">{error}</p>
           <p className="text-xs text-brand-muted">
-            Ask the organiser for a fresh QR, or open the competition in Safari and tap LINE again.
+            Ask the organiser to show the QR again from the leaderboard.
           </p>
         </div>
       </div>

@@ -1,18 +1,15 @@
 import { FunctionsHttpError } from '@supabase/supabase-js'
-import { Browser } from '@capacitor/browser'
 import {
   getLineAccessToken,
   getLineIdToken,
   hasLiffId,
   initLiff,
   isLineLoggedIn,
-  isLineLiffBrowser,
   lineAppEntryUrl,
   lineLoginRedirect,
 } from './liff'
 import { readLineProfilePatch } from './profileSync'
 import { lineOAuthRedirectUri } from './oauth'
-import { isNativeApp } from '../native/app'
 import { siteOrigin } from '../siteUrl'
 import { supabase } from '../supabaseClient'
 import { syncProfileForUser } from '../authProfile'
@@ -20,7 +17,7 @@ import { syncProfileForUser } from '../authProfile'
 const channelId = (import.meta.env.VITE_LINE_CHANNEL_ID as string | undefined)?.trim() || undefined
 
 export function hasLinePlayerLink(): boolean {
-  return Boolean(channelId)
+  return Boolean(channelId && hasLiffId())
 }
 
 /** Same callback as normal LINE login — must be registered in LINE Developers. */
@@ -45,27 +42,14 @@ async function edgeErrorMessage(error: unknown): Promise<string> {
   return 'LINE linking failed. Please try again.'
 }
 
-export function buildLineAuthorizeUrl(linkToken: string): string {
-  const params = new URLSearchParams({
-    response_type: 'code',
-    client_id: channelId!,
-    redirect_uri: linePlayerLinkRedirectUri(),
-    state: linkToken,
-    scope: 'profile openid',
-  })
-  return `https://access.line.me/oauth2/v2.1/authorize?${params}`
-}
-
 export type LinePlayerLinkRequest = {
   linkToken: string
-  authorizeUrl: string
-  /** LIFF URL for LINE QR scanner — do not use raw OAuth URL in QR. */
+  /** LIFF URL for LINE QR scanner only — never OAuth. */
   qrUrl: string
 }
 
-export function linePlayerLinkQrUrl(linkToken: string): string {
-  const liffEntry = lineAppEntryUrl(`/login?lpl=${encodeURIComponent(linkToken)}`)
-  return liffEntry ?? buildLineAuthorizeUrl(linkToken)
+export function linePlayerLinkQrUrl(linkToken: string): string | null {
+  return lineAppEntryUrl(`/login?lpl=${encodeURIComponent(linkToken)}`)
 }
 
 export function linkTokenFromLocation(search = window.location.search): string | null {
@@ -103,12 +87,13 @@ export function shouldProcessLineLinkEntry(linkToken: string): boolean {
   return true
 }
 
-/** Create a single-use link request for a player and build the LINE login URL (for a QR). No redirect. */
+/** Create a single-use link request for QR display. Never redirects. */
 export async function createLinePlayerLinkRequest(
   competitionId: string | null,
   padelPlayerId: string,
 ): Promise<{ request?: LinePlayerLinkRequest; error?: string }> {
   if (!channelId) return { error: 'LINE login is not configured' }
+  if (!hasLiffId()) return { error: 'LINE app link is not configured' }
 
   const { data: linkToken, error } = await supabase.rpc('create_player_line_link_request', {
     p_competition_id: competitionId,
@@ -118,15 +103,18 @@ export async function createLinePlayerLinkRequest(
   if (error) return { error: error.message }
   if (!linkToken || typeof linkToken !== 'string') return { error: 'Could not start linking' }
 
+  const resolvedQrUrl = linePlayerLinkQrUrl(linkToken)
+  if (!resolvedQrUrl) return { error: 'LINE app link is not configured' }
+
   return {
     request: {
       linkToken,
-      authorizeUrl: buildLineAuthorizeUrl(linkToken),
-      qrUrl: linePlayerLinkQrUrl(linkToken),
+      qrUrl: resolvedQrUrl,
     },
   }
 }
 
+/** Guest scanned QR and opened inside LINE — complete link via LIFF session. */
 export async function completeLinePlayerLinkWithLiff(linkToken: string): Promise<{
   competitionId: string | null
   error?: string
@@ -188,35 +176,6 @@ export async function completeLinePlayerLinkWithLiff(linkToken: string): Promise
   await syncProfileForUser(confirmed.session.user)
 
   return { competitionId: payload.competition_id ?? null }
-}
-
-export async function startLinePlayerLink(
-  competitionId: string | null,
-  padelPlayerId: string,
-): Promise<string | null> {
-  if (!channelId) return 'LINE login is not configured'
-
-  const { request, error } = await createLinePlayerLinkRequest(competitionId, padelPlayerId)
-  if (error || !request) return error ?? 'Could not start linking'
-
-  if (!isNativeApp() && isLineLiffBrowser()) {
-    const { competitionId: linkedId, error: linkErr } = await completeLinePlayerLinkWithLiff(
-      request.linkToken,
-    )
-    if (linkErr) return linkErr
-    await initLiff()
-    if (!isLineLoggedIn()) return null
-    window.location.assign(competitionPathAfterLink(linkedId))
-    return null
-  }
-
-  if (isNativeApp()) {
-    await Browser.open({ url: request.authorizeUrl })
-    return null
-  }
-
-  window.location.assign(request.authorizeUrl)
-  return null
 }
 
 export type LineLinkResult = {
