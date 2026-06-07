@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { CompetitionCourtBoard } from '../components/CompetitionCourtBoard'
 import { CompetitionLeaderboard } from '../components/CompetitionLeaderboard'
+import { useAuth } from '../hooks/useAuth'
 import { useCompetitionBoard } from '../hooks/useCompetitionBoard'
 import { useGuestPlayerClaim } from '../hooks/useGuestPlayerClaim'
+import { useLineClientProfile } from '../hooks/useLineClientProfile'
 import { usePublicCompetition } from '../hooks/usePublicCompetition'
+import { saveReturnTo } from '../lib/authReturnTo'
 import { americanoScheduleFromSession, gameSlotTimes } from '../lib/competitionLayout'
 import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
 import { computeAmericanoStandings } from '../lib/competitionStandings'
@@ -35,6 +38,24 @@ function PlayTabs({ tab, onTab }: { tab: PlayTab; onTab: (t: PlayTab) => void })
 
 export function CompetitionPlay() {
   const { id } = useParams()
+  const navigate = useNavigate()
+  const { profile, user } = useAuth()
+  const lineClient = useLineClientProfile()
+  const headerName =
+    profile?.display_name ??
+    lineClient.displayName ??
+    (lineClient.lineLoggedIn ? 'LINE connected' : user ? 'Profile' : 'Sign in')
+  const headerAvatar = profile?.avatar_url ?? lineClient.pictureUrl ?? null
+
+  const openProfile = () => {
+    if (!user) {
+      saveReturnTo('/profile')
+      navigate('/login', { replace: true, state: { from: '/profile' } })
+      return
+    }
+    navigate('/profile')
+  }
+
   const {
     session,
     rounds,
@@ -139,18 +160,33 @@ export function CompetitionPlay() {
 
   return (
     <div className="game-bg flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden">
-      <header className="shrink-0 px-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))]">
-        {session?.title ? (
-          <p className="text-center font-display text-sm font-semibold text-brand-primary">
-            {session.title}
-          </p>
-        ) : (
-          <img
-            src="/brand/logo-padel.webp"
-            alt="Success Padel"
-            className="mx-auto h-8 w-auto max-w-[10rem]"
-          />
-        )}
+      <header className="flex shrink-0 items-center gap-2 px-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))]">
+        <p className="min-w-0 flex-1 truncate font-display text-sm font-semibold text-brand-primary">
+          {session?.title ?? 'Competition'}
+        </p>
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={() => navigate('/competitions')}
+            className="shrink-0 text-sm font-medium text-brand-accent"
+          >
+            ← Back
+          </button>
+          <button
+            type="button"
+            onClick={openProfile}
+            className="flex max-w-[8.5rem] items-center gap-1.5 truncate rounded-full border border-brand-border bg-brand-surface py-1.5 pl-1.5 pr-2.5 text-xs font-medium text-brand-primary"
+          >
+            {headerAvatar ? (
+              <img
+                src={headerAvatar}
+                alt=""
+                className="h-6 w-6 shrink-0 rounded-full object-cover"
+              />
+            ) : null}
+            <span className="truncate">{headerName}</span>
+          </button>
+        </div>
       </header>
 
       <main data-scroll-y className="scroll-y min-h-0 min-w-0 flex-1 px-3 pb-2">
