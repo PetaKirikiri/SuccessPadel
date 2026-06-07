@@ -38,7 +38,6 @@ import { CompetitionPlayerSlots } from '../components/CompetitionPlayerSlots'
 import { CompetitionSchedulePreview } from '../components/CompetitionSchedulePreview'
 import { solveBalancedSchedule } from '../lib/balancedSchedule'
 import {
-  AMERICANO_GAME_COUNTS,
   americanoGamesFromConfig,
   breakMinutesFromConfig,
   courtsNeeded,
@@ -56,8 +55,6 @@ import {
 } from '../lib/rankedSchedule'
 import { supabase } from '../lib/supabaseClient'
 import type { GameSession } from '../lib/types'
-
-type FormStep = 'settings' | 'players' | 'preview'
 
 function Chip({
   active,
@@ -102,7 +99,7 @@ export function CompetitionForm() {
   const [americanoScoring, setAmericanoScoring] = useState<AmericanoScoringChoice>(
     AMERICANO_DEFAULT_TARGET,
   )
-  const [gameCount, setGameCount] = useState<(typeof AMERICANO_GAME_COUNTS)[number]>(7)
+  const [gameCount, setGameCount] = useState(7)
   const [gameMinutes, setGameMinutes] = useState(14)
   const [breakMinutes, setBreakMinutes] = useState(3)
   const [title, setTitle] = useState('')
@@ -111,7 +108,6 @@ export function CompetitionForm() {
   const [seasonError, setSeasonError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [step, setStep] = useState<FormStep>('settings')
   const [playerSlots, setPlayerSlots] = useState<string[]>(() => Array(8).fill(''))
   const [courtNames, setCourtNames] = useState<string[]>([])
   const [previewSeed, setPreviewSeed] = useState(0)
@@ -249,9 +245,7 @@ export function CompetitionForm() {
         }
         setAmericanoScoring(americanoScoringFromConfig(g.scoring_config))
         const savedGames = americanoGamesFromConfig(g.scoring_config)
-        if (AMERICANO_GAME_COUNTS.includes(savedGames as (typeof AMERICANO_GAME_COUNTS)[number])) {
-          setGameCount(savedGames as (typeof AMERICANO_GAME_COUNTS)[number])
-        }
+        setGameCount(Math.max(5, Math.min(11, savedGames)))
         setBreakMinutes(breakMinutesFromConfig(g.scoring_config))
         setGameMinutes(
           gameMinutesFromConfig(
@@ -320,10 +314,6 @@ export function CompetitionForm() {
     }
     if (ruleFormat === 'americano' && !scheduleFits) {
       setError('Schedule does not fit in the session time.')
-      return
-    }
-    if (ruleFormat === 'americano' && !previewGames?.length) {
-      setError('Preview the game layout first.')
       return
     }
     setBusy(true)
@@ -446,21 +436,18 @@ export function CompetitionForm() {
     navigate('/competitions')
   }
 
-  const stepLabel =
-    step === 'settings' ? '1. Settings' : step === 'players' ? '2. Players' : '3. Preview'
+  const canSave =
+    allNamesFilled &&
+    scheduleFits &&
+    (ruleFormat !== 'americano' || Boolean(previewGames?.length))
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div data-scroll-y className="scroll-y min-h-0 flex-1 space-y-3 pb-24">
-        <div className="flex items-center justify-between gap-2">
-          <Link to="/competitions" className="text-sm font-medium text-brand-accent">
-            ← Back
-          </Link>
-          <span className="text-xs font-medium text-brand-muted">{stepLabel}</span>
-        </div>
+        <Link to="/competitions" className="text-sm font-medium text-brand-accent">
+          ← Back
+        </Link>
 
-        {step === 'settings' && (
-        <>
         <section className="game-card space-y-3">
           <label className="block space-y-1">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">Day</span>
@@ -493,9 +480,8 @@ export function CompetitionForm() {
               ))}
             </div>
           </div>
-        </section>
 
-        <section className="game-card space-y-3">
+          <div className="border-t border-brand-border/40 pt-3" />
           <div className="space-y-1.5">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">Level</span>
             <div className="flex flex-wrap gap-1.5">
@@ -569,20 +555,22 @@ export function CompetitionForm() {
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-                  Games
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {AMERICANO_GAME_COUNTS.map((n) => (
-                    <Chip key={n} active={gameCount === n} onClick={() => setGameCount(n)}>
-                      {n}
-                    </Chip>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
+                <label className="block space-y-1">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
+                    Games
+                  </span>
+                  <input
+                    type="number"
+                    min={5}
+                    max={11}
+                    value={gameCount}
+                    onChange={(e) =>
+                      setGameCount(Math.max(5, Math.min(11, Number(e.target.value) || 7)))
+                    }
+                    className="brand-input"
+                  />
+                </label>
                 <label className="block space-y-1">
                   <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
                     Game time (min)
@@ -647,59 +635,54 @@ export function CompetitionForm() {
               className="brand-input"
             />
           </label>
+
+          <div className="border-t border-brand-border/40 pt-3" />
+
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
+            Player names
+          </p>
+          <CompetitionPlayerSlots
+            count={targetPlayers}
+            slots={playerSlots}
+            onChange={setPlayerSlots}
+            disabled={busy}
+          />
+          {!allNamesFilled && (
+            <p className="text-xs text-brand-muted">Fill all {targetPlayers} names to save.</p>
+          )}
+
+          {ruleFormat === 'americano' && allNamesFilled && (
+            <>
+              <div className="border-t border-brand-border/40 pt-3" />
+              <CompetitionSchedulePreview
+                startsAtIso={startsAtIso}
+                eventMinutes={eventMinutes}
+                gameCount={gameCount}
+                gameMinutes={gameMinutes}
+                breakMinutes={breakMinutes}
+                playerCount={targetPlayers}
+              />
+              {previewGames && previewGames.length > 0 ? (
+                <div className="overflow-hidden rounded-lg border border-brand-border/60">
+                  <CompetitionLayoutPreview
+                    session={previewSession}
+                    games={previewGames}
+                    eventStartsAt={startsAtIso}
+                    gameMinutes={gameMinutes}
+                  />
+                </div>
+              ) : null}
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setPreviewSeed((s) => s + 1)}
+                className="brand-btn-outline w-full py-2 text-sm font-semibold"
+              >
+                Shuffle match-ups
+              </button>
+            </>
+          )}
         </section>
-        </>
-        )}
-
-        {step === 'players' && (
-          <section className="game-card space-y-3">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-              Player names
-            </p>
-            <CompetitionPlayerSlots
-              count={targetPlayers}
-              slots={playerSlots}
-              onChange={setPlayerSlots}
-              disabled={busy}
-            />
-            {!allNamesFilled && (
-              <p className="text-xs text-brand-muted">Fill all {targetPlayers} names to continue.</p>
-            )}
-          </section>
-        )}
-
-        {step === 'preview' && ruleFormat === 'americano' && (
-          <div className="space-y-3">
-            <CompetitionSchedulePreview
-              startsAtIso={startsAtIso}
-              eventMinutes={eventMinutes}
-              gameCount={gameCount}
-              gameMinutes={gameMinutes}
-              breakMinutes={breakMinutes}
-              playerCount={targetPlayers}
-            />
-            {previewGames && previewGames.length > 0 ? (
-              <div className="game-card overflow-hidden px-1 py-2">
-                <CompetitionLayoutPreview
-                  session={previewSession}
-                  games={previewGames}
-                  eventStartsAt={startsAtIso}
-                  gameMinutes={gameMinutes}
-                />
-              </div>
-            ) : (
-              <p className="text-sm text-brand-muted">Could not build layout — check player count.</p>
-            )}
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => setPreviewSeed((s) => s + 1)}
-              className="brand-btn-outline w-full py-2 text-sm font-semibold"
-            >
-              Shuffle match-ups
-            </button>
-          </div>
-        )}
 
         {error && <p className="text-sm text-red-600">{error}</p>}
       </div>
@@ -708,74 +691,14 @@ export function CompetitionForm() {
         {(seasonError || error) && (
           <p className="mb-2 text-center text-xs text-red-600">{error ?? seasonError}</p>
         )}
-        {step === 'settings' && (
-          <button
-            type="button"
-            disabled={
-              busy ||
-              seasonLoading ||
-              !seasonId ||
-              (ruleFormat === 'americano' && !scheduleFits)
-            }
-            onClick={() => {
-              setError(null)
-              setStep('players')
-            }}
-            className="brand-btn w-full text-sm font-semibold disabled:opacity-50"
-          >
-            Next — add players
-          </button>
-        )}
-        {step === 'players' && (
-          <div className="flex gap-2">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => setStep('settings')}
-              className="brand-btn-outline flex-1 py-2 text-sm font-semibold"
-            >
-              Back
-            </button>
-            <button
-              type="button"
-              disabled={busy || !allNamesFilled}
-              onClick={() => {
-                setError(null)
-                if (ruleFormat === 'americano') setStep('preview')
-                else void save()
-              }}
-              className="brand-btn flex-[2] py-2 text-sm font-semibold disabled:opacity-50"
-            >
-              {ruleFormat === 'americano' ? 'Preview layout' : busy ? 'Saving…' : 'Accept'}
-            </button>
-          </div>
-        )}
-        {step === 'preview' && (
-          <div className="flex gap-2">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => setStep('players')}
-              className="brand-btn-outline flex-1 py-2 text-sm font-semibold"
-            >
-              Back
-            </button>
-            <button
-              type="button"
-              disabled={
-                busy ||
-                seasonLoading ||
-                !seasonId ||
-                !scheduleFits ||
-                !previewGames?.length
-              }
-              onClick={() => void save()}
-              className="brand-btn flex-[2] py-2 text-sm font-semibold disabled:opacity-50"
-            >
-              {busy ? 'Saving…' : 'Accept'}
-            </button>
-          </div>
-        )}
+        <button
+          type="button"
+          disabled={busy || seasonLoading || !seasonId || !canSave}
+          onClick={() => void save()}
+          className="brand-btn w-full text-sm font-semibold disabled:opacity-50"
+        >
+          {busy ? 'Saving…' : seasonLoading ? 'Loading…' : id ? 'Save' : 'Accept'}
+        </button>
       </div>
     </div>
   )
