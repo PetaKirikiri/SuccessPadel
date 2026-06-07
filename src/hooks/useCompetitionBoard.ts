@@ -36,8 +36,10 @@ type LiveCourt = {
   teamA: string[]
   teamB: string[]
   playerIds: string[]
-  teamAIds: string[]
-  teamBIds: string[]
+  teamAIds: (string | null)[]
+  teamBIds: (string | null)[]
+  teamAAvatars: (string | null)[]
+  teamBAvatars: (string | null)[]
 }
 
 function groupLiveCourts(players: RoundPlayer[]): LiveCourt[] {
@@ -53,15 +55,20 @@ function groupLiveCourts(players: RoundPlayer[]): LiveCourt[] {
         playerIds: [],
         teamAIds: [],
         teamBIds: [],
+        teamAAvatars: [],
+        teamBAvatars: [],
       } satisfies LiveCourt)
     const label = roundPlayerName(p)
     const pid = p.profile_id ?? p.session_players?.profile_id
+    const avatarUrl = p.session_players?.profiles?.avatar_url ?? null
     if (p.team === 'a') {
       row.teamA.push(label)
-      if (pid) row.teamAIds.push(pid)
+      row.teamAIds.push(pid ?? null)
+      row.teamAAvatars.push(avatarUrl)
     } else {
       row.teamB.push(label)
-      if (pid) row.teamBIds.push(pid)
+      row.teamBIds.push(pid ?? null)
+      row.teamBAvatars.push(avatarUrl)
     }
     if (pid) row.playerIds.push(pid)
     map.set(p.court_id, row)

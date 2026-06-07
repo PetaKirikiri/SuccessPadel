@@ -15,15 +15,15 @@ export type RoundPlayer = {
     guest_name: string | null
     profile_id: string | null
     padel_player_id: string | null
-    profiles: { id: string; display_name: string } | null
+    profiles: { id: string; display_name: string; avatar_url?: string | null } | null
   } | null
   courts: { id: string; name: string } | null
 }
 
 export function roundPlayerName(p: RoundPlayer): string {
   return (
-    p.session_players?.guest_name ??
     p.session_players?.profiles?.display_name ??
+    p.session_players?.guest_name ??
     'Player'
   )
 }
@@ -77,7 +77,7 @@ export function useCompetitionRun(sessionId: string | undefined) {
         .select(
           `*,
            competition_round_players(court_id, team, roster_entry_id, profile_id,
-             session_players(guest_name, profile_id, profiles(id, display_name)),
+             session_players(guest_name, profile_id, profiles(id, display_name, avatar_url)),
              courts(id, name))`,
         )
         .eq('session_id', sessionId)
@@ -89,7 +89,7 @@ export function useCompetitionRun(sessionId: string | undefined) {
         .not('competition_round_id', 'is', null),
       supabase
         .from('session_players')
-        .select('id, profile_id, guest_name, guest_email, rank_order, profiles(id, display_name)')
+        .select('id, profile_id, guest_name, guest_email, rank_order, profiles(id, display_name, avatar_url)')
         .eq('session_id', sessionId)
         .order('rank_order')
         .order('id'),

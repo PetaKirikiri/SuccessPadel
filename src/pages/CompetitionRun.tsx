@@ -48,8 +48,10 @@ type CourtGroup = {
   a: string[]
   b: string[]
   playerIds: string[]
-  teamAIds: string[]
-  teamBIds: string[]
+  teamAIds: (string | null)[]
+  teamBIds: (string | null)[]
+  teamAAvatars: (string | null)[]
+  teamBAvatars: (string | null)[]
 }
 
 function groupByCourt(players: RoundPlayer[]): CourtGroup[] {
@@ -66,15 +68,20 @@ function groupByCourt(players: RoundPlayer[]): CourtGroup[] {
         playerIds: [],
         teamAIds: [],
         teamBIds: [],
+        teamAAvatars: [],
+        teamBAvatars: [],
       } satisfies CourtGroup)
     const label = roundPlayerName(p)
     const pid = p.profile_id ?? p.session_players?.profile_id
+    const avatarUrl = p.session_players?.profiles?.avatar_url ?? null
     if (p.team === 'a') {
       row.a.push(label)
-      if (pid) row.teamAIds.push(pid)
+      row.teamAIds.push(pid ?? null)
+      row.teamAAvatars.push(avatarUrl)
     } else {
       row.b.push(label)
-      if (pid) row.teamBIds.push(pid)
+      row.teamBIds.push(pid ?? null)
+      row.teamBAvatars.push(avatarUrl)
     }
     if (pid) row.playerIds.push(pid)
     map.set(p.court_id, row)
@@ -185,8 +192,10 @@ export function CompetitionRun() {
         teamA: string[]
         teamB: string[]
         playerIds: string[]
-        teamAIds: string[]
-        teamBIds: string[]
+        teamAIds: (string | null)[]
+        teamBIds: (string | null)[]
+        teamAAvatars: (string | null)[]
+        teamBAvatars: (string | null)[]
       }[]
     >()
     for (const round of rounds) {
@@ -202,6 +211,8 @@ export function CompetitionRun() {
           playerIds: c.playerIds,
           teamAIds: c.teamAIds,
           teamBIds: c.teamBIds,
+          teamAAvatars: c.teamAAvatars,
+          teamBAvatars: c.teamBAvatars,
         })),
       )
     }

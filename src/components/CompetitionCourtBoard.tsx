@@ -14,8 +14,10 @@ type LiveCourt = {
   teamA: string[]
   teamB: string[]
   playerIds: string[]
-  teamAIds?: string[]
-  teamBIds?: string[]
+  teamAIds?: (string | null)[]
+  teamBIds?: (string | null)[]
+  teamAAvatars?: (string | null)[]
+  teamBAvatars?: (string | null)[]
 }
 
 type Props = {
@@ -98,6 +100,8 @@ function CourtMatchCell({
   disabled = false,
   teamAIds,
   teamBIds,
+  teamAAvatars,
+  teamBAvatars,
   currentUserId,
 }: {
   teamA: string[]
@@ -108,8 +112,10 @@ function CourtMatchCell({
   onScoreA?: (v: string) => void
   onScoreB?: (v: string) => void
   disabled?: boolean
-  teamAIds?: string[]
-  teamBIds?: string[]
+  teamAIds?: (string | null)[]
+  teamBIds?: (string | null)[]
+  teamAAvatars?: (string | null)[]
+  teamBAvatars?: (string | null)[]
   currentUserId?: string | null
 }) {
   const fieldLabel = scoreUnit === 'sets' ? 'Sets' : scoreUnit === 'open' ? 'Score' : 'Pts'
@@ -117,10 +123,10 @@ function CourtMatchCell({
   const names = compactDisplayNames([teamA[0] ?? '', teamA[1] ?? '', teamB[0] ?? '', teamB[1] ?? ''])
   const teamADisplay = [names[0] ?? '', names[1] ?? '']
   const teamBDisplay = [names[2] ?? '', names[3] ?? '']
-  const nameClass = (isCurrent: boolean) =>
-    `truncate rounded px-1 text-lg font-semibold leading-tight ${
-      isCurrent ? 'bg-brand-bg-alt text-brand-accent' : 'text-brand-text'
-    }`
+  const playerClass = (isCurrent: boolean, align: 'left' | 'right') =>
+    `flex min-w-0 items-center gap-1.5 rounded px-1 py-0.5 ${
+      align === 'right' ? 'justify-end' : ''
+    } ${isCurrent ? 'bg-brand-bg-alt text-brand-accent' : 'text-brand-text'}`
 
   const scoreInputClass =
     'w-7 rounded border border-brand-border/80 bg-brand-surface px-0.5 py-0.5 text-center text-xs font-medium tabular-nums text-brand-muted disabled:text-brand-muted/60'
@@ -155,18 +161,46 @@ function CourtMatchCell({
     <span className="text-xs font-medium tabular-nums text-brand-muted">{scoreB || '—'}</span>
   )
 
+  const playerEl = (
+    name: string,
+    avatarUrl: string | null | undefined,
+    isCurrent: boolean,
+    align: 'left' | 'right',
+  ) => (
+    <p className={playerClass(isCurrent, align)}>
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt=""
+          className="h-6 w-6 shrink-0 rounded-full object-cover ring-1 ring-brand-border/60"
+        />
+      ) : (
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-bg-alt text-[10px] font-semibold text-brand-muted ring-1 ring-brand-border/40">
+          {name.trim()[0]?.toUpperCase() ?? '?'}
+        </span>
+      )}
+      <span className="truncate text-lg font-semibold leading-tight">{name}</span>
+    </p>
+  )
+
   return (
     <div
       className="flex min-h-[4.5rem] items-stretch overflow-hidden rounded-lg border border-brand-border/60 bg-brand-surface"
       aria-label={`${teamA[0]} and ${teamA[1]} against ${teamB[0]} and ${teamB[1]}`}
     >
       <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 border-r border-brand-border/60 px-2.5 py-2">
-        <p className={nameClass(Boolean(currentUserId && teamAIds?.[0] === currentUserId))}>
-          {teamADisplay[0]}
-        </p>
-        <p className={nameClass(Boolean(currentUserId && teamAIds?.[1] === currentUserId))}>
-          {teamADisplay[1]}
-        </p>
+        {playerEl(
+          teamADisplay[0],
+          teamAAvatars?.[0],
+          Boolean(currentUserId && teamAIds?.[0] === currentUserId),
+          'left',
+        )}
+        {playerEl(
+          teamADisplay[1],
+          teamAAvatars?.[1],
+          Boolean(currentUserId && teamAIds?.[1] === currentUserId),
+          'left',
+        )}
       </div>
 
       <div className="flex shrink-0 items-center gap-1 px-2 tabular-nums">
@@ -176,12 +210,18 @@ function CourtMatchCell({
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 border-l border-brand-border/60 px-2.5 py-2 text-right">
-        <p className={nameClass(Boolean(currentUserId && teamBIds?.[0] === currentUserId))}>
-          {teamBDisplay[0]}
-        </p>
-        <p className={nameClass(Boolean(currentUserId && teamBIds?.[1] === currentUserId))}>
-          {teamBDisplay[1]}
-        </p>
+        {playerEl(
+          teamBDisplay[0],
+          teamBAvatars?.[0],
+          Boolean(currentUserId && teamBIds?.[0] === currentUserId),
+          'right',
+        )}
+        {playerEl(
+          teamBDisplay[1],
+          teamBAvatars?.[1],
+          Boolean(currentUserId && teamBIds?.[1] === currentUserId),
+          'right',
+        )}
       </div>
     </div>
   )
@@ -354,6 +394,8 @@ function GameScoringCourts({
         const teamB = liveCourt?.teamB ?? court.teamB
         const teamAIds = liveCourt?.teamAIds
         const teamBIds = liveCourt?.teamBIds
+        const teamAAvatars = liveCourt?.teamAAvatars
+        const teamBAvatars = liveCourt?.teamBAvatars
         const saved = gameRoundId && courtId ? matchForCourt(gameRoundId, courtId) : undefined
         const draft = courtId ? drafts[courtId] : undefined
 
@@ -366,6 +408,8 @@ function GameScoringCourts({
                 teamB={teamB}
                 teamAIds={teamAIds}
                 teamBIds={teamBIds}
+                teamAAvatars={teamAAvatars}
+                teamBAvatars={teamBAvatars}
                 scoreUnit={scoreUnit}
                 scoreA={
                   canEdit
@@ -629,6 +673,8 @@ export function CompetitionCourtBoard({
                           teamB={liveCourt?.teamB ?? court.teamB}
                           teamAIds={liveCourt?.teamAIds}
                           teamBIds={liveCourt?.teamBIds}
+                          teamAAvatars={liveCourt?.teamAAvatars}
+                          teamBAvatars={liveCourt?.teamBAvatars}
                           scoreUnit={scoreUnit}
                           scoreA={
                             saved?.teamAPoints != null ? String(saved.teamAPoints) : undefined
