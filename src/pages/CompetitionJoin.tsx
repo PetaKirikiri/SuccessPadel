@@ -80,13 +80,13 @@ export function CompetitionJoin() {
         <img
           src="/brand/logo-padel.webp"
           alt={t('common.brandAlt')}
-          className="h-8 w-auto max-w-[10rem]"
+          className="h-8 w-auto max-w-[10rem] md:h-10 md:max-w-[12rem]"
         />
       </AppTopBar>
 
       <main
         data-scroll-y
-        className="scroll-y mx-auto min-h-0 w-full max-w-md flex-1 px-4 pb-8 pt-2"
+        className="scroll-y mx-auto min-h-0 w-full max-w-md flex-1 px-4 pb-8 pt-2 md:max-w-xl md:px-6"
       >
         {loading && !session ? (
           <p className="py-8 text-center text-sm text-brand-muted">{t('common.loading')}</p>

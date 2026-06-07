@@ -184,7 +184,7 @@ function CourtMatchCell({
     }`
 
   const scoreInputClass =
-    'h-8 w-8 rounded-lg border border-brand-border/80 bg-brand-surface px-0.5 py-0.5 text-center text-sm font-semibold tabular-nums text-brand-primary disabled:text-brand-muted/60'
+    'h-8 w-8 rounded-lg border border-brand-border/80 bg-brand-surface px-0.5 py-0.5 text-center text-sm font-semibold tabular-nums text-brand-primary disabled:text-brand-muted/60 md:h-10 md:w-10 md:text-base'
 
   const scoreAEl = editable ? (
     <input
@@ -226,14 +226,16 @@ function CourtMatchCell({
           <img
             src={displayAvatarUrl}
             alt=""
-            className="h-5 w-5 shrink-0 rounded-full object-cover ring-1 ring-brand-border/60"
+            className="h-5 w-5 shrink-0 rounded-full object-cover ring-1 ring-brand-border/60 md:h-7 md:w-7"
           />
         ) : (
-          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-bg-alt text-[9px] font-semibold text-brand-muted ring-1 ring-brand-border/40">
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-bg-alt text-[9px] font-semibold text-brand-muted ring-1 ring-brand-border/40 md:h-7 md:w-7 md:text-[11px]">
             {displayName.trim()[0]?.toUpperCase() ?? '?'}
           </span>
         )}
-        <span className="truncate text-base font-semibold leading-tight">{displayName}</span>
+        <span className="truncate text-base font-semibold leading-tight md:text-lg">
+          {displayName}
+        </span>
       </p>
     )
   }
@@ -266,7 +268,7 @@ function CourtMatchCell({
 
 type CourtDraft = { teamA: string; teamB: string }
 
-const COURT_LABEL_CLASS = 'text-sm font-semibold text-brand-primary'
+const COURT_LABEL_CLASS = 'text-sm font-semibold text-brand-primary md:text-base'
 
 function courtIdForLabel(
   courtLabel: string,
@@ -519,7 +521,7 @@ function GameCardHeader({
   t: TranslateFn
 }) {
   return (
-    <div className="flex items-center gap-2 border-b border-brand-border/60 px-3 py-3">
+    <div className="flex items-center gap-2 border-b border-brand-border/60 px-3 py-3 md:gap-3 md:px-4 md:py-4">
       <button
         type="button"
         onClick={onToggleCollapsed}
@@ -528,20 +530,20 @@ function GameCardHeader({
       >
         <span className="shrink-0 text-sm text-brand-muted">{collapsed ? '▸' : '▾'}</span>
         <span className="min-w-0 flex-1">
-          <span className="block font-display text-2xl font-bold leading-none text-brand-primary">
+          <span className="block font-display text-2xl font-bold leading-none text-brand-primary md:text-3xl">
             {t('competition.game', { number: gameNumber })}
             {isLiveNow ? (
-              <span className="ml-1.5 text-sm font-medium text-brand-accent">
+              <span className="ml-1.5 text-sm font-medium text-brand-accent md:text-base">
                 · {t('competition.live')}
               </span>
             ) : finished ? (
-              <span className="ml-1.5 text-sm font-medium text-brand-muted">
+              <span className="ml-1.5 text-sm font-medium text-brand-muted md:text-base">
                 · {t('competition.done')}
               </span>
             ) : null}
           </span>
           {timeLabel && (
-            <span className="mt-1 block text-[11px] tabular-nums text-brand-muted">
+            <span className="mt-1 block text-[11px] tabular-nums text-brand-muted md:text-sm">
               {timeLabel}
             </span>
           )}
@@ -549,10 +551,10 @@ function GameCardHeader({
       </button>
       {countdown && (
         <div className="shrink-0 text-right" aria-live="polite">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-muted">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-muted md:text-xs">
             {countdownLabelText}
           </p>
-          <p className="font-display text-3xl font-bold leading-none tabular-nums text-brand-text">
+          <p className="font-display text-3xl font-bold leading-none tabular-nums text-brand-text md:text-4xl">
             {countdown}
           </p>
         </div>

@@ -122,11 +122,11 @@ export function Layout() {
             <button
               type="button"
               onClick={() => navigate('/')}
-              className="text-sm font-medium text-brand-accent"
+              className="text-sm font-medium text-brand-accent md:text-base"
             >
               {t('common.back')}
             </button>
-            <p className="min-w-0 truncate text-sm font-medium text-brand-primary">
+            <p className="min-w-0 truncate text-sm font-medium text-brand-primary md:text-base">
               {firstDisplayName(profile?.display_name)}
             </p>
           </>
@@ -134,13 +134,13 @@ export function Layout() {
           <img
             src="/brand/logo-padel.webp"
             alt={t('common.brandAlt')}
-            className="h-8 w-auto max-w-[7rem] shrink-0"
+            className="h-8 w-auto max-w-[7rem] shrink-0 md:h-10 md:max-w-[9rem]"
           />
         )}
       </AppTopBar>
 
-      <main data-scroll-y className="scroll-y min-h-0 min-w-0 flex-1 px-3 pb-2 pt-1">
-        <div className="w-full min-w-0 max-w-full">
+      <main data-scroll-y className="scroll-y min-h-0 min-w-0 flex-1 px-3 pb-2 pt-1 md:px-6">
+        <div className="mx-auto w-full min-w-0 max-w-full md:max-w-3xl lg:max-w-4xl">
           <LineBookmarkBanner />
           <Outlet />
         </div>
@@ -153,11 +153,11 @@ export function Layout() {
         <div className="game-dock-inner min-w-0 max-w-full">
           {navItems.map((item) => {
             const active = isActive(loc.pathname, item)
-            const iconSize = 'h-5 w-5'
+            const iconSize = 'h-5 w-5 md:h-6 md:w-6'
             return (
               <Link key={item.to} to={item.to} className={tabClass(active, item.variant)}>
                 <item.Icon className={`game-tab-icon shrink-0 ${iconSize}`} />
-                <span className="max-w-full truncate font-display text-[11px] leading-tight">
+                <span className="max-w-full truncate font-display text-[11px] leading-tight md:text-sm">
                   {t(item.labelKey)}
                 </span>
               </Link>

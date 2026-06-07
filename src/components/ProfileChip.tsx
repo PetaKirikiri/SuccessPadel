@@ -38,12 +38,16 @@ export function ProfileChip({ returnTo, className = '' }: Props) {
     <button
       type="button"
       onClick={openProfile}
-      className={`flex max-w-[8.5rem] items-center gap-1.5 truncate rounded-full border border-brand-border bg-brand-surface py-1.5 pl-1.5 pr-2.5 text-xs font-medium text-brand-primary ${className}`}
+      className={`flex max-w-[8.5rem] items-center gap-1.5 truncate rounded-full border border-brand-border bg-brand-surface py-1.5 pl-1.5 pr-2.5 text-xs font-medium text-brand-primary md:max-w-[11rem] md:gap-2 md:py-2 md:pl-2 md:pr-3 md:text-sm ${className}`}
     >
       {avatarUrl ? (
-        <img src={avatarUrl} alt="" className="h-6 w-6 shrink-0 rounded-full object-cover" />
+        <img
+          src={avatarUrl}
+          alt=""
+          className="h-6 w-6 shrink-0 rounded-full object-cover md:h-8 md:w-8"
+        />
       ) : (
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-bg-alt text-[10px] font-semibold text-brand-muted">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-bg-alt text-[10px] font-semibold text-brand-muted md:h-8 md:w-8 md:text-xs">
           {isSignedIn ? name.trim()[0]?.toUpperCase() ?? '?' : 'G'}
         </span>
       )}

@@ -32,14 +32,16 @@ function PlayTabs({
         onClick={() => onTab('games')}
         className={`game-tab game-tab-competition ${tab === 'games' ? 'game-tab-selected' : ''}`}
       >
-        <span className="font-display text-sm leading-tight">{t('competition.games')}</span>
+        <span className="font-display text-sm leading-tight md:text-base">{t('competition.games')}</span>
       </button>
       <button
         type="button"
         onClick={() => onTab('leaderboard')}
         className={`game-tab game-tab-rank ${tab === 'leaderboard' ? 'game-tab-selected' : ''}`}
       >
-        <span className="font-display text-sm leading-tight">{t('competition.leaderboard')}</span>
+        <span className="font-display text-sm leading-tight md:text-base">
+          {t('competition.leaderboard')}
+        </span>
       </button>
     </div>
   )
@@ -156,13 +158,13 @@ export function CompetitionPlay() {
           <img
             src="/brand/logo-padel.webp"
             alt={t('common.brandAlt')}
-            className="h-8 w-auto max-w-[7rem] shrink-0"
+            className="h-8 w-auto max-w-[7rem] shrink-0 md:h-10 md:max-w-[9rem]"
           />
         </div>
       </AppTopBar>
 
-      <main data-scroll-y className="scroll-y min-h-0 min-w-0 flex-1 px-3 pb-2">
-        <div className="mx-auto w-full max-w-full space-y-3">
+      <main data-scroll-y className="scroll-y min-h-0 min-w-0 flex-1 px-3 pb-2 md:px-6">
+        <div className="mx-auto w-full max-w-full space-y-3 md:max-w-3xl lg:max-w-4xl">
           {loading && !session ? (
             <p className="py-6 text-center text-xs text-brand-muted">{t('common.loading')}</p>
           ) : !session ? (

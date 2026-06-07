@@ -15,7 +15,7 @@ export function LanguagePicker() {
 
   return (
     <div
-      className="flex items-center gap-0.5 rounded-full border border-brand-border bg-brand-surface p-0.5"
+      className="flex items-center gap-0.5 rounded-full border border-brand-border bg-brand-surface p-0.5 md:gap-1 md:p-1"
       role="group"
       aria-label={t('aria.language')}
     >
@@ -28,7 +28,7 @@ export function LanguagePicker() {
             onClick={() => setLocale(option.locale)}
             aria-label={t(option.labelKey)}
             aria-pressed={selected}
-            className={`flex h-7 w-7 items-center justify-center rounded-full text-base leading-none transition ${
+            className={`flex h-7 w-7 items-center justify-center rounded-full text-base leading-none transition md:h-9 md:w-9 md:text-xl ${
               selected ? 'bg-brand-bg-alt ring-1 ring-brand-accent/50' : 'opacity-70 hover:opacity-100'
             }`}
           >

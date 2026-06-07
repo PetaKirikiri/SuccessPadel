@@ -11,7 +11,7 @@ export function GlobalProfileChip() {
 
   return (
     <div className="pointer-events-none fixed right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-[150]">
-      <div className="pointer-events-auto flex flex-row flex-nowrap items-center gap-2" dir="ltr">
+      <div className="pointer-events-auto flex flex-row flex-nowrap items-center gap-2 md:gap-3" dir="ltr">
         <LanguagePicker />
         <ProfileChip returnTo={returnTo} className="shrink-0" />
       </div>
