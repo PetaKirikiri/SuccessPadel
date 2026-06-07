@@ -133,7 +133,7 @@ function CourtMatchCell({
     teamBPlayers?.[1] ?? { id: null, name: fallbackNames[3] ?? '', avatarUrl: null },
   ]
   const playerClass = (isCurrent: boolean, align: 'left' | 'right') =>
-    `flex min-w-0 items-center gap-1.5 rounded px-1 py-0.5 ${
+    `flex min-w-0 items-center gap-1.5 rounded py-0.5 ${isCurrent ? 'px-1' : 'px-0'} ${
       align === 'right' ? 'justify-end' : ''
     } ${isCurrent ? 'bg-brand-bg-alt text-brand-accent' : 'text-brand-text'}`
 
@@ -197,7 +197,7 @@ function CourtMatchCell({
       className="overflow-hidden rounded-lg border border-brand-border/60 bg-brand-surface"
       aria-label={`${teamA[0]} and ${teamA[1]} against ${teamB[0]} and ${teamB[1]}`}
     >
-      <div className="grid grid-cols-2 gap-2 px-2.5 py-2">
+      <div className="grid grid-cols-2 gap-2 px-1 py-2">
         <div className="min-w-0 space-y-1">
           {playerEl(teamAPlayerList[0]!, 'left')}
           {playerEl(teamAPlayerList[1]!, 'left')}
@@ -392,7 +392,7 @@ function GameScoringCourts({
         return (
           <div key={court.courtLabel} className="space-y-1">
             <p className={COURT_LABEL_CLASS}>{court.courtLabel}</p>
-            <div className="rounded-lg border border-brand-border/60 bg-brand-surface px-1 py-1">
+            <div>
               <CourtMatchCell
                 teamA={teamA}
                 teamB={teamB}
@@ -671,7 +671,7 @@ export function CompetitionCourtBoard({
                   return (
                     <div key={court.courtLabel} className="space-y-1">
                       <p className={COURT_LABEL_CLASS}>{court.courtLabel}</p>
-                      <div className="rounded-lg border border-brand-border/60 bg-brand-surface px-1 py-1">
+                      <div>
                         <CourtMatchCell
                           teamA={liveCourt?.teamA ?? court.teamA}
                           teamB={liveCourt?.teamB ?? court.teamB}
