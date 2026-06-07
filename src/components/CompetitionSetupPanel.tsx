@@ -4,10 +4,9 @@ import { supabase } from '../lib/supabaseClient'
 import { CompetitionLayoutPreview } from './CompetitionLayoutPreview'
 import { usesAmericanoScoring } from '../lib/competitionPresets'
 import {
+  americanoScheduleFromSession,
   courtsNeeded,
   isValidCourtLayout,
-  RANKED_AMERICANO_GAMES,
-  RANKED_GAME_MINUTES,
 } from '../lib/competitionLayout'
 import { solveBalancedSchedule } from '../lib/balancedSchedule'
 import { competitionPlayUrl } from '../lib/siteUrl'
@@ -42,7 +41,7 @@ export function CompetitionSetupPanel({ sessionId, session, roster, onRefresh }:
   const isAmericano = usesAmericanoScoring(session)
   const layoutValid = isValidCourtLayout(roster.length)
   const neededCourts = courtsNeeded(roster.length)
-  const gameMinutes = isAmericano ? RANKED_GAME_MINUTES : 0
+  const { totalGames, gameMinutes } = americanoScheduleFromSession(session)
   const isLive = Boolean(session.competition_started_at)
   const canPublish = session.status === 'open' && !isLive
   const playUrl = competitionPlayUrl(sessionId)
@@ -74,7 +73,7 @@ export function CompetitionSetupPanel({ sessionId, session, roster, onRefresh }:
       planRankedSchedule(
         ranked,
         courtNames.slice(0, neededCourts),
-        RANKED_AMERICANO_GAMES,
+        totalGames,
         next,
       ),
     )
@@ -88,7 +87,7 @@ export function CompetitionSetupPanel({ sessionId, session, roster, onRefresh }:
       const ranked = sortRosterByRank(roster)
       const schedule = buildStoredSchedule(
         ranked,
-        solveBalancedSchedule(ranked.length, RANKED_AMERICANO_GAMES, previewSeed),
+        solveBalancedSchedule(ranked.length, totalGames, previewSeed),
       )
       const nextConfig = {
         ...(session.scoring_config ?? {}),

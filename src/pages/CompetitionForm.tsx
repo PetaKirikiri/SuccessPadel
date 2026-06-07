@@ -32,6 +32,14 @@ import {
   toIsoTimestamp,
 } from '../lib/courtSchedule'
 import { useAuth } from '../hooks/useAuth'
+import {
+  AMERICANO_GAME_COUNTS,
+  americanoGamesFromConfig,
+  breakMinutesFromConfig,
+  BREAK_MINUTE_OPTIONS,
+  eventScheduleSummary,
+  gameDurationForEvent,
+} from '../lib/competitionLayout'
 import { supabase } from '../lib/supabaseClient'
 import type { GameSession } from '../lib/types'
 
@@ -78,6 +86,8 @@ export function CompetitionForm() {
   const [americanoScoring, setAmericanoScoring] = useState<AmericanoScoringChoice>(
     AMERICANO_DEFAULT_TARGET,
   )
+  const [gameCount, setGameCount] = useState<(typeof AMERICANO_GAME_COUNTS)[number]>(7)
+  const [breakMinutes, setBreakMinutes] = useState<(typeof BREAK_MINUTE_OPTIONS)[number]>(3)
   const [title, setTitle] = useState('')
   const [seasonId, setSeasonId] = useState('')
   const [seasonLoading, setSeasonLoading] = useState(true)
@@ -87,6 +97,18 @@ export function CompetitionForm() {
 
   const hours = scheduleGridHours()
   const maxDuration = useMemo(() => Math.min(3, maxDurationFromStart(startHour)), [startHour])
+  const schedulePreview = useMemo(() => {
+    if (ruleFormat !== 'americano') return null
+    const startsAtIso = toIsoTimestamp(day, startHour)
+    const startsAt = new Date(startsAtIso)
+    const endsAt = new Date(startsAt.getTime() + duration * 60 * 60 * 1000)
+    const eventMinutes = duration * 60
+    const playMinutes = gameDurationForEvent(eventMinutes, gameCount, breakMinutes)
+    return {
+      summary: eventScheduleSummary(startsAtIso, endsAt.toISOString(), gameCount, breakMinutes),
+      playMinutes,
+    }
+  }, [ruleFormat, day, startHour, duration, gameCount, breakMinutes])
 
   useEffect(() => {
     if (duration > maxDuration) setDuration(maxDuration)
@@ -138,6 +160,14 @@ export function CompetitionForm() {
           setTargetPlayers(cap as 4 | 8 | 12 | 16)
         }
         setAmericanoScoring(americanoScoringFromConfig(g.scoring_config))
+        const savedGames = americanoGamesFromConfig(g.scoring_config)
+        if (AMERICANO_GAME_COUNTS.includes(savedGames as (typeof AMERICANO_GAME_COUNTS)[number])) {
+          setGameCount(savedGames as (typeof AMERICANO_GAME_COUNTS)[number])
+        }
+        const savedBreak = breakMinutesFromConfig(g.scoring_config)
+        if (BREAK_MINUTE_OPTIONS.includes(savedBreak as (typeof BREAK_MINUTE_OPTIONS)[number])) {
+          setBreakMinutes(savedBreak as (typeof BREAK_MINUTE_OPTIONS)[number])
+        }
         if (g.starts_at) {
           setDay(bangkokDateFromIso(g.starts_at))
           setStartHour(
@@ -177,7 +207,9 @@ export function CompetitionForm() {
     const partners = ruleFormat === 'americano' ? null : partnerStyle
     const partnershipMode = rulesToPartnershipMode(ruleFormat, partners)
     const americanoConfig =
-      ruleFormat === 'americano' ? buildAmericanoScoringConfig(americanoScoring) : null
+      ruleFormat === 'americano'
+        ? buildAmericanoScoringConfig(americanoScoring, { games: gameCount, breakMinutes })
+        : null
 
     const payload = {
       season_id: seasonId,
@@ -317,25 +349,67 @@ export function CompetitionForm() {
           </div>
 
           {ruleFormat === 'americano' && (
-            <div className="space-y-1.5">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-                Scoring
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {AMERICANO_TARGETS.map((n) => (
+            <>
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
+                  Scoring
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {AMERICANO_TARGETS.map((n) => (
+                    <Chip
+                      key={n}
+                      active={americanoScoring === n}
+                      onClick={() => setAmericanoScoring(n)}
+                    >
+                      {americanoTargetLabel(n)}
+                    </Chip>
+                  ))}
                   <Chip
-                    key={n}
-                    active={americanoScoring === n}
-                    onClick={() => setAmericanoScoring(n)}
+                    active={americanoScoring === 'open'}
+                    onClick={() => setAmericanoScoring('open')}
                   >
-                    {americanoTargetLabel(n)}
+                    Open
                   </Chip>
-                ))}
-                <Chip active={americanoScoring === 'open'} onClick={() => setAmericanoScoring('open')}>
-                  Open
-                </Chip>
+                </div>
               </div>
-            </div>
+
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
+                  Games
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {AMERICANO_GAME_COUNTS.map((n) => (
+                    <Chip key={n} active={gameCount === n} onClick={() => setGameCount(n)}>
+                      {n}
+                    </Chip>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
+                  Break between games
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {BREAK_MINUTE_OPTIONS.map((n) => (
+                    <Chip key={n} active={breakMinutes === n} onClick={() => setBreakMinutes(n)}>
+                      {n} min
+                    </Chip>
+                  ))}
+                </div>
+              </div>
+
+              {schedulePreview && (
+                <p className="text-xs leading-relaxed text-brand-muted">
+                  {schedulePreview.summary}
+                  {schedulePreview.playMinutes < 12 && (
+                    <span className="mt-1 block text-amber-700">
+                      Games may feel rushed — try fewer games or a longer session.
+                    </span>
+                  )}
+                </p>
+              )}
+            </>
           )}
 
           {ruleFormat === 'king_of_court' && (

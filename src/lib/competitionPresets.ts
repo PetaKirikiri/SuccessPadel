@@ -77,11 +77,19 @@ export function americanoTargetLabel(target: number): string {
 
 export type AmericanoScoringChoice = (typeof AMERICANO_TARGETS)[number] | 'open'
 
-export function buildAmericanoScoringConfig(choice: AmericanoScoringChoice): ScoringConfig {
-  if (choice === 'open') return { americano_unit: 'open' }
+export function buildAmericanoScoringConfig(
+  choice: AmericanoScoringChoice,
+  schedule?: { games?: number; breakMinutes?: number },
+): ScoringConfig {
+  const scheduleFields = {
+    ...(schedule?.games ? { americano_games: schedule.games } : {}),
+    ...(schedule?.breakMinutes !== undefined ? { break_minutes: schedule.breakMinutes } : {}),
+  }
+  if (choice === 'open') return { americano_unit: 'open', ...scheduleFields }
   return {
     americano_target: choice,
     americano_unit: choice === 4 ? 'sets' : 'points',
+    ...scheduleFields,
   }
 }
 

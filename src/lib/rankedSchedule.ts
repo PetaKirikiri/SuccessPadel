@@ -4,7 +4,7 @@ import type { GameRound } from './americanoSchedule'
 import { solveBalancedSchedule, type RoundAssignment } from './balancedSchedule'
 import { courtsNeeded } from './competitionLayout'
 
-export const RANKED_AMERICANO_GAMES = 8
+export const RANKED_AMERICANO_GAMES = 7
 export const RANKED_GAME_MINUTES = 14
 /** Bump when schedule logic changes — logged for debug. */
 export const RANKED_SCHEDULE_VERSION = 9

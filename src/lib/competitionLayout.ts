@@ -1,9 +1,44 @@
 import type { CompetitionPlayer } from '../hooks/useCompetitions'
 import { rosterDisplayName } from '../hooks/useCompetitions'
+import type { GameSession, ScoringConfig } from './types'
 
 export const PLAYERS_PER_COURT = 4
-export const COMPETITION_BREAK_MINUTES = 1
+export const DEFAULT_AMERICANO_GAMES = 7
+export const AMERICANO_GAME_COUNTS = [5, 6, 7, 8, 9, 10, 11] as const
+export const BREAK_MINUTE_OPTIONS = [2, 3, 4, 5] as const
+export const DEFAULT_BREAK_MINUTES = 3
+export const COMPETITION_BREAK_MINUTES = DEFAULT_BREAK_MINUTES
 export { RANKED_AMERICANO_GAMES, RANKED_GAME_MINUTES } from './rankedSchedule'
+
+export function americanoGamesFromConfig(config: ScoringConfig | null | undefined): number {
+  const n = config?.americano_games
+  if (typeof n === 'number' && n >= 4 && n <= 16) return Math.floor(n)
+  return DEFAULT_AMERICANO_GAMES
+}
+
+export function breakMinutesFromConfig(config: ScoringConfig | null | undefined): number {
+  const n = config?.break_minutes
+  if (typeof n === 'number' && n >= 0 && n <= 15) return Math.floor(n)
+  return DEFAULT_BREAK_MINUTES
+}
+
+export function americanoScheduleFromSession(
+  session: Pick<GameSession, 'starts_at' | 'ends_at' | 'scoring_config'> | null,
+): {
+  totalGames: number
+  breakMinutes: number
+  gameMinutes: number
+  eventMinutes: number
+} {
+  const totalGames = americanoGamesFromConfig(session?.scoring_config)
+  const breakMinutes = breakMinutesFromConfig(session?.scoring_config)
+  const eventMinutes =
+    session?.starts_at && session?.ends_at
+      ? eventDurationMinutes(session.starts_at, session.ends_at)
+      : 0
+  const gameMinutes = gameDurationForEvent(eventMinutes, totalGames, breakMinutes)
+  return { totalGames, breakMinutes, gameMinutes, eventMinutes }
+}
 
 export function courtsNeeded(playerCount: number): number {
   return Math.floor(playerCount / PLAYERS_PER_COURT)

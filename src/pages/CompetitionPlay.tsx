@@ -5,7 +5,7 @@ import { CompetitionLeaderboard } from '../components/CompetitionLeaderboard'
 import { useCompetitionBoard } from '../hooks/useCompetitionBoard'
 import { useGuestPlayerClaim } from '../hooks/useGuestPlayerClaim'
 import { usePublicCompetition } from '../hooks/usePublicCompetition'
-import { gameSlotTimes, RANKED_GAME_MINUTES } from '../lib/competitionLayout'
+import { americanoScheduleFromSession, gameSlotTimes } from '../lib/competitionLayout'
 import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
 import { computeAmericanoStandings } from '../lib/competitionStandings'
 import { supabase } from '../lib/supabaseClient'
@@ -75,6 +75,8 @@ export function CompetitionPlay() {
     return () => clearInterval(t)
   }, [])
 
+  const schedule = useMemo(() => americanoScheduleFromSession(session), [session])
+
   const liveStandings = useMemo(
     () => computeAmericanoStandings(roster, rounds, courtMatches),
     [roster, rounds, courtMatches],
@@ -89,13 +91,19 @@ export function CompetitionPlay() {
       })
     }
     if (map.size === 0 && session?.starts_at) {
-      for (let g = 1; g <= rounds.length || 8; g++) {
-        const slot = gameSlotTimes(session.starts_at, g, RANKED_GAME_MINUTES)
+      const games = rounds.length || schedule.totalGames
+      for (let g = 1; g <= games; g++) {
+        const slot = gameSlotTimes(
+          session.starts_at,
+          g,
+          schedule.gameMinutes,
+          schedule.breakMinutes,
+        )
         map.set(g, { startsAt: slot.startsAt.getTime(), endsAt: slot.endsAt.getTime() })
       }
     }
     return map
-  }, [rounds, session?.starts_at])
+  }, [rounds, session?.starts_at, schedule.gameMinutes, schedule.breakMinutes, schedule.totalGames])
 
   const roundStatusByGame = useMemo(() => {
     const map = new Map<number, 'pending' | 'active' | 'complete'>()
@@ -171,6 +179,7 @@ export function CompetitionPlay() {
                 onSubmitScores={handleSubmitScores}
                 onSaved={() => void refresh(true)}
                 now={now}
+                gameMinutes={schedule.gameMinutes}
                 roundTimesByGame={roundTimesByGame}
                 roundStatusByGame={roundStatusByGame}
               />

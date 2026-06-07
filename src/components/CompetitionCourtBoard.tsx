@@ -39,6 +39,7 @@ type Props = {
   onSubmitScores?: (entries: CourtScoreSubmit[]) => Promise<void>
   onSaved?: () => void
   now?: number
+  gameMinutes?: number
   roundTimesByGame?: Map<number, { startsAt: number; endsAt: number }>
   roundStatusByGame?: Map<number, 'pending' | 'active' | 'complete'>
 }
@@ -371,6 +372,7 @@ export function CompetitionCourtBoard({
   onSubmitScores,
   onSaved,
   now,
+  gameMinutes = RANKED_GAME_MINUTES,
   roundTimesByGame,
   roundStatusByGame,
 }: Props) {
@@ -455,7 +457,7 @@ export function CompetitionCourtBoard({
                       isLiveNow ? 'text-brand-accent' : 'text-brand-primary/60'
                     }`}
                   >
-                    {gameCountdown(clock, times, RANKED_GAME_MINUTES)}
+                    {gameCountdown(clock, times, gameMinutes)}
                   </p>
                 </div>
               )}

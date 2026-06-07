@@ -39,6 +39,8 @@ export type ScoringConfig = {
   margin_bonus_cap?: number
   americano_target?: number
   americano_unit?: 'points' | 'sets' | 'open'
+  americano_games?: number
+  break_minutes?: number
 }
 
 export type Court = {

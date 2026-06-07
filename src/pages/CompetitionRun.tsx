@@ -17,9 +17,9 @@ import {
   usesAmericanoScoring,
 } from '../lib/competitionPresets'
 import {
+  americanoScheduleFromSession,
   courtsNeeded,
   isValidCourtLayout,
-  RANKED_AMERICANO_GAMES,
   RANKED_GAME_MINUTES,
 } from '../lib/competitionLayout'
 import { solveBalancedSchedule } from '../lib/balancedSchedule'
@@ -240,7 +240,8 @@ export function CompetitionRun() {
 
   const layoutValid = isValidCourtLayout(roster.length)
   const rankedRoster = useMemo(() => sortRosterByRank(roster), [roster])
-  const gameMinutes = isAmericano ? RANKED_GAME_MINUTES : 0
+  const { totalGames, gameMinutes: scheduledGameMinutes } = americanoScheduleFromSession(session)
+  const gameMinutes = isAmericano ? scheduledGameMinutes : 0
 
   const reviewFromDb = finished && rounds.length > 0
 
@@ -248,7 +249,7 @@ export function CompetitionRun() {
     if (!isAmericano) return []
     if (reviewFromDb) return gamesFromDbRounds(rounds, clubCourts)
     if (!layoutValid) return []
-    return planRankedSchedule(rankedRoster, courtNames, RANKED_AMERICANO_GAMES, scheduleSeed)
+    return planRankedSchedule(rankedRoster, courtNames, totalGames, scheduleSeed)
   }, [
     isAmericano,
     reviewFromDb,
@@ -258,6 +259,7 @@ export function CompetitionRun() {
     rankedRoster,
     courtNames,
     scheduleSeed,
+    totalGames,
   ])
 
   const courtBoardColumns = useMemo(() => {
@@ -323,7 +325,7 @@ export function CompetitionRun() {
 
   const buildSchedulePayload = (seed: number): StoredScheduleRound[] => {
     const ranked = sortRosterByRank(roster)
-    const rounds = solveBalancedSchedule(ranked.length, RANKED_AMERICANO_GAMES, seed)
+    const rounds = solveBalancedSchedule(ranked.length, totalGames, seed)
     return buildStoredSchedule(ranked, rounds)
   }
 
@@ -528,6 +530,7 @@ export function CompetitionRun() {
                   }
                 }}
                 onSaved={() => void refresh()}
+                gameMinutes={gameMinutes}
               />
             </div>
           ) : (
@@ -638,6 +641,7 @@ export function CompetitionRun() {
                   }
                 }}
                 now={now}
+                gameMinutes={gameMinutes}
                 roundTimesByGame={roundTimesByGame}
                 roundStatusByGame={roundStatusByGame}
               />

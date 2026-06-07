@@ -5,9 +5,9 @@ import {
   usesAmericanoScoring,
 } from '../lib/competitionPresets'
 import {
+  americanoScheduleFromSession,
   courtsNeeded,
   isValidCourtLayout,
-  RANKED_AMERICANO_GAMES,
   RANKED_GAME_MINUTES,
 } from '../lib/competitionLayout'
 import {
@@ -89,7 +89,8 @@ export function useCompetitionBoard(
   const layoutValid = isValidCourtLayout(roster.length)
   const neededCourts = courtsNeeded(roster.length)
   const scheduleSeed = scheduleSeedFromSession(session?.scoring_config)
-  const gameMinutes = isAmericano ? RANKED_GAME_MINUTES : 0
+  const { totalGames, gameMinutes: scheduledGameMinutes } = americanoScheduleFromSession(session)
+  const gameMinutes = isAmericano ? scheduledGameMinutes : 0
 
   const courtNames = useMemo(
     () => clubCourts.slice(0, neededCourts).map((c) => c.name),
@@ -105,7 +106,7 @@ export function useCompetitionBoard(
     if (!isAmericano) return []
     if (reviewFromDb) return gamesFromDbRounds(rounds, clubCourts)
     if (!layoutValid) return []
-    return planRankedSchedule(rankedRoster, courtNames, RANKED_AMERICANO_GAMES, scheduleSeed)
+    return planRankedSchedule(rankedRoster, courtNames, totalGames, scheduleSeed)
   }, [
     isAmericano,
     reviewFromDb,
@@ -115,6 +116,7 @@ export function useCompetitionBoard(
     rankedRoster,
     courtNames,
     scheduleSeed,
+    totalGames,
   ])
 
   const columns: CourtColumn[] = useMemo(() => {
