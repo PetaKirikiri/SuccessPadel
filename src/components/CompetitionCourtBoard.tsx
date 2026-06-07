@@ -104,12 +104,12 @@ function CourtMatchCell({
 }) {
   const fieldLabel = scoreUnit === 'sets' ? 'Sets' : scoreUnit === 'open' ? 'Score' : 'Pts'
   const editable = Boolean(onScoreA && onScoreB && !disabled)
-  const nameClass = 'truncate text-base font-semibold leading-tight text-brand-text'
+  const nameClass = 'truncate text-xs font-medium leading-tight text-brand-text'
 
   const scoreInputClass =
-    'w-10 rounded border border-black/10 bg-white/80 px-0.5 py-1 text-center text-lg font-bold tabular-nums text-brand-primary disabled:bg-white/40 disabled:text-brand-muted dark:border-white/15 dark:bg-black/20'
+    'w-9 rounded border border-brand-border bg-brand-surface px-0.5 py-0.5 text-center text-sm font-semibold tabular-nums text-brand-text disabled:text-brand-muted'
 
-  const redScore = editable ? (
+  const scoreAEl = editable ? (
     <input
       type="text"
       inputMode="numeric"
@@ -118,13 +118,13 @@ function CourtMatchCell({
       placeholder="—"
       onChange={(e) => onScoreA?.(e.target.value.replace(/\D/g, ''))}
       className={scoreInputClass}
-      aria-label={`Red ${fieldLabel}`}
+      aria-label={`Team A ${fieldLabel}`}
     />
   ) : (
-    <span className="text-xl font-bold tabular-nums text-red-800 dark:text-red-200">{scoreA || '—'}</span>
+    <span className="text-sm font-semibold tabular-nums text-brand-text">{scoreA || '—'}</span>
   )
 
-  const blueScore = editable ? (
+  const scoreBEl = editable ? (
     <input
       type="text"
       inputMode="numeric"
@@ -133,45 +133,31 @@ function CourtMatchCell({
       placeholder="—"
       onChange={(e) => onScoreB?.(e.target.value.replace(/\D/g, ''))}
       className={scoreInputClass}
-      aria-label={`Blue ${fieldLabel}`}
+      aria-label={`Team B ${fieldLabel}`}
     />
   ) : (
-    <span className="text-xl font-bold tabular-nums text-blue-800 dark:text-blue-200">{scoreB || '—'}</span>
-  )
-
-  const scoreStrip = editable ? (
-    <div className="flex items-center gap-0.5">
-      <div className="rounded bg-red-500/40 px-1 py-0.5 dark:bg-red-500/50">{redScore}</div>
-      <span className="text-xs font-semibold text-brand-muted">–</span>
-      <div className="rounded bg-blue-500/40 px-1 py-0.5 dark:bg-blue-500/50">{blueScore}</div>
-    </div>
-  ) : (
-    <div className="flex items-baseline gap-0.5 tabular-nums">
-      <div className="rounded bg-red-500/40 px-1.5 py-0.5 dark:bg-red-500/50">
-        <span className="text-xl font-bold text-red-950 dark:text-red-50">{scoreA || '—'}</span>
-      </div>
-      <span className="text-sm font-semibold text-brand-muted">–</span>
-      <div className="rounded bg-blue-500/40 px-1.5 py-0.5 dark:bg-blue-500/50">
-        <span className="text-xl font-bold text-blue-950 dark:text-blue-50">{scoreB || '—'}</span>
-      </div>
-    </div>
+    <span className="text-sm font-semibold tabular-nums text-brand-text">{scoreB || '—'}</span>
   )
 
   return (
     <div
-      className="flex min-h-[3.25rem] overflow-hidden rounded-lg border border-brand-border/60"
+      className="flex min-h-[2.75rem] items-stretch overflow-hidden rounded-lg border border-brand-border/60 bg-brand-surface"
       aria-label={`${teamA[0]} and ${teamA[1]} against ${teamB[0]} and ${teamB[1]}`}
     >
-      <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 bg-red-500/25 px-2 py-1 dark:bg-red-500/35">
-        <p className={`${nameClass} text-red-950 dark:text-red-50`}>{teamA[0]}</p>
-        <p className={`${nameClass} text-red-950 dark:text-red-50`}>{teamA[1]}</p>
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 border-r border-brand-border/60 px-2 py-1.5">
+        <p className={nameClass}>{teamA[0]}</p>
+        <p className={nameClass}>{teamA[1]}</p>
       </div>
 
-      <div className="flex shrink-0 items-center justify-center px-1">{scoreStrip}</div>
+      <div className="flex shrink-0 items-center gap-1 px-2 tabular-nums">
+        {scoreAEl}
+        <span className="text-xs text-brand-muted">–</span>
+        {scoreBEl}
+      </div>
 
-      <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 bg-blue-500/25 px-2 py-1 text-right dark:bg-blue-500/35">
-        <p className={`${nameClass} text-blue-950 dark:text-blue-50`}>{teamB[0]}</p>
-        <p className={`${nameClass} text-blue-950 dark:text-blue-50`}>{teamB[1]}</p>
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 border-l border-brand-border/60 px-2 py-1.5 text-right">
+        <p className={nameClass}>{teamB[0]}</p>
+        <p className={nameClass}>{teamB[1]}</p>
       </div>
     </div>
   )
@@ -199,7 +185,6 @@ function GameScoringSection({
   scoreUnit,
   scoringOpen,
   canEdit,
-  isHighlighted,
   onSubmitScores,
   onSaved,
 }: {
@@ -211,7 +196,6 @@ function GameScoringSection({
   scoreUnit: AmericanoScoringUnit
   scoringOpen: boolean
   canEdit: boolean
-  isHighlighted: boolean
   onSubmitScores?: (entries: CourtScoreSubmit[]) => Promise<void>
   onSaved?: () => void
 }) {
@@ -312,13 +296,7 @@ function GameScoringSection({
             <p className="text-xs font-bold uppercase tracking-wide text-brand-muted">
               {court.courtLabel}
             </p>
-            <div
-              className={`rounded-lg border px-1.5 py-1 ${
-                isHighlighted
-                  ? 'border-brand-accent/50 bg-brand-accent/5'
-                  : 'border-brand-border/60 bg-brand-surface/40'
-              }`}
-            >
+            <div className="rounded-lg border border-brand-border/60 bg-brand-surface px-1 py-1">
               <CourtMatchCell
                 teamA={teamA}
                 teamB={teamB}
@@ -440,54 +418,36 @@ export function CompetitionCourtBoard({
           roundTimesByGame,
           roundStatusByGame,
         )
-        const isHighlighted = !finished && (isLiveNow || (isActive && mode === 'scoring'))
+        const countdown =
+          mode === 'scoring' && !finished
+            ? gameCountdown(clock, times, gameMinutes)
+            : null
 
         return (
-          <div
-            key={game.gameNumber}
-            className={`game-card overflow-hidden p-0 ${
-              finished ? 'shadow-sm' : 'shadow-md'
-            } ${
-              isHighlighted
-                ? 'border-brand-accent bg-brand-bg-alt ring-2 ring-brand-accent/35'
-                : 'border-brand-border bg-brand-surface'
-            }`}
-          >
-            <div className={isHighlighted ? 'bg-brand-accent/15' : finished ? '' : 'bg-brand-bg-alt'}>
-              <div className="px-3 py-2">
-                <p
-                  className={`font-display font-bold leading-none tracking-tight text-brand-primary ${
-                    finished ? 'text-base' : 'text-lg'
-                  }`}
-                >
+          <div key={game.gameNumber} className="game-card overflow-hidden p-0">
+            <div className="flex items-baseline justify-between gap-2 border-b border-brand-border/60 px-3 py-2">
+              <div className="min-w-0">
+                <p className="font-display text-sm font-semibold text-brand-primary">
                   Game {game.gameNumber}
+                  {isLiveNow ? (
+                    <span className="ml-1.5 text-[10px] font-medium text-brand-muted">· Live</span>
+                  ) : null}
                 </p>
-                {finished && game.timeLabel && (
-                  <p className="mt-0.5 text-[11px] tabular-nums text-brand-muted">{game.timeLabel}</p>
+                {game.timeLabel && (
+                  <p className="text-[10px] tabular-nums text-brand-muted">{game.timeLabel}</p>
                 )}
               </div>
-              {mode === 'scoring' && !finished && (
-                <div
-                  className={`px-3 pb-2 pt-0 ${isLiveNow ? 'bg-brand-accent/10' : ''}`}
+              {countdown && (
+                <p
+                  className="shrink-0 font-display text-base font-semibold tabular-nums text-brand-text"
                   aria-live="polite"
                 >
-                  <p
-                    className={`text-center font-display text-5xl font-bold leading-none tabular-nums tracking-tight ${
-                      isLiveNow ? 'text-brand-accent' : 'text-brand-primary/60'
-                    }`}
-                  >
-                    {gameCountdown(clock, times, gameMinutes)}
-                  </p>
-                </div>
-              )}
-              {mode === 'preview' && game.timeLabel && (
-                <p className="px-4 pb-3 text-center text-xs font-semibold tabular-nums text-brand-muted">
-                  {game.timeLabel}
+                  {countdown}
                 </p>
               )}
             </div>
 
-            <div className="border-t border-brand-border/50 bg-brand-surface px-2 pb-2 pt-2">
+            <div className="px-2 pb-2 pt-2">
                 {mode === 'scoring' && matchForCourt ? (
                   <GameScoringSection
                     game={game}
@@ -500,7 +460,6 @@ export function CompetitionCourtBoard({
                     scoreUnit={scoreUnit}
                     scoringOpen={Boolean(canLog)}
                     canEdit={Boolean(canLog)}
-                    isHighlighted={isHighlighted}
                     onSubmitScores={onSubmitScores}
                     onSaved={onSaved}
                   />
@@ -525,7 +484,7 @@ export function CompetitionCourtBoard({
                           <p className="text-xs font-bold uppercase tracking-wide text-brand-muted">
                             {court.courtLabel}
                           </p>
-                          <div className="rounded-lg border border-brand-border/60 bg-brand-surface/40 px-1.5 py-1">
+                          <div className="rounded-lg border border-brand-border/60 bg-brand-surface px-1 py-1">
                             <CourtMatchCell
                               teamA={liveCourt?.teamA ?? court.teamA}
                               teamB={liveCourt?.teamB ?? court.teamB}

@@ -18,9 +18,6 @@ type Props = {
   onRefresh?: () => void
 }
 
-const META_PILL =
-  'rounded-full border border-brand-border px-2 py-0.5 text-[10px] font-medium text-brand-muted'
-
 export function CompetitionCurrentGameCard({ row, isAdmin = false, onRefresh }: Props) {
   const [busy, setBusy] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -45,6 +42,8 @@ export function CompetitionCurrentGameCard({ row, isAdmin = false, onRefresh }: 
       ? rosterLabel(rosterCount, target, row.player_cap_mode === 'flexible')
       : String(rosterCount)
 
+  const metaParts = [badge, row.skill_level, row.gender, spots].filter(Boolean)
+
   const remove = async () => {
     const warning = isLive
       ? `"${row.title}" is live. Delete anyway? Scores and roster will be lost.`
@@ -67,39 +66,24 @@ export function CompetitionCurrentGameCard({ row, isAdmin = false, onRefresh }: 
         to={`/competitions/${row.id}`}
         className="block transition-opacity active:opacity-80"
       >
-        <div className="space-y-2.5 px-3 py-3">
-          <div className="flex min-w-0 items-start gap-2 border-b border-brand-border/60 pb-2.5">
-            <div className="min-w-0 flex-1 space-y-0.5">
+        <div className="px-3 py-2.5">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="min-w-0 flex-1">
               <p className="font-display text-sm font-semibold leading-snug text-brand-primary">
                 {row.title}
               </p>
-              {scheduled && <p className="text-[11px] text-brand-muted">{scheduled}</p>}
+              <p className="mt-0.5 text-[11px] leading-snug text-brand-muted">
+                {[scheduled, metaParts.join(' · ')].filter(Boolean).join(' · ')}
+              </p>
+              {countdown && (
+                <p className="mt-0.5 text-[11px] tabular-nums text-brand-muted">
+                  {countdown.label} {countdown.value}
+                </p>
+              )}
+              <p className="mt-1 text-[11px] leading-snug text-brand-muted">{spiel}</p>
             </div>
-            <span className="shrink-0 pt-0.5 text-sm text-brand-muted">›</span>
+            <span className="shrink-0 text-sm text-brand-muted">›</span>
           </div>
-
-          {countdown && (
-            <div className="flex items-baseline justify-between gap-2 border-b border-brand-border/60 pb-2.5">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-brand-muted">
-                {countdown.label}
-              </span>
-              <span className="font-display text-base font-semibold tabular-nums text-brand-text">
-                {countdown.value}
-              </span>
-            </div>
-          )}
-
-          <div className="flex flex-wrap gap-1.5">
-            {badge && <span className={META_PILL}>{badge}</span>}
-            {row.skill_level && <span className={META_PILL}>{row.skill_level}</span>}
-            {row.gender && <span className={META_PILL}>{row.gender}</span>}
-            <span className={META_PILL}>{spots}</span>
-          </div>
-
-          <p className="text-[11px] leading-relaxed text-brand-muted">{spiel}</p>
-          {row.rules?.trim() && !spiel.includes(row.rules.trim()) && (
-            <p className="text-[11px] leading-relaxed text-brand-muted">{row.rules.trim()}</p>
-          )}
         </div>
       </Link>
 
