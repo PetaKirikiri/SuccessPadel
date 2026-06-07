@@ -143,27 +143,31 @@ function CourtMatchCell({
 
   return (
     <div
-      className="grid min-h-[4rem] grid-cols-2 overflow-hidden rounded-lg border border-brand-border/60"
+      className="grid min-h-[4rem] grid-cols-[1fr_auto_1fr] grid-rows-2 overflow-hidden rounded-lg border border-brand-border/60"
       aria-label={`${teamA[0]} and ${teamA[1]} against ${teamB[0]} and ${teamB[1]}`}
     >
-      <p className={`${nameClass} bg-red-500/20 px-2 py-1.5 text-red-950 dark:bg-red-500/30 dark:text-red-50`}>
+      <p
+        className={`${nameClass} col-start-1 row-start-1 flex items-center bg-red-500/20 px-2 py-1 text-red-950 dark:bg-red-500/30 dark:text-red-50`}
+      >
         {teamA[0]}
       </p>
       <p
-        className={`${nameClass} bg-blue-500/20 px-2 py-1.5 text-right text-blue-950 dark:bg-blue-500/30 dark:text-blue-50`}
+        className={`${nameClass} col-start-1 row-start-2 flex items-center bg-red-500/20 px-2 py-1 text-red-950 dark:bg-red-500/30 dark:text-red-50`}
       >
-        {teamB[0]}
+        {teamA[1]}
       </p>
 
-      <div className="col-span-2 flex items-center justify-center border-y border-brand-border/50 bg-brand-surface px-2 py-1">
+      <div className="col-start-2 row-start-1 row-span-2 flex items-center justify-center border-x border-brand-border/40 bg-brand-surface px-1.5">
         {scoreBlock}
       </div>
 
-      <p className={`${nameClass} bg-red-500/20 px-2 py-1.5 text-red-950 dark:bg-red-500/30 dark:text-red-50`}>
-        {teamA[1]}
+      <p
+        className={`${nameClass} col-start-3 row-start-1 flex items-center justify-end bg-blue-500/20 px-2 py-1 text-right text-blue-950 dark:bg-blue-500/30 dark:text-blue-50`}
+      >
+        {teamB[0]}
       </p>
       <p
-        className={`${nameClass} bg-blue-500/20 px-2 py-1.5 text-right text-blue-950 dark:bg-blue-500/30 dark:text-blue-50`}
+        className={`${nameClass} col-start-3 row-start-2 flex items-center justify-end bg-blue-500/20 px-2 py-1 text-right text-blue-950 dark:bg-blue-500/30 dark:text-blue-50`}
       >
         {teamB[1]}
       </p>
