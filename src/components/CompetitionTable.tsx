@@ -330,7 +330,12 @@ export function CompetitionTable({
             {tab === 'past' ? 'No past games yet.' : 'No current games.'}
           </p>
           {tab === 'current' && isAdmin ? (
-            <p className="text-xs text-brand-muted">Tap + to create tonight&apos;s competition.</p>
+            <>
+              <Link to="/competitions/new" className="brand-btn inline-block px-6 py-2">
+                Add competition
+              </Link>
+              <p className="text-xs text-brand-muted">Or tap + in the corner.</p>
+            </>
           ) : tab === 'current' ? (
             <p className="text-xs text-brand-muted">Check back when the organiser posts one.</p>
           ) : null}
