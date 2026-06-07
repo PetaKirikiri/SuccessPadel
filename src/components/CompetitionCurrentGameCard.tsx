@@ -18,6 +18,9 @@ type Props = {
   onRefresh?: () => void
 }
 
+const META_PILL =
+  'rounded-full border border-brand-border px-2 py-0.5 text-[10px] font-medium text-brand-muted'
+
 export function CompetitionCurrentGameCard({ row, isAdmin = false, onRefresh }: Props) {
   const [busy, setBusy] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -64,54 +67,36 @@ export function CompetitionCurrentGameCard({ row, isAdmin = false, onRefresh }: 
         to={`/competitions/${row.id}`}
         className="block transition-opacity active:opacity-80"
       >
-        <div className="space-y-2 px-3 py-3">
-          <div className="flex min-w-0 items-start gap-2">
-            <div className="min-w-0 flex-1 space-y-1">
+        <div className="space-y-2.5 px-3 py-3">
+          <div className="flex min-w-0 items-start gap-2 border-b border-brand-border/60 pb-2.5">
+            <div className="min-w-0 flex-1 space-y-0.5">
               <p className="font-display text-sm font-semibold leading-snug text-brand-primary">
                 {row.title}
               </p>
               {scheduled && <p className="text-[11px] text-brand-muted">{scheduled}</p>}
             </div>
-            <span className="shrink-0 text-lg leading-none text-brand-muted">›</span>
+            <span className="shrink-0 pt-0.5 text-sm text-brand-muted">›</span>
           </div>
 
           {countdown && (
-            <div className="flex items-baseline justify-between gap-2 rounded-lg bg-brand-bg-alt/80 px-2.5 py-2">
-              <span className="text-[11px] font-medium text-brand-muted">{countdown.label}</span>
-              <span className="font-display text-lg font-semibold tabular-nums text-brand-accent">
+            <div className="flex items-baseline justify-between gap-2 border-b border-brand-border/60 pb-2.5">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-brand-muted">
+                {countdown.label}
+              </span>
+              <span className="font-display text-base font-semibold tabular-nums text-brand-text">
                 {countdown.value}
               </span>
             </div>
           )}
 
           <div className="flex flex-wrap gap-1.5">
-            {badge && (
-              <span
-                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                  phase === 'live'
-                    ? 'bg-brand-accent text-white'
-                    : 'border border-brand-border text-brand-muted'
-                }`}
-              >
-                {badge}
-              </span>
-            )}
-            {row.skill_level && (
-              <span className="rounded-full bg-brand-bg-alt px-2 py-0.5 text-[10px] font-semibold text-brand-accent">
-                {row.skill_level}
-              </span>
-            )}
-            {row.gender && (
-              <span className="rounded-full border border-brand-border px-2 py-0.5 text-[10px] font-semibold text-brand-sage">
-                {row.gender}
-              </span>
-            )}
-            <span className="rounded-full border border-brand-border px-2 py-0.5 text-[10px] font-medium text-brand-muted">
-              {spots}
-            </span>
+            {badge && <span className={META_PILL}>{badge}</span>}
+            {row.skill_level && <span className={META_PILL}>{row.skill_level}</span>}
+            {row.gender && <span className={META_PILL}>{row.gender}</span>}
+            <span className={META_PILL}>{spots}</span>
           </div>
 
-          <p className="text-[11px] leading-relaxed text-brand-text">{spiel}</p>
+          <p className="text-[11px] leading-relaxed text-brand-muted">{spiel}</p>
           {row.rules?.trim() && !spiel.includes(row.rules.trim()) && (
             <p className="text-[11px] leading-relaxed text-brand-muted">{row.rules.trim()}</p>
           )}
@@ -119,10 +104,10 @@ export function CompetitionCurrentGameCard({ row, isAdmin = false, onRefresh }: 
       </Link>
 
       {isAdmin ? (
-        <div className="flex gap-2 border-t border-brand-border/50 px-3 py-2.5">
+        <div className="flex gap-2 border-t border-brand-border/60 px-3 py-2.5">
           <Link
             to={`/competitions/${row.id}/edit`}
-            className="brand-btn flex-1 py-2 text-center text-sm"
+            className="brand-btn-outline flex-1 py-2 text-center text-sm"
           >
             Edit
           </Link>
@@ -130,7 +115,7 @@ export function CompetitionCurrentGameCard({ row, isAdmin = false, onRefresh }: 
             type="button"
             disabled={busy}
             onClick={() => void remove()}
-            className="flex-1 rounded-lg border-2 border-red-300 bg-red-50 py-2 text-sm font-semibold text-red-700 disabled:opacity-50"
+            className="flex-1 rounded-xl border border-brand-border py-2 text-sm font-medium text-brand-muted disabled:opacity-50"
           >
             Delete
           </button>
