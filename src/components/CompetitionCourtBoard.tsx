@@ -104,7 +104,7 @@ function CourtMatchCell({
 }) {
   const fieldLabel = scoreUnit === 'sets' ? 'Sets' : scoreUnit === 'open' ? 'Score' : 'Pts'
   const editable = Boolean(onScoreA && onScoreB && !disabled)
-  const nameClass = 'truncate text-xs font-medium leading-tight text-brand-text'
+  const nameClass = 'truncate text-lg font-semibold leading-tight text-brand-text'
 
   const scoreInputClass =
     'w-9 rounded border border-brand-border bg-brand-surface px-0.5 py-0.5 text-center text-sm font-semibold tabular-nums text-brand-text disabled:text-brand-muted'
@@ -141,10 +141,10 @@ function CourtMatchCell({
 
   return (
     <div
-      className="flex min-h-[2.75rem] items-stretch overflow-hidden rounded-lg border border-brand-border/60 bg-brand-surface"
+      className="flex min-h-[4.5rem] items-stretch overflow-hidden rounded-lg border border-brand-border/60 bg-brand-surface"
       aria-label={`${teamA[0]} and ${teamA[1]} against ${teamB[0]} and ${teamB[1]}`}
     >
-      <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 border-r border-brand-border/60 px-2 py-1.5">
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 border-r border-brand-border/60 px-2.5 py-2">
         <p className={nameClass}>{teamA[0]}</p>
         <p className={nameClass}>{teamA[1]}</p>
       </div>
@@ -155,7 +155,7 @@ function CourtMatchCell({
         {scoreBEl}
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 border-l border-brand-border/60 px-2 py-1.5 text-right">
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 border-l border-brand-border/60 px-2.5 py-2 text-right">
         <p className={nameClass}>{teamB[0]}</p>
         <p className={nameClass}>{teamB[1]}</p>
       </div>
