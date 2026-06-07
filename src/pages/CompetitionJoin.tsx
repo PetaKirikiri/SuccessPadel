@@ -3,7 +3,6 @@ import { useParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { usePublicCompetition } from '../hooks/usePublicCompetition'
 import { rosterDisplayName } from '../hooks/useCompetitions'
-import { isBrowserLineLoginConfigured, startLineLogin } from '../lib/line/auth'
 import { supabase } from '../lib/supabaseClient'
 
 export function CompetitionJoin() {
@@ -23,8 +22,6 @@ export function CompetitionJoin() {
   const alreadyIn = userId
     ? roster.some((r) => r.profile_id === userId)
     : false
-  const lineEnabled = isBrowserLineLoginConfigured()
-
   useEffect(() => {
     if (profile?.display_name && !name) setName(profile.display_name)
   }, [profile?.display_name, name])
@@ -69,16 +66,6 @@ export function CompetitionJoin() {
     }
     setDone(true)
     await refresh(true)
-  }
-
-  const handleLineLogin = async () => {
-    if (!id) return
-    setError(null)
-    setBusy(true)
-    const { error: lineError, redirected } = await startLineLogin(`/competitions/${id}/join`)
-    if (redirected) return
-    setBusy(false)
-    if (lineError) setError(lineError)
   }
 
   const showSuccess = done || alreadyIn
@@ -148,24 +135,6 @@ export function CompetitionJoin() {
                 {busy ? 'Adding…' : 'Add me'}
               </button>
             </div>
-
-            {lineEnabled && (
-              <>
-                <p className="text-center text-xs text-brand-muted">or</p>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void handleLineLogin()}
-                  className="w-full rounded-xl bg-[#06C755] px-8 py-3 text-base font-semibold text-white disabled:opacity-60"
-                >
-                  Sign in with LINE
-                </button>
-                <p className="text-center text-[11px] text-brand-muted">
-                  Uses your LINE name and links your account. You&apos;ll come back to this page
-                  after signing in.
-                </p>
-              </>
-            )}
 
             {roster.length > 0 && (
               <div className="game-card px-4 py-3">

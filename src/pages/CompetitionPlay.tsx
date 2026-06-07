@@ -6,7 +6,6 @@ import { useAuth } from '../hooks/useAuth'
 import { useCompetitionBoard } from '../hooks/useCompetitionBoard'
 import { useLineClientProfile } from '../hooks/useLineClientProfile'
 import { usePublicCompetition } from '../hooks/usePublicCompetition'
-import { saveReturnTo } from '../lib/authReturnTo'
 import { americanoScheduleFromSession, gameSlotTimes } from '../lib/competitionLayout'
 import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
 import { computeAmericanoStandings } from '../lib/competitionStandings'
@@ -40,20 +39,9 @@ export function CompetitionPlay() {
   const navigate = useNavigate()
   const { profile, user } = useAuth()
   const lineClient = useLineClientProfile()
-  const headerName =
-    profile?.display_name ??
-    lineClient.displayName ??
-    (lineClient.lineLoggedIn ? 'LINE connected' : user ? 'Profile' : 'Sign in')
+  const headerName = profile?.display_name ?? lineClient.displayName ?? 'Profile'
   const headerAvatar = profile?.avatar_url ?? lineClient.pictureUrl ?? null
-
-  const openProfile = () => {
-    if (!user) {
-      saveReturnTo('/profile')
-      navigate('/login', { replace: true, state: { from: '/profile' } })
-      return
-    }
-    navigate('/profile')
-  }
+  const showProfileChip = Boolean(user)
 
   const {
     session,
@@ -153,20 +141,22 @@ export function CompetitionPlay() {
           >
             ← Back
           </button>
-          <button
-            type="button"
-            onClick={openProfile}
-            className="flex max-w-[8.5rem] items-center gap-1.5 truncate rounded-full border border-brand-border bg-brand-surface py-1.5 pl-1.5 pr-2.5 text-xs font-medium text-brand-primary"
-          >
-            {headerAvatar ? (
-              <img
-                src={headerAvatar}
-                alt=""
-                className="h-6 w-6 shrink-0 rounded-full object-cover"
-              />
-            ) : null}
-            <span className="truncate">{headerName}</span>
-          </button>
+          {showProfileChip ? (
+            <button
+              type="button"
+              onClick={() => navigate('/profile')}
+              className="flex max-w-[8.5rem] items-center gap-1.5 truncate rounded-full border border-brand-border bg-brand-surface py-1.5 pl-1.5 pr-2.5 text-xs font-medium text-brand-primary"
+            >
+              {headerAvatar ? (
+                <img
+                  src={headerAvatar}
+                  alt=""
+                  className="h-6 w-6 shrink-0 rounded-full object-cover"
+                />
+              ) : null}
+              <span className="truncate">{headerName}</span>
+            </button>
+          ) : null}
         </div>
       </header>
 

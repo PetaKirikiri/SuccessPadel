@@ -4,16 +4,11 @@ import { useAuth } from '../hooks/useAuth'
 import { authRedirectUrl } from '../lib/authRedirect'
 import { consumeReturnTo, saveReturnTo } from '../lib/authReturnTo'
 import { syncProfileForUser } from '../lib/authProfile'
-import { LineBrowserLoginPanel } from '../components/LineBrowserLoginPanel'
 import { LineNativeLoginPanel } from '../components/LineNativeLoginPanel'
-import {
-  isBrowserLineLoginConfigured,
-  isLineLoginConfigured,
-  startLineLogin,
-} from '../lib/line/auth'
+import { isLineLoginConfigured, startLineLogin } from '../lib/line/auth'
+import { linkTokenFromLocation } from '../lib/line/playerLink'
 import { isNativeApp } from '../lib/native/app'
 import { lineOAuthCallbackCode } from '../lib/line/oauth'
-import { siteOrigin } from '../lib/siteUrl'
 import { supabase } from '../lib/supabaseClient'
 
 type AuthMode = 'sign-in' | 'sign-up' | 'forgot'
@@ -35,14 +30,13 @@ export function Login() {
   const navigate = useNavigate()
   const location = useLocation()
   const { session, loading } = useAuth()
-  const signupUrl = `${siteOrigin()}/login`
   const loginState = (location.state as { from?: string } | null) ?? {}
   const fromPath = loginState.from
   const searchParams = new URLSearchParams(location.search)
   const forceEmail = searchParams.get('email') === '1'
   const nativeApp = isNativeApp()
   const lineEnabled = isLineLoginConfigured()
-  const browserLineLogin = isBrowserLineLoginConfigured() && !nativeApp
+  const playerLinkEntry = Boolean(linkTokenFromLocation(location.search))
 
   const [showEmail, setShowEmail] = useState(forceEmail && !nativeApp)
   const [email, setEmail] = useState('')
@@ -74,6 +68,11 @@ export function Login() {
       navigate(fromPath ?? consumeReturnTo('/'), { replace: true })
     }
   }, [loading, session, fromPath, navigate, oauthReturning])
+
+  useEffect(() => {
+    if (nativeApp || oauthReturning || playerLinkEntry || forceEmail || showEmail) return
+    navigate('/', { replace: true })
+  }, [nativeApp, oauthReturning, playerLinkEntry, forceEmail, showEmail, navigate])
 
   const goAfterAuth = () => {
     navigate(fromPath ?? consumeReturnTo('/'), { replace: true })
@@ -178,9 +177,11 @@ export function Login() {
     }
   }
 
-  if (oauthReturning) return null
+  if (oauthReturning || playerLinkEntry) return null
 
   if (!showEmail) {
+    if (!nativeApp) return null
+
     return (
       <div className="game-bg flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden">
         <div className="login-panel mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col justify-center px-4 py-8">
@@ -190,26 +191,7 @@ export function Login() {
               <code className="text-xs">.env.local</code> and restart the dev server.
             </p>
           )}
-
-          {nativeApp ? (
-            <LineNativeLoginPanel busy={lineBusy} onContinue={() => void handleLineLogin()} />
-          ) : browserLineLogin ? (
-            <LineBrowserLoginPanel
-              busy={lineBusy}
-              signupUrl={signupUrl}
-              onContinue={() => void handleLineLogin()}
-            />
-          ) : (
-            <button
-              type="button"
-              disabled={lineBusy}
-              onClick={() => void handleLineLogin()}
-              className="rounded-xl bg-[#06C755] px-8 py-3 text-base font-semibold text-white disabled:opacity-60"
-            >
-              Continue with LINE
-            </button>
-          )}
-
+          <LineNativeLoginPanel busy={lineBusy} onContinue={() => void handleLineLogin()} />
           {error && <p className="mt-6 text-center text-sm text-red-600">{error}</p>}
         </div>
       </div>
@@ -312,20 +294,6 @@ export function Login() {
             </button>
           )}
         </div>
-
-        {lineEnabled && (
-          <button
-            type="button"
-            onClick={() => {
-              setShowEmail(false)
-              setError(null)
-              setInfo(null)
-            }}
-            className="mt-6 w-full text-center text-sm font-medium text-[#06C755]"
-          >
-            Sign in with LINE
-          </button>
-        )}
 
         {error && <p className="mt-4 text-center text-sm text-red-600">{error}</p>}
         {info && <p className="mt-4 text-center text-sm text-brand-primary">{info}</p>}

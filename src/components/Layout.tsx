@@ -3,7 +3,6 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { LineBookmarkBanner } from './LineBookmarkBanner'
 import { useLineClientProfile } from '../hooks/useLineClientProfile'
-import { saveReturnTo } from '../lib/authReturnTo'
 
 type NavIconProps = { className?: string }
 
@@ -113,20 +112,12 @@ export function Layout() {
   const navigate = useNavigate()
   const onProfile = loc.pathname === '/profile'
 
-  const headerName =
-    profile?.display_name ??
-    lineClient.displayName ??
-    (lineClient.lineLoggedIn ? 'LINE connected' : user ? 'Profile' : 'Sign in')
-
+  const headerName = profile?.display_name ?? lineClient.displayName ?? 'Profile'
   const headerAvatar = profile?.avatar_url ?? lineClient.pictureUrl ?? null
+  const showProfileChip = Boolean(user)
 
   const openProfile = () => {
-    if (onProfile) return
-    if (!user) {
-      saveReturnTo('/profile')
-      navigate('/login', { replace: true, state: { from: '/profile' } })
-      return
-    }
+    if (onProfile || !user) return
     navigate('/profile')
   }
 
@@ -153,20 +144,22 @@ export function Layout() {
               alt="Success Padel"
               className="h-8 w-auto max-w-[7rem] shrink-0"
             />
-            <button
-              type="button"
-              onClick={openProfile}
-              className="flex max-w-[45%] items-center gap-2 truncate rounded-full border border-brand-border bg-brand-surface py-1.5 pl-1.5 pr-3 text-xs font-medium text-brand-primary"
-            >
-              {headerAvatar ? (
-                <img
-                  src={headerAvatar}
-                  alt=""
-                  className="h-6 w-6 shrink-0 rounded-full object-cover"
-                />
-              ) : null}
-              <span className="truncate">{headerName}</span>
-            </button>
+            {showProfileChip ? (
+              <button
+                type="button"
+                onClick={openProfile}
+                className="flex max-w-[45%] items-center gap-2 truncate rounded-full border border-brand-border bg-brand-surface py-1.5 pl-1.5 pr-3 text-xs font-medium text-brand-primary"
+              >
+                {headerAvatar ? (
+                  <img
+                    src={headerAvatar}
+                    alt=""
+                    className="h-6 w-6 shrink-0 rounded-full object-cover"
+                  />
+                ) : null}
+                <span className="truncate">{headerName}</span>
+              </button>
+            ) : null}
           </>
         )}
       </header>
