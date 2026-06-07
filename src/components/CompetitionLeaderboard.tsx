@@ -32,10 +32,12 @@ function playerInitial(name: string): string {
   return t ? t[0]!.toUpperCase() : '?'
 }
 
+const ROW_GRID =
+  'grid grid-cols-[1.75rem_2rem_minmax(0,1fr)_2.25rem_3rem] items-center gap-x-2 px-3'
+
 function LeaderboardRow({
   rank,
   entry,
-  unit,
   isMe,
   showGuestAction,
   signedIn,
@@ -43,7 +45,6 @@ function LeaderboardRow({
 }: {
   rank: number
   entry: LeaderboardEntry
-  unit: string
   isMe: boolean
   showGuestAction: boolean
   signedIn: boolean
@@ -51,12 +52,12 @@ function LeaderboardRow({
 }) {
   return (
     <li
-      className={`flex items-center gap-2.5 border-b border-brand-border/60 px-3 py-3 last:border-0 ${
+      className={`${ROW_GRID} border-b border-brand-border/60 py-2.5 last:border-0 ${
         isMe ? 'bg-brand-bg-alt' : ''
       }`}
     >
       <span
-        className={`w-7 shrink-0 text-center font-display text-lg font-semibold ${
+        className={`text-center font-display text-sm font-semibold ${
           rank <= 3 ? 'text-brand-accent' : 'text-brand-muted'
         }`}
       >
@@ -66,25 +67,22 @@ function LeaderboardRow({
         <img
           src={entry.avatar_url}
           alt=""
-          className="h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-brand-border/60"
+          className="h-8 w-8 rounded-full object-cover ring-1 ring-brand-border/60"
         />
       ) : (
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-bg-alt text-sm font-semibold text-brand-muted ring-2 ring-brand-border/40">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-bg-alt text-xs font-semibold text-brand-muted ring-1 ring-brand-border/40">
           {playerInitial(entry.display_name)}
         </div>
       )}
-      <div className="min-w-0 flex-1 overflow-hidden">
-        <p className="truncate font-medium text-brand-text">{entry.display_name}</p>
-        <p className="truncate text-xs text-brand-muted">
-          {entry.games} game{entry.games === 1 ? '' : 's'}
-        </p>
+      <div className="flex min-w-0 items-center gap-1.5 overflow-hidden">
+        <span className="truncate text-sm font-medium text-brand-text">{entry.display_name}</span>
         {showGuestAction && onGuestAction && (
-          <GuestLineSignInButton signedIn={signedIn} onClick={onGuestAction} />
+          <GuestLineSignInButton signedIn={signedIn} onClick={onGuestAction} compact />
         )}
       </div>
-      <span className="shrink-0 text-right text-lg font-semibold tabular-nums text-brand-accent">
+      <span className="text-center text-xs tabular-nums text-brand-muted">{entry.games}</span>
+      <span className="text-right text-sm font-semibold tabular-nums text-brand-accent">
         {entry.total_points}
-        <span className="ml-0.5 text-[10px] font-medium text-brand-muted">{unit}</span>
       </span>
     </li>
   )
@@ -123,6 +121,15 @@ export function CompetitionLeaderboard({
           {headerSubtitle && <p className="text-xs text-brand-muted">{headerSubtitle}</p>}
         </div>
       )}
+      <div
+        className={`${ROW_GRID} border-b border-brand-border/60 py-2 text-[10px] font-semibold uppercase tracking-wide text-brand-muted`}
+      >
+        <span className="text-center">#</span>
+        <span aria-hidden />
+        <span>Player</span>
+        <span className="text-center">G</span>
+        <span className="text-right">{unit}</span>
+      </div>
       <ol className="m-0 list-none p-0">
         {entries.map((e, i) => {
           const isMe = Boolean(
@@ -136,7 +143,6 @@ export function CompetitionLeaderboard({
               key={e.profile_id}
               rank={i + 1}
               entry={e}
-              unit={unit}
               isMe={isMe}
               showGuestAction={showGuestAction}
               signedIn={Boolean(currentUserId)}
