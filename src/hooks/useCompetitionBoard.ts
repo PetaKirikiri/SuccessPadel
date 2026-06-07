@@ -11,9 +11,11 @@ import {
   RANKED_GAME_MINUTES,
 } from '../lib/competitionLayout'
 import {
+  gamesFromStoredSchedule,
   planRankedSchedule,
   scheduleSeedFromSession,
   sortRosterByRank,
+  storedScheduleFromConfig,
 } from '../lib/rankedSchedule'
 import type { GameRound } from '../lib/americanoSchedule'
 import { pivotScheduleByCourt, type CourtColumn } from '../lib/competitionCourtBoard'
@@ -92,24 +94,32 @@ export function useCompetitionBoard(
   const { totalGames, gameMinutes: scheduledGameMinutes } = americanoScheduleFromSession(session)
   const gameMinutes = isAmericano ? scheduledGameMinutes : 0
 
-  const courtNames = useMemo(
-    () => clubCourts.slice(0, neededCourts).map((c) => c.name),
-    [clubCourts, neededCourts],
-  )
+  const courtNames = useMemo(() => {
+    const fromClub = clubCourts.slice(0, neededCourts).map((c) => c.name)
+    return Array.from(
+      { length: neededCourts },
+      (_, i) => fromClub[i] ?? `Court ${i + 1}`,
+    )
+  }, [clubCourts, neededCourts])
 
   const rankedRoster = useMemo(() => sortRosterByRank(roster), [roster])
 
-  const finished = session?.status === 'complete'
-  const reviewFromDb = finished && rounds.length > 0
+  const hasLiveRounds = rounds.some((r) => (r.competition_round_players ?? []).length > 0)
+  const storedSchedule = useMemo(
+    () => storedScheduleFromConfig(session?.scoring_config),
+    [session?.scoring_config],
+  )
 
   const americanoGames = useMemo(() => {
-    if (!isAmericano) return []
-    if (reviewFromDb) return gamesFromDbRounds(rounds, clubCourts)
-    if (!layoutValid) return []
+    if (!isAmericano || !layoutValid) return []
+    if (hasLiveRounds) return gamesFromDbRounds(rounds, clubCourts)
+    if (storedSchedule.length > 0) {
+      return gamesFromStoredSchedule(rankedRoster, storedSchedule, courtNames)
+    }
     return planRankedSchedule(rankedRoster, courtNames, totalGames, scheduleSeed)
   }, [
     isAmericano,
-    reviewFromDb,
+    hasLiveRounds,
     rounds,
     clubCourts,
     layoutValid,
@@ -117,17 +127,17 @@ export function useCompetitionBoard(
     courtNames,
     scheduleSeed,
     totalGames,
+    storedSchedule,
   ])
 
   const columns: CourtColumn[] = useMemo(() => {
     if (!isAmericano || americanoGames.length === 0) return []
-    if (!gameMinutes && !reviewFromDb) return []
     return pivotScheduleByCourt(
       americanoGames,
       session?.starts_at ?? undefined,
       gameMinutes || RANKED_GAME_MINUTES,
     )
-  }, [americanoGames, gameMinutes, isAmericano, reviewFromDb, session?.starts_at])
+  }, [americanoGames, gameMinutes, isAmericano, session?.starts_at])
 
   const liveCourtsByGame = useMemo(() => {
     const map = new Map<number, LiveCourt[]>()

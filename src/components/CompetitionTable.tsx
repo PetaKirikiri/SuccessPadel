@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { competitionJoinUrl } from '../lib/siteUrl'
 import { canJoinGame, rosterLabel } from '../lib/playerCaps'
 import { supabase } from '../lib/supabaseClient'
+import { CompetitionCurrentGameCard } from './CompetitionCurrentGameCard'
 import { CompetitionGuestRoster } from './CompetitionGuestRoster'
 import { CompetitionSetupPanel } from './CompetitionSetupPanel'
 import type { CompetitionRow } from '../hooks/useCompetitions'
@@ -340,6 +341,41 @@ export function CompetitionTable({
             <p className="text-xs text-brand-muted">Check back when the organiser posts one.</p>
           ) : null}
         </div>
+      ) : tab === 'current' ? (
+        (() => {
+          const liveRows = visibleRows.filter(
+            (row) => Boolean(row.competition_started_at) && row.status !== 'complete',
+          )
+          const hasUpcoming = visibleRows.some(
+            (row) => !row.competition_started_at && row.status !== 'complete',
+          )
+          if (liveRows.length === 0) {
+            return (
+              <div className="game-card space-y-2 px-4 py-5 text-center">
+                <p className="text-sm text-brand-text">No live games right now.</p>
+                {hasUpcoming && isAdmin && (
+                  <p className="text-xs text-brand-muted">
+                    Finish setup on an upcoming competition, then go live from Run.
+                  </p>
+                )}
+              </div>
+            )
+          }
+          return (
+            <>
+              {liveRows.map((row) => (
+                <CompetitionCurrentGameCard
+                  key={row.id}
+                  sessionId={row.id}
+                  title={row.title}
+                  isLive
+                  isAdmin={isAdmin}
+                  onListRefresh={onRefresh}
+                />
+              ))}
+            </>
+          )
+        })()
       ) : (
         visibleRows.map((row) => (
           <CompetitionCard
@@ -347,7 +383,7 @@ export function CompetitionTable({
             row={row}
             userId={userId}
             isAdmin={isAdmin}
-            past={tab === 'past'}
+            past
             expanded={expandedId === row.id}
             onToggle={() => setExpandedId((id) => (id === row.id ? null : row.id))}
             onRefresh={onRefresh}

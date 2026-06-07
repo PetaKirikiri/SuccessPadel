@@ -7,7 +7,7 @@ import { courtsNeeded } from './competitionLayout'
 export const RANKED_AMERICANO_GAMES = 7
 export const RANKED_GAME_MINUTES = 14
 /** Bump when schedule logic changes — logged for debug. */
-export const RANKED_SCHEDULE_VERSION = 9
+export const RANKED_SCHEDULE_VERSION = 10
 
 export type StoredScheduleMatch = {
   court: number
@@ -75,6 +75,50 @@ export function roundsToGames(
       teamB: [
         rosterDisplayName(ranked[court.teamB[0]]),
         rosterDisplayName(ranked[court.teamB[1]]),
+      ],
+    })),
+  }))
+}
+
+export function storedScheduleFromConfig(
+  scoringConfig: Record<string, unknown> | null | undefined,
+): StoredScheduleRound[] {
+  const raw = scoringConfig?.schedule
+  if (!Array.isArray(raw)) return []
+  const out: StoredScheduleRound[] = []
+  for (const row of raw) {
+    if (!row || typeof row !== 'object') continue
+    const round = (row as StoredScheduleRound).round
+    const matches = (row as StoredScheduleRound).matches
+    if (typeof round !== 'number' || !Array.isArray(matches)) continue
+    out.push({ round, matches })
+  }
+  return out.sort((a, b) => a.round - b.round)
+}
+
+function nameForRosterId(ranked: CompetitionPlayer[], id: string): string {
+  const player = ranked.find((p) => p.id === id)
+  return player ? rosterDisplayName(player) : 'Player'
+}
+
+export function gamesFromStoredSchedule(
+  ranked: CompetitionPlayer[],
+  stored: StoredScheduleRound[],
+  courtNames: string[],
+): GameRound[] {
+  const courts = courtsNeeded(ranked.length)
+  const courtsInUse = courtNames.slice(0, courts)
+  return stored.map((round) => ({
+    gameNumber: round.round,
+    matches: round.matches.map((match, courtIndex) => ({
+      courtLabel: courtsInUse[match.court - 1] ?? courtsInUse[courtIndex] ?? `Court ${match.court}`,
+      teamA: [
+        nameForRosterId(ranked, match.team_a[0]),
+        nameForRosterId(ranked, match.team_a[1]),
+      ],
+      teamB: [
+        nameForRosterId(ranked, match.team_b[0]),
+        nameForRosterId(ranked, match.team_b[1]),
       ],
     })),
   }))

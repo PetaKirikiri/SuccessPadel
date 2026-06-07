@@ -1,4 +1,4 @@
-/** Balanced doubles: no repeat partners, no exact-match repeats, team totals ≈ equal. */
+/** Balanced doubles: no repeat partners, spread opponents, no exact-match repeats, team totals ≈ equal. */
 
 export type PlayerSlot = number
 
@@ -21,6 +21,7 @@ export type ScheduleQuality = {
   avgBalanceDiff: number
   maxBalanceDiff: number
   repeatOpponentQuads: number
+  maxOpponentMeetings: number
   repeatExactMatches: number
 }
 
@@ -117,17 +118,21 @@ function buildRound(
             const repeatPartner =
               (usedPartners.has(pkA) ? 1 : 0) + (usedPartners.has(pkB) ? 1 : 0)
             const repeatMatch = usedMatches.has(matchKey(court.teamA, court.teamB)) ? 1 : 0
+            let repeatOpponents = 0
             let oppPenalty = 0
             for (const p of court.teamA) {
               for (const q of court.teamB) {
-                oppPenalty += opponentCounts.get(pairKey(p, q)) ?? 0
+                const prev = opponentCounts.get(pairKey(p, q)) ?? 0
+                if (prev > 0) repeatOpponents += 1
+                oppPenalty += prev * prev
               }
             }
             const score =
               repeatPartner * 1_000_000 +
               repeatMatch * 100_000 +
+              repeatOpponents * 80_000 +
               court.balanceDiff * 100 +
-              oppPenalty * 5
+              oppPenalty * 2_000
             if (score < bestScore) {
               bestScore = score
               best = court
@@ -188,15 +193,22 @@ function attemptSchedule(
   return rounds
 }
 
-function scoreSchedule(schedule: RoundAssignment[], playerCount: number): number {
+function scoreSchedule(
+  schedule: RoundAssignment[],
+  playerCount: number,
+  totalRounds: number,
+): number {
   const q = measureScheduleQuality(schedule, playerCount)
-  const missing = Math.max(0, 8 - schedule.length)
+  const missing = Math.max(0, totalRounds - schedule.length)
+  const excessOpponentMeetings = Math.max(0, q.maxOpponentMeetings - 2)
   return (
     missing * 10_000_000 +
     q.repeatPartners * 1_000_000 +
     q.repeatExactMatches * 100_000 +
+    excessOpponentMeetings * 50_000 +
+    q.maxOpponentMeetings * 5_000 +
+    q.repeatOpponentQuads * 500 +
     q.maxBalanceDiff * 300 +
-    q.repeatOpponentQuads * 40 +
     Math.round(q.avgBalanceDiff * 20)
   )
 }
@@ -209,14 +221,14 @@ export function solveBalancedSchedule(
   if (playerCount < 4 || playerCount % 4 !== 0) return []
 
   const ranks = Array.from({ length: playerCount }, (_, i) => i + 1)
-  const restarts = 80
+  const restarts = 200
   let best: RoundAssignment[] | null = null
   let bestScore = Number.MAX_SAFE_INTEGER
 
   for (let r = 0; r < restarts; r += 1) {
     const rng = mulberry32((scheduleSeed + 1) * 7919 + r * 104729)
     const schedule = attemptSchedule(playerCount, ranks, totalRounds, rng)
-    const score = scoreSchedule(schedule, playerCount)
+    const score = scoreSchedule(schedule, playerCount, totalRounds)
     if (score < bestScore) {
       bestScore = score
       best = schedule
@@ -264,7 +276,9 @@ export function measureScheduleQuality(
   }
 
   let repeatOpponentQuads = 0
+  let maxOpponentMeetings = 0
   for (const count of opponentCounts.values()) {
+    maxOpponentMeetings = Math.max(maxOpponentMeetings, count)
     if (count > 1) repeatOpponentQuads += 1
   }
 
@@ -283,6 +297,56 @@ export function measureScheduleQuality(
     avgBalanceDiff: matchCount > 0 ? balanceSum / matchCount : 0,
     maxBalanceDiff: maxBalance,
     repeatOpponentQuads,
+    maxOpponentMeetings,
     repeatExactMatches,
+  }
+}
+
+export type ScheduleRepeatPair = {
+  slotA: PlayerSlot
+  slotB: PlayerSlot
+  times: number
+}
+
+function parsePairKey(key: string): [PlayerSlot, PlayerSlot] {
+  const [a, b] = key.split(':').map((n) => Number(n))
+  return [a, b]
+}
+
+function repeatsFromCounts(counts: Map<string, number>): ScheduleRepeatPair[] {
+  const out: ScheduleRepeatPair[] = []
+  for (const [key, times] of counts) {
+    if (times <= 1) continue
+    const [slotA, slotB] = parsePairKey(key)
+    out.push({ slotA, slotB, times })
+  }
+  return out.sort((a, b) => b.times - a.times || a.slotA - b.slotA || a.slotB - b.slotB)
+}
+
+export function listScheduleRepeats(schedule: RoundAssignment[]): {
+  partners: ScheduleRepeatPair[]
+  opponents: ScheduleRepeatPair[]
+} {
+  const partnerCounts = new Map<string, number>()
+  const opponentCounts = new Map<string, number>()
+
+  for (const round of schedule) {
+    for (const court of round.courts) {
+      for (const pair of [court.teamA, court.teamB]) {
+        const key = pairKey(pair[0], pair[1])
+        partnerCounts.set(key, (partnerCounts.get(key) ?? 0) + 1)
+      }
+      for (const p of court.teamA) {
+        for (const q of court.teamB) {
+          const key = pairKey(p, q)
+          opponentCounts.set(key, (opponentCounts.get(key) ?? 0) + 1)
+        }
+      }
+    }
+  }
+
+  return {
+    partners: repeatsFromCounts(partnerCounts),
+    opponents: repeatsFromCounts(opponentCounts),
   }
 }

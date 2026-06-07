@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   AMERICANO_DEFAULT_TARGET,
@@ -32,11 +32,17 @@ import {
   toIsoTimestamp,
 } from '../lib/courtSchedule'
 import { useAuth } from '../hooks/useAuth'
+import { useCompetitionFormDraft } from '../hooks/useCompetitionFormDraft'
+import {
+  formatDraftSavedAt,
+  type CompetitionFormDraft,
+} from '../lib/competitionFormDraft'
 import type { CompetitionPlayer } from '../hooks/useCompetitions'
 import { CompetitionLayoutPreview } from '../components/CompetitionLayoutPreview'
 import { CompetitionPlayerSlots } from '../components/CompetitionPlayerSlots'
 import { CompetitionSchedulePreview } from '../components/CompetitionSchedulePreview'
-import { solveBalancedSchedule } from '../lib/balancedSchedule'
+import { CompetitionScheduleQualityFeedback } from '../components/CompetitionScheduleQualityFeedback'
+import { measureScheduleQuality, solveBalancedSchedule } from '../lib/balancedSchedule'
 import {
   americanoGamesFromConfig,
   breakMinutesFromConfig,
@@ -46,7 +52,7 @@ import {
   planAmericanoSchedule,
   totalScheduleMinutes,
 } from '../lib/competitionLayout'
-import { rosterFromNames } from '../lib/rosterPreview'
+import { rosterFromSlots } from '../lib/rosterPreview'
 import {
   buildStoredSchedule,
   planRankedSchedule,
@@ -111,6 +117,76 @@ export function CompetitionForm() {
   const [playerSlots, setPlayerSlots] = useState<string[]>(() => Array(8).fill(''))
   const [courtNames, setCourtNames] = useState<string[]>([])
   const [previewSeed, setPreviewSeed] = useState(0)
+  const [editHydrated, setEditHydrated] = useState(!id)
+
+  const draftScope = id ?? 'new'
+  const applyDraft = useCallback((draft: CompetitionFormDraft) => {
+    setDay(draft.day)
+    setStartHour(draft.startHour)
+    setDuration(draft.duration)
+    setSkillLevel(draft.skillLevel)
+    setGender(draft.gender)
+    setTargetPlayers(draft.targetPlayers)
+    setRuleFormat(draft.ruleFormat)
+    setPartnerStyle(draft.partnerStyle)
+    setAmericanoScoring(draft.americanoScoring)
+    setGameCount(draft.gameCount)
+    setGameMinutes(draft.gameMinutes)
+    setBreakMinutes(draft.breakMinutes)
+    setTitle(draft.title)
+    setPreviewSeed(draft.previewSeed)
+    const slots = Array(draft.targetPlayers).fill('')
+    for (let i = 0; i < Math.min(draft.playerSlots.length, draft.targetPlayers); i += 1) {
+      slots[i] = draft.playerSlots[i] ?? ''
+    }
+    setPlayerSlots(slots)
+  }, [])
+
+  const draftValues = useMemo(
+    (): Omit<CompetitionFormDraft, 'v' | 'savedAt'> => ({
+      day,
+      startHour,
+      duration,
+      skillLevel,
+      gender,
+      targetPlayers,
+      ruleFormat,
+      partnerStyle,
+      americanoScoring,
+      gameCount,
+      gameMinutes,
+      breakMinutes,
+      title,
+      playerSlots,
+      previewSeed,
+    }),
+    [
+      day,
+      startHour,
+      duration,
+      skillLevel,
+      gender,
+      targetPlayers,
+      ruleFormat,
+      partnerStyle,
+      americanoScoring,
+      gameCount,
+      gameMinutes,
+      breakMinutes,
+      title,
+      playerSlots,
+      previewSeed,
+    ],
+  )
+
+  const { restored: draftRestored, savedAt: draftSavedAt, clearDraft, dismissRestored } =
+    useCompetitionFormDraft({
+      scope: draftScope,
+      restore: !id,
+      persist: !id || editHydrated,
+      values: draftValues,
+      onRestore: applyDraft,
+    })
 
   const hours = scheduleGridHours()
   const maxDuration = useMemo(() => Math.min(3, maxDurationFromStart(startHour)), [startHour])
@@ -128,26 +204,35 @@ export function CompetitionForm() {
   }, [ruleFormat, startsAtIso, gameCount, gameMinutes, breakMinutes, eventMinutes])
   const scheduleFits = schedulePlan?.fits ?? true
   const trimmedSlots = useMemo(() => playerSlots.map((s) => s.trim()), [playerSlots])
-  const allNamesFilled = trimmedSlots.length === targetPlayers && trimmedSlots.every(Boolean)
-  const previewRoster = useMemo(() => rosterFromNames(trimmedSlots), [trimmedSlots])
+  const filledNameCount = useMemo(
+    () => trimmedSlots.slice(0, targetPlayers).filter(Boolean).length,
+    [trimmedSlots, targetPlayers],
+  )
+  const allNamesFilled = filledNameCount === targetPlayers
+  const namesRemaining = targetPlayers - filledNameCount
+  const previewRoster = useMemo(
+    () => rosterFromSlots(playerSlots, targetPlayers),
+    [playerSlots, targetPlayers],
+  )
   const previewGames = useMemo(() => {
-    if (ruleFormat !== 'americano' || !allNamesFilled || !isValidCourtLayout(previewRoster.length)) {
+    if (ruleFormat !== 'americano' || !isValidCourtLayout(targetPlayers) || courtNames.length === 0) {
       return null
     }
     return planRankedSchedule(
       previewRoster,
-      courtNames.slice(0, courtsNeeded(previewRoster.length)),
+      courtNames.slice(0, courtsNeeded(targetPlayers)),
       gameCount,
       previewSeed,
     )
-  }, [
-    ruleFormat,
-    allNamesFilled,
-    previewRoster,
-    courtNames,
-    gameCount,
-    previewSeed,
-  ])
+  }, [ruleFormat, targetPlayers, previewRoster, courtNames, gameCount, previewSeed])
+  const previewSchedule = useMemo(() => {
+    if (ruleFormat !== 'americano' || !isValidCourtLayout(targetPlayers)) return null
+    const rounds = solveBalancedSchedule(targetPlayers, gameCount, previewSeed)
+    return {
+      rounds,
+      quality: measureScheduleQuality(rounds, targetPlayers),
+    }
+  }, [ruleFormat, targetPlayers, gameCount, previewSeed])
   const previewSession = useMemo(
     (): Pick<GameSession, 'partnership_mode' | 'rules' | 'scoring_config'> => ({
       partnership_mode: 'americano',
@@ -227,7 +312,10 @@ export function CompetitionForm() {
       .single()
       .then(({ data }) => {
         const g = data as GameSession | null
-        if (!g) return
+        if (!g) {
+          setEditHydrated(true)
+          return
+        }
         if (g.season_id) setSeasonId(g.season_id)
         if (g.skill_level && SKILL_LEVELS.includes(g.skill_level as SkillLevel)) {
           setSkillLevel(g.skill_level as SkillLevel)
@@ -278,6 +366,7 @@ export function CompetitionForm() {
         } else if (g.starts_on) {
           setDay(g.starts_on)
         }
+        setEditHydrated(true)
       })
 
     void supabase
@@ -432,6 +521,7 @@ export function CompetitionForm() {
       }
     }
 
+    clearDraft()
     setBusy(false)
     navigate('/competitions')
   }
@@ -447,6 +537,19 @@ export function CompetitionForm() {
         <Link to="/competitions" className="text-sm font-medium text-brand-accent">
           ← Back
         </Link>
+
+        {draftRestored && (
+          <p className="rounded-lg border border-brand-accent/30 bg-brand-accent/10 px-3 py-2 text-xs text-brand-text">
+            Restored your last draft
+            {draftSavedAt ? ` from ${formatDraftSavedAt(draftSavedAt)}` : ''}.{' '}
+            <button type="button" onClick={dismissRestored} className="font-semibold text-brand-accent">
+              OK
+            </button>
+          </p>
+        )}
+        {draftSavedAt && !draftRestored && (
+          <p className="text-[10px] text-brand-muted">Draft saved locally at {formatDraftSavedAt(draftSavedAt)}</p>
+        )}
 
         <section className="game-card space-y-3">
           <label className="block space-y-1">
@@ -648,10 +751,13 @@ export function CompetitionForm() {
             disabled={busy}
           />
           {!allNamesFilled && (
-            <p className="text-xs text-brand-muted">Fill all {targetPlayers} names to save.</p>
+            <p className="text-xs text-brand-muted">
+              {namesRemaining} name{namesRemaining === 1 ? '' : 's'} left — accept unlocks when all{' '}
+              {targetPlayers} are filled.
+            </p>
           )}
 
-          {ruleFormat === 'americano' && allNamesFilled && (
+          {ruleFormat === 'americano' && (
             <>
               <div className="border-t border-brand-border/40 pt-3" />
               <CompetitionSchedulePreview
@@ -662,6 +768,11 @@ export function CompetitionForm() {
                 breakMinutes={breakMinutes}
                 playerCount={targetPlayers}
               />
+              {!allNamesFilled && (
+                <p className="text-[10px] text-brand-muted">
+                  Match-up preview uses placeholders until every name is entered.
+                </p>
+              )}
               {previewGames && previewGames.length > 0 ? (
                 <div className="overflow-hidden rounded-lg border border-brand-border/60">
                   <CompetitionLayoutPreview
@@ -671,7 +782,16 @@ export function CompetitionForm() {
                     gameMinutes={gameMinutes}
                   />
                 </div>
-              ) : null}
+              ) : (
+                <p className="text-xs text-brand-muted">Loading courts…</p>
+              )}
+              {previewSchedule && (
+                <CompetitionScheduleQualityFeedback
+                  rounds={previewSchedule.rounds}
+                  roster={previewRoster}
+                  quality={previewSchedule.quality}
+                />
+              )}
               <button
                 type="button"
                 disabled={busy}
