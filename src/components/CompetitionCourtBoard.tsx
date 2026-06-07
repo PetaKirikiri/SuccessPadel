@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { AmericanoScoringUnit } from '../lib/competitionPresets'
 import { pivotScheduleByGame, type CourtColumn } from '../lib/competitionCourtBoard'
 import { playTwoMinuteAlarm, TWO_MINUTES_MS } from '../lib/gameCountdownAlarm'
@@ -165,6 +165,8 @@ function CourtMatchCell({
 
 type CourtDraft = { teamA: string; teamB: string }
 
+const COURT_LABEL_CLASS = 'text-sm font-semibold text-brand-primary'
+
 function courtIdForLabel(
   courtLabel: string,
   courtsForGame: LiveCourt[],
@@ -176,24 +178,24 @@ function courtIdForLabel(
   )
 }
 
-function GameScoringSection({
+type ScoringGame = ReturnType<typeof pivotScheduleByGame>[number]
+
+function useGameScoring({
   game,
   gameRoundId,
   courtsForGame,
   courtIdByLabel,
   matchForCourt,
-  scoreUnit,
   scoringOpen,
   canEdit,
   onSubmitScores,
   onSaved,
 }: {
-  game: ReturnType<typeof pivotScheduleByGame>[number]
+  game: ScoringGame
   gameRoundId?: string
   courtsForGame: LiveCourt[]
   courtIdByLabel?: Map<string, string>
   matchForCourt: NonNullable<Props['matchForCourt']>
-  scoreUnit: AmericanoScoringUnit
   scoringOpen: boolean
   canEdit: boolean
   onSubmitScores?: (entries: CourtScoreSubmit[]) => Promise<void>
@@ -281,6 +283,42 @@ function GameScoringSection({
     }
   }
 
+  const submitButton =
+    scoringOpen && onSubmitScores ? (
+      <button
+        type="button"
+        disabled={busy || !gameRoundId || !canEdit || pendingEntries.length === 0}
+        onClick={() => void submitGame()}
+        className="shrink-0 rounded border border-brand-border/70 px-1.5 py-0.5 text-[10px] font-normal text-brand-muted/80 disabled:opacity-25"
+      >
+        {busy ? '…' : 'Submit'}
+      </button>
+    ) : null
+
+  return { drafts, setDraft, submitButton, error, canEdit }
+}
+
+function GameScoringCourts({
+  game,
+  gameRoundId,
+  courtsForGame,
+  courtIdByLabel,
+  matchForCourt,
+  scoreUnit,
+  drafts,
+  setDraft,
+  canEdit,
+}: {
+  game: ScoringGame
+  gameRoundId?: string
+  courtsForGame: LiveCourt[]
+  courtIdByLabel?: Map<string, string>
+  matchForCourt: NonNullable<Props['matchForCourt']>
+  scoreUnit: AmericanoScoringUnit
+  drafts: Record<string, CourtDraft>
+  setDraft: (courtId: string, side: 'teamA' | 'teamB', value: string) => void
+  canEdit: boolean
+}) {
   return (
     <div className="space-y-2">
       {game.courts.map((court) => {
@@ -292,10 +330,8 @@ function GameScoringSection({
         const draft = courtId ? drafts[courtId] : undefined
 
         return (
-          <div key={court.courtLabel} className="space-y-0.5">
-            <p className="text-xs font-bold uppercase tracking-wide text-brand-muted">
-              {court.courtLabel}
-            </p>
+          <div key={court.courtLabel} className="space-y-1">
+            <p className={COURT_LABEL_CLASS}>{court.courtLabel}</p>
             <div className="rounded-lg border border-brand-border/60 bg-brand-surface px-1 py-1">
               <CourtMatchCell
                 teamA={teamA}
@@ -329,27 +365,111 @@ function GameScoringSection({
           </div>
         )
       })}
+    </div>
+  )
+}
 
-      {scoringOpen && onSubmitScores && (
-        <div className="border-t border-brand-border/50 pt-1.5">
-          <div className="flex items-center justify-end gap-2">
-            {!gameRoundId ? (
-              <p className="mr-auto text-[10px] text-brand-muted">Opens when game starts</p>
-            ) : pendingEntries.length === 0 && !busy ? (
-              <p className="mr-auto text-[10px] text-brand-muted">Enter court scores</p>
-            ) : null}
-            <button
-              type="button"
-              disabled={busy || !gameRoundId || !canEdit || pendingEntries.length === 0}
-              onClick={() => void submitGame()}
-              className="shrink-0 rounded-lg border border-brand-border px-2.5 py-1 text-[11px] font-medium text-brand-muted disabled:opacity-40"
-            >
-              {busy ? '…' : 'Submit'}
-            </button>
-          </div>
-          {error && <p className="mt-1 text-right text-[10px] text-red-600">{error}</p>}
-        </div>
+function GameCardHeader({
+  gameNumber,
+  isLiveNow,
+  timeLabel,
+  countdown,
+  submit,
+}: {
+  gameNumber: number
+  isLiveNow?: boolean
+  timeLabel?: string
+  countdown?: string | null
+  submit?: ReactNode
+}) {
+  return (
+    <div className="flex items-center gap-2 border-b border-brand-border/60 px-3 py-3">
+      <div className="min-w-0 flex-1">
+        <p className="font-display text-2xl font-bold leading-none text-brand-primary">
+          Game {gameNumber}
+          {isLiveNow ? (
+            <span className="ml-1.5 text-sm font-medium text-brand-muted">· Live</span>
+          ) : null}
+        </p>
+        {timeLabel && (
+          <p className="mt-1 text-[11px] tabular-nums text-brand-muted">{timeLabel}</p>
+        )}
+      </div>
+      {countdown && (
+        <p
+          className="shrink-0 font-display text-3xl font-bold leading-none tabular-nums text-brand-text"
+          aria-live="polite"
+        >
+          {countdown}
+        </p>
       )}
+      {submit}
+    </div>
+  )
+}
+
+function ScoringGameCard({
+  game,
+  gameRoundId,
+  courtsForGame,
+  courtIdByLabel,
+  matchForCourt,
+  scoreUnit,
+  scoringOpen,
+  canEdit,
+  onSubmitScores,
+  onSaved,
+  isLiveNow,
+  countdown,
+}: {
+  game: ScoringGame
+  gameRoundId?: string
+  courtsForGame: LiveCourt[]
+  courtIdByLabel?: Map<string, string>
+  matchForCourt: NonNullable<Props['matchForCourt']>
+  scoreUnit: AmericanoScoringUnit
+  scoringOpen: boolean
+  canEdit: boolean
+  onSubmitScores?: (entries: CourtScoreSubmit[]) => Promise<void>
+  onSaved?: () => void
+  isLiveNow: boolean
+  countdown?: string | null
+}) {
+  const { drafts, setDraft, submitButton, error, canEdit: editable } = useGameScoring({
+    game,
+    gameRoundId,
+    courtsForGame,
+    courtIdByLabel,
+    matchForCourt,
+    scoringOpen,
+    canEdit,
+    onSubmitScores,
+    onSaved,
+  })
+
+  return (
+    <div className="game-card overflow-hidden p-0">
+      <GameCardHeader
+        gameNumber={game.gameNumber}
+        isLiveNow={isLiveNow}
+        timeLabel={game.timeLabel}
+        countdown={countdown}
+        submit={submitButton}
+      />
+      {error && <p className="px-3 pb-1 text-right text-[10px] text-red-600">{error}</p>}
+      <div className="px-2 pb-2 pt-2">
+        <GameScoringCourts
+          game={game}
+          gameRoundId={gameRoundId}
+          courtsForGame={courtsForGame}
+          courtIdByLabel={courtIdByLabel}
+          matchForCourt={matchForCourt}
+          scoreUnit={scoreUnit}
+          drafts={drafts}
+          setDraft={setDraft}
+          canEdit={editable}
+        />
+      </div>
     </div>
   )
 }
@@ -422,86 +542,69 @@ export function CompetitionCourtBoard({
             ? gameCountdown(clock, times, gameMinutes)
             : null
 
+        if (mode === 'scoring' && matchForCourt) {
+          return (
+            <ScoringGameCard
+              key={game.gameNumber}
+              game={game}
+              gameRoundId={
+                roundIdForGame?.(game.gameNumber) ?? (isActive ? roundId : undefined)
+              }
+              courtsForGame={liveCourtsByGame?.get(game.gameNumber) ?? []}
+              courtIdByLabel={courtIdByLabel}
+              matchForCourt={matchForCourt}
+              scoreUnit={scoreUnit}
+              scoringOpen={Boolean(canLog)}
+              canEdit={Boolean(canLog)}
+              onSubmitScores={onSubmitScores}
+              onSaved={onSaved}
+              isLiveNow={isLiveNow}
+              countdown={countdown}
+            />
+          )
+        }
+
         return (
           <div key={game.gameNumber} className="game-card overflow-hidden p-0">
-            <div className="flex items-baseline justify-between gap-3 border-b border-brand-border/60 px-3 py-2.5">
-              <div className="min-w-0">
-                <p className="font-display text-lg font-semibold leading-none text-brand-primary">
-                  Game {game.gameNumber}
-                  {isLiveNow ? (
-                    <span className="ml-1.5 text-xs font-medium text-brand-muted">· Live</span>
-                  ) : null}
-                </p>
-                {game.timeLabel && (
-                  <p className="mt-1 text-[11px] tabular-nums text-brand-muted">{game.timeLabel}</p>
-                )}
-              </div>
-              {countdown && (
-                <p
-                  className="shrink-0 font-display text-2xl font-semibold leading-none tabular-nums text-brand-text"
-                  aria-live="polite"
-                >
-                  {countdown}
-                </p>
-              )}
-            </div>
-
+            <GameCardHeader
+              gameNumber={game.gameNumber}
+              isLiveNow={isLiveNow}
+              timeLabel={game.timeLabel}
+              countdown={countdown}
+            />
             <div className="px-2 pb-2 pt-2">
-                {mode === 'scoring' && matchForCourt ? (
-                  <GameScoringSection
-                    game={game}
-                    gameRoundId={
-                      roundIdForGame?.(game.gameNumber) ?? (isActive ? roundId : undefined)
-                    }
-                    courtsForGame={liveCourtsByGame?.get(game.gameNumber) ?? []}
-                    courtIdByLabel={courtIdByLabel}
-                    matchForCourt={matchForCourt}
-                    scoreUnit={scoreUnit}
-                    scoringOpen={Boolean(canLog)}
-                    canEdit={Boolean(canLog)}
-                    onSubmitScores={onSubmitScores}
-                    onSaved={onSaved}
-                  />
-                ) : (
-                  <div className="space-y-2">
-                    {game.courts.map((court) => {
-                      const gameRoundId =
-                        roundIdForGame?.(game.gameNumber) ?? (isActive ? roundId : undefined)
-                      const courtsForGame = liveCourtsByGame?.get(game.gameNumber) ?? []
-                      const liveCourt = courtsForGame.find((c) => c.courtName === court.courtLabel)
-                      const courtId = courtIdForLabel(
-                        court.courtLabel,
-                        courtsForGame,
-                        courtIdByLabel,
-                      )
-                      const saved =
-                        gameRoundId && courtId && matchForCourt
-                          ? matchForCourt(gameRoundId, courtId)
-                          : undefined
-                      return (
-                        <div key={court.courtLabel} className="space-y-0.5">
-                          <p className="text-xs font-bold uppercase tracking-wide text-brand-muted">
-                            {court.courtLabel}
-                          </p>
-                          <div className="rounded-lg border border-brand-border/60 bg-brand-surface px-1 py-1">
-                            <CourtMatchCell
-                              teamA={liveCourt?.teamA ?? court.teamA}
-                              teamB={liveCourt?.teamB ?? court.teamB}
-                              scoreUnit={scoreUnit}
-                              scoreA={
-                                saved?.teamAPoints != null ? String(saved.teamAPoints) : undefined
-                              }
-                              scoreB={
-                                saved?.teamBPoints != null ? String(saved.teamBPoints) : undefined
-                              }
-                              disabled
-                            />
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
+              <div className="space-y-2">
+                {game.courts.map((court) => {
+                  const gameRoundId =
+                    roundIdForGame?.(game.gameNumber) ?? (isActive ? roundId : undefined)
+                  const courtsForGame = liveCourtsByGame?.get(game.gameNumber) ?? []
+                  const liveCourt = courtsForGame.find((c) => c.courtName === court.courtLabel)
+                  const courtId = courtIdForLabel(court.courtLabel, courtsForGame, courtIdByLabel)
+                  const saved =
+                    gameRoundId && courtId && matchForCourt
+                      ? matchForCourt(gameRoundId, courtId)
+                      : undefined
+                  return (
+                    <div key={court.courtLabel} className="space-y-1">
+                      <p className={COURT_LABEL_CLASS}>{court.courtLabel}</p>
+                      <div className="rounded-lg border border-brand-border/60 bg-brand-surface px-1 py-1">
+                        <CourtMatchCell
+                          teamA={liveCourt?.teamA ?? court.teamA}
+                          teamB={liveCourt?.teamB ?? court.teamB}
+                          scoreUnit={scoreUnit}
+                          scoreA={
+                            saved?.teamAPoints != null ? String(saved.teamAPoints) : undefined
+                          }
+                          scoreB={
+                            saved?.teamBPoints != null ? String(saved.teamBPoints) : undefined
+                          }
+                          disabled
+                        />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           </div>
         )
