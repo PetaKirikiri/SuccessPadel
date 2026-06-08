@@ -1,8 +1,15 @@
 import { useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from '../hooks/useTranslation'
+import type { TranslateFn } from '../i18n'
+import { ACHIEVEMENT_IMAGE } from '../lib/competitionAchievements'
+import type {
+  Achievement,
+  CompetitionAchievements,
+  MatchAward,
+} from '../lib/competitionAchievements'
 import type { AmericanoScoringUnit } from '../lib/competitionPresets'
-import { compactLeaderboardDisplayNames, isClaimableGuest } from '../lib/leaderboardEntries'
-import { LinePlayerLinkModal } from './LinePlayerLinkModal'
+import { compactDisplayNames, compactLeaderboardDisplayNames } from '../lib/leaderboardEntries'
 
 export type LeaderboardEntry = {
   profile_id: string
@@ -21,9 +28,64 @@ type Props = {
   scoreUnit?: AmericanoScoringUnit
   headerTitle?: string | null
   headerSubtitle?: string | null
-  showLeaderFooter?: boolean
   currentUserId?: string | null
   competitionId?: string | null
+  achievements?: CompetitionAchievements | null
+  flushBottom?: boolean
+}
+
+type AchievementInfo = { iconKey: string; emoji: string; labelKey: string }
+
+function AchievementBadge({
+  iconKey,
+  emoji,
+  labelKey,
+  label,
+  onSelect,
+  sizeClass,
+  emojiClass,
+}: {
+  iconKey: string
+  emoji: string
+  labelKey: string
+  label: string
+  onSelect?: (info: AchievementInfo) => void
+  sizeClass: string
+  emojiClass: string
+}) {
+  const image = ACHIEVEMENT_IMAGE[iconKey]
+  const content = image ? (
+    <img src={image} alt="" className="h-full w-full object-contain" />
+  ) : (
+    <span aria-hidden className={emojiClass}>
+      {emoji}
+    </span>
+  )
+  if (!onSelect) {
+    return (
+      <span
+        aria-label={label}
+        title={label}
+        className={`flex shrink-0 items-center justify-center ${sizeClass}`}
+      >
+        {content}
+      </span>
+    )
+  }
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation()
+        onSelect({ iconKey, emoji, labelKey })
+      }}
+      aria-label={label}
+      title={label}
+      className={`flex shrink-0 items-center justify-center ${sizeClass}`}
+    >
+      {content}
+    </button>
+  )
 }
 
 function playerInitial(name: string): string {
@@ -31,35 +93,28 @@ function playerInitial(name: string): string {
   return t ? t[0]!.toUpperCase() : '?'
 }
 
-function rowGrid(showActionColumn: boolean): string {
-  const base = 'grid items-center gap-x-2 px-1.5 md:gap-x-3 md:px-2'
-  // Name + Add Line stay left; 1fr spacer pushes points to the right edge
-  if (showActionColumn) {
-    return `${base} grid-cols-[1.25rem_1.75rem_minmax(0,10rem)_5rem_1fr_auto] md:grid-cols-[1.5rem_2.5rem_minmax(0,12rem)_5.5rem_1fr_auto]`
-  }
-  return `${base} grid-cols-[1.25rem_1.75rem_minmax(0,1fr)_auto] md:grid-cols-[1.5rem_2.5rem_minmax(0,1fr)_auto]`
-}
+const ROW_GRID =
+  'grid items-center gap-x-2 px-1.5 md:gap-x-3 md:px-2 grid-cols-[1.25rem_1.75rem_6rem_minmax(0,1fr)_auto] md:grid-cols-[1.5rem_2.5rem_9rem_minmax(0,1fr)_auto]'
 
 function LeaderboardRow({
   rank,
   entry,
   isMe,
-  showGuestAction,
-  showActionColumn,
-  onGuestAction,
-  addLineLabel,
+  badges,
+  onOpenProfile,
+  t,
 }: {
   rank: number
   entry: LeaderboardEntry
   isMe: boolean
-  showGuestAction: boolean
-  showActionColumn: boolean
-  onGuestAction?: () => void
-  addLineLabel: string
+  badges: Achievement[]
+  onOpenProfile: () => void
+  t: TranslateFn
 }) {
   return (
     <li
-      className={`${rowGrid(showActionColumn)} border-b border-brand-border/60 py-2.5 last:border-0 md:py-3.5 ${
+      onClick={onOpenProfile}
+      className={`${ROW_GRID} cursor-pointer border-b border-brand-border/60 py-2.5 transition last:border-0 hover:bg-brand-bg-alt/60 md:py-3.5 ${
         isMe ? 'bg-brand-bg-alt' : ''
       }`}
     >
@@ -84,29 +139,87 @@ function LeaderboardRow({
       <span className="min-w-0 truncate text-sm font-medium text-brand-text md:text-base">
         {entry.display_name}
       </span>
-      {showActionColumn ? (
-        <>
-          <div className="flex items-center justify-start">
-            {showGuestAction && onGuestAction ? (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onGuestAction()
-                }}
-                className="w-full rounded-lg bg-[#06C755] px-2 py-1 text-center text-[10px] font-semibold leading-tight text-white md:px-2.5 md:py-1.5 md:text-xs"
-              >
-                {addLineLabel}
-              </button>
-            ) : null}
-          </div>
-          <span aria-hidden className="min-w-0" />
-        </>
-      ) : null}
+      <span className="flex min-w-0 items-center gap-1 md:gap-1.5">
+        {badges.slice(0, 3).map((b) => (
+          <AchievementBadge
+            key={b.key}
+            iconKey={b.key}
+            emoji={b.icon}
+            labelKey={b.labelKey}
+            label={t(b.labelKey)}
+            sizeClass="h-7 w-7 md:h-10 md:w-10"
+            emojiClass="text-xl leading-none md:text-3xl"
+          />
+        ))}
+      </span>
       <span className="justify-self-end text-right font-display text-lg font-bold tabular-nums text-brand-accent md:text-xl">
         {entry.total_points}
       </span>
     </li>
+  )
+}
+
+function MatchAwardsSection({
+  awards,
+  onSelectAchievement,
+  t,
+}: {
+  awards: MatchAward[]
+  onSelectAchievement: (info: AchievementInfo) => void
+  t: TranslateFn
+}) {
+  const groups = new Map<string, MatchAward[]>()
+  for (const award of awards) {
+    const list = groups.get(award.key) ?? []
+    list.push(award)
+    groups.set(award.key, list)
+  }
+
+  return (
+    <div className="border-t border-brand-border/60 px-3 py-3 md:px-4">
+      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-brand-muted md:text-xs">
+        {t('achievements.matchAwardsTitle')}
+      </p>
+      <ul className="m-0 list-none space-y-2 p-0">
+        {[...groups.values()].flatMap((list) => {
+          const shown = list.slice(0, 3)
+          const extra = list.length - shown.length
+          return shown.map((award, i) => {
+            const [nameA, nameB] = compactDisplayNames(award.playerNames)
+            const pair = [nameA, nameB].filter(Boolean).join(' + ')
+            const where = award.court
+              ? t('achievements.roundCourt', { round: award.round, court: award.court })
+              : t('achievements.round', { round: award.round })
+            return (
+              <li key={`${award.key}-${i}`} className="flex items-start gap-2">
+                <AchievementBadge
+                  iconKey={award.key}
+                  emoji={award.icon}
+                  labelKey={award.labelKey}
+                  label={t(award.labelKey)}
+                  onSelect={onSelectAchievement}
+                  sizeClass="h-6 w-6 md:h-7 md:w-7"
+                  emojiClass="text-base leading-none md:text-lg"
+                />
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium text-brand-text">
+                    {t(award.labelKey)}
+                  </span>
+                  <span className="block truncate text-xs text-brand-muted">
+                    {pair} · {award.scoreFor}–{award.scoreAgainst} · {where}
+                  </span>
+                  {i === shown.length - 1 && extra > 0 && (
+                    <span className="block text-[11px] text-brand-muted">
+                      {t('achievements.moreWinners', { count: extra })}
+                    </span>
+                  )}
+                </span>
+              </li>
+            )
+          })
+        })}
+      </ul>
+    </div>
   )
 }
 
@@ -116,23 +229,32 @@ export function CompetitionLeaderboard({
   scoreUnit = 'points',
   headerTitle = null,
   headerSubtitle = null,
-  showLeaderFooter = true,
   currentUserId = null,
   competitionId = null,
+  achievements = null,
+  flushBottom = false,
 }: Props) {
   const { t } = useTranslation()
-  const [linkTarget, setLinkTarget] = useState<{ id: string; name: string } | null>(null)
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [info, setInfo] = useState<AchievementInfo | null>(null)
   const unit = scoreUnit === 'sets' ? t('leaderboard.sets') : t('leaderboard.pts')
   if (entries.length === 0) return null
 
+  const badgesFor = (entry: LeaderboardEntry): Achievement[] => {
+    const map = achievements?.individualAchievementsByPlayerId
+    if (!map) return []
+    for (const id of [entry.padel_player_id, entry.member_profile_id, entry.profile_id]) {
+      if (id && map[id]) return map[id]!
+    }
+    return []
+  }
+
   const displayEntries = compactLeaderboardDisplayNames(entries)
-  const winner = displayEntries[0]
-  const showActionColumn =
-    !currentUserId && displayEntries.some((entry) => isClaimableGuest(entry))
   const showHeader = Boolean(headerTitle || headerSubtitle || compact)
 
   return (
-    <div className="game-card overflow-hidden p-0">
+    <div className={`game-card overflow-hidden p-0 ${flushBottom ? 'rounded-b-none' : ''}`}>
       {showHeader && (
         <div className="border-b border-brand-border bg-brand-bg-alt px-3 py-2 md:px-4 md:py-3">
           {headerTitle ? (
@@ -148,17 +270,12 @@ export function CompetitionLeaderboard({
         </div>
       )}
       <div
-        className={`${rowGrid(showActionColumn)} border-b border-brand-border/60 py-2 text-[10px] font-semibold uppercase tracking-wide text-brand-muted md:py-2.5 md:text-xs`}
+        className={`${ROW_GRID} border-b border-brand-border/60 py-2 text-[10px] font-semibold uppercase tracking-wide text-brand-muted md:py-2.5 md:text-xs`}
       >
         <span className="text-center">#</span>
         <span aria-hidden />
         <span>{t('leaderboard.player')}</span>
-        {showActionColumn ? (
-          <>
-            <span aria-hidden />
-            <span aria-hidden />
-          </>
-        ) : null}
+        <span aria-hidden />
         <span className="justify-self-end text-right font-display text-xs uppercase text-brand-muted md:text-sm">
           {unit}
         </span>
@@ -170,7 +287,6 @@ export function CompetitionLeaderboard({
             currentUserId &&
               (e.member_profile_id === currentUserId || e.profile_id === currentUserId),
           )
-          const showGuestAction = isClaimableGuest(e) && !currentUserId
 
           return (
             <LeaderboardRow
@@ -178,36 +294,72 @@ export function CompetitionLeaderboard({
               rank={i + 1}
               entry={e}
               isMe={isMe}
-              showGuestAction={showGuestAction}
-              showActionColumn={showActionColumn}
-              onGuestAction={
-                showGuestAction
-                  ? () => {
-                      setLinkTarget({ id: e.padel_player_id!, name: source.display_name })
-                    }
-                  : undefined
-              }
-              addLineLabel={t('leaderboard.addLine')}
+              badges={badgesFor(e)}
+              onOpenProfile={() => {
+                const playerId =
+                  source.member_profile_id ?? source.padel_player_id ?? source.profile_id
+                const params = competitionId ? `?competition=${competitionId}` : ''
+                navigate(`/players/${playerId}${params}`, {
+                  state: {
+                    from: location.pathname + location.search,
+                    snapshot: {
+                      entry: source,
+                      rank: i + 1,
+                      unit,
+                      badges: badgesFor(e),
+                    },
+                  },
+                })
+              }}
+              t={t}
             />
           )
         })}
       </ol>
-      {!compact && showLeaderFooter && winner && (
-        <p className="border-t border-brand-border/60 px-3 py-2 text-center text-xs text-brand-muted md:px-4 md:py-3 md:text-sm">
-          {t('leaderboard.leaderFooter', {
-            name: winner.display_name,
-            points: winner.total_points,
-            unit,
-          })}
-        </p>
-      )}
-      {linkTarget && (
-        <LinePlayerLinkModal
-          competitionId={competitionId}
-          padelPlayerId={linkTarget.id}
-          playerName={linkTarget.name}
-          onClose={() => setLinkTarget(null)}
+      {achievements && achievements.matchAwards.length > 0 && (
+        <MatchAwardsSection
+          awards={achievements.matchAwards}
+          onSelectAchievement={setInfo}
+          t={t}
         />
+      )}
+      {info && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 px-6"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setInfo(null)}
+        >
+          <div
+            className="w-full max-w-xs rounded-2xl border border-brand-border bg-brand-surface p-5 text-center shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto mb-3 flex h-20 w-20 items-center justify-center">
+              {ACHIEVEMENT_IMAGE[info.iconKey] ? (
+                <img
+                  src={ACHIEVEMENT_IMAGE[info.iconKey]}
+                  alt=""
+                  className="h-full w-full object-contain"
+                />
+              ) : (
+                <span className="text-5xl leading-none" aria-hidden>
+                  {info.emoji}
+                </span>
+              )}
+            </div>
+            <p className="font-display text-lg font-bold text-brand-primary">
+              {t(info.labelKey)}
+            </p>
+            <p className="mt-1 text-sm text-brand-muted">{t(`${info.labelKey}Desc`)}</p>
+            <button
+              type="button"
+              onClick={() => setInfo(null)}
+              className="brand-btn mt-4 w-full"
+            >
+              {t('common.close')}
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )

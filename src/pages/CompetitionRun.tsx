@@ -9,6 +9,10 @@ import { competitionScheduleDebugLog } from '../lib/debug/competitionScheduleDeb
 import { pivotScheduleByCourt } from '../lib/competitionCourtBoard'
 import { CompetitionLeaderboard } from '../components/CompetitionLeaderboard'
 import { CompetitionMyCourt } from '../components/CompetitionMyCourt'
+import {
+  calculateCompetitionAchievements,
+  isCompetitionComplete,
+} from '../lib/competitionAchievements'
 import { gamesFromDbRounds } from '../hooks/useCompetitionBoard'
 import {
   americanoScoringUnit,
@@ -129,6 +133,14 @@ export function CompetitionRun() {
   const finished = session?.status === 'complete'
   const userId = user?.id
   const isAmericano = session ? usesAmericanoScoring(session) : false
+  const complete = isCompetitionComplete(session, rounds, courtMatches)
+  const achievements = useMemo(
+    () =>
+      complete
+        ? calculateCompetitionAchievements({ roster, rounds, courtMatches, clubCourts })
+        : null,
+    [complete, roster, rounds, courtMatches, clubCourts],
+  )
   const guestLeaderboardProps = {
     currentUserId: userId ?? null,
     competitionId: id ?? null,
@@ -493,6 +505,7 @@ export function CompetitionRun() {
           entries={leaderboard}
           compact={Boolean(activeRound)}
           scoreUnit={scoreUnit}
+          achievements={achievements}
           {...guestLeaderboardProps}
         />
       )}
@@ -658,6 +671,7 @@ export function CompetitionRun() {
             <CompetitionLeaderboard
               entries={leaderboard}
               scoreUnit={scoreUnit}
+              achievements={achievements}
               {...guestLeaderboardProps}
             />
           )}

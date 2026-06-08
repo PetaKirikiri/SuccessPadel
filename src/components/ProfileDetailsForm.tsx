@@ -1,5 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from '../hooks/useTranslation'
+import { uploadProfileAvatar, validateProfileAvatar } from '../lib/profileAvatar'
 import { parsePlayStyles, PLAY_SIDES, PLAY_STYLES, serializePlayStyles, type PlayStyle } from '../lib/profileFields'
+import { firstDisplayName } from '../lib/leaderboardEntries'
 import { supabase } from '../lib/supabaseClient'
 import type { PlaySide, Profile } from '../lib/types'
 
@@ -30,9 +33,16 @@ function Chip({
 type Props = {
   profile: Profile
   onSaved: () => void
+  hideBanner?: boolean
+  fileInputRef?: React.RefObject<HTMLInputElement | null>
 }
 
-export function ProfileDetailsForm({ profile, onSaved }: Props) {
+export function ProfileDetailsForm({ profile, onSaved, hideBanner = false, fileInputRef: fileInputRefProp }: Props) {
+  const { t } = useTranslation()
+  const localFileInputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = fileInputRefProp ?? localFileInputRef
+  const [displayName, setDisplayName] = useState(profile.display_name)
+  const [pendingAvatar, setPendingAvatar] = useState<File | null>(null)
   const [playtomicNumber, setPlaytomicNumber] = useState(profile.playtomic_number ?? '')
   const [racket, setRacket] = useState(profile.racket ?? '')
   const [playStyles, setPlayStyles] = useState<PlayStyle[]>(() => parsePlayStyles(profile.play_style))
@@ -43,7 +53,23 @@ export function ProfileDetailsForm({ profile, onSaved }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
 
+  const pendingAvatarUrl = useMemo(
+    () => (pendingAvatar ? URL.createObjectURL(pendingAvatar) : null),
+    [pendingAvatar],
+  )
+
   useEffect(() => {
+    return () => {
+      if (pendingAvatarUrl) URL.revokeObjectURL(pendingAvatarUrl)
+    }
+  }, [pendingAvatarUrl])
+
+  const avatarPreview = pendingAvatarUrl ?? profile.avatar_url
+  const avatarInitial = firstDisplayName(displayName).trim()[0]?.toUpperCase() ?? '?'
+
+  useEffect(() => {
+    setDisplayName(profile.display_name)
+    setPendingAvatar(null)
     setPlaytomicNumber(profile.playtomic_number ?? '')
     setRacket(profile.racket ?? '')
     setPlayStyles(parsePlayStyles(profile.play_style))
@@ -52,13 +78,44 @@ export function ProfileDetailsForm({ profile, onSaved }: Props) {
     setUsuallyFree(profile.usually_free ?? '')
   }, [profile])
 
+  const onAvatarPick = (file: File | undefined) => {
+    if (!file) return
+    const validationError = validateProfileAvatar(file)
+    if (validationError) {
+      setError(validationError)
+      return
+    }
+    setError(null)
+    setPendingAvatar(file)
+  }
+
   const save = async () => {
+    const trimmedName = displayName.trim()
+    if (!trimmedName) {
+      setError(t('profile.displayNameRequired'))
+      return
+    }
+
     setBusy(true)
     setError(null)
     setSaved(false)
+
+    let avatarUrl = profile.avatar_url
+    if (pendingAvatar) {
+      try {
+        avatarUrl = await uploadProfileAvatar(profile.id, pendingAvatar)
+      } catch (uploadErr) {
+        setBusy(false)
+        setError(uploadErr instanceof Error ? uploadErr.message : t('profile.photoUploadFailed'))
+        return
+      }
+    }
+
     const { error: err } = await supabase
       .from('profiles')
       .update({
+        display_name: trimmedName,
+        avatar_url: avatarUrl,
         playtomic_number: playtomicNumber.trim() || null,
         racket: racket.trim() || null,
         play_style: serializePlayStyles(playStyles),
@@ -70,7 +127,9 @@ export function ProfileDetailsForm({ profile, onSaved }: Props) {
     setBusy(false)
     if (err) setError(err.message)
     else {
+      setPendingAvatar(null)
       setSaved(true)
+      window.dispatchEvent(new Event('successpadel:profile-synced'))
       onSaved()
     }
   }
@@ -84,6 +143,59 @@ export function ProfileDetailsForm({ profile, onSaved }: Props) {
         void save()
       }}
     >
+      {!hideBanner && (
+        <div className="game-card flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="relative shrink-0"
+            aria-label={t('profile.changePhoto')}
+          >
+            {avatarPreview ? (
+              <img
+                src={avatarPreview}
+                alt=""
+                className="h-16 w-16 rounded-full object-cover ring-2 ring-brand-border md:h-20 md:w-20"
+              />
+            ) : (
+              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-bg-alt text-xl font-semibold text-brand-muted ring-2 ring-brand-border md:h-20 md:w-20">
+                {avatarInitial}
+              </span>
+            )}
+          </button>
+          <div className="min-w-0 space-y-1">
+            <p className="text-sm font-semibold text-brand-primary">{firstDisplayName(displayName)}</p>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="text-xs font-medium text-brand-accent"
+            >
+              {t('profile.changePhoto')}
+            </button>
+          </div>
+        </div>
+      )}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={(e) => onAvatarPick(e.target.files?.[0])}
+      />
+
+      <label className="block space-y-1">
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
+          {t('profile.displayName')}
+        </span>
+        <input
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+          placeholder={t('profile.displayNamePlaceholder')}
+          className="brand-input"
+          autoComplete="name"
+        />
+      </label>
+
       <label className="block space-y-1">
         <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">Playtomic #</span>
         <input

@@ -15,7 +15,7 @@ export function LanguagePicker() {
 
   return (
     <div
-      className="flex items-center gap-0.5 rounded-full border border-brand-border bg-brand-surface p-0.5 md:gap-1 md:p-1"
+      className="flex h-9 items-center gap-0.5 rounded-full border border-brand-border bg-brand-surface p-0.5 md:h-11 md:gap-1 md:p-1"
       role="group"
       aria-label={t('aria.language')}
     >

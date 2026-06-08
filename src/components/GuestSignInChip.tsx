@@ -69,7 +69,7 @@ export function GuestSignInChip({ returnTo, className = '' }: Props) {
         onPointerLeave={clearHold}
         onPointerCancel={clearHold}
         onContextMenu={(e) => e.preventDefault()}
-        className="flex max-w-[9rem] items-center gap-1.5 truncate rounded-full border border-brand-border bg-brand-surface py-1.5 pl-1.5 pr-2.5 text-xs font-medium text-brand-primary md:max-w-[12rem] md:gap-2 md:py-2 md:pl-2 md:pr-3 md:text-sm"
+        className="flex h-9 max-w-[9rem] items-center gap-1.5 truncate rounded-full border border-brand-border bg-brand-surface pl-1.5 pr-2.5 text-xs font-medium text-brand-primary md:h-11 md:max-w-[12rem] md:gap-2 md:pl-2 md:pr-3 md:text-sm"
       >
         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-bg-alt text-[10px] font-semibold text-brand-muted md:h-8 md:w-8 md:text-xs">
           G

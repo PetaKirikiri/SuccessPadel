@@ -25,9 +25,10 @@ export function ProfileChip({ returnTo, className = '' }: Props) {
   const avatarUrl = isSignedIn ? (profile?.avatar_url ?? lineClient.pictureUrl ?? null) : null
 
   const openProfile = () => {
-    if (isSignedIn) {
-      if (loc.pathname === '/profile') return
-      navigate('/profile')
+    if (isSignedIn && user) {
+      const path = `/players/${user.id}`
+      if (loc.pathname === path) return
+      navigate(path)
       return
     }
     if (loc.pathname === '/login') return
@@ -39,7 +40,7 @@ export function ProfileChip({ returnTo, className = '' }: Props) {
     <button
       type="button"
       onClick={openProfile}
-      className={`flex max-w-[9rem] items-center gap-1.5 truncate rounded-full border border-brand-border bg-brand-surface py-1.5 pl-1.5 pr-2.5 text-xs font-medium text-brand-primary md:max-w-[12rem] md:gap-2 md:py-2 md:pl-2 md:pr-3 md:text-sm ${className}`}
+      className={`flex h-9 max-w-[9rem] items-center gap-1.5 truncate rounded-full border border-brand-border bg-brand-surface pl-1.5 pr-2.5 text-xs font-medium text-brand-primary md:h-11 md:max-w-[12rem] md:gap-2 md:pl-2 md:pr-3 md:text-sm ${className}`}
     >
       {avatarUrl ? (
         <img

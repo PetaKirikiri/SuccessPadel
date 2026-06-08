@@ -27,7 +27,6 @@ export function Leaderboard() {
           scoreUnit="points"
           headerTitle={season.name}
           headerSubtitle={weeksLeftLabel(season.weeks_left)}
-          showLeaderFooter={false}
           currentUserId={user?.id ?? null}
           competitionId={null}
         />

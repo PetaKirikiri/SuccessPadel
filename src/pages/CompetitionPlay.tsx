@@ -6,6 +6,10 @@ import { useAuth } from '../hooks/useAuth'
 import { useCompetitionBoard } from '../hooks/useCompetitionBoard'
 import { useLineClientProfile } from '../hooks/useLineClientProfile'
 import { usePublicCompetition } from '../hooks/usePublicCompetition'
+import {
+  calculateCompetitionAchievements,
+  isCompetitionComplete,
+} from '../lib/competitionAchievements'
 import { americanoScheduleFromSession, gameSlotTimes } from '../lib/competitionLayout'
 import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
 import { computeAmericanoStandings } from '../lib/competitionStandings'
@@ -181,6 +185,15 @@ export function CompetitionPlay() {
   const showGamesBoard = started && (columns.length > 0 || (finished && rounds.length > 0))
   const standings = finished ? leaderboard : liveStandings
 
+  const complete = isCompetitionComplete(session, rounds, courtMatches)
+  const achievements = useMemo(
+    () =>
+      complete
+        ? calculateCompetitionAchievements({ roster, rounds, courtMatches, clubCourts })
+        : null,
+    [complete, roster, rounds, courtMatches, clubCourts],
+  )
+
   return (
     <div className="game-bg flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden">
       <AppTopBar>
@@ -201,7 +214,7 @@ export function CompetitionPlay() {
         </div>
       </AppTopBar>
 
-      <main data-scroll-y className="scroll-y min-h-0 min-w-0 flex-1 px-3 pb-2 md:px-6">
+      <main data-scroll-y className="scroll-y min-h-0 min-w-0 flex-1 px-3 md:px-6">
         <div className="mx-auto w-full max-w-full space-y-3 md:max-w-3xl lg:max-w-4xl">
           {loading && !session ? (
             <p className="py-6 text-center text-xs text-brand-muted">{t('common.loading')}</p>
@@ -213,10 +226,6 @@ export function CompetitionPlay() {
           {session && !started ? (
             <p className="py-6 text-center text-sm text-brand-muted">
               {t('competition.waitingOrganiser')}
-            </p>
-          ) : finished ? (
-            <p className="game-card px-3 py-2 text-center text-sm text-brand-muted">
-              {t('competition.completeReadOnly')}
             </p>
           ) : null}
           {started && tab === 'games' ? (
@@ -252,6 +261,8 @@ export function CompetitionPlay() {
               scoreUnit={scoreUnit}
               currentUserId={user?.id ?? null}
               competitionId={id ?? null}
+              achievements={achievements}
+              flushBottom
             />
           ) : null}
 

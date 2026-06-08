@@ -502,6 +502,46 @@ function GameScoringCourts({
   )
 }
 
+function VideoIcon() {
+  return (
+    <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M4 7.5A2.5 2.5 0 0 1 6.5 5h7A2.5 2.5 0 0 1 16 7.5v9A2.5 2.5 0 0 1 13.5 19h-7A2.5 2.5 0 0 1 4 16.5v-9Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="m16 10 4.5-2.25v8.5L16 14"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+    </svg>
+  )
+}
+
+function GameVideoButton({ isLiveNow, t }: { isLiveNow?: boolean; t: TranslateFn }) {
+  return (
+    <button
+      type="button"
+      className={`flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border px-2 py-1.5 transition md:px-2.5 md:py-2 ${
+        isLiveNow
+          ? 'border-brand-accent/50 bg-brand-accent/10 text-brand-accent shadow-sm'
+          : 'border-brand-border bg-brand-surface text-brand-muted'
+      }`}
+      aria-label={t('competition.video')}
+    >
+      <VideoIcon />
+      <span className="hidden text-[10px] font-semibold uppercase tracking-wide lg:inline lg:text-[11px]">
+        {t('competition.video')}
+      </span>
+    </button>
+  )
+}
+
 function GameCardHeader({
   gameNumber,
   isLiveNow,
@@ -564,7 +604,10 @@ function GameCardHeader({
           </div>
         )}
       </button>
-      {submit && <div className="shrink-0 pr-3 md:pr-4">{submit}</div>}
+      <div className="flex shrink-0 items-center gap-2 pr-3 md:gap-2.5 md:pr-4">
+        <GameVideoButton isLiveNow={isLiveNow} t={t} />
+        {submit}
+      </div>
     </div>
   )
 }

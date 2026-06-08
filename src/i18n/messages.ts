@@ -37,6 +37,7 @@ export type Messages = {
     player: string
     pts: string
     sets: string
+    add: string
     addLine: string
     leaderFooter: string
     noSeason: string
@@ -44,6 +45,35 @@ export type Messages = {
     noScores: string
     weekLeft: string
     weeksLeft: string
+    gamesPlayed: string
+  }
+  achievements: {
+    matchAwardsTitle: string
+    winner: string
+    runnerUp: string
+    thirdPlace: string
+    mostWins: string
+    winStreak: string
+    undefeated: string
+    bestDefense: string
+    highestScore: string
+    brickWall: string
+    cleanSheet: string
+    biggestVictory: string
+    winnerDesc: string
+    runnerUpDesc: string
+    thirdPlaceDesc: string
+    mostWinsDesc: string
+    winStreakDesc: string
+    undefeatedDesc: string
+    bestDefenseDesc: string
+    highestScoreDesc: string
+    brickWallDesc: string
+    cleanSheetDesc: string
+    biggestVictoryDesc: string
+    round: string
+    roundCourt: string
+    moreWinners: string
   }
   competition: {
     games: string
@@ -81,6 +111,7 @@ export type Messages = {
     finished: string
     gameTime: string
     game: string
+    video: string
     scoreSets: string
     scorePts: string
     scoreOpen: string
@@ -143,9 +174,40 @@ export type Messages = {
   }
   profile: {
     signOut: string
+    displayName: string
+    displayNamePlaceholder: string
+    displayNameRequired: string
+    changePhoto: string
+    photoUploadFailed: string
     bookmarkTitle: string
     bookmarkHint: string
     gotIt: string
+  }
+  playerProfile: {
+    player: string
+    tabProfile: string
+    tabHistory: string
+    details: string
+    achievements: string
+    competition: string
+    competitionSummary: string
+    memberSince: string
+    notSet: string
+    notFound: string
+    noMatches: string
+    won: string
+    lost: string
+    with: string
+    vs: string
+    round: string
+    playtomic: string
+    racket: string
+    playStyle: string
+    preferredSide: string
+    funGames: string
+    usuallyFree: string
+    yes: string
+    no: string
   }
   lang: {
     en: string

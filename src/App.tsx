@@ -22,6 +22,7 @@ import { AuthCallback } from './pages/AuthCallback'
 import { LineAuthCallback } from './pages/LineAuthCallback'
 import { LineAuthComplete } from './pages/LineAuthComplete'
 import { Login } from './pages/Login'
+import { PlayerProfilePage } from './pages/PlayerProfilePage'
 import { Profile } from './pages/Profile'
 import { ResetPassword } from './pages/ResetPassword'
 import { MakeGame } from './pages/MakeGame'
@@ -223,6 +224,14 @@ export default function App() {
             <NativeDeepLinkHandler />
             <div className="viewport-lock flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
               <Routes>
+              <Route
+                path="/players/:playerId"
+                element={
+                  <AppFrame>
+                    <PlayerProfilePage />
+                  </AppFrame>
+                }
+              />
               <Route
                 path="/competitions/:id/join"
                 element={
