@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from '../hooks/useTranslation'
 import type { TranslateFn } from '../i18n'
 import type { AmericanoScoringUnit } from '../lib/competitionPresets'
@@ -61,6 +60,29 @@ type Props = {
 
 type RoundStatus = 'pending' | 'active' | 'complete'
 type CountdownState = 'starts' | 'playing' | 'finished' | 'scheduled'
+
+function gameCardShellClass({
+  finished,
+  isCurrentGame,
+  isMyGame = false,
+}: {
+  finished: boolean
+  isCurrentGame: boolean
+  isMyGame?: boolean
+}) {
+  const parts = ['game-card overflow-hidden p-0 transition-colors']
+  if (finished) {
+    parts.push(
+      'border border-brand-border/70 !bg-[#ebeae8] shadow-none',
+    )
+  } else if (isCurrentGame) {
+    parts.push('border-2 border-brand-accent ring-2 ring-brand-accent/30')
+  }
+  if (isMyGame && !finished) {
+    parts.push('ring-2 ring-brand-accent/70')
+  }
+  return parts.join(' ')
+}
 
 function isGameFinished(
   gameNumber: number,
@@ -140,18 +162,24 @@ function courtHasCurrentUser(
   )
 }
 
-const COURT_LABEL_CLASS = 'text-sm font-semibold text-brand-primary md:text-base'
+const COURT_LABEL_CLASS =
+  'text-center font-display text-xl font-bold text-brand-primary md:text-2xl'
 const CURRENT_PLAYER_HIGHLIGHT_CLASS =
   'animate-pulse rounded bg-brand-bg-alt px-1 text-brand-accent'
 
 function courtLabelClass(
   currentUserId: string | null | undefined,
   court: Parameters<typeof courtHasCurrentUser>[1],
+  finished = false,
 ) {
-  const base = 'text-sm font-semibold md:text-base'
+  const base = finished
+    ? 'text-center font-display text-xl font-bold text-brand-sage md:text-2xl'
+    : 'text-center font-display text-xl font-bold md:text-2xl'
   return courtHasCurrentUser(currentUserId, court)
     ? `${base} ${CURRENT_PLAYER_HIGHLIGHT_CLASS}`
-    : COURT_LABEL_CLASS
+    : finished
+      ? base
+      : COURT_LABEL_CLASS
 }
 
 function CourtMatchCell({
@@ -163,6 +191,7 @@ function CourtMatchCell({
   onScoreA,
   onScoreB,
   disabled = false,
+  finished = false,
   teamAPlayers,
   teamBPlayers,
   currentUserId,
@@ -177,6 +206,7 @@ function CourtMatchCell({
   onScoreA?: (v: string) => void
   onScoreB?: (v: string) => void
   disabled?: boolean
+  finished?: boolean
   teamAPlayers?: CourtPlayer[]
   teamBPlayers?: CourtPlayer[]
   currentUserId?: string | null
@@ -201,11 +231,16 @@ function CourtMatchCell({
   ]
   const playerClass = (isCurrent: boolean) =>
     `flex min-w-0 items-center gap-1 rounded py-0.5 ${
-      isCurrent ? CURRENT_PLAYER_HIGHLIGHT_CLASS : 'px-0 text-brand-text'
+      isCurrent
+        ? CURRENT_PLAYER_HIGHLIGHT_CLASS
+        : finished
+          ? 'px-0 text-brand-muted'
+          : 'px-0 text-brand-text'
     }`
 
-  const scoreInputClass =
-    'h-8 w-8 rounded-lg border border-brand-border/80 bg-brand-surface px-0.5 py-0.5 text-center text-sm font-semibold tabular-nums text-brand-primary disabled:text-brand-muted/60 md:h-10 md:w-10 md:text-base'
+  const scoreInputClass = finished
+    ? 'h-8 w-8 rounded-lg border border-brand-border/60 bg-[#ececea] px-0.5 py-0.5 text-center text-sm font-semibold tabular-nums text-brand-sage disabled:text-brand-muted/60 md:h-10 md:w-10 md:text-base'
+    : 'h-8 w-8 rounded-lg border border-brand-border/80 bg-brand-surface px-0.5 py-0.5 text-center text-sm font-semibold tabular-nums text-brand-primary disabled:text-brand-muted/60 md:h-10 md:w-10 md:text-base'
 
   const scoreAEl = editable ? (
     <input
@@ -263,7 +298,11 @@ function CourtMatchCell({
 
   return (
     <div
-      className="overflow-hidden rounded-lg border border-brand-border/60 bg-brand-surface"
+      className={
+        finished
+          ? 'overflow-hidden rounded-lg border border-brand-border/50 bg-[#e0dfdd]'
+          : 'overflow-hidden rounded-lg border border-brand-border/60 bg-brand-surface'
+      }
       aria-label={`${teamA[0]} and ${teamA[1]} against ${teamB[0]} and ${teamB[1]}`}
     >
       <div className="grid grid-cols-[minmax(0,1fr)_2rem_1px_minmax(0,1fr)_2rem] items-stretch gap-1.5 px-1 py-2">
@@ -338,6 +377,7 @@ function useGameScoring({
   courtIdByLabel,
   matchForCourt,
   canEdit,
+  finished,
   onSubmitScores,
   onSaved,
   t,
@@ -348,6 +388,7 @@ function useGameScoring({
   courtIdByLabel?: Map<string, string>
   matchForCourt: NonNullable<Props['matchForCourt']>
   canEdit: boolean
+  finished: boolean
   onSubmitScores?: (entries: CourtScoreSubmit[]) => Promise<void>
   onSaved?: () => void
   t: TranslateFn
@@ -460,7 +501,11 @@ function useGameScoring({
   }
 
   const submitFooter = onSubmitScores ? (
-    <div className="border-t border-brand-border/60 px-3 py-2.5 md:px-4">
+    <div
+      className={`border-t px-3 py-2.5 md:px-4 ${
+        finished ? 'border-brand-border/50 bg-[#e3e2e0]' : 'border-brand-border/60'
+      }`}
+    >
       <button
         type="button"
         onClick={() => void submitGame()}
@@ -485,6 +530,7 @@ function GameScoringCourts({
   setDraft,
   canEdit,
   dirty,
+  finished,
   currentUserId,
   currentUserAvatarUrl,
   t,
@@ -499,6 +545,7 @@ function GameScoringCourts({
   setDraft: (courtId: string, side: 'teamA' | 'teamB', value: string) => void
   canEdit: boolean
   dirty: boolean
+  finished: boolean
   currentUserId?: string | null
   currentUserAvatarUrl?: string | null
   t: TranslateFn
@@ -528,7 +575,7 @@ function GameScoringCourts({
 
         return (
           <div key={court.courtLabel} className="space-y-1">
-            <p className={courtLabelClass(currentUserId, liveCourt ?? court)}>
+            <p className={courtLabelClass(currentUserId, liveCourt ?? court, finished)}>
               {court.courtLabel}
             </p>
             <div>
@@ -547,6 +594,7 @@ function GameScoringCourts({
                   canEdit && courtId ? (v) => setDraft(courtId, 'teamB', v) : undefined
                 }
                 disabled={!canEdit}
+                finished={finished}
                 currentUserId={currentUserId}
                 currentUserAvatarUrl={currentUserAvatarUrl}
                 t={t}
@@ -559,74 +607,8 @@ function GameScoringCourts({
   )
 }
 
-function VideoIcon() {
-  return (
-    <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M4 7.5A2.5 2.5 0 0 1 6.5 5h7A2.5 2.5 0 0 1 16 7.5v9A2.5 2.5 0 0 1 13.5 19h-7A2.5 2.5 0 0 1 4 16.5v-9Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
-      <path
-        d="m16 10 4.5-2.25v8.5L16 14"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-      />
-    </svg>
-  )
-}
-
-function GameVideoButton({ t }: { t: TranslateFn }) {
-  return (
-    <button
-      type="button"
-      disabled
-      className="flex shrink-0 cursor-not-allowed flex-col items-center justify-center gap-0.5 rounded-xl border border-brand-border/50 bg-brand-bg-alt/60 px-2 py-1.5 text-brand-muted/45 opacity-50 md:px-2.5 md:py-2"
-      aria-label={t('competition.video')}
-      title="Video off"
-    >
-      <VideoIcon />
-      <span className="hidden text-[10px] font-semibold uppercase tracking-wide line-through lg:inline lg:text-[11px]">
-        {t('competition.video')}
-      </span>
-    </button>
-  )
-}
-
-function GesturePadIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5 md:h-6 md:w-6" aria-hidden>
-      <rect x="3" y="3" width="8" height="8" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5" />
-      <rect x="13" y="3" width="8" height="8" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5" />
-      <rect x="3" y="13" width="8" height="8" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5" />
-      <rect x="13" y="13" width="8" height="8" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M5 17 Q12 8 19 7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function GameGesturePadButton({ href }: { href: string }) {
-  return (
-    <Link
-      to={href}
-      className="flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border border-brand-border bg-brand-surface px-2 py-1.5 text-brand-muted transition hover:border-brand-accent/40 hover:text-brand-primary md:px-2.5 md:py-2"
-      aria-label="Gesture pad"
-    >
-      <GesturePadIcon />
-      <span className="hidden text-[10px] font-semibold uppercase tracking-wide lg:inline lg:text-[11px]">
-        Gesture
-      </span>
-    </Link>
-  )
-}
-
 function GameCardHeader({
   gameNumber,
-  gesturePadHref,
   isLiveNow,
   timeLabel,
   countdown,
@@ -634,11 +616,9 @@ function GameCardHeader({
   finished,
   collapsed,
   onToggleCollapsed,
-  submit,
   t,
 }: {
   gameNumber: number
-  gesturePadHref?: string
   isLiveNow?: boolean
   timeLabel?: string
   countdown?: string | null
@@ -646,28 +626,38 @@ function GameCardHeader({
   finished: boolean
   collapsed: boolean
   onToggleCollapsed: () => void
-  submit?: ReactNode
   t: TranslateFn
 }) {
   return (
-    <div className="flex items-center gap-2 border-b border-brand-border/60 md:gap-3">
+    <div
+      className={`flex items-center gap-2 border-b md:gap-3 ${
+        finished ? 'border-brand-border/50 bg-[#e3e2e0]' : 'border-brand-border/60'
+      }`}
+    >
       <button
         type="button"
         onClick={onToggleCollapsed}
         className="flex min-w-0 flex-1 items-center gap-2 px-3 py-3 text-left md:gap-3 md:px-4 md:py-4"
         aria-expanded={!collapsed}
       >
-        <span className="shrink-0 text-sm text-brand-muted">{collapsed ? '▸' : '▾'}</span>
+        <span className={`shrink-0 text-sm ${finished ? 'text-brand-sage/70' : 'text-brand-muted'}`}>
+          {collapsed ? '▸' : '▾'}
+        </span>
         <span className="min-w-0 flex-1">
-          <span className="block font-display text-2xl font-bold leading-none text-brand-primary md:text-3xl">
+          <span
+            className={`block font-display text-2xl font-bold leading-none md:text-3xl ${
+              finished ? 'text-brand-sage' : 'text-brand-primary'
+            }`}
+          >
             {t('competition.game', { number: gameNumber })}
             {isLiveNow ? (
               <span className="ml-1.5 text-sm font-medium text-brand-accent md:text-base">
                 · {t('competition.live')}
               </span>
             ) : finished ? (
-              <span className="ml-1.5 text-sm font-medium text-brand-muted md:text-base">
-                · {t('competition.done')}
+              <span className="ml-1.5 inline-flex items-center gap-1 text-sm font-medium text-brand-muted md:text-base">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand-sage/60" aria-hidden />
+                {t('competition.done')}
               </span>
             ) : null}
           </span>
@@ -688,18 +678,12 @@ function GameCardHeader({
           </div>
         )}
       </button>
-      <div className="flex shrink-0 items-center gap-2 pr-3 md:gap-2.5 md:pr-4">
-        {gesturePadHref ? <GameGesturePadButton href={gesturePadHref} /> : null}
-        <GameVideoButton t={t} />
-        {submit}
-      </div>
     </div>
   )
 }
 
 function ScoringGameCard({
   game,
-  gesturePadHref,
   gameRoundId,
   courtsForGame,
   courtIdByLabel,
@@ -720,7 +704,6 @@ function ScoringGameCard({
   t,
 }: {
   game: ScoringGame
-  gesturePadHref?: string
   gameRoundId?: string
   courtsForGame: LiveCourt[]
   courtIdByLabel?: Map<string, string>
@@ -747,6 +730,7 @@ function ScoringGameCard({
     courtIdByLabel,
     matchForCourt,
     canEdit,
+    finished,
     onSubmitScores,
     onSaved,
     t,
@@ -763,14 +747,9 @@ function ScoringGameCard({
   )
 
   return (
-    <div
-      className={`game-card overflow-hidden p-0 ${
-        isCurrentGame ? 'border-2 border-brand-accent ring-2 ring-brand-accent/30' : ''
-      } ${isMyGame ? 'ring-2 ring-brand-accent/70' : ''}`}
-    >
+    <div className={gameCardShellClass({ finished, isCurrentGame, isMyGame })}>
       <GameCardHeader
         gameNumber={game.gameNumber}
-        gesturePadHref={gesturePadHref}
         isLiveNow={isLiveNow}
         timeLabel={game.timeLabel}
         countdown={countdown}
@@ -783,7 +762,7 @@ function ScoringGameCard({
       {error && <p className="px-3 pb-1 text-center text-xs text-red-600">{error}</p>}
       {!collapsed && (
         <>
-          <div className="px-1 pb-2 pt-2">
+          <div className={`px-1 pb-2 pt-2 ${finished ? 'bg-[#ebeae8]' : ''}`}>
             <GameScoringCourts
               game={game}
               gameRoundId={gameRoundId}
@@ -795,6 +774,7 @@ function ScoringGameCard({
               setDraft={setDraft}
               canEdit={editable}
               dirty={dirty}
+              finished={finished}
               currentUserId={currentUserId}
               currentUserAvatarUrl={currentUserAvatarUrl}
               t={t}
@@ -903,15 +883,12 @@ export function CompetitionCourtBoard({
         const times = roundTimesByGame?.get(game.gameNumber)
         const roundStatus = roundStatusByGame?.get(game.gameNumber)
         const isLiveNow = mode === 'scoring' && isGameLive(clock, times)
-        const clockFinished = isGameFinished(
+        const finished = isGameFinished(
           game.gameNumber,
           clock,
           roundTimesByGame,
           roundStatusByGame,
         )
-        const finished = scoringTimeUnlocked
-          ? roundStatus === 'complete'
-          : clockFinished
         const countdown =
           mode === 'scoring' && !finished
             ? gameCountdown(clock, times, gameMinutes)
@@ -925,18 +902,13 @@ export function CompetitionCourtBoard({
             roundStatus === 'active' ||
             roundStatus === 'complete' ||
             isLiveNow ||
-            clockFinished)
-
-        const gesturePadHref = competitionId
-          ? `/competitions/${competitionId}/games/${game.gameNumber}/gesture-pad`
-          : undefined
+            finished)
 
         if (mode === 'scoring' && matchForCourt) {
           return (
             <ScoringGameCard
               key={game.gameNumber}
               game={game}
-              gesturePadHref={gesturePadHref}
               gameRoundId={
                 roundIdForGame?.(game.gameNumber) ?? (isActive ? roundId : undefined)
               }
@@ -964,13 +936,10 @@ export function CompetitionCourtBoard({
         return (
           <div
             key={game.gameNumber}
-            className={`game-card overflow-hidden p-0 ${
-              isCurrentGame ? 'border-2 border-brand-accent ring-2 ring-brand-accent/30' : ''
-            }`}
+            className={gameCardShellClass({ finished, isCurrentGame })}
           >
             <GameCardHeader
               gameNumber={game.gameNumber}
-              gesturePadHref={gesturePadHref}
               isLiveNow={isLiveNow}
               timeLabel={game.timeLabel}
               countdown={countdown}
@@ -980,7 +949,8 @@ export function CompetitionCourtBoard({
               onToggleCollapsed={() => toggleCollapsed(game.gameNumber, finished)}
               t={t}
             />
-            {!collapsed && <div className="px-1 pb-2 pt-2">
+            {!collapsed && (
+              <div className={`px-1 pb-2 pt-2 ${finished ? 'bg-[#ebeae8]' : ''}`}>
               <div className="space-y-2">
                 {game.courts.map((court, courtIndex) => {
                   const gameRoundId =
@@ -999,7 +969,7 @@ export function CompetitionCourtBoard({
                       : undefined
                   return (
                     <div key={court.courtLabel} className="space-y-1">
-                      <p className={courtLabelClass(currentUserId, liveCourt ?? court)}>
+                      <p className={courtLabelClass(currentUserId, liveCourt ?? court, finished)}>
                         {court.courtLabel}
                       </p>
                       <div>
@@ -1016,6 +986,7 @@ export function CompetitionCourtBoard({
                             saved?.teamBPoints != null ? String(saved.teamBPoints) : undefined
                           }
                           disabled
+                          finished={finished}
                           currentUserId={currentUserId}
                           currentUserAvatarUrl={currentUserAvatarUrl}
                           t={t}
@@ -1025,7 +996,8 @@ export function CompetitionCourtBoard({
                   )
                 })}
               </div>
-            </div>}
+            </div>
+            )}
           </div>
         )
       })}
