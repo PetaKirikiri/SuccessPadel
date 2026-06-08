@@ -20,6 +20,18 @@ export const en: Messages = {
     playTodayHint:
       'If you are playing today, please sign in using Add LINE on the leaderboard. Normal sign-up for other users coming soon.',
   },
+  signInModal: {
+    title: 'Sign in with LINE',
+    welcomeBack: 'Welcome back',
+    returningHint:
+      'Your session expired. Tap Continue with LINE to sign back into the same account.',
+    qrSectionTitle: 'Or scan on your phone',
+    scanQrHeadline: 'Scan this QR in LINE',
+    scanQrSubhead:
+      'Save or screenshot this code, open LINE, and scan it with the QR scanner. Use the same LINE account as before.',
+    notConfigured: 'LINE sign-in is not configured.',
+    checkingSession: 'Checking…',
+  },
   aria: {
     back: 'Back',
     language: 'Language',

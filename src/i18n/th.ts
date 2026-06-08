@@ -20,6 +20,17 @@ export const th: Messages = {
     playTodayHint:
       'หากคุณเล่นวันนี้ กรุณาเข้าสู่ระบบด้วย Add LINE บนตารางคะแนน การลงทะเบียนสำหรับผู้ใช้ทั่วไปจะเปิดเร็วๆ นี้',
   },
+  signInModal: {
+    title: 'เข้าสู่ระบบด้วย LINE',
+    welcomeBack: 'ยินดีต้อนรับกลับ',
+    returningHint: 'เซสชันหมดอายุแล้ว แตะ Continue with LINE เพื่อเข้าสู่บัญชีเดิม',
+    qrSectionTitle: 'หรือสแกนบนมือถือ',
+    scanQrHeadline: 'สแกน QR นี้ใน LINE',
+    scanQrSubhead:
+      'บันทึกหรือจับภาพ QR นี้ เปิด LINE แล้วสแกน ใช้บัญชี LINE เดิมที่เคยลงทะเบียน',
+    notConfigured: 'ยังไม่ได้ตั้งค่าเข้าสู่ระบบ LINE',
+    checkingSession: 'กำลังตรวจสอบ…',
+  },
   aria: {
     back: 'กลับ',
     language: 'ภาษา',

@@ -525,6 +525,7 @@ export function CompetitionRun() {
           ) : isAmericano && courtBoardColumns.length > 0 ? (
             <div className="game-card px-2 py-3">
               <CompetitionCourtBoard
+                competitionId={id}
                 columns={courtBoardColumns}
                 mode="scoring"
                 activeGameNumber={activeRound.round_number}
@@ -639,6 +640,7 @@ export function CompetitionRun() {
                 All games
               </p>
               <CompetitionCourtBoard
+                competitionId={id}
                 columns={courtBoardColumns}
                 mode="scoring"
                 scoreUnit={scoreUnit}

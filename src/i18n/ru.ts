@@ -20,6 +20,18 @@ export const ru: Messages = {
     playTodayHint:
       'Если вы играете сегодня, войдите через Add LINE в таблице лидеров. Обычная регистрация для других пользователей скоро появится.',
   },
+  signInModal: {
+    title: 'Войти через LINE',
+    welcomeBack: 'С возвращением',
+    returningHint:
+      'Сессия истекла. Нажмите Continue with LINE, чтобы войти в тот же аккаунт.',
+    qrSectionTitle: 'Или отсканируйте на телефоне',
+    scanQrHeadline: 'Отсканируйте этот QR в LINE',
+    scanQrSubhead:
+      'Сохраните или сделайте скриншот кода, откройте LINE и отсканируйте. Используйте тот же аккаунт LINE, что и раньше.',
+    notConfigured: 'Вход через LINE не настроен.',
+    checkingSession: 'Проверка…',
+  },
   aria: {
     back: 'Назад',
     language: 'Язык',

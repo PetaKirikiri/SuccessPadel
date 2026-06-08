@@ -29,6 +29,7 @@ import { MakeGame } from './pages/MakeGame'
 import { MatchNew } from './pages/MatchNew'
 import { Week } from './pages/Week'
 import { NativeDeepLinkHandler } from './components/NativeDeepLinkHandler'
+import { GesturePadPage } from './pages/GesturePadPage'
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
   return <ProtectedRoute>{children}</ProtectedRoute>
@@ -266,6 +267,14 @@ export default function App() {
                 element={
                   <AppFrame>
                     <CompetitionPublicGate />
+                  </AppFrame>
+                }
+              />
+              <Route
+                path="/competitions/:id/games/:gameNumber/gesture-pad"
+                element={
+                  <AppFrame>
+                    <GesturePadPage />
                   </AppFrame>
                 }
               />

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { useTranslation } from '../hooks/useTranslation'
 import type { TranslateFn } from '../i18n'
 import type { AmericanoScoringUnit } from '../lib/competitionPresets'
@@ -23,6 +24,7 @@ type LiveCourt = {
 }
 
 type Props = {
+  competitionId?: string
   columns: CourtColumn[]
   mode: 'preview' | 'scoring'
   activeGameNumber?: number
@@ -523,27 +525,53 @@ function VideoIcon() {
   )
 }
 
-function GameVideoButton({ isLiveNow, t }: { isLiveNow?: boolean; t: TranslateFn }) {
+function GameVideoButton({ t }: { t: TranslateFn }) {
   return (
     <button
       type="button"
-      className={`flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border px-2 py-1.5 transition md:px-2.5 md:py-2 ${
-        isLiveNow
-          ? 'border-brand-accent/50 bg-brand-accent/10 text-brand-accent shadow-sm'
-          : 'border-brand-border bg-brand-surface text-brand-muted'
-      }`}
+      disabled
+      className="flex shrink-0 cursor-not-allowed flex-col items-center justify-center gap-0.5 rounded-xl border border-brand-border/50 bg-brand-bg-alt/60 px-2 py-1.5 text-brand-muted/45 opacity-50 md:px-2.5 md:py-2"
       aria-label={t('competition.video')}
+      title="Video off"
     >
       <VideoIcon />
-      <span className="hidden text-[10px] font-semibold uppercase tracking-wide lg:inline lg:text-[11px]">
+      <span className="hidden text-[10px] font-semibold uppercase tracking-wide line-through lg:inline lg:text-[11px]">
         {t('competition.video')}
       </span>
     </button>
   )
 }
 
+function GesturePadIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5 md:h-6 md:w-6" aria-hidden>
+      <rect x="3" y="3" width="8" height="8" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <rect x="13" y="3" width="8" height="8" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <rect x="3" y="13" width="8" height="8" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <rect x="13" y="13" width="8" height="8" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M5 17 Q12 8 19 7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function GameGesturePadButton({ href }: { href: string }) {
+  return (
+    <Link
+      to={href}
+      className="flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border border-brand-border bg-brand-surface px-2 py-1.5 text-brand-muted transition hover:border-brand-accent/40 hover:text-brand-primary md:px-2.5 md:py-2"
+      aria-label="Gesture pad"
+    >
+      <GesturePadIcon />
+      <span className="hidden text-[10px] font-semibold uppercase tracking-wide lg:inline lg:text-[11px]">
+        Gesture
+      </span>
+    </Link>
+  )
+}
+
 function GameCardHeader({
   gameNumber,
+  gesturePadHref,
   isLiveNow,
   timeLabel,
   countdown,
@@ -555,6 +583,7 @@ function GameCardHeader({
   t,
 }: {
   gameNumber: number
+  gesturePadHref?: string
   isLiveNow?: boolean
   timeLabel?: string
   countdown?: string | null
@@ -605,7 +634,8 @@ function GameCardHeader({
         )}
       </button>
       <div className="flex shrink-0 items-center gap-2 pr-3 md:gap-2.5 md:pr-4">
-        <GameVideoButton isLiveNow={isLiveNow} t={t} />
+        {gesturePadHref ? <GameGesturePadButton href={gesturePadHref} /> : null}
+        <GameVideoButton t={t} />
         {submit}
       </div>
     </div>
@@ -614,6 +644,7 @@ function GameCardHeader({
 
 function ScoringGameCard({
   game,
+  gesturePadHref,
   gameRoundId,
   courtsForGame,
   courtIdByLabel,
@@ -635,6 +666,7 @@ function ScoringGameCard({
   t,
 }: {
   game: ScoringGame
+  gesturePadHref?: string
   gameRoundId?: string
   courtsForGame: LiveCourt[]
   courtIdByLabel?: Map<string, string>
@@ -686,6 +718,7 @@ function ScoringGameCard({
     >
       <GameCardHeader
         gameNumber={game.gameNumber}
+        gesturePadHref={gesturePadHref}
         isLiveNow={isLiveNow}
         timeLabel={game.timeLabel}
         countdown={countdown}
@@ -718,6 +751,7 @@ function ScoringGameCard({
 }
 
 export function CompetitionCourtBoard({
+  competitionId,
   columns,
   mode,
   activeGameNumber,
@@ -835,11 +869,16 @@ export function CompetitionCourtBoard({
             roundStatus === 'complete' ||
             isLiveNow)
 
+        const gesturePadHref = competitionId
+          ? `/competitions/${competitionId}/games/${game.gameNumber}/gesture-pad`
+          : undefined
+
         if (mode === 'scoring' && matchForCourt) {
           return (
             <ScoringGameCard
               key={game.gameNumber}
               game={game}
+              gesturePadHref={gesturePadHref}
               gameRoundId={
                 roundIdForGame?.(game.gameNumber) ?? (isActive ? roundId : undefined)
               }
@@ -874,6 +913,7 @@ export function CompetitionCourtBoard({
           >
             <GameCardHeader
               gameNumber={game.gameNumber}
+              gesturePadHref={gesturePadHref}
               isLiveNow={isLiveNow}
               timeLabel={game.timeLabel}
               countdown={countdown}

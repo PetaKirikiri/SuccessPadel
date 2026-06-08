@@ -137,6 +137,16 @@ export type Messages = {
   guestChip: {
     playTodayHint: string
   }
+  signInModal: {
+    title: string
+    welcomeBack: string
+    returningHint: string
+    qrSectionTitle: string
+    scanQrHeadline: string
+    scanQrSubhead: string
+    notConfigured: string
+    checkingSession: string
+  }
   lineLink: {
     title: string
     scanQrHeadline: string

@@ -20,6 +20,18 @@ export const fr: Messages = {
     playTodayHint:
       'Si vous jouez aujourd’hui, connectez-vous avec Add LINE sur le classement. Inscription pour les autres utilisateurs bientôt disponible.',
   },
+  signInModal: {
+    title: 'Se connecter avec LINE',
+    welcomeBack: 'Bon retour',
+    returningHint:
+      'Votre session a expiré. Appuyez sur Continue with LINE pour retrouver le même compte.',
+    qrSectionTitle: 'Ou scannez sur votre téléphone',
+    scanQrHeadline: 'Scannez ce QR dans LINE',
+    scanQrSubhead:
+      'Enregistrez ou capturez ce code, ouvrez LINE et scannez-le. Utilisez le même compte LINE qu’avant.',
+    notConfigured: 'La connexion LINE n’est pas configurée.',
+    checkingSession: 'Vérification…',
+  },
   aria: {
     back: 'Retour',
     language: 'Langue',

@@ -231,6 +231,7 @@ export function CompetitionPlay() {
           {started && tab === 'games' ? (
             showGamesBoard ? (
               <CompetitionCourtBoard
+                competitionId={id}
                 columns={columns}
                 mode="scoring"
                 activeGameNumber={activeRound?.round_number}
