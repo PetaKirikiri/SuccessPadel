@@ -64,6 +64,7 @@ export const ACHIEVEMENT_IMAGE: Record<string, string> = {
 
 const MIN_STREAK = 2
 const MIN_HOT_STREAK = 3
+const MIN_LIVE_GAMES = 3
 
 function roundPlayerKey(p: RoundPlayer): string {
   return p.padel_player_id ?? p.profile_id ?? p.roster_entry_id
@@ -79,6 +80,25 @@ function parseScore(summary: string | undefined): [number, number] | null {
   return [parts[0]!, parts[1]!]
 }
 
+function populatedRounds(rounds: CompetitionRound[]): CompetitionRound[] {
+  return rounds.filter((r) => (r.competition_round_players ?? []).length > 0)
+}
+
+function roundFullyScored(round: CompetitionRound, courtMatches: CourtMatch[]): boolean {
+  const courtIds = new Set((round.competition_round_players ?? []).map((p) => p.court_id))
+  for (const courtId of courtIds) {
+    const match = courtMatches.find(
+      (m) => m.competition_round_id === round.id && m.court_id === courtId,
+    )
+    if (!match || !parseScore(match.score_summary)) return false
+  }
+  return courtIds.size > 0
+}
+
+function countFullyScoredRounds(rounds: CompetitionRound[], courtMatches: CourtMatch[]): number {
+  return populatedRounds(rounds).filter((round) => roundFullyScored(round, courtMatches)).length
+}
+
 /** A competition is complete when explicitly marked, or every populated round has a valid score on each court. */
 export function isCompetitionComplete(
   session: GameSession | null,
@@ -87,19 +107,10 @@ export function isCompetitionComplete(
 ): boolean {
   if (session?.status === 'complete') return true
 
-  const liveRounds = rounds.filter((r) => (r.competition_round_players ?? []).length > 0)
+  const liveRounds = populatedRounds(rounds)
   if (liveRounds.length === 0) return false
 
-  for (const round of liveRounds) {
-    const courtIds = new Set((round.competition_round_players ?? []).map((p) => p.court_id))
-    for (const courtId of courtIds) {
-      const match = courtMatches.find(
-        (m) => m.competition_round_id === round.id && m.court_id === courtId,
-      )
-      if (!match || !parseScore(match.score_summary)) return false
-    }
-  }
-  return true
+  return liveRounds.every((round) => roundFullyScored(round, courtMatches))
 }
 
 type TeamGame = {
@@ -319,27 +330,20 @@ function mapAchievementsToRoster(
   return individualAchievementsByPlayerId
 }
 
-function buildHotStreakAchievements(stats: Map<string, PlayerStat>): Map<string, Achievement[]> {
-  const byKey = new Map<string, Achievement[]>()
-  for (const [key, stat] of stats) {
-    if (stat.played === 0 || currentWinStreak(stat.results) < MIN_HOT_STREAK) continue
-    byKey.set(key, [
-      { key: 'hotStreak', icon: ICON.winStreak, labelKey: 'achievements.hotStreak' },
-    ])
-  }
-  return byKey
-}
-
-/** Live leaderboard badges from scored games so far (e.g. hot streak after 3 wins). */
+/** Live leaderboard badges once enough games are scored (updates as standings shift). */
 export function calculateLiveAchievements(input: AchievementsInput): CompetitionAchievements {
+  if (countFullyScoredRounds(input.rounds, input.courtMatches) < MIN_LIVE_GAMES) {
+    return { individualAchievementsByPlayerId: {}, matchAwards: [] }
+  }
+
   const teamGames = buildTeamGames(input)
   const stats = buildPlayerStats(teamGames)
   return {
     individualAchievementsByPlayerId: mapAchievementsToRoster(
-      buildHotStreakAchievements(stats),
+      buildIndividualAchievements(stats),
       input.roster,
     ),
-    matchAwards: [],
+    matchAwards: buildMatchAwards(teamGames),
   }
 }
 

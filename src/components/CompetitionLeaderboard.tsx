@@ -95,6 +95,15 @@ function playerInitial(name: string): string {
   return t ? t[0]!.toUpperCase() : '?'
 }
 
+function winLossRecord(entry: LeaderboardEntry): string | null {
+  if (entry.games <= 0) return null
+  const wins = entry.wins ?? 0
+  const losses = entry.losses ?? 0
+  const ties = Math.max(0, entry.games - wins - losses)
+  const record = ties > 0 ? `${wins}W · ${losses}L · ${ties}T` : `${wins}W · ${losses}L`
+  return `${entry.games}G · ${record}`
+}
+
 const ROW_GRID =
   'grid items-center gap-x-2 px-1.5 md:gap-x-3 md:px-2 grid-cols-[1.25rem_1.75rem_6rem_minmax(0,1fr)_auto] md:grid-cols-[1.5rem_2.5rem_9rem_minmax(0,1fr)_auto]'
 
@@ -113,6 +122,8 @@ function LeaderboardRow({
   onOpenProfile: () => void
   t: TranslateFn
 }) {
+  const record = winLossRecord(entry)
+
   return (
     <li
       onClick={onOpenProfile}
@@ -158,9 +169,9 @@ function LeaderboardRow({
         <span className="font-display text-lg font-bold tabular-nums text-brand-accent md:text-xl">
           {entry.total_points}
         </span>
-        {entry.games > 0 ? (
+        {record ? (
           <span className="text-[10px] font-medium tabular-nums text-brand-muted md:text-xs">
-            {entry.wins ?? 0}W · {entry.losses ?? 0}L
+            {record}
           </span>
         ) : null}
       </span>
