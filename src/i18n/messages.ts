@@ -5,7 +5,7 @@ export type Messages = {
     close: string
     submit: string
     tryAgain: string
-    guest: string
+    signIn: string
     thanks: string
     brandAlt: string
     notFound: string
@@ -96,6 +96,9 @@ export type Messages = {
     onTheListSuccess: string
     onTheListHint: string
     signupsClosed: string
+    guestSignupDisabled: string
+    guestSignupHint: string
+    viewGame: string
     enterName: string
     addCompetitionFab: string
   }

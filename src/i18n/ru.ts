@@ -7,7 +7,7 @@ export const ru: Messages = {
     close: 'Закрыть',
     submit: 'Сохранить',
     tryAgain: 'Повторить',
-    guest: 'Гость',
+    signIn: 'Войти',
     thanks: 'Спасибо',
     brandAlt: 'Success Padel',
     notFound: 'Соревнование не найдено',
@@ -102,6 +102,10 @@ export const ru: Messages = {
     onTheListHint:
       '{name} — организатор увидит вас в списке. Можно закрыть вкладку.',
     signupsClosed: 'Регистрация на это соревнование закрыта.',
+    guestSignupDisabled: 'Гостевая регистрация отключена',
+    guestSignupHint:
+      'Откройте игру и нажмите Add LINE рядом со своим именем в таблице лидеров.',
+    viewGame: 'Открыть игру',
     enterName: 'Введите имя',
     addCompetitionFab: 'Добавить соревнование',
   },

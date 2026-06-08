@@ -7,7 +7,7 @@ export const th: Messages = {
     close: 'ปิด',
     submit: 'บันทึก',
     tryAgain: 'ลองอีกครั้ง',
-    guest: 'ผู้เยี่ยมชม',
+    signIn: 'เข้าสู่ระบบ',
     thanks: 'ขอบคุณ',
     brandAlt: 'Success Padel',
     notFound: 'ไม่พบการแข่งขัน',
@@ -102,6 +102,9 @@ export const th: Messages = {
     onTheListHint:
       '{name} — ผู้จัดจะเห็นคุณในรายชื่อ คุณสามารถปิดแท็บนี้ได้',
     signupsClosed: 'ปิดรับสมัครสำหรับการแข่งขันนี้แล้ว',
+    guestSignupDisabled: 'ปิดการลงทะเบียนแบบผู้เยี่ยมชมแล้ว',
+    guestSignupHint: 'เปิดเกมแล้วแตะ Add LINE ข้างชื่อของคุณบนตารางคะแนน',
+    viewGame: 'ดูเกม',
     enterName: 'กรุณาใส่ชื่อ',
     addCompetitionFab: 'เพิ่มการแข่งขัน',
   },

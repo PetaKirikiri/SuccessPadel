@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { competitionJoinUrl } from '../lib/siteUrl'
+import { competitionPlayUrl } from '../lib/siteUrl'
 import { rosterLabel } from '../lib/playerCaps'
 import { sortRosterByRank } from '../lib/rankedSchedule'
 import { supabase } from '../lib/supabaseClient'
@@ -120,22 +120,22 @@ export function CompetitionGuestRoster({ sessionId, session, roster, isAdmin, on
           </p>
           <div className="rounded-lg border border-brand-border/60 bg-brand-surface/50 px-2 py-2">
             <p className="text-[10px] text-brand-muted">
-              Send players this link to add themselves (name or LINE sign-in):
+              Share this link so players can view the leaderboard and tap Add LINE next to their name:
             </p>
             <p className="mt-1 break-all text-[10px] text-brand-accent">
-              {competitionJoinUrl(sessionId)}
+              {competitionPlayUrl(sessionId)}
             </p>
             <button
               type="button"
               onClick={() => {
-                void navigator.clipboard.writeText(competitionJoinUrl(sessionId)).then(() => {
+                void navigator.clipboard.writeText(competitionPlayUrl(sessionId)).then(() => {
                   setCopiedJoin(true)
                   setTimeout(() => setCopiedJoin(false), 2000)
                 })
               }}
               className="mt-1 text-[10px] font-semibold text-brand-primary underline"
             >
-              {copiedJoin ? 'Copied' : 'Copy sign-up link'}
+              {copiedJoin ? 'Copied' : 'Copy game link'}
             </button>
           </div>
         </>

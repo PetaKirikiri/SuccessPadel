@@ -246,13 +246,13 @@ function CompetitionCard({
             </button>
           )}
 
-          {expanded && !isAdmin && !isLive && spotsOpen && !joined && (
+          {expanded && !isAdmin && !isLive && spotsOpen && !joined && userId && (
             <a
               href={competitionJoinUrl(row.id)}
               className="brand-btn block w-full py-2 text-center"
               onClick={(e) => e.stopPropagation()}
             >
-              {userId ? t('competition.addYourself') : t('competition.signUpToJoin')}
+              {t('competition.addYourself')}
             </a>
           )}
 

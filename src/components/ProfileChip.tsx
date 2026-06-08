@@ -18,9 +18,10 @@ export function ProfileChip({ returnTo, className = '' }: Props) {
   const loc = useLocation()
 
   const isSignedIn = Boolean(user)
+  const signInLabel = t('common.signIn')
   const name = isSignedIn
     ? firstDisplayName(profile?.display_name ?? lineClient.displayName)
-    : t('common.guest')
+    : signInLabel
   const avatarUrl = isSignedIn ? (profile?.avatar_url ?? lineClient.pictureUrl ?? null) : null
 
   const openProfile = () => {
@@ -38,7 +39,7 @@ export function ProfileChip({ returnTo, className = '' }: Props) {
     <button
       type="button"
       onClick={openProfile}
-      className={`flex max-w-[8.5rem] items-center gap-1.5 truncate rounded-full border border-brand-border bg-brand-surface py-1.5 pl-1.5 pr-2.5 text-xs font-medium text-brand-primary md:max-w-[11rem] md:gap-2 md:py-2 md:pl-2 md:pr-3 md:text-sm ${className}`}
+      className={`flex max-w-[9rem] items-center gap-1.5 truncate rounded-full border border-brand-border bg-brand-surface py-1.5 pl-1.5 pr-2.5 text-xs font-medium text-brand-primary md:max-w-[12rem] md:gap-2 md:py-2 md:pl-2 md:pr-3 md:text-sm ${className}`}
     >
       {avatarUrl ? (
         <img
@@ -48,7 +49,7 @@ export function ProfileChip({ returnTo, className = '' }: Props) {
         />
       ) : (
         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-bg-alt text-[10px] font-semibold text-brand-muted md:h-8 md:w-8 md:text-xs">
-          {isSignedIn ? name.trim()[0]?.toUpperCase() ?? '?' : 'G'}
+          {isSignedIn ? name.trim()[0]?.toUpperCase() ?? '?' : signInLabel.trim()[0]?.toUpperCase() ?? '?'}
         </span>
       )}
       <span className="truncate">{name}</span>

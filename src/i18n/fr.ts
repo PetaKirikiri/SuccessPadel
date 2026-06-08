@@ -7,7 +7,7 @@ export const fr: Messages = {
     close: 'Fermer',
     submit: 'Valider',
     tryAgain: 'Réessayer',
-    guest: 'Invité',
+    signIn: 'Se connecter',
     thanks: 'Merci',
     brandAlt: 'Success Padel',
     notFound: 'Compétition introuvable',
@@ -102,6 +102,10 @@ export const fr: Messages = {
     onTheListHint:
       '{name} — l’organisateur vous verra sur la liste. Vous pouvez fermer cet onglet.',
     signupsClosed: 'Les inscriptions sont closes pour cette compétition.',
+    guestSignupDisabled: 'Inscription invité désactivée',
+    guestSignupHint:
+      'Ouvrez la partie et appuyez sur Add LINE à côté de votre nom dans le classement.',
+    viewGame: 'Voir la partie',
     enterName: 'Saisissez votre nom',
     addCompetitionFab: 'Ajouter une compétition',
   },

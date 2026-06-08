@@ -7,7 +7,7 @@ export const en: Messages = {
     close: 'Close',
     submit: 'Submit',
     tryAgain: 'Try again',
-    guest: 'Guest',
+    signIn: 'Sign In',
     thanks: 'Thanks',
     brandAlt: 'Success Padel',
     notFound: 'Competition not found',
@@ -102,6 +102,10 @@ export const en: Messages = {
     onTheListHint:
       '{name} — the organiser will see you on the roster. You can close this tab.',
     signupsClosed: 'Sign-ups are closed for this competition.',
+    guestSignupDisabled: 'Guest sign-up is turned off',
+    guestSignupHint:
+      'Open the game and tap Add LINE next to your name on the leaderboard.',
+    viewGame: 'View game',
     enterName: 'Enter your name',
     addCompetitionFab: 'Add competition',
   },
