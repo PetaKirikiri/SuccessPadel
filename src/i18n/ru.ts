@@ -111,6 +111,10 @@ export const ru: Messages = {
   },
   lineLink: {
     title: 'Добавить LINE для {name}',
+    scanQrHeadline: 'Нужно отсканировать этот QR-код в LINE',
+    scanQrSubhead:
+      'Не нажимайте «Войти» вверху. Сохраните или сделайте скриншот, откройте LINE и отсканируйте код.',
+    scanQrLabel: 'Сканируйте этот QR в LINE',
     step1Prefix: 'Нажмите ',
     step1Bold: 'Сохранить QR-код',
     step1Suffix: ' (или сделайте скриншот).',

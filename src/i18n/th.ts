@@ -110,6 +110,10 @@ export const th: Messages = {
   },
   lineLink: {
     title: 'เพิ่ม LINE ให้ {name}',
+    scanQrHeadline: 'คุณต้องสแกน QR code นี้ในแอป LINE',
+    scanQrSubhead:
+      'อย่าแตะ Sign In ด้านบน บันทึกหรือจับภาพ QR นี้ เปิด LINE แล้วสแกนด้วยตัวสแกน QR',
+    scanQrLabel: 'สแกน QR นี้ใน LINE',
     step1Prefix: 'แตะ ',
     step1Bold: 'บันทึก QR code',
     step1Suffix: ' (หรือจับภาพหน้าจอ)',

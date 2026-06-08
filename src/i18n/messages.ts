@@ -104,6 +104,9 @@ export type Messages = {
   }
   lineLink: {
     title: string
+    scanQrHeadline: string
+    scanQrSubhead: string
+    scanQrLabel: string
     step1Prefix: string
     step1Bold: string
     step1Suffix: string

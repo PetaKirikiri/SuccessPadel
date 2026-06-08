@@ -107,6 +107,37 @@ export function LinePlayerLinkModal({
           </div>
         ) : request ? (
           <>
+            <div className="rounded-xl border-2 border-[#06C755] bg-[#06C755]/10 px-4 py-3 text-left">
+              <p className="font-display text-lg font-bold leading-snug text-brand-primary md:text-xl">
+                {t('lineLink.scanQrHeadline')}
+              </p>
+              <p className="mt-1.5 text-sm font-medium leading-snug text-brand-text">
+                {t('lineLink.scanQrSubhead')}
+              </p>
+            </div>
+            <div className="grid grid-cols-2 items-center gap-3">
+              <div className="space-y-2">
+                <p className="font-display text-sm font-bold uppercase tracking-wide text-[#06C755]">
+                  {t('lineLink.scanQrLabel')}
+                </p>
+                <LineSignUpQr url={request.qrUrl} onDataUrl={setQrDataUrl} />
+                {qrDataUrl ? (
+                  <a
+                    href={qrDataUrl}
+                    download={`${playerName.trim() || 'player'}-line-qr.png`}
+                    className="brand-btn-outline block w-full py-2 text-sm font-semibold"
+                  >
+                    {t('lineLink.saveQr')}
+                  </a>
+                ) : null}
+              </div>
+              <img
+                src={LINE_ADD_FRIEND_GUIDE_SRC}
+                alt=""
+                aria-hidden
+                className="h-auto max-h-[78vh] w-full rounded-2xl border border-brand-border object-contain"
+              />
+            </div>
             <ol className="space-y-1.5 text-left text-xs text-brand-muted">
               <LinkStep
                 n={1}
@@ -133,26 +164,6 @@ export function LinePlayerLinkModal({
                 suffix={t('lineLink.step4Suffix')}
               />
             </ol>
-            <div className="grid grid-cols-2 items-center gap-3">
-              <div className="space-y-2">
-                <LineSignUpQr url={request.qrUrl} onDataUrl={setQrDataUrl} />
-                {qrDataUrl ? (
-                  <a
-                    href={qrDataUrl}
-                    download={`${playerName.trim() || 'player'}-line-qr.png`}
-                    className="brand-btn-outline block w-full py-2 text-sm font-semibold"
-                  >
-                    {t('lineLink.saveQr')}
-                  </a>
-                ) : null}
-              </div>
-              <img
-                src={LINE_ADD_FRIEND_GUIDE_SRC}
-                alt=""
-                aria-hidden
-                className="h-auto max-h-[78vh] w-full rounded-2xl border border-brand-border object-contain"
-              />
-            </div>
           </>
         ) : null}
       </div>

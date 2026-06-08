@@ -111,6 +111,10 @@ export const en: Messages = {
   },
   lineLink: {
     title: 'Add LINE to {name}',
+    scanQrHeadline: 'You must scan this QR code in LINE',
+    scanQrSubhead:
+      'Do not tap Sign In at the top. Save or screenshot this code, open LINE, and scan it with the QR scanner.',
+    scanQrLabel: 'Scan this QR in LINE',
     step1Prefix: 'Tap ',
     step1Bold: 'Save QR code',
     step1Suffix: ' (or screenshot it).',

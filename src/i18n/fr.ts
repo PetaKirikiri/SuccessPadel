@@ -111,6 +111,10 @@ export const fr: Messages = {
   },
   lineLink: {
     title: 'Ajouter LINE à {name}',
+    scanQrHeadline: 'Vous devez scanner ce QR code dans LINE',
+    scanQrSubhead:
+      'N’appuyez pas sur Se connecter en haut. Enregistrez ou capturez ce code, ouvrez LINE et scannez-le avec le scanner QR.',
+    scanQrLabel: 'Scannez ce QR dans LINE',
     step1Prefix: 'Appuyez sur ',
     step1Bold: 'Enregistrer le QR code',
     step1Suffix: ' (ou faites une capture d’écran).',

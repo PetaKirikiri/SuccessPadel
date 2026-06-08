@@ -3,6 +3,7 @@ import { useTranslation } from '../hooks/useTranslation'
 import type { TranslateFn } from '../i18n'
 import type { AmericanoScoringUnit } from '../lib/competitionPresets'
 import { pivotScheduleByGame, type CourtColumn } from '../lib/competitionCourtBoard'
+import { isScoringTimeUnlocked } from '../lib/competitionScoringUnlock'
 import { playTwoMinuteAlarm, TWO_MINUTES_MS } from '../lib/gameCountdownAlarm'
 import { RANKED_GAME_MINUTES } from '../lib/competitionLayout'
 import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
@@ -521,11 +522,11 @@ function GameCardHeader({
   t: TranslateFn
 }) {
   return (
-    <div className="flex items-center gap-2 border-b border-brand-border/60 px-3 py-3 md:gap-3 md:px-4 md:py-4">
+    <div className="flex items-center gap-2 border-b border-brand-border/60 md:gap-3">
       <button
         type="button"
         onClick={onToggleCollapsed}
-        className="flex min-w-0 flex-1 items-center gap-2 text-left"
+        className="flex min-w-0 flex-1 items-center gap-2 px-3 py-3 text-left md:gap-3 md:px-4 md:py-4"
         aria-expanded={!collapsed}
       >
         <span className="shrink-0 text-sm text-brand-muted">{collapsed ? '▸' : '▾'}</span>
@@ -548,18 +549,18 @@ function GameCardHeader({
             </span>
           )}
         </span>
+        {countdown && (
+          <div className="shrink-0 text-right" aria-live="polite">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-muted md:text-xs">
+              {countdownLabelText}
+            </p>
+            <p className="font-display text-3xl font-bold leading-none tabular-nums text-brand-text md:text-4xl">
+              {countdown}
+            </p>
+          </div>
+        )}
       </button>
-      {countdown && (
-        <div className="shrink-0 text-right" aria-live="polite">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-muted md:text-xs">
-            {countdownLabelText}
-          </p>
-          <p className="font-display text-3xl font-bold leading-none tabular-nums text-brand-text md:text-4xl">
-            {countdown}
-          </p>
-        </div>
-      )}
-      {submit}
+      {submit && <div className="shrink-0 pr-3 md:pr-4">{submit}</div>}
     </div>
   )
 }
@@ -694,6 +695,7 @@ export function CompetitionCourtBoard({
   const games = useMemo(() => pivotScheduleByGame(columns), [columns])
   const [tick, setTick] = useState(() => Date.now())
   const [collapsedGames, setCollapsedGames] = useState<Record<number, boolean>>({})
+  const scoringTimeUnlocked = isScoringTimeUnlocked()
 
   useEffect(() => {
     if (mode !== 'scoring') return
@@ -762,20 +764,30 @@ export function CompetitionCourtBoard({
       {orderedGames.map((game) => {
         const isActive = activeGameNumber === game.gameNumber
         const times = roundTimesByGame?.get(game.gameNumber)
+        const roundStatus = roundStatusByGame?.get(game.gameNumber)
         const isLiveNow = mode === 'scoring' && isGameLive(clock, times)
-        const finished = isGameFinished(
+        const clockFinished = isGameFinished(
           game.gameNumber,
           clock,
           roundTimesByGame,
           roundStatusByGame,
         )
+        const finished = scoringTimeUnlocked
+          ? roundStatus === 'complete'
+          : clockFinished
         const countdown =
           mode === 'scoring' && !finished
             ? gameCountdown(clock, times, gameMinutes)
             : null
         const state = countdownState(clock, times, finished)
-        const collapsed = collapsedGames[game.gameNumber] ?? finished
+        const collapsed = collapsedGames[game.gameNumber] ?? (scoringTimeUnlocked ? false : finished)
         const isCurrentGame = !finished && (isLiveNow || isActive)
+        const canEditGame =
+          Boolean(canLog) &&
+          (scoringTimeUnlocked ||
+            roundStatus === 'active' ||
+            roundStatus === 'complete' ||
+            isLiveNow)
 
         if (mode === 'scoring' && matchForCourt) {
           return (
@@ -789,8 +801,8 @@ export function CompetitionCourtBoard({
               courtIdByLabel={courtIdByLabel}
               matchForCourt={matchForCourt}
               scoreUnit={scoreUnit}
-              scoringOpen={Boolean(canLog)}
-              canEdit={Boolean(canLog)}
+              scoringOpen={canEditGame}
+              canEdit={canEditGame}
               onSubmitScores={onSubmitScores}
               onSaved={onSaved}
               isLiveNow={isLiveNow}
