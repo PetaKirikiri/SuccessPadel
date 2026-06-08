@@ -1,5 +1,16 @@
 export type Quadrant = 'TL' | 'TR' | 'BL' | 'BR'
 
+const PLAYER_BY_QUADRANT: Record<Quadrant, string> = {
+  TL: 'Player 1',
+  TR: 'Player 2',
+  BL: 'Player 3',
+  BR: 'Player 4',
+}
+
+export function playerLabel(quadrant: Quadrant): string {
+  return PLAYER_BY_QUADRANT[quadrant]
+}
+
 export type NormalizedPoint = {
   x: number
   y: number

@@ -1,12 +1,14 @@
 import {
+  playerLabel,
   quadrantFromPoint,
   type CapturedGesture,
   type NormalizedPoint,
   type Quadrant,
 } from './gestureCapture'
 
-export type GestureShape = 'SMASH' | 'LINE_H' | 'LINE_V' | 'CURVE' | 'TAP'
+export type GestureShape = 'SMASH' | 'BACKHAND' | 'LINE_V' | 'CURVE' | 'TAP'
 export type SmashVerdict = 'WIN' | 'FOUL'
+export type BackhandDirection = 'L_TO_R' | 'R_TO_L'
 
 export type GestureAnalysis = {
   code: string
@@ -14,6 +16,7 @@ export type GestureAnalysis = {
   shape: GestureShape
   shapeLabel: string
   smashVerdict: SmashVerdict | null
+  backhandDirection: BackhandDirection | null
   startQuadrant: Quadrant
   endQuadrant: Quadrant
   quadrantSequence: string
@@ -41,6 +44,7 @@ export const SMASH_Y_SPREAD_MIN = 0.1
 export const SMASH_STRAIGHTNESS_MIN = 0.8
 /** Min vertical travel to call smash direction (y grows downward on screen). */
 export const SMASH_DIRECTION_MIN = 0.05
+export const BACKHAND_DIRECTION_MIN = 0.05
 
 const DIRECTIONS = ['E', 'NE', 'N', 'NW', 'W', 'SW', 'S', 'SE'] as const
 
@@ -232,15 +236,15 @@ export function detectGestureShape(points: NormalizedPoint[]): GestureShape {
     ySpread <= LINE_SPREAD_MAX &&
     xSpread > ySpread * 1.5
 
-  if (isLineH) return 'LINE_H'
+  if (isLineH) return 'BACKHAND'
 
   return 'CURVE'
 }
 
 export function shapeLabel(shape: GestureShape): string {
   if (shape === 'SMASH') return 'Smash'
+  if (shape === 'BACKHAND') return 'Backhand'
   if (shape === 'LINE_V') return 'Vertical line'
-  if (shape === 'LINE_H') return 'Horizontal line'
   if (shape === 'TAP') return 'Tap'
   return 'Curve'
 }
@@ -256,18 +260,43 @@ export function detectSmashVerdict(
   return null
 }
 
-/** Primary label: start quadrant + shape, e.g. "TR - Smash Win". */
+export function detectBackhandDirection(
+  start: NormalizedPoint,
+  end: NormalizedPoint,
+): BackhandDirection | null {
+  const dx = end.x - start.x
+  if (dx >= BACKHAND_DIRECTION_MIN) return 'L_TO_R'
+  if (dx <= -BACKHAND_DIRECTION_MIN) return 'R_TO_L'
+  return null
+}
+
+type GestureReportOpts = {
+  smashVerdict?: SmashVerdict | null
+  backhandDirection?: BackhandDirection | null
+}
+
+/** Primary label: player + shot, e.g. "Player 2 - Smash Win". */
 export function gestureReport(
   startQuadrant: Quadrant,
   shape: GestureShape,
-  smashVerdict: SmashVerdict | null = null,
+  opts: GestureReportOpts = {},
 ): string {
+  const player = playerLabel(startQuadrant)
+  const { smashVerdict = null, backhandDirection = null } = opts
+
   if (shape === 'SMASH') {
-    if (smashVerdict === 'WIN') return `${startQuadrant} - Smash Win`
-    if (smashVerdict === 'FOUL') return `${startQuadrant} - Smash Foul`
-    return `${startQuadrant} - Smash`
+    if (smashVerdict === 'WIN') return `${player} - Smash Win`
+    if (smashVerdict === 'FOUL') return `${player} - Smash Foul`
+    return `${player} - Smash`
   }
-  return startQuadrant
+
+  if (shape === 'BACKHAND') {
+    if (backhandDirection === 'L_TO_R') return `${player} - Backhand L→R`
+    if (backhandDirection === 'R_TO_L') return `${player} - Backhand R→L`
+    return `${player} - Backhand`
+  }
+
+  return player
 }
 
 export function analyzeGesture(
@@ -284,13 +313,16 @@ export function analyzeGesture(
   const label = shapeLabel(shape)
   const smashVerdict =
     shape === 'SMASH' ? detectSmashVerdict(gesture.start, gesture.end) : null
+  const backhandDirection =
+    shape === 'BACKHAND' ? detectBackhandDirection(gesture.start, gesture.end) : null
 
   return {
     code: gesture.code,
-    report: gestureReport(gesture.startQuadrant, shape, smashVerdict),
+    report: gestureReport(gesture.startQuadrant, shape, { smashVerdict, backhandDirection }),
     shape,
     shapeLabel: label,
     smashVerdict,
+    backhandDirection,
     startQuadrant: gesture.startQuadrant,
     endQuadrant: gesture.endQuadrant,
     quadrantSequence: seq,

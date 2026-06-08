@@ -12,6 +12,7 @@ import {
   clientToNormalized,
   drawGestureMarkers,
   drawGestureStroke,
+  playerLabel,
   quadrantFromPoint,
   type CapturedGesture,
   type NormalizedPoint,
@@ -214,7 +215,7 @@ export function GestureAnnotationPad({ competitionId, gameNumber, onGesture }: P
                     : 'text-brand-muted'
                 }`}
               >
-                {label}
+                {playerLabel(label)}
               </span>
             </div>
           ))}
