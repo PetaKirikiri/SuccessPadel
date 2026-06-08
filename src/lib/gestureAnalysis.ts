@@ -6,12 +6,14 @@ import {
 } from './gestureCapture'
 
 export type GestureShape = 'SMASH' | 'LINE_H' | 'LINE_V' | 'CURVE' | 'TAP'
+export type SmashVerdict = 'WIN' | 'FOUL'
 
 export type GestureAnalysis = {
   code: string
   report: string
   shape: GestureShape
   shapeLabel: string
+  smashVerdict: SmashVerdict | null
   startQuadrant: Quadrant
   endQuadrant: Quadrant
   quadrantSequence: string
@@ -37,6 +39,8 @@ export type GestureAnalysis = {
 export const SMASH_X_SPREAD_MAX = 0.09
 export const SMASH_Y_SPREAD_MIN = 0.1
 export const SMASH_STRAIGHTNESS_MIN = 0.8
+/** Min vertical travel to call smash direction (y grows downward on screen). */
+export const SMASH_DIRECTION_MIN = 0.05
 
 const DIRECTIONS = ['E', 'NE', 'N', 'NW', 'W', 'SW', 'S', 'SE'] as const
 
@@ -241,9 +245,28 @@ export function shapeLabel(shape: GestureShape): string {
   return 'Curve'
 }
 
-/** Primary label: start quadrant + shape, e.g. "TR - Smash". */
-export function gestureReport(startQuadrant: Quadrant, shape: GestureShape): string {
-  if (shape === 'SMASH') return `${startQuadrant} - Smash`
+/** Top → down = foul; bottom → up = win. */
+export function detectSmashVerdict(
+  start: NormalizedPoint,
+  end: NormalizedPoint,
+): SmashVerdict | null {
+  const dy = end.y - start.y
+  if (dy >= SMASH_DIRECTION_MIN) return 'FOUL'
+  if (dy <= -SMASH_DIRECTION_MIN) return 'WIN'
+  return null
+}
+
+/** Primary label: start quadrant + shape, e.g. "TR - Smash Win". */
+export function gestureReport(
+  startQuadrant: Quadrant,
+  shape: GestureShape,
+  smashVerdict: SmashVerdict | null = null,
+): string {
+  if (shape === 'SMASH') {
+    if (smashVerdict === 'WIN') return `${startQuadrant} - Smash Win`
+    if (smashVerdict === 'FOUL') return `${startQuadrant} - Smash Foul`
+    return `${startQuadrant} - Smash`
+  }
   return startQuadrant
 }
 
@@ -259,12 +282,15 @@ export function analyzeGesture(
   const straight = straightness(pathPoints)
   const shape = detectGestureShape(pathPoints)
   const label = shapeLabel(shape)
+  const smashVerdict =
+    shape === 'SMASH' ? detectSmashVerdict(gesture.start, gesture.end) : null
 
   return {
     code: gesture.code,
-    report: gestureReport(gesture.startQuadrant, shape),
+    report: gestureReport(gesture.startQuadrant, shape, smashVerdict),
     shape,
     shapeLabel: label,
+    smashVerdict,
     startQuadrant: gesture.startQuadrant,
     endQuadrant: gesture.endQuadrant,
     quadrantSequence: seq,

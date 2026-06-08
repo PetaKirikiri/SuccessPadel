@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { GestureAnnotationPad } from './GestureAnnotationPad'
 import { useTranslation } from '../hooks/useTranslation'
 import type { TranslateFn } from '../i18n'
 import type { AmericanoScoringUnit } from '../lib/competitionPresets'
@@ -644,10 +644,14 @@ function GesturePadIcon() {
   )
 }
 
-function GameGesturePadButton({ href }: { href: string }) {
+function GameGesturePadButton({ onOpen }: { onOpen: () => void }) {
   return (
-    <Link
-      to={href}
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation()
+        onOpen()
+      }}
       className="flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border border-brand-border bg-brand-surface px-2 py-1.5 text-brand-muted transition hover:border-brand-accent/40 hover:text-brand-primary md:px-2.5 md:py-2"
       aria-label="Gesture pad"
     >
@@ -655,13 +659,49 @@ function GameGesturePadButton({ href }: { href: string }) {
       <span className="hidden text-[10px] font-semibold uppercase tracking-wide lg:inline lg:text-[11px]">
         Gesture
       </span>
-    </Link>
+    </button>
+  )
+}
+
+function GesturePadOverlay({
+  competitionId,
+  gameNumber,
+  onClose,
+  t,
+}: {
+  competitionId: string
+  gameNumber: number
+  onClose: () => void
+  t: TranslateFn
+}) {
+  return (
+    <div className="gesture-pad-page fixed inset-0 z-[250] flex flex-col overflow-hidden bg-brand-surface">
+      <div className="flex shrink-0 items-center gap-2 border-b border-brand-border/60 px-3 py-3 md:px-4">
+        <button
+          type="button"
+          onClick={onClose}
+          className="shrink-0 text-sm font-medium text-brand-primary"
+        >
+          {t('common.back')}
+        </button>
+        <p className="min-w-0 flex-1 truncate text-center font-display text-base font-semibold text-brand-primary">
+          {t('competition.game', { number: gameNumber })} · Gesture Pad
+        </p>
+        <span className="w-12 shrink-0" aria-hidden />
+      </div>
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <GestureAnnotationPad
+          competitionId={competitionId}
+          gameNumber={String(gameNumber)}
+        />
+      </div>
+    </div>
   )
 }
 
 function GameCardHeader({
   gameNumber,
-  gesturePadHref,
+  onOpenGesturePad,
   isLiveNow,
   timeLabel,
   countdown,
@@ -672,7 +712,7 @@ function GameCardHeader({
   t,
 }: {
   gameNumber: number
-  gesturePadHref?: string
+  onOpenGesturePad?: () => void
   isLiveNow?: boolean
   timeLabel?: string
   countdown?: string | null
@@ -732,9 +772,9 @@ function GameCardHeader({
           </div>
         )}
       </button>
-      {gesturePadHref ? (
+      {onOpenGesturePad ? (
         <div className="flex shrink-0 items-center pr-3 md:pr-4">
-          <GameGesturePadButton href={gesturePadHref} />
+          <GameGesturePadButton onOpen={onOpenGesturePad} />
         </div>
       ) : null}
     </div>
@@ -743,7 +783,7 @@ function GameCardHeader({
 
 function ScoringGameCard({
   game,
-  gesturePadHref,
+  onOpenGesturePad,
   gameRoundId,
   courtsForGame,
   courtIdByLabel,
@@ -764,7 +804,7 @@ function ScoringGameCard({
   t,
 }: {
   game: ScoringGame
-  gesturePadHref?: string
+  onOpenGesturePad?: () => void
   gameRoundId?: string
   courtsForGame: LiveCourt[]
   courtIdByLabel?: Map<string, string>
@@ -811,7 +851,7 @@ function ScoringGameCard({
     <div className={gameCardShellClass({ finished, isCurrentGame, isMyGame })}>
       <GameCardHeader
         gameNumber={game.gameNumber}
-        gesturePadHref={gesturePadHref}
+        onOpenGesturePad={onOpenGesturePad}
         isLiveNow={isLiveNow}
         timeLabel={game.timeLabel}
         countdown={countdown}
@@ -874,6 +914,7 @@ export function CompetitionCourtBoard({
   const games = useMemo(() => pivotScheduleByGame(columns), [columns])
   const [tick, setTick] = useState(() => Date.now())
   const [collapsedGames, setCollapsedGames] = useState<Record<number, boolean>>({})
+  const [gesturePadGame, setGesturePadGame] = useState<number | null>(null)
   const scoringTimeUnlocked = isScoringTimeUnlocked()
 
   useEffect(() => {
@@ -1002,8 +1043,8 @@ export function CompetitionCourtBoard({
             isLiveNow ||
             timeUp)
 
-        const gesturePadHref = competitionId
-          ? `/competitions/${competitionId}/games/${game.gameNumber}/gesture-pad`
+        const openGesturePad = competitionId
+          ? () => setGesturePadGame(game.gameNumber)
           : undefined
 
         if (mode === 'scoring' && matchForCourt) {
@@ -1011,7 +1052,7 @@ export function CompetitionCourtBoard({
             <ScoringGameCard
               key={game.gameNumber}
               game={game}
-              gesturePadHref={gesturePadHref}
+              onOpenGesturePad={openGesturePad}
               gameRoundId={gameRoundId}
               courtsForGame={courtsForGame}
               courtIdByLabel={courtIdByLabel}
@@ -1041,7 +1082,7 @@ export function CompetitionCourtBoard({
           >
             <GameCardHeader
               gameNumber={game.gameNumber}
-              gesturePadHref={gesturePadHref}
+              onOpenGesturePad={openGesturePad}
               isLiveNow={isLiveNow}
               timeLabel={game.timeLabel}
               countdown={countdown}
@@ -1100,6 +1141,14 @@ export function CompetitionCourtBoard({
           </div>
         )
       })}
+      {gesturePadGame != null && competitionId ? (
+        <GesturePadOverlay
+          competitionId={competitionId}
+          gameNumber={gesturePadGame}
+          onClose={() => setGesturePadGame(null)}
+          t={t}
+        />
+      ) : null}
     </div>
   )
 }
