@@ -84,7 +84,7 @@ function gameCardShellClass({
   return parts.join(' ')
 }
 
-function isGameFinished(
+function isGameTimeUp(
   gameNumber: number,
   clock: number,
   roundTimesByGame?: Map<number, { startsAt: number; endsAt: number }>,
@@ -93,6 +93,30 @@ function isGameFinished(
   if (roundStatusByGame?.get(gameNumber) === 'complete') return true
   const times = roundTimesByGame?.get(gameNumber)
   return Boolean(times && clock >= times.endsAt)
+}
+
+function isGameSubmitted(
+  game: ScoringGame,
+  gameRoundId: string | undefined,
+  courtsForGame: LiveCourt[],
+  courtIdByLabel: Map<string, string> | undefined,
+  matchForCourt: NonNullable<Props['matchForCourt']>,
+): boolean {
+  if (!gameRoundId) return false
+  const courtIds: string[] = []
+  if (courtsForGame.length > 0) {
+    courtIds.push(...courtsForGame.map((c) => c.courtId))
+  } else {
+    game.courts.forEach((court, courtIndex) => {
+      const id = courtIdForLabel(court.courtLabel, courtIndex, courtsForGame, courtIdByLabel)
+      if (id) courtIds.push(id)
+    })
+  }
+  if (courtIds.length === 0) return false
+  return courtIds.every((courtId) => {
+    const saved = matchForCourt(gameRoundId, courtId)
+    return saved?.teamAPoints != null && saved?.teamBPoints != null
+  })
 }
 
 function formatCountdown(ms: number): string {
@@ -828,7 +852,7 @@ export function CompetitionCourtBoard({
     for (const game of games) {
       const times = roundTimesByGame.get(game.gameNumber)
       if (!times || !isGameLive(clock, times)) continue
-      if (isGameFinished(game.gameNumber, clock, roundTimesByGame, roundStatusByGame)) continue
+      if (isGameTimeUp(game.gameNumber, clock, roundTimesByGame, roundStatusByGame)) continue
 
       const remaining = times.endsAt - clock
       const prev = prevRemainingMsRef.current.get(game.gameNumber)
@@ -848,24 +872,52 @@ export function CompetitionCourtBoard({
       [...games].sort((a, b) => {
         const aTimes = roundTimesByGame?.get(a.gameNumber)
         const bTimes = roundTimesByGame?.get(b.gameNumber)
-        const aFinished = isGameFinished(a.gameNumber, clock, roundTimesByGame, roundStatusByGame)
-        const bFinished = isGameFinished(b.gameNumber, clock, roundTimesByGame, roundStatusByGame)
+        const aRoundId = roundIdForGame?.(a.gameNumber)
+        const bRoundId = roundIdForGame?.(b.gameNumber)
+        const aCourts = liveCourtsByGame?.get(a.gameNumber) ?? []
+        const bCourts = liveCourtsByGame?.get(b.gameNumber) ?? []
+        const aSubmitted =
+          matchForCourt != null
+            ? isGameSubmitted(a, aRoundId, aCourts, courtIdByLabel, matchForCourt)
+            : false
+        const bSubmitted =
+          matchForCourt != null
+            ? isGameSubmitted(b, bRoundId, bCourts, courtIdByLabel, matchForCourt)
+            : false
+        const aTimeUp = isGameTimeUp(a.gameNumber, clock, roundTimesByGame, roundStatusByGame)
+        const bTimeUp = isGameTimeUp(b.gameNumber, clock, roundTimesByGame, roundStatusByGame)
         const aLive = isGameLive(clock, aTimes)
         const bLive = isGameLive(clock, bTimes)
-        const aCurrent = !aFinished && (aLive || activeGameNumber === a.gameNumber)
-        const bCurrent = !bFinished && (bLive || activeGameNumber === b.gameNumber)
-        const rank = (isCurrent: boolean, isFinished: boolean, times?: { startsAt: number }) => {
+        const aCurrent = !aSubmitted && (aLive || activeGameNumber === a.gameNumber)
+        const bCurrent = !bSubmitted && (bLive || activeGameNumber === b.gameNumber)
+        const rank = (
+          isCurrent: boolean,
+          submitted: boolean,
+          timeUp: boolean,
+          times?: { startsAt: number },
+        ) => {
           if (isCurrent) return 0
-          if (isFinished) return 3
-          if (times && clock < times.startsAt) return 1
+          if (submitted) return 3
+          if (timeUp) return 1
+          if (times && clock < times.startsAt) return 2
           return 2
         }
-        const aRank = rank(aCurrent, aFinished, aTimes)
-        const bRank = rank(bCurrent, bFinished, bTimes)
+        const aRank = rank(aCurrent, aSubmitted, aTimeUp, aTimes)
+        const bRank = rank(bCurrent, bSubmitted, bTimeUp, bTimes)
         if (aRank !== bRank) return aRank - bRank
         return (aTimes?.startsAt ?? a.gameNumber) - (bTimes?.startsAt ?? b.gameNumber)
       }),
-    [activeGameNumber, clock, games, roundStatusByGame, roundTimesByGame],
+    [
+      activeGameNumber,
+      clock,
+      courtIdByLabel,
+      games,
+      liveCourtsByGame,
+      matchForCourt,
+      roundIdForGame,
+      roundStatusByGame,
+      roundTimesByGame,
+    ],
   )
 
   const toggleCollapsed = (gameNumber: number, defaultCollapsed: boolean) => {
@@ -881,37 +933,43 @@ export function CompetitionCourtBoard({
         const isActive = activeGameNumber === game.gameNumber
         const times = roundTimesByGame?.get(game.gameNumber)
         const roundStatus = roundStatusByGame?.get(game.gameNumber)
+        const courtsForGame = liveCourtsByGame?.get(game.gameNumber) ?? []
+        const gameRoundId =
+          roundIdForGame?.(game.gameNumber) ?? (isActive ? roundId : undefined)
         const isLiveNow = mode === 'scoring' && isGameLive(clock, times)
-        const finished = isGameFinished(
+        const timeUp = isGameTimeUp(
           game.gameNumber,
           clock,
           roundTimesByGame,
           roundStatusByGame,
         )
+        const submitted =
+          matchForCourt != null
+            ? isGameSubmitted(game, gameRoundId, courtsForGame, courtIdByLabel, matchForCourt)
+            : timeUp && roundStatus === 'complete'
+        const finished = submitted
         const countdown =
-          mode === 'scoring' && !finished
+          mode === 'scoring' && !submitted
             ? gameCountdown(clock, times, gameMinutes)
             : null
-        const state = countdownState(clock, times, finished)
-        const collapsed = collapsedGames[game.gameNumber] ?? (scoringTimeUnlocked ? false : finished)
-        const isCurrentGame = !finished && (isLiveNow || isActive)
+        const state = countdownState(clock, times, timeUp)
+        const collapsed = collapsedGames[game.gameNumber] ?? (scoringTimeUnlocked ? false : submitted)
+        const isCurrentGame = !submitted && (isLiveNow || isActive)
         const canEditGame =
           Boolean(canLog) &&
           (scoringTimeUnlocked ||
             roundStatus === 'active' ||
             roundStatus === 'complete' ||
             isLiveNow ||
-            finished)
+            timeUp)
 
         if (mode === 'scoring' && matchForCourt) {
           return (
             <ScoringGameCard
               key={game.gameNumber}
               game={game}
-              gameRoundId={
-                roundIdForGame?.(game.gameNumber) ?? (isActive ? roundId : undefined)
-              }
-              courtsForGame={liveCourtsByGame?.get(game.gameNumber) ?? []}
+              gameRoundId={gameRoundId}
+              courtsForGame={courtsForGame}
               courtIdByLabel={courtIdByLabel}
               matchForCourt={matchForCourt}
               scoreUnit={scoreUnit}
@@ -952,9 +1010,6 @@ export function CompetitionCourtBoard({
               <div className={`px-1 pb-2 pt-2 ${finished ? 'bg-[#f6f5f3]' : ''}`}>
               <div className="space-y-2">
                 {game.courts.map((court, courtIndex) => {
-                  const gameRoundId =
-                    roundIdForGame?.(game.gameNumber) ?? (isActive ? roundId : undefined)
-                  const courtsForGame = liveCourtsByGame?.get(game.gameNumber) ?? []
                   const liveCourt = courtsForGame.find((c) => c.courtName === court.courtLabel)
                   const courtId = courtIdForLabel(
                     court.courtLabel,

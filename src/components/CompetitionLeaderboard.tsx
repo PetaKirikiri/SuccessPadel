@@ -225,8 +225,9 @@ function MatchAwardsSection({
                   emojiClass="text-base leading-none md:text-lg"
                 />
                 <span className="min-w-0">
-                  <span className="block text-sm font-medium text-brand-text">
-                    {t(award.labelKey)}
+                  <span className="block text-sm text-brand-text">
+                    <span className="font-medium">{t(award.labelKey)}</span>
+                    <span className="text-brand-muted"> – {t(`${award.labelKey}Desc`)}</span>
                   </span>
                   <span className="block truncate text-xs text-brand-muted">
                     {pair} · {award.scoreFor}–{award.scoreAgainst} · {where}
