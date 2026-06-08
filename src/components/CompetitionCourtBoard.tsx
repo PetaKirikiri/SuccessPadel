@@ -788,7 +788,6 @@ function ScoringGameCard({
 }
 
 export function CompetitionCourtBoard({
-  competitionId,
   columns,
   mode,
   activeGameNumber,
