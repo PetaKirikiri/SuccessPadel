@@ -73,7 +73,7 @@ function gameCardShellClass({
   const parts = ['game-card overflow-hidden p-0 transition-colors']
   if (finished) {
     parts.push(
-      'border border-brand-border/70 !bg-[#ebeae8] shadow-none',
+      'border border-brand-border/50 !bg-[#f6f5f3] shadow-none',
     )
   } else if (isCurrentGame) {
     parts.push('border-2 border-brand-accent ring-2 ring-brand-accent/30')
@@ -239,7 +239,7 @@ function CourtMatchCell({
     }`
 
   const scoreInputClass = finished
-    ? 'h-8 w-8 rounded-lg border border-brand-border/60 bg-[#ececea] px-0.5 py-0.5 text-center text-sm font-semibold tabular-nums text-brand-sage disabled:text-brand-muted/60 md:h-10 md:w-10 md:text-base'
+    ? 'h-8 w-8 rounded-lg border border-brand-border/50 bg-[#faf9f7] px-0.5 py-0.5 text-center text-sm font-semibold tabular-nums text-brand-sage disabled:text-brand-muted/60 md:h-10 md:w-10 md:text-base'
     : 'h-8 w-8 rounded-lg border border-brand-border/80 bg-brand-surface px-0.5 py-0.5 text-center text-sm font-semibold tabular-nums text-brand-primary disabled:text-brand-muted/60 md:h-10 md:w-10 md:text-base'
 
   const scoreAEl = editable ? (
@@ -300,7 +300,7 @@ function CourtMatchCell({
     <div
       className={
         finished
-          ? 'overflow-hidden rounded-lg border border-brand-border/50 bg-[#e0dfdd]'
+          ? 'overflow-hidden rounded-lg border border-brand-border/40 bg-[#f3f2f0]'
           : 'overflow-hidden rounded-lg border border-brand-border/60 bg-brand-surface'
       }
       aria-label={`${teamA[0]} and ${teamA[1]} against ${teamB[0]} and ${teamB[1]}`}
@@ -503,7 +503,7 @@ function useGameScoring({
   const submitFooter = onSubmitScores ? (
     <div
       className={`border-t px-3 py-2.5 md:px-4 ${
-        finished ? 'border-brand-border/50 bg-[#e3e2e0]' : 'border-brand-border/60'
+        finished ? 'border-brand-border/40 bg-[#f1f0ee]' : 'border-brand-border/60'
       }`}
     >
       <button
@@ -631,7 +631,7 @@ function GameCardHeader({
   return (
     <div
       className={`flex items-center gap-2 border-b md:gap-3 ${
-        finished ? 'border-brand-border/50 bg-[#e3e2e0]' : 'border-brand-border/60'
+        finished ? 'border-brand-border/40 bg-[#f1f0ee]' : 'border-brand-border/60'
       }`}
     >
       <button
@@ -762,7 +762,7 @@ function ScoringGameCard({
       {error && <p className="px-3 pb-1 text-center text-xs text-red-600">{error}</p>}
       {!collapsed && (
         <>
-          <div className={`px-1 pb-2 pt-2 ${finished ? 'bg-[#ebeae8]' : ''}`}>
+          <div className={`px-1 pb-2 pt-2 ${finished ? 'bg-[#f6f5f3]' : ''}`}>
             <GameScoringCourts
               game={game}
               gameRoundId={gameRoundId}
@@ -949,7 +949,7 @@ export function CompetitionCourtBoard({
               t={t}
             />
             {!collapsed && (
-              <div className={`px-1 pb-2 pt-2 ${finished ? 'bg-[#ebeae8]' : ''}`}>
+              <div className={`px-1 pb-2 pt-2 ${finished ? 'bg-[#f6f5f3]' : ''}`}>
               <div className="space-y-2">
                 {game.courts.map((court, courtIndex) => {
                   const gameRoundId =

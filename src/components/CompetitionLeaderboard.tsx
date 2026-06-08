@@ -20,6 +20,8 @@ export type LeaderboardEntry = {
   avatar_url?: string | null
   total_points: number
   games: number
+  wins?: number
+  losses?: number
 }
 
 type Props = {
@@ -152,8 +154,15 @@ function LeaderboardRow({
           />
         ))}
       </span>
-      <span className="justify-self-end text-right font-display text-lg font-bold tabular-nums text-brand-accent md:text-xl">
-        {entry.total_points}
+      <span className="flex flex-col items-end justify-self-end text-right leading-tight">
+        <span className="font-display text-lg font-bold tabular-nums text-brand-accent md:text-xl">
+          {entry.total_points}
+        </span>
+        {entry.games > 0 ? (
+          <span className="text-[10px] font-medium tabular-nums text-brand-muted md:text-xs">
+            {entry.wins ?? 0}W · {entry.losses ?? 0}L
+          </span>
+        ) : null}
       </span>
     </li>
   )

@@ -8,6 +8,7 @@ import { useLineClientProfile } from '../hooks/useLineClientProfile'
 import { usePublicCompetition } from '../hooks/usePublicCompetition'
 import {
   calculateCompetitionAchievements,
+  calculateLiveAchievements,
   isCompetitionComplete,
 } from '../lib/competitionAchievements'
 import { americanoScheduleFromSession, gameSlotTimes } from '../lib/competitionLayout'
@@ -189,16 +190,16 @@ export function CompetitionPlay() {
   const finished = session?.status === 'complete'
   const canScore = started && !finished
   const showGamesBoard = started && (columns.length > 0 || (finished && rounds.length > 0))
-  const standings = finished ? leaderboard : liveStandings
+  const standings = liveStandings
 
   const complete = isCompetitionComplete(session, rounds, courtMatches)
-  const achievements = useMemo(
-    () =>
-      complete
-        ? calculateCompetitionAchievements({ roster, rounds, courtMatches, clubCourts })
-        : null,
-    [complete, roster, rounds, courtMatches, clubCourts],
-  )
+  const achievements = useMemo(() => {
+    if (!started) return null
+    const input = { roster, rounds, courtMatches, clubCourts }
+    return complete
+      ? calculateCompetitionAchievements(input)
+      : calculateLiveAchievements(input)
+  }, [started, complete, roster, rounds, courtMatches, clubCourts])
 
   return (
     <div className="game-bg flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden">

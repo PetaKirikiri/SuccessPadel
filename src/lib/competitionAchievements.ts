@@ -58,10 +58,12 @@ export const ACHIEVEMENT_IMAGE: Record<string, string> = {
   thirdPlace: '/achievements/third-place.png',
   bestDefense: '/achievements/best-defense.png',
   winStreak: '/achievements/win-streak.png',
+  hotStreak: '/achievements/win-streak.png',
   mostWins: '/achievements/most-wins.png',
 }
 
 const MIN_STREAK = 2
+const MIN_HOT_STREAK = 3
 
 function roundPlayerKey(p: RoundPlayer): string {
   return p.padel_player_id ?? p.profile_id ?? p.roster_entry_id
@@ -192,6 +194,16 @@ function longestWinStreak(results: { round: number; won: boolean }[]): number {
   return best
 }
 
+function currentWinStreak(results: { round: number; won: boolean }[]): number {
+  const sorted = [...results].sort((a, b) => a.round - b.round)
+  let streak = 0
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    if (sorted[i]!.won) streak += 1
+    else break
+  }
+  return streak
+}
+
 function podiumPoints(stats: Map<string, PlayerStat>): number[] {
   const distinct = [...new Set([...stats.values()].filter((s) => s.played > 0).map((s) => s.points))]
   return distinct.sort((a, b) => b - a).slice(0, 3)
@@ -221,6 +233,9 @@ function buildIndividualAchievements(
 
     if (maxWins > 0 && stat.wins === maxWins) {
       list.push({ key: 'mostWins', icon: ICON.mostWins, labelKey: 'achievements.mostWins' })
+    }
+    if (currentWinStreak(stat.results) >= MIN_HOT_STREAK) {
+      list.push({ key: 'hotStreak', icon: ICON.winStreak, labelKey: 'achievements.hotStreak' })
     }
     if (maxStreak >= MIN_STREAK && longestWinStreak(stat.results) === maxStreak) {
       list.push({ key: 'winStreak', icon: ICON.winStreak, labelKey: 'achievements.winStreak' })
@@ -289,6 +304,45 @@ function buildMatchAwards(teamGames: TeamGame[]): MatchAward[] {
   return awards
 }
 
+function mapAchievementsToRoster(
+  achievementsByKey: Map<string, Achievement[]>,
+  roster: CompetitionPlayer[],
+): Record<string, Achievement[]> {
+  const individualAchievementsByPlayerId: Record<string, Achievement[]> = {}
+  for (const sp of roster) {
+    const list = achievementsByKey.get(rosterKey(sp))
+    if (!list || list.length === 0) continue
+    for (const id of [sp.padel_player_id, sp.profile_id, sp.id]) {
+      if (id) individualAchievementsByPlayerId[id] = list
+    }
+  }
+  return individualAchievementsByPlayerId
+}
+
+function buildHotStreakAchievements(stats: Map<string, PlayerStat>): Map<string, Achievement[]> {
+  const byKey = new Map<string, Achievement[]>()
+  for (const [key, stat] of stats) {
+    if (stat.played === 0 || currentWinStreak(stat.results) < MIN_HOT_STREAK) continue
+    byKey.set(key, [
+      { key: 'hotStreak', icon: ICON.winStreak, labelKey: 'achievements.hotStreak' },
+    ])
+  }
+  return byKey
+}
+
+/** Live leaderboard badges from scored games so far (e.g. hot streak after 3 wins). */
+export function calculateLiveAchievements(input: AchievementsInput): CompetitionAchievements {
+  const teamGames = buildTeamGames(input)
+  const stats = buildPlayerStats(teamGames)
+  return {
+    individualAchievementsByPlayerId: mapAchievementsToRoster(
+      buildHotStreakAchievements(stats),
+      input.roster,
+    ),
+    matchAwards: [],
+  }
+}
+
 export function calculateCompetitionAchievements(
   input: AchievementsInput,
 ): CompetitionAchievements {
@@ -296,17 +350,8 @@ export function calculateCompetitionAchievements(
   const stats = buildPlayerStats(teamGames)
   const achievementsByKey = buildIndividualAchievements(stats)
 
-  const individualAchievementsByPlayerId: Record<string, Achievement[]> = {}
-  for (const sp of input.roster) {
-    const list = achievementsByKey.get(rosterKey(sp))
-    if (!list || list.length === 0) continue
-    for (const id of [sp.padel_player_id, sp.profile_id, sp.id]) {
-      if (id) individualAchievementsByPlayerId[id] = list
-    }
-  }
-
   return {
-    individualAchievementsByPlayerId,
+    individualAchievementsByPlayerId: mapAchievementsToRoster(achievementsByKey, input.roster),
     matchAwards: buildMatchAwards(teamGames),
   }
 }

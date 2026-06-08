@@ -8,9 +8,12 @@ import { compareSchedules } from '../lib/competitionScheduleCompare'
 import { competitionScheduleDebugLog } from '../lib/debug/competitionScheduleDebug'
 import { pivotScheduleByCourt } from '../lib/competitionCourtBoard'
 import { CompetitionLeaderboard } from '../components/CompetitionLeaderboard'
+import { computeAmericanoStandings } from '../lib/competitionStandings'
+import { enrichStandingsWithAvatars } from '../lib/leaderboardEntries'
 import { CompetitionMyCourt } from '../components/CompetitionMyCourt'
 import {
   calculateCompetitionAchievements,
+  calculateLiveAchievements,
   isCompetitionComplete,
 } from '../lib/competitionAchievements'
 import { gamesFromDbRounds } from '../hooks/useCompetitionBoard'
@@ -134,12 +137,20 @@ export function CompetitionRun() {
   const userId = user?.id
   const isAmericano = session ? usesAmericanoScoring(session) : false
   const complete = isCompetitionComplete(session, rounds, courtMatches)
-  const achievements = useMemo(
+  const achievements = useMemo(() => {
+    if (!started) return null
+    const input = { roster, rounds, courtMatches, clubCourts }
+    return complete
+      ? calculateCompetitionAchievements(input)
+      : calculateLiveAchievements(input)
+  }, [started, complete, roster, rounds, courtMatches, clubCourts])
+  const standings = useMemo(
     () =>
-      complete
-        ? calculateCompetitionAchievements({ roster, rounds, courtMatches, clubCourts })
-        : null,
-    [complete, roster, rounds, courtMatches, clubCourts],
+      enrichStandingsWithAvatars(
+        computeAmericanoStandings(roster, rounds, courtMatches),
+        leaderboard,
+      ),
+    [roster, rounds, courtMatches, leaderboard],
   )
   const guestLeaderboardProps = {
     currentUserId: userId ?? null,
@@ -500,9 +511,9 @@ export function CompetitionRun() {
         />
       )}
 
-      {started && isAmericano && leaderboard.length > 0 && !liveFocus && isAdmin && (
+      {started && isAmericano && standings.length > 0 && !liveFocus && isAdmin && (
         <CompetitionLeaderboard
-          entries={leaderboard}
+          entries={standings}
           compact={Boolean(activeRound)}
           scoreUnit={scoreUnit}
           achievements={achievements}
@@ -669,9 +680,9 @@ export function CompetitionRun() {
             </div>
           )}
 
-          {leaderboard.length > 0 && (isAdmin || finished) && (
+          {standings.length > 0 && (isAdmin || finished) && (
             <CompetitionLeaderboard
-              entries={leaderboard}
+              entries={standings}
               scoreUnit={scoreUnit}
               achievements={achievements}
               {...guestLeaderboardProps}

@@ -54,6 +54,7 @@ export type Messages = {
     thirdPlace: string
     mostWins: string
     winStreak: string
+    hotStreak: string
     undefeated: string
     bestDefense: string
     highestScore: string
@@ -65,6 +66,7 @@ export type Messages = {
     thirdPlaceDesc: string
     mostWinsDesc: string
     winStreakDesc: string
+    hotStreakDesc: string
     undefeatedDesc: string
     bestDefenseDesc: string
     highestScoreDesc: string
