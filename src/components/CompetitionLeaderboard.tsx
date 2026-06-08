@@ -113,6 +113,7 @@ function LeaderboardRow({
   isMe,
   badges,
   onOpenProfile,
+  onSelectAchievement,
   t,
 }: {
   rank: number
@@ -120,6 +121,7 @@ function LeaderboardRow({
   isMe: boolean
   badges: Achievement[]
   onOpenProfile: () => void
+  onSelectAchievement: (info: AchievementInfo) => void
   t: TranslateFn
 }) {
   const record = winLossRecord(entry)
@@ -160,6 +162,7 @@ function LeaderboardRow({
             emoji={b.icon}
             labelKey={b.labelKey}
             label={t(b.labelKey)}
+            onSelect={onSelectAchievement}
             sizeClass="h-7 w-7 md:h-10 md:w-10"
             emojiClass="text-xl leading-none md:text-3xl"
           />
@@ -315,6 +318,7 @@ export function CompetitionLeaderboard({
               entry={e}
               isMe={isMe}
               badges={badgesFor(e)}
+              onSelectAchievement={setInfo}
               onOpenProfile={() => {
                 const playerId =
                   source.member_profile_id ?? source.padel_player_id ?? source.profile_id
