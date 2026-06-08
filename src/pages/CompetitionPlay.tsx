@@ -16,6 +16,42 @@ import { supabase } from '../lib/supabaseClient'
 
 type PlayTab = 'games' | 'leaderboard'
 
+function GamesIcon() {
+  return (
+    <svg className="game-tab-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M5 5.5h14M5 12h14M5 18.5h14M8 3.5v17M16 3.5v17"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="2"
+      />
+    </svg>
+  )
+}
+
+function LeaderboardIcon() {
+  return (
+    <svg className="game-tab-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M8 21h8M12 17v4M7 4h10v3a5 5 0 0 1-10 0V4Z"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+      <path
+        d="M7 6H4.5A2.5 2.5 0 0 0 7 10M17 6h2.5A2.5 2.5 0 0 1 17 10"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="2"
+      />
+    </svg>
+  )
+}
+
 function PlayTabs({
   tab,
   onTab,
@@ -32,6 +68,7 @@ function PlayTabs({
         onClick={() => onTab('games')}
         className={`game-tab game-tab-competition ${tab === 'games' ? 'game-tab-selected' : ''}`}
       >
+        <GamesIcon />
         <span className="font-display text-sm leading-tight md:text-base">{t('competition.games')}</span>
       </button>
       <button
@@ -39,6 +76,7 @@ function PlayTabs({
         onClick={() => onTab('leaderboard')}
         className={`game-tab game-tab-rank ${tab === 'leaderboard' ? 'game-tab-selected' : ''}`}
       >
+        <LeaderboardIcon />
         <span className="font-display text-sm leading-tight md:text-base">
           {t('competition.leaderboard')}
         </span>

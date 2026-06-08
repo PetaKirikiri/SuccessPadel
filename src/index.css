@@ -100,11 +100,15 @@ body {
 }
 
 .game-dock-inner {
-  @apply flex min-w-0 max-w-full gap-1 overflow-hidden rounded-2xl border border-brand-border bg-brand-surface/95 p-1 shadow-sm;
+  @apply flex min-w-0 max-w-full gap-1 overflow-hidden rounded-2xl border border-brand-border bg-brand-surface/95 p-1.5 shadow-lg;
 }
 
 .game-tab {
-  @apply flex min-h-[2.75rem] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl border-2 border-transparent px-0.5 py-1.5 text-center transition;
+  @apply flex min-h-[3rem] min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl border border-transparent px-1 py-1.5 text-center text-brand-muted transition;
+}
+
+.game-tab-icon {
+  @apply h-5 w-5 shrink-0;
 }
 
 .game-tab-active {
@@ -134,12 +138,7 @@ body {
 }
 
 .game-tab-rank {
-  background: linear-gradient(
-    180deg,
-    var(--color-brand-gold-light) 0%,
-    rgb(255 243 218 / 0.95) 100%
-  );
-  color: var(--color-brand-gold-dark);
+  background: transparent;
 }
 
 .game-tab-rank .game-tab-icon {
@@ -151,7 +150,7 @@ body {
 }
 
 .game-tab-competition {
-  @apply bg-brand-surface text-brand-text;
+  @apply bg-transparent;
 }
 
 .game-tab-competition .game-tab-icon {
@@ -163,7 +162,7 @@ body {
 }
 
 .game-tab-selected {
-  @apply font-semibold;
+  @apply bg-brand-bg-alt font-semibold text-brand-primary shadow-sm;
 }
 
 .game-card {
