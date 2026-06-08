@@ -9,6 +9,18 @@ export function parseScoreField(value: string): number | null {
   return n
 }
 
+/** Score shown in inputs and used for submit — while editing, never fall back to saved. */
+export function effectiveScoreField(
+  draftValue: string | undefined,
+  savedPoints: number | undefined,
+  dirty: boolean,
+): string {
+  if (dirty && draftValue !== undefined) return draftValue
+  if (draftValue != null && draftValue !== '') return draftValue
+  if (savedPoints != null) return String(savedPoints)
+  return ''
+}
+
 export type CourtScoreSubmit = {
   roundId: string
   courtId: string

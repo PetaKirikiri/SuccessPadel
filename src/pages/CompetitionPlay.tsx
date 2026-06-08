@@ -96,6 +96,7 @@ export function CompetitionPlay() {
   const { profile, user } = useAuth()
   const lineClient = useLineClientProfile()
   const headerAvatar = profile?.avatar_url ?? lineClient.pictureUrl ?? null
+  const [tab, setTab] = useState<PlayTab>('games')
 
   const {
     session,
@@ -109,15 +110,20 @@ export function CompetitionPlay() {
     error,
     refresh,
     applyMatchScore,
-  } = usePublicCompetition(id)
+  } = usePublicCompetition(id, {
+    pollMs: tab === 'leaderboard' ? 20_000 : false,
+  })
   const { columns, liveCourtsByGame, roundIdForGame, courtIdByLabel, scoreUnit, playTo, matchForCourt } =
     useCompetitionBoard(session, rounds, roster, clubCourts, courtMatches)
-  const [tab, setTab] = useState<PlayTab>('leaderboard')
   const [now, setNow] = useState(Date.now())
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(t)
   }, [])
+
+  useEffect(() => {
+    if (tab === 'leaderboard') void refresh(true)
+  }, [tab, refresh])
 
   const schedule = useMemo(() => americanoScheduleFromSession(session), [session])
 
@@ -243,7 +249,6 @@ export function CompetitionPlay() {
                 canLog={canScore}
                 matchForCourt={matchForCourt}
                 onSubmitScores={handleSubmitScores}
-                onSaved={() => void refresh(true)}
                 now={now}
                 gameMinutes={schedule.gameMinutes}
                 roundTimesByGame={roundTimesByGame}

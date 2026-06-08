@@ -12,7 +12,6 @@ import {
   clientToNormalized,
   drawGestureMarkers,
   drawGestureStroke,
-  gestureCode,
   quadrantFromPoint,
   type CapturedGesture,
   type NormalizedPoint,
@@ -44,7 +43,6 @@ export function GestureAnnotationPad({ competitionId, gameNumber, onGesture }: P
   const activeQuadrantRef = useRef<Quadrant | null>(null)
   const startedAtRef = useRef(0)
 
-  const [lastGesture, setLastGesture] = useState<CapturedGesture | null>(null)
   const [lastAnalysis, setLastAnalysis] = useState<ReturnType<typeof analyzeGesture> | null>(null)
   const [debugLog, setDebugLog] = useState<GestureDebugEntry[]>(() => readGestureDebugLog())
   const [showDebug, setShowDebug] = useState(false)
@@ -52,7 +50,6 @@ export function GestureAnnotationPad({ competitionId, gameNumber, onGesture }: P
   const [isDrawing, setIsDrawing] = useState(false)
   const [startQuadrant, setStartQuadrant] = useState<Quadrant | null>(null)
   const [activeQuadrant, setActiveQuadrant] = useState<Quadrant | null>(null)
-  const [liveCode, setLiveCode] = useState<string | null>(null)
   const [livePath, setLivePath] = useState<NormalizedPoint[]>([])
 
   const syncCanvasSize = useCallback(() => {
@@ -99,7 +96,6 @@ export function GestureAnnotationPad({ competitionId, gameNumber, onGesture }: P
     setIsDrawing(false)
     setStartQuadrant(null)
     setActiveQuadrant(null)
-    setLiveCode(null)
     setLivePath([])
     activeQuadrantRef.current = null
   }
@@ -110,13 +106,10 @@ export function GestureAnnotationPad({ competitionId, gameNumber, onGesture }: P
       setStartQuadrant(quadrant)
       setActiveQuadrant(quadrant)
       activeQuadrantRef.current = quadrant
-      setLiveCode(gestureCode(quadrant, quadrant))
       return
     }
 
-    const start = quadrantFromPoint(pathRef.current[0])
     setActiveQuadrant(quadrant)
-    setLiveCode(gestureCode(start, quadrant))
 
     if (activeQuadrantRef.current && activeQuadrantRef.current !== quadrant) {
       gestureHapticQuadrantChange()
@@ -180,7 +173,6 @@ export function GestureAnnotationPad({ competitionId, gameNumber, onGesture }: P
     const entry = appendGestureDebugEntry(analysis, { competitionId, gameNumber })
 
     gestureHapticComplete()
-    setLastGesture(captured)
     setLastAnalysis(analysis)
     setDebugLog((prev) => [entry, ...prev.filter((e) => e.id !== entry.id)].slice(0, 120))
     setPulse(true)
@@ -235,8 +227,6 @@ export function GestureAnnotationPad({ competitionId, gameNumber, onGesture }: P
       <GesturePadFeedback
         isDrawing={isDrawing}
         livePath={livePath}
-        liveCode={liveCode}
-        lastGesture={lastGesture}
         lastAnalysis={lastAnalysis}
         pulse={pulse}
         logCount={debugLog.length}

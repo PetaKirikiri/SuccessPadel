@@ -9,6 +9,7 @@ export type GestureShape = 'SMASH' | 'LINE_H' | 'LINE_V' | 'CURVE' | 'TAP'
 
 export type GestureAnalysis = {
   code: string
+  report: string
   shape: GestureShape
   shapeLabel: string
   startQuadrant: Quadrant
@@ -240,6 +241,12 @@ export function shapeLabel(shape: GestureShape): string {
   return 'Curve'
 }
 
+/** Primary label: start quadrant + shape, e.g. "TR - Smash". */
+export function gestureReport(startQuadrant: Quadrant, shape: GestureShape): string {
+  if (shape === 'SMASH') return `${startQuadrant} - Smash`
+  return startQuadrant
+}
+
 export function analyzeGesture(
   gesture: CapturedGesture,
   durationMs: number,
@@ -255,6 +262,7 @@ export function analyzeGesture(
 
   return {
     code: gesture.code,
+    report: gestureReport(gesture.startQuadrant, shape),
     shape,
     shapeLabel: label,
     startQuadrant: gesture.startQuadrant,
@@ -272,7 +280,7 @@ export function analyzeGesture(
     straightness: Math.round(straight * 1000) / 1000,
     gridPath: grid,
     pathSignature: signature,
-    patternKey: `${shape}|${seq}|${grid}`,
+    patternKey: `${gesture.startQuadrant}|${shape}|${seq}|${grid}`,
     start: roundPoint(gesture.start),
     end: roundPoint(gesture.end),
     pathSample: resamplePath(pathPoints, 24).map((p) => roundPoint(p)),

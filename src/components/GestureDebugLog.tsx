@@ -107,9 +107,7 @@ export function GestureDebugLog({ entries, onClear, onClose }: Props) {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="font-mono text-sm font-bold text-brand-primary">
-                        {entry.shape === 'SMASH' ? 'Smash' : entry.shapeLabel} · {entry.code}
-                      </p>
+                      <p className="font-mono text-sm font-bold text-brand-primary">{entry.report}</p>
                       <p className="mt-0.5 truncate font-mono text-[10px] text-brand-muted">
                         {entry.patternKey}
                       </p>

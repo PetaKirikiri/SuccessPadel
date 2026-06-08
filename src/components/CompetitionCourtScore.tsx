@@ -28,7 +28,6 @@ type Props = {
   stacked?: boolean
   onSaved: () => void
   onScoreChange?: (roundId: string, courtId: string, teamA: number, teamB: number) => void
-  autoSave?: boolean
 }
 
 function PickButton({
@@ -151,7 +150,6 @@ export function CompetitionCourtScore({
   stacked = false,
   onSaved,
   onScoreChange,
-  autoSave = true,
 }: Props) {
   const [winner, setWinner] = useState<MatchTeam | null>(savedWinner ?? null)
   const [teamAPoints, setTeamAPoints] = useState('')
@@ -229,23 +227,6 @@ export function CompetitionCourtScore({
     },
     [courtId, marginBonus, onSaved, onScoreChange, roundId],
   )
-
-  useEffect(() => {
-    if (!autoSave || !isAmericano || !canLog || !readyToSave || !differsFromSaved) return
-    if (parsedA === null || parsedB === null) return
-    void saveAmericano(parsedA, parsedB)
-  }, [
-    autoSave,
-    isAmericano,
-    canLog,
-    readyToSave,
-    differsFromSaved,
-    parsedA,
-    parsedB,
-    saveAmericano,
-    roundId,
-    courtId,
-  ])
 
   const submitWinner = async () => {
     if (!winner) return
@@ -363,6 +344,19 @@ export function CompetitionCourtScore({
             {sumLabel} must add up to {target}
           </p>
         )}
+        {canLog && isAmericano && (
+          <button
+            type="button"
+            disabled={busy || !readyToSave || !differsFromSaved}
+            onClick={() => {
+              if (parsedA === null || parsedB === null) return
+              void saveAmericano(parsedA, parsedB)
+            }}
+            className="brand-btn w-full py-2 text-xs disabled:opacity-50"
+          >
+            {busy ? 'Saving…' : savedScore ? 'Update score' : 'Submit score'}
+          </button>
+        )}
         {error && <p className="text-center text-[10px] text-red-600">{error}</p>}
       </>
     )
@@ -442,14 +436,22 @@ export function CompetitionCourtScore({
                   </>
                 )}
               </div>
-              {busy && (
-                <p className={`text-brand-muted ${large ? 'text-base' : 'text-xs'}`}>Saving…</p>
-              )}
               {scoreUnit === 'points' && scoresValid && !sumMatches && (
                 <p className={`text-red-600 ${large ? 'text-base' : 'text-xs'}`}>
                   {sumLabel} must add up to {target}
                 </p>
               )}
+              <button
+                type="button"
+                disabled={busy || !readyToSave || !differsFromSaved}
+                onClick={() => {
+                  if (parsedA === null || parsedB === null) return
+                  void saveAmericano(parsedA, parsedB)
+                }}
+                className="brand-btn w-full py-2.5 text-sm disabled:opacity-50"
+              >
+                {busy ? 'Saving…' : savedScore ? 'Update score' : 'Submit score'}
+              </button>
             </>
           ) : (
             <div className={large ? 'space-y-3' : 'space-y-1'}>

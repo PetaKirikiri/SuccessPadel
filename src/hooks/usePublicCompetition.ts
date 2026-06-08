@@ -15,7 +15,13 @@ type PublicCompetition = {
   leaderboard: LeaderboardEntry[]
 }
 
-export function usePublicCompetition(sessionId: string | undefined) {
+type Options = {
+  /** Poll interval in ms. Pass false to disable background refresh. */
+  pollMs?: number | false
+}
+
+export function usePublicCompetition(sessionId: string | undefined, options?: Options) {
+  const pollMs = options?.pollMs
   const [session, setSession] = useState<GameSession | null>(null)
   const [rounds, setRounds] = useState<CompetitionRound[]>([])
   const [courtMatches, setCourtMatches] = useState<CourtMatch[]>([])
@@ -88,10 +94,10 @@ export function usePublicCompetition(sessionId: string | undefined) {
   }, [refresh])
 
   useEffect(() => {
-    if (!sessionId) return
-    const poll = setInterval(() => void refresh(true), 2500)
+    if (!sessionId || pollMs === false || !pollMs) return
+    const poll = setInterval(() => void refresh(true), pollMs)
     return () => clearInterval(poll)
-  }, [sessionId, refresh])
+  }, [pollMs, sessionId, refresh])
 
   const activeRound = rounds.find((r) => r.status === 'active') ?? null
 

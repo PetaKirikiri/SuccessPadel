@@ -1,93 +1,65 @@
 import type { GestureAnalysis } from '../lib/gestureAnalysis'
-import { detectGestureShape } from '../lib/gestureAnalysis'
-import type { NormalizedPoint } from '../lib/gestureCapture'
+import { detectGestureShape, gestureReport } from '../lib/gestureAnalysis'
+import { quadrantFromPoint, type NormalizedPoint } from '../lib/gestureCapture'
 
 type Props = {
   isDrawing: boolean
   livePath: NormalizedPoint[]
-  liveCode: string | null
-  lastGesture: { code: string } | null
   lastAnalysis: GestureAnalysis | null
   pulse: boolean
   logCount: number
   onOpenLog: () => void
 }
 
-function liveShapeHint(path: NormalizedPoint[]): string | null {
-  if (path.length < 3) return null
+function liveReport(path: NormalizedPoint[]): string | null {
+  if (path.length < 2) return null
+  const start = quadrantFromPoint(path[0])
   const shape = detectGestureShape(path)
-  if (shape === 'SMASH') return 'Smash…'
-  if (shape === 'LINE_V') return 'Vertical…'
-  if (shape === 'LINE_H') return 'Horizontal…'
-  return null
+  const report = gestureReport(start, shape)
+  if (shape === 'SMASH') return `${report}…`
+  return start
 }
 
 export function GesturePadFeedback({
   isDrawing,
   livePath,
-  liveCode,
-  lastGesture,
   lastAnalysis,
   pulse,
   logCount,
   onOpenLog,
 }: Props) {
-  const liveHint = isDrawing ? liveShapeHint(livePath) : null
-  const showSmash = lastAnalysis?.shape === 'SMASH'
+  const liveLabel = isDrawing ? liveReport(livePath) : null
+  const isSmash = lastAnalysis?.shape === 'SMASH'
 
   return (
     <div className="gesture-pad-feedback flex shrink-0 items-center justify-between gap-3 border-t border-brand-border bg-brand-surface px-3 py-2 landscape:py-2.5 landscape:pl-[max(0.75rem,env(safe-area-inset-left))] landscape:pr-[max(0.75rem,env(safe-area-inset-right))] landscape:pb-[max(0.5rem,env(safe-area-inset-bottom))]">
       <div className={`min-w-0 flex-1 transition-transform ${pulse ? 'scale-[1.02]' : ''}`}>
         {isDrawing ? (
+          <p
+            className={`font-display text-xl font-bold leading-none tabular-nums landscape:text-2xl ${
+              liveLabel?.includes('Smash') ? 'text-brand-accent' : 'text-brand-primary'
+            }`}
+          >
+            {liveLabel ?? 'Drawing…'}
+          </p>
+        ) : lastAnalysis ? (
           <div>
-            {liveHint ? (
-              <p className="font-display text-xl font-bold leading-none text-brand-accent landscape:text-2xl">
-                {liveHint}
-              </p>
-            ) : liveCode ? (
-              <p className="font-display text-xl font-bold leading-none tabular-nums text-brand-primary landscape:text-2xl">
-                {liveCode}
-              </p>
-            ) : (
-              <p className="text-xs text-brand-muted">Drawing…</p>
-            )}
-            {liveCode && liveHint ? (
-              <p className="mt-0.5 font-mono text-[10px] tabular-nums text-brand-muted landscape:text-xs">
-                {liveCode}
-              </p>
-            ) : null}
-          </div>
-        ) : lastGesture ? (
-          <div>
-            {showSmash ? (
-              <p
-                className={`font-display text-2xl font-bold leading-none text-brand-accent landscape:text-3xl ${
-                  pulse ? 'scale-105' : ''
-                }`}
-              >
-                Smash
-              </p>
-            ) : lastAnalysis ? (
-              <p className="font-display text-xl font-bold leading-none text-brand-primary landscape:text-2xl">
-                {lastAnalysis.shapeLabel}
-              </p>
-            ) : null}
             <p
-              className={`mt-0.5 font-display text-lg font-bold tabular-nums text-brand-primary landscape:text-xl ${
-                showSmash ? 'text-brand-muted' : ''
-              }`}
+              className={`font-display text-2xl font-bold leading-none tabular-nums landscape:text-3xl ${
+                isSmash ? 'text-brand-accent' : 'text-brand-primary'
+              } ${pulse && isSmash ? 'scale-105' : ''}`}
             >
-              {lastGesture.code}
+              {lastAnalysis.report}
             </p>
-            {lastAnalysis ? (
-              <p className="mt-0.5 truncate font-mono text-[10px] text-brand-muted landscape:text-xs">
-                Δx {lastAnalysis.xSpread} · Δy {lastAnalysis.ySpread} · straight{' '}
-                {lastAnalysis.straightness}
-              </p>
-            ) : null}
+            <p className="mt-0.5 truncate font-mono text-[10px] text-brand-muted landscape:text-xs">
+              Δx {lastAnalysis.xSpread} · Δy {lastAnalysis.ySpread} · straight{' '}
+              {lastAnalysis.straightness}
+            </p>
           </div>
         ) : (
-          <p className="text-xs text-brand-muted landscape:text-sm">Draw a straight vertical line for smash</p>
+          <p className="text-xs text-brand-muted landscape:text-sm">
+            Draw a straight vertical line — e.g. TR - Smash
+          </p>
         )}
       </div>
       <button

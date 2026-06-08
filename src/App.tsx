@@ -97,6 +97,7 @@ function MainAppRoutes() {
         }
       >
         <Route index element={<Leaderboard />} />
+        <Route path="players/:playerId" element={<PlayerProfilePage />} />
         <Route
           path="fun/new"
           element={
@@ -225,14 +226,6 @@ export default function App() {
             <NativeDeepLinkHandler />
             <div className="viewport-lock flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
               <Routes>
-              <Route
-                path="/players/:playerId"
-                element={
-                  <AppFrame>
-                    <PlayerProfilePage />
-                  </AppFrame>
-                }
-              />
               <Route
                 path="/competitions/:id/join"
                 element={

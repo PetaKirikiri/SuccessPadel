@@ -8,7 +8,11 @@ import { isScoringTimeUnlocked } from '../lib/competitionScoringUnlock'
 import { playTwoMinuteAlarm, TWO_MINUTES_MS } from '../lib/gameCountdownAlarm'
 import { RANKED_GAME_MINUTES } from '../lib/competitionLayout'
 import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
-import { parseScoreField, scoreDigitsOnly } from '../lib/competitionScoreInput'
+import {
+  effectiveScoreField,
+  parseScoreField,
+  scoreDigitsOnly,
+} from '../lib/competitionScoreInput'
 import { compactDisplayNames } from '../lib/leaderboardEntries'
 import type { CourtPlayer } from '../lib/americanoSchedule'
 import type { MatchTeam } from '../lib/types'
@@ -365,28 +369,42 @@ function useGameScoring({
     }))
   }, [])
 
-  const pendingEntries = useMemo(() => {
-    if (!gameRoundId || !canEdit) return []
-    const entries: CourtScoreSubmit[] = []
-    for (const court of game.courts) {
+  const courtScoreRows = useMemo(() => {
+    if (!gameRoundId) return []
+    return game.courts.flatMap((court) => {
       const courtId = courtIdForLabel(court.courtLabel, courtsForGame, courtIdByLabel)
-      if (!courtId) continue
+      if (!courtId) return []
       const draft = drafts[courtId]
-      if (!draft) continue
-      const teamA = parseScoreField(draft.teamA)
-      const teamB = parseScoreField(draft.teamB)
-      if (teamA === null || teamB === null) continue
       const saved = matchForCourt(gameRoundId, courtId)
-      if (saved?.teamAPoints === teamA && saved?.teamBPoints === teamB) continue
-      entries.push({
+      const teamAStr = effectiveScoreField(draft?.teamA, saved?.teamAPoints, dirty)
+      const teamBStr = effectiveScoreField(draft?.teamB, saved?.teamBPoints, dirty)
+      const teamA = parseScoreField(teamAStr)
+      const teamB = parseScoreField(teamBStr)
+      return [{ courtId, teamA, teamB, teamAStr, teamBStr, saved }]
+    })
+  }, [courtIdByLabel, courtsForGame, dirty, drafts, game.courts, gameRoundId, matchForCourt])
+
+  const allCourtsReady =
+    courtScoreRows.length === game.courts.length &&
+    courtScoreRows.length > 0 &&
+    courtScoreRows.every((row) => row.teamA !== null && row.teamB !== null)
+
+  const pendingEntries = useMemo(() => {
+    if (!gameRoundId || !canEdit || !allCourtsReady) return []
+    return courtScoreRows
+      .filter(
+        (row) =>
+          row.teamA !== null &&
+          row.teamB !== null &&
+          (row.saved?.teamAPoints !== row.teamA || row.saved?.teamBPoints !== row.teamB),
+      )
+      .map((row) => ({
         roundId: gameRoundId,
-        courtId,
-        teamA,
-        teamB,
-      })
-    }
-    return entries
-  }, [canEdit, courtIdByLabel, courtsForGame, drafts, game.courts, gameRoundId, matchForCourt])
+        courtId: row.courtId,
+        teamA: row.teamA!,
+        teamB: row.teamB!,
+      }))
+  }, [allCourtsReady, canEdit, courtScoreRows, gameRoundId])
 
   const submitGame = async () => {
     if (!onSubmitScores || pendingEntries.length === 0) return
@@ -407,7 +425,7 @@ function useGameScoring({
     scoringOpen && onSubmitScores ? (
       <button
         type="button"
-        disabled={busy || !gameRoundId || !canEdit || pendingEntries.length === 0}
+        disabled={busy || !gameRoundId || !canEdit || !allCourtsReady || pendingEntries.length === 0}
         onClick={() => void submitGame()}
         className="shrink-0 rounded border border-brand-border/70 px-1.5 py-0.5 text-[10px] font-normal text-brand-muted/80 disabled:opacity-25"
       >
@@ -415,7 +433,7 @@ function useGameScoring({
       </button>
     ) : null
 
-  return { drafts, setDraft, submitButton, error, canEdit }
+  return { drafts, setDraft, submitButton, error, canEdit, dirty }
 }
 
 function GameScoringCourts({
@@ -428,6 +446,7 @@ function GameScoringCourts({
   drafts,
   setDraft,
   canEdit,
+  dirty,
   currentUserId,
   currentUserAvatarUrl,
   t,
@@ -441,6 +460,7 @@ function GameScoringCourts({
   drafts: Record<string, CourtDraft>
   setDraft: (courtId: string, side: 'teamA' | 'teamB', value: string) => void
   canEdit: boolean
+  dirty: boolean
   currentUserId?: string | null
   currentUserAvatarUrl?: string | null
   t: TranslateFn
@@ -456,6 +476,16 @@ function GameScoringCourts({
         const teamBPlayers = liveCourt?.teamBPlayers ?? court.teamBPlayers
         const saved = gameRoundId && courtId ? matchForCourt(gameRoundId, courtId) : undefined
         const draft = courtId ? drafts[courtId] : undefined
+        const scoreA = canEdit
+          ? effectiveScoreField(draft?.teamA, saved?.teamAPoints, dirty)
+          : saved?.teamAPoints != null
+            ? String(saved.teamAPoints)
+            : ''
+        const scoreB = canEdit
+          ? effectiveScoreField(draft?.teamB, saved?.teamBPoints, dirty)
+          : saved?.teamBPoints != null
+            ? String(saved.teamBPoints)
+            : ''
 
         return (
           <div key={court.courtLabel} className="space-y-1">
@@ -469,22 +499,8 @@ function GameScoringCourts({
                 teamAPlayers={teamAPlayers}
                 teamBPlayers={teamBPlayers}
                 scoreUnit={scoreUnit}
-                scoreA={
-                  canEdit
-                    ? draft?.teamA ||
-                      (saved?.teamAPoints != null ? String(saved.teamAPoints) : '')
-                    : saved?.teamAPoints != null
-                      ? String(saved.teamAPoints)
-                      : ''
-                }
-                scoreB={
-                  canEdit
-                    ? draft?.teamB ||
-                      (saved?.teamBPoints != null ? String(saved.teamBPoints) : '')
-                    : saved?.teamBPoints != null
-                      ? String(saved.teamBPoints)
-                      : ''
-                }
+                scoreA={scoreA}
+                scoreB={scoreB}
                 onScoreA={
                   canEdit && courtId ? (v) => setDraft(courtId, 'teamA', v) : undefined
                 }
@@ -687,7 +703,7 @@ function ScoringGameCard({
   currentUserAvatarUrl?: string | null
   t: TranslateFn
 }) {
-  const { drafts, setDraft, submitButton, error, canEdit: editable } = useGameScoring({
+  const { drafts, setDraft, submitButton, error, canEdit: editable, dirty } = useGameScoring({
     game,
     gameRoundId,
     courtsForGame,
@@ -741,6 +757,7 @@ function ScoringGameCard({
           drafts={drafts}
           setDraft={setDraft}
           canEdit={editable}
+          dirty={dirty}
           currentUserId={currentUserId}
           currentUserAvatarUrl={currentUserAvatarUrl}
           t={t}
@@ -867,7 +884,8 @@ export function CompetitionCourtBoard({
           (scoringTimeUnlocked ||
             roundStatus === 'active' ||
             roundStatus === 'complete' ||
-            isLiveNow)
+            isLiveNow ||
+            clockFinished)
 
         const gesturePadHref = competitionId
           ? `/competitions/${competitionId}/games/${game.gameNumber}/gesture-pad`
