@@ -134,6 +134,20 @@ function courtHasCurrentUser(
   )
 }
 
+const COURT_LABEL_CLASS = 'text-sm font-semibold text-brand-primary md:text-base'
+const CURRENT_PLAYER_HIGHLIGHT_CLASS =
+  'animate-pulse rounded bg-brand-bg-alt px-1 text-brand-accent'
+
+function courtLabelClass(
+  currentUserId: string | null | undefined,
+  court: Parameters<typeof courtHasCurrentUser>[1],
+) {
+  const base = 'text-sm font-semibold md:text-base'
+  return courtHasCurrentUser(currentUserId, court)
+    ? `${base} ${CURRENT_PLAYER_HIGHLIGHT_CLASS}`
+    : COURT_LABEL_CLASS
+}
+
 function CourtMatchCell({
   teamA,
   teamB,
@@ -181,7 +195,7 @@ function CourtMatchCell({
   ]
   const playerClass = (isCurrent: boolean) =>
     `flex min-w-0 items-center gap-1 rounded py-0.5 ${
-      isCurrent ? 'animate-pulse bg-brand-bg-alt px-1 text-brand-accent' : 'px-0 text-brand-text'
+      isCurrent ? CURRENT_PLAYER_HIGHLIGHT_CLASS : 'px-0 text-brand-text'
     }`
 
   const scoreInputClass =
@@ -268,8 +282,6 @@ function CourtMatchCell({
 }
 
 type CourtDraft = { teamA: string; teamB: string }
-
-const COURT_LABEL_CLASS = 'text-sm font-semibold text-brand-primary md:text-base'
 
 function courtIdForLabel(
   courtLabel: string,
@@ -416,7 +428,6 @@ function GameScoringCourts({
   canEdit,
   currentUserId,
   currentUserAvatarUrl,
-  highlightCurrentCourt,
   t,
 }: {
   game: ScoringGame
@@ -430,7 +441,6 @@ function GameScoringCourts({
   canEdit: boolean
   currentUserId?: string | null
   currentUserAvatarUrl?: string | null
-  highlightCurrentCourt?: boolean
   t: TranslateFn
 }) {
   return (
@@ -447,13 +457,7 @@ function GameScoringCourts({
 
         return (
           <div key={court.courtLabel} className="space-y-1">
-            <p
-              className={`${COURT_LABEL_CLASS} ${
-                highlightCurrentCourt && courtHasCurrentUser(currentUserId, liveCourt ?? court)
-                  ? 'animate-pulse rounded bg-brand-bg-alt px-1 text-brand-accent'
-                  : ''
-              }`}
-            >
+            <p className={courtLabelClass(currentUserId, liveCourt ?? court)}>
               {court.courtLabel}
             </p>
             <div>
@@ -663,7 +667,6 @@ function ScoringGameCard({
           canEdit={editable}
           currentUserId={currentUserId}
           currentUserAvatarUrl={currentUserAvatarUrl}
-          highlightCurrentCourt={isCurrentGame}
           t={t}
         />
       </div>}
@@ -851,13 +854,7 @@ export function CompetitionCourtBoard({
                       : undefined
                   return (
                     <div key={court.courtLabel} className="space-y-1">
-                      <p
-                        className={`${COURT_LABEL_CLASS} ${
-                          isCurrentGame && courtHasCurrentUser(currentUserId, liveCourt ?? court)
-                            ? 'animate-pulse rounded bg-brand-bg-alt px-1 text-brand-accent'
-                            : ''
-                        }`}
-                      >
+                      <p className={courtLabelClass(currentUserId, liveCourt ?? court)}>
                         {court.courtLabel}
                       </p>
                       <div>
