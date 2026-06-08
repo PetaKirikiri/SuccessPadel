@@ -291,13 +291,42 @@ type CourtDraft = { teamA: string; teamB: string }
 
 function courtIdForLabel(
   courtLabel: string,
+  courtIndex: number,
   courtsForGame: LiveCourt[],
   courtIdByLabel?: Map<string, string>,
 ): string | undefined {
-  return (
-    courtsForGame.find((c) => c.courtName === courtLabel)?.courtId ??
-    courtIdByLabel?.get(courtLabel)
-  )
+  const live = courtsForGame.find(
+    (c) =>
+      c.courtName === courtLabel ||
+      c.courtName.toLowerCase() === courtLabel.toLowerCase(),
+  )?.courtId
+  if (live) return live
+
+  const exact = courtIdByLabel?.get(courtLabel)
+  if (exact) return exact
+
+  for (const [name, id] of courtIdByLabel ?? []) {
+    if (name.toLowerCase() === courtLabel.toLowerCase()) return id
+  }
+
+  const ordered = [...(courtIdByLabel?.values() ?? [])]
+  return ordered[courtIndex]
+}
+
+function scoreStringsForCourt(
+  draft: CourtDraft | undefined,
+  saved:
+    | { teamAPoints?: number; teamBPoints?: number }
+    | undefined,
+  dirty: boolean,
+): { teamAStr: string; teamBStr: string } {
+  if (dirty && draft != null) {
+    return { teamAStr: draft.teamA, teamBStr: draft.teamB }
+  }
+  return {
+    teamAStr: effectiveScoreField(draft?.teamA, saved?.teamAPoints, false),
+    teamBStr: effectiveScoreField(draft?.teamB, saved?.teamBPoints, false),
+  }
 }
 
 type ScoringGame = ReturnType<typeof pivotScheduleByGame>[number]
@@ -308,7 +337,6 @@ function useGameScoring({
   courtsForGame,
   courtIdByLabel,
   matchForCourt,
-  scoringOpen,
   canEdit,
   onSubmitScores,
   onSaved,
@@ -319,7 +347,6 @@ function useGameScoring({
   courtsForGame: LiveCourt[]
   courtIdByLabel?: Map<string, string>
   matchForCourt: NonNullable<Props['matchForCourt']>
-  scoringOpen: boolean
   canEdit: boolean
   onSubmitScores?: (entries: CourtScoreSubmit[]) => Promise<void>
   onSaved?: () => void
@@ -330,32 +357,51 @@ function useGameScoring({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const scoringCourts = useMemo(() => {
+    if (!gameRoundId) return []
+    if (courtsForGame.length > 0) {
+      return courtsForGame.map((court) => ({
+        courtId: court.courtId,
+        courtLabel: court.courtName,
+      }))
+    }
+    return game.courts.flatMap((court, courtIndex) => {
+      const courtId = courtIdForLabel(
+        court.courtLabel,
+        courtIndex,
+        courtsForGame,
+        courtIdByLabel,
+      )
+      if (!courtId) return []
+      return [{ courtId, courtLabel: court.courtLabel }]
+    })
+  }, [courtIdByLabel, courtsForGame, game.courts, gameRoundId])
+
   const savedSnapshot = useMemo(() => {
     if (!gameRoundId) return ''
-    return game.courts
-      .map((court) => {
-        const courtId = courtIdForLabel(court.courtLabel, courtsForGame, courtIdByLabel)
-        if (!courtId) return ''
+    return scoringCourts
+      .map(({ courtId }) => {
         const saved = matchForCourt(gameRoundId, courtId)
         return `${courtId}:${saved?.teamAPoints ?? ''}:${saved?.teamBPoints ?? ''}:${saved?.playedAt ?? ''}`
       })
       .join('|')
-  }, [courtIdByLabel, courtsForGame, game.courts, gameRoundId, matchForCourt])
+  }, [gameRoundId, matchForCourt, scoringCourts])
 
   useEffect(() => {
-    if (dirty || !gameRoundId) return
-    const next: Record<string, CourtDraft> = {}
-    for (const court of game.courts) {
-      const courtId = courtIdForLabel(court.courtLabel, courtsForGame, courtIdByLabel)
-      if (!courtId) continue
-      const saved = matchForCourt(gameRoundId, courtId)
-      next[courtId] = {
-        teamA: saved?.teamAPoints != null ? String(saved.teamAPoints) : '',
-        teamB: saved?.teamBPoints != null ? String(saved.teamBPoints) : '',
+    if (!gameRoundId) return
+    setDrafts((prev) => {
+      const next = dirty ? { ...prev } : {}
+      for (const { courtId } of scoringCourts) {
+        if (dirty && prev[courtId]) continue
+        const saved = matchForCourt(gameRoundId, courtId)
+        next[courtId] = {
+          teamA: saved?.teamAPoints != null ? String(saved.teamAPoints) : '',
+          teamB: saved?.teamBPoints != null ? String(saved.teamBPoints) : '',
+        }
       }
-    }
-    setDrafts(next)
-  }, [courtIdByLabel, courtsForGame, dirty, game.courts, gameRoundId, matchForCourt, savedSnapshot])
+      return next
+    })
+  }, [dirty, gameRoundId, matchForCourt, savedSnapshot, scoringCourts])
 
   const setDraft = useCallback((courtId: string, side: 'teamA' | 'teamB', value: string) => {
     setDirty(true)
@@ -371,47 +417,39 @@ function useGameScoring({
 
   const courtScoreRows = useMemo(() => {
     if (!gameRoundId) return []
-    return game.courts.flatMap((court) => {
-      const courtId = courtIdForLabel(court.courtLabel, courtsForGame, courtIdByLabel)
-      if (!courtId) return []
+    return scoringCourts.map(({ courtId }) => {
       const draft = drafts[courtId]
       const saved = matchForCourt(gameRoundId, courtId)
-      const teamAStr = effectiveScoreField(draft?.teamA, saved?.teamAPoints, dirty)
-      const teamBStr = effectiveScoreField(draft?.teamB, saved?.teamBPoints, dirty)
+      const { teamAStr, teamBStr } = scoreStringsForCourt(draft, saved, dirty)
       const teamA = parseScoreField(teamAStr)
       const teamB = parseScoreField(teamBStr)
-      return [{ courtId, teamA, teamB, teamAStr, teamBStr, saved }]
+      return { courtId, teamA, teamB, teamAStr, teamBStr, saved }
     })
-  }, [courtIdByLabel, courtsForGame, dirty, drafts, game.courts, gameRoundId, matchForCourt])
+  }, [dirty, drafts, gameRoundId, matchForCourt, scoringCourts])
 
   const allCourtsReady =
-    courtScoreRows.length === game.courts.length &&
-    courtScoreRows.length > 0 &&
+    scoringCourts.length > 0 &&
+    courtScoreRows.length === scoringCourts.length &&
     courtScoreRows.every((row) => row.teamA !== null && row.teamB !== null)
 
-  const pendingEntries = useMemo(() => {
-    if (!gameRoundId || !canEdit || !allCourtsReady) return []
+  const submitEntries = useMemo((): CourtScoreSubmit[] => {
+    if (!gameRoundId || !allCourtsReady) return []
     return courtScoreRows
-      .filter(
-        (row) =>
-          row.teamA !== null &&
-          row.teamB !== null &&
-          (row.saved?.teamAPoints !== row.teamA || row.saved?.teamBPoints !== row.teamB),
-      )
+      .filter((row) => row.teamA !== null && row.teamB !== null)
       .map((row) => ({
         roundId: gameRoundId,
         courtId: row.courtId,
         teamA: row.teamA!,
         teamB: row.teamB!,
       }))
-  }, [allCourtsReady, canEdit, courtScoreRows, gameRoundId])
+  }, [allCourtsReady, courtScoreRows, gameRoundId])
 
   const submitGame = async () => {
-    if (!onSubmitScores || pendingEntries.length === 0) return
+    if (!onSubmitScores || submitEntries.length === 0) return
     setBusy(true)
     setError(null)
     try {
-      await onSubmitScores(pendingEntries)
+      await onSubmitScores(submitEntries)
       setDirty(false)
       onSaved?.()
     } catch (e) {
@@ -421,19 +459,19 @@ function useGameScoring({
     }
   }
 
-  const submitButton =
-    scoringOpen && onSubmitScores ? (
+  const submitFooter = onSubmitScores ? (
+    <div className="border-t border-brand-border/60 px-3 py-2.5 md:px-4">
       <button
         type="button"
-        disabled={busy || !gameRoundId || !canEdit || !allCourtsReady || pendingEntries.length === 0}
         onClick={() => void submitGame()}
-        className="shrink-0 rounded border border-brand-border/70 px-1.5 py-0.5 text-[10px] font-normal text-brand-muted/80 disabled:opacity-25"
+        className="brand-btn w-full py-2.5 text-sm font-semibold disabled:opacity-40"
       >
         {busy ? '…' : t('common.submit')}
       </button>
-    ) : null
+    </div>
+  ) : null
 
-  return { drafts, setDraft, submitButton, error, canEdit, dirty }
+  return { drafts, setDraft, submitFooter, error, canEdit, dirty }
 }
 
 function GameScoringCourts({
@@ -467,25 +505,26 @@ function GameScoringCourts({
 }) {
   return (
     <div className="space-y-2">
-      {game.courts.map((court) => {
+      {game.courts.map((court, courtIndex) => {
         const liveCourt = courtsForGame.find((c) => c.courtName === court.courtLabel)
-        const courtId = courtIdForLabel(court.courtLabel, courtsForGame, courtIdByLabel)
+        const courtId = courtIdForLabel(
+          court.courtLabel,
+          courtIndex,
+          courtsForGame,
+          courtIdByLabel,
+        )
         const teamA = liveCourt?.teamA ?? court.teamA
         const teamB = liveCourt?.teamB ?? court.teamB
         const teamAPlayers = liveCourt?.teamAPlayers ?? court.teamAPlayers
         const teamBPlayers = liveCourt?.teamBPlayers ?? court.teamBPlayers
         const saved = gameRoundId && courtId ? matchForCourt(gameRoundId, courtId) : undefined
         const draft = courtId ? drafts[courtId] : undefined
-        const scoreA = canEdit
-          ? effectiveScoreField(draft?.teamA, saved?.teamAPoints, dirty)
-          : saved?.teamAPoints != null
-            ? String(saved.teamAPoints)
-            : ''
-        const scoreB = canEdit
-          ? effectiveScoreField(draft?.teamB, saved?.teamBPoints, dirty)
-          : saved?.teamBPoints != null
-            ? String(saved.teamBPoints)
-            : ''
+        const { teamAStr: scoreA, teamBStr: scoreB } = canEdit
+          ? scoreStringsForCourt(draft, saved, dirty)
+          : {
+              teamAStr: saved?.teamAPoints != null ? String(saved.teamAPoints) : '',
+              teamBStr: saved?.teamBPoints != null ? String(saved.teamBPoints) : '',
+            }
 
         return (
           <div key={court.courtLabel} className="space-y-1">
@@ -666,7 +705,6 @@ function ScoringGameCard({
   courtIdByLabel,
   matchForCourt,
   scoreUnit,
-  scoringOpen,
   canEdit,
   onSubmitScores,
   onSaved,
@@ -688,7 +726,6 @@ function ScoringGameCard({
   courtIdByLabel?: Map<string, string>
   matchForCourt: NonNullable<Props['matchForCourt']>
   scoreUnit: AmericanoScoringUnit
-  scoringOpen: boolean
   canEdit: boolean
   onSubmitScores?: (entries: CourtScoreSubmit[]) => Promise<void>
   onSaved?: () => void
@@ -703,13 +740,12 @@ function ScoringGameCard({
   currentUserAvatarUrl?: string | null
   t: TranslateFn
 }) {
-  const { drafts, setDraft, submitButton, error, canEdit: editable, dirty } = useGameScoring({
+  const { drafts, setDraft, submitFooter, error, canEdit: editable, dirty } = useGameScoring({
     game,
     gameRoundId,
     courtsForGame,
     courtIdByLabel,
     matchForCourt,
-    scoringOpen,
     canEdit,
     onSubmitScores,
     onSaved,
@@ -742,27 +778,31 @@ function ScoringGameCard({
         finished={finished}
         collapsed={collapsed}
         onToggleCollapsed={onToggleCollapsed}
-        submit={submitButton}
         t={t}
       />
-      {error && <p className="px-3 pb-1 text-right text-[10px] text-red-600">{error}</p>}
-      {!collapsed && <div className="px-1 pb-2 pt-2">
-        <GameScoringCourts
-          game={game}
-          gameRoundId={gameRoundId}
-          courtsForGame={courtsForGame}
-          courtIdByLabel={courtIdByLabel}
-          matchForCourt={matchForCourt}
-          scoreUnit={scoreUnit}
-          drafts={drafts}
-          setDraft={setDraft}
-          canEdit={editable}
-          dirty={dirty}
-          currentUserId={currentUserId}
-          currentUserAvatarUrl={currentUserAvatarUrl}
-          t={t}
-        />
-      </div>}
+      {error && <p className="px-3 pb-1 text-center text-xs text-red-600">{error}</p>}
+      {!collapsed && (
+        <>
+          <div className="px-1 pb-2 pt-2">
+            <GameScoringCourts
+              game={game}
+              gameRoundId={gameRoundId}
+              courtsForGame={courtsForGame}
+              courtIdByLabel={courtIdByLabel}
+              matchForCourt={matchForCourt}
+              scoreUnit={scoreUnit}
+              drafts={drafts}
+              setDraft={setDraft}
+              canEdit={editable}
+              dirty={dirty}
+              currentUserId={currentUserId}
+              currentUserAvatarUrl={currentUserAvatarUrl}
+              t={t}
+            />
+          </div>
+          {submitFooter}
+        </>
+      )}
     </div>
   )
 }
@@ -904,7 +944,6 @@ export function CompetitionCourtBoard({
               courtIdByLabel={courtIdByLabel}
               matchForCourt={matchForCourt}
               scoreUnit={scoreUnit}
-              scoringOpen={canEditGame}
               canEdit={canEditGame}
               onSubmitScores={onSubmitScores}
               onSaved={onSaved}
@@ -943,12 +982,17 @@ export function CompetitionCourtBoard({
             />
             {!collapsed && <div className="px-1 pb-2 pt-2">
               <div className="space-y-2">
-                {game.courts.map((court) => {
+                {game.courts.map((court, courtIndex) => {
                   const gameRoundId =
                     roundIdForGame?.(game.gameNumber) ?? (isActive ? roundId : undefined)
                   const courtsForGame = liveCourtsByGame?.get(game.gameNumber) ?? []
                   const liveCourt = courtsForGame.find((c) => c.courtName === court.courtLabel)
-                  const courtId = courtIdForLabel(court.courtLabel, courtsForGame, courtIdByLabel)
+                  const courtId = courtIdForLabel(
+                    court.courtLabel,
+                    courtIndex,
+                    courtsForGame,
+                    courtIdByLabel,
+                  )
                   const saved =
                     gameRoundId && courtId && matchForCourt
                       ? matchForCourt(gameRoundId, courtId)
