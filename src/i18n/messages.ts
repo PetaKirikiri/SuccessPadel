@@ -6,6 +6,7 @@ export type Messages = {
     submit: string
     tryAgain: string
     signIn: string
+    guest: string
     thanks: string
     brandAlt: string
     notFound: string
@@ -101,6 +102,9 @@ export type Messages = {
     viewGame: string
     enterName: string
     addCompetitionFab: string
+  }
+  guestChip: {
+    playTodayHint: string
   }
   lineLink: {
     title: string

@@ -8,12 +8,17 @@ export const en: Messages = {
     submit: 'Submit',
     tryAgain: 'Try again',
     signIn: 'Sign In',
+    guest: 'Guest',
     thanks: 'Thanks',
     brandAlt: 'Success Padel',
     notFound: 'Competition not found',
     submitFailed: 'Submit failed',
     copyLinkPrompt: 'Copy this link and open it in your browser:',
     copyBrowserLinkPrompt: 'Copy this link:',
+  },
+  guestChip: {
+    playTodayHint:
+      'If you are playing today, please sign in using Add LINE on the leaderboard. Normal sign-up for other users coming soon.',
   },
   aria: {
     back: 'Back',

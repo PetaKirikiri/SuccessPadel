@@ -9,6 +9,7 @@ import {
   hasLiffId,
   initLiff,
   isInLineClient,
+  isLineLiffBrowser,
   isLineLoggedIn,
   lineLoginRedirect,
 } from './liff'
@@ -47,15 +48,24 @@ function lineEntryPath(returnPath: string): string {
     : '/login'
 }
 
+async function initLiffWithTimeout(ms = 10_000): Promise<void> {
+  await Promise.race([
+    initLiff(),
+    new Promise<never>((_, reject) => {
+      window.setTimeout(() => reject(new Error('LIFF init timed out')), ms)
+    }),
+  ])
+}
+
 export async function startLineLogin(returnPath = '/login'): Promise<LineSignInResult> {
-  if (hasLiffId()) {
+  if (hasLiffId() && isLineLiffBrowser()) {
     try {
-      await initLiff()
+      await initLiffWithTimeout()
       if (isInLineClient()) {
         return signInWithLine()
       }
     } catch {
-      /* Safari / external browser — use OAuth below */
+      /* LINE webview unavailable — use OAuth below */
     }
   }
 

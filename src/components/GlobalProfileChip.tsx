@@ -5,6 +5,7 @@ import {
   competitionIdFromPublicPath,
   isCompetitionPublicViewPath,
 } from '../lib/competitionRoutes'
+import { GuestSignInChip } from './GuestSignInChip'
 import { LanguagePicker } from './LanguagePicker'
 import { ProfileChip } from './ProfileChip'
 
@@ -20,15 +21,19 @@ export function GlobalProfileChip() {
     loc.pathname && loc.pathname !== '/login' && !loc.pathname.startsWith('/auth/')
       ? `${loc.pathname}${loc.search}`
       : undefined
-  const showProfileChip = onCompetitionPublic
-    ? !authLoading && !checking && Boolean(user && linked)
-    : true
+  const showLinkedProfile =
+    onCompetitionPublic && !authLoading && !checking && Boolean(user && linked)
+  const showGuestChip =
+    onCompetitionPublic && !authLoading && !checking && !(user && linked)
+  const showDefaultChip = !onCompetitionPublic
 
   return (
     <div className="pointer-events-none fixed right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-[150]">
       <div className="pointer-events-auto flex flex-row flex-nowrap items-center gap-2 md:gap-3" dir="ltr">
         <LanguagePicker />
-        {showProfileChip && <ProfileChip returnTo={returnTo} className="shrink-0" />}
+        {showLinkedProfile && <ProfileChip returnTo={returnTo} className="shrink-0" />}
+        {showGuestChip && <GuestSignInChip returnTo={returnTo} className="shrink-0" />}
+        {showDefaultChip && <ProfileChip returnTo={returnTo} className="shrink-0" />}
       </div>
     </div>
   )

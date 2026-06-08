@@ -8,12 +8,17 @@ export const ru: Messages = {
     submit: 'Сохранить',
     tryAgain: 'Повторить',
     signIn: 'Войти',
+    guest: 'Гость',
     thanks: 'Спасибо',
     brandAlt: 'Success Padel',
     notFound: 'Соревнование не найдено',
     submitFailed: 'Не удалось сохранить',
     copyLinkPrompt: 'Скопируйте ссылку и откройте в браузере:',
     copyBrowserLinkPrompt: 'Скопируйте ссылку:',
+  },
+  guestChip: {
+    playTodayHint:
+      'Если вы играете сегодня, войдите через Add LINE в таблице лидеров. Обычная регистрация для других пользователей скоро появится.',
   },
   aria: {
     back: 'Назад',

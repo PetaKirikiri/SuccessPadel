@@ -8,12 +8,17 @@ export const fr: Messages = {
     submit: 'Valider',
     tryAgain: 'Réessayer',
     signIn: 'Se connecter',
+    guest: 'Invité',
     thanks: 'Merci',
     brandAlt: 'Success Padel',
     notFound: 'Compétition introuvable',
     submitFailed: 'Échec de l’enregistrement',
     copyLinkPrompt: 'Copiez ce lien et ouvrez-le dans votre navigateur :',
     copyBrowserLinkPrompt: 'Copiez ce lien :',
+  },
+  guestChip: {
+    playTodayHint:
+      'Si vous jouez aujourd’hui, connectez-vous avec Add LINE sur le classement. Inscription pour les autres utilisateurs bientôt disponible.',
   },
   aria: {
     back: 'Retour',

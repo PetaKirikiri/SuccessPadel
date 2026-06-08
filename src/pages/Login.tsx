@@ -48,12 +48,20 @@ export function Login() {
   const handleLineLogin = async () => {
     setError(null)
     setLineBusy(true)
-    const returnPath = fromPath ?? consumeReturnTo('/login')
-    const { error: lineError, redirected } = await startLineLogin(returnPath)
-    if (redirected) return
-    setLineBusy(false)
-    if (lineError) setError(lineError)
-    else goAfterAuth()
+    let redirected = false
+    try {
+      const returnPath = fromPath ?? consumeReturnTo('/login')
+      const result = await startLineLogin(returnPath)
+      redirected = result.redirected
+      if (result.redirected) {
+        window.setTimeout(() => setLineBusy(false), 5000)
+        return
+      }
+      if (result.error) setError(result.error)
+      else goAfterAuth()
+    } finally {
+      if (!redirected) setLineBusy(false)
+    }
   }
 
   if (oauthReturning || playerLinkEntry) return null

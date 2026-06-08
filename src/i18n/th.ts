@@ -8,12 +8,17 @@ export const th: Messages = {
     submit: 'บันทึก',
     tryAgain: 'ลองอีกครั้ง',
     signIn: 'เข้าสู่ระบบ',
+    guest: 'ผู้เยี่ยมชม',
     thanks: 'ขอบคุณ',
     brandAlt: 'Success Padel',
     notFound: 'ไม่พบการแข่งขัน',
     submitFailed: 'บันทึกไม่สำเร็จ',
     copyLinkPrompt: 'คัดลอกลิงก์นี้แล้วเปิดในเบราว์เซอร์:',
     copyBrowserLinkPrompt: 'คัดลอกลิงก์นี้:',
+  },
+  guestChip: {
+    playTodayHint:
+      'หากคุณเล่นวันนี้ กรุณาเข้าสู่ระบบด้วย Add LINE บนตารางคะแนน การลงทะเบียนสำหรับผู้ใช้ทั่วไปจะเปิดเร็วๆ นี้',
   },
   aria: {
     back: 'กลับ',
