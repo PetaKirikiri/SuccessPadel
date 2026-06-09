@@ -42,6 +42,18 @@ export function FriendlyGamesList({ games, loading, past = false, isAdmin = fals
             to={`/friendly/${game.id}`}
             currentUserId={user?.id}
             showJoinHint={!past}
+            footer={
+              isAdmin && !past ? (
+                <div className="border-t border-brand-border/60 px-3 py-2.5">
+                  <Link
+                    to={`/friendly/${game.id}/pad`}
+                    className="brand-btn block w-full py-2 text-center text-sm font-semibold"
+                  >
+                    {t('friendly.openPad')}
+                  </Link>
+                </div>
+              ) : null
+            }
           />
         </li>
       ))}
