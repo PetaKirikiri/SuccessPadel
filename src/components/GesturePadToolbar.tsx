@@ -16,7 +16,7 @@ export function GesturePadToolbar({ onBack, backLabel, competitionId, gameNumber
 
   return (
     <>
-      <div className="pointer-events-none absolute left-3 top-1/2 z-20 -translate-y-1/2">
+      <div className="pointer-events-none absolute left-[max(0.75rem,env(safe-area-inset-left))] top-[max(0.5rem,env(safe-area-inset-top))] z-20">
         <div className="pointer-events-auto flex flex-col items-center gap-2">
           <button type="button" onClick={onBack} className={`${chromeBtn} px-4 py-1.5`}>
             {backLabel}

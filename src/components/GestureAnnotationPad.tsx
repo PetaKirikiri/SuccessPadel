@@ -14,7 +14,7 @@ import {
 } from '../lib/gestureDebugLog'
 import {
   captureGesture,
-  clientToNormalized,
+  clientToPadNormalized,
   drawGestureMarkers,
   drawGestureStroke,
   quadrantFromPoint,
@@ -72,7 +72,7 @@ import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
 import type { MatchTeam } from '../lib/types'
 import {
   COURT_QUADRANTS,
-  dropHalfFromX,
+  dropHalfFromClient,
   isCompleteAssignment,
   loadCourtSetup,
   quadrantsForTeamPlacement,
@@ -278,7 +278,7 @@ function DraggableGesturePadPlayerChip({
 
     const pad = padRef.current
     if (!pad) return
-    onSwapSide(quadrant, player, dropHalfFromX(e.clientX, pad.getBoundingClientRect()))
+    onSwapSide(quadrant, player, dropHalfFromClient(e.clientX, e.clientY, pad))
   }
 
   return (
@@ -831,7 +831,7 @@ export function GestureAnnotationPad({
     gestureHapticStart()
     setExchangeHint(null)
 
-    const point = clientToNormalized(clientX, clientY, pad.getBoundingClientRect())
+    const point = clientToPadNormalized(clientX, clientY, pad)
     anchorsRef.current = [point]
     liveTipRef.current = point
     setLivePath([point])
@@ -844,7 +844,7 @@ export function GestureAnnotationPad({
     const pad = padRef.current
     if (!pad) return
 
-    const point = clientToNormalized(clientX, clientY, pad.getBoundingClientRect())
+    const point = clientToPadNormalized(clientX, clientY, pad)
     const tip = liveTipRef.current
     if (tip && tip.x === point.x && tip.y === point.y) return
 
@@ -1041,9 +1041,24 @@ export function GestureAnnotationPad({
 
   return (
     <div className="relative flex h-full min-h-0 flex-1 flex-col">
+      {(setupPhase === 'serve' || setupPhase === 'ready' || !needsSetup) ? (
+        <div className="gesture-pad-header shrink-0 flex flex-col items-center gap-1 px-3 pb-2">
+          <GesturePadScoreboard score={tennisScore} />
+          {padCaption ? (
+            <p
+              className={`max-w-[92vw] truncate text-center text-xs font-semibold ${padCaptionTone} ${
+                pulse ? 'scale-105' : ''
+              } transition-transform`}
+            >
+              {padCaption}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+      <div className="gesture-court-frame relative flex min-h-0 flex-1 flex-col">
       <div
         ref={padRef}
-        className="relative h-full min-h-0 flex-1 touch-none select-none overflow-hidden bg-[#1a5fa8]"
+        className="gesture-court-pad relative touch-none select-none overflow-hidden bg-[#1a5fa8]"
         onPointerDown={(e) => {
           e.currentTarget.setPointerCapture(e.pointerId)
           pointerDown(e.clientX, e.clientY)
@@ -1172,23 +1187,6 @@ export function GestureAnnotationPad({
         )}
         <canvas ref={canvasRef} className="absolute inset-0 z-[2]" />
 
-        <div className="pointer-events-none absolute inset-x-0 top-[max(0.5rem,env(safe-area-inset-top))] z-20 flex flex-col items-center gap-1 px-3">
-          {(setupPhase === 'serve' || setupPhase === 'ready' || !needsSetup) ? (
-            <>
-              <GesturePadScoreboard score={tennisScore} />
-              {padCaption ? (
-                <p
-                  className={`max-w-[92vw] truncate text-center text-xs font-semibold ${padCaptionTone} ${
-                    pulse ? 'scale-105' : ''
-                  } transition-transform`}
-                >
-                  {padCaption}
-                </p>
-              ) : null}
-            </>
-          ) : null}
-        </div>
-
         {matchComplete && matchWinnerTeam ? (
           <GesturePadMatchComplete
             score={tennisScore}
@@ -1206,6 +1204,7 @@ export function GestureAnnotationPad({
         {statsPlayer ? (
           <PlayerGameStatsModal stats={statsPlayer} onClose={() => setStatsPlayer(null)} />
         ) : null}
+      </div>
       </div>
     </div>
   )

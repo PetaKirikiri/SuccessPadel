@@ -204,6 +204,30 @@ body {
   padding-inline: 1rem;
 }
 
+/* On-court gesture pad — portrait column: score on top, court below. */
+.gesture-pad-page {
+  display: flex;
+  flex-direction: column;
+}
+
+.gesture-pad-header {
+  padding-left: max(3.5rem, calc(env(safe-area-inset-left, 0px) + 2.75rem));
+  padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
+}
+
+.gesture-court-frame {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.gesture-court-pad {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
 /* Tablet and up — slightly larger touch targets and readable type */
 @media (min-width: 768px) {
   .game-tab {

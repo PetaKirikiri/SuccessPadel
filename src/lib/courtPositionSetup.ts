@@ -34,6 +34,14 @@ export function dropHalfFromX(clientX: number, rect: DOMRect): CourtHalf {
   return clientX - rect.left < rect.width / 2 ? 'left' : 'right'
 }
 
+export function dropHalfFromClient(
+  clientX: number,
+  _clientY: number,
+  pad: HTMLElement,
+): CourtHalf {
+  return dropHalfFromX(clientX, pad.getBoundingClientRect())
+}
+
 export function quadrantHalf(q: Quadrant): CourtHalf {
   return q === 'TL' || q === 'BL' ? 'left' : 'right'
 }
@@ -51,6 +59,15 @@ export function serverQuadrantFromHalfTap(
   const top = clientY < rect.top + rect.height / 2
   if (half === 'left') return top ? 'TL' : 'BL'
   return top ? 'TR' : 'BR'
+}
+
+export function serverQuadrantFromClient(
+  half: CourtHalf,
+  _clientX: number,
+  clientY: number,
+  pad: HTMLElement,
+): Quadrant {
+  return serverQuadrantFromHalfTap(half, clientY, pad.getBoundingClientRect())
 }
 
 export function quadrantsForTeamPlacement(

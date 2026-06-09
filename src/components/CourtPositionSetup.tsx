@@ -1,7 +1,7 @@
 import { useRef, useState, type RefObject } from 'react'
 import type { CourtPlayer } from '../lib/americanoSchedule'
 import {
-  dropHalfFromX,
+  dropHalfFromClient,
   isCompleteAssignment,
   teamIsPlaced,
   teamsFromQuadrants,
@@ -146,7 +146,7 @@ function DraggableNetChip({
 
     const pad = padRef.current
     if (!pad) return
-    const half = dropHalfFromX(e.clientX, pad.getBoundingClientRect())
+    const half = dropHalfFromClient(e.clientX, e.clientY, pad)
     onAssignTeam(team, player, half)
   }
 

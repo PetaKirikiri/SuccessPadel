@@ -1,5 +1,5 @@
 import type { RefObject } from 'react'
-import { serverQuadrantFromHalfTap, type CourtHalf } from '../lib/courtPositionSetup'
+import { serverQuadrantFromClient, type CourtHalf } from '../lib/courtPositionSetup'
 import type { Quadrant } from '../lib/gestureCapture'
 
 type Props = {
@@ -12,7 +12,7 @@ export function CourtServeSetup({ padRef, onPickServe }: Props) {
     e.stopPropagation()
     const pad = padRef.current
     if (!pad) return
-    const quadrant = serverQuadrantFromHalfTap(half, e.clientY, pad.getBoundingClientRect())
+    const quadrant = serverQuadrantFromClient(half, e.clientX, e.clientY, pad)
     onPickServe(quadrant)
   }
 

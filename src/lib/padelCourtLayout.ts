@@ -1,5 +1,8 @@
 /** FIP regulation padel court — interior playing area (meters). */
+export const PADEL_COURT_WIDTH_M = 10
 export const PADEL_COURT_LENGTH_M = 20
+/** Portrait court on screen: width × height (10 m wide, 20 m long). */
+export const PADEL_COURT_ASPECT_RATIO = `${PADEL_COURT_WIDTH_M} / ${PADEL_COURT_LENGTH_M}` as const
 export const PADEL_SERVICE_LINE_FROM_NET_M = 6.95
 export const PADEL_CENTRAL_LINE_EXTENSION_M = 0.2
 export const PADEL_NET_FROM_BASELINE_M = PADEL_COURT_LENGTH_M / 2

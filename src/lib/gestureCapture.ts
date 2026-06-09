@@ -71,6 +71,15 @@ export function clientToNormalized(
   }
 }
 
+/** Finger position on the pad element — no rotation or transpose. */
+export function clientToPadNormalized(
+  clientX: number,
+  clientY: number,
+  pad: HTMLElement,
+): NormalizedPoint {
+  return clientToNormalized(clientX, clientY, pad.getBoundingClientRect())
+}
+
 export function normalizedToCanvas(
   point: NormalizedPoint,
   width: number,
