@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { GlobalProfileChip } from './GlobalProfileChip'
 import { LineEntryGate } from './LineEntryGate'
@@ -8,31 +9,36 @@ import {
   LinePlayerLinkEntryHandler,
 } from './LinePlayerLinkEntryHandler'
 import { LoginWithAPPDebugOverlay } from './LoginWithAPPDebugOverlay'
+import { GesturePadChromeContext, isGesturePadRoute } from '../lib/gesturePadChrome'
 
 type Props = {
   children: ReactNode
 }
 
 export function AppShell({ children }: Props) {
-  const { search } = useLocation()
+  const { pathname, search } = useLocation()
+  const [gesturePadActive, setGesturePadActive] = useState(false)
+  const hideGlobalChrome = gesturePadActive || isGesturePadRoute(pathname)
 
   if (isPlayerLinkHandoffSearch(search)) {
     return (
       <>
-        <GlobalProfileChip />
+        {!hideGlobalChrome ? <GlobalProfileChip /> : null}
         <LinePlayerLinkEntryHandler />
       </>
     )
   }
 
   return (
-    <div className="viewport-lock">
-      <GlobalProfileChip />
-      <LineEntryGate>
-        <LineOAuthReturnHandler />
-        {children}
-        <LoginWithAPPDebugOverlay />
-      </LineEntryGate>
-    </div>
+    <GesturePadChromeContext.Provider value={setGesturePadActive}>
+      <div className="viewport-lock">
+        {!hideGlobalChrome ? <GlobalProfileChip /> : null}
+        <LineEntryGate>
+          <LineOAuthReturnHandler />
+          {children}
+          <LoginWithAPPDebugOverlay />
+        </LineEntryGate>
+      </div>
+    </GesturePadChromeContext.Provider>
   )
 }

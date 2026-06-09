@@ -5,10 +5,19 @@ import {
   type NormalizedPoint,
   type Quadrant,
 } from './gestureCapture'
-import { courtShotZoneFromPoint, type CourtShotZone } from './padelCourtLayout'
+import { courtShotZoneFromPoint, isVolleyZoneStart, type CourtShotZone } from './padelCourtLayout'
 
-export type GestureShape = 'SMASH' | 'BACKHAND' | 'FOREHAND' | 'VOLLEY' | 'LINE_V' | 'CURVE' | 'TAP'
+export type GestureShape =
+  | 'SMASH'
+  | 'BACKHAND'
+  | 'FOREHAND'
+  | 'VOLLEY'
+  | 'LOB'
+  | 'LINE_V'
+  | 'CURVE'
+  | 'TAP'
 export type SmashVerdict = 'WIN' | 'FOUL'
+export type LobVerdict = 'WIN' | 'FOUL'
 export type VolleyVerdict = 'SCORE' | 'FOUL'
 export type BackhandDirection = 'L_TO_R' | 'R_TO_L'
 
@@ -18,6 +27,7 @@ export type GestureAnalysis = {
   shape: GestureShape
   shapeLabel: string
   smashVerdict: SmashVerdict | null
+  lobVerdict: LobVerdict | null
   volleyVerdict: VolleyVerdict | null
   backhandDirection: BackhandDirection | null
   startQuadrant: Quadrant
@@ -39,6 +49,12 @@ export type GestureAnalysis = {
   start: NormalizedPoint
   end: NormalizedPoint
   pathSample: NormalizedPoint[]
+  /** Collapsed anchor path — hold jitter at the end removed. */
+  anchors?: NormalizedPoint[]
+  /** End of the horizontal leg (anchor 2). Win/loss measured from here. */
+  strokeCorner?: NormalizedPoint | null
+  /** Meaningful finish after the horizontal leg — not hold noise. */
+  finishPoint?: NormalizedPoint | null
   shotZone: CourtShotZone
 }
 
@@ -253,6 +269,23 @@ function findLCornerIndex(points: NormalizedPoint[]): number | null {
   return bestIdx
 }
 
+export const LOB_STRAIGHTNESS_MIN = 0.75
+export const LOB_LEG_MIN = 0.07
+/** Reject near-vertical / near-horizontal — lob is a diagonal line. */
+export const LOB_DIAG_RATIO_MIN = 0.35
+export const LOB_DIAG_RATIO_MAX = 2.8
+
+export function isLobDiagonalShape(points: NormalizedPoint[]): boolean {
+  if (points.length < 2) return false
+
+  const { xSpread, ySpread } = pathSpread(points)
+  if (xSpread < LOB_LEG_MIN || ySpread < LOB_LEG_MIN) return false
+  if (straightness(points) < LOB_STRAIGHTNESS_MIN) return false
+
+  const ratio = xSpread / Math.max(ySpread, 1e-6)
+  return ratio >= LOB_DIAG_RATIO_MIN && ratio <= LOB_DIAG_RATIO_MAX
+}
+
 export function isVolleyLShape(points: NormalizedPoint[]): boolean {
   if (points.length < 3) return false
 
@@ -265,6 +298,7 @@ export function isVolleyLShape(points: NormalizedPoint[]): boolean {
 
 function horizontalShotShape(
   points: NormalizedPoint[],
+  startQuadrant: Quadrant,
   opts: { strict: boolean },
 ): GestureShape | null {
   const { xSpread, ySpread } = pathSpread(points)
@@ -283,10 +317,84 @@ function horizontalShotShape(
 
   if (!isLineH) return null
 
-  const dir = detectBackhandDirection(start, end)
-  if (dir === 'R_TO_L') return 'FOREHAND'
-  if (dir === 'L_TO_R') return 'BACKHAND'
+  return detectHorizShotShape(startQuadrant, start, end)
+}
+
+const HORZ_LEG_MIN_DX = 0.04
+/** Merge pause/hold anchors that sit on top of each other at the finish. */
+const HOLD_ANCHOR_EPS = 0.012
+
+export type HorizStrokeAnchors = {
+  horizStart: NormalizedPoint
+  horizEnd: NormalizedPoint
+  finishPoint: NormalizedPoint
+}
+
+export function collapseHoldAnchors(points: NormalizedPoint[]): NormalizedPoint[] {
+  if (points.length <= 1) return points
+  const out: NormalizedPoint[] = [points[0]!]
+  for (let i = 1; i < points.length; i++) {
+    const p = points[i]!
+    const last = out[out.length - 1]!
+    if (Math.hypot(p.x - last.x, p.y - last.y) < HOLD_ANCHOR_EPS) continue
+    out.push(p)
+  }
+  return out
+}
+
+/** Horizontal leg = anchor 1 → anchor 2; finish = last distinct anchor after that. */
+export function parseHorizStroke(points: NormalizedPoint[]): HorizStrokeAnchors | null {
+  const anchors = collapseHoldAnchors(points)
+  if (anchors.length < 2) return null
+
+  const horizStart = anchors[0]!
+  const horizEnd = anchors[1]!
+  const finishPoint = anchors[anchors.length - 1]!
+  const legDx = Math.abs(horizEnd.x - horizStart.x)
+  const legDy = Math.abs(horizEnd.y - horizStart.y)
+  if (legDx < HORZ_LEG_MIN_DX || legDx <= legDy * 1.15) return null
+
+  return { horizStart, horizEnd, finishPoint }
+}
+
+export function strokeFinishUp(corner: NormalizedPoint, finish: NormalizedPoint): boolean {
+  return finish.y - corner.y <= -VOLLEY_DIRECTION_MIN
+}
+
+export function strokeFinishDown(corner: NormalizedPoint, finish: NormalizedPoint): boolean {
+  return finish.y - corner.y >= SMASH_DIRECTION_MIN
+}
+
+export function horizStrokeFinishVerdict(
+  corner: NormalizedPoint,
+  finish: NormalizedPoint,
+): VolleyVerdict | null {
+  if (strokeFinishUp(corner, finish)) return 'SCORE'
+  if (strokeFinishDown(corner, finish)) return 'FOUL'
   return null
+}
+
+export function detectHorizShotShapeFromAnchors(
+  points: NormalizedPoint[],
+  startQuadrant: Quadrant,
+): 'BACKHAND' | 'FOREHAND' | null {
+  const parsed = parseHorizStroke(points)
+  if (!parsed) return null
+  return detectHorizShotShape(startQuadrant, parsed.horizStart, parsed.horizEnd)
+}
+
+/** Toward the player's left (across body) = backhand; toward their right = forehand. */
+export function detectHorizShotShape(
+  startQuadrant: Quadrant,
+  start: NormalizedPoint,
+  end: NormalizedPoint,
+): 'BACKHAND' | 'FOREHAND' | null {
+  const dx = end.x - start.x
+  if (Math.abs(dx) < BACKHAND_DIRECTION_MIN) return null
+
+  const facesSouth = startQuadrant === 'TL' || startQuadrant === 'TR'
+  const towardPlayerLeft = facesSouth ? dx < 0 : dx > 0
+  return towardPlayerLeft ? 'BACKHAND' : 'FOREHAND'
 }
 
 export function detectGestureShape(
@@ -319,15 +427,19 @@ export function detectGestureShape(
 
   if (isLineV) return 'LINE_V'
 
-  const strictHoriz = horizontalShotShape(points, { strict: true })
+  if (startZone === 'back' && isLobDiagonalShape(points)) return 'LOB'
+
+  const anchorHoriz = detectHorizShotShapeFromAnchors(points, quadrant)
+  if (anchorHoriz) return anchorHoriz
+
+  const strictHoriz = horizontalShotShape(points, quadrant, { strict: true })
   if (strictHoriz) return strictHoriz
 
   if (startZone === 'inner') {
-    const netHoriz = horizontalShotShape(points, { strict: false })
+    if (isVolleyLShape(points)) return 'VOLLEY'
+    const netHoriz = horizontalShotShape(points, quadrant, { strict: false })
     if (netHoriz) return netHoriz
   }
-
-  if (startZone === 'back' && isVolleyLShape(points)) return 'VOLLEY'
 
   return 'CURVE'
 }
@@ -337,6 +449,7 @@ export function shapeLabel(shape: GestureShape): string {
   if (shape === 'BACKHAND') return 'Backhand'
   if (shape === 'FOREHAND') return 'Forehand'
   if (shape === 'VOLLEY') return 'Volley'
+  if (shape === 'LOB') return 'Lob'
   if (shape === 'LINE_V') return 'Vertical line'
   if (shape === 'TAP') return 'Tap'
   return 'Curve'
@@ -351,6 +464,25 @@ export function detectSmashVerdict(
   if (dy >= SMASH_DIRECTION_MIN) return 'FOUL'
   if (dy <= -SMASH_DIRECTION_MIN) return 'WIN'
   return null
+}
+
+/** Diagonal lob: bottom→up = win, top→down = foul (start vs last anchor). */
+export function detectLobVerdict(anchors: NormalizedPoint[]): LobVerdict | null {
+  const collapsed = collapseHoldAnchors(anchors)
+  if (collapsed.length < 2) return null
+  return detectSmashVerdict(collapsed[0]!, collapsed[collapsed.length - 1]!)
+}
+
+export function lobFinishUp(anchors: NormalizedPoint[]): boolean {
+  const collapsed = collapseHoldAnchors(anchors)
+  if (collapsed.length < 2) return false
+  return collapsed[collapsed.length - 1]!.y - collapsed[0]!.y <= -SMASH_DIRECTION_MIN
+}
+
+export function lobFinishDown(anchors: NormalizedPoint[]): boolean {
+  const collapsed = collapseHoldAnchors(anchors)
+  if (collapsed.length < 2) return false
+  return collapsed[collapsed.length - 1]!.y - collapsed[0]!.y >= SMASH_DIRECTION_MIN
 }
 
 export function detectBackhandDirection(
@@ -368,27 +500,36 @@ export function detectVolleyVerdict(
   points: NormalizedPoint[],
   end: NormalizedPoint,
 ): VolleyVerdict | null {
-  if (end.y >= VOLLEY_END_BOTTOM_Y) return 'FOUL'
+  const anchors = collapseHoldAnchors(points)
+  const finish = anchors[anchors.length - 1] ?? end
+  if (finish.y >= VOLLEY_END_BOTTOM_Y) return 'FOUL'
 
-  const sampled = resamplePath(points, 16)
-  const cornerIdx = findLCornerIndex(points)
+  const parsed = parseHorizStroke(points)
+  if (parsed && parsed.finishPoint !== parsed.horizEnd) {
+    return horizStrokeFinishVerdict(parsed.horizEnd, parsed.finishPoint)
+  }
+
+  const sampled = resamplePath(anchors, 16)
+  const cornerIdx = findLCornerIndex(anchors)
   if (cornerIdx !== null && cornerIdx < sampled.length) {
     const corner = sampled[cornerIdx]!
-    const finalDy = end.y - corner.y
+    const finalDy = finish.y - corner.y
     if (finalDy <= -VOLLEY_DIRECTION_MIN) return 'SCORE'
     if (finalDy >= VOLLEY_DIRECTION_MIN) return 'FOUL'
   }
 
-  if (end.y < 0.48) return 'SCORE'
+  if (finish.y < 0.48) return 'SCORE'
   return null
 }
 
 type GestureReportOpts = {
   smashVerdict?: SmashVerdict | null
+  lobVerdict?: LobVerdict | null
   volleyVerdict?: VolleyVerdict | null
   backhandDirection?: BackhandDirection | null
   playerNames?: Partial<Record<Quadrant, string>>
   shotZone?: CourtShotZone
+  startQuadrant?: Quadrant
   start?: NormalizedPoint
   end?: NormalizedPoint
 }
@@ -402,11 +543,11 @@ function horizStrokeVerdict(start: NormalizedPoint, end: NormalizedPoint): Volle
 
 function innerHorizVolleyLabel(
   shape: GestureShape,
-  shotZone: CourtShotZone | undefined,
   start: NormalizedPoint | undefined,
   end: NormalizedPoint | undefined,
+  startQuadrant: Quadrant | undefined,
 ): string | null {
-  if (shotZone !== 'inner' || !start || !end) return null
+  if (!start || !end || !startQuadrant || !isVolleyZoneStart(start, startQuadrant)) return null
   if (shape !== 'BACKHAND' && shape !== 'FOREHAND') return null
   const verdict = horizStrokeVerdict(start, end)
   if (verdict === 'SCORE') return 'Volley Score'
@@ -419,12 +560,37 @@ export function gestureShotLabel(
   shape: GestureShape,
   opts: Omit<GestureReportOpts, 'playerNames'> = {},
 ): string | null {
-  const { smashVerdict = null, volleyVerdict = null, shotZone, start, end } = opts
+  const {
+    smashVerdict = null,
+    lobVerdict = null,
+    volleyVerdict: volleyVerdictIn = null,
+    startQuadrant,
+    start,
+    end,
+  } = opts
+
+  let volleyVerdict = volleyVerdictIn
+  if (
+    volleyVerdict == null &&
+    startQuadrant &&
+    start &&
+    end &&
+    (shape === 'BACKHAND' || shape === 'FOREHAND') &&
+    isVolleyZoneStart(start, startQuadrant)
+  ) {
+    volleyVerdict = horizStrokeVerdict(start, end) ?? 'FOUL'
+  }
 
   if (shape === 'SMASH') {
     if (smashVerdict === 'WIN') return 'Smash Win'
     if (smashVerdict === 'FOUL') return 'Smash Foul'
     return 'Smash'
+  }
+
+  if (shape === 'LOB') {
+    if (lobVerdict === 'WIN') return 'Lob Win'
+    if (lobVerdict === 'FOUL') return 'Lob Foul'
+    return 'Lob'
   }
 
   if (shape === 'VOLLEY') {
@@ -433,7 +599,7 @@ export function gestureShotLabel(
     return 'Volley'
   }
 
-  const innerVolley = innerHorizVolleyLabel(shape, shotZone, start, end)
+  const innerVolley = innerHorizVolleyLabel(shape, start, end, startQuadrant)
   if (innerVolley) return innerVolley
 
   if (shape === 'BACKHAND') return 'Backhand'
@@ -449,10 +615,9 @@ export function gestureReport(
 ): string {
   const {
     smashVerdict = null,
+    lobVerdict = null,
     volleyVerdict = null,
-    backhandDirection = null,
     playerNames,
-    shotZone,
     start,
     end,
   } = opts
@@ -464,26 +629,60 @@ export function gestureReport(
     return `${player} - Smash`
   }
 
+  if (shape === 'LOB') {
+    if (lobVerdict === 'WIN') return `${player} - Lob Win`
+    if (lobVerdict === 'FOUL') return `${player} - Lob Foul`
+    return `${player} - Lob`
+  }
+
   if (shape === 'VOLLEY') {
     if (volleyVerdict === 'SCORE') return `${player} - Volley Score`
     if (volleyVerdict === 'FOUL') return `${player} - Volley Foul`
     return `${player} - Volley`
   }
 
-  const innerVolley = innerHorizVolleyLabel(shape, shotZone, start, end)
+  const innerVolley = innerHorizVolleyLabel(shape, start, end, startQuadrant)
   if (innerVolley) return `${player} - ${innerVolley}`
 
-  if (shape === 'BACKHAND') {
-    if (backhandDirection === 'L_TO_R') return `${player} - Backhand L→R`
-    return `${player} - Backhand`
-  }
-
-  if (shape === 'FOREHAND') {
-    if (backhandDirection === 'R_TO_L') return `${player} - Forehand R→L`
-    return `${player} - Forehand`
-  }
+  if (shape === 'BACKHAND') return `${player} - Backhand`
+  if (shape === 'FOREHAND') return `${player} - Forehand`
 
   return player
+}
+
+/** Live pad label — BH/FH use anchor 1→2 for shape, corner→finish for win/loss. */
+export function gestureLiveShotLabel(
+  path: NormalizedPoint[],
+  startQuadrant: Quadrant,
+): string | null {
+  if (path.length < 2) return null
+  const shape = detectGestureShape(path, startQuadrant)
+  const parsed = parseHorizStroke(path)
+  const start = path[0]!
+  const end = path[path.length - 1]!
+
+  if ((shape === 'BACKHAND' || shape === 'FOREHAND') && parsed) {
+    if (parsed.finishPoint !== parsed.horizEnd) {
+      const verdict = horizStrokeFinishVerdict(parsed.horizEnd, parsed.finishPoint)
+      const inner = isVolleyZoneStart(parsed.horizStart, startQuadrant)
+      if (inner) {
+        if (verdict === 'SCORE') return 'Volley Score'
+        if (verdict === 'FOUL') return 'Volley Foul'
+      } else if (verdict === 'FOUL') {
+        return shape === 'BACKHAND' ? 'Backhand Foul' : 'Forehand Foul'
+      }
+    }
+    return shape === 'BACKHAND' ? 'Backhand' : 'Forehand'
+  }
+
+  return gestureShotLabel(shape, {
+    smashVerdict: shape === 'SMASH' ? detectSmashVerdict(start, end) : null,
+    lobVerdict: shape === 'LOB' ? detectLobVerdict(path) : null,
+    volleyVerdict: shape === 'VOLLEY' ? detectVolleyVerdict(path, end) : null,
+    startQuadrant,
+    start,
+    end,
+  })
 }
 
 export function analyzeGesture(
@@ -492,6 +691,7 @@ export function analyzeGesture(
   opts?: { playerNames?: Partial<Record<Quadrant, string>> },
 ): GestureAnalysis {
   const { pathPoints } = gesture
+  const anchors = collapseHoldAnchors(pathPoints)
   const seq = quadrantSequence(pathPoints)
   const grid = gridPath(pathPoints)
   const signature = pathSignature(pathPoints)
@@ -499,26 +699,41 @@ export function analyzeGesture(
   const straight = straightness(pathPoints)
   const shape = detectGestureShape(pathPoints, gesture.startQuadrant)
   const label = shapeLabel(shape)
-  const shotZone = courtShotZoneFromPoint(gesture.start, gesture.startQuadrant)
+  const shotZone: CourtShotZone = isVolleyZoneStart(gesture.start, gesture.startQuadrant)
+    ? 'inner'
+    : 'back'
+  const parsed = shape === 'LOB' ? null : parseHorizStroke(pathPoints)
+  const strokeCorner = parsed?.horizEnd ?? null
+  const finishPoint = parsed?.finishPoint ?? null
   const smashVerdict =
     shape === 'SMASH' ? detectSmashVerdict(gesture.start, gesture.end) : null
+  const lobVerdict = shape === 'LOB' ? detectLobVerdict(pathPoints) : null
   const backhandDirection =
     shape === 'BACKHAND' || shape === 'FOREHAND'
-      ? detectBackhandDirection(gesture.start, gesture.end)
+      ? detectBackhandDirection(
+          parsed?.horizStart ?? gesture.start,
+          parsed?.horizEnd ?? gesture.end,
+        )
       : null
   let volleyVerdict =
     shape === 'VOLLEY' ? detectVolleyVerdict(pathPoints, gesture.end) : null
   if ((shape === 'BACKHAND' || shape === 'FOREHAND') && shotZone === 'inner') {
-    volleyVerdict = horizStrokeVerdict(gesture.start, gesture.end)
+    if (parsed && parsed.finishPoint !== parsed.horizEnd) {
+      volleyVerdict = horizStrokeFinishVerdict(parsed.horizEnd, parsed.finishPoint) ?? 'FOUL'
+    } else {
+      volleyVerdict = 'FOUL'
+    }
   }
 
   return {
     code: gesture.code,
     report: gestureReport(gesture.startQuadrant, shape, {
       smashVerdict,
+      lobVerdict,
       volleyVerdict,
       backhandDirection,
       playerNames: opts?.playerNames,
+      startQuadrant: gesture.startQuadrant,
       shotZone,
       start: gesture.start,
       end: gesture.end,
@@ -526,6 +741,7 @@ export function analyzeGesture(
     shape,
     shapeLabel: label,
     smashVerdict,
+    lobVerdict,
     volleyVerdict,
     backhandDirection,
     startQuadrant: gesture.startQuadrant,
@@ -547,6 +763,9 @@ export function analyzeGesture(
     start: roundPoint(gesture.start),
     end: roundPoint(gesture.end),
     pathSample: resamplePath(pathPoints, 24).map((p) => roundPoint(p)),
+    anchors: anchors.map((p) => roundPoint(p)),
+    strokeCorner: strokeCorner ? roundPoint(strokeCorner) : null,
+    finishPoint: finishPoint ? roundPoint(finishPoint) : null,
     shotZone,
   }
 }

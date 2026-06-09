@@ -4,7 +4,7 @@ import { GesturePadToolbar } from '../components/GesturePadToolbar'
 import { useAuth } from '../hooks/useAuth'
 import { useLineClientProfile } from '../hooks/useLineClientProfile'
 import { useFriendlyGame } from '../hooks/useFriendlyGame'
-import { friendlyQuadrantPlayers } from '../lib/friendlyGames'
+import { friendlyQuadrantPlayers, isFreeFriendly } from '../lib/friendlyGames'
 
 export function FriendlyPadPage() {
   const { id } = useParams()
@@ -24,13 +24,13 @@ export function FriendlyPadPage() {
   return (
     <div className="gesture-pad-page fixed inset-0 z-[400] flex flex-col overflow-hidden bg-[#1a5fa8]">
       <GesturePadToolbar
-        onBack={() => navigate(game.playMode === 'free' ? '/friendly' : `/friendly/${game.id}`)}
+        onBack={() => navigate(isFreeFriendly(game) ? '/friendly' : `/friendly/${game.id}`)}
         backLabel="← Back"
       />
       <GestureAnnotationPad
         courtSetupKey={game.id}
         onMatchClosed={() =>
-          navigate(game.playMode === 'free' ? '/friendly' : `/friendly/${game.id}`)
+          navigate(isFreeFriendly(game) ? '/friendly' : `/friendly/${game.id}`)
         }
         quadrantPlayers={friendlyQuadrantPlayers(game)}
         currentUserId={user?.id ?? null}

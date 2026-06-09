@@ -12,6 +12,7 @@ import {
   friendlyOrganizedSession,
   friendlyPreviewGames,
   friendlyStartsAtIso,
+  isFreeFriendly,
   isOnFriendlyRoster,
 } from '../lib/friendlyGames'
 import { joinFriendlySession } from '../lib/friendlyServer'
@@ -108,7 +109,7 @@ export function FriendlyGamePage() {
   const startsAtIso = friendlyStartsAtIso(organizedConfig)
   const showJoin = canJoinFriendlyGame(game, user?.id)
   const joined = isOnFriendlyRoster(game, user?.id)
-  const isFree = game.playMode === 'free'
+  const isFree = isFreeFriendly(game)
 
   return (
     <div className="space-y-3 pb-6">
@@ -152,6 +153,15 @@ export function FriendlyGamePage() {
 
         {joined && !isAdmin ? (
           <p className="text-center text-xs text-brand-muted">{t('friendly.onRoster')}</p>
+        ) : null}
+
+        {isAdmin && isFree ? (
+          <Link
+            to={`/friendly/${game.id}/pad`}
+            className="brand-btn block w-full py-3 text-center text-sm font-semibold"
+          >
+            {t('friendly.openPad')}
+          </Link>
         ) : null}
 
         {joinError ? <p className="text-xs text-red-600">{joinError}</p> : null}

@@ -1,12 +1,10 @@
+import { GestureShotGuideTabs } from './GestureShotGuideTabs'
 import type { GestureAnalysis } from '../lib/gestureAnalysis'
 import {
-  detectGestureShape,
-  detectSmashVerdict,
-  detectVolleyVerdict,
+  gestureLiveShotLabel,
   gestureShotLabel,
 } from '../lib/gestureAnalysis'
 import { quadrantFromPoint, type NormalizedPoint } from '../lib/gestureCapture'
-import { courtShotZoneFromPoint } from '../lib/padelCourtLayout'
 
 type Props = {
   isDrawing: boolean
@@ -19,18 +17,8 @@ type Props = {
 
 function liveReport(path: NormalizedPoint[]): string | null {
   if (path.length < 2) return null
-  const start = path[0]!
-  const end = path[path.length - 1]!
-  const startQuadrant = quadrantFromPoint(start)
-  const shape = detectGestureShape(path, startQuadrant)
-  const shotZone = courtShotZoneFromPoint(start, startQuadrant)
-  const label = gestureShotLabel(shape, {
-    smashVerdict: shape === 'SMASH' ? detectSmashVerdict(start, end) : null,
-    volleyVerdict: shape === 'VOLLEY' ? detectVolleyVerdict(path, end) : null,
-    shotZone,
-    start,
-    end,
-  })
+  const startQuadrant = quadrantFromPoint(path[0]!)
+  const label = gestureLiveShotLabel(path, startQuadrant)
   return label ? `${label}…` : null
 }
 
@@ -43,7 +31,8 @@ function reportTone(report: string | null | undefined): string {
     report.includes('Smash') ||
     report.includes('Backhand') ||
     report.includes('Forehand') ||
-    report.includes('Volley')
+    report.includes('Volley') ||
+    report.includes('Lob')
   ) {
     return 'text-brand-accent'
   }
@@ -62,8 +51,9 @@ export function GesturePadFeedback({
   const reportLabel = lastAnalysis
     ? gestureShotLabel(lastAnalysis.shape, {
         smashVerdict: lastAnalysis.smashVerdict,
+        lobVerdict: lastAnalysis.lobVerdict,
         volleyVerdict: lastAnalysis.volleyVerdict,
-        shotZone: lastAnalysis.shotZone,
+        startQuadrant: lastAnalysis.startQuadrant,
         start: lastAnalysis.start,
         end: lastAnalysis.end,
       })
@@ -76,7 +66,8 @@ export function GesturePadFeedback({
       reportLabel?.includes('Smash') ||
         reportLabel?.includes('Backhand') ||
         reportLabel?.includes('Forehand') ||
-        reportLabel?.includes('Volley'),
+        reportLabel?.includes('Volley') ||
+        reportLabel?.includes('Lob'),
     )
 
   return (
@@ -103,11 +94,7 @@ export function GesturePadFeedback({
             </p>
           </div>
         ) : (
-          <div className="space-y-1 text-xs leading-relaxed text-brand-muted portrait:text-sm landscape:text-sm">
-            <p>Smash up from bottom = Win · smash down from top = Foul</p>
-            <p>Backhand left→right · forehand right→left across the court</p>
-            <p>Volley L-shape up = Score · L ends bottom = Foul</p>
-          </div>
+          <GestureShotGuideTabs compact />
         )}
       </div>
       <button

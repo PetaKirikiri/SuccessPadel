@@ -22,9 +22,9 @@ export function parseClubDate(dateStr: string): Date {
   return new Date(`${dateStr}T00:00:00`)
 }
 
-export function clubHourToDate(dateStr: string, hour: number): Date {
+export function clubHourToDate(dateStr: string, hour: number, minute = 0): Date {
   const d = parseClubDate(dateStr)
-  d.setHours(hour, 0, 0, 0)
+  d.setHours(hour, minute, 0, 0)
   return d
 }
 
@@ -66,8 +66,8 @@ export function maxConsecutiveHours(startHour: number, availableHours: number[])
   return Math.max(count, 1)
 }
 
-export function formatHourLabel(hour: number): string {
-  return `${String(hour).padStart(2, '0')}:00`
+export function formatHourLabel(hour: number, minute = 0): string {
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
 }
 
 export function scheduleGridHours(): number[] {
@@ -85,9 +85,10 @@ export function rangesOverlap(
   return aStart < bEnd && bStart < aEnd
 }
 
-export function toIsoTimestamp(dateStr: string, hour: number): string {
+export function toIsoTimestamp(dateStr: string, hour: number, minute = 0): string {
   const hh = String(hour).padStart(2, '0')
-  return `${dateStr}T${hh}:00:00+07:00`
+  const mm = String(minute).padStart(2, '0')
+  return `${dateStr}T${hh}:${mm}:00+07:00`
 }
 
 export function bangkokHour(iso: string): number {

@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import type { CourtPlayer } from '../lib/americanoSchedule'
 import {
   analyzeGesture,
   detectGestureShape,
-  detectSmashVerdict,
-  detectVolleyVerdict,
+  gestureLiveShotLabel,
   gestureShotLabel,
+  shapeLabel,
 } from '../lib/gestureAnalysis'
 import {
   appendGestureDebugEntry,
@@ -27,6 +27,7 @@ import {
   gestureHapticComplete,
   gestureHapticQuadrantChange,
   gestureHapticStart,
+  pointExchangeHighlightClass,
   quadrantHighlightClass,
   serveFeedbackQuadrantClass,
 } from '../lib/gestureFeedback'
@@ -35,9 +36,21 @@ import { CourtServeSetup } from './CourtServeSetup'
 import { GesturePadScoreboard } from './GesturePadScoreboard'
 import { GesturePadMatchComplete } from './GesturePadMatchComplete'
 import { PlayerGameStatsModal } from './PlayerGameStatsModal'
-import { pointWinnerFromGesture } from '../lib/gestureScoring'
 import { buildMatchPlayerStats, type PlayerGameStats } from '../lib/playerGameStats'
 import {
+  type PendingPointExchange,
+  type PointExchangePhase,
+  type PointExchangeState,
+  tryBeginFoulPoint,
+  tryBeginPointExchange,
+  tryCompleteLoserTag,
+} from '../lib/pointExchange'
+import {
+  serveGestureLabel,
+  tryBeginAceServe,
+} from '../lib/serveGesture'
+import {
+  attachLoserGestureToPoint,
   finalizeMatchSession,
   gesturesForSession,
   MATCH_PERSIST_TO_SERVER,
@@ -52,74 +65,42 @@ import { applyTennisPoint, INITIAL_TENNIS_SCORE, type TennisScore } from '../lib
 import {
   currentServeSideQuadrant,
   currentServeQuadrant as resolveServeQuadrant,
-  receiveBoxCenter,
   serveReceiveQuadrant,
-  serverChipCoords,
   serverChipPlacement,
 } from '../lib/serveRotation'
 import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
+import type { MatchTeam } from '../lib/types'
 import {
-  clearCourtPositions,
   COURT_QUADRANTS,
+  dropHalfFromX,
   isCompleteAssignment,
   loadCourtSetup,
   quadrantsForTeamPlacement,
+  quadrantHalf,
   rosterFromQuadrants,
   saveCourtSetup,
+  teamForQuadrant,
   teamsFromQuadrants,
   type CourtHalf,
   type CourtTeam,
   type SetupPhase,
 } from '../lib/courtPositionSetup'
 import { firstDisplayName } from '../lib/leaderboardEntries'
+import { useGesturePadChrome } from '../lib/gesturePadChrome'
 import type { QuadrantPlayers } from '../lib/gesturePadPlayers'
 import {
   PADEL_CENTRAL_LINE_TOP_END_Y,
   PADEL_CENTRAL_SEGMENT_HEIGHT_BOTTOM,
   PADEL_CENTRAL_SEGMENT_HEIGHT_TOP,
+  PADEL_HALF_INNER_END_BOTTOM_Y,
+  PADEL_HALF_INNER_START_TOP_Y,
   PADEL_NET_Y,
   PADEL_SERVICE_LINE_BOTTOM_Y,
   PADEL_SERVICE_LINE_TOP_Y,
-  courtShotZoneFromPoint,
   pct,
 } from '../lib/padelCourtLayout'
 
 const COURT_INSET = 'inset-3 sm:inset-4'
-
-function ServeDirectionGuide({
-  server,
-  receive,
-}: {
-  server: Quadrant
-  receive: Quadrant
-}) {
-  const from = serverChipCoords(server)
-  const to = receiveBoxCenter(receive)
-  const angleDeg = (Math.atan2(to.y - from.y, to.x - from.x) * 180) / Math.PI
-
-  return (
-    <div
-      className="pointer-events-none absolute z-[2]"
-      style={{
-        left: '50%',
-        top: pct(PADEL_NET_Y),
-        transform: `translate(-50%, -50%) rotate(${angleDeg}deg)`,
-      }}
-      aria-hidden
-    >
-      <svg width="46" height="26" viewBox="0 0 46 26" className="drop-shadow-sm">
-        <path
-          d="M5 13 H38 M30 5 L38 13 L30 21"
-          fill="none"
-          stroke="rgba(252,211,77,0.95)"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </div>
-  )
-}
 
 function PadelCourtMarkings() {
   return (
@@ -136,6 +117,14 @@ function PadelCourtMarkings() {
       <div
         className="absolute inset-x-0 h-px bg-white/75"
         style={{ top: pct(PADEL_SERVICE_LINE_BOTTOM_Y) }}
+      />
+      <div
+        className="absolute inset-x-0 border-t border-dashed border-white/25"
+        style={{ top: pct(PADEL_HALF_INNER_START_TOP_Y) }}
+      />
+      <div
+        className="absolute inset-x-0 border-t border-dashed border-white/25"
+        style={{ top: pct(PADEL_HALF_INNER_END_BOTTOM_Y) }}
       />
       <div
         className="absolute w-0.5 -translate-x-1/2 bg-white/85"
@@ -217,6 +206,7 @@ function GesturePadPlayerChip({
   active,
   serving = false,
   align,
+  draggable = false,
 }: {
   player: CourtPlayer
   isCurrent: boolean
@@ -224,6 +214,7 @@ function GesturePadPlayerChip({
   active: boolean
   serving?: boolean
   align: 'left' | 'right'
+  draggable?: boolean
 }) {
   const displayName = firstDisplayName(player.name.trim() || 'Player')
   const avatarUrl = player.avatarUrl ?? (isCurrent ? currentUserAvatarUrl : null)
@@ -232,7 +223,9 @@ function GesturePadPlayerChip({
     <div
       className={`flex h-10 max-w-[min(56vw,16rem)] items-center gap-2 truncate rounded-full border border-white/35 bg-black/35 py-0.5 pl-0.5 pr-3 text-white shadow-sm backdrop-blur-sm sm:h-11 sm:max-w-[16rem] sm:gap-2.5 sm:pr-3.5 ${
         align === 'right' ? 'flex-row-reverse' : ''
-      } ${serving ? 'ring-2 ring-amber-300 shadow-[0_0_14px_rgba(252,211,77,0.55)]' : active ? 'ring-2 ring-white/90' : 'ring-1 ring-white/25'}`}
+      } ${draggable ? 'cursor-grab ring-2 ring-white/50 active:cursor-grabbing' : ''} ${
+        serving ? 'ring-2 ring-amber-300 shadow-[0_0_14px_rgba(252,211,77,0.55)]' : active ? 'ring-2 ring-white/90' : 'ring-1 ring-white/25'
+      }`}
       aria-label={displayName}
     >
       {avatarUrl ? (
@@ -251,19 +244,103 @@ function GesturePadPlayerChip({
   )
 }
 
-function liveReportLabel(path: NormalizedPoint[], activeQuadrant: Quadrant | null) {
+function DraggableGesturePadPlayerChip({
+  player,
+  quadrant,
+  padRef,
+  onSwapSide,
+  isCurrent,
+  currentUserAvatarUrl,
+  active,
+  serving = false,
+  align,
+}: {
+  player: CourtPlayer
+  quadrant: Quadrant
+  padRef: RefObject<HTMLDivElement | null>
+  onSwapSide: (quadrant: Quadrant, player: CourtPlayer, half: CourtHalf) => void
+  isCurrent: boolean
+  currentUserAvatarUrl?: string | null
+  active: boolean
+  serving?: boolean
+  align: 'left' | 'right'
+}) {
+  const [dragging, setDragging] = useState(false)
+  const [offset, setOffset] = useState({ x: 0, y: 0 })
+  const originRef = useRef<{ x: number; y: number } | null>(null)
+
+  const finishDrag = (e: React.PointerEvent) => {
+    if (!dragging) return
+    e.stopPropagation()
+    setDragging(false)
+    setOffset({ x: 0, y: 0 })
+    originRef.current = null
+
+    const pad = padRef.current
+    if (!pad) return
+    onSwapSide(quadrant, player, dropHalfFromX(e.clientX, pad.getBoundingClientRect()))
+  }
+
+  return (
+    <div
+      className={`pointer-events-auto touch-none ${dragging ? 'z-30' : ''}`}
+      style={dragging ? { transform: `translate(${offset.x}px, ${offset.y}px)` } : undefined}
+      onPointerDown={(e) => {
+        e.stopPropagation()
+        e.currentTarget.setPointerCapture(e.pointerId)
+        originRef.current = { x: e.clientX, y: e.clientY }
+        setDragging(true)
+      }}
+      onPointerMove={(e) => {
+        if (!dragging || !originRef.current) return
+        e.stopPropagation()
+        setOffset({
+          x: e.clientX - originRef.current.x,
+          y: e.clientY - originRef.current.y,
+        })
+      }}
+      onPointerUp={finishDrag}
+      onPointerCancel={finishDrag}
+    >
+      <GesturePadPlayerChip
+        player={player}
+        isCurrent={isCurrent}
+        currentUserAvatarUrl={currentUserAvatarUrl}
+        active={active}
+        serving={serving}
+        align={align}
+        draggable={dragging}
+      />
+    </div>
+  )
+}
+
+function liveReportLabel(
+  path: NormalizedPoint[],
+  activeQuadrant: Quadrant | null,
+  serverQuadrant: Quadrant | null,
+  exchangePhase: PointExchangePhase,
+) {
   if (path.length < 2) return null
   const start = path[0]!
-  const end = path[path.length - 1]!
   const startQuadrant = activeQuadrant ?? quadrantFromPoint(start)
   const shape = detectGestureShape(path, startQuadrant)
-  const label = gestureShotLabel(shape, {
-    smashVerdict: shape === 'SMASH' ? detectSmashVerdict(start, end) : null,
-    volleyVerdict: shape === 'VOLLEY' ? detectVolleyVerdict(path, end) : null,
-    shotZone: courtShotZoneFromPoint(start, startQuadrant),
-    start,
-    end,
-  })
+
+  if (exchangePhase === 'await_loser') {
+    if (path.length >= 2 && shape !== 'TAP') {
+      const label = shapeLabel(shape)
+      if (label !== 'Curve' && label !== 'Tap') return `${label}…`
+      return 'Shot…'
+    }
+    return null
+  }
+
+  if (exchangePhase === 'idle' && serverQuadrant) {
+    const serveLabel = serveGestureLabel(path, serverQuadrant)
+    if (serveLabel) return `${serveLabel}…`
+  }
+
+  const label = gestureLiveShotLabel(path, startQuadrant)
   return label ? `${label}…` : null
 }
 
@@ -273,10 +350,12 @@ function reportTone(report: string | null | undefined): string {
   if (
     report.includes('Win') ||
     report.includes('Score') ||
+    report.includes('Serve') ||
     report.includes('Smash') ||
     report.includes('Backhand') ||
     report.includes('Forehand') ||
-    report.includes('Volley')
+    report.includes('Volley') ||
+    report.includes('Lob')
   ) {
     return 'text-amber-100'
   }
@@ -297,6 +376,7 @@ export function GestureAnnotationPad({
   currentUserAvatarUrl,
   friendly = false,
 }: Props) {
+  useGesturePadChrome()
   const isFriendly = friendly || isFriendlySession(courtSetupKey)
   const padRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -320,6 +400,10 @@ export function GestureAnnotationPad({
   const [initialServeQuadrant, setInitialServeQuadrant] = useState<Quadrant | null>(null)
   const [tennisScore, setTennisScore] = useState<TennisScore>(INITIAL_TENNIS_SCORE)
   const [matchSubmitted, setMatchSubmitted] = useState(false)
+  const [pointExchangePhase, setPointExchangePhase] = useState<PointExchangePhase>('idle')
+  const [pendingPoint, setPendingPoint] = useState<PendingPointExchange | null>(null)
+  const exchangeRef = useRef<PointExchangeState>({ phase: 'idle' })
+  const [exchangeHint, setExchangeHint] = useState<string | null>(null)
   const [friendlyServerSaved, setFriendlyServerSaved] = useState(false)
   const [matchStartedAt, setMatchStartedAt] = useState<string | null>(null)
   const [submittingMatch, setSubmittingMatch] = useState(false)
@@ -412,6 +496,60 @@ export function GestureAnnotationPad({
     },
     [assignments, courtSetupKey, initialServeQuadrant, matchStartedAt, matchSubmitted, roster],
   )
+
+  const applyScoredPoint = useCallback(
+    (point: {
+      winnerGestureId: string
+      winnerQuadrant: Quadrant | ''
+      loserQuadrant: Quadrant | ''
+      winnerTeam: MatchTeam
+      loserGestureId?: string
+      isServe?: boolean
+    }) => {
+      setTennisScore((prev) => {
+        const next = applyTennisPoint(prev, point.winnerTeam)
+        if (courtSetupKey) {
+          recordMatchPoint(courtSetupKey, {
+            winnerGestureId: point.winnerGestureId,
+            loserGestureId: point.loserGestureId ?? '',
+            winnerQuadrant: point.winnerQuadrant,
+            loserQuadrant: point.loserQuadrant,
+            winner: point.winnerTeam,
+            scoreAfter: next,
+            isServe: point.isServe ?? false,
+          })
+        }
+        persistSetup(next)
+        return next
+      })
+    },
+    [courtSetupKey, persistSetup],
+  )
+
+  const finishLoserTag = useCallback(
+    (pending: PendingPointExchange, loserQuadrant: Quadrant, loserGestureId: string) => {
+      if (courtSetupKey) {
+        attachLoserGestureToPoint(
+          courtSetupKey,
+          pending.winnerGestureId,
+          loserGestureId,
+          loserQuadrant,
+        )
+      }
+      exchangeRef.current = { phase: 'idle' }
+      setPendingPoint(null)
+      setPointExchangePhase('idle')
+      setExchangeHint(null)
+    },
+    [courtSetupKey],
+  )
+
+  const beginAwaitLoser = useCallback((pending: PendingPointExchange) => {
+    exchangeRef.current = { phase: 'await_loser', pending }
+    setPendingPoint(pending)
+    setPointExchangePhase('await_loser')
+    setExchangeHint(null)
+  }, [])
 
   const matchPlayerStats = useMemo(() => {
     if (!matchComplete || !isCompleteAssignment(roster, assignments)) return []
@@ -521,17 +659,19 @@ export function GestureAnnotationPad({
     return padPlayers
   }, [assignments, needsSetup, padPlayers, roster, setupPhase])
 
-  const showServeVisual =
-    needsSetup &&
-    setupPhase === 'ready' &&
-    servingPlayerQuadrant != null &&
-    activeServeQuadrant != null &&
-    !matchComplete
-
   const receiveQuadrant = useMemo(
     () => (activeServeQuadrant ? serveReceiveQuadrant(activeServeQuadrant) : null),
     [activeServeQuadrant],
   )
+
+  const showMatchReady =
+    (setupPhase === 'ready' || !needsSetup) && !matchComplete && Boolean(servingPlayerQuadrant)
+
+  const showServeIndicators =
+    showMatchReady &&
+    pointExchangePhase === 'idle' &&
+    activeServeQuadrant != null &&
+    receiveQuadrant != null
 
   const playerNames = useMemo(() => {
     const names: Partial<Record<Quadrant, string>> = {}
@@ -689,6 +829,7 @@ export function GestureAnnotationPad({
     startedAtRef.current = performance.now()
     setIsDrawing(true)
     gestureHapticStart()
+    setExchangeHint(null)
 
     const point = clientToNormalized(clientX, clientY, pad.getBoundingClientRect())
     anchorsRef.current = [point]
@@ -737,20 +878,56 @@ export function GestureAnnotationPad({
     if (courtSetupKey) recordMatchGesture(courtSetupKey, entry.id)
 
     if (setupPhase === 'ready' || !needsSetup) {
-      const winner = pointWinnerFromGesture(analysis)
-      if (winner && !matchComplete) {
-        setTennisScore((prev) => {
-          const next = applyTennisPoint(prev, winner)
-          if (courtSetupKey) {
-            recordMatchPoint(courtSetupKey, {
-              gestureId: entry.id,
-              winner,
-              scoreAfter: next,
-            })
+      if (!matchComplete) {
+        const exchange = exchangeRef.current
+
+        if (exchange.phase === 'await_loser') {
+          const done = tryCompleteLoserTag(
+            analysis,
+            entry,
+            exchange.pending,
+            captured.pathPoints,
+          )
+          if (!done.ok) {
+            setExchangeHint(done.reason)
+          } else {
+            finishLoserTag(exchange.pending, done.loserQuadrant, done.loserGestureId)
           }
-          persistSetup(next)
-          return next
-        })
+        } else {
+          const ace =
+            activeServeQuadrant != null
+              ? tryBeginAceServe(captured.pathPoints, entry, activeServeQuadrant)
+              : null
+          if (ace?.ok) {
+            applyScoredPoint({ ...ace.point, isServe: true })
+            beginAwaitLoser(ace.pending)
+          } else {
+            const foul = tryBeginFoulPoint(analysis)
+            if (foul.ok) {
+              applyScoredPoint({
+                winnerGestureId: entry.id,
+                winnerQuadrant: '',
+                loserQuadrant: foul.foulerQuadrant,
+                loserGestureId: entry.id,
+                winnerTeam: foul.winnerTeam,
+              })
+              setExchangeHint(null)
+            } else {
+              const began = tryBeginPointExchange(analysis, entry)
+              if (!began.ok) {
+                setExchangeHint(began.reason)
+              } else {
+                applyScoredPoint({
+                  winnerGestureId: entry.id,
+                  winnerQuadrant: began.pending.winnerQuadrant,
+                  loserQuadrant: '',
+                  winnerTeam: began.pending.winnerTeam,
+                })
+                beginAwaitLoser(began.pending)
+              }
+            }
+          }
+        }
       }
     }
 
@@ -773,6 +950,45 @@ export function GestureAnnotationPad({
     if (!isCompleteAssignment(roster, assignments)) return
     setSetupPhase('serve')
   }
+
+  const handleSwapPlayerSide = useCallback(
+    (fromQuadrant: Quadrant, player: CourtPlayer, half: CourtHalf) => {
+      if (quadrantHalf(fromQuadrant) === half) return
+      if (!isCompleteAssignment(roster, assignments)) return
+
+      const complete = COURT_QUADRANTS.reduce(
+        (acc, q) => {
+          acc[q] = assignments[q]!
+          return acc
+        },
+        {} as QuadrantPlayers,
+      )
+      const team = teamForQuadrant(fromQuadrant)
+      const { teamA, teamB } = teamsFromQuadrants(complete)
+      const pair = team === 'a' ? teamA : teamB
+      const next = { ...complete, ...quadrantsForTeamPlacement(team, half, player, pair) }
+      setAssignments(next)
+      if (courtSetupKey && initialServeQuadrant) {
+        saveCourtSetup(
+          courtSetupKey,
+          next,
+          initialServeQuadrant,
+          tennisScore,
+          matchSubmitted,
+          matchStartedAt ?? undefined,
+        )
+      }
+    },
+    [
+      assignments,
+      courtSetupKey,
+      initialServeQuadrant,
+      matchStartedAt,
+      matchSubmitted,
+      roster,
+      tennisScore,
+    ],
+  )
 
   const handlePickServe = (quadrant: Quadrant) => {
     if (!isCompleteAssignment(roster, assignments)) return
@@ -801,33 +1017,27 @@ export function GestureAnnotationPad({
     setSetupPhase('ready')
   }
 
-  const handleEditPositions = () => {
-    if (courtSetupKey) clearCourtPositions(courtSetupKey)
-    setAssignments({})
-    setInitialServeQuadrant(null)
-    setTennisScore(INITIAL_TENNIS_SCORE)
-    setMatchSubmitted(false)
-    setMatchStartedAt(null)
-    setSubmitError(null)
-    setStatsPlayer(null)
-    setSetupPhase('positions')
-    setLastAnalysis(null)
-    clearCanvas()
-    resetLiveState()
-  }
-
-  const liveLabel = isDrawing ? liveReportLabel(livePath, startQuadrant) : null
+  const liveLabel = isDrawing
+    ? liveReportLabel(livePath, startQuadrant, activeServeQuadrant, pointExchangePhase)
+    : null
   const resultLabel = lastAnalysis
     ? gestureShotLabel(lastAnalysis.shape, {
         smashVerdict: lastAnalysis.smashVerdict,
+        lobVerdict: lastAnalysis.lobVerdict,
         volleyVerdict: lastAnalysis.volleyVerdict,
-        shotZone: lastAnalysis.shotZone,
+        startQuadrant: lastAnalysis.startQuadrant,
         start: lastAnalysis.start,
         end: lastAnalysis.end,
       })
     : null
+  const awaitLoserCaption =
+    pointExchangePhase === 'await_loser' && !isDrawing && !exchangeHint
+      ? 'Tag the losing shot on the red side'
+      : null
   const floatingLabel = liveLabel ?? resultLabel
   const floatingTone = reportTone(floatingLabel)
+  const padCaption = exchangeHint ?? awaitLoserCaption ?? floatingLabel
+  const padCaptionTone = exchangeHint ? 'text-red-200' : floatingTone
 
   return (
     <div className="relative flex h-full min-h-0 flex-1 flex-col">
@@ -855,16 +1065,25 @@ export function GestureAnnotationPad({
             <div
               key={label}
               className={
-                showServeVisual && activeServeQuadrant && receiveQuadrant
-                  ? serveFeedbackQuadrantClass(
+                pointExchangePhase === 'await_loser' && pendingPoint
+                  ? pointExchangeHighlightClass(
                       label,
-                      activeServeQuadrant,
-                      receiveQuadrant,
+                      pendingPoint.winnerTeam,
+                      pendingPoint.loserTeam,
                       isDrawing,
                       startQuadrant,
                       activeQuadrant,
                     )
-                  : quadrantHighlightClass(label, startQuadrant, activeQuadrant, isDrawing)
+                  : showServeIndicators
+                    ? serveFeedbackQuadrantClass(
+                        label,
+                        activeServeQuadrant,
+                        receiveQuadrant,
+                        isDrawing,
+                        startQuadrant,
+                        activeQuadrant,
+                      )
+                    : quadrantHighlightClass(label, startQuadrant, activeQuadrant, isDrawing)
               }
             />
           ))}
@@ -882,12 +1101,7 @@ export function GestureAnnotationPad({
         {needsSetup && setupPhase === 'serve' ? (
           <CourtServeSetup padRef={padRef} onPickServe={handlePickServe} />
         ) : null}
-        {showServeVisual && activeServeQuadrant && receiveQuadrant ? (
-          <div className={`pointer-events-none absolute ${COURT_INSET} z-[2]`}>
-            <ServeDirectionGuide server={activeServeQuadrant} receive={receiveQuadrant} />
-          </div>
-        ) : null}
-        {showServeVisual ? (
+        {showMatchReady ? (
           <div className={`pointer-events-none absolute ${COURT_INSET} z-[3]`}>
             {QUADRANT_LABELS.map((label) => {
               const player = activePlayers?.[label]
@@ -919,8 +1133,11 @@ export function GestureAnnotationPad({
                       : undefined
                   }
                 >
-                  <GesturePadPlayerChip
+                  <DraggableGesturePadPlayerChip
                     player={player}
+                    quadrant={label}
+                    padRef={padRef}
+                    onSwapSide={handleSwapPlayerSide}
                     isCurrent={Boolean(currentUserId && player.id === currentUserId)}
                     currentUserAvatarUrl={currentUserAvatarUrl}
                     active={isActive}
@@ -955,21 +1172,22 @@ export function GestureAnnotationPad({
         )}
         <canvas ref={canvasRef} className="absolute inset-0 z-[2]" />
 
-        <div className="pointer-events-none absolute inset-x-0 top-[max(0.5rem,env(safe-area-inset-top))] z-20 flex flex-col items-center px-3">
+        <div className="pointer-events-none absolute inset-x-0 top-[max(0.5rem,env(safe-area-inset-top))] z-20 flex flex-col items-center gap-1 px-3">
           {(setupPhase === 'serve' || setupPhase === 'ready' || !needsSetup) ? (
-            <GesturePadScoreboard score={tennisScore} />
+            <>
+              <GesturePadScoreboard score={tennisScore} />
+              {padCaption ? (
+                <p
+                  className={`max-w-[92vw] truncate text-center text-xs font-semibold ${padCaptionTone} ${
+                    pulse ? 'scale-105' : ''
+                  } transition-transform`}
+                >
+                  {padCaption}
+                </p>
+              ) : null}
+            </>
           ) : null}
         </div>
-
-        {needsSetup && setupPhase === 'ready' ? (
-          <button
-            type="button"
-            onClick={handleEditPositions}
-            className="pointer-events-auto absolute right-3 top-[max(3.5rem,env(safe-area-inset-top))] z-20 rounded-full border border-white/35 bg-black/40 px-3 py-1 text-xs font-semibold text-white/90 backdrop-blur-sm sm:right-4"
-          >
-            Change
-          </button>
-        ) : null}
 
         {matchComplete && matchWinnerTeam ? (
           <GesturePadMatchComplete
@@ -987,18 +1205,6 @@ export function GestureAnnotationPad({
 
         {statsPlayer ? (
           <PlayerGameStatsModal stats={statsPlayer} onClose={() => setStatsPlayer(null)} />
-        ) : null}
-
-        {floatingLabel ? (
-          <div
-            className={`pointer-events-none absolute left-1/2 z-[3] max-w-[92%] -translate-x-1/2 rounded-full bg-black/45 px-4 py-2 text-center font-display text-lg font-bold backdrop-blur-sm transition-transform ${
-              needsSetup && setupPhase === 'ready'
-                ? 'bottom-[max(3.25rem,env(safe-area-inset-bottom))]'
-                : 'bottom-[max(1rem,env(safe-area-inset-bottom))]'
-            } ${pulse ? 'scale-105' : ''} ${floatingTone}`}
-          >
-            {floatingLabel}
-          </div>
         ) : null}
       </div>
     </div>

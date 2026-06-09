@@ -29,9 +29,15 @@ export type PlayerStatsSnapshot = {
 
 export type MatchPointEvent = {
   at: string
-  gestureId: string
   winner: MatchTeam
   scoreAfter: TennisScore
+  winnerGestureId: string
+  loserGestureId: string
+  winnerQuadrant: string
+  loserQuadrant: string
+  isServe?: boolean
+  /** @deprecated use winnerGestureId */
+  gestureId?: string
 }
 
 export type MatchSessionRecord = {
@@ -179,6 +185,27 @@ export function recordMatchGesture(sessionId: string, gestureId: string): void {
   }
 }
 
+export function attachLoserGestureToPoint(
+  sessionId: string,
+  winnerGestureId: string,
+  loserGestureId: string,
+  loserQuadrant: string,
+): void {
+  const sessions = readSessions()
+  const session = sessions[sessionId]
+  if (!session) return
+
+  const idx = session.pointEvents.findIndex((event) => event.winnerGestureId === winnerGestureId)
+  if (idx < 0) return
+
+  session.pointEvents[idx] = {
+    ...session.pointEvents[idx]!,
+    loserGestureId,
+    loserQuadrant,
+  }
+  writeSessions(sessions)
+}
+
 export function recordMatchPoint(
   sessionId: string,
   event: Omit<MatchPointEvent, 'at'> & { at?: string },
@@ -189,9 +216,14 @@ export function recordMatchPoint(
   session.pointEvents = [
     {
       at: event.at ?? new Date().toISOString(),
-      gestureId: event.gestureId,
       winner: event.winner,
       scoreAfter: event.scoreAfter,
+      winnerGestureId: event.winnerGestureId,
+      loserGestureId: event.loserGestureId,
+      winnerQuadrant: event.winnerQuadrant,
+      loserQuadrant: event.loserQuadrant,
+      isServe: event.isServe,
+      gestureId: event.winnerGestureId,
     },
     ...session.pointEvents,
   ]

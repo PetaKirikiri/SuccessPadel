@@ -1,4 +1,6 @@
 import type { Quadrant } from './gestureCapture'
+import type { MatchTeam } from './types'
+import { quadrantTeam } from './gestureScoring'
 
 export function gestureHapticStart(): void {
   navigator.vibrate?.(10)
@@ -40,12 +42,39 @@ export function serveFeedbackQuadrantClass(
   start: Quadrant | null,
   active: Quadrant | null,
 ): string {
-  if (isDrawing) return quadrantHighlightClass(label, start, active, true)
-  if (label === receive) {
-    return 'animate-pulse bg-amber-300/35 ring-2 ring-inset ring-amber-200/95 transition-colors duration-300'
-  }
   if (label === server) {
-    return 'bg-emerald-300/18 ring-1 ring-inset ring-emerald-200/60 transition-colors duration-300'
+    return 'animate-pulse bg-emerald-200/40 ring-2 ring-inset ring-emerald-100/90 transition-colors duration-300'
   }
+  if (label === receive) {
+    return 'bg-amber-300/8 ring-1 ring-inset ring-amber-200/25 transition-colors duration-300'
+  }
+  if (isDrawing) return quadrantHighlightClass(label, start, active, true)
+  return 'bg-black/5'
+}
+
+const LOSER_SIDE_CLASS =
+  'bg-rose-400/28 ring-2 ring-inset ring-rose-200/70 transition-colors duration-300'
+
+export function pointExchangeHighlightClass(
+  label: Quadrant,
+  winnerTeam: MatchTeam,
+  loserTeam: MatchTeam,
+  isDrawing: boolean,
+  start: Quadrant | null,
+  active: Quadrant | null,
+): string {
+  const onLoserTeam = quadrantTeam(label) === loserTeam
+  const onWinnerTeam = quadrantTeam(label) === winnerTeam
+
+  if (isDrawing && start && quadrantTeam(start) === loserTeam) {
+    if (onLoserTeam && (label === start || label === active)) {
+      return 'bg-rose-400/38 ring-2 ring-inset ring-white/85 transition-colors duration-300'
+    }
+    if (onLoserTeam) return LOSER_SIDE_CLASS
+    return 'bg-black/5'
+  }
+
+  if (onLoserTeam) return LOSER_SIDE_CLASS
+  if (onWinnerTeam) return 'bg-black/5'
   return 'bg-black/5'
 }

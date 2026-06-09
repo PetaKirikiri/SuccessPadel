@@ -34,6 +34,14 @@ export function dropHalfFromX(clientX: number, rect: DOMRect): CourtHalf {
   return clientX - rect.left < rect.width / 2 ? 'left' : 'right'
 }
 
+export function quadrantHalf(q: Quadrant): CourtHalf {
+  return q === 'TL' || q === 'BL' ? 'left' : 'right'
+}
+
+export function teamForQuadrant(q: Quadrant): CourtTeam {
+  return q === 'TL' || q === 'TR' ? 'a' : 'b'
+}
+
 /** First server from a left/right half tap (top vs bottom by Y). */
 export function serverQuadrantFromHalfTap(
   half: CourtHalf,

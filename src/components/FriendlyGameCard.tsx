@@ -1,19 +1,23 @@
-import type { ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { CompetitionLayoutPreview } from './CompetitionLayoutPreview'
 import { useTranslation } from '../hooks/useTranslation'
+import { translateCountdownLabel } from '../i18n/competitionLabels'
 import { firstDisplayName } from '../lib/leaderboardEntries'
+import { competitionCountdown } from '../lib/competitionListCard'
 import type { FriendlyGameRecord } from '../lib/friendlyGames'
 import {
   DEFAULT_FRIENDLY_ORGANIZED_CONFIG,
   friendlyOrganizedSession,
   friendlyPreviewGames,
   friendlyStartsAtIso,
+  isFreeFriendly,
   isOrganizedFriendly,
 } from '../lib/friendlyGames'
 import type { FriendlyRosterSlot } from '../lib/friendlyGameDisplay'
 import {
   friendlyEndTimeLabel,
+  friendlyListCardTiming,
   friendlyRosterSlots,
   friendlyRulesSummary,
   friendlyWhenLabel,
@@ -86,7 +90,8 @@ export function FriendlyGameCard({
   className = '',
 }: Props) {
   const { t } = useTranslation()
-  const isFree = game.playMode === 'free'
+  const [now, setNow] = useState(Date.now())
+  const isFree = isFreeFriendly(game)
   const slots = friendlyRosterSlots(game)
   const filled = slots.filter((s) => !s.vacant).length
   const when = friendlyWhenLabel(game)
@@ -94,9 +99,19 @@ export function FriendlyGameCard({
   const rulesLine = friendlyRulesSummary(game)
   const mode = isFree ? t('friendly.freePlay') : t('friendly.organizedPlay')
   const spots = `${filled}/${slots.length}`
-  const meta = [`${when}${endTime ? `–${endTime}` : ''}`, mode, spots]
-    .filter(Boolean)
-    .join(' · ')
+  const meta = [`${when}${endTime ? `–${endTime}` : ''}`, mode, spots].filter(Boolean).join(' · ')
+  const timing = friendlyListCardTiming(game)
+
+  useEffect(() => {
+    if (!timing) return
+    const tick = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(tick)
+  }, [timing])
+
+  const countdown = useMemo(
+    () => (timing ? competitionCountdown(timing, now) : null),
+    [timing, now],
+  )
 
   const organizedConfig = game.organizedConfig ?? DEFAULT_FRIENDLY_ORGANIZED_CONFIG
   const previewGames = friendlyPreviewGames(game, courtNames, game.profileAvatars)
@@ -115,6 +130,11 @@ export function FriendlyGameCard({
           <p className="mt-0.5 text-[11px] leading-snug text-brand-muted">{meta}</p>
           {rulesLine ? (
             <p className="mt-0.5 text-[11px] leading-snug text-brand-muted">{rulesLine}</p>
+          ) : null}
+          {countdown ? (
+            <p className="mt-0.5 text-[11px] tabular-nums text-brand-muted">
+              {translateCountdownLabel(t, countdown.label)} {countdown.value}
+            </p>
           ) : null}
           <div className="mt-1.5">
             <AvatarStack slots={slots} currentUserId={currentUserId} />
@@ -151,7 +171,7 @@ export function FriendlyGameCard({
         </div>
       ) : null}
 
-      {isAdmin && isFree ? (
+      {isAdmin && isFree && to ? (
         <div className="border-t border-brand-border/60 px-3 py-2.5">
           <Link
             to={`/friendly/${game.id}/pad`}

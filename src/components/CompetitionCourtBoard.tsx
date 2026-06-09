@@ -1006,13 +1006,15 @@ export function CompetitionCourtBoard({
   const gesturePadEnabled = Boolean(sessionId && isAdmin && currentUserId)
   const scoringTimeUnlocked = isScoringTimeUnlocked()
 
+  const previewTimed = mode === 'preview' && Boolean(roundTimesByGame?.size)
+
   useEffect(() => {
-    if (mode !== 'scoring') return
+    if (mode !== 'scoring' && !previewTimed) return
     const t = setInterval(() => setTick(Date.now()), 1000)
     return () => clearInterval(t)
-  }, [mode])
+  }, [mode, previewTimed])
 
-  const clock = mode === 'scoring' ? tick : (now ?? tick)
+  const clock = mode === 'scoring' || previewTimed ? tick : (now ?? tick)
   const prevRemainingMsRef = useRef(new Map<number, number>())
   const alarmedGamesRef = useRef(new Set<number>())
 
@@ -1105,7 +1107,8 @@ export function CompetitionCourtBoard({
         const courtsForGame = liveCourtsByGame?.get(game.gameNumber) ?? []
         const gameRoundId =
           roundIdForGame?.(game.gameNumber) ?? (isActive ? roundId : undefined)
-        const isLiveNow = mode === 'scoring' && isGameLive(clock, times)
+        const timedMode = mode === 'scoring' || previewTimed
+        const isLiveNow = timedMode && isGameLive(clock, times)
         const timeUp = isGameTimeUp(
           game.gameNumber,
           clock,
@@ -1115,10 +1118,12 @@ export function CompetitionCourtBoard({
         const submitted =
           matchForCourt != null
             ? isGameSubmitted(game, gameRoundId, courtsForGame, courtIdByLabel, matchForCourt)
-            : timeUp && roundStatus === 'complete'
+            : previewTimed
+              ? timeUp
+              : timeUp && roundStatus === 'complete'
         const finished = submitted
         const countdown =
-          mode === 'scoring' && !submitted
+          timedMode && !submitted && times
             ? gameCountdown(clock, times, gameMinutes)
             : null
         const state = countdownState(clock, times, timeUp)

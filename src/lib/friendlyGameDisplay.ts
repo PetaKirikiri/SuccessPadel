@@ -1,3 +1,4 @@
+import { courtsNeeded } from './competitionLayout'
 import {
   americanoTargetLabel,
   partnerStyleLabel,
@@ -7,10 +8,13 @@ import {
 import { clubHourToDate, formatClubDateShort, formatHourLabel, parseClubDate } from './courtSchedule'
 import {
   DEFAULT_FRIENDLY_ORGANIZED_CONFIG,
+  friendlyFilledSlots,
   friendlyOrganizedSession,
+  friendlyStartsAtIso,
   friendlyVacantSlots,
   type FriendlyGameRecord,
 } from './friendlyGames'
+import type { GameSession } from './types'
 
 export type FriendlyRosterSlot = {
   name: string
@@ -42,7 +46,7 @@ export function friendlyWhenLabel(game: FriendlyGameRecord): string {
   const config = game.organizedConfig ?? DEFAULT_FRIENDLY_ORGANIZED_CONFIG
   if (game.playMode !== 'free' && config.day) {
     const date = formatClubDateShort(parseClubDate(config.day))
-    return `${date} · ${formatHourLabel(config.startHour)}`
+    return `${date} · ${formatHourLabel(config.startHour, config.startMinute ?? 0)}`
   }
   return new Intl.DateTimeFormat('en-GB', {
     timeZone: BANGKOK,
@@ -104,7 +108,7 @@ export function friendlyEndTimeLabel(game: FriendlyGameRecord): string | null {
   if (game.playMode === 'free') return null
   const config = game.organizedConfig ?? DEFAULT_FRIENDLY_ORGANIZED_CONFIG
   if (!config.day) return null
-  const start = clubHourToDate(config.day, config.startHour)
+  const start = clubHourToDate(config.day, config.startHour, config.startMinute ?? 0)
   const totalMin =
     config.gameCount * config.gameMinutes + Math.max(0, config.gameCount - 1) * config.breakMinutes
   const end = new Date(start.getTime() + totalMin * 60_000)
@@ -113,4 +117,45 @@ export function friendlyEndTimeLabel(game: FriendlyGameRecord): string | null {
 
 export function friendlyOpenSpots(game: FriendlyGameRecord): number {
   return friendlyVacantSlots(game)
+}
+
+export function friendlyListCardTiming(
+  game: FriendlyGameRecord,
+): Pick<GameSession, 'starts_at' | 'ends_at' | 'status' | 'scoring_config'> | null {
+  if (game.playMode === 'free') return null
+  const config = game.organizedConfig ?? DEFAULT_FRIENDLY_ORGANIZED_CONFIG
+  if (!config.day) return null
+  const starts_at = friendlyStartsAtIso(config)
+  if (!starts_at) return null
+  const start = clubHourToDate(config.day, config.startHour, config.startMinute ?? 0)
+  const totalMin =
+    config.gameCount * config.gameMinutes +
+    Math.max(0, config.gameCount - 1) * config.breakMinutes
+  const ends_at = new Date(start.getTime() + totalMin * 60_000).toISOString()
+  const session = friendlyOrganizedSession(config)
+  return {
+    starts_at,
+    ends_at,
+    status: game.status === 'complete' ? 'complete' : 'open',
+    scoring_config: {
+      ...session.scoring_config,
+      americano_games: config.gameCount,
+      break_minutes: config.breakMinutes,
+      game_minutes: config.gameMinutes,
+    },
+  }
+}
+
+export function friendlyLayoutSpiel(game: FriendlyGameRecord): string {
+  if (game.playMode === 'free') return ''
+  const config = game.organizedConfig ?? DEFAULT_FRIENDLY_ORGANIZED_CONFIG
+  const rosterCount = friendlyFilledSlots(game)
+  const courts = courtsNeeded(Math.max(rosterCount, 4))
+  const parts = [friendlyRulesSummary(game)]
+  if (courts > 0) parts.push(`${courts} court${courts === 1 ? '' : 's'}`)
+  if (rosterCount > 0) parts.push(`${rosterCount} players`)
+  parts.push(
+    `${config.gameCount} games · ${config.gameMinutes} min + ${config.breakMinutes} min break`,
+  )
+  return parts.filter(Boolean).join(' · ')
 }

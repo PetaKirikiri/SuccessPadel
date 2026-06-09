@@ -58,3 +58,11 @@ export function courtShotZoneFromPoint(
   }
   return courtShotZoneFromY(point.y)
 }
+
+/** Volley vs ground stroke is decided by the first anchor (stroke start). */
+export function isVolleyZoneStart(
+  start: { x: number; y: number },
+  startQuadrant: 'TL' | 'TR' | 'BL' | 'BR',
+): boolean {
+  return courtShotZoneFromPoint(start, startQuadrant) === 'inner'
+}

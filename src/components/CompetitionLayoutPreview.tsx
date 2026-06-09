@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import type { GameRound } from '../lib/americanoSchedule'
+import { breakMinutesFromConfig, gameSlotTimes } from '../lib/competitionLayout'
 import { americanoScoringUnit } from '../lib/competitionPresets'
 import { pivotScheduleByCourt } from '../lib/competitionCourtBoard'
 import type { GameSession } from '../lib/types'
@@ -29,17 +30,33 @@ export function CompetitionLayoutPreview({
   currentUserAvatarUrl,
 }: Props) {
   const scoreUnit = americanoScoringUnit(session)
+  const breakMinutes = breakMinutesFromConfig(session.scoring_config)
 
   const columns = useMemo(
-    () => pivotScheduleByCourt(games, eventStartsAt, gameMinutes),
-    [games, eventStartsAt, gameMinutes],
+    () => pivotScheduleByCourt(games, eventStartsAt, gameMinutes, breakMinutes),
+    [breakMinutes, games, eventStartsAt, gameMinutes],
   )
+
+  const roundTimesByGame = useMemo(() => {
+    if (!eventStartsAt) return undefined
+    const map = new Map<number, { startsAt: number; endsAt: number }>()
+    for (const game of games) {
+      const slot = gameSlotTimes(eventStartsAt, game.gameNumber, gameMinutes, breakMinutes)
+      map.set(game.gameNumber, {
+        startsAt: slot.startsAt.getTime(),
+        endsAt: slot.endsAt.getTime(),
+      })
+    }
+    return map
+  }, [breakMinutes, eventStartsAt, gameMinutes, games])
 
   return (
     <CompetitionCourtBoard
       columns={columns}
       mode="preview"
       scoreUnit={scoreUnit}
+      gameMinutes={gameMinutes}
+      roundTimesByGame={roundTimesByGame}
       friendlySessionId={friendlySessionId}
       friendly={friendly}
       isAdmin={isAdmin}

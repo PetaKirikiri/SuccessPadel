@@ -29,6 +29,7 @@ export type FriendlyVisibility = 'public' | 'private'
 export type FriendlyOrganizedConfig = {
   day: string
   startHour: number
+  startMinute?: number
   ruleFormat: RuleFormat
   partnerStyle: PartnerStyle
   americanoScoring: AmericanoScoringChoice
@@ -40,7 +41,7 @@ export type FriendlyOrganizedConfig = {
 
 export function friendlyStartsAtIso(config: FriendlyOrganizedConfig): string | undefined {
   if (!config.day) return undefined
-  return toIsoTimestamp(config.day, config.startHour)
+  return toIsoTimestamp(config.day, config.startHour, config.startMinute ?? 0)
 }
 
 export const DEFAULT_FRIENDLY_ORGANIZED_CONFIG: FriendlyOrganizedConfig = {
@@ -70,7 +71,11 @@ export type FriendlyGameRecord = {
 }
 
 export function isOrganizedFriendly(game: FriendlyGameRecord): boolean {
-  return game.playMode !== 'free'
+  return game.playMode === 'organized'
+}
+
+export function isFreeFriendly(game: FriendlyGameRecord): boolean {
+  return !isOrganizedFriendly(game)
 }
 
 export function isPublicFriendly(game: FriendlyGameRecord): boolean {
