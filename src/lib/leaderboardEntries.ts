@@ -21,13 +21,21 @@ export function isClaimableGuest(e: LeaderboardEntry): boolean {
   return Boolean(e.is_guest && e.padel_player_id)
 }
 
+function isNumberedPlayerLabel(name: string): boolean {
+  return /^Player\s+\S+$/i.test(name.trim())
+}
+
 export function firstDisplayName(fullName: string | null | undefined): string {
-  const tokens = (fullName ?? '').trim().split(/\s+/).filter(Boolean)
+  const trimmed = (fullName ?? '').trim()
+  if (isNumberedPlayerLabel(trimmed)) return trimmed
+  const tokens = trimmed.split(/\s+/).filter(Boolean)
   return tokens[0] ?? 'Player'
 }
 
 function nameTokens(fullName: string): { first: string } {
-  const tokens = fullName.trim().split(/\s+/).filter(Boolean)
+  const trimmed = fullName.trim()
+  if (isNumberedPlayerLabel(trimmed)) return { first: trimmed }
+  const tokens = trimmed.split(/\s+/).filter(Boolean)
   const first = tokens[0] ?? 'Player'
   return { first }
 }

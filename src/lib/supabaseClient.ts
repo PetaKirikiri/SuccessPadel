@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { AUTH_STORAGE_KEY, authStorage } from './auth/authStorage'
 
 const url = import.meta.env.VITE_SUPABASE_URL
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -12,7 +13,8 @@ export const supabase = createClient(url ?? '', anonKey ?? '', {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storageKey: 'success-padel-auth',
+    storage: authStorage,
+    storageKey: AUTH_STORAGE_KEY,
   },
 })
 

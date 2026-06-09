@@ -1,23 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
-  AMERICANO_DEFAULT_TARGET,
-  AMERICANO_TARGETS,
   type AmericanoScoringChoice,
   americanoScoringFromConfig,
-  americanoTargetLabel,
   buildAmericanoScoringConfig,
   buildCompetitionTitle,
   buildRulesText,
   DURATIONS,
   GENDERS,
-  partnerStyleLabel,
   partnershipModeToRules,
   PLAYER_CAPS,
-  ruleFormatLabel,
   rulesToPartnershipMode,
-  RULE_FORMATS,
-  PARTNER_STYLES,
   SKILL_LEVELS,
   type Gender,
   type PartnerStyle,
@@ -39,6 +32,7 @@ import {
 } from '../lib/competitionFormDraft'
 import type { CompetitionPlayer } from '../hooks/useCompetitions'
 import { CompetitionLayoutPreview } from '../components/CompetitionLayoutPreview'
+import { CompetitionRulesSetup } from '../components/CompetitionRulesSetup'
 import { CompetitionPlayerSlots } from '../components/CompetitionPlayerSlots'
 import { CompetitionSchedulePreview } from '../components/CompetitionSchedulePreview'
 import { CompetitionScheduleQualityFeedback } from '../components/CompetitionScheduleQualityFeedback'
@@ -50,7 +44,6 @@ import {
   gameMinutesFromConfig,
   isValidCourtLayout,
   planAmericanoSchedule,
-  totalScheduleMinutes,
 } from '../lib/competitionLayout'
 import { rosterFromSlots } from '../lib/rosterPreview'
 import {
@@ -102,9 +95,7 @@ export function CompetitionForm() {
   const [targetPlayers, setTargetPlayers] = useState<4 | 8 | 12 | 16>(8)
   const [ruleFormat, setRuleFormat] = useState<RuleFormat>('king_of_court')
   const [partnerStyle, setPartnerStyle] = useState<PartnerStyle>('swapped')
-  const [americanoScoring, setAmericanoScoring] = useState<AmericanoScoringChoice>(
-    AMERICANO_DEFAULT_TARGET,
-  )
+  const [americanoScoring, setAmericanoScoring] = useState<AmericanoScoringChoice>('open')
   const [gameCount, setGameCount] = useState(7)
   const [gameMinutes, setGameMinutes] = useState(14)
   const [breakMinutes, setBreakMinutes] = useState(3)
@@ -238,13 +229,8 @@ export function CompetitionForm() {
     (): Pick<GameSession, 'partnership_mode' | 'rules' | 'scoring_config'> => ({
       partnership_mode: 'americano',
       rules: buildRulesText('americano', null, {
-        target:
-          americanoScoring === 'open'
-            ? undefined
-            : americanoScoring === 4
-              ? 4
-              : americanoScoring,
-        unit: americanoScoring === 'open' ? 'open' : americanoScoring === 4 ? 'sets' : 'points',
+        target: americanoScoring === 'open' ? undefined : americanoScoring,
+        unit: americanoScoring === 'open' ? 'open' : 'games',
       }),
       scoring_config: buildAmericanoScoringConfig(americanoScoring, {
         games: gameCount,
@@ -631,115 +617,25 @@ export function CompetitionForm() {
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">Rules</span>
-            <div className="flex flex-wrap gap-1.5">
-              {RULE_FORMATS.map((format) => (
-                <Chip
-                  key={format}
-                  active={ruleFormat === format}
-                  onClick={() => setRuleFormat(format)}
-                >
-                  {ruleFormatLabel(format)}
-                </Chip>
-              ))}
-            </div>
-          </div>
-
-          {ruleFormat === 'americano' && (
-            <>
-              <div className="space-y-1.5">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-                  Scoring
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {AMERICANO_TARGETS.map((n) => (
-                    <Chip
-                      key={n}
-                      active={americanoScoring === n}
-                      onClick={() => setAmericanoScoring(n)}
-                    >
-                      {americanoTargetLabel(n)}
-                    </Chip>
-                  ))}
-                  <Chip
-                    active={americanoScoring === 'open'}
-                    onClick={() => setAmericanoScoring('open')}
-                  >
-                    Open
-                  </Chip>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <label className="block space-y-1">
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-                    Games
-                  </span>
-                  <input
-                    type="number"
-                    min={5}
-                    max={11}
-                    value={gameCount}
-                    onChange={(e) =>
-                      setGameCount(Math.max(5, Math.min(11, Number(e.target.value) || 7)))
-                    }
-                    className="brand-input"
-                  />
-                </label>
-                <label className="block space-y-1">
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-                    Game time (min)
-                  </span>
-                  <input
-                    type="number"
-                    min={8}
-                    max={30}
-                    value={gameMinutes}
-                    onChange={(e) => setGameMinutes(Math.max(8, Math.min(30, Number(e.target.value) || 14)))}
-                    className="brand-input"
-                  />
-                </label>
-                <label className="block space-y-1">
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-                    Rest (min)
-                  </span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={10}
-                    value={breakMinutes}
-                    onChange={(e) =>
-                      setBreakMinutes(Math.max(1, Math.min(10, Number(e.target.value) || 3)))
-                    }
-                    className="brand-input"
-                  />
-                </label>
-              </div>
-
-              <p className="text-xs text-brand-muted tabular-nums">
-                Uses {totalScheduleMinutes(gameCount, gameMinutes, breakMinutes)} / {eventMinutes}{' '}
-                min
-              </p>
-            </>
-          )}
-
-          {ruleFormat === 'king_of_court' && (
-            <div className="space-y-1.5">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">Partners</span>
-              <div className="flex flex-wrap gap-1.5">
-                {PARTNER_STYLES.map((style) => (
-                  <Chip
-                    key={style}
-                    active={partnerStyle === style}
-                    onClick={() => setPartnerStyle(style)}
-                  >
-                    {partnerStyleLabel(style)}
-                  </Chip>
-                ))}
-              </div>
-            </div>
-          )}
+          <CompetitionRulesSetup
+            value={{
+              ruleFormat,
+              partnerStyle,
+              americanoScoring,
+              gameCount,
+              gameMinutes,
+              breakMinutes,
+            }}
+            onChange={(patch) => {
+              if (patch.ruleFormat !== undefined) setRuleFormat(patch.ruleFormat)
+              if (patch.partnerStyle !== undefined) setPartnerStyle(patch.partnerStyle)
+              if (patch.americanoScoring !== undefined) setAmericanoScoring(patch.americanoScoring)
+              if (patch.gameCount !== undefined) setGameCount(patch.gameCount)
+              if (patch.gameMinutes !== undefined) setGameMinutes(patch.gameMinutes)
+              if (patch.breakMinutes !== undefined) setBreakMinutes(patch.breakMinutes)
+            }}
+            eventMinutes={eventMinutes}
+          />
 
           <label className="block space-y-1">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">Name</span>

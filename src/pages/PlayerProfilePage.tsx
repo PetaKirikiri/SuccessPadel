@@ -201,7 +201,10 @@ export function PlayerProfilePage() {
               }
             >
               {tab === 'history' ? (
-                <PlayerMatchHistory playerId={playerId} embedded />
+                <PlayerMatchHistory
+                  playerId={profileId ?? padelPlayerId ?? playerId}
+                  embedded
+                />
               ) : isOwnProfile && authProfile ? (
                 <>
                   <div className="px-4 py-3 md:px-5">

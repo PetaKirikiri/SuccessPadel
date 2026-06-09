@@ -91,6 +91,16 @@ function mergeLineUser(
   return { sub: tokenUser.sub, name, picture }
 }
 
+async function magicLinkEmailForUser(
+  admin: ReturnType<typeof createClient>,
+  userId: string,
+  fallbackEmail: string,
+): Promise<string> {
+  const { data, error } = await admin.auth.admin.getUserById(userId)
+  if (error) throw error
+  return data.user.email ?? fallbackEmail
+}
+
 async function sessionForLineUser(admin: ReturnType<typeof createClient>, lineUser: LineUser) {
   const email = `line_${lineUser.sub}@successpadel.local`
 
@@ -154,9 +164,10 @@ async function sessionForLineUser(admin: ReturnType<typeof createClient>, lineUs
     })
   }
 
+  const linkEmail = await magicLinkEmailForUser(admin, userId, email)
   const { data: link, error: linkErr } = await admin.auth.admin.generateLink({
     type: 'magiclink',
-    email,
+    email: linkEmail,
   })
   if (linkErr) throw linkErr
 

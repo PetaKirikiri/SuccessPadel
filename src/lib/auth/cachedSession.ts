@@ -1,14 +1,11 @@
 import type { Session } from '@supabase/supabase-js'
+import { AUTH_STORAGE_KEY, hasPersistedAuthRecord } from './authStorage'
 import { supabase } from '../supabaseClient'
 
-export const AUTH_STORAGE_KEY = 'success-padel-auth'
+export { AUTH_STORAGE_KEY }
 
 export function hasCachedAuthStorage(): boolean {
-  try {
-    return Boolean(localStorage.getItem(AUTH_STORAGE_KEY))
-  } catch {
-    return false
-  }
+  return hasPersistedAuthRecord()
 }
 
 /** True when this browser has logged in before (session may have expired). */
@@ -16,19 +13,31 @@ export function hadPreviousLogin(): boolean {
   return hasCachedAuthStorage()
 }
 
-/** Read persisted Supabase session from browser storage before showing a new-account QR. */
+function sessionExpiresSoon(session: Session, skewMs = 60_000): boolean {
+  const expiresAt = session.expires_at
+  if (!expiresAt) return false
+  return expiresAt * 1000 < Date.now() + skewMs
+}
+
+async function refreshPersistedSession(): Promise<Session | null> {
+  const { data, error } = await supabase.auth.refreshSession()
+  if (error || !data.session?.user) return null
+  return data.session
+}
+
+/** Restore Supabase session from browser storage and refresh if needed. */
 export async function tryRestoreCachedSession(): Promise<Session | null> {
   if (!hasCachedAuthStorage()) return null
 
   const { data, error } = await supabase.auth.getSession()
-  if (error || !data.session?.user) return null
+  if (error) return refreshPersistedSession()
 
-  const expiresAt = data.session.expires_at
-  if (expiresAt && expiresAt * 1000 < Date.now()) {
-    const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession()
-    if (refreshError || !refreshed.session?.user) return null
-    return refreshed.session
+  const session = data.session
+  if (!session?.user) return refreshPersistedSession()
+  if (sessionExpiresSoon(session)) {
+    const refreshed = await refreshPersistedSession()
+    return refreshed ?? session
   }
 
-  return data.session
+  return session
 }

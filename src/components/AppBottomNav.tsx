@@ -4,35 +4,19 @@ import { useTranslation } from '../hooks/useTranslation'
 
 type NavIconProps = { className?: string }
 
-function IconRank({ className }: NavIconProps) {
+function IconFriendly({ className }: NavIconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden>
+      <rect x="3" y="5" width="18" height="14" rx="2" fill="currentColor" opacity="0.2" />
       <path
-        d="M12 3l2.2 4.5 5 .7-3.6 3.5.85 5L12 14.8 7.55 16.7l.85-5L4.8 8.2l5-.7L12 3z"
-        fill="currentColor"
-        opacity="0.28"
-      />
-      <path
-        d="M12 3l2.2 4.5 5 .7-3.6 3.5.85 5L12 14.8 7.55 16.7l.85-5L4.8 8.2l5-.7L12 3z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M5 19.5h14"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-      />
-      <path
-        d="M8 19.5V16.8M12 19.5V15.2M16 19.5V17"
+        d="M3 12h18M12 5v14"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
       />
+      <circle cx="8" cy="9" r="1.25" fill="currentColor" />
+      <circle cx="16" cy="15" r="1.25" fill="currentColor" />
     </svg>
   )
 }
@@ -70,20 +54,30 @@ function IconCompetition({ className }: NavIconProps) {
 
 type NavVariant = 'rank' | 'competition'
 
+function isCompetitivePath(path: string): boolean {
+  return path === '/competitive' || path.startsWith('/competitions')
+}
+
 const navItems: {
   to: string
-  labelKey: 'nav.leaderboard' | 'nav.competition'
+  labelKey: 'nav.friendly' | 'nav.competitive'
   Icon: (props: NavIconProps) => React.ReactElement
   variant: NavVariant
-  match: RegExp
+  isActive: (path: string) => boolean
 }[] = [
-  { to: '/', labelKey: 'nav.leaderboard', Icon: IconRank, variant: 'rank', match: /^\/$/ },
   {
-    to: '/competitions',
-    labelKey: 'nav.competition',
+    to: '/friendly',
+    labelKey: 'nav.friendly',
+    Icon: IconFriendly,
+    variant: 'rank',
+    isActive: (path) => path === '/friendly' || path.startsWith('/friendly/'),
+  },
+  {
+    to: '/competitive',
+    labelKey: 'nav.competitive',
     Icon: IconCompetition,
     variant: 'competition',
-    match: /^\/competitions/,
+    isActive: isCompetitivePath,
   },
 ]
 
@@ -99,7 +93,7 @@ export function AppBottomNav() {
     <nav className="game-dock w-full min-w-0 shrink-0" aria-label={t('aria.playModes')}>
       <div className="game-dock-inner min-w-0 max-w-full">
         {navItems.map((item) => {
-          const active = item.match.test(loc.pathname)
+          const active = item.isActive(loc.pathname)
           const iconSize = 'h-5 w-5 md:h-6 md:w-6'
           return (
             <Link key={item.to} to={item.to} className={tabClass(active, item.variant)}>

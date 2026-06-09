@@ -1,6 +1,7 @@
 import type { CompetitionPlayer } from '../hooks/useCompetitions'
 import { rosterDisplayName } from '../hooks/useCompetitions'
 import { courtsNeeded } from './competitionLayout'
+import type { PlaySide } from './types'
 
 type AssignmentRecord = {
   roundNumber: number
@@ -26,6 +27,7 @@ export type CourtPlayer = {
   id: string | null
   name: string
   avatarUrl: string | null
+  preferredSide?: PlaySide | null
 }
 
 function partnerCount(

@@ -105,7 +105,13 @@ export function competitionLayoutSpiel(row: CompetitionRow): string {
     const unit = americanoScoringUnit(row)
     const target = americanoScoreTarget(row)
     const score =
-      unit === 'open' ? 'open score' : unit === 'sets' ? `${target ?? 4} sets` : `${target ?? 24} pts`
+      unit === 'open'
+        ? 'open'
+        : unit === 'games'
+          ? `${target ?? 6} games`
+          : unit === 'sets'
+            ? `${target ?? 4} sets`
+            : `${target ?? 24} pts`
     parts.push(`Americano · ${score}`)
   } else if (row.rules) {
     parts.push(row.rules.split('\n')[0] ?? row.rules)

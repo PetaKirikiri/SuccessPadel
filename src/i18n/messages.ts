@@ -25,6 +25,61 @@ export type Messages = {
   nav: {
     leaderboard: string
     competition: string
+    friendly: string
+    competitive: string
+  }
+  friendly: {
+    title: string
+    startMatch: string
+    addPlayer: string
+    guestName: string
+    adminOnly: string
+    addGame: string
+    addGameFab: string
+    listHint: string
+    noGames: string
+    nameLabel: string
+    namePlaceholder: string
+    playerNames: string
+    addPlayerSlot: string
+    public: string
+    private: string
+    join: string
+    onRoster: string
+    openSpots: string
+    tapToJoin: string
+    freePlay: string
+    organizedPlay: string
+    courtPreview: string
+    accept: string
+    openPad: string
+    games: string
+    publishFailed: string
+    signInRequired: string
+    leaderboard: string
+    leaderboardSubtitle: string
+    noLeaderboardScores: string
+    noLeaderboardHint: string
+    card: {
+      when: string
+      posted: string
+      settings: string
+      players: string
+      spotOpen: string
+      spotsOpen: string
+    }
+    hint: {
+      when: string
+      posted: string
+      settings: string
+      players: string
+      format: string
+      partners: string
+      scoring: string
+      rounds: string
+      gameMinutes: string
+      break: string
+    }
   }
   login: {
     pitch: string
@@ -37,6 +92,8 @@ export type Messages = {
     player: string
     pts: string
     sets: string
+    games: string
+    wins: string
     add: string
     addLine: string
     leaderFooter: string
@@ -77,6 +134,9 @@ export type Messages = {
     roundCourt: string
     moreWinners: string
   }
+  hub: {
+    seasonLeaderboard: string
+  }
   competition: {
     games: string
     leaderboard: string
@@ -115,6 +175,7 @@ export type Messages = {
     game: string
     video: string
     scoreSets: string
+    scoreGames: string
     scorePts: string
     scoreOpen: string
     teamA: string
@@ -148,6 +209,11 @@ export type Messages = {
     scanQrSubhead: string
     notConfigured: string
     checkingSession: string
+    emailSectionTitle: string
+    emailLabel: string
+    passwordLabel: string
+    emailSignIn: string
+    emailSigningIn: string
   }
   lineLink: {
     title: string

@@ -15,7 +15,12 @@ export type RoundPlayer = {
     guest_name: string | null
     profile_id: string | null
     padel_player_id: string | null
-    profiles: { id: string; display_name: string; avatar_url?: string | null } | null
+    profiles: {
+      id: string
+      display_name: string
+      avatar_url?: string | null
+      preferred_side?: string | null
+    } | null
   } | null
   courts: { id: string; name: string } | null
 }
@@ -77,7 +82,7 @@ export function useCompetitionRun(sessionId: string | undefined) {
         .select(
           `*,
            competition_round_players(court_id, team, roster_entry_id, profile_id,
-             session_players(guest_name, profile_id, profiles(id, display_name, avatar_url)),
+             session_players(guest_name, profile_id, profiles(id, display_name, avatar_url, preferred_side)),
              courts(id, name))`,
         )
         .eq('session_id', sessionId)

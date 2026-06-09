@@ -5,12 +5,13 @@ import type { TranslateFn } from '../i18n'
 import { competitionJoinUrl } from '../lib/siteUrl'
 import { canJoinGame, rosterLabel } from '../lib/playerCaps'
 import { supabase } from '../lib/supabaseClient'
+import { GamesHubEmpty, GamesHubLoading } from './GamesHubView'
 import { CompetitionCurrentGameCard } from './CompetitionCurrentGameCard'
 import { CompetitionGuestRoster } from './CompetitionGuestRoster'
 import { CompetitionSetupPanel } from './CompetitionSetupPanel'
 import type { CompetitionRow } from '../hooks/useCompetitions'
 
-type ListTab = 'current' | 'past'
+export type CompetitionListTab = 'current' | 'past'
 
 type Props = {
   rows: CompetitionRow[]
@@ -19,6 +20,23 @@ type Props = {
   isAdmin: boolean
   userId?: string
   onRefresh: () => void
+  listTab?: CompetitionListTab
+  showListTabs?: boolean
+}
+
+export function splitCompetitionRows(rows: CompetitionRow[]) {
+  const current: CompetitionRow[] = []
+  const past: CompetitionRow[] = []
+  for (const row of rows) {
+    if (row.status === 'complete') past.push(row)
+    else current.push(row)
+  }
+  past.sort((a, b) => {
+    const ta = Date.parse(a.competition_started_at ?? a.starts_at ?? '')
+    const tb = Date.parse(b.competition_started_at ?? b.starts_at ?? '')
+    return (Number.isFinite(tb) ? tb : 0) - (Number.isFinite(ta) ? ta : 0)
+  })
+  return { currentRows: current, pastRows: past }
 }
 
 function formatPastDate(iso: string | null | undefined): string | null {
@@ -38,8 +56,8 @@ function ListTabs({
   pastCount,
   t,
 }: {
-  tab: ListTab
-  onTab: (t: ListTab) => void
+  tab: CompetitionListTab
+  onTab: (t: CompetitionListTab) => void
   currentCount: number
   pastCount: number
   t: TranslateFn
@@ -296,65 +314,81 @@ export function CompetitionTable({
   isAdmin,
   userId,
   onRefresh,
+  listTab,
+  showListTabs = true,
 }: Props) {
   const { t } = useTranslation()
   const [expandedId, setExpandedId] = useState<string | null>(null)
-  const [tab, setTab] = useState<ListTab>('current')
+  const [internalTab, setInternalTab] = useState<CompetitionListTab>('current')
   const didDefaultTab = useRef(false)
 
-  const { currentRows, pastRows } = useMemo(() => {
-    const current: CompetitionRow[] = []
-    const past: CompetitionRow[] = []
-    for (const row of rows) {
-      if (row.status === 'complete') past.push(row)
-      else current.push(row)
-    }
-    past.sort((a, b) => {
-      const ta = Date.parse(a.competition_started_at ?? a.starts_at ?? '')
-      const tb = Date.parse(b.competition_started_at ?? b.starts_at ?? '')
-      return (Number.isFinite(tb) ? tb : 0) - (Number.isFinite(ta) ? ta : 0)
-    })
-    return { currentRows: current, pastRows: past }
-  }, [rows])
+  const { currentRows, pastRows } = useMemo(() => splitCompetitionRows(rows), [rows])
 
+  const tab = listTab ?? internalTab
   const visibleRows = tab === 'past' ? pastRows : currentRows
 
   useEffect(() => {
-    if (loading || didDefaultTab.current) return
+    if (!showListTabs || loading || didDefaultTab.current) return
     didDefaultTab.current = true
-    if (currentRows.length === 0 && pastRows.length > 0) setTab('past')
-  }, [loading, currentRows.length, pastRows.length])
+    if (currentRows.length === 0 && pastRows.length > 0) setInternalTab('past')
+  }, [showListTabs, loading, currentRows.length, pastRows.length])
+
+  const listClass = showListTabs ? 'space-y-3' : '-mx-3 space-y-2'
 
   return (
-    <div className="space-y-3">
-      <ListTabs
-        tab={tab}
-        onTab={setTab}
-        currentCount={currentRows.length}
-        pastCount={pastRows.length}
-        t={t}
-      />
+    <div className={listClass}>
+      {showListTabs ? (
+        <ListTabs
+          tab={tab}
+          onTab={setInternalTab}
+          currentCount={currentRows.length}
+          pastCount={pastRows.length}
+          t={t}
+        />
+      ) : null}
 
       {error && <p className="px-1 text-center text-xs text-red-600">{error}</p>}
 
       {loading ? (
-        <p className="py-6 text-center text-xs text-brand-muted">{t('common.loading')}</p>
+        showListTabs ? (
+          <p className="py-6 text-center text-xs text-brand-muted">{t('common.loading')}</p>
+        ) : (
+          <GamesHubLoading />
+        )
       ) : visibleRows.length === 0 ? (
-        <div className="game-card space-y-2 px-4 py-5 text-center">
-          <p className="text-sm text-brand-text">
-            {tab === 'past' ? t('competition.noPastGames') : t('competition.noCurrentGames')}
-          </p>
-          {tab === 'current' && isAdmin ? (
-            <>
-              <Link to="/competitions/new" className="brand-btn inline-block px-6 py-2">
-                {t('competition.addCompetition')}
-              </Link>
-              <p className="text-xs text-brand-muted">{t('competition.tapPlusHint')}</p>
-            </>
-          ) : tab === 'current' ? (
-            <p className="text-xs text-brand-muted">{t('competition.checkBackHint')}</p>
-          ) : null}
-        </div>
+        showListTabs ? (
+          <div className="game-card space-y-2 px-4 py-5 text-center">
+            <p className="text-sm text-brand-text">
+              {tab === 'past' ? t('competition.noPastGames') : t('competition.noCurrentGames')}
+            </p>
+            {tab === 'current' && isAdmin ? (
+              <>
+                <Link to="/competitions/new" className="brand-btn inline-block px-6 py-2">
+                  {t('competition.addCompetition')}
+                </Link>
+                <p className="text-xs text-brand-muted">{t('competition.tapPlusHint')}</p>
+              </>
+            ) : tab === 'current' ? (
+              <p className="text-xs text-brand-muted">{t('competition.checkBackHint')}</p>
+            ) : null}
+          </div>
+        ) : (
+          <GamesHubEmpty>
+            <p>
+              {tab === 'past' ? t('competition.noPastGames') : t('competition.noCurrentGames')}
+            </p>
+            {tab === 'current' && isAdmin ? (
+              <>
+                <Link to="/competitions/new" className="brand-btn inline-block px-6 py-2">
+                  {t('competition.addCompetition')}
+                </Link>
+                <p className="text-xs text-brand-muted">{t('competition.tapPlusHint')}</p>
+              </>
+            ) : tab === 'current' ? (
+              <p className="text-xs text-brand-muted">{t('competition.checkBackHint')}</p>
+            ) : null}
+          </GamesHubEmpty>
+        )
       ) : tab === 'current' ? (
         visibleRows.map((row) => (
           <CompetitionCurrentGameCard

@@ -15,9 +15,12 @@ import { CompetitionForm } from './pages/CompetitionForm'
 import { CompetitionJoin } from './pages/CompetitionJoin'
 import { CompetitionPublicGate } from './pages/CompetitionPublicGate'
 import { CompetitionRun } from './pages/CompetitionRun'
-import { Competitions } from './pages/Competitions'
+import { CompetitiveHomePage } from './pages/CompetitiveHomePage'
 import { FindGame } from './pages/FindGame'
-import { Leaderboard } from './pages/Leaderboard'
+import { FriendlyGameForm } from './pages/FriendlyGameForm'
+import { FriendlyGamePage } from './pages/FriendlyGamePage'
+import { FriendlyHomePage } from './pages/FriendlyHomePage'
+import { FriendlyPadPage } from './pages/FriendlyPadPage'
 import { AuthCallback } from './pages/AuthCallback'
 import { LineAuthCallback } from './pages/LineAuthCallback'
 import { LineAuthComplete } from './pages/LineAuthComplete'
@@ -29,7 +32,6 @@ import { MakeGame } from './pages/MakeGame'
 import { MatchNew } from './pages/MatchNew'
 import { Week } from './pages/Week'
 import { NativeDeepLinkHandler } from './components/NativeDeepLinkHandler'
-import { GesturePadPage } from './pages/GesturePadPage'
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
   return <ProtectedRoute>{children}</ProtectedRoute>
@@ -40,7 +42,7 @@ function AdminOnly({ children }: { children: React.ReactNode }) {
   if (loading || (user && !profile)) {
     return <p className="game-subtle p-4 text-center">Loading…</p>
   }
-  if (!profile?.is_admin) return <Navigate to="/competitions" replace />
+  if (!profile?.is_admin) return <Navigate to="/competitive" replace />
   return children
 }
 
@@ -96,7 +98,13 @@ function MainAppRoutes() {
           </div>
         }
       >
-        <Route index element={<Leaderboard />} />
+        <Route index element={<Navigate to="/friendly" replace />} />
+        <Route path="friendly" element={<FriendlyHomePage />} />
+        <Route path="friendly/new" element={<FriendlyGameForm />} />
+        <Route path="friendly/:id/pad" element={<FriendlyPadPage />} />
+        <Route path="friendly/:id" element={<FriendlyGamePage />} />
+        <Route path="competitive" element={<CompetitiveHomePage />} />
+        <Route path="competitions" element={<Navigate to="/competitive" replace />} />
         <Route path="players/:playerId" element={<PlayerProfilePage />} />
         <Route
           path="fun/new"
@@ -121,7 +129,6 @@ function MainAppRoutes() {
             </AdminRoute>
           }
         />
-        <Route path="competitions" element={<Competitions />} />
         <Route
           path="competitions/new"
           element={
@@ -264,12 +271,8 @@ export default function App() {
                 }
               />
               <Route
-                path="/competitions/:id/games/:gameNumber/gesture-pad"
-                element={
-                  <AppFrame>
-                    <GesturePadPage />
-                  </AppFrame>
-                }
+                path="/competitions/:id/games/:gameNumber/courts/:courtId/gesture-pad"
+                element={<Navigate to="/friendly" replace />}
               />
               <Route
                 path="*"

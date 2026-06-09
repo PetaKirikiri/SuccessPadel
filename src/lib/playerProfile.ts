@@ -48,10 +48,20 @@ async function fetchProfileById(profileId: string): Promise<PublicPlayerProfile 
   return parsePublicProfile(data)
 }
 
+async function fetchPadelPlayerIdForProfile(profileId: string): Promise<string | null> {
+  const { data } = await supabase
+    .from('padel_players')
+    .select('id')
+    .eq('profile_id', profileId)
+    .maybeSingle()
+  return data?.id ?? null
+}
+
 export async function resolvePlayerProfile(playerId: string): Promise<ResolvedPlayerProfile> {
   const direct = await fetchProfileById(playerId)
   if (direct) {
-    return { profile: direct, guestName: null, guestAvatarUrl: null, padelPlayerId: null }
+    const padelPlayerId = await fetchPadelPlayerIdForProfile(direct.id)
+    return { profile: direct, guestName: null, guestAvatarUrl: null, padelPlayerId }
   }
 
   const { data: padel } = await supabase

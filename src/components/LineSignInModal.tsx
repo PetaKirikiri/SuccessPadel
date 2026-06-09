@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from '../hooks/useTranslation'
 import { hadPreviousLogin } from '../lib/auth/cachedSession'
-import { isLineLoginConfigured, startLineLogin } from '../lib/line/auth'
+import { isLineLoginConfigured } from '../lib/line/auth'
 import { lineAppEntryUrl } from '../lib/line/liff'
+import { supabase } from '../lib/supabaseClient'
 import { LineSignUpQr } from './LineSignUpQr'
 
 const LINE_ADD_FRIEND_GUIDE_SRC = '/assets/line-add-friend-guide.png'
@@ -33,41 +34,52 @@ function LinkStep({
   )
 }
 
-export function LineSignInModal({ returnTo, onClose }: Props) {
+export function LineSignInModal({ onClose }: Props) {
   const { t } = useTranslation()
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
-  const [lineBusy, setLineBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [emailBusy, setEmailBusy] = useState(false)
+  const [emailError, setEmailError] = useState<string | null>(null)
   const qrUrl = useMemo(() => lineAppEntryUrl('/login'), [])
   const lineEnabled = isLineLoginConfigured()
   const returning = hadPreviousLogin()
 
-  const handleContinueLine = async () => {
-    setError(null)
-    setLineBusy(true)
-    let redirected = false
+  const handleEmailSignIn = async (e: FormEvent) => {
+    e.preventDefault()
+    setEmailError(null)
+    setEmailBusy(true)
     try {
-      const result = await startLineLogin(returnTo ?? window.location.pathname)
-      redirected = result.redirected
-      if (result.redirected) {
-        window.setTimeout(() => setLineBusy(false), 5000)
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      })
+      if (signInError) {
+        setEmailError(signInError.message)
         return
       }
-      if (result.error) setError(result.error)
-      else onClose()
+      const { data: confirmed } = await supabase.auth.getSession()
+      if (!confirmed.session?.user) {
+        setEmailError('Sign-in did not stick — try again.')
+        return
+      }
+      onClose()
     } finally {
-      if (!redirected) setLineBusy(false)
+      setEmailBusy(false)
     }
   }
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 px-4"
+      className="fixed inset-0 z-[200] flex items-end justify-center bg-black/60 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] sm:items-center sm:px-4"
       onClick={onClose}
     >
       <div
-        className="login-panel max-h-[94vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-2xl bg-brand-surface p-5 text-center"
+        data-scroll-y
+        className="login-panel scroll-y min-h-0 w-full max-w-lg space-y-4 overflow-y-auto overscroll-contain rounded-2xl bg-brand-surface p-5 text-center max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-1.5rem)] sm:max-h-[94vh]"
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
       >
         <div className="flex items-start justify-between gap-2">
           <p className="font-display text-base font-semibold text-brand-primary">
@@ -85,30 +97,17 @@ export function LineSignInModal({ returnTo, onClose }: Props) {
 
         {!lineEnabled ? (
           <p className="text-sm text-red-600">{t('signInModal.notConfigured')}</p>
+        ) : !qrUrl ? (
+          <p className="text-sm text-red-600">{t('signInModal.notConfigured')}</p>
         ) : (
-          <>
-            <p className="text-left text-sm text-brand-muted">
-              {returning ? t('signInModal.returningHint') : t('login.pitch')}
+          <div>
+            {returning ? (
+              <p className="mb-3 text-left text-sm text-brand-muted">{t('signInModal.returningHint')}</p>
+            ) : null}
+            <p className="mb-3 text-left font-display text-sm font-semibold text-brand-primary">
+              {t('signInModal.scanQrHeadline')}
             </p>
-            <button
-              type="button"
-              disabled={lineBusy}
-              onClick={() => void handleContinueLine()}
-              className="w-full rounded-xl bg-[#06C755] px-8 py-3 text-base font-semibold text-white disabled:opacity-60"
-            >
-              {lineBusy ? t('login.openingLine') : t('login.continueLine')}
-            </button>
-            {error ? <p className="text-sm text-red-600">{error}</p> : null}
-
-            <div className="border-t border-brand-border/60 pt-4">
-              <p className="mb-3 text-left text-xs font-semibold uppercase tracking-wide text-brand-muted">
-                {t('signInModal.qrSectionTitle')}
-              </p>
-              {!qrUrl ? (
-                <p className="text-sm text-red-600">{t('signInModal.notConfigured')}</p>
-              ) : (
-                <>
-                  <div className="rounded-xl border border-brand-border bg-brand-bg-alt/40 px-4 py-3 text-left">
+            <div className="rounded-xl border border-brand-border bg-brand-bg-alt/40 px-4 py-3 text-left">
                     <p className="text-sm font-medium leading-snug text-brand-text">
                       {t('signInModal.scanQrSubhead')}
                     </p>
@@ -133,7 +132,7 @@ export function LineSignInModal({ returnTo, onClose }: Props) {
                       src={LINE_ADD_FRIEND_GUIDE_SRC}
                       alt=""
                       aria-hidden
-                      className="h-auto max-h-[40vh] w-full rounded-2xl border border-brand-border object-contain"
+                      className="h-auto max-h-[24vh] w-full rounded-2xl border border-brand-border object-contain sm:max-h-[32vh]"
                     />
                   </div>
                   <ol className="mt-3 space-y-1.5 text-left text-xs text-brand-muted">
@@ -161,12 +160,43 @@ export function LineSignInModal({ returnTo, onClose }: Props) {
                       bold={t('lineLink.step4Bold')}
                       suffix={t('lineLink.step4Suffix')}
                     />
-                  </ol>
-                </>
-              )}
-            </div>
-          </>
+            </ol>
+          </div>
         )}
+
+        <div className="border-t border-brand-border/60 pt-4">
+          <p className="mb-3 text-left text-xs font-semibold uppercase tracking-wide text-brand-muted">
+            {t('signInModal.emailSectionTitle')}
+          </p>
+          <form className="space-y-3 text-left" onSubmit={(e) => void handleEmailSignIn(e)}>
+            <label className="block space-y-1">
+              <span className="text-xs text-brand-muted">{t('signInModal.emailLabel')}</span>
+              <input
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="brand-input"
+                required
+              />
+            </label>
+            <label className="block space-y-1">
+              <span className="text-xs text-brand-muted">{t('signInModal.passwordLabel')}</span>
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="brand-input"
+                required
+              />
+            </label>
+            <button type="submit" disabled={emailBusy} className="brand-btn w-full disabled:opacity-60">
+              {emailBusy ? t('signInModal.emailSigningIn') : t('signInModal.emailSignIn')}
+            </button>
+            {emailError ? <p className="text-sm text-red-600">{emailError}</p> : null}
+          </form>
+        </div>
       </div>
     </div>,
     document.body,

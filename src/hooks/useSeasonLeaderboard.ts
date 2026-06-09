@@ -18,14 +18,15 @@ type SeasonLeaderboardPayload = {
   has_live_competition: boolean
 }
 
-export function useSeasonLeaderboard() {
+export function useSeasonLeaderboard(enabled = true) {
   const [season, setSeason] = useState<SeasonLeaderboardMeta | null>(null)
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [hasLiveCompetition, setHasLiveCompetition] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(enabled)
   const [error, setError] = useState<string | null>(null)
 
   const refresh = useCallback(async (silent = false) => {
+    if (!enabled) return
     if (!silent) setLoading(true)
     setError(null)
     try {
@@ -50,17 +51,21 @@ export function useSeasonLeaderboard() {
     } finally {
       if (!silent) setLoading(false)
     }
-  }, [])
+  }, [enabled])
 
   useEffect(() => {
+    if (!enabled) {
+      setLoading(false)
+      return
+    }
     void refresh()
-  }, [refresh])
+  }, [enabled, refresh])
 
   useEffect(() => {
-    if (!hasLiveCompetition) return
+    if (!enabled || !hasLiveCompetition) return
     const poll = setInterval(() => void refresh(true), 5000)
     return () => clearInterval(poll)
-  }, [hasLiveCompetition, refresh])
+  }, [enabled, hasLiveCompetition, refresh])
 
   return { season, entries, loading, error, refresh }
 }

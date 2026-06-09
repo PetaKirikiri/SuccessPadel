@@ -22,6 +22,10 @@ export function ProfileChip({ returnTo, className = '' }: Props) {
     ? firstDisplayName(profile?.display_name ?? lineClient.displayName)
     : signInLabel
   const avatarUrl = isSignedIn ? (profile?.avatar_url ?? lineClient.pictureUrl ?? null) : null
+  const isAdmin = Boolean(profile?.is_admin)
+  const chipClass = isAdmin
+    ? 'border-brand-gold bg-brand-gold-light ring-1 ring-brand-gold/40 text-brand-gold-dark shadow-sm'
+    : 'border-brand-border bg-brand-surface text-brand-primary'
 
   return (
     <>
@@ -29,16 +33,20 @@ export function ProfileChip({ returnTo, className = '' }: Props) {
         type="button"
         disabled={busy}
         onClick={() => void openProfile()}
-        className={`flex h-9 max-w-[9rem] items-center gap-1.5 truncate rounded-full border border-brand-border bg-brand-surface pl-1.5 pr-2.5 text-xs font-medium text-brand-primary disabled:opacity-60 md:h-11 md:max-w-[12rem] md:gap-2 md:pl-2 md:pr-3 md:text-sm ${className}`}
+        className={`flex h-9 max-w-[9rem] items-center gap-1.5 truncate rounded-full border pl-1.5 pr-2.5 text-xs font-medium disabled:opacity-60 md:h-11 md:max-w-[12rem] md:gap-2 md:pl-2 md:pr-3 md:text-sm ${chipClass} ${className}`}
       >
         {avatarUrl ? (
           <img
             src={avatarUrl}
             alt=""
-            className="h-6 w-6 shrink-0 rounded-full object-cover md:h-8 md:w-8"
+            className={`h-6 w-6 shrink-0 rounded-full object-cover md:h-8 md:w-8 ${isAdmin ? 'ring-2 ring-brand-gold' : ''}`}
           />
         ) : (
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-bg-alt text-[10px] font-semibold text-brand-muted md:h-8 md:w-8 md:text-xs">
+          <span
+            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold md:h-8 md:w-8 md:text-xs ${
+              isAdmin ? 'bg-brand-gold/25 text-brand-gold-dark ring-2 ring-brand-gold' : 'bg-brand-bg-alt text-brand-muted'
+            }`}
+          >
             {isSignedIn ? name.trim()[0]?.toUpperCase() ?? '?' : signInLabel.trim()[0]?.toUpperCase() ?? '?'}
           </span>
         )}

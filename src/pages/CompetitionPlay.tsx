@@ -256,6 +256,7 @@ export function CompetitionPlay() {
                 roundStatusByGame={roundStatusByGame}
                 currentUserId={user?.id ?? null}
                 currentUserAvatarUrl={headerAvatar}
+                isAdmin={Boolean(user && profile?.is_admin)}
               />
             ) : (
               <p className="game-card px-3 py-4 text-sm text-brand-muted">

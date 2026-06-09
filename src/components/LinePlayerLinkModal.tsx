@@ -75,7 +75,8 @@ export function LinePlayerLinkModal({
       onClick={onClose}
     >
       <div
-        className="login-panel max-h-[94vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-2xl bg-brand-surface p-5 text-center"
+        data-scroll-y
+        className="login-panel scroll-y max-h-[94vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-2xl bg-brand-surface p-5 text-center"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-2">

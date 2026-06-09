@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
-import { tryRestoreCachedSession } from '../lib/auth/cachedSession'
+import { AUTH_STORAGE_KEY, tryRestoreCachedSession } from '../lib/auth/cachedSession'
 import { installLoginWithAppLifecycleDebug } from '../lib/debug/loginWithAppDebug'
 import { syncProfileForUser } from '../lib/authProfile'
 import { supabase } from '../lib/supabaseClient'
@@ -36,6 +36,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(next)
   }, [])
 
+  const applySession = useCallback(
+    async (nextSession: Session | null) => {
+      setSession(nextSession)
+      setUser(nextSession?.user ?? null)
+      if (nextSession?.user) await loadProfile(nextSession.user)
+      else setProfile(null)
+    },
+    [loadProfile],
+  )
+
   useEffect(() => {
     installLoginWithAppLifecycleDebug()
   }, [])
@@ -51,47 +61,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true
 
-    const syncUser = async (authUser: User | null) => {
+    void (async () => {
+      const restored = await tryRestoreCachedSession()
       if (!active) return
-      if (authUser) await loadProfile(authUser)
-      else setProfile(null)
+      if (restored) {
+        await applySession(restored)
+        if (active) setLoading(false)
+        return
+      }
+      const { data } = await supabase.auth.getSession()
+      if (!active) return
+      await applySession(data.session)
       if (active) setLoading(false)
+    })()
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (!active || event === 'INITIAL_SESSION') return
+      void applySession(nextSession).then(() => {
+        if (active) setLoading(false)
+      })
+    })
+
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== AUTH_STORAGE_KEY && event.key !== null) return
+      void tryRestoreCachedSession().then((restored) => {
+        if (!active) return
+        void applySession(restored)
+      })
     }
+    window.addEventListener('storage', onStorage)
 
-    void supabase.auth.getSession().then(({ data }) => {
-      if (!active) return
-      setSession(data.session)
-      setUser(data.session?.user ?? null)
-      void syncUser(data.session?.user ?? null)
-    })
-
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
-      setSession(s)
-      setUser(s?.user ?? null)
-      setLoading(true)
-      void syncUser(s?.user ?? null)
-    })
+    const refreshOnFocus = () => {
+      void tryRestoreCachedSession().then((restored) => {
+        if (!active || !restored) return
+        void applySession(restored)
+      })
+    }
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') refreshOnFocus()
+    }
+    window.addEventListener('focus', refreshOnFocus)
+    document.addEventListener('visibilitychange', onVisibility)
 
     return () => {
       active = false
       sub.subscription.unsubscribe()
-    }
-  }, [loadProfile])
-
-  useEffect(() => {
-    const refresh = () => {
-      void tryRestoreCachedSession()
-    }
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible') refresh()
-    }
-    window.addEventListener('focus', refresh)
-    document.addEventListener('visibilitychange', onVisibility)
-    return () => {
-      window.removeEventListener('focus', refresh)
+      window.removeEventListener('storage', onStorage)
+      window.removeEventListener('focus', refreshOnFocus)
       document.removeEventListener('visibilitychange', onVisibility)
     }
-  }, [])
+  }, [applySession])
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut()

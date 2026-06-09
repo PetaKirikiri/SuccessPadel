@@ -43,6 +43,16 @@ async function lineUserFromIdToken(idToken: string, channelId: string): Promise<
   return { sub: claims.sub, name: claims.name, picture: claims.picture }
 }
 
+async function magicLinkEmailForUser(
+  admin: ReturnType<typeof createClient>,
+  userId: string,
+  fallbackEmail: string,
+): Promise<string> {
+  const { data, error } = await admin.auth.admin.getUserById(userId)
+  if (error) throw error
+  return data.user.email ?? fallbackEmail
+}
+
 async function sessionForLineUser(admin: ReturnType<typeof createClient>, lineUser: LineUser) {
   const email = `line_${lineUser.sub}@successpadel.local`
 
@@ -88,9 +98,10 @@ async function sessionForLineUser(admin: ReturnType<typeof createClient>, lineUs
     : await admin.from('profiles').upsert(profilePatch)
   if (profileErr) throw profileErr
 
+  const linkEmail = await magicLinkEmailForUser(admin, userId, email)
   const { data: link, error: linkErr } = await admin.auth.admin.generateLink({
     type: 'magiclink',
-    email,
+    email: linkEmail,
   })
   if (linkErr) throw linkErr
 

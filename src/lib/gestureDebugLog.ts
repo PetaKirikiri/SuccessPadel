@@ -5,6 +5,8 @@ export type GestureDebugEntry = GestureAnalysis & {
   at: string
   gameNumber?: string
   competitionId?: string
+  courtId?: string
+  matchSessionId?: string
 }
 
 const STORAGE_KEY = 'sp-gesture-debug-log'
@@ -27,7 +29,12 @@ export function readGestureDebugLog(): GestureDebugEntry[] {
 
 export function appendGestureDebugEntry(
   analysis: GestureAnalysis,
-  context?: { gameNumber?: string; competitionId?: string },
+  context?: {
+    gameNumber?: string
+    competitionId?: string
+    courtId?: string
+    matchSessionId?: string
+  },
 ): GestureDebugEntry {
   const entry: GestureDebugEntry = {
     ...analysis,
@@ -35,6 +42,8 @@ export function appendGestureDebugEntry(
     at: new Date().toISOString(),
     gameNumber: context?.gameNumber,
     competitionId: context?.competitionId,
+    courtId: context?.courtId,
+    matchSessionId: context?.matchSessionId,
   }
 
   const prev = readGestureDebugLog()

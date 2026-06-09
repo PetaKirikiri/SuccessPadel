@@ -1,11 +1,12 @@
 import type { GestureAnalysis } from '../lib/gestureAnalysis'
 import {
-  detectBackhandDirection,
   detectGestureShape,
   detectSmashVerdict,
-  gestureReport,
+  detectVolleyVerdict,
+  gestureShotLabel,
 } from '../lib/gestureAnalysis'
-import { playerLabel, quadrantFromPoint, type NormalizedPoint } from '../lib/gestureCapture'
+import { quadrantFromPoint, type NormalizedPoint } from '../lib/gestureCapture'
+import { courtShotZoneFromPoint } from '../lib/padelCourtLayout'
 
 type Props = {
   isDrawing: boolean
@@ -18,21 +19,32 @@ type Props = {
 
 function liveReport(path: NormalizedPoint[]): string | null {
   if (path.length < 2) return null
-  const start = quadrantFromPoint(path[0]!)
+  const start = path[0]!
   const end = path[path.length - 1]!
-  const shape = detectGestureShape(path)
-  const report = gestureReport(start, shape, {
-    smashVerdict: shape === 'SMASH' ? detectSmashVerdict(path[0]!, end) : null,
-    backhandDirection: shape === 'BACKHAND' ? detectBackhandDirection(path[0]!, end) : null,
+  const startQuadrant = quadrantFromPoint(start)
+  const shape = detectGestureShape(path, startQuadrant)
+  const shotZone = courtShotZoneFromPoint(start, startQuadrant)
+  const label = gestureShotLabel(shape, {
+    smashVerdict: shape === 'SMASH' ? detectSmashVerdict(start, end) : null,
+    volleyVerdict: shape === 'VOLLEY' ? detectVolleyVerdict(path, end) : null,
+    shotZone,
+    start,
+    end,
   })
-  if (shape === 'SMASH' || shape === 'BACKHAND') return `${report}…`
-  return playerLabel(start)
+  return label ? `${label}…` : null
 }
 
 function reportTone(report: string | null | undefined): string {
   if (!report) return 'text-brand-primary'
   if (report.includes('Foul')) return 'text-red-600'
-  if (report.includes('Win') || report.includes('Smash') || report.includes('Backhand')) {
+  if (
+    report.includes('Win') ||
+    report.includes('Score') ||
+    report.includes('Smash') ||
+    report.includes('Backhand') ||
+    report.includes('Forehand') ||
+    report.includes('Volley')
+  ) {
     return 'text-brand-accent'
   }
   return 'text-brand-primary'
@@ -47,10 +59,25 @@ export function GesturePadFeedback({
   onOpenLog,
 }: Props) {
   const liveLabel = isDrawing ? liveReport(livePath) : null
-  const reportLabel = lastAnalysis?.report ?? null
+  const reportLabel = lastAnalysis
+    ? gestureShotLabel(lastAnalysis.shape, {
+        smashVerdict: lastAnalysis.smashVerdict,
+        volleyVerdict: lastAnalysis.volleyVerdict,
+        shotZone: lastAnalysis.shotZone,
+        start: lastAnalysis.start,
+        end: lastAnalysis.end,
+      })
+    : null
   const liveTone = reportTone(liveLabel)
   const resultTone = reportTone(reportLabel)
-  const showPulse = pulse && Boolean(reportLabel?.includes('Smash') || reportLabel?.includes('Backhand'))
+  const showPulse =
+    pulse &&
+    Boolean(
+      reportLabel?.includes('Smash') ||
+        reportLabel?.includes('Backhand') ||
+        reportLabel?.includes('Forehand') ||
+        reportLabel?.includes('Volley'),
+    )
 
   return (
     <div className="gesture-pad-feedback flex shrink-0 flex-col gap-2 border-t border-brand-border bg-brand-surface px-3 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] portrait:min-h-[7rem] portrait:gap-3 portrait:px-4 portrait:pt-4 landscape:flex-row landscape:items-center landscape:justify-between landscape:gap-3 landscape:py-2.5 landscape:pl-[max(0.75rem,env(safe-area-inset-left))] landscape:pr-[max(0.75rem,env(safe-area-inset-right))] landscape:pb-[max(0.5rem,env(safe-area-inset-bottom))]">
@@ -78,7 +105,8 @@ export function GesturePadFeedback({
         ) : (
           <div className="space-y-1 text-xs leading-relaxed text-brand-muted portrait:text-sm landscape:text-sm">
             <p>Smash up from bottom = Win · smash down from top = Foul</p>
-            <p>Backhand left→right or right→left across the court</p>
+            <p>Backhand left→right · forehand right→left across the court</p>
+            <p>Volley L-shape up = Score · L ends bottom = Foul</p>
           </div>
         )}
       </div>

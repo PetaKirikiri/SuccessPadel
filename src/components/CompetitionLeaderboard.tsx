@@ -28,12 +28,14 @@ type Props = {
   entries: LeaderboardEntry[]
   compact?: boolean
   scoreUnit?: AmericanoScoringUnit
+  scoreColumnLabel?: string
   headerTitle?: string | null
   headerSubtitle?: string | null
   currentUserId?: string | null
   competitionId?: string | null
   achievements?: CompetitionAchievements | null
   flushBottom?: boolean
+  embedded?: boolean
 }
 
 type AchievementInfo = { iconKey: string; emoji: string; labelKey: string }
@@ -251,18 +253,26 @@ export function CompetitionLeaderboard({
   entries,
   compact = false,
   scoreUnit = 'points',
+  scoreColumnLabel,
   headerTitle = null,
   headerSubtitle = null,
   currentUserId = null,
   competitionId = null,
   achievements = null,
   flushBottom = false,
+  embedded = false,
 }: Props) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
   const [info, setInfo] = useState<AchievementInfo | null>(null)
-  const unit = scoreUnit === 'sets' ? t('leaderboard.sets') : t('leaderboard.pts')
+  const unit =
+    scoreColumnLabel ??
+    (scoreUnit === 'sets'
+      ? t('leaderboard.sets')
+      : scoreUnit === 'games'
+        ? t('leaderboard.games')
+        : t('leaderboard.pts'))
   if (entries.length === 0) return null
 
   const badgesFor = (entry: LeaderboardEntry): Achievement[] => {
@@ -277,10 +287,16 @@ export function CompetitionLeaderboard({
   const displayEntries = compactLeaderboardDisplayNames(entries)
   const showHeader = Boolean(headerTitle || headerSubtitle || compact)
 
+  const shellClass = embedded
+    ? 'overflow-hidden'
+    : `game-card overflow-hidden p-0 ${flushBottom ? 'rounded-b-none' : ''}`
+
   return (
-    <div className={`game-card overflow-hidden p-0 ${flushBottom ? 'rounded-b-none' : ''}`}>
+    <div className={shellClass}>
       {showHeader && (
-        <div className="border-b border-brand-border bg-brand-bg-alt px-3 py-2 md:px-4 md:py-3">
+        <div
+          className={`border-b border-brand-border bg-brand-bg-alt px-3 py-2 md:px-4 md:py-3 ${embedded ? 'bg-brand-bg-alt/40' : ''}`}
+        >
           {headerTitle ? (
             <p className="font-display text-base font-semibold text-brand-primary md:text-lg">
               {headerTitle}

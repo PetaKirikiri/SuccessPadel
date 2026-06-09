@@ -8,15 +8,15 @@ export function usesAmericanoScoring(
   return /americano/i.test(session.rules ?? '')
 }
 
-export type AmericanoScoringUnit = 'points' | 'sets' | 'open'
+export type AmericanoScoringUnit = 'points' | 'sets' | 'games' | 'open'
 
 export function americanoScoringUnit(
   session: Pick<GameSession, 'scoring_config'>,
 ): AmericanoScoringUnit {
   const unit = session.scoring_config?.americano_unit
-  if (unit === 'open' || unit === 'sets' || unit === 'points') return unit
+  if (unit === 'open' || unit === 'sets' || unit === 'points' || unit === 'games') return unit
   if (session.scoring_config?.americano_target === 4) return 'sets'
-  return 'points'
+  return 'games'
 }
 
 export function americanoScoreTarget(
@@ -26,7 +26,9 @@ export function americanoScoreTarget(
   const unit = americanoScoringUnit(session)
   const t = session.scoring_config?.americano_target
   if (typeof t === 'number' && t > 0) return t
-  return unit === 'sets' ? AMERICANO_DEFAULT_SETS : AMERICANO_DEFAULT_TARGET
+  if (unit === 'sets') return AMERICANO_DEFAULT_SETS
+  if (unit === 'points') return AMERICANO_DEFAULT_TARGET
+  return AMERICANO_DEFAULT_GAMES
 }
 
 export function americanoTargetPoints(
@@ -40,7 +42,9 @@ export const GENDERS = ['Mixed', 'Women', 'Men'] as const
 export const PLAYER_CAPS = [4, 8, 12, 16] as const
 export const DURATIONS = [1, 2, 3] as const
 export const RULE_FORMATS = ['king_of_court', 'americano'] as const
-export const AMERICANO_TARGETS = [4, 16, 24, 32] as const
+export const AMERICANO_TARGETS = [4, 5, 6, 7, 8] as const
+export const AMERICANO_DEFAULT_GAMES = 6
+/** @deprecated legacy point-target sessions */
 export const AMERICANO_DEFAULT_TARGET = 24
 export const AMERICANO_DEFAULT_SETS = 4
 export const PARTNER_STYLES = ['swapped', 'fixed'] as const
@@ -65,6 +69,9 @@ export function buildRulesText(
 ): string {
   if (format === 'americano') {
     if (americano?.unit === 'open') return 'Americano · open'
+    if (americano?.unit === 'games') {
+      return `Americano · ${americano.target ?? AMERICANO_DEFAULT_GAMES} games`
+    }
     if (americano?.unit === 'sets') return `Americano · ${americano.target ?? AMERICANO_DEFAULT_SETS} sets`
     return `Americano · ${americano?.target ?? AMERICANO_DEFAULT_TARGET} pts`
   }
@@ -72,7 +79,7 @@ export function buildRulesText(
 }
 
 export function americanoTargetLabel(target: number): string {
-  return target === 4 ? '4 sets' : `${target} pts`
+  return String(target)
 }
 
 export type AmericanoScoringChoice = (typeof AMERICANO_TARGETS)[number] | 'open'
@@ -89,7 +96,7 @@ export function buildAmericanoScoringConfig(
   if (choice === 'open') return { americano_unit: 'open', ...scheduleFields }
   return {
     americano_target: choice,
-    americano_unit: choice === 4 ? 'sets' : 'points',
+    americano_unit: 'games',
     ...scheduleFields,
   }
 }
@@ -102,7 +109,8 @@ export function americanoScoringFromConfig(
   if (target && AMERICANO_TARGETS.includes(target as (typeof AMERICANO_TARGETS)[number])) {
     return target as (typeof AMERICANO_TARGETS)[number]
   }
-  return AMERICANO_DEFAULT_TARGET
+  if (config?.americano_unit === 'sets' && target === 4) return 4
+  return 'open'
 }
 
 export function rulesToPartnershipMode(

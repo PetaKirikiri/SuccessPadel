@@ -38,7 +38,7 @@ export type ScoringConfig = {
   margin_bonus?: number
   margin_bonus_cap?: number
   americano_target?: number
-  americano_unit?: 'points' | 'sets' | 'open'
+  americano_unit?: 'points' | 'sets' | 'games' | 'open'
   americano_games?: number
   break_minutes?: number
   game_minutes?: number

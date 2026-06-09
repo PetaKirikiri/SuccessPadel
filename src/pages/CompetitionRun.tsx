@@ -131,10 +131,10 @@ export function CompetitionRun() {
   const [copied, setCopied] = useState(false)
   const prevRoundNumber = useRef<number | null>(null)
 
-  const isAdmin = Boolean(profile?.is_admin)
+  const userId = user?.id
+  const isAdmin = Boolean(userId && profile?.is_admin)
   const started = Boolean(session?.competition_started_at)
   const finished = session?.status === 'complete'
-  const userId = user?.id
   const isAmericano = session ? usesAmericanoScoring(session) : false
   const complete = isCompetitionComplete(session, rounds, courtMatches)
   const achievements = useMemo(() => {
@@ -560,6 +560,7 @@ export function CompetitionRun() {
                 gameMinutes={gameMinutes}
                 currentUserId={userId ?? null}
                 currentUserAvatarUrl={profile?.avatar_url ?? null}
+                isAdmin={isAdmin}
               />
             </div>
           ) : (
@@ -676,6 +677,7 @@ export function CompetitionRun() {
                 roundStatusByGame={roundStatusByGame}
                 currentUserId={userId ?? null}
                 currentUserAvatarUrl={profile?.avatar_url ?? null}
+                isAdmin={isAdmin}
               />
             </div>
           )}

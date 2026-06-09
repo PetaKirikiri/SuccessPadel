@@ -1,9 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { GestureAnnotationPad } from './GestureAnnotationPad'
+import { GesturePadToolbar } from './GesturePadToolbar'
 import { useTranslation } from '../hooks/useTranslation'
 import type { TranslateFn } from '../i18n'
 import type { AmericanoScoringUnit } from '../lib/competitionPresets'
 import { pivotScheduleByGame, type CourtColumn } from '../lib/competitionCourtBoard'
+import {
+  quadrantPlayersForCourt,
+  type QuadrantPlayers,
+} from '../lib/gesturePadPlayers'
 import { isScoringTimeUnlocked } from '../lib/competitionScoringUnlock'
 import { playTwoMinuteAlarm, TWO_MINUTES_MS } from '../lib/gameCountdownAlarm'
 import { RANKED_GAME_MINUTES } from '../lib/competitionLayout'
@@ -57,6 +63,7 @@ type Props = {
   roundStatusByGame?: Map<number, 'pending' | 'active' | 'complete'>
   currentUserId?: string | null
   currentUserAvatarUrl?: string | null
+  isAdmin?: boolean
 }
 
 type RoundStatus = 'pending' | 'active' | 'complete'
@@ -168,6 +175,7 @@ function countdownLabel(state: CountdownState, t: TranslateFn): string {
 function scoreFieldLabel(scoreUnit: AmericanoScoringUnit, t: TranslateFn): string {
   if (scoreUnit === 'sets') return t('competition.scoreSets')
   if (scoreUnit === 'open') return t('competition.scoreOpen')
+  if (scoreUnit === 'games') return t('competition.scoreGames')
   return t('competition.scorePts')
 }
 
@@ -558,6 +566,7 @@ function GameScoringCourts({
   finished,
   currentUserId,
   currentUserAvatarUrl,
+  onOpenCourtGesturePad,
   t,
 }: {
   game: ScoringGame
@@ -573,6 +582,7 @@ function GameScoringCourts({
   finished: boolean
   currentUserId?: string | null
   currentUserAvatarUrl?: string | null
+  onOpenCourtGesturePad?: (quadrantPlayers: QuadrantPlayers, courtId?: string) => void
   t: TranslateFn
 }) {
   return (
@@ -598,11 +608,23 @@ function GameScoringCourts({
               teamBStr: saved?.teamBPoints != null ? String(saved.teamBPoints) : '',
             }
 
+        const openGesturePad = onOpenCourtGesturePad
+          ? () =>
+              onOpenCourtGesturePad(
+                quadrantPlayersForCourt(teamA, teamB, teamAPlayers, teamBPlayers),
+                courtId,
+              )
+          : undefined
+
         return (
           <div key={court.courtLabel} className="space-y-1">
-            <p className={courtLabelClass(currentUserId, liveCourt ?? court, finished)}>
-              {court.courtLabel}
-            </p>
+            <CourtLabelRow
+              courtLabel={court.courtLabel}
+              currentUserId={currentUserId}
+              court={liveCourt ?? court}
+              finished={finished}
+              onOpenGesturePad={openGesturePad}
+            />
             <div>
               <CourtMatchCell
                 teamA={teamA}
@@ -666,42 +688,85 @@ function GameGesturePadButton({ onOpen }: { onOpen: () => void }) {
 function GesturePadOverlay({
   competitionId,
   gameNumber,
+  courtId,
+  roundId,
+  quadrantPlayers,
+  currentUserId,
+  currentUserAvatarUrl,
+  onSubmitMatch,
+  onSaved,
   onClose,
   t,
 }: {
   competitionId: string
   gameNumber: number
+  courtId?: string
+  roundId?: string
+  quadrantPlayers: QuadrantPlayers
+  currentUserId?: string | null
+  currentUserAvatarUrl?: string | null
+  onSubmitMatch?: (entry: CourtScoreSubmit) => Promise<void>
+  onSaved?: () => void
   onClose: () => void
   t: TranslateFn
 }) {
+  const courtSetupKey =
+    courtId != null ? `${competitionId}-${gameNumber}-${courtId}` : undefined
+
+  const handleSubmitMatch = onSubmitMatch
+    ? async (entry: CourtScoreSubmit) => {
+        await onSubmitMatch(entry)
+        onSaved?.()
+      }
+    : undefined
+
   return (
-    <div className="gesture-pad-page fixed inset-0 z-[250] flex flex-col overflow-hidden bg-brand-surface">
-      <div className="flex shrink-0 items-center gap-2 border-b border-brand-border/60 px-3 py-3 md:px-4">
-        <button
-          type="button"
-          onClick={onClose}
-          className="shrink-0 text-sm font-medium text-brand-primary"
-        >
-          {t('common.back')}
-        </button>
-        <p className="min-w-0 flex-1 truncate text-center font-display text-base font-semibold text-brand-primary">
-          {t('competition.game', { number: gameNumber })} · Gesture Pad
-        </p>
-        <span className="w-12 shrink-0" aria-hidden />
-      </div>
-      <div className="relative flex min-h-0 flex-1 flex-col">
-        <GestureAnnotationPad
-          competitionId={competitionId}
-          gameNumber={String(gameNumber)}
-        />
-      </div>
+    <div className="gesture-pad-page fixed inset-0 z-[400] flex flex-col overflow-hidden bg-[#1a5fa8]">
+      <GesturePadToolbar
+        onBack={onClose}
+        backLabel={t('common.back')}
+        competitionId={competitionId}
+        gameNumber={String(gameNumber)}
+      />
+      <GestureAnnotationPad
+        competitionId={competitionId}
+        gameNumber={String(gameNumber)}
+        courtSetupKey={courtSetupKey}
+        courtId={courtId}
+        roundId={roundId}
+        onSubmitMatch={handleSubmitMatch}
+        onMatchClosed={onClose}
+        quadrantPlayers={quadrantPlayers}
+        currentUserId={currentUserId}
+        currentUserAvatarUrl={currentUserAvatarUrl}
+      />
+    </div>
+  )
+}
+
+function CourtLabelRow({
+  courtLabel,
+  currentUserId,
+  court,
+  finished,
+  onOpenGesturePad,
+}: {
+  courtLabel: string
+  currentUserId?: string | null
+  court: LiveCourt | ScoringGame['courts'][number]
+  finished: boolean
+  onOpenGesturePad?: () => void
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2 pr-1">
+      <p className={courtLabelClass(currentUserId, court, finished)}>{courtLabel}</p>
+      {onOpenGesturePad ? <GameGesturePadButton onOpen={onOpenGesturePad} /> : null}
     </div>
   )
 }
 
 function GameCardHeader({
   gameNumber,
-  onOpenGesturePad,
   isLiveNow,
   timeLabel,
   countdown,
@@ -712,7 +777,6 @@ function GameCardHeader({
   t,
 }: {
   gameNumber: number
-  onOpenGesturePad?: () => void
   isLiveNow?: boolean
   timeLabel?: string
   countdown?: string | null
@@ -772,18 +836,13 @@ function GameCardHeader({
           </div>
         )}
       </button>
-      {onOpenGesturePad ? (
-        <div className="flex shrink-0 items-center pr-3 md:pr-4">
-          <GameGesturePadButton onOpen={onOpenGesturePad} />
-        </div>
-      ) : null}
     </div>
   )
 }
 
 function ScoringGameCard({
   game,
-  onOpenGesturePad,
+  onOpenCourtGesturePad,
   gameRoundId,
   courtsForGame,
   courtIdByLabel,
@@ -804,7 +863,7 @@ function ScoringGameCard({
   t,
 }: {
   game: ScoringGame
-  onOpenGesturePad?: () => void
+  onOpenCourtGesturePad?: (quadrantPlayers: QuadrantPlayers, courtId?: string) => void
   gameRoundId?: string
   courtsForGame: LiveCourt[]
   courtIdByLabel?: Map<string, string>
@@ -851,7 +910,6 @@ function ScoringGameCard({
     <div className={gameCardShellClass({ finished, isCurrentGame, isMyGame })}>
       <GameCardHeader
         gameNumber={game.gameNumber}
-        onOpenGesturePad={onOpenGesturePad}
         isLiveNow={isLiveNow}
         timeLabel={game.timeLabel}
         countdown={countdown}
@@ -879,6 +937,7 @@ function ScoringGameCard({
               finished={finished}
               currentUserId={currentUserId}
               currentUserAvatarUrl={currentUserAvatarUrl}
+              onOpenCourtGesturePad={onOpenCourtGesturePad}
               t={t}
             />
           </div>
@@ -909,12 +968,19 @@ export function CompetitionCourtBoard({
   roundStatusByGame,
   currentUserId,
   currentUserAvatarUrl,
+  isAdmin = false,
 }: Props) {
   const { t } = useTranslation()
   const games = useMemo(() => pivotScheduleByGame(columns), [columns])
   const [tick, setTick] = useState(() => Date.now())
   const [collapsedGames, setCollapsedGames] = useState<Record<number, boolean>>({})
-  const [gesturePadGame, setGesturePadGame] = useState<number | null>(null)
+  const [gesturePadTarget, setGesturePadTarget] = useState<{
+    gameNumber: number
+    courtId?: string
+    roundId?: string
+    quadrantPlayers: QuadrantPlayers
+  } | null>(null)
+  const gesturePadEnabled = Boolean(competitionId && isAdmin && currentUserId)
   const scoringTimeUnlocked = isScoringTimeUnlocked()
 
   useEffect(() => {
@@ -1043,8 +1109,14 @@ export function CompetitionCourtBoard({
             isLiveNow ||
             timeUp)
 
-        const openGesturePad = competitionId
-          ? () => setGesturePadGame(game.gameNumber)
+        const onOpenCourtGesturePad = gesturePadEnabled
+          ? (quadrantPlayers: QuadrantPlayers, courtId?: string) =>
+              setGesturePadTarget({
+                gameNumber: game.gameNumber,
+                quadrantPlayers,
+                courtId,
+                roundId: gameRoundId,
+              })
           : undefined
 
         if (mode === 'scoring' && matchForCourt) {
@@ -1052,7 +1124,7 @@ export function CompetitionCourtBoard({
             <ScoringGameCard
               key={game.gameNumber}
               game={game}
-              onOpenGesturePad={openGesturePad}
+              onOpenCourtGesturePad={onOpenCourtGesturePad}
               gameRoundId={gameRoundId}
               courtsForGame={courtsForGame}
               courtIdByLabel={courtIdByLabel}
@@ -1082,7 +1154,6 @@ export function CompetitionCourtBoard({
           >
             <GameCardHeader
               gameNumber={game.gameNumber}
-              onOpenGesturePad={openGesturePad}
               isLiveNow={isLiveNow}
               timeLabel={game.timeLabel}
               countdown={countdown}
@@ -1107,17 +1178,32 @@ export function CompetitionCourtBoard({
                     gameRoundId && courtId && matchForCourt
                       ? matchForCourt(gameRoundId, courtId)
                       : undefined
+                  const teamA = liveCourt?.teamA ?? court.teamA
+                  const teamB = liveCourt?.teamB ?? court.teamB
+                  const teamAPlayers = liveCourt?.teamAPlayers ?? court.teamAPlayers
+                  const teamBPlayers = liveCourt?.teamBPlayers ?? court.teamBPlayers
+                  const openGesturePad = onOpenCourtGesturePad
+                    ? () =>
+                        onOpenCourtGesturePad(
+                          quadrantPlayersForCourt(teamA, teamB, teamAPlayers, teamBPlayers),
+                        )
+                    : undefined
+
                   return (
                     <div key={court.courtLabel} className="space-y-1">
-                      <p className={courtLabelClass(currentUserId, liveCourt ?? court, finished)}>
-                        {court.courtLabel}
-                      </p>
+                      <CourtLabelRow
+                        courtLabel={court.courtLabel}
+                        currentUserId={currentUserId}
+                        court={liveCourt ?? court}
+                        finished={finished}
+                        onOpenGesturePad={openGesturePad}
+                      />
                       <div>
                         <CourtMatchCell
-                          teamA={liveCourt?.teamA ?? court.teamA}
-                          teamB={liveCourt?.teamB ?? court.teamB}
-                          teamAPlayers={liveCourt?.teamAPlayers ?? court.teamAPlayers}
-                          teamBPlayers={liveCourt?.teamBPlayers ?? court.teamBPlayers}
+                          teamA={teamA}
+                          teamB={teamB}
+                          teamAPlayers={teamAPlayers}
+                          teamBPlayers={teamBPlayers}
                           scoreUnit={scoreUnit}
                           scoreA={
                             saved?.teamAPoints != null ? String(saved.teamAPoints) : undefined
@@ -1141,14 +1227,30 @@ export function CompetitionCourtBoard({
           </div>
         )
       })}
-      {gesturePadGame != null && competitionId ? (
-        <GesturePadOverlay
-          competitionId={competitionId}
-          gameNumber={gesturePadGame}
-          onClose={() => setGesturePadGame(null)}
-          t={t}
-        />
-      ) : null}
+      {gesturePadTarget != null && gesturePadEnabled && competitionId
+        ? createPortal(
+            <GesturePadOverlay
+              competitionId={competitionId}
+              gameNumber={gesturePadTarget.gameNumber}
+              courtId={gesturePadTarget.courtId}
+              roundId={gesturePadTarget.roundId}
+              quadrantPlayers={gesturePadTarget.quadrantPlayers}
+              currentUserId={currentUserId}
+              currentUserAvatarUrl={currentUserAvatarUrl}
+              onSubmitMatch={
+                onSubmitScores
+                  ? async (entry) => {
+                      await onSubmitScores([entry])
+                    }
+                  : undefined
+              }
+              onSaved={onSaved}
+              onClose={() => setGesturePadTarget(null)}
+              t={t}
+            />,
+            document.body,
+          )
+        : null}
     </div>
   )
 }

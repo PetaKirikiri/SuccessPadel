@@ -32,6 +32,16 @@ async function lineUserFromAccessToken(accessToken: string): Promise<LineUser | 
   return { sub: u.sub, name: u.name, picture: u.picture }
 }
 
+LD async function magicLinkEmailForUser(
+  admin: ReturnType<typeof createClient>,
+  userId: string,
+  fallbackEmail: string,
+): Promise<string> {
+  const { data, error } = await admin.auth.admin.getUserById(userId)
+  if (error) throw error
+  return data.user.email ?? fallbackEmail
+}
+
 async function findAuthUserIdByEmail(
   admin: ReturnType<typeof createClient>,
   email: string,
@@ -87,9 +97,10 @@ async function sessionForLineUser(admin: ReturnType<typeof createClient>, lineUs
     : await admin.from('profiles').upsert(profilePatch)
   if (profileErr) throw profileErr
 
+  const linkEmail = await magicLinkEmailForUser(admin, userId, email)
   const { data: link, error: linkErr } = await admin.auth.admin.generateLink({
     type: 'magiclink',
-    email,
+    email: linkEmail,
   })
   if (linkErr) throw linkErr
 

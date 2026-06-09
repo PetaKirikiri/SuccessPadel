@@ -18,6 +18,7 @@ import {
   storedScheduleFromConfig,
 } from '../lib/rankedSchedule'
 import type { CourtPlayer, GameRound } from '../lib/americanoSchedule'
+import type { PlaySide } from '../lib/types'
 import { pivotScheduleByCourt, type CourtColumn } from '../lib/competitionCourtBoard'
 import type { CompetitionPlayer } from './useCompetitions'
 import {
@@ -29,7 +30,6 @@ import {
   type RoundPlayer,
 } from './useCompetitionRun'
 import type { GameSession, MatchTeam } from '../lib/types'
-
 type LiveCourt = {
   courtId: string
   courtName: string
@@ -57,7 +57,10 @@ function groupLiveCourts(players: RoundPlayer[]): LiveCourt[] {
     const label = roundPlayerName(p)
     const pid = p.profile_id ?? p.session_players?.profile_id
     const avatarUrl = p.session_players?.profiles?.avatar_url ?? null
-    const player = { id: pid ?? null, name: label, avatarUrl } satisfies CourtPlayer
+    const rawSide = p.session_players?.profiles?.preferred_side
+    const preferredSide: PlaySide | null =
+      rawSide === 'left' || rawSide === 'right' || rawSide === 'both' ? rawSide : null
+    const player = { id: pid ?? null, name: label, avatarUrl, preferredSide } satisfies CourtPlayer
     if (p.team === 'a') {
       row.teamA.push(label)
       row.teamAPlayers.push(player)
@@ -130,12 +133,16 @@ export function useCompetitionBoard(
   )
 
   const americanoGames = useMemo(() => {
-    if (!isAmericano || !layoutValid) return []
-    if (hasLiveRounds) return gamesFromDbRounds(rounds, clubCourts)
-    if (storedSchedule.length > 0) {
-      return gamesFromStoredSchedule(rankedRoster, storedSchedule, courtNames)
+    if (!isAmericano) return []
+    let games: GameRound[]
+    if (hasLiveRounds) games = gamesFromDbRounds(rounds, clubCourts)
+    else if (!layoutValid) return []
+    else if (storedSchedule.length > 0) {
+      games = gamesFromStoredSchedule(rankedRoster, storedSchedule, courtNames)
+    } else {
+      games = planRankedSchedule(rankedRoster, courtNames, totalGames, scheduleSeed)
     }
-    return planRankedSchedule(rankedRoster, courtNames, totalGames, scheduleSeed)
+    return games
   }, [
     isAmericano,
     hasLiveRounds,
