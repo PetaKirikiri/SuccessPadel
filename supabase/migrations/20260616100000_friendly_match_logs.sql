@@ -38,12 +38,12 @@ grant select on public.friendly_match_logs to authenticated;
 create or replace function public.save_friendly_match_log(
   p_friendly_session_id uuid,
   p_court_setup_key text,
-  p_game_number int default null,
-  p_court_label text default null,
   p_match_started_at timestamptz,
   p_match_ended_at timestamptz,
   p_final_score jsonb,
   p_winner text,
+  p_game_number int default null,
+  p_court_label text default null,
   p_player_stats jsonb default '[]'::jsonb,
   p_point_events jsonb default '[]'::jsonb,
   p_gestures jsonb default '[]'::jsonb
@@ -125,5 +125,5 @@ end;
 $body$;
 
 grant execute on function public.save_friendly_match_log(
-  uuid, text, int, text, timestamptz, timestamptz, jsonb, text, jsonb, jsonb, jsonb
+  uuid, text, timestamptz, timestamptz, jsonb, text, int, text, jsonb, jsonb, jsonb
 ) to authenticated;
