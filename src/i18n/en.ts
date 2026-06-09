@@ -69,7 +69,7 @@ export const en: Messages = {
     private: 'Private',
     join: 'Join',
     onRoster: "You're in",
-    openSpots: 'Open spots',
+    openSpots: 'Open',
     tapToJoin: 'Tap to join',
     freePlay: 'Free play',
     organizedPlay: 'Organized',

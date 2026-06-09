@@ -77,22 +77,22 @@ export function friendlyRuleChips(game: FriendlyGameRecord): FriendlyRuleChip[] 
     const scoring =
       config.americanoScoring === 'open'
         ? 'Open'
-        : `${americanoTargetLabel(config.americanoScoring as Exclude<AmericanoScoringChoice, 'open'>)} games`
+        : `${americanoTargetLabel(config.americanoScoring as Exclude<AmericanoScoringChoice, 'open'>)} games max`
     chips.push({ key: 'scoring', label: scoring, hintKey: 'friendly.hint.scoring' })
     chips.push({
       key: 'rounds',
-      label: `${config.gameCount} games`,
+      label: `${config.gameCount} games total`,
       hintKey: 'friendly.hint.rounds',
     })
     chips.push({
       key: 'gameMin',
-      label: `${config.gameMinutes} min`,
+      label: `${config.gameMinutes} min/game`,
       hintKey: 'friendly.hint.gameMinutes',
     })
     if (config.breakMinutes > 0) {
       chips.push({
         key: 'break',
-        label: `${config.breakMinutes} min break`,
+        label: `${config.breakMinutes} min breaks`,
         hintKey: 'friendly.hint.break',
       })
     }
@@ -100,7 +100,7 @@ export function friendlyRuleChips(game: FriendlyGameRecord): FriendlyRuleChip[] 
   return chips
 }
 
-export function friendlyDurationEstimate(game: FriendlyGameRecord): string | null {
+export function friendlyEndTimeLabel(game: FriendlyGameRecord): string | null {
   if (game.playMode === 'free') return null
   const config = game.organizedConfig ?? DEFAULT_FRIENDLY_ORGANIZED_CONFIG
   if (!config.day) return null
@@ -108,7 +108,7 @@ export function friendlyDurationEstimate(game: FriendlyGameRecord): string | nul
   const totalMin =
     config.gameCount * config.gameMinutes + Math.max(0, config.gameCount - 1) * config.breakMinutes
   const end = new Date(start.getTime() + totalMin * 60_000)
-  return `Until ~${end.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}`
+  return end.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })
 }
 
 export function friendlyOpenSpots(game: FriendlyGameRecord): number {

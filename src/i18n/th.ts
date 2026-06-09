@@ -68,7 +68,7 @@ export const th: Messages = {
     private: 'ส่วนตัว',
     join: 'เข้าร่วม',
     onRoster: 'คุณอยู่ในรายชื่อแล้ว',
-    openSpots: 'ที่ว่าง',
+    openSpots: 'ว่าง',
     tapToJoin: 'แตะเพื่อเข้าร่วม',
     freePlay: 'เล่นอิสระ',
     organizedPlay: 'จัดระเบียบ',

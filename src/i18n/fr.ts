@@ -69,7 +69,7 @@ export const fr: Messages = {
     private: 'Privé',
     join: 'Rejoindre',
     onRoster: 'Vous êtes inscrit',
-    openSpots: 'Places libres',
+    openSpots: 'Libre',
     tapToJoin: 'Appuyer pour rejoindre',
     freePlay: 'Jeu libre',
     organizedPlay: 'Organisé',

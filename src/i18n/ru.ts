@@ -69,7 +69,7 @@ export const ru: Messages = {
     private: 'Приватная',
     join: 'Присоединиться',
     onRoster: 'Вы в списке',
-    openSpots: 'Свободные места',
+    openSpots: 'Свободно',
     tapToJoin: 'Нажмите, чтобы присоединиться',
     freePlay: 'Свободная игра',
     organizedPlay: 'Организованная',
