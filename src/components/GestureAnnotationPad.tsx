@@ -39,11 +39,13 @@ import { pointWinnerFromGesture } from '../lib/gestureScoring'
 import { buildMatchPlayerStats, type PlayerGameStats } from '../lib/playerGameStats'
 import {
   finalizeMatchSession,
+  gesturesForSession,
   MATCH_PERSIST_TO_SERVER,
   recordMatchGesture,
   recordMatchPoint,
   ensureMatchSession,
 } from '../lib/matchSessionLog'
+import { saveFriendlyMatchLog } from '../lib/friendlyMatchServer'
 import { isMatchComplete, matchWinner } from '../lib/matchFormat'
 import { isFriendlySession, resetFriendlyMatchState } from '../lib/friendlyMatch'
 import { applyTennisPoint, INITIAL_TENNIS_SCORE, type TennisScore } from '../lib/tennisScore'
@@ -318,6 +320,7 @@ export function GestureAnnotationPad({
   const [initialServeQuadrant, setInitialServeQuadrant] = useState<Quadrant | null>(null)
   const [tennisScore, setTennisScore] = useState<TennisScore>(INITIAL_TENNIS_SCORE)
   const [matchSubmitted, setMatchSubmitted] = useState(false)
+  const [friendlyServerSaved, setFriendlyServerSaved] = useState(false)
   const [matchStartedAt, setMatchStartedAt] = useState<string | null>(null)
   const [submittingMatch, setSubmittingMatch] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -449,7 +452,7 @@ export function GestureAnnotationPad({
         }
 
         if (courtSetupKey) {
-          finalizeMatchSession({
+          const finalized = finalizeMatchSession({
             sessionId: courtSetupKey,
             finalScore,
             winner: matchWinnerTeam,
@@ -466,6 +469,17 @@ export function GestureAnnotationPad({
               assignments as QuadrantPlayers,
             ),
           })
+
+          if (isFriendly && finalized) {
+            const gestures = gesturesForSession(finalized, readGestureDebugLog())
+            const { error: saveErr } = await saveFriendlyMatchLog(
+              courtSetupKey,
+              finalized,
+              gestures,
+            )
+            if (saveErr) throw new Error(saveErr)
+            setFriendlyServerSaved(true)
+          }
         }
 
         setMatchSubmitted(true)
@@ -964,7 +978,7 @@ export function GestureAnnotationPad({
             submitting={submittingMatch}
             submitted={matchSubmitted}
             error={submitError}
-            savedLocally={!MATCH_PERSIST_TO_SERVER}
+            savedLocally={isFriendly ? !friendlyServerSaved : !MATCH_PERSIST_TO_SERVER}
             playerStats={matchPlayerStats}
             onSelectPlayer={setStatsPlayer}
             onClose={onMatchClosed}
