@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { FriendlyRosterChips } from './FriendlyRosterChips'
 import { useTranslation } from '../hooks/useTranslation'
+import { firstDisplayName } from '../lib/leaderboardEntries'
 import type { FriendlyGameRecord } from '../lib/friendlyGames'
+import type { FriendlyRosterSlot } from '../lib/friendlyGameDisplay'
 import {
   friendlyEndTimeLabel,
   friendlyRosterSlots,
-  friendlyRuleChips,
+  friendlyRulesSummary,
   friendlyWhenLabel,
 } from '../lib/friendlyGameDisplay'
 
@@ -19,77 +20,93 @@ type Props = {
   className?: string
 }
 
-function Badge({ children, accent }: { children: ReactNode; accent?: boolean }) {
+function AvatarStack({
+  slots,
+  currentUserId,
+}: {
+  slots: FriendlyRosterSlot[]
+  currentUserId?: string | null
+}) {
   return (
-    <span
-      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-        accent
-          ? 'bg-brand-accent/15 text-brand-accent'
-          : 'border border-brand-border/70 text-brand-muted'
-      }`}
-    >
-      {children}
-    </span>
+    <div className="flex items-center">
+      {slots.map((slot, i) => {
+        if (slot.vacant) {
+          return (
+            <span
+              key={`open-${i}`}
+              className="-ml-2 flex h-7 w-7 items-center justify-center rounded-full border border-dashed border-brand-border/80 bg-brand-bg-alt/60 text-[11px] font-semibold text-brand-muted ring-2 ring-brand-surface first:ml-0"
+            >
+              +
+            </span>
+          )
+        }
+        const name = firstDisplayName(slot.name || 'Player')
+        const isMe = Boolean(currentUserId && slot.profileId === currentUserId)
+        const ring = isMe ? 'ring-brand-accent' : 'ring-brand-surface'
+        return slot.avatarUrl ? (
+          <img
+            key={`${slot.profileId ?? slot.name}-${i}`}
+            src={slot.avatarUrl}
+            alt=""
+            className={`-ml-2 h-7 w-7 rounded-full object-cover ring-2 first:ml-0 ${ring}`}
+          />
+        ) : (
+          <span
+            key={`${slot.profileId ?? slot.name}-${i}`}
+            className={`-ml-2 flex h-7 w-7 items-center justify-center rounded-full bg-brand-bg-alt text-[11px] font-semibold text-brand-primary ring-2 first:ml-0 ${ring}`}
+          >
+            {name[0]?.toUpperCase() ?? '?'}
+          </span>
+        )
+      })}
+    </div>
   )
 }
 
-export function FriendlyGameCard({
-  game,
-  to,
-  currentUserId,
-  footer,
-  className = '',
-}: Props) {
+export function FriendlyGameCard({ game, to, currentUserId, footer, className = '' }: Props) {
   const { t } = useTranslation()
   const isFree = game.playMode === 'free'
   const slots = friendlyRosterSlots(game)
+  const filled = slots.filter((s) => !s.vacant).length
   const when = friendlyWhenLabel(game)
   const endTime = friendlyEndTimeLabel(game)
-  const ruleChips = friendlyRuleChips(game)
+  const rulesLine = friendlyRulesSummary(game)
+  const mode = isFree ? t('friendly.freePlay') : t('friendly.organizedPlay')
+  const spots = `${filled}/${slots.length}`
+  const meta = [`${when}${endTime ? `–${endTime}` : ''}`, mode, spots]
+    .filter(Boolean)
+    .join(' · ')
 
-  const body = (
-    <article className={`game-card space-y-3 p-3 ${className}`}>
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <h2 className="min-w-0 flex-1 font-display text-sm font-semibold leading-snug text-brand-primary md:text-base">
-          {game.title}
-        </h2>
-        <div className="flex shrink-0 flex-wrap justify-end gap-1">
-          <Badge>{game.visibility === 'public' ? t('friendly.public') : t('friendly.private')}</Badge>
-          <Badge accent>{isFree ? t('friendly.freePlay') : t('friendly.organizedPlay')}</Badge>
+  const inner = (
+    <div className="px-3 py-2.5">
+      <div className="flex min-w-0 items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="font-display text-sm font-semibold leading-snug text-brand-primary">
+            {game.title}
+          </p>
+          <p className="mt-0.5 text-[11px] leading-snug text-brand-muted">{meta}</p>
+          {rulesLine ? (
+            <p className="mt-0.5 text-[11px] leading-snug text-brand-muted">{rulesLine}</p>
+          ) : null}
+          <div className="mt-1.5">
+            <AvatarStack slots={slots} currentUserId={currentUserId} />
+          </div>
         </div>
+        {to ? <span className="shrink-0 text-sm text-brand-muted">›</span> : null}
       </div>
+    </div>
+  )
 
-      <p className="text-sm font-medium text-brand-text">
-        {when}
-        {endTime ? `–${endTime}` : ''}
-      </p>
-
-      {!isFree && ruleChips.length > 0 ? (
-        <div className="flex flex-wrap gap-1.5">
-          {ruleChips.map((chip) => (
-            <span
-              key={chip.key}
-              className="inline-flex items-center rounded-lg border border-brand-border/70 bg-brand-bg-alt/40 px-2 py-1 text-[11px] font-medium text-brand-text"
-            >
-              {chip.label}
-            </span>
-          ))}
-        </div>
-      ) : null}
-
-      <FriendlyRosterChips slots={slots} currentUserId={currentUserId} />
-
+  return (
+    <article className={`game-card overflow-hidden p-0 ${className}`}>
+      {to ? (
+        <Link to={to} className="block transition-opacity active:opacity-80">
+          {inner}
+        </Link>
+      ) : (
+        inner
+      )}
       {footer}
     </article>
   )
-
-  if (to) {
-    return (
-      <Link to={to} className="block transition active:opacity-80">
-        {body}
-      </Link>
-    )
-  }
-
-  return body
 }
