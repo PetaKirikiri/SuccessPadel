@@ -8,9 +8,9 @@ import { useTranslation } from '../hooks/useTranslation'
 
 export function FriendlyHomePage() {
   const { t } = useTranslation()
-  const { profile } = useAuth()
+  const { profile, loading: authLoading } = useAuth()
   const { games, loading, error, refresh } = usePublicFriendlyGames()
-  const isAdmin = Boolean(profile?.is_admin)
+  const isAdmin = !authLoading && Boolean(profile?.is_admin)
   const location = useLocation()
 
   useEffect(() => {

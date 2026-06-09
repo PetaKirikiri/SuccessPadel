@@ -35,6 +35,8 @@ type LiveCourt = {
 
 type Props = {
   competitionId?: string
+  friendlySessionId?: string
+  friendly?: boolean
   columns: CourtColumn[]
   mode: 'preview' | 'scoring'
   activeGameNumber?: number
@@ -582,7 +584,11 @@ function GameScoringCourts({
   finished: boolean
   currentUserId?: string | null
   currentUserAvatarUrl?: string | null
-  onOpenCourtGesturePad?: (quadrantPlayers: QuadrantPlayers, courtId?: string) => void
+  onOpenCourtGesturePad?: (
+    quadrantPlayers: QuadrantPlayers,
+    courtId?: string,
+    courtLabel?: string,
+  ) => void
   t: TranslateFn
 }) {
   return (
@@ -613,6 +619,7 @@ function GameScoringCourts({
               onOpenCourtGesturePad(
                 quadrantPlayersForCourt(teamA, teamB, teamAPlayers, teamBPlayers),
                 courtId,
+                court.courtLabel,
               )
           : undefined
 
@@ -686,9 +693,11 @@ function GameGesturePadButton({ onOpen }: { onOpen: () => void }) {
 }
 
 function GesturePadOverlay({
-  competitionId,
+  sessionId,
+  friendly,
   gameNumber,
   courtId,
+  courtLabel,
   roundId,
   quadrantPlayers,
   currentUserId,
@@ -698,9 +707,11 @@ function GesturePadOverlay({
   onClose,
   t,
 }: {
-  competitionId: string
+  sessionId: string
+  friendly?: boolean
   gameNumber: number
   courtId?: string
+  courtLabel?: string
   roundId?: string
   quadrantPlayers: QuadrantPlayers
   currentUserId?: string | null
@@ -710,8 +721,11 @@ function GesturePadOverlay({
   onClose: () => void
   t: TranslateFn
 }) {
-  const courtSetupKey =
-    courtId != null ? `${competitionId}-${gameNumber}-${courtId}` : undefined
+  const courtSetupKey = friendly
+    ? `${sessionId}-${gameNumber}-${courtLabel ?? courtId ?? 'court'}`
+    : courtId != null
+      ? `${sessionId}-${gameNumber}-${courtId}`
+      : undefined
 
   const handleSubmitMatch = onSubmitMatch
     ? async (entry: CourtScoreSubmit) => {
@@ -725,20 +739,21 @@ function GesturePadOverlay({
       <GesturePadToolbar
         onBack={onClose}
         backLabel={t('common.back')}
-        competitionId={competitionId}
+        competitionId={friendly ? undefined : sessionId}
         gameNumber={String(gameNumber)}
       />
       <GestureAnnotationPad
-        competitionId={competitionId}
+        competitionId={friendly ? undefined : sessionId}
         gameNumber={String(gameNumber)}
         courtSetupKey={courtSetupKey}
         courtId={courtId}
         roundId={roundId}
-        onSubmitMatch={handleSubmitMatch}
+        onSubmitMatch={friendly ? undefined : handleSubmitMatch}
         onMatchClosed={onClose}
         quadrantPlayers={quadrantPlayers}
         currentUserId={currentUserId}
         currentUserAvatarUrl={currentUserAvatarUrl}
+        friendly={friendly}
       />
     </div>
   )
@@ -863,7 +878,11 @@ function ScoringGameCard({
   t,
 }: {
   game: ScoringGame
-  onOpenCourtGesturePad?: (quadrantPlayers: QuadrantPlayers, courtId?: string) => void
+  onOpenCourtGesturePad?: (
+    quadrantPlayers: QuadrantPlayers,
+    courtId?: string,
+    courtLabel?: string,
+  ) => void
   gameRoundId?: string
   courtsForGame: LiveCourt[]
   courtIdByLabel?: Map<string, string>
@@ -950,6 +969,8 @@ function ScoringGameCard({
 
 export function CompetitionCourtBoard({
   competitionId,
+  friendlySessionId,
+  friendly = false,
   columns,
   mode,
   activeGameNumber,
@@ -977,10 +998,12 @@ export function CompetitionCourtBoard({
   const [gesturePadTarget, setGesturePadTarget] = useState<{
     gameNumber: number
     courtId?: string
+    courtLabel?: string
     roundId?: string
     quadrantPlayers: QuadrantPlayers
   } | null>(null)
-  const gesturePadEnabled = Boolean(competitionId && isAdmin && currentUserId)
+  const sessionId = friendlySessionId ?? competitionId
+  const gesturePadEnabled = Boolean(sessionId && isAdmin && currentUserId)
   const scoringTimeUnlocked = isScoringTimeUnlocked()
 
   useEffect(() => {
@@ -1110,11 +1133,12 @@ export function CompetitionCourtBoard({
             timeUp)
 
         const onOpenCourtGesturePad = gesturePadEnabled
-          ? (quadrantPlayers: QuadrantPlayers, courtId?: string) =>
+          ? (quadrantPlayers: QuadrantPlayers, courtId?: string, courtLabel?: string) =>
               setGesturePadTarget({
                 gameNumber: game.gameNumber,
                 quadrantPlayers,
                 courtId,
+                courtLabel,
                 roundId: gameRoundId,
               })
           : undefined
@@ -1186,6 +1210,8 @@ export function CompetitionCourtBoard({
                     ? () =>
                         onOpenCourtGesturePad(
                           quadrantPlayersForCourt(teamA, teamB, teamAPlayers, teamBPlayers),
+                          courtId,
+                          court.courtLabel,
                         )
                     : undefined
 
@@ -1227,12 +1253,14 @@ export function CompetitionCourtBoard({
           </div>
         )
       })}
-      {gesturePadTarget != null && gesturePadEnabled && competitionId
+      {gesturePadTarget != null && gesturePadEnabled && sessionId
         ? createPortal(
             <GesturePadOverlay
-              competitionId={competitionId}
+              sessionId={sessionId}
+              friendly={friendly}
               gameNumber={gesturePadTarget.gameNumber}
               courtId={gesturePadTarget.courtId}
+              courtLabel={gesturePadTarget.courtLabel}
               roundId={gesturePadTarget.roundId}
               quadrantPlayers={gesturePadTarget.quadrantPlayers}
               currentUserId={currentUserId}

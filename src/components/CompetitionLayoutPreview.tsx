@@ -10,6 +10,11 @@ type Props = {
   games: GameRound[]
   eventStartsAt?: string
   gameMinutes: number
+  friendlySessionId?: string
+  friendly?: boolean
+  isAdmin?: boolean
+  currentUserId?: string | null
+  currentUserAvatarUrl?: string | null
 }
 
 export function CompetitionLayoutPreview({
@@ -17,6 +22,11 @@ export function CompetitionLayoutPreview({
   games,
   eventStartsAt,
   gameMinutes,
+  friendlySessionId,
+  friendly = false,
+  isAdmin = false,
+  currentUserId,
+  currentUserAvatarUrl,
 }: Props) {
   const scoreUnit = americanoScoringUnit(session)
 
@@ -25,5 +35,16 @@ export function CompetitionLayoutPreview({
     [games, eventStartsAt, gameMinutes],
   )
 
-  return <CompetitionCourtBoard columns={columns} mode="preview" scoreUnit={scoreUnit} />
+  return (
+    <CompetitionCourtBoard
+      columns={columns}
+      mode="preview"
+      scoreUnit={scoreUnit}
+      friendlySessionId={friendlySessionId}
+      friendly={friendly}
+      isAdmin={isAdmin}
+      currentUserId={currentUserId}
+      currentUserAvatarUrl={currentUserAvatarUrl}
+    />
+  )
 }

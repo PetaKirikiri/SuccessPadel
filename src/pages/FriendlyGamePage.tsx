@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useParams } from 'react-router-dom'
 import { CompetitionLayoutPreview } from '../components/CompetitionLayoutPreview'
 import { FriendlyGameCard } from '../components/FriendlyGameCard'
 import { useAuth } from '../hooks/useAuth'
+import { useLineClientProfile } from '../hooks/useLineClientProfile'
 import { useFriendlyGame } from '../hooks/useFriendlyGame'
 import { useTranslation } from '../hooks/useTranslation'
 import {
@@ -20,9 +21,11 @@ import type { Profile } from '../lib/types'
 
 export function FriendlyGamePage() {
   const { id } = useParams()
-  const navigate = useNavigate()
   const { t } = useTranslation()
   const { user, profile } = useAuth()
+  const lineClient = useLineClientProfile()
+  const headerAvatar = profile?.avatar_url ?? lineClient.pictureUrl ?? null
+  const isAdmin = Boolean(profile?.is_admin)
   const { game, loading, refresh } = useFriendlyGame(id)
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [courtNames, setCourtNames] = useState<string[]>([])
@@ -113,9 +116,16 @@ export function FriendlyGamePage() {
         ← {t('common.back')}
       </Link>
 
-      <FriendlyGameCard game={displayGame} currentUserId={user?.id} />
+      <FriendlyGameCard
+        game={displayGame}
+        currentUserId={user?.id}
+        currentUserAvatarUrl={headerAvatar}
+        isAdmin={isAdmin}
+        courtNames={courtNames}
+        showCourts
+      />
 
-      {!isFree && previewGames.length > 0 ? (
+      {!isFree && previewGames.length > 0 && !isAdmin ? (
         <div className="game-card overflow-hidden p-0">
           <div className="overflow-hidden rounded-lg">
             <CompetitionLayoutPreview
@@ -140,18 +150,8 @@ export function FriendlyGamePage() {
           </button>
         ) : null}
 
-        {joined && !profile?.is_admin ? (
+        {joined && !isAdmin ? (
           <p className="text-center text-xs text-brand-muted">{t('friendly.onRoster')}</p>
-        ) : null}
-
-        {profile?.is_admin ? (
-          <button
-            type="button"
-            onClick={() => navigate(`/friendly/${game.id}/pad`)}
-            className="brand-btn w-full py-3 text-sm font-semibold"
-          >
-            {t('friendly.openPad')}
-          </button>
         ) : null}
 
         {joinError ? <p className="text-xs text-red-600">{joinError}</p> : null}

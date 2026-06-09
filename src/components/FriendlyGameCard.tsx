@@ -1,8 +1,16 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { CompetitionLayoutPreview } from './CompetitionLayoutPreview'
 import { useTranslation } from '../hooks/useTranslation'
 import { firstDisplayName } from '../lib/leaderboardEntries'
 import type { FriendlyGameRecord } from '../lib/friendlyGames'
+import {
+  DEFAULT_FRIENDLY_ORGANIZED_CONFIG,
+  friendlyOrganizedSession,
+  friendlyPreviewGames,
+  friendlyStartsAtIso,
+  isOrganizedFriendly,
+} from '../lib/friendlyGames'
 import type { FriendlyRosterSlot } from '../lib/friendlyGameDisplay'
 import {
   friendlyEndTimeLabel,
@@ -15,7 +23,10 @@ type Props = {
   game: FriendlyGameRecord
   to?: string
   currentUserId?: string | null
-  showJoinHint?: boolean
+  currentUserAvatarUrl?: string | null
+  isAdmin?: boolean
+  courtNames?: string[]
+  showCourts?: boolean
   footer?: ReactNode
   className?: string
 }
@@ -63,7 +74,17 @@ function AvatarStack({
   )
 }
 
-export function FriendlyGameCard({ game, to, currentUserId, footer, className = '' }: Props) {
+export function FriendlyGameCard({
+  game,
+  to,
+  currentUserId,
+  currentUserAvatarUrl,
+  isAdmin = false,
+  courtNames = [],
+  showCourts = false,
+  footer,
+  className = '',
+}: Props) {
   const { t } = useTranslation()
   const isFree = game.playMode === 'free'
   const slots = friendlyRosterSlots(game)
@@ -76,6 +97,13 @@ export function FriendlyGameCard({ game, to, currentUserId, footer, className = 
   const meta = [`${when}${endTime ? `–${endTime}` : ''}`, mode, spots]
     .filter(Boolean)
     .join(' · ')
+
+  const organizedConfig = game.organizedConfig ?? DEFAULT_FRIENDLY_ORGANIZED_CONFIG
+  const previewGames = friendlyPreviewGames(game, courtNames, game.profileAvatars)
+  const previewSession = friendlyOrganizedSession(organizedConfig)
+  const startsAtIso = friendlyStartsAtIso(organizedConfig)
+  const showCourtBoard =
+    showCourts && isAdmin && isOrganizedFriendly(game) && previewGames.length > 0 && courtNames.length > 0
 
   const inner = (
     <div className="px-3 py-2.5">
@@ -106,6 +134,34 @@ export function FriendlyGameCard({ game, to, currentUserId, footer, className = 
       ) : (
         inner
       )}
+
+      {showCourtBoard ? (
+        <div className="border-t border-brand-border/60 px-1 pb-2 pt-2">
+          <CompetitionLayoutPreview
+            session={previewSession}
+            games={previewGames}
+            eventStartsAt={startsAtIso}
+            gameMinutes={organizedConfig.gameMinutes}
+            friendlySessionId={game.id}
+            friendly
+            isAdmin={isAdmin}
+            currentUserId={currentUserId}
+            currentUserAvatarUrl={currentUserAvatarUrl}
+          />
+        </div>
+      ) : null}
+
+      {isAdmin && isFree ? (
+        <div className="border-t border-brand-border/60 px-3 py-2.5">
+          <Link
+            to={`/friendly/${game.id}/pad`}
+            className="brand-btn block w-full py-2 text-center text-sm font-semibold"
+          >
+            {t('friendly.openPad')}
+          </Link>
+        </div>
+      ) : null}
+
       {footer}
     </article>
   )

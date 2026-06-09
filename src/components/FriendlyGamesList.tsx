@@ -1,8 +1,11 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FriendlyGameCard } from './FriendlyGameCard'
 import { GamesHubEmpty, GamesHubLoading } from './GamesHubView'
 import { useAuth } from '../hooks/useAuth'
+import { useLineClientProfile } from '../hooks/useLineClientProfile'
 import { useTranslation } from '../hooks/useTranslation'
+import { supabase } from '../lib/supabaseClient'
 import type { FriendlyGameRecord } from '../lib/friendlyGames'
 
 type Props = {
@@ -14,7 +17,27 @@ type Props = {
 
 export function FriendlyGamesList({ games, loading, past = false, isAdmin = false }: Props) {
   const { t } = useTranslation()
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
+  const lineClient = useLineClientProfile()
+  const headerAvatar = profile?.avatar_url ?? lineClient.pictureUrl ?? null
+  const [courtNames, setCourtNames] = useState<string[]>([])
+
+  useEffect(() => {
+    let active = true
+    void (async () => {
+      const { data } = await supabase.rpc('list_setup_courts')
+      if (active && Array.isArray(data)) {
+        setCourtNames(
+          (data as { name: string; sort_order: number }[])
+            .sort((a, b) => a.sort_order - b.sort_order)
+            .map((c) => c.name),
+        )
+      }
+    })()
+    return () => {
+      active = false
+    }
+  }, [])
 
   if (loading) return <GamesHubLoading />
 
@@ -41,19 +64,10 @@ export function FriendlyGamesList({ games, loading, past = false, isAdmin = fals
             game={game}
             to={`/friendly/${game.id}`}
             currentUserId={user?.id}
-            showJoinHint={!past}
-            footer={
-              isAdmin && !past ? (
-                <div className="border-t border-brand-border/60 px-3 py-2.5">
-                  <Link
-                    to={`/friendly/${game.id}/pad`}
-                    className="brand-btn block w-full py-2 text-center text-sm font-semibold"
-                  >
-                    {t('friendly.openPad')}
-                  </Link>
-                </div>
-              ) : null
-            }
+            currentUserAvatarUrl={headerAvatar}
+            isAdmin={isAdmin}
+            courtNames={courtNames}
+            showCourts={!past}
           />
         </li>
       ))}
