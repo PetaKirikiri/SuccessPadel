@@ -1,5 +1,10 @@
 import type { LeaderboardEntry } from '../components/CompetitionLeaderboard'
 import type { CourtPlayer } from './americanoSchedule'
+import {
+  achievementsFromTeamGames,
+  type CompetitionAchievements,
+  type TeamGame,
+} from './competitionAchievements'
 import type { AmericanoScoringUnit } from './competitionPresets'
 import { quadrantTeam } from './gestureScoring'
 import type { GameLogRosterSlot } from './gameLogSerialize'
@@ -17,10 +22,28 @@ type PlayerTotals = {
   losses: number
 }
 
-function rosterPlayerKey(slot: GameLogRosterSlot): string | null {
-  if (slot.playerId) return slot.playerId
-  if (slot.name.trim()) return slot.name.trim()
-  return null
+function rosterKeyLookup(sessionRoster: CourtPlayer[]): Map<string, string> {
+  const map = new Map<string, string>()
+  for (const player of sessionRoster) {
+    const key = player.id ?? player.name
+    map.set(key, key)
+    if (player.id) map.set(player.id, key)
+    map.set(player.name, key)
+  }
+  return map
+}
+
+function canonicalRosterKey(raw: string, lookup: Map<string, string>): string {
+  return lookup.get(raw) ?? raw
+}
+
+function rosterPlayerKey(
+  slot: GameLogRosterSlot,
+  lookup?: Map<string, string>,
+): string | null {
+  const raw = slot.playerId ?? (slot.name.trim() || null)
+  if (!raw) return null
+  return lookup ? canonicalRosterKey(raw, lookup) : raw
 }
 
 function teamScores(
@@ -67,11 +90,15 @@ export function computeFriendlySessionStandings(
   sessionRoster: CourtPlayer[] = [],
 ): LeaderboardEntry[] {
   const totals = new Map<string, PlayerTotals>()
+  const keyLookup = rosterKeyLookup(sessionRoster)
+  const rosterByKey = new Map(sessionRoster.map((p) => [p.id ?? p.name, p]))
 
   for (const player of sessionRoster) {
     const key = player.id ?? player.name
-    totals.set(key, emptyTotals(key, player.name, player.id))
-    if (player.avatarUrl) totals.get(key)!.avatar_url = player.avatarUrl
+    totals.set(key, {
+      ...emptyTotals(key, player.name, player.id),
+      avatar_url: player.avatarUrl ?? null,
+    })
   }
 
   for (const log of latestLogsByCourt(logs)) {
@@ -81,18 +108,20 @@ export function computeFriendlySessionStandings(
     const [scoreA, scoreB] = scores
 
     for (const slot of log.roster) {
-      const key = rosterPlayerKey(slot)
+      const key = rosterPlayerKey(slot, keyLookup)
       if (!key) continue
       const team = quadrantTeam(slot.quadrant)
       const teamScore = team === 'a' ? scoreA : scoreB
       const oppScore = team === 'a' ? scoreB : scoreA
+      const rosterPlayer = rosterByKey.get(key)
       const cur =
         totals.get(key) ??
         emptyTotals(key, slot.name || key, slot.playerId)
       totals.set(key, {
         ...cur,
-        display_name: slot.name || cur.display_name,
-        member_profile_id: slot.playerId ?? cur.member_profile_id,
+        display_name: slot.name || rosterPlayer?.name || cur.display_name,
+        member_profile_id: slot.playerId ?? rosterPlayer?.id ?? cur.member_profile_id,
+        avatar_url: cur.avatar_url ?? rosterPlayer?.avatarUrl ?? null,
         points: cur.points + teamScore,
         games: cur.games + 1,
         wins: cur.wins + (teamScore > oppScore ? 1 : 0),
@@ -121,4 +150,72 @@ export function computeFriendlySessionStandings(
     )
 
   return normalizeLeaderboardEntries(rows)
+}
+
+function buildFriendlyTeamGames(
+  logs: MatchGestureLog[],
+  scoreUnit: AmericanoScoringUnit,
+  sessionRoster: CourtPlayer[] = [],
+): TeamGame[] {
+  const keyLookup = rosterKeyLookup(sessionRoster)
+  const games: TeamGame[] = []
+
+  for (const log of latestLogsByCourt(logs)) {
+    if (!log.matchEndedAt || !log.winner) continue
+    const scores = teamScores(log, scoreUnit)
+    if (!scores) continue
+    const [scoreA, scoreB] = scores
+    const round = Number(log.gameNumber) || 0
+    const court = log.courtId
+
+    const teamA = log.roster.filter((slot) => quadrantTeam(slot.quadrant) === 'a')
+    const teamB = log.roster.filter((slot) => quadrantTeam(slot.quadrant) === 'b')
+
+    const makeTeamGame = (
+      team: GameLogRosterSlot[],
+      scoreFor: number,
+      scoreAgainst: number,
+    ): TeamGame => ({
+      playerKeys: team
+        .map((slot) => rosterPlayerKey(slot, keyLookup))
+        .filter((key): key is string => Boolean(key)),
+      playerNames: team.map((slot) => slot.name).filter(Boolean),
+      round,
+      court,
+      scoreFor,
+      scoreAgainst,
+      won: scoreFor > scoreAgainst,
+    })
+
+    if (teamA.length) games.push(makeTeamGame(teamA, scoreA, scoreB))
+    if (teamB.length) games.push(makeTeamGame(teamB, scoreB, scoreA))
+  }
+
+  return games
+}
+
+export function calculateFriendlySessionAchievements(
+  logs: MatchGestureLog[],
+  scoreUnit: AmericanoScoringUnit,
+  sessionRoster: CourtPlayer[] = [],
+  standings: LeaderboardEntry[] = [],
+): CompetitionAchievements {
+  const teamGames = buildFriendlyTeamGames(logs, scoreUnit, sessionRoster)
+  const standingsOrder = standings.filter((row) => row.games > 0).map((row) => row.profile_id)
+  const completedCourts = new Set(
+    logs.filter((log) => log.matchEndedAt).map((log) => log.courtSetupKey),
+  ).size
+  const minTeamGames = completedCourts >= 1 ? 1 : 3
+  const activeStandings = standings.filter((row) => row.games > 0)
+  return achievementsFromTeamGames(
+    teamGames,
+    sessionRoster.map((player) => ({
+      key: player.id ?? player.name,
+      memberProfileId: player.id,
+      name: player.name,
+    })),
+    standingsOrder,
+    minTeamGames,
+    activeStandings,
+  )
 }

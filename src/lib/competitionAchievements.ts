@@ -123,6 +123,8 @@ type TeamGame = {
   won: boolean
 }
 
+export type { TeamGame }
+
 function buildTeamGames(input: AchievementsInput): TeamGame[] {
   const { rounds, courtMatches, clubCourts } = input
   const courtNameById = new Map(clubCourts.map((c) => [c.id, c.name]))
@@ -215,32 +217,147 @@ function currentWinStreak(results: { round: number; won: boolean }[]): number {
   return streak
 }
 
-function podiumPoints(stats: Map<string, PlayerStat>): number[] {
-  const distinct = [...new Set([...stats.values()].filter((s) => s.played > 0).map((s) => s.points))]
-  return distinct.sort((a, b) => b - a).slice(0, 3)
+function standingsSortKeys(stats: Map<string, PlayerStat>): string[] {
+  return [...stats.entries()]
+    .filter(([, stat]) => stat.played > 0)
+    .sort(
+      (a, b) =>
+        b[1].points - a[1].points ||
+        b[1].played - a[1].played ||
+        a[0].localeCompare(b[0]),
+    )
+    .map(([key]) => key)
+}
+
+export function podiumMedalForRowIndex(index: number): Achievement | null {
+  if (index === 0) {
+    return { key: 'winner', icon: ICON.winner, labelKey: 'achievements.winner' }
+  }
+  if (index === 1) {
+    return { key: 'runnerUp', icon: ICON.runnerUp, labelKey: 'achievements.runnerUp' }
+  }
+  if (index === 2) {
+    return { key: 'thirdPlace', icon: ICON.thirdPlace, labelKey: 'achievements.thirdPlace' }
+  }
+  return null
+}
+
+const PODIUM_BADGE_ORDER = ['winner', 'runnerUp', 'thirdPlace'] as const
+
+export function sortAchievementsForDisplay(badges: Achievement[]): Achievement[] {
+  return [...badges].sort((a, b) => {
+    const ai = PODIUM_BADGE_ORDER.indexOf(a.key as (typeof PODIUM_BADGE_ORDER)[number])
+    const bi = PODIUM_BADGE_ORDER.indexOf(b.key as (typeof PODIUM_BADGE_ORDER)[number])
+    if (ai !== -1 || bi !== -1) {
+      return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi)
+    }
+    return 0
+  })
+}
+
+export function podiumAchievementForRank(rank: number): Achievement | null {
+  return rank >= 1 && rank <= 3 ? podiumMedalForRowIndex(rank - 1) : null
+}
+
+type AchievementStandingsRow = {
+  profile_id: string
+  member_profile_id?: string | null
+  padel_player_id?: string | null
+  display_name: string
+  games: number
+}
+
+export function mergeAchievementRecords(
+  ...maps: Record<string, Achievement[]>[]
+): Record<string, Achievement[]> {
+  const out: Record<string, Achievement[]> = {}
+  for (const map of maps) {
+    for (const [id, badges] of Object.entries(map)) {
+      if (!badges.length) continue
+      const merged = sortAchievementsForDisplay([
+        ...(out[id] ?? []).filter((badge) => !badges.some((next) => next.key === badge.key)),
+        ...badges,
+      ])
+      out[id] = merged
+    }
+  }
+  return out
+}
+
+export function podiumAchievementsFromStandings(
+  standings: AchievementStandingsRow[],
+): Record<string, Achievement[]> {
+  const out: Record<string, Achievement[]> = {}
+  standings
+    .filter((row) => row.games > 0)
+    .slice(0, 3)
+    .forEach((row, index) => {
+      const medal = podiumMedalForRowIndex(index)
+      if (!medal) return
+      const ids = [
+        row.padel_player_id,
+        row.member_profile_id,
+        row.profile_id,
+        row.display_name,
+      ].filter((id): id is string => Boolean(id))
+      for (const id of ids) {
+        out[id] = sortAchievementsForDisplay([medal])
+      }
+    })
+  return out
+}
+
+function achievementsForStandingsRow(
+  row: AchievementStandingsRow,
+  byKey: Map<string, Achievement[]>,
+): Achievement[] | null {
+  const ids = [row.profile_id, row.member_profile_id, row.padel_player_id, row.display_name].filter(
+    (id): id is string => Boolean(id),
+  )
+  for (const id of ids) {
+    const list = byKey.get(id)
+    if (list?.length) return list
+  }
+  return null
+}
+
+function mapAchievementsToStandingsRows(
+  byKey: Map<string, Achievement[]>,
+  standings: AchievementStandingsRow[],
+): Record<string, Achievement[]> {
+  const out: Record<string, Achievement[]> = {}
+  for (const row of standings) {
+    if (row.games <= 0) continue
+    const list = achievementsForStandingsRow(row, byKey)
+    if (!list?.length) continue
+    const sorted = sortAchievementsForDisplay(list)
+    const ids = [row.padel_player_id, row.member_profile_id, row.profile_id, row.display_name].filter(
+      (id): id is string => Boolean(id),
+    )
+    for (const id of ids) {
+      out[id] = sorted
+    }
+  }
+  return out
 }
 
 function buildIndividualAchievements(
   stats: Map<string, PlayerStat>,
+  standingsOrder?: string[],
 ): Map<string, Achievement[]> {
-  const [gold, silver, bronze] = podiumPoints(stats)
-  const active = [...stats.values()].filter((s) => s.played > 0)
-  const maxWins = Math.max(0, ...active.map((s) => s.wins))
-  const maxStreak = Math.max(0, ...active.map((s) => longestWinStreak(s.results)))
-  const minConceded = active.length ? Math.min(...active.map((s) => s.conceded)) : null
+  const order = standingsOrder?.length ? standingsOrder : standingsSortKeys(stats)
+
+  const active = order
+    .map((key) => stats.get(key))
+    .filter((stat): stat is PlayerStat => Boolean(stat?.played))
+  const maxWins = Math.max(0, ...active.map((stat) => stat.wins))
+  const maxStreak = Math.max(0, ...active.map((stat) => longestWinStreak(stat.results)))
+  const minConceded = active.length ? Math.min(...active.map((stat) => stat.conceded)) : null
 
   const byKey = new Map<string, Achievement[]>()
   for (const [key, stat] of stats) {
     if (stat.played === 0) continue
     const list: Achievement[] = []
-
-    if (gold != null && stat.points === gold) {
-      list.push({ key: 'winner', icon: ICON.winner, labelKey: 'achievements.winner' })
-    } else if (silver != null && stat.points === silver) {
-      list.push({ key: 'runnerUp', icon: ICON.runnerUp, labelKey: 'achievements.runnerUp' })
-    } else if (bronze != null && stat.points === bronze) {
-      list.push({ key: 'thirdPlace', icon: ICON.thirdPlace, labelKey: 'achievements.thirdPlace' })
-    }
 
     if (maxWins > 0 && stat.wins === maxWins) {
       list.push({ key: 'mostWins', icon: ICON.mostWins, labelKey: 'achievements.mostWins' })
@@ -260,6 +377,15 @@ function buildIndividualAchievements(
 
     if (list.length > 0) byKey.set(key, list)
   }
+
+  order.slice(0, 3).forEach((key, index) => {
+    const medal = podiumMedalForRowIndex(index)
+    if (!medal) return
+    const list = byKey.get(key) ?? []
+    list.unshift(medal)
+    byKey.set(key, list)
+  })
+
   return byKey
 }
 
@@ -330,8 +456,71 @@ function mapAchievementsToRoster(
   return individualAchievementsByPlayerId
 }
 
+export type SessionRosterPlayer = {
+  key: string
+  memberProfileId: string | null
+  name: string
+}
+
+/** Shared achievement engine for any americano-style team game list (competition or friendly). */
+export function achievementsFromTeamGames(
+  teamGames: TeamGame[],
+  roster: SessionRosterPlayer[],
+  standingsOrder?: string[],
+  minGamesForLive = MIN_LIVE_GAMES,
+  standingsRows?: AchievementStandingsRow[],
+): CompetitionAchievements {
+  const podiumOnly = standingsRows?.length
+    ? podiumAchievementsFromStandings(standingsRows)
+    : {}
+
+  if (teamGames.length < minGamesForLive) {
+    return { individualAchievementsByPlayerId: podiumOnly, matchAwards: [] }
+  }
+
+  const stats = buildPlayerStats(teamGames)
+  const achievementsByKey = buildIndividualAchievements(stats, standingsOrder)
+  const fromStandings = standingsRows?.length
+    ? mapAchievementsToStandingsRows(achievementsByKey, standingsRows)
+    : null
+
+  const individualAchievementsByPlayerId: Record<string, Achievement[]> = fromStandings
+    ? mergeAchievementRecords(fromStandings, podiumOnly)
+    : { ...podiumOnly }
+
+  if (!fromStandings) {
+    for (const [key, list] of achievementsByKey) {
+      if (!list.length) continue
+      individualAchievementsByPlayerId[key] = sortAchievementsForDisplay(list)
+    }
+
+    for (const player of roster) {
+      const list = achievementsByKey.get(player.key)
+      if (!list?.length) continue
+      const ids = new Set<string>()
+      if (player.memberProfileId) ids.add(player.memberProfileId)
+      ids.add(player.key)
+      if (player.name && player.name !== player.key) ids.add(player.name)
+      for (const id of ids) {
+        individualAchievementsByPlayerId[id] = sortAchievementsForDisplay(list)
+      }
+    }
+  }
+
+  return {
+    individualAchievementsByPlayerId: mergeAchievementRecords(
+      individualAchievementsByPlayerId,
+      podiumOnly,
+    ),
+    matchAwards: buildMatchAwards(teamGames),
+  }
+}
+
 /** Live leaderboard badges once enough games are scored (updates as standings shift). */
-export function calculateLiveAchievements(input: AchievementsInput): CompetitionAchievements {
+export function calculateLiveAchievements(
+  input: AchievementsInput,
+  standingsOrder?: string[],
+): CompetitionAchievements {
   if (countFullyScoredRounds(input.rounds, input.courtMatches) < MIN_LIVE_GAMES) {
     return { individualAchievementsByPlayerId: {}, matchAwards: [] }
   }
@@ -340,7 +529,7 @@ export function calculateLiveAchievements(input: AchievementsInput): Competition
   const stats = buildPlayerStats(teamGames)
   return {
     individualAchievementsByPlayerId: mapAchievementsToRoster(
-      buildIndividualAchievements(stats),
+      buildIndividualAchievements(stats, standingsOrder),
       input.roster,
     ),
     matchAwards: buildMatchAwards(teamGames),
@@ -349,10 +538,11 @@ export function calculateLiveAchievements(input: AchievementsInput): Competition
 
 export function calculateCompetitionAchievements(
   input: AchievementsInput,
+  standingsOrder?: string[],
 ): CompetitionAchievements {
   const teamGames = buildTeamGames(input)
   const stats = buildPlayerStats(teamGames)
-  const achievementsByKey = buildIndividualAchievements(stats)
+  const achievementsByKey = buildIndividualAchievements(stats, standingsOrder)
 
   return {
     individualAchievementsByPlayerId: mapAchievementsToRoster(achievementsByKey, input.roster),

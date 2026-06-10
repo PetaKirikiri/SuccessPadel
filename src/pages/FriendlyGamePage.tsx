@@ -21,7 +21,11 @@ import {
   isFreeFriendly,
   isOnFriendlyRoster,
 } from '../lib/friendlyGames'
-import { computeFriendlySessionStandings } from '../lib/friendlySessionStandings'
+import {
+  calculateFriendlySessionAchievements,
+  computeFriendlySessionStandings,
+} from '../lib/friendlySessionStandings'
+import { enrichStandingsWithAvatars } from '../lib/leaderboardEntries'
 import { joinFriendlySession } from '../lib/friendlyServer'
 import {
   saveFriendlyManualCourtScore,
@@ -104,7 +108,32 @@ export function FriendlyGamePage() {
     [matchLogs, scoreUnit, sessionRoster],
   )
 
-  const hasStandings = standings.some((row) => row.games > 0)
+  const avatarSources = useMemo(
+    () =>
+      profiles
+        .filter((p) => sessionRoster.some((player) => player.id === p.id))
+        .map((p) => ({
+          profile_id: p.id,
+          member_profile_id: p.id,
+          display_name: p.display_name,
+          avatar_url: p.avatar_url,
+          total_points: 0,
+          games: 0,
+        })),
+    [profiles, sessionRoster],
+  )
+
+  const enrichedStandings = useMemo(
+    () => enrichStandingsWithAvatars(standings, avatarSources),
+    [standings, avatarSources],
+  )
+
+  const achievements = useMemo(
+    () => calculateFriendlySessionAchievements(matchLogs, scoreUnit, sessionRoster, enrichedStandings),
+    [matchLogs, scoreUnit, sessionRoster, enrichedStandings],
+  )
+
+  const hasStandings = enrichedStandings.some((row) => row.games > 0)
 
   const handleSubmitFriendlyScores = useCallback(
     async (entries: FriendlyCourtScoreSubmit[]) => {
@@ -164,13 +193,11 @@ export function FriendlyGamePage() {
       {!isFree && previewGames.length > 0 && viewTab === 'leaderboard' ? (
         hasStandings ? (
           <CompetitionLeaderboard
-            entries={standings}
+            entries={enrichedStandings}
             scoreUnit={scoreUnit}
-            headerTitle={t('friendly.leaderboard')}
-            headerSubtitle={t('friendly.leaderboardSubtitle')}
             currentUserId={user?.id ?? null}
             competitionId={null}
-            embedded
+            achievements={achievements}
           />
         ) : (
           <div className="game-card space-y-1 px-3 py-4 text-center">

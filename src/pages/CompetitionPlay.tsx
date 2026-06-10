@@ -193,13 +193,17 @@ export function CompetitionPlay() {
   const standings = liveStandings
 
   const complete = isCompetitionComplete(session, rounds, courtMatches)
+  const standingsOrder = useMemo(
+    () => liveStandings.filter((row) => row.games > 0).map((row) => row.profile_id),
+    [liveStandings],
+  )
   const achievements = useMemo(() => {
     if (!started) return null
     const input = { roster, rounds, courtMatches, clubCourts }
     return complete
-      ? calculateCompetitionAchievements(input)
-      : calculateLiveAchievements(input)
-  }, [started, complete, roster, rounds, courtMatches, clubCourts])
+      ? calculateCompetitionAchievements(input, standingsOrder)
+      : calculateLiveAchievements(input, standingsOrder)
+  }, [started, complete, roster, rounds, courtMatches, clubCourts, standingsOrder])
 
   return (
     <div className="game-bg flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden">

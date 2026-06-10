@@ -2,14 +2,14 @@ import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from '../hooks/useTranslation'
 import type { TranslateFn } from '../i18n'
-import { ACHIEVEMENT_IMAGE } from '../lib/competitionAchievements'
+import { ACHIEVEMENT_IMAGE, podiumAchievementForRank, sortAchievementsForDisplay } from '../lib/competitionAchievements'
 import type {
   Achievement,
   CompetitionAchievements,
   MatchAward,
 } from '../lib/competitionAchievements'
 import type { AmericanoScoringUnit } from '../lib/competitionPresets'
-import { compactDisplayNames, compactLeaderboardDisplayNames } from '../lib/leaderboardEntries'
+import { compactDisplayNames, compactLeaderboardDisplayNames, leaderboardEntryLookupIds } from '../lib/leaderboardEntries'
 
 export type LeaderboardEntry = {
   profile_id: string
@@ -275,13 +275,15 @@ export function CompetitionLeaderboard({
         : t('leaderboard.pts'))
   if (entries.length === 0) return null
 
-  const badgesFor = (entry: LeaderboardEntry): Achievement[] => {
+  const badgesFor = (entry: LeaderboardEntry, rank: number): Achievement[] => {
     const map = achievements?.individualAchievementsByPlayerId
-    if (!map) return []
-    for (const id of [entry.padel_player_id, entry.member_profile_id, entry.profile_id]) {
-      if (id && map[id]) return map[id]!
+    if (map) {
+      for (const id of leaderboardEntryLookupIds(entry)) {
+        if (map[id]) return sortAchievementsForDisplay(map[id]!)
+      }
     }
-    return []
+    const podium = podiumAchievementForRank(rank)
+    return podium ? [podium] : []
   }
 
   const displayEntries = compactLeaderboardDisplayNames(entries)
@@ -334,7 +336,7 @@ export function CompetitionLeaderboard({
               rank={i + 1}
               entry={e}
               isMe={isMe}
-              badges={badgesFor(e)}
+              badges={badgesFor(source, i + 1)}
               onSelectAchievement={setInfo}
               onOpenProfile={() => {
                 const playerId =
@@ -347,7 +349,7 @@ export function CompetitionLeaderboard({
                       entry: source,
                       rank: i + 1,
                       unit,
-                      badges: badgesFor(e),
+                      badges: badgesFor(source, i + 1),
                     },
                   },
                 })

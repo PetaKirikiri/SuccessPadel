@@ -21,6 +21,24 @@ export function isClaimableGuest(e: LeaderboardEntry): boolean {
   return Boolean(e.is_guest && e.padel_player_id)
 }
 
+/** All ids used to attach or resolve achievement badges for a leaderboard row. */
+export function leaderboardEntryLookupIds(
+  entry: Pick<
+    LeaderboardEntry,
+    'profile_id' | 'member_profile_id' | 'padel_player_id' | 'display_name'
+  >,
+): string[] {
+  const ids: string[] = []
+  const push = (id: string | null | undefined) => {
+    if (id && !ids.includes(id)) ids.push(id)
+  }
+  push(entry.padel_player_id)
+  push(entry.member_profile_id)
+  push(entry.profile_id)
+  push(entry.display_name)
+  return ids
+}
+
 function isNumberedPlayerLabel(name: string): boolean {
   return /^Player\s+\S+$/i.test(name.trim())
 }

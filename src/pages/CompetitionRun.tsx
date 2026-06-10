@@ -137,13 +137,6 @@ export function CompetitionRun() {
   const finished = session?.status === 'complete'
   const isAmericano = session ? usesAmericanoScoring(session) : false
   const complete = isCompetitionComplete(session, rounds, courtMatches)
-  const achievements = useMemo(() => {
-    if (!started) return null
-    const input = { roster, rounds, courtMatches, clubCourts }
-    return complete
-      ? calculateCompetitionAchievements(input)
-      : calculateLiveAchievements(input)
-  }, [started, complete, roster, rounds, courtMatches, clubCourts])
   const standings = useMemo(
     () =>
       enrichStandingsWithAvatars(
@@ -152,6 +145,17 @@ export function CompetitionRun() {
       ),
     [roster, rounds, courtMatches, leaderboard],
   )
+  const standingsOrder = useMemo(
+    () => standings.filter((row) => row.games > 0).map((row) => row.profile_id),
+    [standings],
+  )
+  const achievements = useMemo(() => {
+    if (!started) return null
+    const input = { roster, rounds, courtMatches, clubCourts }
+    return complete
+      ? calculateCompetitionAchievements(input, standingsOrder)
+      : calculateLiveAchievements(input, standingsOrder)
+  }, [started, complete, roster, rounds, courtMatches, clubCourts, standingsOrder])
   const guestLeaderboardProps = {
     currentUserId: userId ?? null,
     competitionId: id ?? null,
