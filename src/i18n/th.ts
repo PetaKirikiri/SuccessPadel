@@ -188,6 +188,7 @@ export const th: Messages = {
     label: 'คอร์ด {number}',
     ref: 'กรรมการ',
     openLiveCourt: 'เปิดสนามสด {name}',
+    openCourtView: 'เปิดมุมมองสนาม',
     liveCourt: 'สนามสด',
   },
   competition: {

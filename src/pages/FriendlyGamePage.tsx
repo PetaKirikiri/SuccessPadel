@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { CompetitionLayoutPreview } from '../components/CompetitionLayoutPreview'
+import { CompetitionLeaderboard } from '../components/CompetitionLeaderboard'
 import { FriendlyLateStartPanel } from '../components/FriendlyLateStartPanel'
 import { useAuth } from '../hooks/useAuth'
 import { useLineClientProfile } from '../hooks/useLineClientProfile'
 import { useFriendlyGame } from '../hooks/useFriendlyGame'
 import { useFriendlyLiveCourtScores } from '../hooks/useFriendlyLiveCourtScores'
+import { useFriendlyMatchLogs } from '../hooks/useFriendlyMatchLogs'
 import { useMatchGestureLog } from '../hooks/useMatchGestureLog'
 import { useTranslation } from '../hooks/useTranslation'
 import { isReviewableLog } from '../lib/matchReviewHydrate'
@@ -14,10 +16,12 @@ import {
   DEFAULT_FRIENDLY_ORGANIZED_CONFIG,
   friendlyOrganizedSession,
   friendlyPreviewGames,
+  friendlySessionRoster,
   friendlyStartsAtIso,
   isFreeFriendly,
   isOnFriendlyRoster,
 } from '../lib/friendlyGames'
+import { computeFriendlySessionStandings } from '../lib/friendlySessionStandings'
 import { joinFriendlySession } from '../lib/friendlyServer'
 import {
   saveFriendlyManualCourtScore,
@@ -28,6 +32,8 @@ import { useSetupCourts } from '../hooks/useSetupCourts'
 import { formatDateInput } from '../lib/courtSchedule'
 import { supabase } from '../lib/supabaseClient'
 import type { Profile } from '../lib/types'
+
+type FriendlyViewTab = 'games' | 'leaderboard'
 
 export function FriendlyGamePage() {
   const { id } = useParams()
@@ -42,6 +48,8 @@ export function FriendlyGamePage() {
   const [profiles, setProfiles] = useState<Profile[]>([])
   const { courtNames, courtRefs } = useSetupCourts()
   const liveCourtScores = useFriendlyLiveCourtScores(id)
+  const { logs: matchLogs } = useFriendlyMatchLogs(id)
+  const [viewTab, setViewTab] = useState<FriendlyViewTab>('games')
   const [joinBusy, setJoinBusy] = useState(false)
   const [joinError, setJoinError] = useState<string | null>(null)
 
@@ -86,6 +94,18 @@ export function FriendlyGamePage() {
 
   const scoreUnit = useMemo(() => americanoScoringUnit(previewSession), [previewSession])
 
+  const sessionRoster = useMemo(
+    () => (displayGame ? friendlySessionRoster(displayGame) : []),
+    [displayGame],
+  )
+
+  const standings = useMemo(
+    () => computeFriendlySessionStandings(matchLogs, scoreUnit, sessionRoster),
+    [matchLogs, scoreUnit, sessionRoster],
+  )
+
+  const hasStandings = standings.some((row) => row.games > 0)
+
   const handleSubmitFriendlyScores = useCallback(
     async (entries: FriendlyCourtScoreSubmit[]) => {
       if (!game) return
@@ -126,15 +146,41 @@ export function FriendlyGamePage() {
       </Link>
 
       {isAdmin ? (
-        <Link
-          to={`/friendly/${game.id}/edit`}
-          className="brand-btn-outline block w-full py-2.5 text-center text-sm font-semibold"
-        >
+        <Link to={`/friendly/${game.id}/edit`} className="block text-center text-xs text-brand-muted">
           {t('friendly.edit')}
         </Link>
       ) : null}
 
       {!isFree && previewGames.length > 0 ? (
+        <button
+          type="button"
+          onClick={() => setViewTab(viewTab === 'leaderboard' ? 'games' : 'leaderboard')}
+          className="brand-btn-outline block w-full py-2.5 text-center text-sm font-semibold"
+        >
+          {viewTab === 'leaderboard' ? t('competition.games') : t('friendly.leaderboard')}
+        </button>
+      ) : null}
+
+      {!isFree && previewGames.length > 0 && viewTab === 'leaderboard' ? (
+        hasStandings ? (
+          <CompetitionLeaderboard
+            entries={standings}
+            scoreUnit={scoreUnit}
+            headerTitle={t('friendly.leaderboard')}
+            headerSubtitle={t('friendly.leaderboardSubtitle')}
+            currentUserId={user?.id ?? null}
+            competitionId={null}
+            embedded
+          />
+        ) : (
+          <div className="game-card space-y-1 px-3 py-4 text-center">
+            <p className="text-sm text-brand-muted">{t('friendly.noLeaderboardScores')}</p>
+            <p className="text-xs text-brand-muted">{t('friendly.noLeaderboardHint')}</p>
+          </div>
+        )
+      ) : null}
+
+      {!isFree && previewGames.length > 0 && viewTab === 'games' ? (
         <CompetitionLayoutPreview
           session={previewSession}
           games={previewGames}

@@ -189,6 +189,7 @@ export const fr: Messages = {
     label: 'Court {number}',
     ref: 'Arbitre',
     openLiveCourt: 'Ouvrir le court en direct {name}',
+    openCourtView: 'Ouvrir la vue court',
     liveCourt: 'Court en direct',
   },
   competition: {

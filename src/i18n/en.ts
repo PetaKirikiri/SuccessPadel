@@ -189,6 +189,7 @@ export const en: Messages = {
     label: 'Court {number}',
     ref: 'Ref',
     openLiveCourt: 'Open {name} live court',
+    openCourtView: 'Open court view',
     liveCourt: 'Live court',
   },
   competition: {

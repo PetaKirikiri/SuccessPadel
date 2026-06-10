@@ -189,6 +189,7 @@ export const ru: Messages = {
     label: 'Корт {number}',
     ref: 'Судья',
     openLiveCourt: 'Открыть живой корт {name}',
+    openCourtView: 'Открыть вид корта',
     liveCourt: 'Живой корт',
   },
   competition: {

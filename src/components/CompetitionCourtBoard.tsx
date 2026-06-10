@@ -1227,6 +1227,7 @@ function ScoringGameCard({
 }
 
 function FriendlyManualGameCard({
+  sessionId,
   game,
   scoreUnit,
   liveCourtScores,
@@ -1244,6 +1245,7 @@ function FriendlyManualGameCard({
   currentUserAvatarUrl,
   t,
 }: {
+  sessionId?: string
   game: ScoringGame
   scoreUnit: AmericanoScoringUnit
   liveCourtScores?: Map<string, LiveCourtGamesScore>
@@ -1301,6 +1303,14 @@ function FriendlyManualGameCard({
                     finished={finished}
                     t={t}
                   >
+                    {sessionId && canEdit ? (
+                      <Link
+                        to={friendlyCourtLivePath(sessionId, game.gameNumber, row.courtLabel)}
+                        className="brand-btn-outline mb-2 block w-full py-2 text-center text-xs font-semibold no-underline"
+                      >
+                        {t('court.openCourtView')}
+                      </Link>
+                    ) : null}
                     <CourtMatchCell
                       teamA={teamA}
                       teamB={teamB}
@@ -1535,6 +1545,7 @@ export function CompetitionCourtBoard({
           return (
             <FriendlyManualGameCard
               key={game.gameNumber}
+              sessionId={friendlySessionId}
               game={game}
               scoreUnit={scoreUnit}
               liveCourtScores={liveCourtScores}

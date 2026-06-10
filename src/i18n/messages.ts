@@ -164,6 +164,7 @@ export type Messages = {
     label: string
     ref: string
     openLiveCourt: string
+    openCourtView: string
     liveCourt: string
   }
   competition: {
