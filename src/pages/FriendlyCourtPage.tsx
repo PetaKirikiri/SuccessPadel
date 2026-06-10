@@ -119,14 +119,16 @@ export function FriendlyCourtPage() {
     return [...courtMatch.teamAPlayers, ...courtMatch.teamBPlayers]
   }, [courtMatch])
 
-  const reviewMode = isReviewableLog(log)
+  const isAdmin = Boolean(profile?.is_admin)
+  const hasReviewableLog = isReviewableLog(log)
+  const reviewMode = !isAdmin || hasReviewableLog
 
   if (loading || gameLoading || logLoading || (user && !profile)) {
     return <p className="p-4 text-center text-sm text-brand-muted">{t('common.loading')}</p>
   }
   if (
     !user ||
-    !profile?.is_admin ||
+    !profile ||
     !game ||
     !displayGame ||
     !quadrantPlayers ||
@@ -135,6 +137,9 @@ export function FriendlyCourtPage() {
     !courtLabel
   ) {
     return <Navigate to="/friendly" replace />
+  }
+  if (!isAdmin && !hasReviewableLog) {
+    return <Navigate to={`/friendly/${game.id}`} replace />
   }
 
   const backTo = isFreeFriendly(game) ? '/friendly' : `/friendly/${game.id}`
@@ -165,9 +170,11 @@ export function FriendlyCourtPage() {
       <GesturePadDashboard
         onBack={() => navigate(backTo)}
         backLabel={t('common.back')}
-        onUndo={() => setUndoSignal((n) => n + 1)}
-        onResetGame={handleResetGame}
-        onStats={() => navigate(`/friendly/${game.id}/heatmap`)}
+        onUndo={isAdmin && !reviewMode ? () => setUndoSignal((n) => n + 1) : undefined}
+        onResetGame={isAdmin && !reviewMode ? handleResetGame : undefined}
+        onStats={
+          isAdmin ? () => navigate(`/friendly/${game.id}/heatmap`) : undefined
+        }
       />
     </div>
   )

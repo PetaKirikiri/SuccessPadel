@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { displayCourtLabel } from '../lib/courtDisplay'
 import { resolveCourtRef, type CourtRef, type CourtRefsLookup } from '../lib/courtRefs'
 import { liveCourtScoreKey, type LiveCourtGamesScore } from '../lib/liveCourtScore'
@@ -252,6 +252,7 @@ function CourtCard({
   court,
   finished,
   href,
+  statsHref,
   children,
   t,
 }: {
@@ -261,9 +262,11 @@ function CourtCard({
   court: LiveCourt | ScoringGame['courts'][number]
   finished: boolean
   href?: string
+  statsHref?: string
   children: ReactNode
   t: TranslateFn
 }) {
+  const navigate = useNavigate()
   const isMyCourt = courtHasCurrentUser(currentUserId, court)
   const shellClass = `${courtCardShellClass({ finished, isMyCourt })}${
     href
@@ -286,19 +289,38 @@ function CourtCard({
           t={t}
         />
       </div>
-      <div className="p-2 md:p-2.5">{children}</div>
+      <div className="p-2 md:p-2.5">
+        {children}
+        {statsHref ? (
+          <Link
+            to={statsHref}
+            onClick={(e) => e.stopPropagation()}
+            className="brand-btn-outline mt-2 block w-full py-2 text-center text-xs font-semibold no-underline"
+          >
+            {t('pad.dashboard.stats')}
+          </Link>
+        ) : null}
+      </div>
     </>
   )
 
   if (href) {
     return (
-      <Link
-        to={href}
-        className={`block no-underline text-inherit ${shellClass}`}
+      <article
+        className={shellClass}
+        role="link"
+        tabIndex={0}
         aria-label={t('court.openLiveCourt', { name: displayCourtLabel(courtLabel, t) })}
+        onClick={() => navigate(href)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            navigate(href)
+          }
+        }}
       >
         {body}
-      </Link>
+      </article>
     )
   }
 
@@ -891,6 +913,12 @@ function GameScoringCourts({
           courtId,
           canEditScores: canEdit,
         })
+        const statsHref = courtStatsHref(
+          friendly,
+          sessionId,
+          game.gameNumber,
+          court.courtLabel,
+        )
 
         return (
           <CourtCard
@@ -901,6 +929,7 @@ function GameScoringCourts({
             court={liveCourt ?? court}
             finished={finished}
             href={href}
+            statsHref={statsHref}
             t={t}
           >
             <CourtMatchCell
@@ -984,7 +1013,7 @@ function courtLiveHref({
   sessionId,
   competitionId,
   gameNumber,
-  courtLabel,
+  courtLabel: _courtLabel,
   courtId,
   canEditScores,
 }: {
@@ -997,12 +1026,21 @@ function courtLiveHref({
   courtId?: string
   canEditScores: boolean
 }): string | undefined {
-  if (!liveCourtEnabled || !sessionId) return undefined
-  if (friendly) return friendlyCourtLivePath(sessionId, gameNumber, courtLabel)
+  if (!liveCourtEnabled || !sessionId || friendly) return undefined
   if (competitionId && courtId && !canEditScores) {
     return `/competitions/${competitionId}/games/${gameNumber}/courts/${courtId}/live-court`
   }
   return undefined
+}
+
+function courtStatsHref(
+  friendly: boolean,
+  sessionId: string | undefined,
+  gameNumber: number,
+  courtLabel: string,
+): string | undefined {
+  if (!friendly || !sessionId) return undefined
+  return friendlyCourtLivePath(sessionId, gameNumber, courtLabel)
 }
 
 function GameCardHeader({
@@ -1301,16 +1339,9 @@ function FriendlyManualGameCard({
                     currentUserId={currentUserId}
                     court={row.court}
                     finished={finished}
+                    statsHref={courtStatsHref(true, sessionId, game.gameNumber, row.courtLabel)}
                     t={t}
                   >
-                    {sessionId && canEdit ? (
-                      <Link
-                        to={friendlyCourtLivePath(sessionId, game.gameNumber, row.courtLabel)}
-                        className="brand-btn-outline mb-2 block w-full py-2 text-center text-xs font-semibold no-underline"
-                      >
-                        {t('court.openCourtView')}
-                      </Link>
-                    ) : null}
                     <CourtMatchCell
                       teamA={teamA}
                       teamB={teamB}
@@ -1619,6 +1650,13 @@ export function CompetitionCourtBoard({
                     canEditScores: false,
                   })
 
+                  const statsHref = courtStatsHref(
+                    friendly,
+                    sessionId,
+                    game.gameNumber,
+                    court.courtLabel,
+                  )
+
                   return (
                     <CourtCard
                       key={court.courtLabel}
@@ -1628,6 +1666,7 @@ export function CompetitionCourtBoard({
                       court={liveCourt ?? court}
                       finished={finished}
                       href={href}
+                      statsHref={statsHref}
                       t={t}
                     >
                       <CourtMatchCell
