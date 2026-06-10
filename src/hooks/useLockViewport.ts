@@ -64,14 +64,19 @@ export function useLockViewport() {
     applyViewportLock()
 
     const onResize = () => applyViewportLock()
+    const onOrientation = () => {
+      applyViewportLock()
+      window.setTimeout(applyViewportLock, 150)
+      window.setTimeout(applyViewportLock, 400)
+    }
     window.addEventListener('resize', onResize)
-    window.addEventListener('orientationchange', onResize)
+    window.addEventListener('orientationchange', onOrientation)
     window.visualViewport?.addEventListener('resize', onResize)
     document.addEventListener('touchmove', blockDocumentScroll, { passive: false })
 
     return () => {
       window.removeEventListener('resize', onResize)
-      window.removeEventListener('orientationchange', onResize)
+      window.removeEventListener('orientationchange', onOrientation)
       window.visualViewport?.removeEventListener('resize', onResize)
       document.removeEventListener('touchmove', blockDocumentScroll)
     }

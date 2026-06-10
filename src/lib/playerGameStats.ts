@@ -83,7 +83,8 @@ export function buildPlayerGameStats(
   let unregistered = 0
 
   for (const entry of entries) {
-    if (entry.startQuadrant !== quadrant) continue
+    const shotQuadrant = entry.actorQuadrant ?? entry.startQuadrant
+    if (shotQuadrant !== quadrant) continue
     const category = classifyGestureShot(entry)
     if (category.endsWith('-score')) scored += 1
     else if (category.endsWith('-foul')) fouls += 1
@@ -111,14 +112,25 @@ export function buildPlayerGameStats(
   }
 }
 
-export function buildMatchPlayerStats(
-  entries: GestureDebugEntry[],
-  filter: MatchStatsFilter,
+export function buildMatchPlayerStatsFromEntries(
+  matchEntries: GestureDebugEntry[],
   assignments: QuadrantPlayers,
 ): PlayerGameStats[] {
-  const matchEntries = filterMatchGestures(entries, filter)
   return COURT_QUADRANTS.map((quadrant) => {
     const player = assignments[quadrant] ?? { id: null, name: '', avatarUrl: null }
     return buildPlayerGameStats(quadrant, player, matchEntries)
   }).filter((s) => s.player.name?.trim())
+}
+
+export function buildMatchPlayerStats(
+  entries: GestureDebugEntry[],
+  filter: MatchStatsFilter,
+  assignments: QuadrantPlayers,
+  sessionEntries?: GestureDebugEntry[] | null,
+): PlayerGameStats[] {
+  const matchEntries =
+    sessionEntries && sessionEntries.length > 0
+      ? sessionEntries
+      : filterMatchGestures(entries, filter)
+  return buildMatchPlayerStatsFromEntries(matchEntries, assignments)
 }

@@ -1,17 +1,18 @@
 import type { CourtPlayer } from './americanoSchedule'
-import { playerKey } from './courtPositionSetup'
+import { BIA_PROFILE_ID } from './clubMemberDisplay'
+import { playerKey, clearCourtPositions } from './courtPositionSetup'
 import { clearGestureDebugLog } from './gestureDebugLog'
 import type { Quadrant } from './gestureCapture'
 import type { QuadrantPlayers } from './gesturePadPlayers'
 
 export const UI_PROFILE_ID = 'a6f65f96-7ab1-4f56-ade2-5ef785242b75'
-export const BIA_PROFILE_ID = '69666c11-7080-44ba-bb24-d7271e542df2'
+export { BIA_PROFILE_ID }
 
 const DEFAULT_PLAYERS: Record<Quadrant, CourtPlayer> = {
   TL: { id: UI_PROFILE_ID, name: 'UI', avatarUrl: null },
   TR: { id: null, name: 'HAM', avatarUrl: null },
   BL: { id: null, name: 'MOOK', avatarUrl: null },
-  BR: { id: BIA_PROFILE_ID, name: 'BIA', avatarUrl: null },
+  BR: { id: BIA_PROFILE_ID, name: 'Bia', avatarUrl: null },
 }
 
 export function defaultFriendlyQuadrantPlayers(): QuadrantPlayers {
@@ -54,24 +55,54 @@ function clearFriendlyPlayerMatchLogs(): void {
   }
 }
 
+function deleteMatchSession(courtSetupKey: string): void {
+  try {
+    const raw = localStorage.getItem('sp-match-sessions')
+    if (!raw) return
+    const sessions = JSON.parse(raw) as Record<string, unknown>
+    if (sessions && typeof sessions === 'object') {
+      delete sessions[courtSetupKey]
+      localStorage.setItem('sp-match-sessions', JSON.stringify(sessions))
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Wipe gesture logs, saved pad state, and match session for one court/game. */
+export function resetPadGameState(
+  courtSetupKey: string,
+  options?: { friendly?: boolean },
+): void {
+  clearGestureDebugLog()
+  clearCourtPositions(courtSetupKey)
+  deleteMatchSession(courtSetupKey)
+  if (options?.friendly) clearFriendlyPlayerMatchLogs()
+}
+
 export function resetFriendlyMatchState(courtSetupKey?: string): void {
   clearGestureDebugLog()
   removeLocalStorageByPrefix('sp-court-pos-')
   if (courtSetupKey) {
-    try {
-      const raw = localStorage.getItem('sp-match-sessions')
-      if (raw) {
-        const sessions = JSON.parse(raw) as Record<string, unknown>
-        if (sessions && typeof sessions === 'object') {
-          delete sessions[courtSetupKey]
-          localStorage.setItem('sp-match-sessions', JSON.stringify(sessions))
-        }
-      }
-    } catch {
-      /* ignore */
-    }
+    clearCourtPositions(courtSetupKey)
+    deleteMatchSession(courtSetupKey)
   }
   clearFriendlyPlayerMatchLogs()
+}
+
+const PAD_RESET_SEEN_PREFIX = 'sp-pad-reset-seen-'
+
+/** When padResetAt changes on the server, wipe stale on-device pad state once. */
+export function applyFriendlyPadReset(courtSetupKey: string, padResetAt: string | null): void {
+  if (!padResetAt) return
+  const seenKey = `${PAD_RESET_SEEN_PREFIX}${courtSetupKey}`
+  try {
+    if (localStorage.getItem(seenKey) === padResetAt) return
+    resetFriendlyMatchState(courtSetupKey)
+    localStorage.setItem(seenKey, padResetAt)
+  } catch {
+    /* ignore */
+  }
 }
 
 export function allFriendlySlotsFilled(players: QuadrantPlayers): boolean {

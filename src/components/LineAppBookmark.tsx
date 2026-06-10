@@ -14,7 +14,7 @@ type Props = {
 export function LineAppBookmark({ variant = 'card', onDone }: Props) {
   const { t } = useTranslation()
   const [copied, setCopied] = useState(false)
-  const url = lineBookmarkUrl('/login')
+  const url = lineBookmarkUrl('/friendly')
 
   const copyLink = async () => {
     try {

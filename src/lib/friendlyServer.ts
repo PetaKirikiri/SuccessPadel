@@ -119,3 +119,19 @@ export async function joinFriendlySession(id: string): Promise<string | null> {
   const { error } = await supabase.rpc('join_friendly_session', { p_id: id })
   return error?.message ?? null
 }
+
+export async function deleteFriendlySession(id: string): Promise<string | null> {
+  const { error } = await supabase.rpc('delete_friendly_session', { p_id: id })
+  return error?.message ?? null
+}
+
+export async function updateFriendlySession(
+  id: string,
+  game: Omit<FriendlyGameRecord, 'id' | 'createdAt' | 'createdBy'>,
+): Promise<string | null> {
+  const { error } = await supabase.rpc('update_friendly_session', {
+    p_id: id,
+    ...friendlyRpcPayload(game),
+  })
+  return error?.message ?? null
+}

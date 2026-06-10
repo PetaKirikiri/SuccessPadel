@@ -7,12 +7,22 @@ import {
   type RuleFormat,
   rulesToPartnershipMode,
 } from './competitionPresets'
-import { courtsNeeded, isValidCourtLayout } from './competitionLayout'
+import {
+  americanoRoundsForFullRotation,
+  courtsNeeded,
+  isValidCourtLayout,
+  totalScheduleMinutes,
+} from './competitionLayout'
 import { pivotScheduleByCourt } from './competitionCourtBoard'
 import type { QuadrantPlayers } from './gesturePadPlayers'
 import { quadrantPlayersForCourt } from './gesturePadPlayers'
-import { BIA_PROFILE_ID, UI_PROFILE_ID } from './friendlyMatch'
-import { toIsoTimestamp } from './courtSchedule'
+import { clubDisplayName, BIA_PROFILE_ID } from './clubMemberDisplay'
+import { UI_PROFILE_ID } from './friendlyMatch'
+import {
+  clubHourToDate,
+  clubTimePartsFromDate,
+  toIsoTimestamp,
+} from './courtSchedule'
 import { rosterFromSlots } from './rosterPreview'
 import { planRankedSchedule } from './rankedSchedule'
 import type { GameSession } from './types'
@@ -29,7 +39,13 @@ export type FriendlyVisibility = 'public' | 'private'
 export type FriendlyOrganizedConfig = {
   day: string
   startHour: number
+  /** Minutes past the hour — delayed start (e.g. 18:30). */
   startMinute?: number
+  /** Spare minutes after the last game ends. */
+  endBufferMinutes?: number
+  /** Fixed court-hire end (Bangkok local). Games must finish by this time. */
+  sessionEndHour?: number
+  sessionEndMinute?: number
   ruleFormat: RuleFormat
   partnerStyle: PartnerStyle
   americanoScoring: AmericanoScoringChoice
@@ -37,11 +53,197 @@ export type FriendlyOrganizedConfig = {
   gameMinutes: number
   breakMinutes: number
   previewSeed: number
+  /** Dev/test pad: no match end; keep scoring for gesture log tests. */
+  endless?: boolean
+  /** Bump to clear on-device pad state for this friendly session. */
+  padResetAt?: string
+}
+
+export function friendlyPlayMinutes(config: FriendlyOrganizedConfig): number {
+  return (
+    config.gameCount * config.gameMinutes +
+    Math.max(0, config.gameCount - 1) * config.breakMinutes
+  )
+}
+
+const FRIENDLY_MIN_GAMES = 5
+const FRIENDLY_MAX_GAMES = 11
+const FRIENDLY_MIN_GAME_MINUTES = 8
+const FRIENDLY_MAX_GAME_MINUTES = 30
+
+export function friendlySessionEndAt(config: FriendlyOrganizedConfig): Date | null {
+  if (!config.day) return null
+  if (typeof config.sessionEndHour === 'number') {
+    return clubHourToDate(config.day, config.sessionEndHour, config.sessionEndMinute ?? 0)
+  }
+  const warmupMinutes = config.startMinute ?? 0
+  const endBufferMinutes = config.endBufferMinutes ?? 0
+  const gameStart = clubHourToDate(config.day, config.startHour, warmupMinutes)
+  const gameEnd = new Date(gameStart.getTime() + friendlyPlayMinutes(config) * 60_000)
+  return new Date(gameEnd.getTime() + endBufferMinutes * 60_000)
+}
+
+/** Persist a fixed end time derived from the current schedule (first publish / legacy rows). */
+export function friendlyConfigWithSessionEnd(
+  config: FriendlyOrganizedConfig,
+): FriendlyOrganizedConfig {
+  if (typeof config.sessionEndHour === 'number') return config
+  const endAt = friendlySessionEndAt(config)
+  if (!endAt) return config
+  const { hour, minute } = clubTimePartsFromDate(endAt)
+  return { ...config, sessionEndHour: hour, sessionEndMinute: minute }
+}
+
+/** Save organized settings — keep fixed court end + timing extras from a prior publish. */
+export function mergeFriendlyOrganizedConfig(
+  prev: FriendlyOrganizedConfig | undefined,
+  next: FriendlyOrganizedConfig,
+): FriendlyOrganizedConfig {
+  const withEnd = friendlyConfigWithSessionEnd(next)
+  if (!prev) return withEnd
+
+  const scheduleChanged =
+    prev.gameCount !== next.gameCount ||
+    prev.gameMinutes !== next.gameMinutes ||
+    prev.breakMinutes !== next.breakMinutes ||
+    prev.startHour !== next.startHour ||
+    (prev.startMinute ?? 0) !== (next.startMinute ?? 0) ||
+    prev.day !== next.day
+
+  return {
+    ...withEnd,
+    endBufferMinutes: prev.endBufferMinutes ?? withEnd.endBufferMinutes,
+    sessionEndHour: scheduleChanged
+      ? withEnd.sessionEndHour
+      : (prev.sessionEndHour ?? withEnd.sessionEndHour),
+    sessionEndMinute: scheduleChanged
+      ? withEnd.sessionEndMinute
+      : (prev.sessionEndMinute ?? withEnd.sessionEndMinute),
+    padResetAt: prev.padResetAt,
+    endless: prev.endless ?? withEnd.endless,
+  }
+}
+
+export function friendlyPlayMinutesUntilSessionEnd(
+  config: FriendlyOrganizedConfig,
+  gameStart: Date,
+): number | null {
+  const sessionEnd = friendlySessionEndAt(config)
+  if (!sessionEnd) return null
+  const endBufferMs = (config.endBufferMinutes ?? 0) * 60_000
+  const gameEndDeadline = sessionEnd.getTime() - endBufferMs
+  return Math.max(0, Math.floor((gameEndDeadline - gameStart.getTime()) / 60_000))
+}
+
+/** Fit game count + length into remaining play time (rest minutes between games). */
+export function fitFriendlyScheduleToRemaining(
+  playMinutes: number,
+  breakMinutes: number,
+  maxGameCount = FRIENDLY_MAX_GAMES,
+): {
+  gameCount: number
+  gameMinutes: number
+  usedMinutes: number
+  fits: boolean
+} {
+  const cappedMax = Math.max(
+    FRIENDLY_MIN_GAMES,
+    Math.min(FRIENDLY_MAX_GAMES, maxGameCount),
+  )
+
+  for (let n = cappedMax; n >= FRIENDLY_MIN_GAMES; n -= 1) {
+    const breakTotal = Math.max(0, n - 1) * breakMinutes
+    const perGame = Math.floor((playMinutes - breakTotal) / n)
+    if (perGame < FRIENDLY_MIN_GAME_MINUTES) continue
+    const gameMinutes = Math.min(FRIENDLY_MAX_GAME_MINUTES, perGame)
+    const usedMinutes = totalScheduleMinutes(n, gameMinutes, breakMinutes)
+    if (usedMinutes <= playMinutes) {
+      return { gameCount: n, gameMinutes, usedMinutes, fits: true }
+    }
+  }
+
+  const n = FRIENDLY_MIN_GAMES
+  const breakTotal = Math.max(0, n - 1) * breakMinutes
+  const gameMinutes = Math.min(
+    FRIENDLY_MAX_GAME_MINUTES,
+    Math.max(
+      FRIENDLY_MIN_GAME_MINUTES,
+      Math.floor((playMinutes - breakTotal) / n),
+    ),
+  )
+  const usedMinutes = totalScheduleMinutes(n, gameMinutes, breakMinutes)
+  return {
+    gameCount: n,
+    gameMinutes,
+    usedMinutes,
+    fits: usedMinutes <= playMinutes && playMinutes > 0,
+  }
+}
+
+export function friendlyMaxGameCountForPlayers(playerCount: number): number {
+  const rotation = americanoRoundsForFullRotation(playerCount)
+  if (rotation > 0) return Math.min(FRIENDLY_MAX_GAMES, rotation)
+  return FRIENDLY_MAX_GAMES
+}
+
+export type FriendlySessionTiming = {
+  sessionStart: Date
+  gameStart: Date
+  gameEnd: Date
+  sessionEnd: Date
+  warmupMinutes: number
+  endBufferMinutes: number
+  playMinutes: number
+}
+
+export function friendlySessionTiming(
+  config: FriendlyOrganizedConfig,
+): FriendlySessionTiming | null {
+  if (!config.day) return null
+  const delayMin = config.startMinute ?? 0
+  const endBufferMinutes = config.endBufferMinutes ?? 0
+  const sessionStart = clubHourToDate(config.day, config.startHour, delayMin)
+  const gameStart = sessionStart
+  const playMinutes = friendlyPlayMinutes(config)
+  const gameEnd = new Date(gameStart.getTime() + playMinutes * 60_000)
+  const sessionEnd =
+    typeof config.sessionEndHour === 'number'
+      ? clubHourToDate(config.day, config.sessionEndHour, config.sessionEndMinute ?? 0)
+      : new Date(gameEnd.getTime() + endBufferMinutes * 60_000)
+  return {
+    sessionStart,
+    gameStart,
+    gameEnd,
+    sessionEnd,
+    warmupMinutes: delayMin,
+    endBufferMinutes,
+    playMinutes,
+  }
 }
 
 export function friendlyStartsAtIso(config: FriendlyOrganizedConfig): string | undefined {
   if (!config.day) return undefined
   return toIsoTimestamp(config.day, config.startHour, config.startMinute ?? 0)
+}
+
+export function friendlyEndsAtIso(config: FriendlyOrganizedConfig): string | undefined {
+  if (!config.day) return undefined
+  if (typeof config.sessionEndHour === 'number') {
+    return toIsoTimestamp(
+      config.day,
+      config.sessionEndHour,
+      config.sessionEndMinute ?? 0,
+    )
+  }
+  const offsetMin =
+    (config.startMinute ?? 0) +
+    friendlyPlayMinutes(config) +
+    (config.endBufferMinutes ?? 0)
+  return toIsoTimestamp(
+    config.day,
+    config.startHour + Math.floor(offsetMin / 60),
+    offsetMin % 60,
+  )
 }
 
 export const DEFAULT_FRIENDLY_ORGANIZED_CONFIG: FriendlyOrganizedConfig = {
@@ -76,6 +278,16 @@ export function isOrganizedFriendly(game: FriendlyGameRecord): boolean {
 
 export function isFreeFriendly(game: FriendlyGameRecord): boolean {
   return !isOrganizedFriendly(game)
+}
+
+export function isEndlessFriendly(game: Pick<FriendlyGameRecord, 'organizedConfig'>): boolean {
+  return Boolean(game.organizedConfig?.endless)
+}
+
+export function friendlyPadResetAt(
+  game: Pick<FriendlyGameRecord, 'organizedConfig'>,
+): string | null {
+  return game.organizedConfig?.padResetAt ?? null
 }
 
 export function isPublicFriendly(game: FriendlyGameRecord): boolean {
@@ -129,10 +341,12 @@ function resolvePlayer(
   avatarUrl: string | null,
 ): CourtPlayer {
   const trimmed = name.trim() || 'Player'
-  if (profileId) return { id: profileId, name: trimmed, avatarUrl }
+  if (profileId) {
+    return { id: profileId, name: clubDisplayName(profileId, trimmed), avatarUrl }
+  }
   const upper = trimmed.toUpperCase()
   if (upper === 'UI') return { id: UI_PROFILE_ID, name: 'UI', avatarUrl }
-  if (upper === 'BIA') return { id: BIA_PROFILE_ID, name: 'BIA', avatarUrl }
+  if (upper === 'BIA') return { id: BIA_PROFILE_ID, name: 'Bia', avatarUrl }
   return { id: null, name: trimmed, avatarUrl: null }
 }
 
@@ -211,12 +425,14 @@ export function friendlyOrganizedGames(
   players: string[],
   config: FriendlyOrganizedConfig,
   courtNames: string[],
+  profileIds?: (string | null)[],
+  profileAvatars?: (string | null)[],
 ): GameRound[] | null {
   if (config.ruleFormat !== 'americano') return null
   const count = players.length
   if (!isValidCourtLayout(count) || courtNames.length === 0) return null
   return planRankedSchedule(
-    rosterFromSlots(players, count),
+    rosterFromSlots(players, count, profileIds, profileAvatars),
     courtNames.slice(0, courtsNeeded(count)),
     config.gameCount,
     config.previewSeed,
@@ -229,9 +445,23 @@ export function friendlyPreviewGames(
   profileAvatars?: (string | null)[],
 ): GameRound[] {
   const config = game.organizedConfig ?? DEFAULT_FRIENDLY_ORGANIZED_CONFIG
-  const scheduled = friendlyOrganizedGames(game.players, config, courtNames)
+  const scheduled = friendlyOrganizedGames(
+    game.players,
+    config,
+    courtNames,
+    game.profileIds,
+    profileAvatars ?? game.profileAvatars,
+  )
   if (scheduled?.length) return scheduled
   return [friendlyGameRound(game.players, game.profileIds, profileAvatars)]
+}
+
+/** Session roster — who is playing, with no court quadrant assignment. */
+export function friendlySessionRoster(game: FriendlyGameRecord): CourtPlayer[] {
+  const names = courtPlayerNames(game.players)
+  return names.map((name, i) =>
+    resolvePlayer(name, game.profileIds?.[i] ?? null, game.profileAvatars?.[i] ?? null),
+  )
 }
 
 export function friendlyQuadrantPlayers(game: FriendlyGameRecord): QuadrantPlayers {

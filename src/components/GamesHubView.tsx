@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from '../hooks/useTranslation'
 import { useSeasonLeaderboard } from '../hooks/useSeasonLeaderboard'
-import { FriendlyLeaderboard } from '../pages/FriendlyLeaderboard'
 import { Leaderboard } from '../pages/Leaderboard'
 
 export type GamesHubTab = 'current' | 'past' | 'leaderboard'
@@ -11,34 +10,51 @@ type LeaderboardVariant = 'competition' | 'friendly'
 type Props = {
   currentCount: number
   currentPanel: ReactNode
+  /** Tab row (competition), title bar, or none (friendly list only). */
+  hubNav?: 'tabs' | 'title' | 'none'
+  /** Title bar label when hubNav is title. */
+  titleLabel?: string
+  /** Control beside title (e.g. admin + to add). */
+  titleAddon?: ReactNode
+  /** Nested control inside the Current games tab (e.g. admin + to add). */
+  currentTabAddon?: ReactNode
   fab?: ReactNode
   showPastTab?: boolean
   pastCount?: number
   pastPanel?: ReactNode
   leaderboardVariant?: LeaderboardVariant
+  /** Background for the tab content area (e.g. friendly list on cream). */
+  listClassName?: string
 }
 
 function HubTab({
   active,
   onClick,
   label,
+  addon,
 }: {
   active: boolean
   onClick: () => void
   label: string
+  addon?: ReactNode
 }) {
   return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={active}
-      onClick={onClick}
-      className={`game-tab min-w-0 flex-1 py-2 ${active ? 'game-tab-selected' : ''}`}
+    <div
+      className={`game-tab game-tab-competition min-w-0 flex-1 flex-row items-center gap-1 px-2 py-2 ${
+        active ? 'game-tab-active' : ''
+      }`}
     >
-      <span className="max-w-full truncate font-display text-xs leading-tight md:text-sm">
+      <button
+        type="button"
+        role="tab"
+        aria-selected={active}
+        onClick={onClick}
+        className="min-w-0 flex-1 truncate text-left font-display text-xs leading-tight md:text-sm"
+      >
         {label}
-      </span>
-    </button>
+      </button>
+      {addon ? <div className="shrink-0">{addon}</div> : null}
+    </div>
   )
 }
 
@@ -52,17 +68,35 @@ export function GamesHubEmpty({ children }: { children: ReactNode }) {
 }
 
 export function GamesHubList({ children }: { children: ReactNode }) {
-  return <ul className="-mx-3 m-0 list-none divide-y divide-brand-border/50 p-0">{children}</ul>
+  return <ul className="m-0 list-none divide-y divide-brand-border/50 p-0">{children}</ul>
+}
+
+function HubTitleBar({ label, addon }: { label: string; addon?: ReactNode }) {
+  return (
+    <nav className="shrink-0 bg-brand-bg pb-1.5">
+      <div className="game-dock-inner !rounded-xl flex items-center gap-2 px-3 py-2">
+        <h2 className="min-w-0 flex-1 font-display text-sm font-semibold text-brand-primary md:text-base">
+          {label}
+        </h2>
+        {addon ? <div className="shrink-0">{addon}</div> : null}
+      </div>
+    </nav>
+  )
 }
 
 export function GamesHubView({
   currentCount,
   currentPanel,
+  hubNav = 'tabs',
+  titleLabel,
+  titleAddon,
+  currentTabAddon,
   fab,
   showPastTab = false,
   pastCount = 0,
   pastPanel,
   leaderboardVariant = 'competition',
+  listClassName = '',
 }: Props) {
   const { t } = useTranslation()
   const { season } = useSeasonLeaderboard(leaderboardVariant === 'competition')
@@ -75,54 +109,61 @@ export function GamesHubView({
     if (currentCount === 0 && pastCount > 0) setTab('past')
   }, [showPastTab, currentCount, pastCount])
 
-  const leaderboardLabel =
-    leaderboardVariant === 'friendly'
-      ? t('friendly.leaderboard')
-      : season?.name
-        ? t('hub.seasonLeaderboard', { name: season.name })
-        : t('nav.leaderboard')
+  const leaderboardLabel = season?.name
+    ? t('hub.seasonLeaderboard', { name: season.name })
+    : t('nav.leaderboard')
+
+  const listBody =
+    hubNav !== 'tabs' ? (
+      <div className={`w-full min-w-0 max-w-full overflow-x-hidden pt-1 ${listClassName}`}>
+        {currentPanel}
+      </div>
+    ) : tab === 'leaderboard' ? (
+      <Leaderboard embedded />
+    ) : (
+      <div className={`w-full min-w-0 max-w-full overflow-x-hidden pt-1 ${listClassName}`}>
+        {tab === 'current' ? currentPanel : pastPanel}
+      </div>
+    )
 
   return (
-    <div className="relative w-full min-w-0">
+    <div className="flex min-h-0 min-w-0 w-full max-w-full flex-1 flex-col overflow-hidden">
       {fab}
 
-      <article className="game-card overflow-hidden p-0" role="tabpanel">
-        <div
-          role="tablist"
-          aria-label={t('aria.playModes')}
-          className="flex gap-1 border-b border-brand-border/60 bg-brand-bg-alt/40 p-1.5"
-        >
-          <HubTab
-            active={tab === 'current'}
-            onClick={() => setTab('current')}
-            label={`${t('competition.currentGames')}${currentCount > 0 ? ` (${currentCount})` : ''}`}
-          />
-          {showPastTab ? (
+      {hubNav === 'title' ? (
+        <HubTitleBar label={titleLabel ?? t('friendly.games')} addon={titleAddon} />
+      ) : hubNav === 'none' ? null : (
+        <nav className="shrink-0 bg-brand-bg pb-1.5" aria-label={t('aria.playModes')}>
+          <div className="game-dock-inner !rounded-xl" role="tablist">
             <HubTab
-              active={tab === 'past'}
-              onClick={() => setTab('past')}
-              label={`${t('competition.pastGames')}${pastCount > 0 ? ` (${pastCount})` : ''}`}
+              active={tab === 'current'}
+              onClick={() => setTab('current')}
+              label={`${t('competition.currentGames')}${currentCount > 0 ? ` (${currentCount})` : ''}`}
+              addon={currentTabAddon}
             />
-          ) : null}
-          <HubTab
-            active={tab === 'leaderboard'}
-            onClick={() => setTab('leaderboard')}
-            label={leaderboardLabel}
-          />
-        </div>
+            {showPastTab ? (
+              <HubTab
+                active={tab === 'past'}
+                onClick={() => setTab('past')}
+                label={`${t('competition.pastGames')}${pastCount > 0 ? ` (${pastCount})` : ''}`}
+              />
+            ) : null}
+            <HubTab
+              active={tab === 'leaderboard'}
+              onClick={() => setTab('leaderboard')}
+              label={leaderboardLabel}
+            />
+          </div>
+        </nav>
+      )}
 
-        <div className="min-h-[10rem]">
-          {tab === 'leaderboard' ? (
-            leaderboardVariant === 'friendly' ? (
-              <FriendlyLeaderboard embedded />
-            ) : (
-              <Leaderboard embedded />
-            )
-          ) : (
-            <div className="px-3 py-3">{tab === 'current' ? currentPanel : pastPanel}</div>
-          )}
-        </div>
-      </article>
+      <div
+        data-scroll-y
+        className="scroll-y min-h-0 min-w-0 w-full max-w-full flex-1"
+        role="tabpanel"
+      >
+        {listBody}
+      </div>
     </div>
   )
 }

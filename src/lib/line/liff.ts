@@ -125,7 +125,7 @@ export function liffShareUrl(): string | null {
 }
 
 /** URL for QR / Open in LINE — always production LIFF (opens Vercel endpoint). */
-export function lineAppEntryUrl(path = '/login'): string | null {
+export function lineAppEntryUrl(path = '/friendly'): string | null {
   if (!liffId) return null
   const normalized = path.startsWith('/') ? path : `/${path}`
   const suffix = normalized === '/' ? '' : normalized

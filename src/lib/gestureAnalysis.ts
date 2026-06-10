@@ -541,6 +541,17 @@ function horizStrokeVerdict(start: NormalizedPoint, end: NormalizedPoint): Volle
   return null
 }
 
+/** Volley label with shot type: BH (backhand), FH (forehand), OH (overhead). */
+export function volleyTypeLabel(
+  subtype: 'BH' | 'FH' | 'OH',
+  verdict: VolleyVerdict | null,
+): string {
+  const base = `Volley ${subtype}`
+  if (verdict === 'SCORE') return `${base} Score`
+  if (verdict === 'FOUL') return `${base} Foul`
+  return base
+}
+
 function innerHorizVolleyLabel(
   shape: GestureShape,
   start: NormalizedPoint | undefined,
@@ -549,10 +560,7 @@ function innerHorizVolleyLabel(
 ): string | null {
   if (!start || !end || !startQuadrant || !isVolleyZoneStart(start, startQuadrant)) return null
   if (shape !== 'BACKHAND' && shape !== 'FOREHAND') return null
-  const verdict = horizStrokeVerdict(start, end)
-  if (verdict === 'SCORE') return 'Volley Score'
-  if (verdict === 'FOUL') return 'Volley Foul'
-  return 'Volley'
+  return volleyTypeLabel(shape === 'BACKHAND' ? 'BH' : 'FH', horizStrokeVerdict(start, end))
 }
 
 /** Shot-only label for pad feedback, e.g. "Smash Win" or "Backhand". */
@@ -594,9 +602,7 @@ export function gestureShotLabel(
   }
 
   if (shape === 'VOLLEY') {
-    if (volleyVerdict === 'SCORE') return 'Volley Score'
-    if (volleyVerdict === 'FOUL') return 'Volley Foul'
-    return 'Volley'
+    return volleyTypeLabel('OH', volleyVerdict)
   }
 
   const innerVolley = innerHorizVolleyLabel(shape, start, end, startQuadrant)
@@ -636,9 +642,7 @@ export function gestureReport(
   }
 
   if (shape === 'VOLLEY') {
-    if (volleyVerdict === 'SCORE') return `${player} - Volley Score`
-    if (volleyVerdict === 'FOUL') return `${player} - Volley Foul`
-    return `${player} - Volley`
+    return `${player} - ${volleyTypeLabel('OH', volleyVerdict)}`
   }
 
   const innerVolley = innerHorizVolleyLabel(shape, start, end, startQuadrant)
@@ -662,16 +666,18 @@ export function gestureLiveShotLabel(
   const end = path[path.length - 1]!
 
   if ((shape === 'BACKHAND' || shape === 'FOREHAND') && parsed) {
+    const subtype = shape === 'BACKHAND' ? 'BH' : 'FH'
+    const inner = isVolleyZoneStart(parsed.horizStart, startQuadrant)
     if (parsed.finishPoint !== parsed.horizEnd) {
       const verdict = horizStrokeFinishVerdict(parsed.horizEnd, parsed.finishPoint)
-      const inner = isVolleyZoneStart(parsed.horizStart, startQuadrant)
       if (inner) {
-        if (verdict === 'SCORE') return 'Volley Score'
-        if (verdict === 'FOUL') return 'Volley Foul'
+        if (verdict === 'SCORE') return volleyTypeLabel(subtype, 'SCORE')
+        if (verdict === 'FOUL') return volleyTypeLabel(subtype, 'FOUL')
       } else if (verdict === 'FOUL') {
         return shape === 'BACKHAND' ? 'Backhand Foul' : 'Forehand Foul'
       }
     }
+    if (inner) return volleyTypeLabel(subtype, null)
     return shape === 'BACKHAND' ? 'Backhand' : 'Forehand'
   }
 
@@ -767,5 +773,170 @@ export function analyzeGesture(
     strokeCorner: strokeCorner ? roundPoint(strokeCorner) : null,
     finishPoint: finishPoint ? roundPoint(finishPoint) : null,
     shotZone,
+  }
+}
+
+function resamplePolyline(corners: NormalizedPoint[], count: number): NormalizedPoint[] {
+  if (corners.length === 0) return []
+  if (corners.length === 1) return Array.from({ length: count }, () => corners[0]!)
+
+  const segLens: number[] = []
+  let total = 0
+  for (let i = 1; i < corners.length; i++) {
+    const len = segmentLength(corners[i - 1]!, corners[i]!)
+    segLens.push(len)
+    total += len
+  }
+  if (total === 0) return Array.from({ length: count }, () => corners[0]!)
+
+  return Array.from({ length: count }, (_, i) => {
+    const target = count === 1 ? 0 : (i / (count - 1)) * total
+    let walked = 0
+    for (let s = 0; s < segLens.length; s++) {
+      const seg = segLens[s]!
+      if (walked + seg >= target) {
+        const t = (target - walked) / seg
+        const a = corners[s]!
+        const b = corners[s + 1]!
+        return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t }
+      }
+      walked += seg
+    }
+    return corners[corners.length - 1]!
+  })
+}
+
+function chaikinSmooth(points: NormalizedPoint[], iterations = 2): NormalizedPoint[] {
+  let current = points
+  for (let iter = 0; iter < iterations; iter++) {
+    if (current.length < 2) break
+    const next: NormalizedPoint[] = [current[0]!]
+    for (let i = 0; i < current.length - 1; i++) {
+      const p0 = current[i]!
+      const p1 = current[i + 1]!
+      next.push(
+        { x: 0.75 * p0.x + 0.25 * p1.x, y: 0.75 * p0.y + 0.25 * p1.y },
+        { x: 0.25 * p0.x + 0.75 * p1.x, y: 0.25 * p0.y + 0.75 * p1.y },
+      )
+    }
+    next.push(current[current.length - 1]!)
+    current = next
+  }
+  return current
+}
+
+/** Snap a messy stroke to the canonical path used for display after release. */
+export function idealizeGesturePath(
+  analysis: Pick<
+    GestureAnalysis,
+    'shape' | 'start' | 'end' | 'strokeCorner' | 'finishPoint' | 'startQuadrant'
+  >,
+  anchorPath: NormalizedPoint[],
+): NormalizedPoint[] {
+  const { shape, start, end } = analysis
+  const parsed = parseHorizStroke(anchorPath)
+
+  if (shape === 'SMASH' || shape === 'LINE_V') {
+    return resamplePath([start, { x: start.x, y: end.y }], 28)
+  }
+  if (shape === 'LOB') return resamplePath([start, end], 28)
+  if (shape === 'BACKHAND' || shape === 'FOREHAND') {
+    if (parsed) {
+      const corners = [parsed.horizStart, parsed.horizEnd]
+      if (parsed.finishPoint !== parsed.horizEnd) corners.push(parsed.finishPoint)
+      return resamplePolyline(corners, 28)
+    }
+    return resamplePath([start, end], 28)
+  }
+  if (shape === 'VOLLEY') {
+    const cornerIdx = findLCornerIndex(anchorPath)
+    if (cornerIdx != null) {
+      const corner = resamplePath(anchorPath, 24)[cornerIdx]!
+      return resamplePolyline([start, corner, end], 28)
+    }
+  }
+  if (shape === 'TAP') return [start, end]
+  const smoothed = chaikinSmooth(collapseHoldAnchors(anchorPath), 2)
+  return resamplePath(smoothed.length >= 2 ? smoothed : anchorPath, 28)
+}
+
+export function lerpGesturePaths(
+  from: NormalizedPoint[],
+  to: NormalizedPoint[],
+  t: number,
+  samples = 32,
+): NormalizedPoint[] {
+  const a = resamplePath(from.length ? from : to, samples)
+  const b = resamplePath(to.length ? to : from, samples)
+  return a.map((p, i) => {
+    const q = b[i]!
+    return { x: p.x + (q.x - p.x) * t, y: p.y + (q.y - p.y) * t }
+  })
+}
+
+const VERT_LEG_MIN_DY = 0.05
+
+/** Step-2 vertical leg: ↑ score, ↓ foul (from horizontal corner). */
+export function detectVerticalVerdictStroke(
+  points: NormalizedPoint[],
+  corner: NormalizedPoint,
+): VolleyVerdict | null {
+  if (points.length < 2) return null
+  const start = points[0]!
+  const end = points[points.length - 1]!
+  const dy = Math.abs(end.y - start.y)
+  const dx = Math.abs(end.x - start.x)
+  if (dy < VERT_LEG_MIN_DY || dy <= dx * 1.1) return null
+  return horizStrokeFinishVerdict(corner, end)
+}
+
+export function horizStepLabel(shape: 'BACKHAND' | 'FOREHAND', innerZone: boolean): string {
+  const base = shape === 'BACKHAND' ? 'Backhand' : 'Forehand'
+  if (innerZone) return `${base} volley · step 1 of 2`
+  return `${base} · step 1 of 2`
+}
+
+export function buildComposedHorizVertAnalysis(
+  horizAnalysis: GestureAnalysis,
+  horizPath: NormalizedPoint[],
+  vertPath: NormalizedPoint[],
+  extraDurationMs: number,
+  opts?: { playerNames?: Partial<Record<Quadrant, string>> },
+): GestureAnalysis {
+  const corner = horizAnalysis.strokeCorner ?? horizAnalysis.end
+  const finish = vertPath[vertPath.length - 1]!
+  const verdict = horizStrokeFinishVerdict(corner, finish)
+  const combined = [...horizPath, ...vertPath.slice(1)]
+  const shape: GestureShape =
+    horizAnalysis.shape === 'BACKHAND' || horizAnalysis.shape === 'FOREHAND'
+      ? horizAnalysis.shape
+      : 'FOREHAND'
+  const inner = horizAnalysis.shotZone === 'inner'
+  const volleyVerdict: VolleyVerdict | null = inner ? (verdict ?? 'FOUL') : null
+
+  return {
+    ...horizAnalysis,
+    shape,
+    shapeLabel: shapeLabel(shape),
+    report: gestureReport(horizAnalysis.startQuadrant, shape, {
+      volleyVerdict,
+      backhandDirection: horizAnalysis.backhandDirection,
+      playerNames: opts?.playerNames,
+      shotZone: horizAnalysis.shotZone,
+      startQuadrant: horizAnalysis.startQuadrant,
+      start: horizAnalysis.start,
+      end: finish,
+    }),
+    volleyVerdict,
+    end: roundPoint(finish),
+    endQuadrant: quadrantFromPoint(finish),
+    durationMs: Math.round(horizAnalysis.durationMs + extraDurationMs),
+    pointCount: combined.length,
+    pathLength: Math.round(pathLength(combined) * 1000) / 1000,
+    pathSample: resamplePath(combined, 24).map((p) => roundPoint(p)),
+    anchors: [roundPoint(horizAnalysis.start), roundPoint(corner), roundPoint(finish)],
+    strokeCorner: roundPoint(corner),
+    finishPoint: roundPoint(finish),
+    patternKey: `${horizAnalysis.startQuadrant}|${shape}|2stroke|${verdict ?? '?'}`,
   }
 }

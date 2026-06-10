@@ -1,15 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
-import { GestureAnnotationPad } from './GestureAnnotationPad'
-import { GesturePadToolbar } from './GesturePadToolbar'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
+import { displayCourtLabel } from '../lib/courtDisplay'
+import { resolveCourtRef, type CourtRef, type CourtRefsLookup } from '../lib/courtRefs'
+import { liveCourtScoreKey, type LiveCourtGamesScore } from '../lib/liveCourtScore'
+import { friendlyCourtLivePath } from '../lib/friendlyCourtLive'
 import { useTranslation } from '../hooks/useTranslation'
 import type { TranslateFn } from '../i18n'
 import type { AmericanoScoringUnit } from '../lib/competitionPresets'
 import { pivotScheduleByGame, type CourtColumn } from '../lib/competitionCourtBoard'
-import {
-  quadrantPlayersForCourt,
-  type QuadrantPlayers,
-} from '../lib/gesturePadPlayers'
 import { isScoringTimeUnlocked } from '../lib/competitionScoringUnlock'
 import { playTwoMinuteAlarm, TWO_MINUTES_MS } from '../lib/gameCountdownAlarm'
 import { RANKED_GAME_MINUTES } from '../lib/competitionLayout'
@@ -19,9 +17,12 @@ import {
   parseScoreField,
   scoreDigitsOnly,
 } from '../lib/competitionScoreInput'
-import { compactDisplayNames } from '../lib/leaderboardEntries'
+import { compactDisplayNames, firstDisplayName } from '../lib/leaderboardEntries'
 import type { CourtPlayer } from '../lib/americanoSchedule'
+import type { FriendlyCourtScoreSubmit } from '../lib/friendlyManualScore'
 import type { MatchTeam } from '../lib/types'
+
+export type { FriendlyCourtScoreSubmit }
 
 type LiveCourt = {
   courtId: string
@@ -58,6 +59,7 @@ type Props = {
     playedAt?: string
   } | undefined
   onSubmitScores?: (entries: CourtScoreSubmit[]) => Promise<void>
+  onSubmitFriendlyScores?: (entries: FriendlyCourtScoreSubmit[]) => Promise<void>
   onSaved?: () => void
   now?: number
   gameMinutes?: number
@@ -66,6 +68,8 @@ type Props = {
   currentUserId?: string | null
   currentUserAvatarUrl?: string | null
   isAdmin?: boolean
+  courtRefs?: CourtRefsLookup
+  liveCourtScores?: Map<string, LiveCourtGamesScore>
 }
 
 type RoundStatus = 'pending' | 'active' | 'complete'
@@ -80,13 +84,16 @@ function gameCardShellClass({
   isCurrentGame: boolean
   isMyGame?: boolean
 }) {
-  const parts = ['game-card overflow-hidden p-0 transition-colors']
+  const parts = [
+    'w-full min-w-0 overflow-hidden rounded-2xl border-2 bg-brand-surface shadow-[0_10px_30px_-12px_rgba(96,45,36,0.35)] transition-colors',
+  ]
   if (finished) {
-    parts.push(
-      'border border-brand-border/50 !bg-[#f6f5f3] shadow-none',
-    )
-  } else if (isCurrentGame) {
-    parts.push('border-2 border-brand-accent ring-2 ring-brand-accent/30')
+    parts.push('border-brand-border/55 !bg-[#f4f3f1] shadow-[0_4px_14px_-10px_rgba(96,45,36,0.2)]')
+  } else {
+    parts.push('border-brand-primary/40')
+  }
+  if (isCurrentGame && !finished) {
+    parts.push('ring-2 ring-brand-accent/45')
   }
   if (isMyGame && !finished) {
     parts.push('ring-2 ring-brand-accent/70')
@@ -198,7 +205,7 @@ function courtHasCurrentUser(
 }
 
 const COURT_LABEL_CLASS =
-  'text-center font-display text-xl font-bold text-brand-primary md:text-2xl'
+  'text-center font-display text-2xl font-bold text-brand-accent md:text-3xl'
 const CURRENT_PLAYER_HIGHLIGHT_CLASS =
   'animate-pulse rounded bg-brand-bg-alt px-1 text-brand-accent'
 
@@ -208,13 +215,94 @@ function courtLabelClass(
   finished = false,
 ) {
   const base = finished
-    ? 'text-center font-display text-xl font-bold text-brand-sage md:text-2xl'
-    : 'text-center font-display text-xl font-bold md:text-2xl'
+    ? 'font-display text-2xl font-bold text-brand-sage md:text-3xl'
+    : 'font-display text-2xl font-bold md:text-3xl'
   return courtHasCurrentUser(currentUserId, court)
     ? `${base} ${CURRENT_PLAYER_HIGHLIGHT_CLASS}`
     : finished
       ? base
       : COURT_LABEL_CLASS
+}
+
+function courtCardShellClass({
+  finished,
+  isMyCourt = false,
+}: {
+  finished: boolean
+  isMyCourt?: boolean
+}) {
+  const parts = [
+    'w-full min-w-0 overflow-hidden rounded-xl border-2 bg-brand-surface shadow-[0_6px_18px_-8px_rgba(96,45,36,0.28)] transition',
+  ]
+  if (finished) {
+    parts.push('border-brand-border/50 !bg-[#faf9f8] shadow-[0_2px_8px_-6px_rgba(96,45,36,0.15)]')
+  } else {
+    parts.push('border-brand-primary/35')
+  }
+  if (isMyCourt && !finished) {
+    parts.push('ring-2 ring-brand-accent/35')
+  }
+  return parts.join(' ')
+}
+
+function CourtCard({
+  courtLabel,
+  courtRef,
+  currentUserId,
+  court,
+  finished,
+  href,
+  children,
+  t,
+}: {
+  courtLabel: string
+  courtRef?: CourtRef
+  currentUserId?: string | null
+  court: LiveCourt | ScoringGame['courts'][number]
+  finished: boolean
+  href?: string
+  children: ReactNode
+  t: TranslateFn
+}) {
+  const isMyCourt = courtHasCurrentUser(currentUserId, court)
+  const shellClass = `${courtCardShellClass({ finished, isMyCourt })}${
+    href
+      ? ' cursor-pointer transition hover:border-brand-accent/45 active:scale-[0.99] active:opacity-95'
+      : ''
+  }`
+  const body = (
+    <>
+      <div
+        className={`border-b ${
+          finished ? 'border-brand-border/40 bg-brand-surface' : 'border-brand-border/50 bg-brand-surface'
+        }`}
+      >
+        <CourtLabelRow
+          courtLabel={courtLabel}
+          courtRef={courtRef}
+          currentUserId={currentUserId}
+          court={court}
+          finished={finished}
+          t={t}
+        />
+      </div>
+      <div className="p-2 md:p-2.5">{children}</div>
+    </>
+  )
+
+  if (href) {
+    return (
+      <Link
+        to={href}
+        className={`block no-underline text-inherit ${shellClass}`}
+        aria-label={t('court.openLiveCourt', { name: displayCourtLabel(courtLabel, t) })}
+      >
+        {body}
+      </Link>
+    )
+  }
+
+  return <article className={shellClass}>{body}</article>
 }
 
 function CourtMatchCell({
@@ -231,6 +319,7 @@ function CourtMatchCell({
   teamBPlayers,
   currentUserId,
   currentUserAvatarUrl,
+  embedded = false,
   t,
 }: {
   teamA: string[]
@@ -246,6 +335,7 @@ function CourtMatchCell({
   teamBPlayers?: CourtPlayer[]
   currentUserId?: string | null
   currentUserAvatarUrl?: string | null
+  embedded?: boolean
   t: TranslateFn
 }) {
   const fieldLabel = scoreFieldLabel(scoreUnit, t)
@@ -265,7 +355,7 @@ function CourtMatchCell({
     teamBPlayers?.[1] ?? { id: null, name: fallbackNames[3] ?? '', avatarUrl: null },
   ]
   const playerClass = (isCurrent: boolean) =>
-    `flex min-w-0 items-center gap-1 rounded py-0.5 ${
+    `flex min-w-0 items-center gap-1.5 rounded py-0.5 ${
       isCurrent
         ? CURRENT_PLAYER_HIGHLIGHT_CLASS
         : finished
@@ -288,8 +378,10 @@ function CourtMatchCell({
       className={scoreInputClass}
       aria-label={t('aria.teamAScore', { unit: fieldLabel })}
     />
+  ) : scoreA ? (
+    <span className="text-base font-bold tabular-nums text-brand-accent md:text-lg">{scoreA}</span>
   ) : (
-    <span className="text-xs font-medium tabular-nums text-brand-muted">{scoreA || '—'}</span>
+    <span className="inline-block min-w-[1.25rem]" aria-hidden />
   )
 
   const scoreBEl = editable ? (
@@ -303,31 +395,77 @@ function CourtMatchCell({
       className={scoreInputClass}
       aria-label={t('aria.teamBScore', { unit: fieldLabel })}
     />
+  ) : scoreB ? (
+    <span className="text-base font-bold tabular-nums text-brand-accent md:text-lg">{scoreB}</span>
   ) : (
-    <span className="text-xs font-medium tabular-nums text-brand-muted">{scoreB || '—'}</span>
+    <span className="inline-block min-w-[1.25rem]" aria-hidden />
   )
 
-  const playerEl = (player: CourtPlayer) => {
+  const playerEl = (player: CourtPlayer, align: 'left' | 'right') => {
     const isCurrent = Boolean(currentUserId && player.id === currentUserId)
-    const displayAvatarUrl = player.avatarUrl ?? (isCurrent ? currentUserAvatarUrl : null)
+    const isRegistered = Boolean(player.id)
+    const displayAvatarUrl = isRegistered
+      ? player.avatarUrl ?? (isCurrent ? currentUserAvatarUrl ?? null : null)
+      : null
     const [displayName] = compactDisplayNames([player.name])
+    const nameEl = (
+      <span className="truncate text-lg font-semibold leading-tight text-brand-text md:text-xl">
+        {displayName}
+      </span>
+    )
+    const avatarEl = displayAvatarUrl ? (
+      <img
+        src={displayAvatarUrl}
+        alt=""
+        className="h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-brand-border/60 md:h-9 md:w-9"
+      />
+    ) : null
     return (
-      <p className={playerClass(isCurrent)}>
-        {displayAvatarUrl ? (
-          <img
-            src={displayAvatarUrl}
-            alt=""
-            className="h-5 w-5 shrink-0 rounded-full object-cover ring-1 ring-brand-border/60 md:h-7 md:w-7"
-          />
+      <p
+        className={`${playerClass(isCurrent)} ${
+          align === 'right' ? 'justify-end text-right' : ''
+        }`}
+      >
+        {align === 'right' ? (
+          <>
+            {nameEl}
+            {avatarEl}
+          </>
         ) : (
-          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-bg-alt text-[9px] font-semibold text-brand-muted ring-1 ring-brand-border/40 md:h-7 md:w-7 md:text-[11px]">
-            {displayName.trim()[0]?.toUpperCase() ?? '?'}
-          </span>
+          <>
+            {avatarEl}
+            {nameEl}
+          </>
         )}
-        <span className="truncate text-base font-semibold leading-tight md:text-lg">
-          {displayName}
-        </span>
       </p>
+    )
+  }
+
+  const grid = (
+    <div className="grid grid-cols-[minmax(0,1fr)_auto_1px_auto_minmax(0,1fr)] items-center gap-x-2 gap-y-1 px-0.5 py-1 md:gap-x-3 md:px-1 md:py-1.5">
+        <div className="min-w-0 justify-self-start space-y-1">
+          {playerEl(teamAPlayerList[0]!, 'left')}
+          {playerEl(teamAPlayerList[1]!, 'left')}
+        </div>
+        <div className="flex min-w-[1.25rem] items-center justify-center tabular-nums">
+          {scoreAEl}
+        </div>
+        <span className="h-full min-h-[2.5rem] w-px bg-brand-border/60" aria-hidden="true" />
+        <div className="flex min-w-[1.25rem] items-center justify-center tabular-nums">
+          {scoreBEl}
+        </div>
+        <div className="min-w-0 justify-self-end space-y-1">
+          {playerEl(teamBPlayerList[0]!, 'right')}
+          {playerEl(teamBPlayerList[1]!, 'right')}
+        </div>
+      </div>
+  )
+
+  if (embedded) {
+    return (
+      <div aria-label={`${teamA[0]} and ${teamA[1]} against ${teamB[0]} and ${teamB[1]}`}>
+        {grid}
+      </div>
     )
   }
 
@@ -340,23 +478,7 @@ function CourtMatchCell({
       }
       aria-label={`${teamA[0]} and ${teamA[1]} against ${teamB[0]} and ${teamB[1]}`}
     >
-      <div className="grid grid-cols-[minmax(0,1fr)_2rem_1px_minmax(0,1fr)_2rem] items-stretch gap-1.5 px-1 py-2">
-        <div className="min-w-0 space-y-1">
-          {playerEl(teamAPlayerList[0]!)}
-          {playerEl(teamAPlayerList[1]!)}
-        </div>
-        <div className="flex items-center justify-center tabular-nums">
-          {scoreAEl}
-        </div>
-        <span className="h-full w-px bg-brand-border/60" aria-hidden="true" />
-        <div className="min-w-0 space-y-1">
-          {playerEl(teamBPlayerList[0]!)}
-          {playerEl(teamBPlayerList[1]!)}
-        </div>
-        <div className="flex items-center justify-center tabular-nums">
-          {scoreBEl}
-        </div>
-      </div>
+      {grid}
     </div>
   )
 }
@@ -554,6 +676,145 @@ function useGameScoring({
   return { drafts, setDraft, submitFooter, error, canEdit, dirty }
 }
 
+function useFriendlyManualScoring({
+  game,
+  liveCourtScores,
+  canEdit,
+  onSubmit,
+  onSaved,
+  t,
+}: {
+  game: ScoringGame
+  liveCourtScores?: Map<string, LiveCourtGamesScore>
+  canEdit: boolean
+  onSubmit?: (entries: FriendlyCourtScoreSubmit[]) => Promise<void>
+  onSaved?: () => void
+  t: TranslateFn
+}) {
+  const courts = useMemo(
+    () =>
+      game.courts.map((court) => ({
+        courtKey: liveCourtScoreKey(game.gameNumber, court.courtLabel),
+        courtLabel: court.courtLabel,
+        court,
+      })),
+    [game.courts, game.gameNumber],
+  )
+
+  const savedSnapshot = useMemo(
+    () =>
+      courts
+        .map(({ courtKey }) => {
+          const live = liveCourtScores?.get(courtKey)
+          return `${courtKey}:${live?.scoreA ?? ''}:${live?.scoreB ?? ''}`
+        })
+        .join('|'),
+    [courts, liveCourtScores],
+  )
+
+  const [drafts, setDrafts] = useState<Record<string, CourtDraft>>({})
+  const [dirty, setDirty] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setDrafts((prev) => {
+      const next = dirty ? { ...prev } : {}
+      for (const { courtKey } of courts) {
+        if (dirty && prev[courtKey]) continue
+        const live = liveCourtScores?.get(courtKey)
+        next[courtKey] = {
+          teamA: live?.scoreA ?? '',
+          teamB: live?.scoreB ?? '',
+        }
+      }
+      return next
+    })
+  }, [courts, dirty, liveCourtScores, savedSnapshot])
+
+  const setDraft = useCallback((courtKey: string, side: 'teamA' | 'teamB', value: string) => {
+    setDirty(true)
+    setDrafts((prev) => ({
+      ...prev,
+      [courtKey]: {
+        teamA: prev[courtKey]?.teamA ?? '',
+        teamB: prev[courtKey]?.teamB ?? '',
+        [side]: scoreDigitsOnly(value),
+      },
+    }))
+  }, [])
+
+  const courtScoreRows = useMemo(() => {
+    return courts.map(({ courtKey, courtLabel, court }) => {
+      const draft = drafts[courtKey]
+      const live = liveCourtScores?.get(courtKey)
+      const saved = live
+        ? {
+            teamAPoints: live.scoreA !== '' ? Number(live.scoreA) : undefined,
+            teamBPoints: live.scoreB !== '' ? Number(live.scoreB) : undefined,
+          }
+        : undefined
+      const { teamAStr, teamBStr } = scoreStringsForCourt(draft, saved, dirty)
+      const teamA = parseScoreField(teamAStr)
+      const teamB = parseScoreField(teamBStr)
+      return { courtKey, courtLabel, court, teamA, teamB, teamAStr, teamBStr }
+    })
+  }, [courts, dirty, drafts, liveCourtScores])
+
+  const allCourtsReady =
+    courts.length > 0 &&
+    courtScoreRows.length === courts.length &&
+    courtScoreRows.every((row) => row.teamA !== null && row.teamB !== null)
+
+  const submitEntries = useMemo((): FriendlyCourtScoreSubmit[] => {
+    if (!allCourtsReady) return []
+    return courtScoreRows
+      .filter((row) => row.teamA !== null && row.teamB !== null)
+      .map((row) => ({
+        gameNumber: game.gameNumber,
+        courtLabel: row.courtLabel,
+        teamA: row.teamA!,
+        teamB: row.teamB!,
+        teamAPlayers: row.court.teamAPlayers,
+        teamBPlayers: row.court.teamBPlayers,
+      }))
+  }, [allCourtsReady, courtScoreRows, game.gameNumber])
+
+  const submitGame = async () => {
+    if (!onSubmit || submitEntries.length === 0) return
+    setBusy(true)
+    setError(null)
+    try {
+      await onSubmit(submitEntries)
+      setDirty(false)
+      onSaved?.()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('common.submitFailed'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const submitFooter = onSubmit ? (
+    <div
+      className={`border-t px-3 py-2.5 md:px-4 ${
+        canEdit ? 'border-brand-border/60' : 'border-brand-border/40 bg-[#f1f0ee]'
+      }`}
+    >
+      <button
+        type="button"
+        disabled={busy || !allCourtsReady}
+        onClick={() => void submitGame()}
+        className="brand-btn w-full py-2.5 text-sm font-semibold disabled:opacity-40"
+      >
+        {busy ? '…' : t('common.submit')}
+      </button>
+    </div>
+  ) : null
+
+  return { courtScoreRows, setDraft, submitFooter, error, canEdit, dirty }
+}
+
 function GameScoringCourts({
   game,
   gameRoundId,
@@ -568,7 +829,11 @@ function GameScoringCourts({
   finished,
   currentUserId,
   currentUserAvatarUrl,
-  onOpenCourtGesturePad,
+  liveCourtEnabled,
+  friendly,
+  sessionId,
+  competitionId,
+  courtRefs,
   t,
 }: {
   game: ScoringGame
@@ -584,15 +849,15 @@ function GameScoringCourts({
   finished: boolean
   currentUserId?: string | null
   currentUserAvatarUrl?: string | null
-  onOpenCourtGesturePad?: (
-    quadrantPlayers: QuadrantPlayers,
-    courtId?: string,
-    courtLabel?: string,
-  ) => void
+  liveCourtEnabled: boolean
+  friendly: boolean
+  sessionId?: string
+  competitionId?: string
+  courtRefs?: CourtRefsLookup
   t: TranslateFn
 }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {game.courts.map((court, courtIndex) => {
         const liveCourt = courtsForGame.find((c) => c.courtName === court.courtLabel)
         const courtId = courtIdForLabel(
@@ -614,170 +879,128 @@ function GameScoringCourts({
               teamBStr: saved?.teamBPoints != null ? String(saved.teamBPoints) : '',
             }
 
-        const openGesturePad = onOpenCourtGesturePad
-          ? () =>
-              onOpenCourtGesturePad(
-                quadrantPlayersForCourt(teamA, teamB, teamAPlayers, teamBPlayers),
-                courtId,
-                court.courtLabel,
-              )
-          : undefined
+        const href = courtLiveHref({
+          liveCourtEnabled,
+          friendly,
+          sessionId,
+          competitionId,
+          gameNumber: game.gameNumber,
+          courtLabel: court.courtLabel,
+          courtId,
+          canEditScores: canEdit,
+        })
 
         return (
-          <div key={court.courtLabel} className="space-y-1">
-            <CourtLabelRow
-              courtLabel={court.courtLabel}
-              currentUserId={currentUserId}
-              court={liveCourt ?? court}
+          <CourtCard
+            key={court.courtLabel}
+            courtLabel={court.courtLabel}
+            courtRef={resolveCourtRef(court.courtLabel, courtIndex, courtRefs)}
+            currentUserId={currentUserId}
+            court={liveCourt ?? court}
+            finished={finished}
+            href={href}
+            t={t}
+          >
+            <CourtMatchCell
+              teamA={teamA}
+              teamB={teamB}
+              teamAPlayers={teamAPlayers}
+              teamBPlayers={teamBPlayers}
+              scoreUnit={scoreUnit}
+              scoreA={scoreA}
+              scoreB={scoreB}
+              onScoreA={canEdit && courtId ? (v) => setDraft(courtId, 'teamA', v) : undefined}
+              onScoreB={canEdit && courtId ? (v) => setDraft(courtId, 'teamB', v) : undefined}
+              disabled={!canEdit}
               finished={finished}
-              onOpenGesturePad={openGesturePad}
+              currentUserId={currentUserId}
+              currentUserAvatarUrl={currentUserAvatarUrl}
+              embedded
+              t={t}
             />
-            <div>
-              <CourtMatchCell
-                teamA={teamA}
-                teamB={teamB}
-                teamAPlayers={teamAPlayers}
-                teamBPlayers={teamBPlayers}
-                scoreUnit={scoreUnit}
-                scoreA={scoreA}
-                scoreB={scoreB}
-                onScoreA={
-                  canEdit && courtId ? (v) => setDraft(courtId, 'teamA', v) : undefined
-                }
-                onScoreB={
-                  canEdit && courtId ? (v) => setDraft(courtId, 'teamB', v) : undefined
-                }
-                disabled={!canEdit}
-                finished={finished}
-                currentUserId={currentUserId}
-                currentUserAvatarUrl={currentUserAvatarUrl}
-                t={t}
-              />
-            </div>
-          </div>
+          </CourtCard>
         )
       })}
     </div>
   )
 }
 
-function GesturePadIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5 md:h-6 md:w-6" aria-hidden>
-      <rect x="3" y="3" width="8" height="8" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5" />
-      <rect x="13" y="3" width="8" height="8" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5" />
-      <rect x="3" y="13" width="8" height="8" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5" />
-      <rect x="13" y="13" width="8" height="8" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M5 17 Q12 8 19 7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function GameGesturePadButton({ onOpen }: { onOpen: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation()
-        onOpen()
-      }}
-      className="flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border border-brand-border bg-brand-surface px-2 py-1.5 text-brand-muted transition hover:border-brand-accent/40 hover:text-brand-primary md:px-2.5 md:py-2"
-      aria-label="Gesture pad"
-    >
-      <GesturePadIcon />
-      <span className="hidden text-[10px] font-semibold uppercase tracking-wide lg:inline lg:text-[11px]">
-        Gesture
-      </span>
-    </button>
-  )
-}
-
-function GesturePadOverlay({
-  sessionId,
-  friendly,
-  gameNumber,
-  courtId,
-  courtLabel,
-  roundId,
-  quadrantPlayers,
-  currentUserId,
-  currentUserAvatarUrl,
-  onSubmitMatch,
-  onSaved,
-  onClose,
-  t,
-}: {
-  sessionId: string
-  friendly?: boolean
-  gameNumber: number
-  courtId?: string
-  courtLabel?: string
-  roundId?: string
-  quadrantPlayers: QuadrantPlayers
-  currentUserId?: string | null
-  currentUserAvatarUrl?: string | null
-  onSubmitMatch?: (entry: CourtScoreSubmit) => Promise<void>
-  onSaved?: () => void
-  onClose: () => void
-  t: TranslateFn
-}) {
-  const courtSetupKey = friendly
-    ? `${sessionId}-${gameNumber}-${courtLabel ?? courtId ?? 'court'}`
-    : courtId != null
-      ? `${sessionId}-${gameNumber}-${courtId}`
-      : undefined
-
-  const handleSubmitMatch = onSubmitMatch
-    ? async (entry: CourtScoreSubmit) => {
-        await onSubmitMatch(entry)
-        onSaved?.()
-      }
-    : undefined
-
-  return (
-    <div className="gesture-pad-page fixed inset-0 z-[400] flex flex-col overflow-hidden bg-[#1a5fa8]">
-      <GesturePadToolbar
-        onBack={onClose}
-        backLabel={t('common.back')}
-        competitionId={friendly ? undefined : sessionId}
-        gameNumber={String(gameNumber)}
-      />
-      <GestureAnnotationPad
-        competitionId={friendly ? undefined : sessionId}
-        gameNumber={String(gameNumber)}
-        courtSetupKey={courtSetupKey}
-        courtId={courtId}
-        roundId={roundId}
-        onSubmitMatch={friendly ? undefined : handleSubmitMatch}
-        onMatchClosed={onClose}
-        quadrantPlayers={quadrantPlayers}
-        currentUserId={currentUserId}
-        currentUserAvatarUrl={currentUserAvatarUrl}
-        friendly={friendly}
-      />
-    </div>
-  )
-}
-
 function CourtLabelRow({
   courtLabel,
+  courtRef,
   currentUserId,
   court,
   finished,
-  onOpenGesturePad,
+  t,
 }: {
   courtLabel: string
+  courtRef?: CourtRef
   currentUserId?: string | null
   court: LiveCourt | ScoringGame['courts'][number]
   finished: boolean
-  onOpenGesturePad?: () => void
+  t: TranslateFn
 }) {
+  const label = displayCourtLabel(courtLabel, t)
+  const titleClass = `${courtLabelClass(currentUserId, court, finished)} text-left`
+  const refInitial = courtRef?.displayName ? firstDisplayName(courtRef.displayName).charAt(0) : ''
   return (
-    <div className="flex items-center justify-between gap-2 pr-1">
-      <p className={courtLabelClass(currentUserId, court, finished)}>{courtLabel}</p>
-      {onOpenGesturePad ? <GameGesturePadButton onOpen={onOpenGesturePad} /> : null}
+    <div className="flex min-h-12 items-center gap-3 px-3 py-2">
+      <p className={`min-w-0 flex-1 truncate ${titleClass}`}>{label}</p>
+      {courtRef ? (
+        <div className="flex shrink-0 items-center gap-2">
+          <div className="min-w-0 text-right">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-muted">
+              {t('court.ref')}
+            </p>
+            <p className="max-w-[9rem] truncate text-sm font-semibold text-brand-primary sm:max-w-[11rem] md:max-w-none md:text-base">
+              {firstDisplayName(courtRef.displayName)}
+            </p>
+          </div>
+          {courtRef.avatarUrl ? (
+            <img
+              src={courtRef.avatarUrl}
+              alt=""
+              className="h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-brand-accent/45 md:h-11 md:w-11"
+            />
+          ) : (
+            <span
+              aria-hidden
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-primary/10 font-display text-sm font-bold text-brand-primary md:h-11 md:w-11 md:text-base"
+            >
+              {refInitial}
+            </span>
+          )}
+        </div>
+      ) : null}
     </div>
   )
+}
+
+function courtLiveHref({
+  liveCourtEnabled,
+  friendly,
+  sessionId,
+  competitionId,
+  gameNumber,
+  courtLabel,
+  courtId,
+  canEditScores,
+}: {
+  liveCourtEnabled: boolean
+  friendly: boolean
+  sessionId?: string
+  competitionId?: string
+  gameNumber: number
+  courtLabel: string
+  courtId?: string
+  canEditScores: boolean
+}): string | undefined {
+  if (!liveCourtEnabled || !sessionId) return undefined
+  if (friendly) return friendlyCourtLivePath(sessionId, gameNumber, courtLabel)
+  if (competitionId && courtId && !canEditScores) {
+    return `/competitions/${competitionId}/games/${gameNumber}/courts/${courtId}/live-court`
+  }
+  return undefined
 }
 
 function GameCardHeader({
@@ -803,53 +1026,75 @@ function GameCardHeader({
 }) {
   return (
     <div
-      className={`flex items-center gap-2 border-b md:gap-3 ${
-        finished ? 'border-brand-border/40 bg-[#f1f0ee]' : 'border-brand-border/60'
+      className={`flex items-stretch border-b-2 ${
+        finished
+          ? 'border-brand-border/50 bg-[#e8e7e5]'
+          : 'border-brand-accent/50 bg-brand-primary'
       }`}
     >
-      <button
-        type="button"
-        onClick={onToggleCollapsed}
-        className="flex min-w-0 flex-1 items-center gap-2 px-3 py-3 text-left md:gap-3 md:px-4 md:py-4"
-        aria-expanded={!collapsed}
-      >
-        <span className={`shrink-0 text-sm ${finished ? 'text-brand-sage/70' : 'text-brand-muted'}`}>
-          {collapsed ? '▸' : '▾'}
-        </span>
-        <span className="min-w-0 flex-1">
-          <span
-            className={`block font-display text-2xl font-bold leading-none md:text-3xl ${
-              finished ? 'text-brand-sage' : 'text-brand-primary'
-            }`}
-          >
-            {t('competition.game', { number: gameNumber })}
-            {isLiveNow ? (
-              <span className="ml-1.5 text-sm font-medium text-brand-accent md:text-base">
-                · {t('competition.live')}
-              </span>
-            ) : finished ? (
-              <span className="ml-1.5 inline-flex items-center gap-1 text-sm font-medium text-brand-muted md:text-base">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand-sage/60" aria-hidden />
-                {t('competition.done')}
-              </span>
-            ) : null}
-          </span>
-          {timeLabel && (
-            <span className="mt-1 block text-[11px] tabular-nums text-brand-muted md:text-sm">
+      <div className="flex min-w-0 flex-1 items-center gap-2 px-3 py-3.5 md:gap-3 md:px-4 md:py-4">
+        <p
+          className={`shrink-0 font-display text-2xl font-bold leading-none tabular-nums md:text-3xl ${
+            finished ? 'text-brand-sage' : 'text-brand-accent-light'
+          }`}
+        >
+          {t('competition.game', { number: gameNumber })}
+        </p>
+        <div className="min-w-0 flex-1">
+          {isLiveNow ? (
+            <span
+              className={`text-xs font-semibold md:text-sm ${
+                finished ? 'text-brand-accent' : 'text-brand-bg-alt'
+              }`}
+            >
+              {t('competition.live')}
+            </span>
+          ) : finished ? (
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-brand-muted md:text-sm">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand-sage/60" aria-hidden />
+              {t('competition.done')}
+            </span>
+          ) : null}
+          {timeLabel ? (
+            <span
+              className={`mt-0.5 block text-[11px] tabular-nums md:text-sm ${
+                finished ? 'text-brand-muted' : 'text-white/75'
+              }`}
+            >
               {timeLabel}
             </span>
-          )}
-        </span>
-        {countdown && (
+          ) : null}
+        </div>
+        {countdown ? (
           <div className="shrink-0 text-right" aria-live="polite">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-muted md:text-xs">
+            <p
+              className={`text-[10px] font-semibold uppercase tracking-wide md:text-xs ${
+                finished ? 'text-brand-muted' : 'text-white/65'
+              }`}
+            >
               {countdownLabelText}
             </p>
-            <p className="font-display text-3xl font-bold leading-none tabular-nums text-brand-text md:text-4xl">
+            <p
+              className={`font-display text-2xl font-bold leading-none tabular-nums md:text-3xl ${
+                finished ? 'text-brand-primary' : 'text-brand-bg-alt'
+              }`}
+            >
               {countdown}
             </p>
           </div>
-        )}
+        ) : null}
+      </div>
+      <button
+        type="button"
+        onClick={onToggleCollapsed}
+        aria-expanded={!collapsed}
+        className={`flex min-w-12 shrink-0 items-center justify-center self-stretch border-l px-4 text-2xl leading-none transition active:opacity-70 md:min-w-14 md:px-5 md:text-3xl ${
+          finished
+            ? 'border-brand-border/50 text-brand-sage/80'
+            : 'border-white/25 text-brand-bg-alt'
+        }`}
+      >
+        {collapsed ? '▸' : '▾'}
       </button>
     </div>
   )
@@ -857,7 +1102,11 @@ function GameCardHeader({
 
 function ScoringGameCard({
   game,
-  onOpenCourtGesturePad,
+  liveCourtEnabled,
+  friendly,
+  sessionId,
+  competitionId,
+  courtRefs,
   gameRoundId,
   courtsForGame,
   courtIdByLabel,
@@ -878,11 +1127,11 @@ function ScoringGameCard({
   t,
 }: {
   game: ScoringGame
-  onOpenCourtGesturePad?: (
-    quadrantPlayers: QuadrantPlayers,
-    courtId?: string,
-    courtLabel?: string,
-  ) => void
+  liveCourtEnabled: boolean
+  friendly: boolean
+  sessionId?: string
+  competitionId?: string
+  courtRefs?: CourtRefsLookup
   gameRoundId?: string
   courtsForGame: LiveCourt[]
   courtIdByLabel?: Map<string, string>
@@ -941,7 +1190,11 @@ function ScoringGameCard({
       {error && <p className="px-3 pb-1 text-center text-xs text-red-600">{error}</p>}
       {!collapsed && (
         <>
-          <div className={`px-1 pb-2 pt-2 ${finished ? 'bg-[#f6f5f3]' : ''}`}>
+          <div
+            className={`border-t px-3 pb-3.5 pt-3 md:px-4 ${
+              finished ? 'border-brand-border/40 bg-brand-bg-alt/70' : 'border-brand-border/30 bg-brand-bg-alt'
+            }`}
+          >
             <GameScoringCourts
               game={game}
               gameRoundId={gameRoundId}
@@ -956,9 +1209,117 @@ function ScoringGameCard({
               finished={finished}
               currentUserId={currentUserId}
               currentUserAvatarUrl={currentUserAvatarUrl}
-              onOpenCourtGesturePad={onOpenCourtGesturePad}
+              liveCourtEnabled={liveCourtEnabled}
+              friendly={friendly}
+              sessionId={sessionId}
+              competitionId={competitionId}
+              courtRefs={courtRefs}
               t={t}
             />
+          </div>
+          {submitFooter}
+        </>
+      )}
+    </div>
+  )
+}
+
+function FriendlyManualGameCard({
+  game,
+  scoreUnit,
+  liveCourtScores,
+  courtRefs,
+  onSubmitFriendlyScores,
+  onSaved,
+  isLiveNow,
+  isCurrentGame,
+  countdown,
+  countdownLabelText,
+  finished,
+  collapsed,
+  onToggleCollapsed,
+  currentUserId,
+  currentUserAvatarUrl,
+  t,
+}: {
+  game: ScoringGame
+  scoreUnit: AmericanoScoringUnit
+  liveCourtScores?: Map<string, LiveCourtGamesScore>
+  courtRefs?: CourtRefsLookup
+  onSubmitFriendlyScores?: (entries: FriendlyCourtScoreSubmit[]) => Promise<void>
+  onSaved?: () => void
+  isLiveNow: boolean
+  isCurrentGame: boolean
+  countdown?: string | null
+  countdownLabelText: string
+  finished: boolean
+  collapsed: boolean
+  onToggleCollapsed: () => void
+  currentUserId?: string | null
+  currentUserAvatarUrl?: string | null
+  t: TranslateFn
+}) {
+  const { courtScoreRows, setDraft, submitFooter, error, canEdit } = useFriendlyManualScoring({
+    game,
+    liveCourtScores,
+    canEdit: Boolean(onSubmitFriendlyScores),
+    onSubmit: onSubmitFriendlyScores,
+    onSaved,
+    t,
+  })
+
+  return (
+    <div className={gameCardShellClass({ finished, isCurrentGame })}>
+      <GameCardHeader
+        gameNumber={game.gameNumber}
+        isLiveNow={isLiveNow}
+        timeLabel={game.timeLabel}
+        countdown={countdown}
+        countdownLabelText={countdownLabelText}
+        finished={finished}
+        collapsed={collapsed}
+        onToggleCollapsed={onToggleCollapsed}
+        t={t}
+      />
+      {error && <p className="px-3 pb-1 text-center text-xs text-red-600">{error}</p>}
+      {!collapsed && (
+        <>
+          <div className="border-t border-brand-border/30 bg-brand-bg-alt px-3 pb-3.5 pt-3 md:px-4">
+            <div className="space-y-3.5">
+              {courtScoreRows.map((row, courtIndex) => {
+                const teamA = row.court.teamA
+                const teamB = row.court.teamB
+                return (
+                  <CourtCard
+                    key={row.courtLabel}
+                    courtLabel={row.courtLabel}
+                    courtRef={resolveCourtRef(row.courtLabel, courtIndex, courtRefs)}
+                    currentUserId={currentUserId}
+                    court={row.court}
+                    finished={finished}
+                    t={t}
+                  >
+                    <CourtMatchCell
+                      teamA={teamA}
+                      teamB={teamB}
+                      teamAPlayers={row.court.teamAPlayers}
+                      teamBPlayers={row.court.teamBPlayers}
+                      scoreUnit={scoreUnit}
+                      scoreA={row.teamAStr}
+                      scoreB={row.teamBStr}
+                      onScoreA={canEdit ? (v) => setDraft(row.courtKey, 'teamA', v) : undefined}
+                      onScoreB={canEdit ? (v) => setDraft(row.courtKey, 'teamB', v) : undefined}
+                      disabled={!canEdit}
+                      finished={finished}
+                      currentUserId={currentUserId}
+                      currentUserAvatarUrl={currentUserAvatarUrl}
+                      embedded
+                      t={t}
+                    />
+                  </CourtCard>
+                )
+              })}
+            </div>
           </div>
           {submitFooter}
         </>
@@ -982,6 +1343,7 @@ export function CompetitionCourtBoard({
   courtIdByLabel,
   matchForCourt,
   onSubmitScores,
+  onSubmitFriendlyScores,
   onSaved,
   now,
   gameMinutes = RANKED_GAME_MINUTES,
@@ -990,20 +1352,18 @@ export function CompetitionCourtBoard({
   currentUserId,
   currentUserAvatarUrl,
   isAdmin = false,
+  courtRefs,
+  liveCourtScores,
 }: Props) {
   const { t } = useTranslation()
   const games = useMemo(() => pivotScheduleByGame(columns), [columns])
   const [tick, setTick] = useState(() => Date.now())
   const [collapsedGames, setCollapsedGames] = useState<Record<number, boolean>>({})
-  const [gesturePadTarget, setGesturePadTarget] = useState<{
-    gameNumber: number
-    courtId?: string
-    courtLabel?: string
-    roundId?: string
-    quadrantPlayers: QuadrantPlayers
-  } | null>(null)
   const sessionId = friendlySessionId ?? competitionId
-  const gesturePadEnabled = Boolean(sessionId && isAdmin && currentUserId)
+  const liveCourtEnabled = Boolean(
+    sessionId && isAdmin && currentUserId && !(friendly && onSubmitFriendlyScores),
+  )
+  const friendlyManualScoring = Boolean(friendly && isAdmin && onSubmitFriendlyScores)
   const scoringTimeUnlocked = isScoringTimeUnlocked()
 
   const previewTimed = mode === 'preview' && Boolean(roundTimesByGame?.size)
@@ -1099,7 +1459,7 @@ export function CompetitionCourtBoard({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {orderedGames.map((game) => {
         const isActive = activeGameNumber === game.gameNumber
         const times = roundTimesByGame?.get(game.gameNumber)
@@ -1137,23 +1497,16 @@ export function CompetitionCourtBoard({
             isLiveNow ||
             timeUp)
 
-        const onOpenCourtGesturePad = gesturePadEnabled
-          ? (quadrantPlayers: QuadrantPlayers, courtId?: string, courtLabel?: string) =>
-              setGesturePadTarget({
-                gameNumber: game.gameNumber,
-                quadrantPlayers,
-                courtId,
-                courtLabel,
-                roundId: gameRoundId,
-              })
-          : undefined
-
         if (mode === 'scoring' && matchForCourt) {
           return (
             <ScoringGameCard
               key={game.gameNumber}
               game={game}
-              onOpenCourtGesturePad={onOpenCourtGesturePad}
+              liveCourtEnabled={liveCourtEnabled}
+              friendly={friendly}
+              sessionId={sessionId}
+              competitionId={competitionId}
+              courtRefs={courtRefs}
               gameRoundId={gameRoundId}
               courtsForGame={courtsForGame}
               courtIdByLabel={courtIdByLabel}
@@ -1161,6 +1514,30 @@ export function CompetitionCourtBoard({
               scoreUnit={scoreUnit}
               canEdit={canEditGame}
               onSubmitScores={onSubmitScores}
+              onSaved={onSaved}
+              isLiveNow={isLiveNow}
+              isCurrentGame={isCurrentGame}
+              countdown={countdown}
+              countdownLabelText={countdownLabel(state, t)}
+              finished={finished}
+              collapsed={collapsed}
+              onToggleCollapsed={() => toggleCollapsed(game.gameNumber, finished)}
+              currentUserId={currentUserId}
+              currentUserAvatarUrl={currentUserAvatarUrl}
+              t={t}
+            />
+          )
+        }
+
+        if (mode === 'preview' && friendlyManualScoring) {
+          return (
+            <FriendlyManualGameCard
+              key={game.gameNumber}
+              game={game}
+              scoreUnit={scoreUnit}
+              liveCourtScores={liveCourtScores}
+              courtRefs={courtRefs}
+              onSubmitFriendlyScores={onSubmitFriendlyScores}
               onSaved={onSaved}
               isLiveNow={isLiveNow}
               isCurrentGame={isCurrentGame}
@@ -1193,8 +1570,12 @@ export function CompetitionCourtBoard({
               t={t}
             />
             {!collapsed && (
-              <div className={`px-1 pb-2 pt-2 ${finished ? 'bg-[#f6f5f3]' : ''}`}>
-              <div className="space-y-2">
+              <div
+                className={`border-t px-3 pb-3.5 pt-3 md:px-4 ${
+                  finished ? 'border-brand-border/40 bg-brand-bg-alt/70' : 'border-brand-border/30 bg-brand-bg-alt'
+                }`}
+              >
+              <div className="space-y-3.5">
                 {game.courts.map((court, courtIndex) => {
                   const liveCourt = courtsForGame.find((c) => c.courtName === court.courtLabel)
                   const courtId = courtIdForLabel(
@@ -1207,49 +1588,51 @@ export function CompetitionCourtBoard({
                     gameRoundId && courtId && matchForCourt
                       ? matchForCourt(gameRoundId, courtId)
                       : undefined
+                  const liveScore = liveCourtScores?.get(
+                    liveCourtScoreKey(game.gameNumber, court.courtLabel),
+                  )
                   const teamA = liveCourt?.teamA ?? court.teamA
                   const teamB = liveCourt?.teamB ?? court.teamB
                   const teamAPlayers = liveCourt?.teamAPlayers ?? court.teamAPlayers
                   const teamBPlayers = liveCourt?.teamBPlayers ?? court.teamBPlayers
-                  const openGesturePad = onOpenCourtGesturePad
-                    ? () =>
-                        onOpenCourtGesturePad(
-                          quadrantPlayersForCourt(teamA, teamB, teamAPlayers, teamBPlayers),
-                          courtId,
-                          court.courtLabel,
-                        )
-                    : undefined
+                  const href = courtLiveHref({
+                    liveCourtEnabled,
+                    friendly,
+                    sessionId,
+                    competitionId,
+                    gameNumber: game.gameNumber,
+                    courtLabel: court.courtLabel,
+                    courtId,
+                    canEditScores: false,
+                  })
 
                   return (
-                    <div key={court.courtLabel} className="space-y-1">
-                      <CourtLabelRow
-                        courtLabel={court.courtLabel}
-                        currentUserId={currentUserId}
-                        court={liveCourt ?? court}
+                    <CourtCard
+                      key={court.courtLabel}
+                      courtLabel={court.courtLabel}
+                      courtRef={resolveCourtRef(court.courtLabel, courtIndex, courtRefs)}
+                      currentUserId={currentUserId}
+                      court={liveCourt ?? court}
+                      finished={finished}
+                      href={href}
+                      t={t}
+                    >
+                      <CourtMatchCell
+                        teamA={teamA}
+                        teamB={teamB}
+                        teamAPlayers={teamAPlayers}
+                        teamBPlayers={teamBPlayers}
+                        scoreUnit={scoreUnit}
+                        scoreA={liveScore?.scoreA ?? (saved?.teamAPoints != null ? String(saved.teamAPoints) : undefined)}
+                        scoreB={liveScore?.scoreB ?? (saved?.teamBPoints != null ? String(saved.teamBPoints) : undefined)}
+                        disabled
                         finished={finished}
-                        onOpenGesturePad={openGesturePad}
+                        currentUserId={currentUserId}
+                        currentUserAvatarUrl={currentUserAvatarUrl}
+                        embedded
+                        t={t}
                       />
-                      <div>
-                        <CourtMatchCell
-                          teamA={teamA}
-                          teamB={teamB}
-                          teamAPlayers={teamAPlayers}
-                          teamBPlayers={teamBPlayers}
-                          scoreUnit={scoreUnit}
-                          scoreA={
-                            saved?.teamAPoints != null ? String(saved.teamAPoints) : undefined
-                          }
-                          scoreB={
-                            saved?.teamBPoints != null ? String(saved.teamBPoints) : undefined
-                          }
-                          disabled
-                          finished={finished}
-                          currentUserId={currentUserId}
-                          currentUserAvatarUrl={currentUserAvatarUrl}
-                          t={t}
-                        />
-                      </div>
-                    </div>
+                    </CourtCard>
                   )
                 })}
               </div>
@@ -1258,32 +1641,6 @@ export function CompetitionCourtBoard({
           </div>
         )
       })}
-      {gesturePadTarget != null && gesturePadEnabled && sessionId
-        ? createPortal(
-            <GesturePadOverlay
-              sessionId={sessionId}
-              friendly={friendly}
-              gameNumber={gesturePadTarget.gameNumber}
-              courtId={gesturePadTarget.courtId}
-              courtLabel={gesturePadTarget.courtLabel}
-              roundId={gesturePadTarget.roundId}
-              quadrantPlayers={gesturePadTarget.quadrantPlayers}
-              currentUserId={currentUserId}
-              currentUserAvatarUrl={currentUserAvatarUrl}
-              onSubmitMatch={
-                onSubmitScores
-                  ? async (entry) => {
-                      await onSubmitScores([entry])
-                    }
-                  : undefined
-              }
-              onSaved={onSaved}
-              onClose={() => setGesturePadTarget(null)}
-              t={t}
-            />,
-            document.body,
-          )
-        : null}
     </div>
   )
 }

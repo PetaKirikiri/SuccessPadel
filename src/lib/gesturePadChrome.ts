@@ -1,7 +1,12 @@
 import { createContext, useContext, useEffect } from 'react'
 
 export function isGesturePadRoute(pathname: string): boolean {
-  return /\/gesture-pad\/?$/.test(pathname) || /\/friendly\/[^/]+\/pad\/?$/.test(pathname)
+  return (
+    /\/gesture-pad\/?$/.test(pathname) ||
+    /\/live-court\/?$/.test(pathname) ||
+    /\/friendly\/[^/]+\/(pad|heatmap)\/?$/.test(pathname) ||
+    /\/friendly\/[^/]+\/games\/[^/]+\/courts\/[^/]+\/?$/.test(pathname)
+  )
 }
 
 export const GesturePadChromeContext = createContext<((active: boolean) => void) | null>(null)

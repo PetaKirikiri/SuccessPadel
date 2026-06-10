@@ -69,7 +69,7 @@ export function ResetPassword() {
         {error && <p className="mt-4 break-words text-center text-sm text-red-600">{error}</p>}
 
         <p className="game-subtle mt-6 text-center text-xs">
-          <Link to="/login" className="brand-link">
+          <Link to="/friendly" className="brand-link">
             Back to sign in
           </Link>
         </p>

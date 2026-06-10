@@ -33,7 +33,7 @@ import {
 import type { CompetitionPlayer } from '../hooks/useCompetitions'
 import { CompetitionLayoutPreview } from '../components/CompetitionLayoutPreview'
 import { CompetitionRulesSetup } from '../components/CompetitionRulesSetup'
-import { CompetitionPlayerSlots } from '../components/CompetitionPlayerSlots'
+import { MemberPlayerSlots } from '../components/MemberPlayerSlots'
 import { CompetitionSchedulePreview } from '../components/CompetitionSchedulePreview'
 import { CompetitionScheduleQualityFeedback } from '../components/CompetitionScheduleQualityFeedback'
 import { measureScheduleQuality, solveBalancedSchedule } from '../lib/balancedSchedule'
@@ -53,7 +53,7 @@ import {
   sortRosterByRank,
 } from '../lib/rankedSchedule'
 import { supabase } from '../lib/supabaseClient'
-import type { GameSession } from '../lib/types'
+import type { GameSession, Profile } from '../lib/types'
 
 function Chip({
   active,
@@ -106,6 +106,8 @@ export function CompetitionForm() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [playerSlots, setPlayerSlots] = useState<string[]>(() => Array(8).fill(''))
+  const [profileIds, setProfileIds] = useState<(string | null)[]>(() => Array(8).fill(null))
+  const [profiles, setProfiles] = useState<Profile[]>([])
   const [courtNames, setCourtNames] = useState<string[]>([])
   const [previewSeed, setPreviewSeed] = useState(0)
   const [editHydrated, setEditHydrated] = useState(!id)
@@ -251,7 +253,25 @@ export function CompetitionForm() {
       for (let i = 0; i < Math.min(prev.length, targetPlayers); i++) next[i] = prev[i]
       return next
     })
+    setProfileIds((prev) => {
+      const next = Array<string | null>(targetPlayers).fill(null)
+      for (let i = 0; i < Math.min(prev.length, targetPlayers); i++) next[i] = prev[i]
+      return next
+    })
   }, [targetPlayers])
+
+  useEffect(() => {
+    void supabase
+      .from('profiles')
+      .select('id, display_name, avatar_url')
+      .order('display_name')
+      .then(({ data }) => setProfiles((data as Profile[]) ?? []))
+  }, [])
+
+  const handlePlayersChange = (names: string[], ids: (string | null)[]) => {
+    setPlayerSlots(names)
+    setProfileIds(ids)
+  }
 
   useEffect(() => {
     let active = true
@@ -359,24 +379,28 @@ export function CompetitionForm() {
 
     void supabase
       .from('session_players')
-      .select('guest_name, rank_order, profiles(display_name)')
+      .select('guest_name, rank_order, profile_id, profiles(display_name)')
       .eq('session_id', id)
       .order('rank_order')
       .then(({ data }) => {
         if (!data?.length) return
-        const next = Array(targetPlayers).fill('')
+        const nextNames = Array(targetPlayers).fill('')
+        const nextIds = Array<string | null>(targetPlayers).fill(null)
         for (const row of data) {
           const r = row as unknown as {
             guest_name: string | null
             rank_order: number | null
+            profile_id: string | null
             profiles: { display_name: string } | null
           }
           const idx = r.rank_order ?? 0
-          if (idx >= 0 && idx < next.length) {
-            next[idx] = r.profiles?.display_name ?? r.guest_name ?? ''
+          if (idx >= 0 && idx < nextNames.length) {
+            nextNames[idx] = r.profiles?.display_name ?? r.guest_name ?? ''
+            nextIds[idx] = r.profile_id
           }
         }
-        setPlayerSlots(next)
+        setPlayerSlots(nextNames)
+        setProfileIds(nextIds)
       })
   }, [id, targetPlayers])
 
@@ -653,10 +677,13 @@ export function CompetitionForm() {
           <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
             Player names
           </p>
-          <CompetitionPlayerSlots
+          <p className="text-[10px] text-brand-muted">Enter names in rank order — strongest first.</p>
+          <MemberPlayerSlots
             count={targetPlayers}
-            slots={playerSlots}
-            onChange={setPlayerSlots}
+            profiles={profiles}
+            names={playerSlots}
+            profileIds={profileIds}
+            onChange={handlePlayersChange}
             disabled={busy}
           />
           {!allNamesFilled && (

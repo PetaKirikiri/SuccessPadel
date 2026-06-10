@@ -41,7 +41,7 @@ export function LineSignInModal({ onClose }: Props) {
   const [password, setPassword] = useState('')
   const [emailBusy, setEmailBusy] = useState(false)
   const [emailError, setEmailError] = useState<string | null>(null)
-  const qrUrl = useMemo(() => lineAppEntryUrl('/login'), [])
+  const qrUrl = useMemo(() => lineAppEntryUrl('/friendly'), [])
   const lineEnabled = isLineLoginConfigured()
   const returning = hadPreviousLogin()
 

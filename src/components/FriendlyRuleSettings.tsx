@@ -1,0 +1,83 @@
+import { useState } from 'react'
+import type { FriendlyRuleChip } from '../lib/friendlyGameDisplay'
+import { FriendlyRuleChipIcon } from './FriendlyRuleChipIcon'
+import { FriendlyRuleHintModal } from './FriendlyRuleHintModal'
+
+type Props = {
+  chips: FriendlyRuleChip[]
+  /** Inline chips in the schedule panel (right column). */
+  inline?: boolean
+}
+
+function RuleChip({
+  chip,
+  inline,
+  onSelect,
+}: {
+  chip: FriendlyRuleChip
+  inline: boolean
+  onSelect: (chip: FriendlyRuleChip) => void
+}) {
+  const open = (e: React.SyntheticEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    onSelect(chip)
+  }
+
+  return (
+    <li
+      role="button"
+      tabIndex={0}
+      onClick={open}
+      onPointerDown={(e) => e.stopPropagation()}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onSelect(chip)
+        }
+      }}
+      className={
+        inline
+          ? 'flex min-h-[3rem] min-w-0 max-w-full cursor-pointer items-center gap-1.5 rounded-lg border border-brand-primary/20 bg-brand-bg-alt px-2 py-2 transition active:opacity-80 sm:min-h-[2.75rem] sm:gap-2 sm:px-2.5'
+          : 'inline-flex max-w-full cursor-pointer items-center gap-1.5 rounded-lg border border-brand-primary/20 bg-brand-bg-alt py-2 pl-2.5 pr-2 transition active:opacity-80'
+      }
+    >
+      <span
+        className={
+          inline
+            ? 'min-w-0 flex-1 truncate text-[10px] font-semibold leading-snug text-brand-text sm:text-xs'
+            : 'text-xs font-semibold leading-snug text-brand-text'
+        }
+      >
+        {chip.label}
+      </span>
+      <FriendlyRuleChipIcon
+        icon={chip.icon}
+        className={inline ? 'h-5 w-5 shrink-0 text-brand-accent' : 'h-5 w-5 text-brand-accent'}
+      />
+    </li>
+  )
+}
+
+export function FriendlyRuleSettings({ chips, inline = false }: Props) {
+  const [active, setActive] = useState<FriendlyRuleChip | null>(null)
+
+  if (chips.length === 0) return null
+
+  return (
+    <>
+      <ul
+        className={
+          inline
+            ? 'm-0 grid w-full min-w-0 list-none grid-cols-2 gap-1.5 p-0 sm:min-w-0 sm:max-w-[58%] sm:shrink-0 sm:grid-cols-3 sm:gap-2'
+            : 'm-0 grid list-none grid-cols-3 gap-1.5 p-0'
+        }
+      >
+        {chips.map((chip) => (
+          <RuleChip key={chip.key} chip={chip} inline={inline} onSelect={setActive} />
+        ))}
+      </ul>
+      {active ? <FriendlyRuleHintModal chip={active} onClose={() => setActive(null)} /> : null}
+    </>
+  )
+}

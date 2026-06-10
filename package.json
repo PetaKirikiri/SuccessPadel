@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:phone": "vite --host",
+    "debug:tail": "mkdir -p .debug && touch .debug/ingest.jsonl && tail -f .debug/ingest.jsonl",
     "dev:tunnel": "npx cloudflared tunnel --url http://localhost:5173",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
@@ -24,6 +25,7 @@
     "@line/liff": "^2.29.0",
     "@supabase/supabase-js": "^2.107.0",
     "framer-motion": "^12.40.0",
+    "lucide-react": "^1.17.0",
     "qrcode": "^1.5.4",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",

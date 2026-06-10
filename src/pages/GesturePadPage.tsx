@@ -1,23 +1,32 @@
-import { useMemo, useCallback } from 'react'
+import { useMemo, useCallback, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { GestureAnnotationPad } from '../components/GestureAnnotationPad'
-import { GesturePadToolbar } from '../components/GesturePadToolbar'
+import { GesturePadDashboard } from '../components/GesturePadDashboard'
+import { useTranslation } from '../hooks/useTranslation'
 import { useAuth } from '../hooks/useAuth'
 import { useCompetitionBoard } from '../hooks/useCompetitionBoard'
 import { useLineClientProfile } from '../hooks/useLineClientProfile'
 import { usePublicCompetition } from '../hooks/usePublicCompetition'
 import { pivotScheduleByGame } from '../lib/competitionCourtBoard'
 import { quadrantPlayersForGesturePad } from '../lib/gesturePadPlayers'
+import { useMatchGestureLog } from '../hooks/useMatchGestureLog'
+import { resetPadGameState } from '../lib/friendlyMatch'
 import { supabase } from '../lib/supabaseClient'
 import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
 
 export function GesturePadPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { id, gameNumber, courtId } = useParams()
   const { user, profile, loading } = useAuth()
   const lineClient = useLineClientProfile()
   const headerAvatar = profile?.avatar_url ?? lineClient.pictureUrl ?? null
   const gameNum = Number(gameNumber)
+  const [padEpoch, setPadEpoch] = useState(0)
+  const [undoSignal, setUndoSignal] = useState(0)
+  const courtSetupKey =
+    id && gameNumber && courtId ? `${id}-${gameNumber}-${courtId}` : undefined
+  const { loading: logLoading } = useMatchGestureLog(courtSetupKey)
   const { session, rounds, roster, clubCourts, courtMatches, applyMatchScore } =
     usePublicCompetition(id)
   const { columns, liveCourtsByGame } = useCompetitionBoard(
@@ -44,6 +53,18 @@ export function GesturePadPage() {
     [gameNum, rounds],
   )
 
+  const sessionRoster = useMemo(() => {
+    const live = (liveCourtsByGame.get(gameNum) ?? []).find((c) => c.courtId === courtId)
+    if (live?.teamAPlayers?.length && live?.teamBPlayers?.length) {
+      return [...live.teamAPlayers, ...live.teamBPlayers]
+    }
+    const court = games.find((g) => g.gameNumber === gameNum)?.courts.find((c) => c.courtLabel === courtId)
+    if (court?.teamAPlayers?.length && court?.teamBPlayers?.length) {
+      return [...court.teamAPlayers, ...court.teamBPlayers]
+    }
+    return null
+  }, [courtId, gameNum, games, liveCourtsByGame])
+
   const submitMatch = useCallback(
     async (entry: CourtScoreSubmit) => {
       const winTeam = entry.teamA >= entry.teamB ? 'a' : 'b'
@@ -67,8 +88,19 @@ export function GesturePadPage() {
     else navigate(-1)
   }
 
-  if (loading || (user && !profile)) {
-    return <p className="p-4 text-center text-sm text-brand-muted">Loading…</p>
+  const handleResetGame = () => {
+    if (!courtSetupKey) return
+    if (
+      !window.confirm(t('pad.resetConfirm'))
+    ) {
+      return
+    }
+    resetPadGameState(courtSetupKey)
+    setPadEpoch((epoch) => epoch + 1)
+  }
+
+  if (loading || logLoading || (user && !profile)) {
+    return <p className="p-4 text-center text-sm text-brand-muted">{t('common.loading')}</p>
   }
   if (!user || !profile?.is_admin) {
     return <Navigate to={id ? `/competitions/${id}` : '/competitions'} replace />
@@ -76,25 +108,30 @@ export function GesturePadPage() {
 
   return (
     <div className="gesture-pad-page fixed inset-0 z-[400] flex flex-col overflow-hidden bg-[#1a5fa8]">
-      <GesturePadToolbar
+      <div className="gesture-pad-device flex min-h-0 flex-1 flex-col">
+        <GestureAnnotationPad
+          key={padEpoch}
+          competitionId={id}
+          gameNumber={gameNumber}
+          courtSetupKey={courtSetupKey}
+          courtId={courtId}
+          roundId={roundId}
+          onSubmitMatch={roundId && courtId ? submitMatch : undefined}
+          onMatchClosed={goBack}
+          quadrantPlayers={quadrantPlayers}
+          sessionRoster={sessionRoster ?? undefined}
+          currentUserId={user?.id ?? null}
+          currentUserAvatarUrl={headerAvatar}
+          undoSignal={undoSignal}
+        />
+      </div>
+      <GesturePadDashboard
         onBack={goBack}
-        backLabel="← Back"
+        backLabel={t('common.back')}
+        onUndo={courtSetupKey ? () => setUndoSignal((n) => n + 1) : undefined}
+        onResetGame={courtSetupKey ? handleResetGame : undefined}
         competitionId={id}
         gameNumber={gameNumber}
-      />
-      <GestureAnnotationPad
-        competitionId={id}
-        gameNumber={gameNumber}
-        courtSetupKey={
-          id && gameNumber && courtId ? `${id}-${gameNumber}-${courtId}` : undefined
-        }
-        courtId={courtId}
-        roundId={roundId}
-        onSubmitMatch={roundId && courtId ? submitMatch : undefined}
-        onMatchClosed={goBack}
-        quadrantPlayers={quadrantPlayers}
-        currentUserId={user?.id ?? null}
-        currentUserAvatarUrl={headerAvatar}
       />
     </div>
   )

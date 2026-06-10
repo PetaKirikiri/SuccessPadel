@@ -35,6 +35,7 @@ export type Messages = {
     guestName: string
     adminOnly: string
     addGame: string
+    addGameBtn: string
     addGameFab: string
     listHint: string
     noGames: string
@@ -56,6 +57,21 @@ export type Messages = {
     games: string
     publishFailed: string
     signInRequired: string
+    edit: string
+    editTitle: string
+    saveChanges: string
+    startDelay: string
+    lateStart: {
+      title: string
+      adjust: string
+      mustFinish: string
+      startNow: string
+      restLabel: string
+      remaining: string
+      plan: string
+      tooLate: string
+      apply: string
+    }
     leaderboard: string
     leaderboardSubtitle: string
     noLeaderboardScores: string
@@ -67,6 +83,13 @@ export type Messages = {
       players: string
       spotOpen: string
       spotsOpen: string
+    }
+    chip: {
+      open: string
+      bestOfGames: string
+      matches: string
+      minsPerGame: string
+      minBreaks: string
     }
     hint: {
       when: string
@@ -136,6 +159,12 @@ export type Messages = {
   }
   hub: {
     seasonLeaderboard: string
+  }
+  court: {
+    label: string
+    ref: string
+    openLiveCourt: string
+    liveCourt: string
   }
   competition: {
     games: string
@@ -286,6 +315,166 @@ export type Messages = {
     usuallyFree: string
     yes: string
     no: string
+  }
+  stats: {
+    title: string
+    allGames: string
+    game: string
+    share: string
+    linkCopied: string
+    copyFailed: string
+    loadingData: string
+    noData: string
+    noPlayerShots: string
+    filterAll: string
+    filterScore: string
+    filterFoul: string
+    accuracy: string
+    shotDistribution: string
+    servePoints: string
+    courtCoverage: string
+    success: string
+    won: string
+    scored: string
+    fouls: string
+    totalShots: string
+    judged: string
+    lost: string
+    servePointsLower: string
+    legendScored: string
+    legendFoul: string
+    zoneNet: string
+    zoneMid: string
+    zoneBack: string
+    kindSmash: string
+    kindForehand: string
+    kindBackhand: string
+    kindVolley: string
+    kindLob: string
+    insTimesFouled: string
+    insFavShot: string
+    insMostReliable: string
+    insGoToSide: string
+    insUnpredictability: string
+    insNetPresence: string
+    insAvgSwing: string
+    valLeft: string
+    valCentre: string
+    valRight: string
+    valHigh: string
+    valMedium: string
+    valLow: string
+    none: string
+    hintPctIn: string
+    hintPctShots: string
+    hintCourtWidth: string
+    hintVolleyZone: string
+    hintStrokeTempo: string
+  }
+  pad: {
+    resetConfirm: string
+    gesture: string
+    gestureAria: string
+    dashboard: {
+      controlsAria: string
+      reset: string
+      undo: string
+      undoConfirm: string
+      stats: string
+      moreSoon: string
+    }
+    drawKey: {
+      title: string
+      score: string
+      foul: string
+      net: string
+      out: string
+      glass: string
+    }
+    gameLog: {
+      aria: string
+      live: string
+      reviewHint: string
+      shotOverhead: string
+      shotBackhand: string
+      shotForehand: string
+      shotLob: string
+    }
+    complete: {
+      title: string
+      topTeamWins: string
+      bottomTeamWins: string
+      saving: string
+      savedLocal: string
+      saved: string
+      seeStats: string
+      shotsSuccess: string
+      done: string
+    }
+    serve: {
+      playForServe: string
+      thenSelectingServer: string
+      firstServe: string
+      secondServe: string
+      tapHint: string
+      serveLeftAria: string
+      serveRightAria: string
+      confirmYes: string
+      confirmChange: string
+      startGame: string
+      confirmPair: string
+      confirmSolo: string
+      sideTop: string
+      sideBottom: string
+      badge: string
+      playerFallback: string
+    }
+    positions: {
+      chooseWhere: string
+      chooseWherePrompt: string
+      sideLeft: string
+      sideRight: string
+      controlSide: string
+      powerSide: string
+      perspectiveTop: string
+      perspectiveBottom: string
+      confirmTeam: string
+      accept: string
+      undo: string
+      swapSides: string
+      dragSide: string
+      dragOther: string
+      allPlaced: string
+      confirm: string
+    }
+    horiz: {
+      directionSet: string
+      volley: string
+      backhand: string
+      forehand: string
+      win: string
+      foul: string
+      drawHint: string
+    }
+    confirm: {
+      cancel: string
+      accept: string
+      swipeHint: string
+      winner: string
+      notWinner: string
+      horizontalNote: string
+      flickNo: string
+      flickYes: string
+    }
+    shots: {
+      serveIn: string
+      netSecondServe: string
+      outSecondServe: string
+      netFoul: string
+      serveOutFoul: string
+      ballPath: string
+      serve: string
+    }
   }
   lang: {
     en: string

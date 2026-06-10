@@ -88,7 +88,7 @@ export function AuthCallback() {
             Recovery links must open on the same address you used in the app (e.g. your phone’s{' '}
             <span className="font-mono">172.20.x.x:5173</span> URL, not localhost).
           </p>
-          <Link to="/login" className="brand-link text-sm">
+          <Link to="/friendly" className="brand-link text-sm">
             Back to sign in
           </Link>
         </div>

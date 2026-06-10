@@ -1,264 +1,231 @@
-import { useRef, useState, type RefObject } from 'react'
+import { useEffect } from 'react'
 import type { CourtPlayer } from '../lib/americanoSchedule'
+import { agentDebugIngest } from '../lib/debug/devDebug'
 import {
-  dropHalfFromClient,
-  isCompleteAssignment,
+  COURT_QUADRANTS,
+  netFacingHalf,
+  playerKey,
+  teamForQuadrant,
   teamIsPlaced,
-  teamsFromQuadrants,
-  type CourtHalf,
-  type CourtTeam,
 } from '../lib/courtPositionSetup'
 import type { Quadrant } from '../lib/gestureCapture'
 import type { QuadrantPlayers } from '../lib/gesturePadPlayers'
 import { firstDisplayName } from '../lib/leaderboardEntries'
+import { GesturePadSetupWizard, WIZARD_BTN } from './GesturePadSetupWizard'
+import { pct } from '../lib/padelCourtLayout'
+import { serverBoxBounds } from '../lib/serveRotation'
+import { useTranslation } from '../hooks/useTranslation'
 
-const SLOT_POS: Record<Quadrant, string> = {
-  TL: 'top-3 left-3 sm:top-4 sm:left-4',
-  TR: 'top-3 right-3 sm:top-4 sm:right-4',
-  BL: 'bottom-3 left-3 sm:bottom-4 sm:left-4',
-  BR: 'bottom-3 right-3 sm:bottom-4 sm:right-4',
-}
-
-/** Centre-line column: one team group stacked above the other with spacing. */
-function TeamChipGroup({
-  team,
-  players,
-  padRef,
-  onAssignTeam,
-}: {
-  team: CourtTeam
-  players: [CourtPlayer, CourtPlayer]
-  padRef: RefObject<HTMLDivElement | null>
-  onAssignTeam: (team: CourtTeam, player: CourtPlayer, half: CourtHalf) => void
-}) {
-  return (
-    <div className="flex flex-col items-stretch gap-1.5 rounded-2xl border border-white/25 bg-black/25 px-2 py-2 shadow-sm backdrop-blur-sm">
-      {players.map((player) => (
-        <DraggableNetChip
-          key={player.id ?? player.name}
-          player={player}
-          team={team}
-          padRef={padRef}
-          onAssignTeam={onAssignTeam}
-        />
-      ))}
-    </div>
-  )
+const CHIP_ANCHOR: Record<Quadrant, string> = {
+  TL: 'top-1 left-1 justify-start sm:top-1.5 sm:left-1.5',
+  TR: 'top-1 right-1 justify-end sm:top-1.5 sm:right-1.5',
+  BL: 'bottom-1 left-1 justify-start sm:bottom-1.5 sm:left-1.5',
+  BR: 'bottom-1 right-1 justify-end sm:bottom-1.5 sm:right-1.5',
 }
 
 type Props = {
-  quadrantPlayers: QuadrantPlayers
-  roster: CourtPlayer[]
   assignments: Partial<QuadrantPlayers>
-  padRef: RefObject<HTMLDivElement | null>
-  onAssignTeam: (team: CourtTeam, player: CourtPlayer, half: CourtHalf) => void
-  onConfirmPositions: () => void
+  wizardPlayer: CourtPlayer | null
+  pendingConfirm: boolean
+  showPlacementPrompt: boolean
+  highlightPlayerKey?: string | null
+  onAssignQuadrant: (quadrant: Quadrant) => void
+  onAcceptTeam: () => void
+  onSwapTeam: () => void
+  onUndoTeam: () => void
 }
 
-function sideHint(player: CourtPlayer) {
-  if (player.preferredSide) return null
-  return (
-    <span className="shrink-0 rounded bg-white/15 px-1 py-0.5 text-[10px] font-bold tracking-wide text-white/80">
-      L · R
-    </span>
-  )
-}
-
-function PlayerChip({
+function ServerBoxPlayerChip({
   player,
-  draggable,
-  dragging,
-  offset,
-  locked,
-  onPointerDown,
-  onPointerMove,
-  onPointerUp,
-  onPointerCancel,
+  highlighted,
+  alignRight,
+  large = false,
 }: {
   player: CourtPlayer
-  draggable: boolean
-  dragging: boolean
-  offset: { x: number; y: number }
-  locked?: boolean
-  onPointerDown: (e: React.PointerEvent) => void
-  onPointerMove: (e: React.PointerEvent) => void
-  onPointerUp: (e: React.PointerEvent) => void
-  onPointerCancel: (e: React.PointerEvent) => void
+  highlighted: boolean
+  alignRight: boolean
+  large?: boolean
 }) {
-  const name = firstDisplayName(player.name.trim() || 'Player')
+  const name = firstDisplayName(player.name.trim() || '?')
   return (
     <div
-      className={`flex w-full max-w-full touch-none items-center gap-1.5 truncate rounded-full border py-0.5 pl-0.5 pr-2.5 shadow-sm backdrop-blur-sm sm:gap-2 sm:pr-3 ${
-        locked
-          ? 'pointer-events-none border-white/35 bg-black/45 ring-1 ring-white/25'
-          : draggable
-            ? 'cursor-grab border-white/50 bg-black/50 ring-1 ring-white/35 active:cursor-grabbing'
-            : 'border-white/35 bg-black/40 opacity-60'
-      } ${dragging ? 'z-20 scale-105 ring-2 ring-white/70' : 'z-10'}`}
-      style={
-        dragging
-          ? { transform: `translate(${offset.x}px, ${offset.y}px)` }
-          : undefined
-      }
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerCancel}
+      className={`pointer-events-none flex min-w-0 items-center gap-1.5 truncate rounded-full border shadow-sm ${
+        large
+          ? 'max-w-full gap-2 py-1 pl-1 pr-3 sm:py-1.5 sm:pl-1.5 sm:pr-4'
+          : 'max-w-[min(100%,9rem)] py-0.5 pl-0.5 pr-2 sm:max-w-[10rem] sm:pr-2.5'
+      } ${
+        highlighted
+          ? 'border-white bg-white text-[#11355c]'
+          : 'border-white/35 bg-black/45 text-white'
+      } ${alignRight ? 'flex-row-reverse pl-2 pr-0.5 sm:pl-2.5 sm:pr-0.5' : ''}`}
     >
       {player.avatarUrl ? (
         <img
           src={player.avatarUrl}
           alt=""
-          className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-white/50 sm:h-9 sm:w-9"
+          className={`shrink-0 rounded-full object-cover ring-1 ring-white/40 ${
+            large ? 'h-10 w-10 sm:h-11 sm:w-11' : 'h-7 w-7 sm:h-8 sm:w-8'
+          }`}
         />
       ) : (
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/15 text-xs font-semibold sm:h-9 sm:w-9 sm:text-sm">
+        <span
+          className={`flex shrink-0 items-center justify-center rounded-full font-bold ${
+            large ? 'h-10 w-10 text-base sm:h-11 sm:w-11 sm:text-lg' : 'h-7 w-7 text-xs sm:h-8 sm:w-8 sm:text-sm'
+          } ${highlighted ? 'bg-[#11355c]/10 text-[#11355c]' : 'bg-white/15 text-white'}`}
+        >
           {name[0]?.toUpperCase() ?? '?'}
         </span>
       )}
-      <span className="truncate text-xs font-semibold text-white sm:text-sm">{name}</span>
-      {sideHint(player)}
+      <span
+        className={`min-w-0 truncate font-semibold ${
+          large ? 'text-base sm:text-lg' : 'text-xs sm:text-sm'
+        }`}
+      >
+        {name}
+      </span>
     </div>
   )
 }
 
-function DraggableNetChip({
-  player,
-  team,
-  padRef,
-  onAssignTeam,
-}: {
-  player: CourtPlayer
-  team: CourtTeam
-  padRef: RefObject<HTMLDivElement | null>
-  onAssignTeam: (team: CourtTeam, player: CourtPlayer, half: CourtHalf) => void
-}) {
-  const [dragging, setDragging] = useState(false)
-  const [offset, setOffset] = useState({ x: 0, y: 0 })
-  const originRef = useRef<{ x: number; y: number } | null>(null)
-
-  const finishDrag = (e: React.PointerEvent) => {
-    if (!dragging) return
-    e.stopPropagation()
-    setDragging(false)
-    setOffset({ x: 0, y: 0 })
-    originRef.current = null
-
-    const pad = padRef.current
-    if (!pad) return
-    const half = dropHalfFromClient(e.clientX, e.clientY, pad)
-    onAssignTeam(team, player, half)
-  }
-
-  return (
-    <PlayerChip
-      player={player}
-      draggable
-      dragging={dragging}
-      offset={offset}
-      onPointerDown={(e) => {
-        e.stopPropagation()
-        e.currentTarget.setPointerCapture(e.pointerId)
-        originRef.current = { x: e.clientX, y: e.clientY }
-        setDragging(true)
-      }}
-      onPointerMove={(e) => {
-        if (!dragging || !originRef.current) return
-        e.stopPropagation()
-        setOffset({
-          x: e.clientX - originRef.current.x,
-          y: e.clientY - originRef.current.y,
-        })
-      }}
-      onPointerUp={finishDrag}
-      onPointerCancel={finishDrag}
-    />
-  )
-}
-
 export function CourtPositionSetup({
-  quadrantPlayers,
-  roster,
   assignments,
-  padRef,
-  onAssignTeam,
-  onConfirmPositions,
+  wizardPlayer,
+  pendingConfirm,
+  showPlacementPrompt,
+  highlightPlayerKey,
+  onAssignQuadrant,
+  onAcceptTeam,
+  onSwapTeam,
+  onUndoTeam,
 }: Props) {
-  const { teamA, teamB } = teamsFromQuadrants(quadrantPlayers)
-  const teamAPlaced = teamIsPlaced('a', assignments)
-  const teamBPlaced = teamIsPlaced('b', assignments)
-  const canStart = isCompleteAssignment(roster, assignments)
-  const placedCount = (teamAPlaced ? 2 : 0) + (teamBPlaced ? 2 : 0)
+  const { t } = useTranslation()
 
-  const hint = !teamAPlaced
-    ? 'Drag a player to the left or right side'
-    : !teamBPlaced
-      ? 'Drag a player from the other team'
-      : 'All players placed'
+  const showModal = Boolean(wizardPlayer && (pendingConfirm || showPlacementPrompt))
+
+  // #region agent log
+  useEffect(() => {
+    const chipsOnCourt = COURT_QUADRANTS.filter((q) => assignments[q]?.name?.trim()).map((q) => ({
+      q,
+      name: assignments[q]!.name.trim(),
+    }))
+    agentDebugIngest(
+      'CourtPositionSetup.tsx:chips',
+      'server-box chips render',
+      {
+        chipCount: chipsOnCourt.length,
+        chips: chipsOnCourt,
+        showPlacementPrompt,
+        pendingConfirm,
+        wizardPlayer: wizardPlayer?.name ?? null,
+      },
+      chipsOnCourt.length > 0 && showPlacementPrompt ? 'A' : chipsOnCourt.length > 0 && pendingConfirm ? 'B' : 'A',
+    )
+  }, [assignments, pendingConfirm, showPlacementPrompt, wizardPlayer])
+  // #endregion
 
   return (
     <>
-      <div className="pointer-events-none absolute inset-0 z-[4] bg-black/30" aria-hidden />
-      <div className="pointer-events-none absolute inset-0 z-[4] grid grid-cols-2">
-        <div className="border-r border-dashed border-white/20" />
-        <div />
-      </div>
-      {(['TL', 'TR', 'BL', 'BR'] as Quadrant[]).map((quadrant) => {
+    <div className="absolute inset-0 z-[6]">
+      {COURT_QUADRANTS.map((quadrant) => {
+        const bounds = serverBoxBounds(quadrant)
         const player = assignments[quadrant]
-        if (!player?.name?.trim()) return null
+        const taken = Boolean(player?.name?.trim())
+        const boxTeam = teamForQuadrant(quadrant)
+        const teamPlaced = teamIsPlaced(boxTeam, assignments)
+        const showChip = taken && (pendingConfirm || teamPlaced)
+        const teamOpen = !teamPlaced
+        const canPick = !pendingConfirm && teamOpen
+        const facingLeft = netFacingHalf(quadrant) === 'left'
+        const sideLabel = facingLeft
+          ? t('pad.positions.sideLeft')
+          : t('pad.positions.sideRight')
+        const roleLabel = facingLeft
+          ? t('pad.positions.powerSide')
+          : t('pad.positions.controlSide')
         const alignRight = quadrant === 'TR' || quadrant === 'BR'
+
         return (
-          <div
-            key={`locked-${quadrant}`}
-            className={`pointer-events-none absolute z-[5] flex ${SLOT_POS[quadrant]} ${alignRight ? 'justify-end' : 'justify-start'}`}
+          <button
+            key={quadrant}
+            type="button"
+            disabled={!canPick}
+            aria-label={quadrant}
+            className={`absolute touch-none transition-colors ${
+              !teamOpen && !taken
+                ? 'cursor-default opacity-20'
+                : canPick
+                  ? 'court-server-box-blink cursor-pointer'
+                  : 'cursor-default'
+            }`}
+            style={{
+              left: pct(bounds.xMin),
+              top: pct(bounds.yMin),
+              width: pct(bounds.xMax - bounds.xMin),
+              height: pct(bounds.yMax - bounds.yMin),
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation()
+              if (canPick) onAssignQuadrant(quadrant)
+            }}
           >
-            <PlayerChip
-              player={player}
-              draggable={false}
-              dragging={false}
-              offset={{ x: 0, y: 0 }}
-              locked
-              onPointerDown={() => {}}
-              onPointerMove={() => {}}
-              onPointerUp={() => {}}
-              onPointerCancel={() => {}}
-            />
-          </div>
+            {!taken ? (
+              <span className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-0.5">
+                <span className="font-display text-[11px] font-bold uppercase tracking-[0.2em] text-white/35 sm:text-xs">
+                  {roleLabel}
+                </span>
+                <span className="font-display text-sm font-semibold uppercase tracking-[0.28em] text-white/28 sm:text-base">
+                  {sideLabel}
+                </span>
+              </span>
+            ) : null}
+            {showChip && player ? (
+              <div
+                className={`pointer-events-none absolute flex ${CHIP_ANCHOR[quadrant]}`}
+              >
+                <ServerBoxPlayerChip
+                  player={player}
+                  highlighted={
+                    Boolean(highlightPlayerKey && playerKey(player) === highlightPlayerKey)
+                  }
+                  alignRight={alignRight}
+                />
+              </div>
+            ) : null}
+          </button>
         )
       })}
-      {!teamAPlaced || !teamBPlaced ? (
-        <div className="pointer-events-auto absolute left-1/2 top-1/2 z-[5] flex w-[min(52vw,13rem)] -translate-x-1/2 -translate-y-1/2 flex-col items-stretch gap-5">
-          {!teamAPlaced ? (
-            <TeamChipGroup
-              team="a"
-              players={teamA}
-              padRef={padRef}
-              onAssignTeam={onAssignTeam}
-            />
-          ) : null}
-          {!teamBPlaced ? (
-            <TeamChipGroup
-              team="b"
-              players={teamB}
-              padRef={padRef}
-              onAssignTeam={onAssignTeam}
-            />
-          ) : null}
-        </div>
-      ) : null}
-      <div className="pointer-events-auto absolute inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[6] flex flex-col items-center gap-2 px-4">
-        <p className="rounded-full bg-black/50 px-3 py-1 text-center text-xs font-medium text-white backdrop-blur-sm">
-          {hint} ({placedCount}/4)
-        </p>
-        <button
-          type="button"
-          disabled={!canStart}
-          onClick={onConfirmPositions}
-          className="w-full max-w-xs rounded-xl bg-brand-accent px-6 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
-        >
-          Confirm positions
-        </button>
-      </div>
+
+    </div>
+
+    {showModal && wizardPlayer ? (
+      <GesturePadSetupWizard
+        interactive={pendingConfirm}
+        message={showPlacementPrompt ? t('pad.positions.chooseWherePrompt') : undefined}
+      >
+        {showPlacementPrompt ? (
+          <ServerBoxPlayerChip
+            player={wizardPlayer}
+            highlighted
+            alignRight={false}
+            large
+          />
+        ) : null}
+        {pendingConfirm ? (
+          <div className="grid w-full grid-cols-3 gap-3 sm:gap-4">
+            <button type="button" onClick={onUndoTeam} className={WIZARD_BTN}>
+              {t('pad.positions.undo')}
+            </button>
+            <button type="button" onClick={onSwapTeam} className={WIZARD_BTN}>
+              {t('pad.positions.swapSides')}
+            </button>
+            <button type="button" onClick={onAcceptTeam} className={WIZARD_BTN}>
+              {t('pad.positions.accept')}
+            </button>
+          </div>
+        ) : null}
+      </GesturePadSetupWizard>
+    ) : null}
     </>
   )
 }

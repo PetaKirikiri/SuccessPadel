@@ -23,6 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+.debug
 
 # Capacitor / native tooling
 ios/App/Pods

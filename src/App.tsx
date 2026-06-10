@@ -20,7 +20,10 @@ import { FindGame } from './pages/FindGame'
 import { FriendlyGameForm } from './pages/FriendlyGameForm'
 import { FriendlyGamePage } from './pages/FriendlyGamePage'
 import { FriendlyHomePage } from './pages/FriendlyHomePage'
+import { FriendlyCourtPage } from './pages/FriendlyCourtPage'
 import { FriendlyPadPage } from './pages/FriendlyPadPage'
+import { GesturePadPage } from './pages/GesturePadPage'
+import { FriendlyHeatMapPage } from './pages/FriendlyHeatMapPage'
 import { AuthCallback } from './pages/AuthCallback'
 import { LineAuthCallback } from './pages/LineAuthCallback'
 import { LineAuthComplete } from './pages/LineAuthComplete'
@@ -101,8 +104,27 @@ function MainAppRoutes() {
         <Route index element={<Navigate to="/friendly" replace />} />
         <Route path="friendly" element={<FriendlyHomePage />} />
         <Route path="friendly/new" element={<FriendlyGameForm />} />
+        <Route
+          path="friendly/:id/edit"
+          element={
+            <AdminRoute>
+              <AdminOnly>
+                <FriendlyGameForm />
+              </AdminOnly>
+            </AdminRoute>
+          }
+        />
         <Route path="friendly/:id/pad" element={<FriendlyPadPage />} />
+        <Route path="friendly/:id/heatmap" element={<FriendlyHeatMapPage />} />
+        <Route
+          path="friendly/:id/games/:gameNumber/courts/:courtSlug"
+          element={<FriendlyCourtPage />}
+        />
         <Route path="friendly/:id" element={<FriendlyGamePage />} />
+        <Route
+          path="competitions/:id/games/:gameNumber/courts/:courtId/live-court"
+          element={<GesturePadPage />}
+        />
         <Route path="competitive" element={<CompetitiveHomePage />} />
         <Route path="competitions" element={<Navigate to="/competitive" replace />} />
         <Route path="players/:playerId" element={<PlayerProfilePage />} />

@@ -1,17 +1,25 @@
 import { courtsNeeded } from './competitionLayout'
 import {
-  americanoTargetLabel,
   partnerStyleLabel,
   ruleFormatLabel,
   type AmericanoScoringChoice,
 } from './competitionPresets'
-import { clubHourToDate, formatClubDateShort, formatHourLabel, parseClubDate } from './courtSchedule'
+import type { TranslateFn } from '../i18n'
+import {
+  formatClubDateShort,
+  formatClubTime,
+  formatHourLabel,
+  parseClubDate,
+} from './courtSchedule'
 import {
   DEFAULT_FRIENDLY_ORGANIZED_CONFIG,
   friendlyFilledSlots,
   friendlyOrganizedSession,
+  friendlyEndsAtIso,
+  friendlySessionTiming,
   friendlyStartsAtIso,
   friendlyVacantSlots,
+  isEndlessFriendly,
   type FriendlyGameRecord,
 } from './friendlyGames'
 import type { GameSession } from './types'
@@ -23,13 +31,64 @@ export type FriendlyRosterSlot = {
   vacant: boolean
 }
 
+export type FriendlyRuleIcon =
+  | 'americano'
+  | 'king'
+  | 'partners-fixed'
+  | 'partners-swapped'
+  | 'scoring'
+  | 'rounds'
+  | 'game-minutes'
+  | 'break'
+
 export type FriendlyRuleChip = {
   key: string
   label: string
   hintKey: string
+  icon: FriendlyRuleIcon
+}
+
+export type FriendlyScheduleDisplay = {
+  dateLine: string
+  timeLine: string
+  posted: boolean
 }
 
 const BANGKOK = 'Asia/Bangkok'
+
+export function friendlyScheduleDisplay(game: FriendlyGameRecord): FriendlyScheduleDisplay {
+  const config = game.organizedConfig ?? DEFAULT_FRIENDLY_ORGANIZED_CONFIG
+  if (game.playMode !== 'free' && config.day) {
+    const timing = friendlySessionTiming(config)
+    if (!timing) {
+      return { dateLine: '', timeLine: '', posted: false }
+    }
+    const { sessionStart, sessionEnd } = timing
+    const dateLine = sessionStart.toLocaleDateString('en-GB', {
+      timeZone: BANGKOK,
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+    })
+    const timeLine = `${formatClubTime(sessionStart)}–${formatClubTime(sessionEnd)}`
+    return { dateLine, timeLine, posted: false }
+  }
+
+  const postedAt = new Date(game.createdAt)
+  const dateLine = postedAt.toLocaleDateString('en-GB', {
+    timeZone: BANGKOK,
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  })
+  const timeLine = postedAt.toLocaleTimeString('en-GB', {
+    timeZone: BANGKOK,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+  return { dateLine, timeLine, posted: true }
+}
 
 export function friendlyRosterSlots(game: FriendlyGameRecord): FriendlyRosterSlot[] {
   const ids = game.profileIds ?? []
@@ -59,45 +118,64 @@ export function friendlyWhenLabel(game: FriendlyGameRecord): string {
 }
 
 export function friendlyRulesSummary(game: FriendlyGameRecord): string {
+  if (isEndlessFriendly(game)) return 'Endless · gesture log test'
   if (game.playMode === 'free') return ''
   const config = game.organizedConfig ?? DEFAULT_FRIENDLY_ORGANIZED_CONFIG
   return friendlyOrganizedSession(config).rules ?? ''
 }
 
-export function friendlyRuleChips(game: FriendlyGameRecord): FriendlyRuleChip[] {
+export function friendlyRuleChips(game: FriendlyGameRecord, t: TranslateFn): FriendlyRuleChip[] {
   if (game.playMode === 'free') return []
   const config = game.organizedConfig ?? DEFAULT_FRIENDLY_ORGANIZED_CONFIG
+  const formatIcon: FriendlyRuleIcon =
+    config.ruleFormat === 'americano' ? 'americano' : 'king'
   const chips: FriendlyRuleChip[] = [
-    { key: 'format', label: ruleFormatLabel(config.ruleFormat), hintKey: 'friendly.hint.format' },
+    {
+      key: 'format',
+      label: ruleFormatLabel(config.ruleFormat),
+      hintKey: 'friendly.hint.format',
+      icon: formatIcon,
+    },
   ]
   if (config.ruleFormat === 'king_of_court') {
     chips.push({
       key: 'partners',
       label: partnerStyleLabel(config.partnerStyle),
       hintKey: 'friendly.hint.partners',
+      icon: config.partnerStyle === 'fixed' ? 'partners-fixed' : 'partners-swapped',
     })
   }
   if (config.ruleFormat === 'americano') {
     const scoring =
       config.americanoScoring === 'open'
-        ? 'Open'
-        : `${americanoTargetLabel(config.americanoScoring as Exclude<AmericanoScoringChoice, 'open'>)} games max`
-    chips.push({ key: 'scoring', label: scoring, hintKey: 'friendly.hint.scoring' })
+        ? t('friendly.chip.open')
+        : t('friendly.chip.bestOfGames', {
+            n: config.americanoScoring as Exclude<AmericanoScoringChoice, 'open'>,
+          })
+    chips.push({
+      key: 'scoring',
+      label: scoring,
+      hintKey: 'friendly.hint.scoring',
+      icon: 'scoring',
+    })
     chips.push({
       key: 'rounds',
-      label: `${config.gameCount} games total`,
+      label: t('friendly.chip.matches', { n: config.gameCount }),
       hintKey: 'friendly.hint.rounds',
+      icon: 'rounds',
     })
     chips.push({
       key: 'gameMin',
-      label: `${config.gameMinutes} min/game`,
+      label: t('friendly.chip.minsPerGame', { n: config.gameMinutes }),
       hintKey: 'friendly.hint.gameMinutes',
+      icon: 'game-minutes',
     })
     if (config.breakMinutes > 0) {
       chips.push({
         key: 'break',
-        label: `${config.breakMinutes} min breaks`,
+        label: t('friendly.chip.minBreaks', { n: config.breakMinutes }),
         hintKey: 'friendly.hint.break',
+        icon: 'break',
       })
     }
   }
@@ -107,12 +185,9 @@ export function friendlyRuleChips(game: FriendlyGameRecord): FriendlyRuleChip[] 
 export function friendlyEndTimeLabel(game: FriendlyGameRecord): string | null {
   if (game.playMode === 'free') return null
   const config = game.organizedConfig ?? DEFAULT_FRIENDLY_ORGANIZED_CONFIG
-  if (!config.day) return null
-  const start = clubHourToDate(config.day, config.startHour, config.startMinute ?? 0)
-  const totalMin =
-    config.gameCount * config.gameMinutes + Math.max(0, config.gameCount - 1) * config.breakMinutes
-  const end = new Date(start.getTime() + totalMin * 60_000)
-  return end.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })
+  const timing = friendlySessionTiming(config)
+  if (!timing) return null
+  return formatClubTime(timing.sessionEnd)
 }
 
 export function friendlyOpenSpots(game: FriendlyGameRecord): number {
@@ -126,12 +201,8 @@ export function friendlyListCardTiming(
   const config = game.organizedConfig ?? DEFAULT_FRIENDLY_ORGANIZED_CONFIG
   if (!config.day) return null
   const starts_at = friendlyStartsAtIso(config)
-  if (!starts_at) return null
-  const start = clubHourToDate(config.day, config.startHour, config.startMinute ?? 0)
-  const totalMin =
-    config.gameCount * config.gameMinutes +
-    Math.max(0, config.gameCount - 1) * config.breakMinutes
-  const ends_at = new Date(start.getTime() + totalMin * 60_000).toISOString()
+  const ends_at = friendlyEndsAtIso(config)
+  if (!starts_at || !ends_at) return null
   const session = friendlyOrganizedSession(config)
   return {
     starts_at,

@@ -4,8 +4,9 @@ import type {
   RuleFormat,
 } from './competitionPresets'
 import { formatDateInput } from './courtSchedule'
-import { DEFAULT_FRIENDLY_ORGANIZED_CONFIG, FRIENDLY_MIN_PLAYERS } from './friendlyGames'
 import type { FriendlyPlayMode, FriendlyVisibility } from './friendlyGames'
+import { DEFAULT_FRIENDLY_ORGANIZED_CONFIG, FRIENDLY_MIN_PLAYERS } from './friendlyGames'
+import type { FriendlyGameRecord } from './friendlyGames'
 
 export type FriendlyFormRulesSetup = {
   ruleFormat: RuleFormat
@@ -17,7 +18,7 @@ export type FriendlyFormRulesSetup = {
 }
 
 const STORAGE_KEY = 'successpadel:friendly-form-draft'
-const DRAFT_VERSION = 3
+const DRAFT_VERSION = 4
 
 export type FriendlyFormDraft = {
   v: typeof DRAFT_VERSION
@@ -26,6 +27,7 @@ export type FriendlyFormDraft = {
   visibility: FriendlyVisibility
   day: string
   startHour: number
+  startMinute: number
   playerSlots: string[]
   profileIds: (string | null)[]
   playMode: FriendlyPlayMode
@@ -47,6 +49,7 @@ export function friendlyFormDefaults(): FriendlyFormValues {
     visibility: 'public',
     day: formatDateInput(new Date()),
     startHour: 18,
+    startMinute: 0,
     playerSlots: Array.from({ length: FRIENDLY_MIN_PLAYERS }, () => ''),
     profileIds: Array.from({ length: FRIENDLY_MIN_PLAYERS }, () => null),
     playMode: 'free',
@@ -66,13 +69,17 @@ function normalizeRulesSetup(raw: unknown): FriendlyFormRulesSetup {
   const base = defaultRulesSetup()
   if (!raw || typeof raw !== 'object') return base
   const r = raw as Partial<FriendlyFormRulesSetup>
+  const num = (v: unknown, fallback: number) => {
+    const n = typeof v === 'number' ? v : typeof v === 'string' ? parseInt(v, 10) : NaN
+    return Number.isFinite(n) ? n : fallback
+  }
   return {
     ruleFormat: r.ruleFormat ?? base.ruleFormat,
     partnerStyle: r.partnerStyle ?? base.partnerStyle,
     americanoScoring: r.americanoScoring ?? base.americanoScoring,
-    gameCount: typeof r.gameCount === 'number' ? r.gameCount : base.gameCount,
-    gameMinutes: typeof r.gameMinutes === 'number' ? r.gameMinutes : base.gameMinutes,
-    breakMinutes: typeof r.breakMinutes === 'number' ? r.breakMinutes : base.breakMinutes,
+    gameCount: num(r.gameCount ?? (r as { games?: unknown }).games, base.gameCount),
+    gameMinutes: num(r.gameMinutes, base.gameMinutes),
+    breakMinutes: num(r.breakMinutes, base.breakMinutes),
   }
 }
 
@@ -87,6 +94,10 @@ function migrateDraft(raw: Record<string, unknown>): FriendlyFormValues {
     visibility: raw.visibility === 'private' ? 'private' : 'public',
     day: typeof raw.day === 'string' && raw.day ? raw.day : defaults.day,
     startHour: typeof raw.startHour === 'number' ? raw.startHour : defaults.startHour,
+    startMinute:
+      typeof raw.startMinute === 'number'
+        ? raw.startMinute
+        : defaults.startMinute,
     ...slots,
     playMode: raw.playMode === 'organized' ? 'organized' : 'free',
     rulesSetup: normalizeRulesSetup(raw.rulesSetup),
@@ -101,7 +112,7 @@ export function loadFriendlyFormDraft(): FriendlyFormDraft | null {
     const parsed = JSON.parse(raw) as Record<string, unknown>
     if (!parsed || typeof parsed !== 'object') return null
     const v = parsed.v
-    if (v !== 1 && v !== 2 && v !== 3) return null
+    if (v !== 1 && v !== 2 && v !== 3 && v !== 4) return null
     const values = migrateDraft(parsed)
     return {
       v: DRAFT_VERSION,
@@ -113,11 +124,34 @@ export function loadFriendlyFormDraft(): FriendlyFormDraft | null {
   }
 }
 
-export function friendlyFormInitialState(): FriendlyFormValues {
-  const draft = loadFriendlyFormDraft()
-  if (!draft) return friendlyFormDefaults()
-  const { v: _v, savedAt: _savedAt, ...values } = draft
-  return values
+export function friendlyFormValuesFromGame(game: FriendlyGameRecord): FriendlyFormValues {
+  const cfg = game.organizedConfig ?? DEFAULT_FRIENDLY_ORGANIZED_CONFIG
+  const defaults = friendlyFormDefaults()
+  const len = Math.max(game.players.length, game.profileIds?.length ?? 0, FRIENDLY_MIN_PLAYERS)
+  const playerSlots = Array.from({ length: len }, (_, i) => game.players[i] ?? '')
+  const profileIds = Array.from(
+    { length: len },
+    (_, i) => game.profileIds?.[i] ?? null,
+  )
+  return {
+    title: game.title,
+    visibility: game.visibility ?? 'public',
+    day: cfg.day || defaults.day,
+    startHour: cfg.startHour ?? defaults.startHour,
+    startMinute: cfg.startMinute ?? 0,
+    playerSlots,
+    profileIds,
+    playMode: game.playMode ?? 'free',
+    rulesSetup: normalizeRulesSetup({
+      ruleFormat: cfg.ruleFormat,
+      partnerStyle: cfg.partnerStyle,
+      americanoScoring: cfg.americanoScoring,
+      gameCount: cfg.gameCount,
+      gameMinutes: cfg.gameMinutes,
+      breakMinutes: cfg.breakMinutes,
+    }),
+    previewSeed: cfg.previewSeed ?? 0,
+  }
 }
 
 export function saveFriendlyFormDraft(draft: FriendlyFormValues): void {
@@ -131,6 +165,13 @@ export function saveFriendlyFormDraft(draft: FriendlyFormValues): void {
   } catch {
     /* ignore */
   }
+}
+
+export function friendlyFormInitialState(): FriendlyFormValues {
+  const draft = loadFriendlyFormDraft()
+  if (!draft) return friendlyFormDefaults()
+  const { v: _v, savedAt: _savedAt, ...values } = draft
+  return values
 }
 
 export function clearFriendlyFormDraft(): void {

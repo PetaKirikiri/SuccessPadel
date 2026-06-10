@@ -36,7 +36,7 @@ export function markLineBookmarkSaved(): void {
   }
 }
 
-export function lineBookmarkUrl(path = '/login'): string {
+export function lineBookmarkUrl(path = '/friendly'): string {
   const normalized = path.startsWith('/') ? path : `/${path}`
   return `${siteOrigin()}${normalized}`
 }

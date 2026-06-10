@@ -25,10 +25,10 @@ export function LineOAuthReturnHandler() {
       if (!active) return
       if (err) {
         setError(err)
-        navigate('/login', { replace: true, state: { lineError: err } })
+        navigate('/friendly', { replace: true, state: { lineError: err } })
         return
       }
-      navigate(consumeReturnTo('/'), { replace: true })
+      navigate(consumeReturnTo('/friendly'), { replace: true })
     })()
 
     return () => {

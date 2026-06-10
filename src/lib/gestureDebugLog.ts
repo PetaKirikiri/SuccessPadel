@@ -1,4 +1,7 @@
 import type { GestureAnalysis } from './gestureAnalysis'
+import type { HeatMapPoint, HeatMapPathPoint } from './courtHalfCapture'
+import type { NormalizedPoint, Quadrant } from './gestureCapture'
+import type { RallyWheelShot, ShotWaveOption } from './rallyShotWheel'
 
 export type GestureDebugEntry = GestureAnalysis & {
   id: string
@@ -7,6 +10,29 @@ export type GestureDebugEntry = GestureAnalysis & {
   competitionId?: string
   courtId?: string
   matchSessionId?: string
+  /** Player who hit the shot. */
+  actorQuadrant?: Quadrant
+  /** Pad coords where the player was placed (shot taken from). */
+  shotOrigin?: NormalizedPoint
+  /** Stroke start on the actor's team half (net = 0, baseline = 1). */
+  heatMapPoint?: HeatMapPoint
+  heatMapStart?: HeatMapPoint
+  heatMapEnd?: HeatMapPoint
+  /** Full stroke in half-court coordinates — for heat maps. */
+  heatMapPath?: HeatMapPathPoint[]
+  /** Raw pad coordinates (0–1) of the drawn stroke. */
+  drawPath?: NormalizedPoint[]
+  /** Scoring outcome when this gesture ended a serve attempt. */
+  scoringIntent?: 'second_serve' | 'serve_in' | 'foul'
+  /** Ball-path exchange — wheel picks for attacker and defender. */
+  attackerShot?: RallyWheelShot
+  defenderShot?: RallyWheelShot
+  /** Second-wave refinement (OH extension or FH/BH spin). */
+  attackerWave?: ShotWaveOption
+  defenderWave?: ShotWaveOption
+  /** Shot power 0..1 from how far the coin was pulled out. */
+  attackerPower?: number
+  defenderPower?: number
 }
 
 const STORAGE_KEY = 'sp-gesture-debug-log'
@@ -28,17 +54,33 @@ export function readGestureDebugLog(): GestureDebugEntry[] {
 }
 
 export function appendGestureDebugEntry(
-  analysis: GestureAnalysis,
+  analysis: GestureAnalysis &
+    Partial<
+      Pick<
+        GestureDebugEntry,
+        | 'actorQuadrant'
+        | 'heatMapPoint'
+        | 'heatMapStart'
+        | 'heatMapEnd'
+        | 'heatMapPath'
+        | 'drawPath'
+        | 'shotOrigin'
+        | 'scoringIntent'
+        | 'attackerShot'
+        | 'defenderShot'
+      >
+    >,
   context?: {
     gameNumber?: string
     competitionId?: string
     courtId?: string
     matchSessionId?: string
   },
+  id?: string,
 ): GestureDebugEntry {
   const entry: GestureDebugEntry = {
     ...analysis,
-    id: newId(),
+    id: id ?? newId(),
     at: new Date().toISOString(),
     gameNumber: context?.gameNumber,
     competitionId: context?.competitionId,
@@ -54,6 +96,32 @@ export function appendGestureDebugEntry(
     /* storage full — drop oldest */
   }
   return entry
+}
+
+export function removeGestureDebugEntry(id: string): void {
+  try {
+    const prev = readGestureDebugLog()
+    const next = prev.filter((e) => e.id !== id)
+    if (next.length === prev.length) return
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Replace all debug-log gestures for one match session (DB timeline restore). */
+export function importGesturesForSession(
+  sessionId: string,
+  entries: GestureDebugEntry[],
+): void {
+  try {
+    const others = readGestureDebugLog().filter((e) => e.matchSessionId !== sessionId)
+    const tagged = entries.map((e) => ({ ...e, matchSessionId: sessionId }))
+    const next = [...tagged, ...others].slice(0, MAX_ENTRIES)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+  } catch {
+    /* ignore */
+  }
 }
 
 export function clearGestureDebugLog(): void {

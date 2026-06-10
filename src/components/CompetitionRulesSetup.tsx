@@ -10,6 +10,71 @@ import {
   type RuleFormat,
 } from '../lib/competitionPresets'
 import { totalScheduleMinutes } from '../lib/competitionLayout'
+import { useEffect, useState, type ChangeEvent } from 'react'
+
+function clampInt(raw: string, min: number, max: number, fallback: number): number {
+  const n = parseInt(raw, 10)
+  if (!Number.isFinite(n)) return fallback
+  return Math.max(min, Math.min(max, n))
+}
+
+function ScheduleNumberInput({
+  label,
+  value,
+  min,
+  max,
+  fallback,
+  onCommit,
+}: {
+  label: string
+  value: number
+  min: number
+  max: number
+  fallback: number
+  onCommit: (n: number) => void
+}) {
+  const [text, setText] = useState(String(value))
+  const [focused, setFocused] = useState(false)
+
+  useEffect(() => {
+    if (!focused) setText(String(value))
+  }, [value, focused])
+
+  const commit = (raw: string) => {
+    const trimmed = raw.trim()
+    if (!trimmed) {
+      setText(String(value))
+      return
+    }
+    const next = clampInt(trimmed, min, max, fallback)
+    onCommit(next)
+    setText(String(next))
+  }
+
+  return (
+    <label className="block space-y-1">
+      <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
+        {label}
+      </span>
+      <input
+        type="number"
+        min={min}
+        max={max}
+        value={text}
+        onChange={(e: ChangeEvent<HTMLInputElement>) => setText(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => {
+          setFocused(false)
+          commit(text)
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+        }}
+        className="brand-input"
+      />
+    </label>
+  )
+}
 
 function Chip({
   active,
@@ -98,57 +163,30 @@ export function CompetitionRulesSetup({ value, onChange, eventMinutes }: Props) 
           </div>
 
           <div className="grid grid-cols-3 gap-3">
-            <label className="block space-y-1">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-                Games
-              </span>
-              <input
-                type="number"
-                min={5}
-                max={11}
-                value={gameCount}
-                onChange={(e) =>
-                  onChange({
-                    gameCount: Math.max(5, Math.min(11, Number(e.target.value) || 7)),
-                  })
-                }
-                className="brand-input"
-              />
-            </label>
-            <label className="block space-y-1">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-                Game time (min)
-              </span>
-              <input
-                type="number"
-                min={8}
-                max={30}
-                value={gameMinutes}
-                onChange={(e) =>
-                  onChange({
-                    gameMinutes: Math.max(8, Math.min(30, Number(e.target.value) || 14)),
-                  })
-                }
-                className="brand-input"
-              />
-            </label>
-            <label className="block space-y-1">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-                Rest (min)
-              </span>
-              <input
-                type="number"
-                min={1}
-                max={10}
-                value={breakMinutes}
-                onChange={(e) =>
-                  onChange({
-                    breakMinutes: Math.max(1, Math.min(10, Number(e.target.value) || 3)),
-                  })
-                }
-                className="brand-input"
-              />
-            </label>
+            <ScheduleNumberInput
+              label="Games"
+              value={gameCount}
+              min={5}
+              max={11}
+              fallback={7}
+              onCommit={(gameCount) => onChange({ gameCount })}
+            />
+            <ScheduleNumberInput
+              label="Game time (min)"
+              value={gameMinutes}
+              min={8}
+              max={30}
+              fallback={14}
+              onCommit={(gameMinutes) => onChange({ gameMinutes })}
+            />
+            <ScheduleNumberInput
+              label="Rest (min)"
+              value={breakMinutes}
+              min={1}
+              max={10}
+              fallback={3}
+              onCommit={(breakMinutes) => onChange({ breakMinutes })}
+            />
           </div>
 
           {eventMinutes != null && (

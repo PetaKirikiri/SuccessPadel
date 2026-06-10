@@ -13,6 +13,13 @@ type LineProfileInput = {
 
 type LineUser = { sub: string; name?: string; picture?: string }
 
+const BIA_LINE_USER_ID = 'U2131aeeeaaa787589d757995fb667e07'
+
+function clubLineDisplayName(sub: string, name?: string): string | undefined {
+  if (sub === BIA_LINE_USER_ID) return 'Bia'
+  return name
+}
+
 async function lineProfileFromAccessToken(accessToken: string): Promise<LineProfileInput | null> {
   const res = await fetch('https://api.line.me/v2/profile', {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -102,6 +109,7 @@ async function magicLinkEmailForUser(
 }
 
 async function sessionForLineUser(admin: ReturnType<typeof createClient>, lineUser: LineUser) {
+  lineUser = { ...lineUser, name: clubLineDisplayName(lineUser.sub, lineUser.name) }
   const email = `line_${lineUser.sub}@successpadel.local`
 
   const { data: existing } = await admin

@@ -1,23 +1,53 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { FriendlyDeleteConfirm } from './FriendlyDeleteConfirm'
 import { FriendlyGameCard } from './FriendlyGameCard'
 import { GamesHubEmpty, GamesHubLoading } from './GamesHubView'
+import { SwipeRevealActions } from './SwipeRevealActions'
 import { useAuth } from '../hooks/useAuth'
 import { useLineClientProfile } from '../hooks/useLineClientProfile'
 import { useTranslation } from '../hooks/useTranslation'
 import type { FriendlyGameRecord } from '../lib/friendlyGames'
+import { deleteFriendlySession } from '../lib/friendlyServer'
 
 type Props = {
   games: FriendlyGameRecord[]
   loading: boolean
   past?: boolean
   isAdmin?: boolean
+  onRefresh?: () => void
 }
 
-export function FriendlyGamesList({ games, loading, past = false, isAdmin = false }: Props) {
+export function FriendlyGamesList({
+  games,
+  loading,
+  past = false,
+  isAdmin = false,
+  onRefresh,
+}: Props) {
   const { t } = useTranslation()
   const { user, profile } = useAuth()
   const lineClient = useLineClientProfile()
+  const swipeDelete = isAdmin
+  const [deleteBusyId, setDeleteBusyId] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<FriendlyGameRecord | null>(null)
   const headerAvatar = profile?.avatar_url ?? lineClient.pictureUrl ?? null
+
+  const confirmDelete = async () => {
+    if (!pendingDelete) return
+    const game = pendingDelete
+    setDeleteBusyId(game.id)
+    setDeleteError(null)
+    const err = await deleteFriendlySession(game.id)
+    setDeleteBusyId(null)
+    if (err) {
+      setDeleteError(err)
+      return
+    }
+    setPendingDelete(null)
+    onRefresh?.()
+  }
 
   if (loading) return <GamesHubLoading />
 
@@ -37,18 +67,36 @@ export function FriendlyGamesList({ games, loading, past = false, isAdmin = fals
   }
 
   return (
-    <ul className="m-0 list-none space-y-2 p-0">
-      {games.map((game) => (
-        <li key={game.id}>
-          <FriendlyGameCard
-            game={game}
-            to={`/friendly/${game.id}`}
-            currentUserId={user?.id}
-            currentUserAvatarUrl={headerAvatar}
-            isAdmin={isAdmin}
-          />
-        </li>
-      ))}
-    </ul>
+    <>
+      {deleteError ? <p className="mb-2 text-xs text-red-600">{deleteError}</p> : null}
+      <ul className="m-0 w-full min-w-0 max-w-full list-none space-y-4 p-0">
+        {games.map((game) => (
+          <li key={game.id} className="w-full min-w-0 max-w-full">
+            <SwipeRevealActions
+              enabled={swipeDelete}
+              actionLabel={t('competition.delete')}
+              onAction={() => setPendingDelete(game)}
+            >
+              <FriendlyGameCard
+                game={game}
+                to={`/friendly/${game.id}`}
+                currentUserId={user?.id}
+                currentUserAvatarUrl={headerAvatar}
+                isAdmin={isAdmin}
+                className={deleteBusyId === game.id ? 'pointer-events-none opacity-60' : ''}
+              />
+            </SwipeRevealActions>
+          </li>
+        ))}
+      </ul>
+      {pendingDelete ? (
+        <FriendlyDeleteConfirm
+          title={pendingDelete.title}
+          busy={deleteBusyId === pendingDelete.id}
+          onConfirm={() => void confirmDelete()}
+          onCancel={() => setPendingDelete(null)}
+        />
+      ) : null}
+    </>
   )
 }

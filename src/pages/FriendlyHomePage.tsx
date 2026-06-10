@@ -1,17 +1,16 @@
 import { useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { FriendlyGamesList } from '../components/FriendlyGamesList'
 import { GamesHubView } from '../components/GamesHubView'
 import { useAuth } from '../hooks/useAuth'
 import { usePublicFriendlyGames } from '../hooks/usePublicFriendlyGames'
-import { useTranslation } from '../hooks/useTranslation'
 
 export function FriendlyHomePage() {
-  const { t } = useTranslation()
   const { profile, loading: authLoading } = useAuth()
   const { games, loading, error, refresh } = usePublicFriendlyGames()
   const isAdmin = !authLoading && Boolean(profile?.is_admin)
   const location = useLocation()
+  const lineError = (location.state as { lineError?: string } | null)?.lineError
 
   useEffect(() => {
     if (location.pathname === '/friendly') void refresh()
@@ -19,24 +18,20 @@ export function FriendlyHomePage() {
 
   return (
     <GamesHubView
-      leaderboardVariant="friendly"
+      hubNav="none"
+      listClassName="bg-brand-bg"
       currentCount={games.length}
       currentPanel={
         <>
+          {lineError ? <p className="mb-2 text-xs text-red-600">{lineError}</p> : null}
           {error ? <p className="mb-2 text-xs text-red-600">{error}</p> : null}
-          <FriendlyGamesList games={games} loading={loading} isAdmin={isAdmin} />
+          <FriendlyGamesList
+            games={games}
+            loading={loading}
+            isAdmin={isAdmin}
+            onRefresh={refresh}
+          />
         </>
-      }
-      fab={
-        isAdmin ? (
-          <Link
-            to="/friendly/new"
-            aria-label={t('friendly.addGameFab')}
-            className="fixed right-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-brand-accent text-2xl font-semibold leading-none text-white shadow-lg bottom-[calc(4.75rem+env(safe-area-inset-bottom))]"
-          >
-            +
-          </Link>
-        ) : null
       }
     />
   )

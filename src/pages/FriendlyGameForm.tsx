@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { CompetitionLayoutPreview } from '../components/CompetitionLayoutPreview'
 import {
   CompetitionRulesSetup,
@@ -9,30 +9,44 @@ import { MemberPlayerSlots } from '../components/MemberPlayerSlots'
 import { SessionTimeSetup } from '../components/SessionTimeSetup'
 import { useAuth } from '../hooks/useAuth'
 import { useFriendlyFormDraft } from '../hooks/useFriendlyFormDraft'
+import { useFriendlyGame } from '../hooks/useFriendlyGame'
 import { useTranslation } from '../hooks/useTranslation'
-import { friendlyFormInitialState } from '../lib/friendlyFormDraft'
+import {
+  friendlyFormDefaults,
+  friendlyFormInitialState,
+  friendlyFormValuesFromGame,
+} from '../lib/friendlyFormDraft'
 import {
   clearFriendlyGamesCache,
   FRIENDLY_MAX_PLAYERS,
+  friendlyConfigWithSessionEnd,
   friendlyOrganizedGames,
   friendlyOrganizedSession,
   friendlyStartsAtIso,
+  mergeFriendlyOrganizedConfig,
   type FriendlyOrganizedConfig,
   type FriendlyPlayMode,
   type FriendlyVisibility,
 } from '../lib/friendlyGames'
-import { publishFriendlySession } from '../lib/friendlyServer'
+import { publishFriendlySession, updateFriendlySession } from '../lib/friendlyServer'
 import { supabase } from '../lib/supabaseClient'
 import type { Profile } from '../lib/types'
 
 export function FriendlyGameForm() {
+  const { id: editId } = useParams()
+  const isEdit = Boolean(editId)
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { profile, user, session, loading: authLoading } = useAuth()
-  const initial = useMemo(() => friendlyFormInitialState(), [])
+  const { game, loading: gameLoading } = useFriendlyGame(isEdit ? editId : undefined)
+  const initial = useMemo(
+    () => (isEdit ? friendlyFormDefaults() : friendlyFormInitialState()),
+    [isEdit],
+  )
   const [title, setTitle] = useState(initial.title)
   const [day, setDay] = useState(initial.day)
   const [startHour, setStartHour] = useState(initial.startHour)
+  const [startMinute, setStartMinute] = useState(initial.startMinute ?? 0)
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [playerSlots, setPlayerSlots] = useState(initial.playerSlots)
   const [profileIds, setProfileIds] = useState(initial.profileIds)
@@ -43,6 +57,7 @@ export function FriendlyGameForm() {
   const [courtNames, setCourtNames] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [hydrated, setHydrated] = useState(!isEdit)
 
   const draftValues = useMemo(
     () => ({
@@ -50,16 +65,36 @@ export function FriendlyGameForm() {
       visibility,
       day,
       startHour,
+      startMinute,
       playerSlots,
       profileIds,
       playMode,
       rulesSetup,
       previewSeed,
     }),
-    [title, visibility, day, startHour, playerSlots, profileIds, playMode, rulesSetup, previewSeed],
+    [title, visibility, day, startHour, startMinute, playerSlots, profileIds, playMode, rulesSetup, previewSeed],
   )
 
-  const { persistNow, clearDraft } = useFriendlyFormDraft({ values: draftValues })
+  const { persistNow, clearDraft } = useFriendlyFormDraft({
+    values: draftValues,
+    enabled: !isEdit,
+  })
+
+  useEffect(() => {
+    if (!isEdit || !game || hydrated) return
+    const values = friendlyFormValuesFromGame(game)
+    setTitle(values.title)
+    setDay(values.day)
+    setStartHour(values.startHour)
+    setStartMinute(values.startMinute)
+    setPlayerSlots(values.playerSlots)
+    setProfileIds(values.profileIds)
+    setVisibility(values.visibility)
+    setPlayMode(values.playMode)
+    setRulesSetup(values.rulesSetup)
+    setPreviewSeed(values.previewSeed)
+    setHydrated(true)
+  }, [game, hydrated, isEdit])
 
   useEffect(() => {
     void supabase
@@ -97,8 +132,14 @@ export function FriendlyGameForm() {
   )
 
   const organizedConfig = useMemo(
-    (): FriendlyOrganizedConfig => ({ day, startHour, ...rulesSetup, previewSeed }),
-    [day, startHour, rulesSetup, previewSeed],
+    (): FriendlyOrganizedConfig => ({
+      day,
+      startHour,
+      startMinute,
+      ...rulesSetup,
+      previewSeed,
+    }),
+    [day, startHour, startMinute, rulesSetup, previewSeed],
   )
 
   const startsAtIso = useMemo(
@@ -141,16 +182,37 @@ export function FriendlyGameForm() {
       setBusy(false)
       return
     }
-    const { id: serverId, error: publishError } = await publishFriendlySession({
+
+    const payload = {
       title: title.trim() || 'Friendly match',
       players: trimmedSlots,
       profileIds,
       profileAvatars,
       playMode,
       visibility,
-      organizedConfig: playMode === 'organized' ? organizedConfig : undefined,
-      status: 'ready',
-    })
+      organizedConfig:
+        playMode === 'organized'
+          ? mergeFriendlyOrganizedConfig(
+              game?.organizedConfig,
+              friendlyConfigWithSessionEnd(organizedConfig),
+            )
+          : undefined,
+      status: game?.status ?? ('ready' as const),
+    }
+
+    if (isEdit && editId) {
+      const err = await updateFriendlySession(editId, payload)
+      if (err) {
+        setError(err)
+        setBusy(false)
+        return
+      }
+      setBusy(false)
+      navigate(`/friendly/${editId}`)
+      return
+    }
+
+    const { id: serverId, error: publishError } = await publishFriendlySession(payload)
     if (!serverId) {
       setError(publishError ?? t('friendly.publishFailed'))
       setBusy(false)
@@ -166,13 +228,24 @@ export function FriendlyGameForm() {
     )
   }
 
+  if (isEdit && (gameLoading || !hydrated)) {
+    return <p className="text-sm text-brand-muted">{t('common.loading')}</p>
+  }
+  if (isEdit && !game) return <Navigate to="/friendly" replace />
+
+  const backTo = isEdit && editId ? `/friendly/${editId}` : '/friendly'
+
   return (
     <div className="w-full min-w-0 space-y-3 pb-4">
-      <Link to="/friendly" className="text-sm font-medium text-brand-accent">
+      <Link to={backTo} className="text-sm font-medium text-brand-accent">
         ← {t('common.back')}
       </Link>
 
-      <section className="game-card space-y-3" onBlur={persistNow}>
+      <section className="game-card space-y-3" onBlur={isEdit ? undefined : persistNow}>
+        {isEdit ? (
+          <p className="text-sm font-semibold text-brand-primary">{t('friendly.editTitle')}</p>
+        ) : null}
+
         <label className="block space-y-1">
           <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
             {t('friendly.nameLabel')}
@@ -181,7 +254,7 @@ export function FriendlyGameForm() {
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            onBlur={persistNow}
+            onBlur={isEdit ? undefined : persistNow}
             placeholder={t('friendly.namePlaceholder')}
             className="brand-input"
           />
@@ -243,9 +316,12 @@ export function FriendlyGameForm() {
             <SessionTimeSetup
               day={day}
               startHour={startHour}
+              startMinute={startMinute}
               onDayChange={setDay}
               onStartHourChange={setStartHour}
-              onBlur={persistNow}
+              onStartMinuteChange={setStartMinute}
+              onBlur={isEdit ? undefined : persistNow}
+              minuteLabel={t('friendly.startDelay')}
             />
             <CompetitionRulesSetup
               value={rulesSetup}
@@ -287,9 +363,11 @@ export function FriendlyGameForm() {
         >
           {busy
             ? t('common.loading')
-            : playMode === 'free'
-              ? t('friendly.startMatch')
-              : t('friendly.accept')}
+            : isEdit
+              ? t('friendly.saveChanges')
+              : playMode === 'free'
+                ? t('friendly.startMatch')
+                : t('friendly.accept')}
         </button>
       </section>
     </div>

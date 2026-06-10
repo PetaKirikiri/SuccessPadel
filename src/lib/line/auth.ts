@@ -13,6 +13,7 @@ import {
   isLineLoggedIn,
   lineLoginRedirect,
 } from './liff'
+import { clubDisplayName, clubDisplayNameFromLine } from '../clubMemberDisplay'
 import { readLineProfilePatch, syncLineProfileFromLiff } from './profileSync'
 import { hasLineOAuth, startLineOAuthLogin } from './oauth'
 
@@ -45,7 +46,7 @@ export function isBrowserLineLoginConfigured(): boolean {
 function lineEntryPath(returnPath: string): string {
   return returnPath && !returnPath.startsWith('/auth/') && returnPath !== '/login'
     ? returnPath
-    : '/login'
+    : '/friendly'
 }
 
 async function initLiffWithTimeout(ms = 10_000): Promise<void> {
@@ -57,7 +58,7 @@ async function initLiffWithTimeout(ms = 10_000): Promise<void> {
   ])
 }
 
-export async function startLineLogin(returnPath = '/login'): Promise<LineSignInResult> {
+export async function startLineLogin(returnPath = '/friendly'): Promise<LineSignInResult> {
   if (hasLiffId() && isLineLiffBrowser()) {
     try {
       await initLiffWithTimeout()
@@ -152,6 +153,13 @@ export async function signInWithLine(): Promise<LineSignInResult> {
     const liffPatch = await readLineProfilePatch()
     resolvedName = liffPatch?.display_name
     resolvedAvatar = liffPatch?.picture_url
+  }
+
+  if (resolvedName) {
+    resolvedName = clubDisplayName(
+      user.id,
+      clubDisplayNameFromLine(profilePayload?.user_id, resolvedName) ?? resolvedName,
+    )
   }
 
   if (resolvedName) {

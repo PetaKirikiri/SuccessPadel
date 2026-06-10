@@ -7,6 +7,13 @@ const cors = {
 
 type LineUser = { sub: string; name?: string; picture?: string }
 
+const BIA_LINE_USER_ID = 'U2131aeeeaaa787589d757995fb667e07'
+
+function clubLineDisplayName(sub: string, name?: string): string | undefined {
+  if (sub === BIA_LINE_USER_ID) return 'Bia'
+  return name
+}
+
 async function lineUserFromAccessToken(accessToken: string): Promise<LineUser | null> {
   const profileRes = await fetch('https://api.line.me/v2/profile', {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -57,6 +64,7 @@ async function findAuthUserIdByEmail(
 }
 
 async function sessionForLineUser(admin: ReturnType<typeof createClient>, lineUser: LineUser) {
+  lineUser = { ...lineUser, name: clubLineDisplayName(lineUser.sub, lineUser.name) }
   const email = `line_${lineUser.sub}@successpadel.local`
 
   const { data: existing } = await admin

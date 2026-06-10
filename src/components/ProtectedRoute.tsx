@@ -16,10 +16,8 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     )
   }
   if (!session) {
-    saveReturnTo(loc.pathname)
-    return (
-      <Navigate to="/login" state={{ from: loc.pathname }} replace />
-    )
+    saveReturnTo(`${loc.pathname}${loc.search}`)
+    return <Navigate to="/friendly" replace />
   }
   return children
 }

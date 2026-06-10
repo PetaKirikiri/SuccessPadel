@@ -8,25 +8,28 @@ import {
 
 type Options = {
   values: FriendlyFormValues
+  enabled?: boolean
 }
 
-export function useFriendlyFormDraft({ values }: Options) {
+export function useFriendlyFormDraft({ values, enabled = true }: Options) {
   const readyRef = useRef(false)
   const valuesRef = useRef(values)
   valuesRef.current = values
 
   useEffect(() => {
+    if (!enabled) return
     readyRef.current = true
     const draft = loadFriendlyFormDraft()
     if (draft) saveFriendlyFormDraft(valuesRef.current)
-  }, [])
+  }, [enabled])
 
   const persistNow = useCallback(() => {
+    if (!enabled) return
     saveFriendlyFormDraft(valuesRef.current)
-  }, [])
+  }, [enabled])
 
   useEffect(() => {
-    if (!readyRef.current) return
+    if (!enabled || !readyRef.current) return
     const timer = window.setTimeout(() => {
       saveFriendlyFormDraft(valuesRef.current)
     }, 100)
@@ -34,9 +37,10 @@ export function useFriendlyFormDraft({ values }: Options) {
       window.clearTimeout(timer)
       saveFriendlyFormDraft(valuesRef.current)
     }
-  }, [values])
+  }, [enabled, values])
 
   useEffect(() => {
+    if (!enabled) return
     const flush = () => persistNow()
     window.addEventListener('beforeunload', flush)
     window.addEventListener('pagehide', flush)
@@ -50,7 +54,7 @@ export function useFriendlyFormDraft({ values }: Options) {
       document.removeEventListener('visibilitychange', onVisibility)
       flush()
     }
-  }, [persistNow])
+  }, [enabled, persistNow])
 
   const clearDraft = useCallback(() => {
     clearFriendlyFormDraft()

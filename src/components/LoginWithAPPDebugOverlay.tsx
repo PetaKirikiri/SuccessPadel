@@ -81,7 +81,7 @@ export function LoginWithAPPDebugOverlay() {
       {open && (
         <pre className="max-h-[36vh] overflow-auto px-2 pb-2 text-[9px] leading-tight">
           {lines.length === 0
-            ? 'No logs yet — tap Continue with LINE…'
+            ? 'No logs yet — open via LINE / Sign In…'
             : lines.map((e) => (
                 <div key={`${e.seq}-${e.timestamp}`} className="border-b border-amber-900/50 py-0.5">
                   <div>{formatLine(e)}</div>

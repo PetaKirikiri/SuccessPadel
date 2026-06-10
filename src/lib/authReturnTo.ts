@@ -6,7 +6,7 @@ export function saveReturnTo(path: string) {
   }
 }
 
-export function consumeReturnTo(fallback = '/'): string {
+export function consumeReturnTo(fallback = '/friendly'): string {
   const fromState = sessionStorage.getItem(RETURN_TO_KEY)
   sessionStorage.removeItem(RETURN_TO_KEY)
   if (fromState && fromState !== '/login' && !fromState.startsWith('/auth/')) {

@@ -1,9 +1,11 @@
 import type { CourtPlayer } from './americanoSchedule'
 import { playerKey } from './courtPositionSetup'
+import { agentDebugIngest } from './debug/devDebug'
 import type { GestureDebugEntry } from './gestureDebugLog'
 import type { Quadrant } from './gestureCapture'
 import type { MatchTeam } from './types'
 import type { TennisScore } from './tennisScore'
+import { INITIAL_TENNIS_SCORE } from './tennisScore'
 import { isFriendlySession } from './friendlyMatch'
 import type { PlayerGameStats, ShotTypeBreakdown } from './playerGameStats'
 
@@ -13,6 +15,7 @@ export const MATCH_PERSIST_TO_SERVER = false
 const SESSIONS_KEY = 'sp-match-sessions'
 const PLAYER_LOGS_KEY = 'sp-player-match-logs'
 const MAX_PLAYER_ENTRIES = 40
+const MAX_SESSION_GESTURES = 150
 
 export type PlayerStatsSnapshot = {
   playerKey: string
@@ -50,6 +53,8 @@ export type MatchSessionRecord = {
   finalScore?: TennisScore
   winner?: MatchTeam
   gestureIds: string[]
+  /** Full gesture payloads — survives global debug-log clears. */
+  gestureEntries?: GestureDebugEntry[]
   pointEvents: MatchPointEvent[]
   playerStats?: PlayerStatsSnapshot[]
   savedLocally: boolean
@@ -158,6 +163,7 @@ export function startMatchSession(opts: {
     courtId: opts.courtId,
     matchStartedAt: opts.matchStartedAt,
     gestureIds: [],
+    gestureEntries: [],
     pointEvents: [],
     savedLocally: false,
     isFriendly: opts.isFriendly ?? isFriendlySession(opts.id),
@@ -171,18 +177,71 @@ export function loadMatchSession(id: string): MatchSessionRecord | null {
   return readSessions()[id] ?? null
 }
 
+/** Write a full session record (e.g. hydrated from a server log for review). */
+export function importMatchSession(record: MatchSessionRecord): void {
+  const sessions = readSessions()
+  sessions[record.id] = record
+  writeSessions(sessions)
+}
+
 export function listMatchSessions(): MatchSessionRecord[] {
   return Object.values(readSessions())
 }
 
-export function recordMatchGesture(sessionId: string, gestureId: string): void {
+/** Remove a session entirely (e.g. court reset back to setup). */
+export function deleteMatchSession(id: string): void {
   const sessions = readSessions()
-  const session = sessions[sessionId]
-  if (!session) return
-  if (!session.gestureIds.includes(gestureId)) {
-    session.gestureIds = [gestureId, ...session.gestureIds]
+  if (sessions[id]) {
+    delete sessions[id]
     writeSessions(sessions)
   }
+}
+
+export function recordMatchGesture(
+  sessionId: string,
+  gestureId: string,
+  entry?: GestureDebugEntry,
+): void {
+  const sessions = readSessions()
+  const session = sessions[sessionId]
+  // #region agent log
+  agentDebugIngest(
+    'matchSessionLog.ts:recordMatchGesture',
+    'gesture write to local session',
+    {
+      runId: 'persist-debug',
+      sessionId,
+      sessionExists: Boolean(session),
+      gestureId,
+      knownSessionKeys: Object.keys(sessions),
+      gestureIdsAfter: session ? session.gestureIds.length + (session.gestureIds.includes(gestureId) ? 0 : 1) : 0,
+    },
+    session ? 'G' : 'H',
+  )
+  // #endregion
+  if (!session) return
+  let dirty = false
+  if (!session.gestureIds.includes(gestureId)) {
+    session.gestureIds = [gestureId, ...session.gestureIds]
+    dirty = true
+  }
+  if (entry && !session.gestureEntries?.some((g) => g.id === gestureId)) {
+    session.gestureEntries = [entry, ...(session.gestureEntries ?? [])].slice(0, MAX_SESSION_GESTURES)
+    dirty = true
+  }
+  if (dirty) writeSessions(sessions)
+}
+
+function backfillSessionGestureEntries(
+  sessionId: string,
+  entries: GestureDebugEntry[],
+): void {
+  if (!entries.length) return
+  const sessions = readSessions()
+  const session = sessions[sessionId]
+  if (!session || session.gestureEntries?.length) return
+  session.gestureEntries = entries
+  writeSessions(sessions)
 }
 
 export function attachLoserGestureToPoint(
@@ -212,6 +271,20 @@ export function recordMatchPoint(
 ): void {
   const sessions = readSessions()
   const session = sessions[sessionId]
+  // #region agent log
+  agentDebugIngest(
+    'matchSessionLog.ts:recordMatchPoint',
+    'point write to local session',
+    {
+      runId: 'persist-debug',
+      sessionId,
+      sessionExists: Boolean(session),
+      knownSessionKeys: Object.keys(sessions),
+      pointEventsAfter: session ? session.pointEvents.length + 1 : 0,
+    },
+    session ? 'G' : 'H',
+  )
+  // #endregion
   if (!session) return
   session.pointEvents = [
     {
@@ -293,4 +366,128 @@ export function gesturesForSession(
 ): GestureDebugEntry[] {
   const ids = new Set(session.gestureIds)
   return allGestures.filter((g) => ids.has(g.id))
+}
+
+/** Prefer session-stored gestures — survives global debug-log clears. */
+export function matchStatGestures(
+  sessionId: string | undefined,
+  allGestures: GestureDebugEntry[],
+): GestureDebugEntry[] | null {
+  if (!sessionId) return null
+  const session = loadMatchSession(sessionId)
+  if (session?.gestureEntries?.length) {
+    return session.gestureEntries
+  }
+  if (session?.gestureIds.length) {
+    const fromLog = gesturesForSession(session, allGestures)
+    if (fromLog.length) {
+      backfillSessionGestureEntries(sessionId, fromLog)
+      return fromLog
+    }
+  }
+  const tagged = allGestures.filter((g) => g.matchSessionId === sessionId)
+  return tagged.length ? tagged : null
+}
+
+export function sessionGestureEntries(
+  session: MatchSessionRecord | null,
+  allGestures: GestureDebugEntry[],
+): GestureDebugEntry[] {
+  if (!session) return []
+  if (session.gestureEntries?.length) return session.gestureEntries
+  return gesturesForSession(session, allGestures)
+}
+
+/** Oldest gesture first — storage keeps newest first. */
+export function chronologicalSessionGestures(
+  session: MatchSessionRecord | null,
+  allGestures: GestureDebugEntry[],
+): GestureDebugEntry[] {
+  const entries = sessionGestureEntries(session, allGestures)
+  return [...entries].reverse()
+}
+
+export function gesturesSinceLastPoint(
+  chronoGestures: GestureDebugEntry[],
+  chronoPoints: MatchPointEvent[],
+): GestureDebugEntry[] {
+  if (chronoPoints.length === 0) return chronoGestures
+  const lastPoint = chronoPoints[chronoPoints.length - 1]!
+  const winIdx = chronoGestures.findIndex((g) => g.id === lastPoint.winnerGestureId)
+  if (winIdx < 0) return chronoGestures
+  return chronoGestures.slice(winIdx + 1)
+}
+
+export function gesturesForPoint(
+  chronoGestures: GestureDebugEntry[],
+  chronoPoints: MatchPointEvent[],
+  pointIndex: number,
+): GestureDebugEntry[] {
+  const point = chronoPoints[pointIndex]
+  if (!point) return []
+  const winIdx = chronoGestures.findIndex((g) => g.id === point.winnerGestureId)
+  if (winIdx < 0) return []
+  const prevWinnerId =
+    pointIndex > 0 ? chronoPoints[pointIndex - 1]!.winnerGestureId : null
+  const prevWinIdx = prevWinnerId
+    ? chronoGestures.findIndex((g) => g.id === prevWinnerId)
+    : -1
+  const startIdx = prevWinIdx >= 0 ? prevWinIdx + 1 : 0
+  return chronoGestures.slice(startIdx, winIdx + 1)
+}
+
+/** Oldest point first — storage keeps newest first. */
+export function chronologicalPointEvents(session: MatchSessionRecord | null): MatchPointEvent[] {
+  if (!session?.pointEvents.length) return []
+  return [...session.pointEvents].reverse()
+}
+
+export function removeMatchGesture(sessionId: string, gestureId: string): void {
+  const sessions = readSessions()
+  const session = sessions[sessionId]
+  if (!session) return
+  session.gestureIds = session.gestureIds.filter((id) => id !== gestureId)
+  if (session.gestureEntries?.length) {
+    session.gestureEntries = session.gestureEntries.filter((g) => g.id !== gestureId)
+  }
+  writeSessions(sessions)
+}
+
+export function removeLastMatchPoint(sessionId: string): MatchPointEvent | null {
+  const sessions = readSessions()
+  const session = sessions[sessionId]
+  if (!session?.pointEvents.length) return null
+  const removed = session.pointEvents[0]!
+  session.pointEvents = session.pointEvents.slice(1)
+  writeSessions(sessions)
+  return removed
+}
+
+export function scoreBeforeChronologicalPoint(
+  events: MatchPointEvent[],
+  index: number,
+): TennisScore {
+  if (index <= 0) return INITIAL_TENNIS_SCORE
+  return events[index - 1]!.scoreAfter
+}
+
+export function pruneSessionGestures(sessionId: string, keepIds: Set<string>): void {
+  const sessions = readSessions()
+  const session = sessions[sessionId]
+  if (!session) return
+  session.gestureIds = session.gestureIds.filter((id) => keepIds.has(id))
+  if (session.gestureEntries?.length) {
+    session.gestureEntries = session.gestureEntries.filter((g) => keepIds.has(g.id))
+  }
+  writeSessions(sessions)
+}
+
+/** Drop this point and all later points (chronological index). */
+export function truncatePointEventsFrom(sessionId: string, fromChronologicalIndex: number): void {
+  const sessions = readSessions()
+  const session = sessions[sessionId]
+  if (!session) return
+  const kept = chronologicalPointEvents(session).slice(0, fromChronologicalIndex)
+  session.pointEvents = [...kept].reverse()
+  writeSessions(sessions)
 }

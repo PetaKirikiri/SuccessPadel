@@ -1,6 +1,7 @@
 import type { CompetitionPlayer } from '../hooks/useCompetitions'
 import { rosterDisplayName } from '../hooks/useCompetitions'
-import type { GameRound } from './americanoSchedule'
+import { clubDisplayName } from './clubMemberDisplay'
+import type { CourtPlayer, GameRound } from './americanoSchedule'
 import { solveBalancedSchedule, type RoundAssignment } from './balancedSchedule'
 import { courtsNeeded } from './competitionLayout'
 
@@ -31,6 +32,13 @@ export function scheduleSeedFromSession(
 export function nextScheduleSeed(current: number, playerCount: number): number {
   const span = Math.max(1, playerCount - 1)
   return (current + 1) % span
+}
+
+export function courtPlayerFromRoster(sp: CompetitionPlayer): CourtPlayer {
+  const profileId = sp.profile_id ?? sp.profiles?.id ?? null
+  const name = clubDisplayName(profileId, rosterDisplayName(sp))
+  const avatarUrl = profileId ? (sp.profiles?.avatar_url ?? null) : null
+  return { id: profileId, name, avatarUrl }
 }
 
 export function sortRosterByRank(roster: CompetitionPlayer[]): CompetitionPlayer[] {
@@ -76,6 +84,14 @@ export function roundsToGames(
         rosterDisplayName(ranked[court.teamB[0]]),
         rosterDisplayName(ranked[court.teamB[1]]),
       ],
+      teamAPlayers: [
+        courtPlayerFromRoster(ranked[court.teamA[0]]),
+        courtPlayerFromRoster(ranked[court.teamA[1]]),
+      ],
+      teamBPlayers: [
+        courtPlayerFromRoster(ranked[court.teamB[0]]),
+        courtPlayerFromRoster(ranked[court.teamB[1]]),
+      ],
     })),
   }))
 }
@@ -101,6 +117,11 @@ function nameForRosterId(ranked: CompetitionPlayer[], id: string): string {
   return player ? rosterDisplayName(player) : 'Player'
 }
 
+function courtPlayerForRosterId(ranked: CompetitionPlayer[], id: string): CourtPlayer {
+  const player = ranked.find((p) => p.id === id)
+  return player ? courtPlayerFromRoster(player) : { id: null, name: 'Player', avatarUrl: null }
+}
+
 export function gamesFromStoredSchedule(
   ranked: CompetitionPlayer[],
   stored: StoredScheduleRound[],
@@ -119,6 +140,14 @@ export function gamesFromStoredSchedule(
       teamB: [
         nameForRosterId(ranked, match.team_b[0]),
         nameForRosterId(ranked, match.team_b[1]),
+      ],
+      teamAPlayers: [
+        courtPlayerForRosterId(ranked, match.team_a[0]),
+        courtPlayerForRosterId(ranked, match.team_a[1]),
+      ],
+      teamBPlayers: [
+        courtPlayerForRosterId(ranked, match.team_b[0]),
+        courtPlayerForRosterId(ranked, match.team_b[1]),
       ],
     })),
   }))

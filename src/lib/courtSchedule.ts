@@ -70,6 +70,14 @@ export function formatHourLabel(hour: number, minute = 0): string {
   return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
 }
 
+/** Five-minute steps for delayed session start (e.g. 18:30). */
+export const SESSION_START_MINUTES = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55] as const
+
+export function roundToSessionStartMinute(minute: number): number {
+  const step = 5
+  return Math.min(55, Math.max(0, Math.round(minute / step) * step))
+}
+
 export function scheduleGridHours(): number[] {
   const hours: number[] = []
   for (let h = OPEN_HOUR; h <= LAST_SLOT_START_HOUR; h++) hours.push(h)
@@ -100,4 +108,26 @@ export function bangkokHour(iso: string): number {
     }).format(new Date(iso)),
     10,
   )
+}
+
+export function clubTimePartsFromDate(d: Date): { hour: number; minute: number } {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: CLUB_TIMEZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(d)
+  return {
+    hour: Number(parts.find((p) => p.type === 'hour')?.value ?? 0),
+    minute: Number(parts.find((p) => p.type === 'minute')?.value ?? 0),
+  }
+}
+
+export function bangkokNow(): { day: string; hour: number; minute: number } {
+  const now = new Date()
+  return {
+    day: new Intl.DateTimeFormat('en-CA', { timeZone: CLUB_TIMEZONE }).format(now),
+    hour: clubTimePartsFromDate(now).hour,
+    minute: clubTimePartsFromDate(now).minute,
+  }
 }
