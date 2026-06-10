@@ -5,9 +5,9 @@ function screenWidthPx(): string {
   return `${Math.round(w)}px`
 }
 
+/** Layout viewport height — do not use visualViewport.height (keyboard shrinks it). */
 function screenHeightPx(): string {
-  const h = window.visualViewport?.height ?? window.innerHeight
-  return `${Math.round(h)}px`
+  return `${Math.round(window.innerHeight)}px`
 }
 
 function applyViewportLock() {
@@ -71,13 +71,11 @@ export function useLockViewport() {
     }
     window.addEventListener('resize', onResize)
     window.addEventListener('orientationchange', onOrientation)
-    window.visualViewport?.addEventListener('resize', onResize)
     document.addEventListener('touchmove', blockDocumentScroll, { passive: false })
 
     return () => {
       window.removeEventListener('resize', onResize)
       window.removeEventListener('orientationchange', onOrientation)
-      window.visualViewport?.removeEventListener('resize', onResize)
       document.removeEventListener('touchmove', blockDocumentScroll)
     }
   }, [])

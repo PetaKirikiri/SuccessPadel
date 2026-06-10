@@ -375,6 +375,7 @@ function CourtMatchCell({
       value={scoreA ?? ''}
       placeholder="0"
       onChange={(e) => onScoreA?.(e.target.value.replace(/\D/g, ''))}
+      onFocus={(e) => e.currentTarget.scrollIntoView({ block: 'center', behavior: 'smooth' })}
       className={scoreInputClass}
       aria-label={t('aria.teamAScore', { unit: fieldLabel })}
     />
@@ -392,6 +393,7 @@ function CourtMatchCell({
       value={scoreB ?? ''}
       placeholder="0"
       onChange={(e) => onScoreB?.(e.target.value.replace(/\D/g, ''))}
+      onFocus={(e) => e.currentTarget.scrollIntoView({ block: 'center', behavior: 'smooth' })}
       className={scoreInputClass}
       aria-label={t('aria.teamBScore', { unit: fieldLabel })}
     />

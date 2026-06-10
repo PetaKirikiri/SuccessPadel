@@ -43,7 +43,7 @@
       ;(function () {
         function lockWidth() {
           var w = (window.visualViewport && window.visualViewport.width) || window.innerWidth
-          var h = (window.visualViewport && window.visualViewport.height) || window.innerHeight
+          var h = window.innerHeight
           var wpx = Math.round(w) + 'px'
           var hpx = Math.round(h) + 'px'
           var html = document.documentElement
@@ -59,7 +59,6 @@
         lockWidth()
         window.addEventListener('resize', lockWidth)
         window.addEventListener('orientationchange', lockWidth)
-        if (window.visualViewport) window.visualViewport.addEventListener('resize', lockWidth)
       })()
     </script>
     <meta name="theme-color" content="#FDFAF5" />
