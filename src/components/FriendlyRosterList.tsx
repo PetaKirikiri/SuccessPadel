@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useTranslation } from '../hooks/useTranslation'
 import { firstDisplayName } from '../lib/leaderboardEntries'
 import type { FriendlyRosterSlot } from '../lib/friendlyGameDisplay'
@@ -5,6 +6,28 @@ import type { FriendlyRosterSlot } from '../lib/friendlyGameDisplay'
 type Props = {
   slots: FriendlyRosterSlot[]
   currentUserId?: string | null
+}
+
+function RosterAvatar({ name, avatarUrl }: { name: string; avatarUrl: string | null }) {
+  const [broken, setBroken] = useState(false)
+  const initial = firstDisplayName(name || 'Player')[0]?.toUpperCase() ?? '?'
+
+  if (avatarUrl && !broken) {
+    return (
+      <img
+        src={avatarUrl}
+        alt=""
+        onError={() => setBroken(true)}
+        className="h-7 w-7 shrink-0 rounded-full object-cover"
+      />
+    )
+  }
+
+  return (
+    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-primary/10 text-[11px] font-semibold text-brand-primary">
+      {initial}
+    </span>
+  )
 }
 
 export function FriendlyRosterList({ slots, currentUserId }: Props) {
@@ -29,25 +52,16 @@ export function FriendlyRosterList({ slots, currentUserId }: Props) {
           }
 
           const name = firstDisplayName(slot.name || 'Player')
-          const hasAvatar = Boolean(slot.avatarUrl)
           return (
             <li
               key={`${slot.profileId ?? slot.name}-${i}`}
-              className={`inline-flex max-w-full items-center gap-1.5 rounded-full border py-1 pr-2.5 ${
-                hasAvatar ? 'pl-1' : 'pl-2.5'
-              } ${
+              className={`inline-flex max-w-full items-center gap-1.5 rounded-full border py-1 pl-1 pr-2.5 ${
                 isMe
                   ? 'border-brand-accent/50 bg-brand-accent/10'
                   : 'border-brand-primary/20 bg-brand-bg-alt'
               }`}
             >
-              {slot.avatarUrl ? (
-                <img
-                  src={slot.avatarUrl}
-                  alt=""
-                  className="h-7 w-7 shrink-0 rounded-full object-cover"
-                />
-              ) : null}
+              <RosterAvatar name={slot.name} avatarUrl={slot.avatarUrl ?? null} />
               <span
                 className={`truncate text-xs font-semibold ${
                   isMe ? 'text-brand-accent' : 'text-brand-primary'

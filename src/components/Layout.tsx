@@ -10,7 +10,8 @@ export function Layout() {
   const loc = useLocation()
   const onPlayerProfile = loc.pathname.startsWith('/players/')
   const isGamesHub = loc.pathname === '/friendly' || loc.pathname === '/competitive'
-  const showBottomNav = !onPlayerProfile && !isGesturePadRoute(loc.pathname)
+  const isCompetitionRun = /^\/competitions\/[^/]+\/run$/.test(loc.pathname)
+  const showBottomNav = !onPlayerProfile && !isGesturePadRoute(loc.pathname) && !isCompetitionRun
 
   return (
     <div className="game-bg flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden">

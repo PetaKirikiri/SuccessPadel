@@ -608,7 +608,6 @@ function useGameScoring({
   courtIdByLabel,
   matchForCourt,
   canEdit,
-  finished,
   onSubmitScores,
   onSaved,
   t,
@@ -619,15 +618,14 @@ function useGameScoring({
   courtIdByLabel?: Map<string, string>
   matchForCourt: NonNullable<Props['matchForCourt']>
   canEdit: boolean
-  finished: boolean
   onSubmitScores?: (entries: CourtScoreSubmit[]) => Promise<void>
   onSaved?: () => void
   t: TranslateFn
 }) {
   const [drafts, setDrafts] = useState<Record<string, CourtDraft>>({})
   const [dirty, setDirty] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [busyCourtKey, setBusyCourtKey] = useState<string | null>(null)
+  const [error, setError] = useState<{ courtId: string; message: string } | null>(null)
 
   const scoringCourts = useMemo(() => {
     if (!gameRoundId) return []
@@ -689,65 +687,44 @@ function useGameScoring({
 
   const courtScoreRows = useMemo(() => {
     if (!gameRoundId) return []
-    return scoringCourts.map(({ courtId }) => {
+    return scoringCourts.map(({ courtId, courtLabel }) => {
       const draft = drafts[courtId]
       const saved = matchForCourt(gameRoundId, courtId)
       const { teamAStr, teamBStr } = scoreStringsForCourt(draft, saved, dirty)
       const teamA = parseScoreField(teamAStr)
       const teamB = parseScoreField(teamBStr)
-      return { courtId, teamA, teamB, teamAStr, teamBStr, saved }
+      const court = game.courts.find((c) => c.courtLabel === courtLabel)
+      return { courtId, courtLabel, court, teamA, teamB, teamAStr, teamBStr, saved }
     })
-  }, [dirty, drafts, gameRoundId, matchForCourt, scoringCourts])
+  }, [dirty, drafts, game.courts, gameRoundId, matchForCourt, scoringCourts])
 
-  const allCourtsReady =
-    scoringCourts.length > 0 &&
-    courtScoreRows.length === scoringCourts.length &&
-    courtScoreRows.every((row) => row.teamA !== null && row.teamB !== null)
-
-  const submitEntries = useMemo((): CourtScoreSubmit[] => {
-    if (!gameRoundId || !allCourtsReady) return []
-    return courtScoreRows
-      .filter((row) => row.teamA !== null && row.teamB !== null)
-      .map((row) => ({
-        roundId: gameRoundId,
-        courtId: row.courtId,
-        teamA: row.teamA!,
-        teamB: row.teamB!,
-      }))
-  }, [allCourtsReady, courtScoreRows, gameRoundId])
-
-  const submitGame = async () => {
-    if (!onSubmitScores || submitEntries.length === 0) return
-    setBusy(true)
+  const submitCourt = async (courtId: string) => {
+    const row = courtScoreRows.find((r) => r.courtId === courtId)
+    if (!onSubmitScores || !gameRoundId || !row || row.teamA === null || row.teamB === null) return
+    setBusyCourtKey(courtId)
     setError(null)
     try {
-      await onSubmitScores(submitEntries)
+      await onSubmitScores([
+        {
+          roundId: gameRoundId,
+          courtId,
+          teamA: row.teamA,
+          teamB: row.teamB,
+        },
+      ])
       setDirty(false)
       onSaved?.()
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('common.submitFailed'))
+      setError({
+        courtId,
+        message: e instanceof Error ? e.message : t('common.submitFailed'),
+      })
     } finally {
-      setBusy(false)
+      setBusyCourtKey(null)
     }
   }
 
-  const submitFooter = onSubmitScores ? (
-    <div
-      className={`border-t px-3 py-2.5 md:px-4 ${
-        finished ? 'border-brand-border/40 bg-[#f1f0ee]' : 'border-brand-border/60'
-      }`}
-    >
-      <button
-        type="button"
-        onClick={() => void submitGame()}
-        className="brand-btn w-full py-2.5 text-sm font-semibold disabled:opacity-40"
-      >
-        {busy ? '…' : t('common.submit')}
-      </button>
-    </div>
-  ) : null
-
-  return { drafts, setDraft, submitFooter, error, canEdit, dirty }
+  return { courtScoreRows, setDraft, submitCourt, busyCourtKey, error, canEdit, dirty }
 }
 
 function useFriendlyManualScoring({
@@ -868,15 +845,14 @@ function useFriendlyManualScoring({
 
 function GameScoringCourts({
   game,
-  gameRoundId,
   courtsForGame,
-  courtIdByLabel,
-  matchForCourt,
   scoreUnit,
-  drafts,
+  courtScoreRows,
   setDraft,
+  submitCourt,
+  busyCourtKey,
+  courtError,
   canEdit,
-  dirty,
   finished,
   currentUserId,
   currentUserAvatarUrl,
@@ -889,15 +865,14 @@ function GameScoringCourts({
   t,
 }: {
   game: ScoringGame
-  gameRoundId?: string
   courtsForGame: LiveCourt[]
-  courtIdByLabel?: Map<string, string>
-  matchForCourt: NonNullable<Props['matchForCourt']>
   scoreUnit: AmericanoScoringUnit
-  drafts: Record<string, CourtDraft>
+  courtScoreRows: ReturnType<typeof useGameScoring>['courtScoreRows']
   setDraft: (courtId: string, side: 'teamA' | 'teamB', value: string) => void
+  submitCourt?: (courtId: string) => Promise<void>
+  busyCourtKey?: string | null
+  courtError?: { courtId: string; message: string } | null
   canEdit: boolean
-  dirty: boolean
   finished: boolean
   playTo?: number
   currentUserId?: string | null
@@ -911,26 +886,16 @@ function GameScoringCourts({
 }) {
   return (
     <div className="space-y-3">
-      {game.courts.map((court, courtIndex) => {
-        const liveCourt = courtsForGame.find((c) => c.courtName === court.courtLabel)
-        const courtId = courtIdForLabel(
-          court.courtLabel,
-          courtIndex,
-          courtsForGame,
-          courtIdByLabel,
-        )
+      {courtScoreRows.map((row, courtIndex) => {
+        const liveCourt = courtsForGame.find((c) => c.courtName === row.courtLabel)
+        const courtId = row.courtId
+        const court = row.court
+        if (!court) return null
         const teamA = liveCourt?.teamA ?? court.teamA
         const teamB = liveCourt?.teamB ?? court.teamB
         const teamAPlayers = liveCourt?.teamAPlayers ?? court.teamAPlayers
         const teamBPlayers = liveCourt?.teamBPlayers ?? court.teamBPlayers
-        const saved = gameRoundId && courtId ? matchForCourt(gameRoundId, courtId) : undefined
-        const draft = courtId ? drafts[courtId] : undefined
-        const { teamAStr: scoreA, teamBStr: scoreB } = canEdit
-          ? scoreStringsForCourt(draft, saved, dirty)
-          : {
-              teamAStr: saved?.teamAPoints != null ? String(saved.teamAPoints) : '',
-              teamBStr: saved?.teamBPoints != null ? String(saved.teamBPoints) : '',
-            }
+        const courtReady = row.teamA !== null && row.teamB !== null
 
         const href = courtLiveHref({
           liveCourtEnabled,
@@ -938,7 +903,7 @@ function GameScoringCourts({
           sessionId,
           competitionId,
           gameNumber: game.gameNumber,
-          courtLabel: court.courtLabel,
+          courtLabel: row.courtLabel,
           courtId,
           canEditScores: canEdit,
         })
@@ -946,14 +911,14 @@ function GameScoringCourts({
           friendly,
           sessionId,
           game.gameNumber,
-          court.courtLabel,
+          row.courtLabel,
         )
 
         return (
           <CourtCard
-            key={court.courtLabel}
-            courtLabel={court.courtLabel}
-            courtRef={resolveCourtRef(court.courtLabel, courtIndex, courtRefs)}
+            key={row.courtLabel}
+            courtLabel={row.courtLabel}
+            courtRef={resolveCourtRef(row.courtLabel, courtIndex, courtRefs)}
             currentUserId={currentUserId}
             court={liveCourt ?? court}
             finished={finished}
@@ -967,8 +932,8 @@ function GameScoringCourts({
               teamAPlayers={teamAPlayers}
               teamBPlayers={teamBPlayers}
               scoreUnit={scoreUnit}
-              scoreA={scoreA}
-              scoreB={scoreB}
+              scoreA={row.teamAStr}
+              scoreB={row.teamBStr}
               onScoreA={canEdit && courtId ? (v) => setDraft(courtId, 'teamA', v) : undefined}
               onScoreB={canEdit && courtId ? (v) => setDraft(courtId, 'teamB', v) : undefined}
               disabled={!canEdit}
@@ -979,6 +944,21 @@ function GameScoringCourts({
               embedded
               t={t}
             />
+            {canEdit && submitCourt ? (
+              <>
+                <button
+                  type="button"
+                  disabled={busyCourtKey === courtId || !courtReady}
+                  onClick={() => void submitCourt(courtId)}
+                  className="brand-btn mt-2 w-full py-2 text-xs font-semibold disabled:opacity-40"
+                >
+                  {busyCourtKey === courtId ? '…' : t('common.submit')}
+                </button>
+                {courtError?.courtId === courtId ? (
+                  <p className="mt-1 text-center text-xs text-red-600">{courtError.message}</p>
+                ) : null}
+              </>
+            ) : null}
           </CourtCard>
         )
       })}
@@ -1223,14 +1203,14 @@ function ScoringGameCard({
   currentUserAvatarUrl?: string | null
   t: TranslateFn
 }) {
-  const { drafts, setDraft, submitFooter, error, canEdit: editable, dirty } = useGameScoring({
+  const { courtScoreRows, setDraft, submitCourt, busyCourtKey, error, canEdit: editable } =
+    useGameScoring({
     game,
     gameRoundId,
     courtsForGame,
     courtIdByLabel,
     matchForCourt,
     canEdit,
-    finished,
     onSubmitScores,
     onSaved,
     t,
@@ -1259,39 +1239,34 @@ function ScoringGameCard({
         onToggleCollapsed={onToggleCollapsed}
         t={t}
       />
-      {error && <p className="px-3 pb-1 text-center text-xs text-red-600">{error}</p>}
       {!collapsed && (
-        <>
-          <div
-            className={`border-t px-3 pb-3.5 pt-3 md:px-4 ${
-              finished ? 'border-brand-border/40 bg-brand-bg-alt/70' : 'border-brand-border/30 bg-brand-bg-alt'
-            }`}
-          >
-            <GameScoringCourts
-              game={game}
-              gameRoundId={gameRoundId}
-              courtsForGame={courtsForGame}
-              courtIdByLabel={courtIdByLabel}
-              matchForCourt={matchForCourt}
-              scoreUnit={scoreUnit}
-              playTo={playTo}
-              drafts={drafts}
-              setDraft={setDraft}
-              canEdit={editable}
-              dirty={dirty}
-              finished={finished}
-              currentUserId={currentUserId}
-              currentUserAvatarUrl={currentUserAvatarUrl}
-              liveCourtEnabled={liveCourtEnabled}
-              friendly={friendly}
-              sessionId={sessionId}
-              competitionId={competitionId}
-              courtRefs={courtRefs}
-              t={t}
-            />
-          </div>
-          {submitFooter}
-        </>
+        <div
+          className={`border-t px-3 pb-3.5 pt-3 md:px-4 ${
+            finished ? 'border-brand-border/40 bg-brand-bg-alt/70' : 'border-brand-border/30 bg-brand-bg-alt'
+          }`}
+        >
+          <GameScoringCourts
+            game={game}
+            courtsForGame={courtsForGame}
+            scoreUnit={scoreUnit}
+            playTo={playTo}
+            courtScoreRows={courtScoreRows}
+            setDraft={setDraft}
+            submitCourt={onSubmitScores ? submitCourt : undefined}
+            busyCourtKey={busyCourtKey}
+            courtError={error}
+            canEdit={editable}
+            finished={finished}
+            currentUserId={currentUserId}
+            currentUserAvatarUrl={currentUserAvatarUrl}
+            liveCourtEnabled={liveCourtEnabled}
+            friendly={friendly}
+            sessionId={sessionId}
+            competitionId={competitionId}
+            courtRefs={courtRefs}
+            t={t}
+          />
+        </div>
       )}
     </div>
   )

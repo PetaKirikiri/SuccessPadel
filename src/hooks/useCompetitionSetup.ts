@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { enrichCompetitionRowsAvatars } from '../lib/competitionRosterAvatars'
 import { supabase } from '../lib/supabaseClient'
 import type { CompetitionRow } from './useCompetitions'
 
@@ -18,7 +19,8 @@ export function useCompetitionSetup() {
       setError(rpcError.message)
       setRows([])
     } else {
-      setRows((data as CompetitionRow[]) ?? [])
+      const listed = (data as CompetitionRow[]) ?? []
+      setRows(await enrichCompetitionRowsAvatars(listed))
     }
     setLoading(false)
   }, [])

@@ -205,6 +205,10 @@ export type Messages = {
     deleteConfirm: string
     edit: string
     delete: string
+    shareInvite: string
+    shareInviteMessage: string
+    linkCopied: string
+    copyFailed: string
     startsIn: string
     timeLeft: string
     finished: string

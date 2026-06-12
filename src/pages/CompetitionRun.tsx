@@ -123,6 +123,11 @@ export function CompetitionRun() {
   const isAdmin = Boolean(userId && profile?.is_admin)
   const started = Boolean(session?.competition_started_at)
   const finished = session?.status === 'complete'
+
+  useEffect(() => {
+    if (started && id) navigate(`/competitions/${id}`, { replace: true })
+  }, [started, id, navigate])
+
   const isAmericano = session ? usesAmericanoScoring(session) : false
   const complete = isCompetitionComplete(session, rounds, courtMatches)
   const standings = useMemo(

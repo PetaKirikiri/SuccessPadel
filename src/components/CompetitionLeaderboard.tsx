@@ -284,6 +284,8 @@ export function CompetitionLeaderboard({
         : t('leaderboard.pts'))
   if (entries.length === 0) return null
 
+  const hasAnyScores = entries.some((entry) => entry.games > 0)
+
   const badgesFor = (entry: LeaderboardEntry, rank: number): Achievement[] => {
     const map = achievements?.individualAchievementsByPlayerId
     if (map) {
@@ -291,6 +293,7 @@ export function CompetitionLeaderboard({
         if (map[id]) return sortAchievementsForDisplay(map[id]!)
       }
     }
+    if (!hasAnyScores || entry.games <= 0) return []
     const podium = podiumAchievementForRank(rank)
     return podium ? [podium] : []
   }

@@ -21,6 +21,9 @@ import { supabase } from '../lib/supabaseClient'
 
 type PlayTab = 'games' | 'leaderboard'
 
+const PLAY_SHELL =
+  'mx-auto w-full max-w-full px-3 md:max-w-3xl md:px-6 lg:max-w-4xl'
+
 function GamesIcon() {
   return (
     <svg className="game-tab-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -67,7 +70,7 @@ function PlayTabs({
   t: (key: string) => string
 }) {
   return (
-    <div className="game-dock-inner">
+    <>
       <button
         type="button"
         onClick={() => onTab('games')}
@@ -86,7 +89,7 @@ function PlayTabs({
           {t('competition.leaderboard')}
         </span>
       </button>
-    </div>
+    </>
   )
 }
 
@@ -213,8 +216,8 @@ export function CompetitionPlay() {
   }, [started, complete, roster, rounds, courtMatches, clubCourts, standingsOrder])
 
   return (
-    <div className="game-bg flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden">
-      <AppTopBar>
+    <div className="flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-brand-bg">
+      <AppTopBar className="border-b border-brand-border/40 bg-brand-bg">
         <div className="flex min-w-0 items-center gap-2">
           <button
             type="button"
@@ -232,8 +235,8 @@ export function CompetitionPlay() {
         </div>
       </AppTopBar>
 
-      <main data-scroll-y className="scroll-y min-h-0 min-w-0 flex-1 px-3 md:px-6">
-        <div className="mx-auto w-full max-w-full space-y-3 md:max-w-3xl lg:max-w-4xl">
+      <main data-scroll-y className="scroll-y min-h-0 min-w-0 flex-1 bg-brand-bg">
+        <div className={`${PLAY_SHELL} space-y-3 pb-3`}>
           {loading && !session ? (
             <p className="py-6 text-center text-xs text-brand-muted">{t('common.loading')}</p>
           ) : !session ? (
@@ -275,24 +278,29 @@ export function CompetitionPlay() {
               </p>
             )
           ) : started ? (
-            <div className="-mx-3 bg-brand-surface md:-mx-6">
-              <CompetitionLeaderboard
-                entries={standings}
-                scoreUnit={scoreUnit}
-                currentUserId={user?.id ?? null}
-                competitionId={id ?? null}
-                achievements={achievements}
-                flushBottom
-              />
-            </div>
+            <CompetitionLeaderboard
+              entries={standings}
+              scoreUnit={scoreUnit}
+              currentUserId={user?.id ?? null}
+              competitionId={id ?? null}
+              achievements={achievements}
+              flushBottom
+            />
           ) : null}
 
           {error && <p className="text-center text-sm text-red-600">{error}</p>}
         </div>
       </main>
 
-      <nav className="game-dock w-full min-w-0 shrink-0" aria-label={t('aria.competitionViews')}>
-        <PlayTabs tab={tab} onTab={setTab} t={t} />
+      <nav
+        className="w-full min-w-0 shrink-0 border-t border-brand-border/40 bg-brand-bg pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5"
+        aria-label={t('aria.competitionViews')}
+      >
+        <div className={PLAY_SHELL}>
+          <div className="game-dock-inner !mx-0 !max-w-none w-full !rounded-xl">
+            <PlayTabs tab={tab} onTab={setTab} t={t} />
+          </div>
+        </div>
       </nav>
     </div>
   )
