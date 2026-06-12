@@ -11,35 +11,53 @@ type Props = {
   onChange: (filters: LeaderboardFilters) => void
 }
 
-function FilterChip({
-  active,
+function TabStrip<T extends string>({
+  options,
+  value,
   label,
-  onClick,
+  onSelect,
+  labelFor,
+  scroll = false,
 }: {
-  active: boolean
+  options: readonly T[]
+  value: T
   label: string
-  onClick: () => void
+  onSelect: (next: T) => void
+  labelFor: (option: T) => string
+  scroll?: boolean
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
-        active
-          ? 'bg-brand-accent text-white shadow-sm'
-          : 'border border-brand-border bg-brand-surface text-brand-text'
-      }`}
+    <div
+      className={`${scroll ? 'flex overflow-x-auto scrollbar-none' : 'grid'} border-b border-brand-border/60`}
+      style={
+        scroll
+          ? undefined
+          : ({ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` } as const)
+      }
+      role="tablist"
+      aria-label={label}
     >
-      {label}
-    </button>
-  )
-}
-
-function FilterRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-1.5">
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-muted">{label}</p>
-      <div className="flex flex-wrap gap-1.5">{children}</div>
+      {options.map((option) => {
+        const selected = value === option
+        return (
+          <button
+            key={option}
+            type="button"
+            role="tab"
+            aria-selected={selected}
+            onClick={() => onSelect(option)}
+            className={`shrink-0 px-2 py-2 font-display text-xs transition md:py-2.5 md:text-sm ${
+              scroll ? 'min-w-[4.5rem]' : 'min-w-0'
+            } ${
+              selected
+                ? 'bg-brand-bg-alt font-semibold text-brand-primary'
+                : 'text-brand-muted hover:bg-brand-bg-alt/40'
+            }`}
+          >
+            {labelFor(option)}
+          </button>
+        )
+      })}
     </div>
   )
 }
@@ -57,37 +75,29 @@ export function LeaderboardFilters({ filters, onChange }: Props) {
     mode === 'solo' ? t('leaderboard.filterSolo') : t('leaderboard.filterDuos')
 
   return (
-    <div className="space-y-3 border-b border-brand-border bg-brand-surface px-3 py-3 md:px-4">
-      <FilterRow label={t('leaderboard.filterFormat')}>
-        {LEADERBOARD_RANK_MODES.map((mode) => (
-          <FilterChip
-            key={mode}
-            active={filters.rankMode === mode}
-            label={rankLabel(mode)}
-            onClick={() => onChange({ ...filters, rankMode: mode })}
-          />
-        ))}
-      </FilterRow>
-      <FilterRow label={t('leaderboard.filterGender')}>
-        {LEADERBOARD_GENDER_OPTIONS.map((gender) => (
-          <FilterChip
-            key={gender}
-            active={filters.gender === gender}
-            label={genderLabel(gender)}
-            onClick={() => onChange({ ...filters, gender })}
-          />
-        ))}
-      </FilterRow>
-      <FilterRow label={t('leaderboard.filterLevel')}>
-        {LEADERBOARD_SKILL_OPTIONS.map((skillLevel) => (
-          <FilterChip
-            key={skillLevel}
-            active={filters.skillLevel === skillLevel}
-            label={skillLabel(skillLevel)}
-            onClick={() => onChange({ ...filters, skillLevel })}
-          />
-        ))}
-      </FilterRow>
+    <div className="shrink-0 bg-brand-surface">
+      <TabStrip
+        label={t('leaderboard.filterFormat')}
+        options={LEADERBOARD_RANK_MODES}
+        value={filters.rankMode}
+        labelFor={rankLabel}
+        onSelect={(rankMode) => onChange({ ...filters, rankMode })}
+      />
+      <TabStrip
+        label={t('leaderboard.filterLevel')}
+        options={LEADERBOARD_SKILL_OPTIONS}
+        value={filters.skillLevel}
+        labelFor={skillLabel}
+        onSelect={(skillLevel) => onChange({ ...filters, skillLevel })}
+        scroll
+      />
+      <TabStrip
+        label={t('leaderboard.filterGender')}
+        options={LEADERBOARD_GENDER_OPTIONS}
+        value={filters.gender}
+        labelFor={genderLabel}
+        onSelect={(gender) => onChange({ ...filters, gender })}
+      />
     </div>
   )
 }

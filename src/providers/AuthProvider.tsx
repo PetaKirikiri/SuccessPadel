@@ -54,8 +54,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const onProfileSynced = () => {
       if (user) void loadProfile(user)
     }
+    const onLineProfileReady = () => {
+      if (!user) return
+      void (async () => {
+        const { syncLineProfileFromLiff } = await import('../lib/line/profileSync')
+        await syncLineProfileFromLiff(user.id)
+        await loadProfile(user)
+      })()
+    }
     window.addEventListener('successpadel:profile-synced', onProfileSynced)
-    return () => window.removeEventListener('successpadel:profile-synced', onProfileSynced)
+    window.addEventListener('successpadel:line-profile-ready', onLineProfileReady)
+    return () => {
+      window.removeEventListener('successpadel:profile-synced', onProfileSynced)
+      window.removeEventListener('successpadel:line-profile-ready', onLineProfileReady)
+    }
   }, [user, loadProfile])
 
   useEffect(() => {

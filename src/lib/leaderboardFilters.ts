@@ -22,6 +22,7 @@ export const LEADERBOARD_RANK_MODES: RankMode[] = ['solo', 'duos']
 
 export function leaderboardFiltersToRpc(filters: LeaderboardFilters) {
   return {
+    p_season_id: null,
     p_gender: filters.gender === 'all' ? null : filters.gender,
     p_skill_level: filters.skillLevel === 'all' ? null : filters.skillLevel,
     p_rank_mode: filters.rankMode,

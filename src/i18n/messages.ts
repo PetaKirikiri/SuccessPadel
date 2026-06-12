@@ -328,6 +328,13 @@ export type Messages = {
     adminSave: string
     adminSaved: string
     connectLine: string
+    shareProfile: string
+    shareProfileMessage: string
+    linkCopied: string
+    copyFailed: string
+    deletePlayer: string
+    deletePlayerConfirm: string
+    deletePlayerFailed: string
     save: string
     genderMale: string
     genderFemale: string

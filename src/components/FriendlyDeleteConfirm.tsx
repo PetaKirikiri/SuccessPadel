@@ -3,12 +3,13 @@ import { useTranslation } from '../hooks/useTranslation'
 
 type Props = {
   title: string
+  message?: string
   busy?: boolean
   onConfirm: () => void
   onCancel: () => void
 }
 
-export function FriendlyDeleteConfirm({ title, busy = false, onConfirm, onCancel }: Props) {
+export function FriendlyDeleteConfirm({ title, message, busy = false, onConfirm, onCancel }: Props) {
   const { t } = useTranslation()
 
   return createPortal(
@@ -26,7 +27,7 @@ export function FriendlyDeleteConfirm({ title, busy = false, onConfirm, onCancel
           {t('competition.delete')}
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-brand-text">
-          {t('competition.deleteConfirm', { title })}
+          {message ?? t('competition.deleteConfirm', { title })}
         </p>
         <div className="mt-4 flex gap-2">
           <button

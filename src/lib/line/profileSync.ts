@@ -1,4 +1,6 @@
 import { supabase } from '../supabaseClient'
+import { mirrorLineAvatarToStorage } from '../profileAvatar'
+import { isLineCdnAvatarUrl } from '../lineAvatar'
 import {
   getDecodedLineClaims,
   getLineProfile,
@@ -49,11 +51,17 @@ export async function applyLineProfilePatch(
   userId: string,
   patch: LineProfilePatch,
 ): Promise<boolean> {
+  let avatarUrl = patch.picture_url ?? null
+  if (avatarUrl && isLineCdnAvatarUrl(avatarUrl)) {
+    const mirrored = await mirrorLineAvatarToStorage(userId, avatarUrl)
+    if (mirrored) avatarUrl = mirrored
+  }
+
   const { error } = await supabase
     .from('profiles')
     .update({
       display_name: patch.display_name,
-      avatar_url: patch.picture_url ?? null,
+      avatar_url: avatarUrl,
       ...(patch.user_id ? { line_user_id: patch.user_id } : {}),
     })
     .eq('id', userId)

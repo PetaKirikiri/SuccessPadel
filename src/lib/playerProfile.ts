@@ -16,6 +16,7 @@ export type PublicPlayerProfile = {
   skill_level: string | null
   created_at: string
   line_user_id: string | null
+  is_admin?: boolean
 }
 
 export type ResolvedPlayerProfile = {
@@ -23,6 +24,7 @@ export type ResolvedPlayerProfile = {
   guestName: string | null
   guestAvatarUrl: string | null
   padelPlayerId: string | null
+  padelLineUserId: string | null
   /** Unlinked padel_players.id that can receive a LINE QR link. */
   linkablePadelPlayerId: string | null
 }
@@ -52,6 +54,7 @@ function parsePublicProfile(data: unknown): PublicPlayerProfile | null {
     skill_level: typeof row.skill_level === 'string' ? row.skill_level : null,
     created_at: typeof row.created_at === 'string' ? row.created_at : new Date(0).toISOString(),
     line_user_id: typeof row.line_user_id === 'string' ? row.line_user_id : null,
+    is_admin: Boolean(row.is_admin),
   }
 }
 
@@ -125,12 +128,13 @@ export async function resolvePlayerProfile(playerId: string): Promise<ResolvedPl
     guestName: null,
     guestAvatarUrl: null,
     padelPlayerId: null,
+    padelLineUserId: null,
     linkablePadelPlayerId: null,
   }
 
   const { data: padelById } = await supabase
     .from('padel_players')
-    .select('id, display_name, profile_id')
+    .select('id, display_name, profile_id, line_user_id')
     .eq('id', playerId)
     .maybeSingle()
 
@@ -143,6 +147,7 @@ export async function resolvePlayerProfile(playerId: string): Promise<ResolvedPl
       guestName: null,
       guestAvatarUrl: null,
       padelPlayerId: padelPlayerId ?? padelById?.id ?? null,
+      padelLineUserId: padelById?.line_user_id ?? null,
       linkablePadelPlayerId,
     }
   }
@@ -158,6 +163,7 @@ export async function resolvePlayerProfile(playerId: string): Promise<ResolvedPl
         guestName: null,
         guestAvatarUrl: null,
         padelPlayerId: padelById.id,
+        padelLineUserId: padelById.line_user_id ?? null,
         linkablePadelPlayerId,
       }
     }
@@ -168,6 +174,7 @@ export async function resolvePlayerProfile(playerId: string): Promise<ResolvedPl
     guestName: padelById.display_name,
     guestAvatarUrl: null,
     padelPlayerId: padelById.id,
+    padelLineUserId: padelById.line_user_id ?? null,
     linkablePadelPlayerId: padelById.profile_id ? null : padelById.id,
   }
 }

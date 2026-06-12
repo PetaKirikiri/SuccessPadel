@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { AppTopBar } from '../components/AppTopBar'
 import type { LeaderboardEntry } from '../components/CompetitionLeaderboard'
+import { FriendlyDeleteConfirm } from '../components/FriendlyDeleteConfirm'
 import { LineAppBookmark } from '../components/LineAppBookmark'
 import { LinePlayerLinkModal } from '../components/LinePlayerLinkModal'
 import { PlayerMatchHistory } from '../components/PlayerMatchHistory'
@@ -17,6 +18,8 @@ import { useLocale } from '../providers/LocaleProvider'
 import { isClaimableGuest } from '../lib/leaderboardEntries'
 import type { Achievement } from '../lib/competitionAchievements'
 import { resolvePlayerProfile } from '../lib/playerProfile'
+import { adminDeletePlayer, canAdminDeletePlayer } from '../lib/playerDelete'
+import { playerProfileShareUrl, sharePlayerProfile } from '../lib/playerProfileShare'
 
 export type PlayerProfileSnapshot = {
   entry: LeaderboardEntry
@@ -84,6 +87,10 @@ export function PlayerProfilePage() {
   )
   const [loading, setLoading] = useState(true)
   const [linkTarget, setLinkTarget] = useState<{ id: string; name: string } | null>(null)
+  const [shareFeedback, setShareFeedback] = useState<string | null>(null)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleteBusy, setDeleteBusy] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const [tab, setTab] = useState<PlayerProfileTab>('profile')
 
   const isOwnProfile = Boolean(
@@ -214,6 +221,64 @@ export function PlayerProfilePage() {
     return true
   }, [isAdmin, linkablePadelPlayerId, routeEntry, user])
 
+  const needsPlayerSignup = Boolean(
+    linkablePadelPlayerId || (resolved?.profile && !resolved.profile.line_user_id),
+  )
+
+  const canShareProfile = isAdmin && needsPlayerSignup
+
+  const canDeletePlayer = useMemo(() => {
+    if (!isAdmin || !playerId) return false
+    return canAdminDeletePlayer(
+      {
+        id: resolved?.profile?.id ?? resolved?.padelPlayerId ?? playerId,
+        kind: resolved?.profile ? 'profile' : 'guest_padel',
+        lineUserId: resolved?.profile?.line_user_id ?? resolved?.padelLineUserId,
+        isAdmin: resolved?.profile?.is_admin,
+      },
+      user?.id,
+      isAdmin,
+    )
+  }, [isAdmin, playerId, resolved, user?.id])
+
+  const adminDeleteTargetId = useMemo(() => {
+    if (resolved?.profile) return resolved.profile.id
+    return resolved?.padelPlayerId ?? playerId ?? null
+  }, [playerId, resolved])
+
+  const profileSharePlayerId = linkablePadelPlayerId ?? playerId ?? null
+
+  const handleShareProfile = async () => {
+    if (!profileSharePlayerId) return
+    const url = playerProfileShareUrl(profileSharePlayerId, competitionId)
+    const result = await sharePlayerProfile({
+      url,
+      title: displayName,
+      text: `${t('playerProfile.shareProfileMessage')}\n${url}`,
+    })
+    if (result === 'copied') {
+      setShareFeedback(t('playerProfile.linkCopied'))
+      window.setTimeout(() => setShareFeedback(null), 2500)
+    } else if (result === 'failed') {
+      setShareFeedback(t('playerProfile.copyFailed'))
+      window.setTimeout(() => setShareFeedback(null), 2500)
+    }
+  }
+
+  const handleDeletePlayer = async () => {
+    if (!adminDeleteTargetId) return
+    setDeleteBusy(true)
+    setDeleteError(null)
+    const error = await adminDeletePlayer(adminDeleteTargetId)
+    setDeleteBusy(false)
+    if (error) {
+      setDeleteError(error)
+      return
+    }
+    setDeleteOpen(false)
+    navigate('/members', { replace: true })
+  }
+
   const padelPlayerId =
     routeEntry?.padel_player_id ??
     resolved?.padelPlayerId ??
@@ -282,6 +347,10 @@ export function PlayerProfilePage() {
                       ? () => setLinkTarget({ id: linkablePadelPlayerId, name: displayName })
                       : undefined
                   }
+                  canShareProfile={canShareProfile}
+                  onShareProfile={canShareProfile ? () => void handleShareProfile() : undefined}
+                  shareProfileLabel={t('playerProfile.shareProfile')}
+                  shareFeedback={shareFeedback}
                   onChangePhoto={
                     canEditProfile ? () => fileInputRef.current?.click() : undefined
                   }
@@ -351,6 +420,23 @@ export function PlayerProfilePage() {
               {t('profile.signOut')}
             </button>
           )}
+          {canDeletePlayer && !loading && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteError(null)
+                  setDeleteOpen(true)
+                }}
+                className="block w-full py-2 text-center text-xs font-medium text-red-600"
+              >
+                {t('playerProfile.deletePlayer')}
+              </button>
+              {deleteError ? (
+                <p className="text-center text-xs text-red-600">{deleteError}</p>
+              ) : null}
+            </>
+          )}
         </div>
       </main>
 
@@ -360,6 +446,21 @@ export function PlayerProfilePage() {
           padelPlayerId={linkTarget.id}
           playerName={linkTarget.name}
           onClose={() => setLinkTarget(null)}
+        />
+      )}
+
+      {deleteOpen && (
+        <FriendlyDeleteConfirm
+          title={displayName}
+          message={
+            deleteError ?? t('playerProfile.deletePlayerConfirm', { name: displayName })
+          }
+          busy={deleteBusy}
+          onConfirm={() => void handleDeletePlayer()}
+          onCancel={() => {
+            setDeleteOpen(false)
+            setDeleteError(null)
+          }}
         />
       )}
     </div>

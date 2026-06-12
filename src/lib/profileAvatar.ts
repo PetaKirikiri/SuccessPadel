@@ -21,3 +21,23 @@ export async function uploadProfileAvatar(userId: string, file: File): Promise<s
   const { data } = supabase.storage.from('avatars').getPublicUrl(path)
   return `${data.publicUrl}?v=${Date.now()}`
 }
+
+/** Copy a LINE CDN photo into our avatars bucket so the URL stays valid. */
+export async function mirrorLineAvatarToStorage(
+  userId: string,
+  linePictureUrl: string,
+): Promise<string | null> {
+  try {
+    const res = await fetch(linePictureUrl)
+    if (!res.ok) return null
+    const blob = await res.blob()
+    const type = blob.type && ALLOWED_TYPES.has(blob.type) ? blob.type : 'image/jpeg'
+    const ext = type === 'image/png' ? 'png' : type === 'image/webp' ? 'webp' : 'jpg'
+    const file = new File([blob], `avatar.${ext}`, { type })
+    if (file.size > MAX_BYTES) return null
+    return await uploadProfileAvatar(userId, file)
+  } catch {
+    return null
+  }
+}
+

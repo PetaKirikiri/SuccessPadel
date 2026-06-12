@@ -1,3 +1,4 @@
+import { SquareArrowUp } from 'lucide-react'
 import type { TranslateFn } from '../i18n'
 
 type Props = {
@@ -6,6 +7,10 @@ type Props = {
   memberSince?: string | null
   canAddLine: boolean
   onAddLine?: () => void
+  canShareProfile?: boolean
+  onShareProfile?: () => void
+  shareProfileLabel?: string
+  shareFeedback?: string | null
   onChangePhoto?: () => void
   changePhotoLabel?: string
   embedded?: boolean
@@ -23,6 +28,10 @@ export function PlayerProfileBanner({
   memberSince,
   canAddLine,
   onAddLine,
+  canShareProfile = false,
+  onShareProfile,
+  shareProfileLabel = 'Share profile',
+  shareFeedback = null,
   onChangePhoto,
   changePhotoLabel,
   embedded = false,
@@ -83,22 +92,33 @@ export function PlayerProfileBanner({
           )}
         </div>
       </div>
-      {canAddLine && onAddLine && (
-        <button
-          type="button"
-          onClick={onAddLine}
-          aria-label={t('playerProfile.connectLine')}
-          className="ml-auto flex shrink-0 flex-col items-center gap-1.5 rounded-xl border-2 border-[#06C755] bg-[#06C755]/12 px-3 py-2.5 shadow-sm active:scale-[0.98]"
-        >
-          <img
-            src="/brand/line-logo.png"
-            alt=""
-            className="h-10 w-10 rounded-lg object-cover shadow-md ring-2 ring-[#06C755]/45 md:h-11 md:w-11"
-          />
-          <span className="max-w-[5.5rem] text-center text-[10px] font-bold leading-tight text-[#06C755]">
-            {t('playerProfile.connectLine')}
-          </span>
-        </button>
+      {(canShareProfile || canAddLine) && (
+        <div className="ml-auto flex shrink-0 flex-col items-end gap-2">
+          {canShareProfile && onShareProfile && (
+            <div className="flex flex-col items-end gap-1">
+              <button
+                type="button"
+                onClick={onShareProfile}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border bg-brand-bg-alt px-3 py-2 text-xs font-semibold text-brand-primary shadow-sm active:scale-[0.98]"
+              >
+                <SquareArrowUp className="h-3.5 w-3.5" aria-hidden />
+                {shareProfileLabel}
+              </button>
+              {shareFeedback && (
+                <p className="text-[10px] font-medium text-brand-muted">{shareFeedback}</p>
+              )}
+            </div>
+          )}
+          {canAddLine && onAddLine && (
+            <button
+              type="button"
+              onClick={onAddLine}
+              className="inline-flex items-center rounded-lg border border-brand-border bg-brand-bg-alt px-3 py-2 text-xs font-semibold text-brand-primary shadow-sm active:scale-[0.98]"
+            >
+              {t('playerProfile.connectLine')}
+            </button>
+          )}
+        </div>
       )}
     </div>
   )
