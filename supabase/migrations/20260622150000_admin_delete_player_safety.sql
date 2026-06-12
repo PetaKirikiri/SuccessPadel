@@ -1,5 +1,7 @@
 -- Harden admin delete: guest/legacy cleanup only, never touch LINE-linked identities.
 
+drop function if exists public.list_guest_players_with_games();
+
 create or replace function public.player_is_line_linked(
   p_padel_player_id uuid default null,
   p_profile_id uuid default null
