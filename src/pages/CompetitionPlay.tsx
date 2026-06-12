@@ -15,14 +15,12 @@ import { americanoScheduleFromSession, gameSlotTimes } from '../lib/competitionL
 import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
 import { computeAmericanoStandings } from '../lib/competitionStandings'
 import { AppTopBar } from '../components/AppTopBar'
+import { AppShellColumn } from '../components/AppShellColumn'
 import { useTranslation } from '../hooks/useTranslation'
 import { enrichStandingsWithAvatars } from '../lib/leaderboardEntries'
 import { supabase } from '../lib/supabaseClient'
 
 type PlayTab = 'games' | 'leaderboard'
-
-const PLAY_SHELL =
-  'mx-auto w-full max-w-full px-3 md:max-w-3xl md:px-6 lg:max-w-4xl'
 
 function GamesIcon() {
   return (
@@ -236,7 +234,7 @@ export function CompetitionPlay() {
       </AppTopBar>
 
       <main data-scroll-y className="scroll-y min-h-0 min-w-0 flex-1 bg-brand-bg">
-        <div className={`${PLAY_SHELL} space-y-3 pb-3`}>
+        <AppShellColumn className="space-y-3 pb-3">
           {loading && !session ? (
             <p className="py-6 text-center text-xs text-brand-muted">{t('common.loading')}</p>
           ) : !session ? (
@@ -289,18 +287,18 @@ export function CompetitionPlay() {
           ) : null}
 
           {error && <p className="text-center text-sm text-red-600">{error}</p>}
-        </div>
+        </AppShellColumn>
       </main>
 
       <nav
         className="w-full min-w-0 shrink-0 border-t border-brand-border/40 bg-brand-bg pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5"
         aria-label={t('aria.competitionViews')}
       >
-        <div className={PLAY_SHELL}>
+        <AppShellColumn>
           <div className="game-dock-inner !mx-0 !max-w-none w-full !rounded-xl">
             <PlayTabs tab={tab} onTab={setTab} t={t} />
           </div>
-        </div>
+        </AppShellColumn>
       </nav>
     </div>
   )

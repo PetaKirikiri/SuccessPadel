@@ -74,7 +74,7 @@ export function GamesHubList({ children }: { children: ReactNode }) {
 function HubTitleBar({ label, addon }: { label: string; addon?: ReactNode }) {
   return (
     <nav className="shrink-0 bg-brand-bg pb-1.5">
-      <div className="game-dock-inner !rounded-xl flex items-center gap-2 px-3 py-2">
+      <div className="game-dock-inner !mx-0 !max-w-none w-full !rounded-xl flex items-center gap-2 px-3 py-2">
         <h2 className="min-w-0 flex-1 font-display text-sm font-semibold text-brand-primary md:text-base">
           {label}
         </h2>
@@ -136,7 +136,7 @@ export function GamesHubView({
         <HubTitleBar label={titleLabel ?? t('friendly.games')} addon={titleAddon} />
       ) : hubNav === 'none' ? null : (
         <nav className="shrink-0 bg-brand-bg pb-1.5" aria-label={t('aria.playModes')}>
-          <div className="game-dock-inner !rounded-xl" role="tablist">
+          <div className="game-dock-inner !mx-0 !max-w-none w-full !rounded-xl" role="tablist">
             <HubTab
               active={tab === 'current'}
               onClick={() => setTab('current')}

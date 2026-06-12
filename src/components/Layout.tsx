@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { useTranslation } from '../hooks/useTranslation'
 import { isGesturePadRoute } from '../lib/gesturePadChrome'
 import { AppBottomNav } from './AppBottomNav'
+import { AppShellColumn } from './AppShellColumn'
 import { AppTopBar } from './AppTopBar'
 import { LineBookmarkBanner } from './LineBookmarkBanner'
 
@@ -31,21 +32,23 @@ export function Layout() {
           onPlayerProfile
             ? 'overflow-hidden p-0'
             : isGamesHub
-              ? 'flex flex-col overflow-hidden px-3 pb-2 pt-0 md:px-6'
-              : 'scroll-y px-3 pb-2 pt-1 md:px-6'
+              ? 'flex flex-col overflow-hidden'
+              : 'scroll-y'
         }`}
       >
         {onPlayerProfile ? (
           <Outlet />
         ) : (
-          <div
-            className={`mx-auto w-full min-w-0 max-w-full md:max-w-3xl lg:max-w-4xl ${
-              isGamesHub ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : ''
-            }`}
+          <AppShellColumn
+            className={
+              isGamesHub
+                ? 'flex min-h-0 flex-1 flex-col overflow-hidden pb-2 pt-0'
+                : 'pb-2 pt-1'
+            }
           >
             {!isGamesHub ? <LineBookmarkBanner /> : null}
             <Outlet />
-          </div>
+          </AppShellColumn>
         )}
       </main>
 

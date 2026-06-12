@@ -1,6 +1,7 @@
 import type React from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useTranslation } from '../hooks/useTranslation'
+import { AppShellColumn } from './AppShellColumn'
 
 type NavIconProps = { className?: string }
 
@@ -90,21 +91,26 @@ export function AppBottomNav() {
   const loc = useLocation()
 
   return (
-    <nav className="game-dock w-full min-w-0 shrink-0" aria-label={t('aria.playModes')}>
-      <div className="game-dock-inner min-w-0 max-w-full">
-        {navItems.map((item) => {
-          const active = item.isActive(loc.pathname)
-          const iconSize = 'h-5 w-5 md:h-6 md:w-6'
-          return (
-            <Link key={item.to} to={item.to} className={tabClass(active, item.variant)}>
-              <item.Icon className={`game-tab-icon shrink-0 ${iconSize}`} />
-              <span className="max-w-full truncate font-display text-[11px] leading-tight md:text-sm">
-                {t(item.labelKey)}
-              </span>
-            </Link>
-          )
-        })}
-      </div>
+    <nav
+      className="w-full min-w-0 shrink-0 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5"
+      aria-label={t('aria.playModes')}
+    >
+      <AppShellColumn>
+        <div className="game-dock-inner !mx-0 !max-w-none w-full !rounded-xl">
+          {navItems.map((item) => {
+            const active = item.isActive(loc.pathname)
+            const iconSize = 'h-5 w-5 md:h-6 md:w-6'
+            return (
+              <Link key={item.to} to={item.to} className={tabClass(active, item.variant)}>
+                <item.Icon className={`game-tab-icon shrink-0 ${iconSize}`} />
+                <span className="max-w-full truncate font-display text-[11px] leading-tight md:text-sm">
+                  {t(item.labelKey)}
+                </span>
+              </Link>
+            )
+          })}
+        </div>
+      </AppShellColumn>
     </nav>
   )
 }

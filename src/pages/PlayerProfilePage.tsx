@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { AppTopBar } from '../components/AppTopBar'
+import { AppShellColumn } from '../components/AppShellColumn'
 import type { LeaderboardEntry } from '../components/CompetitionLeaderboard'
 import { FriendlyDeleteConfirm } from '../components/FriendlyDeleteConfirm'
 import { LineAppBookmark } from '../components/LineAppBookmark'
@@ -326,8 +327,8 @@ export function PlayerProfilePage() {
         </div>
       </AppTopBar>
 
-      <main data-scroll-y className="scroll-y min-h-0 min-w-0 flex-1 px-3 pt-2 md:px-6">
-        <div className="mx-auto w-full min-w-0 max-w-full space-y-3 pb-8 md:max-w-3xl lg:max-w-4xl">
+      <main data-scroll-y className="scroll-y min-h-0 min-w-0 flex-1 pt-2">
+        <AppShellColumn className="space-y-3 pb-8">
           {inClient && !loading && !(isOwnProfile && authLoading) ? <LineAppBookmark /> : null}
           {loading || (isOwnProfile && authLoading) ? (
             <p className="py-8 text-center text-sm text-brand-muted">{t('common.loading')}</p>
@@ -437,7 +438,7 @@ export function PlayerProfilePage() {
               ) : null}
             </>
           )}
-        </div>
+        </AppShellColumn>
       </main>
 
       {linkTarget && (
