@@ -119,7 +119,9 @@ export function GamesHubView({
         {currentPanel}
       </div>
     ) : tab === 'leaderboard' ? (
-      <Leaderboard embedded />
+      <div className="min-h-full bg-brand-surface">
+        <Leaderboard embedded />
+      </div>
     ) : (
       <div className={`w-full min-w-0 max-w-full overflow-x-hidden pt-1 ${listClassName}`}>
         {tab === 'current' ? currentPanel : pastPanel}

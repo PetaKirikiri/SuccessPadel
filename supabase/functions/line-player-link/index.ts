@@ -56,6 +56,71 @@ async function findAuthUserIdByEmail(
   return undefined
 }
 
+async function sessionForProfileId(
+  admin: ReturnType<typeof createClient>,
+  profileId: string,
+  lineUser: LineUser,
+) {
+  const email = `line_${lineUser.sub}@successpadel.local`
+  const { data: existing, error: loadErr } = await admin
+    .from('profiles')
+    .select('id, display_name, avatar_url, line_user_id')
+    .eq('id', profileId)
+    .maybeSingle()
+  if (loadErr) throw loadErr
+  if (!existing?.id) throw new Error('Profile not found')
+
+  const profilePatch: Record<string, string | null> = {
+    line_user_id: lineUser.sub,
+    display_name: lineUser.name ?? existing.display_name ?? 'Player',
+    avatar_url: lineUser.picture ?? existing.avatar_url ?? null,
+  }
+  const { error: profileErr } = await admin.from('profiles').update(profilePatch).eq('id', profileId)
+  if (profileErr) throw profileErr
+
+  let userId = profileId
+  try {
+    await admin.auth.admin.getUserById(profileId)
+  } catch {
+    const { data: created, error } = await admin.auth.admin.createUser({
+      email,
+      email_confirm: true,
+      user_metadata: {
+        display_name: profilePatch.display_name,
+        avatar_url: profilePatch.avatar_url,
+        line_user_id: lineUser.sub,
+      },
+    })
+    if (error) {
+      userId = (await findAuthUserIdByEmail(admin, email)) ?? profileId
+    } else {
+      userId = created.user.id
+    }
+  }
+
+  const linkEmail = await magicLinkEmailForUser(admin, userId, email)
+  const { data: link, error: linkErr } = await admin.auth.admin.generateLink({
+    type: 'magiclink',
+    email: linkEmail,
+  })
+  if (linkErr) throw linkErr
+
+  const tokenHash = link.properties?.hashed_token
+  if (!tokenHash) throw new Error('No session token from auth')
+
+  const { data: session, error: sessErr } = await admin.auth.verifyOtp({
+    token_hash: tokenHash,
+    type: 'email',
+  })
+  if (sessErr) throw sessErr
+
+  return {
+    profile_id: profileId,
+    access_token: session.session?.access_token,
+    refresh_token: session.session?.refresh_token,
+  }
+}
+
 async function sessionForLineUser(admin: ReturnType<typeof createClient>, lineUser: LineUser) {
   const email = `line_${lineUser.sub}@successpadel.local`
 
@@ -182,7 +247,32 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
-    const session = await sessionForLineUser(admin, lineUser)
+    const { data: linkReq } = await admin
+      .from('player_line_link_requests')
+      .select('padel_player_id')
+      .eq('link_token', link_token)
+      .maybeSingle()
+
+    let existingProfileId: string | null = null
+    if (linkReq?.padel_player_id) {
+      const { data: padelRow } = await admin
+        .from('padel_players')
+        .select('profile_id')
+        .eq('id', linkReq.padel_player_id)
+        .maybeSingle()
+      if (padelRow?.profile_id) {
+        const { data: prof } = await admin
+          .from('profiles')
+          .select('id, line_user_id')
+          .eq('id', padelRow.profile_id)
+          .maybeSingle()
+        if (prof?.id && !prof.line_user_id) existingProfileId = prof.id
+      }
+    }
+
+    const session = existingProfileId
+      ? await sessionForProfileId(admin, existingProfileId, lineUser)
+      : await sessionForLineUser(admin, lineUser)
     if (!session.access_token || !session.refresh_token || !session.profile_id) {
       return new Response(JSON.stringify({ error: 'Could not create session' }), {
         status: 500,

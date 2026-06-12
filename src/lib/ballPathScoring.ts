@@ -10,6 +10,7 @@ import {
   isMeshEnclosureZone,
   padNormToCourtNorm,
   type CourtInsetBounds,
+  type CourtLayout,
 } from './padelCourtLayout'
 
 export { clampPadToGlassZone, clampPadToEnclosureZone } from './padelCourtLayout'
@@ -69,18 +70,23 @@ export function isCourtNormBeyondEnclosure(point: NormalizedPoint): boolean {
 }
 
 /** Court-normal glass hit test — same pattern as pointInServiceBox. */
-export function isPadInGlass(pad: NormalizedPoint, inset: CourtInsetBounds): boolean {
-  return isGlassEnclosureZone(enclosureZoneAtPad(pad, inset))
+export function isPadInGlass(
+  pad: NormalizedPoint,
+  inset: CourtInsetBounds,
+  layout: CourtLayout = 'portrait',
+): boolean {
+  return isGlassEnclosureZone(enclosureZoneAtPad(pad, inset, layout))
 }
 
 /** Snap live stroke end onto the glass band while the finger is still down. */
 export function snapPadEndToGlassIfNeeded(
   pad: NormalizedPoint,
   inset: CourtInsetBounds,
+  layout: CourtLayout = 'portrait',
 ): { pad: NormalizedPoint; onGlass: boolean } {
-  const zone = enclosureZoneAtPad(pad, inset)
+  const zone = enclosureZoneAtPad(pad, inset, layout)
   const onGlass = isGlassEnclosureZone(zone)
-  const snapped = onGlass ? clampPadToGlassZone(pad, inset) : pad
+  const snapped = onGlass ? clampPadToGlassZone(pad, inset, layout) : pad
   return { pad: snapped, onGlass }
 }
 
@@ -97,10 +103,12 @@ export function resolveBallPath(
   endPad: NormalizedPoint,
   inset: CourtInsetBounds,
   netHoverHeld: boolean,
+  layout: CourtLayout = 'portrait',
 ): BallPathResult | null {
-  const endCourt = padNormToCourtNorm(endPad, inset)
-  const hitterQuadrant = quadrantFromPoint(startPad)
-  const endQuadrant = quadrantFromPoint(endPad)
+  const startCourt = padNormToCourtNorm(startPad, inset, layout)
+  const endCourt = padNormToCourtNorm(endPad, inset, layout)
+  const hitterQuadrant = quadrantFromPoint(startCourt)
+  const endQuadrant = quadrantFromPoint(endCourt)
   const hitterHalf = teamHalfFromQuadrant(hitterQuadrant)
   const endHalf = courtHalf(endCourt.y)
   const hitterTeam = quadrantTeam(hitterQuadrant)
@@ -117,7 +125,7 @@ export function resolveBallPath(
     }
   }
 
-  const endZone = enclosureZoneAtPad(endPad, inset)
+  const endZone = enclosureZoneAtPad(endPad, inset, layout)
 
   if (isGlassEnclosureZone(endZone)) {
     return {
@@ -185,8 +193,9 @@ export function resolveGlassReboundPath(
   endPad: NormalizedPoint,
   inset: CourtInsetBounds,
   netHoverHeld: boolean,
+  layout: CourtLayout = 'portrait',
 ): BallPathResult | null {
-  const result = resolveBallPath(glassPad, endPad, inset, netHoverHeld)
+  const result = resolveBallPath(glassPad, endPad, inset, netHoverHeld, layout)
   if (!result || result.outcome === 'glass') return result
 
   const hitterTeam = quadrantTeam(attackerQuadrant)

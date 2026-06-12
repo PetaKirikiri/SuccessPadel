@@ -31,14 +31,17 @@ import {
 import { solveBalancedSchedule } from '../lib/balancedSchedule'
 import {
   buildStoredSchedule,
+  gamesFromStoredSchedule,
   planRankedSchedule,
   RANKED_SCHEDULE_VERSION,
   scheduleSeedFromSession,
   sortRosterByRank,
+  storedScheduleFromConfig,
   type StoredScheduleRound,
 } from '../lib/rankedSchedule'
 import type { CourtPlayer } from '../lib/americanoSchedule'
 import { formatClubTime } from '../lib/courtSchedule'
+import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
 import { linkGuestRostersByEmail } from '../lib/authProfile'
 import { competitionPlayUrl } from '../lib/siteUrl'
 import { supabase } from '../lib/supabaseClient'
@@ -92,20 +95,6 @@ function groupByCourt(players: RoundPlayer[]): CourtGroup[] {
   return [...map.values()]
 }
 
-function canLogScores(
-  isAdmin: boolean,
-  whoCanLog: string,
-  onRoster: boolean,
-  userId: string | undefined,
-  courtPlayerIds: string[],
-): boolean {
-  if (isAdmin) return true
-  if (whoCanLog === 'any_member') return true
-  if (whoCanLog === 'roster_members' && onRoster) return true
-  if (userId && courtPlayerIds.includes(userId)) return true
-  return false
-}
-
 export function CompetitionRun() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -118,7 +107,6 @@ export function CompetitionRun() {
     roster,
     clubCourts,
     leaderboard,
-    onRoster,
     loading,
     error,
     refresh,
@@ -130,6 +118,7 @@ export function CompetitionRun() {
   const [now, setNow] = useState(Date.now())
   const [copied, setCopied] = useState(false)
   const prevRoundNumber = useRef<number | null>(null)
+  const autoRebuildRef = useRef(false)
 
   const userId = user?.id
   const isAdmin = Boolean(userId && profile?.is_admin)
@@ -168,6 +157,19 @@ export function CompetitionRun() {
   useEffect(() => {
     setScheduleSeed(scheduleSeedFromSession(session?.scoring_config))
   }, [session?.scoring_config, session?.id])
+
+  useEffect(() => {
+    if (autoRebuildRef.current || !id || !isAdmin || !started || !session || !activeRound) return
+    if ((activeRound.competition_round_players?.length ?? 0) > 0) return
+    const stored = storedScheduleFromConfig(
+      session.scoring_config as Record<string, unknown> | null | undefined,
+    )
+    if (stored.length === 0) return
+    autoRebuildRef.current = true
+    void supabase.rpc('rebuild_competition_schedule', { p_session_id: id }).then(({ error }) => {
+      if (!error) void refresh(true)
+    })
+  }, [id, isAdmin, started, session, activeRound, refresh])
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000)
@@ -278,6 +280,12 @@ export function CompetitionRun() {
     if (!isAmericano) return []
     if (reviewFromDb) return gamesFromDbRounds(rounds, clubCourts)
     if (!layoutValid) return []
+    const stored = storedScheduleFromConfig(
+      session?.scoring_config as Record<string, unknown> | null | undefined,
+    )
+    if (stored.length > 0) {
+      return gamesFromStoredSchedule(rankedRoster, stored, courtNames)
+    }
     return planRankedSchedule(rankedRoster, courtNames, totalGames, scheduleSeed)
   }, [
     isAmericano,
@@ -289,6 +297,7 @@ export function CompetitionRun() {
     courtNames,
     scheduleSeed,
     totalGames,
+    session?.scoring_config,
   ])
 
   const courtBoardColumns = useMemo(() => {
@@ -392,6 +401,22 @@ export function CompetitionRun() {
     setBusy(false)
   }
 
+  const handleSubmitScores = useCallback(async (entries: CourtScoreSubmit[]) => {
+    for (const entry of entries) {
+      const winTeam = entry.teamA >= entry.teamB ? 'a' : 'b'
+      const { error: err } = await supabase.rpc('record_competition_match', {
+        p_round_id: entry.roundId,
+        p_court_id: entry.courtId,
+        p_score_summary: `${entry.teamA}-${entry.teamB}`,
+        p_winner_team: winTeam,
+        p_margin_bonus: false,
+        p_team_a_points: entry.teamA,
+        p_team_b_points: entry.teamB,
+      })
+      if (err) throw new Error(err.message)
+    }
+  }, [])
+
   const startCompetition = async () => {
     if (!id) return
     setBusy(true)
@@ -418,6 +443,7 @@ export function CompetitionRun() {
     isAmericano && scoreUnit !== 'open' ? americanoTargetPoints(session) : undefined
   const playerFocus = Boolean(!isAdmin && started && userId)
   const liveFocus = Boolean(playerFocus && activeRound)
+  const canScore = started && !finished
 
   return (
     <div className={`pb-24 ${liveFocus ? 'space-y-4 pt-1' : 'space-y-3'}`}>
@@ -548,7 +574,8 @@ export function CompetitionRun() {
                 playTo={playTo}
                 liveCourtsByGame={liveCourtsByGame}
                 roundIdForGame={roundIdForGame}
-                canLog={isAdmin}
+                canLog={canScore}
+                onSubmitScores={handleSubmitScores}
                 matchForCourt={(roundId, courtId) => {
                   const saved = matchForCourt(roundId, courtId)
                   if (!saved) return undefined
@@ -586,13 +613,7 @@ export function CompetitionRun() {
                   savedTeamAPoints={isAmericano ? savedParts?.[0] : undefined}
                   savedTeamBPoints={isAmericano ? savedParts?.[1] : undefined}
                   savedWinner={saved ? matchWinnerTeam(saved) : undefined}
-                  canLog={canLogScores(
-                    isAdmin,
-                    session.who_can_log_matches,
-                    onRoster,
-                    userId,
-                    c.playerIds,
-                  )}
+                  canLog={canScore}
                   showMargin={session.margin_bonus_enabled && !isAmericano}
                   onSaved={() => void refresh()}
                 />
@@ -663,7 +684,8 @@ export function CompetitionRun() {
                 playTo={playTo}
                 liveCourtsByGame={liveCourtsByGame}
                 roundIdForGame={roundIdForGame}
-                canLog={false}
+                canLog={canScore}
+                onSubmitScores={handleSubmitScores}
                 matchForCourt={(roundId, courtId) => {
                   const saved = matchForCourt(roundId, courtId)
                   if (!saved) return undefined
@@ -675,6 +697,7 @@ export function CompetitionRun() {
                     winner: matchWinnerTeam(saved),
                   }
                 }}
+                onSaved={() => void refresh()}
                 now={now}
                 gameMinutes={gameMinutes}
                 roundTimesByGame={roundTimesByGame}

@@ -97,6 +97,7 @@ export function CompetitionPlay() {
   const { profile, user } = useAuth()
   const lineClient = useLineClientProfile()
   const headerAvatar = profile?.avatar_url ?? lineClient.pictureUrl ?? null
+  const isAdmin = Boolean(user && profile?.is_admin)
   const [tab, setTab] = useState<PlayTab>('games')
 
   const {
@@ -188,6 +189,12 @@ export function CompetitionPlay() {
 
   const started = Boolean(session?.competition_started_at)
   const finished = session?.status === 'complete'
+
+  useEffect(() => {
+    if (isAdmin && session && !started && id) {
+      navigate(`/competitions/${id}/run`, { replace: true })
+    }
+  }, [isAdmin, session, started, id, navigate])
   const canScore = started && !finished
   const showGamesBoard = started && (columns.length > 0 || (finished && rounds.length > 0))
   const standings = liveStandings
@@ -260,7 +267,7 @@ export function CompetitionPlay() {
                 roundStatusByGame={roundStatusByGame}
                 currentUserId={user?.id ?? null}
                 currentUserAvatarUrl={headerAvatar}
-                isAdmin={Boolean(user && profile?.is_admin)}
+                isAdmin={isAdmin}
               />
             ) : (
               <p className="game-card px-3 py-4 text-sm text-brand-muted">
@@ -268,14 +275,16 @@ export function CompetitionPlay() {
               </p>
             )
           ) : started ? (
-            <CompetitionLeaderboard
-              entries={standings}
-              scoreUnit={scoreUnit}
-              currentUserId={user?.id ?? null}
-              competitionId={id ?? null}
-              achievements={achievements}
-              flushBottom
-            />
+            <div className="-mx-3 bg-brand-surface md:-mx-6">
+              <CompetitionLeaderboard
+                entries={standings}
+                scoreUnit={scoreUnit}
+                currentUserId={user?.id ?? null}
+                competitionId={id ?? null}
+                achievements={achievements}
+                flushBottom
+              />
+            </div>
           ) : null}
 
           {error && <p className="text-center text-sm text-red-600">{error}</p>}

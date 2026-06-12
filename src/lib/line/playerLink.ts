@@ -225,6 +225,31 @@ export function competitionIdFromPlayerLinkSearch(search: string): string | null
   return stored && UUID_RE.test(stored) ? stored : null
 }
 
+const LINK_QR_CACHE_PREFIX = 'sp_lpl_qr_'
+
+function cachedPlayerLinkRequest(padelPlayerId: string): LinePlayerLinkRequest | null {
+  if (typeof localStorage === 'undefined') return null
+  try {
+    const raw = localStorage.getItem(`${LINK_QR_CACHE_PREFIX}${padelPlayerId}`)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as LinePlayerLinkRequest
+    if (parsed.linkToken?.startsWith('lpl_') && parsed.qrUrl) return parsed
+  } catch {
+    /* ignore */
+  }
+  return null
+}
+
+function cachePlayerLinkRequest(padelPlayerId: string, request: LinePlayerLinkRequest): void {
+  localStorage.setItem(`${LINK_QR_CACHE_PREFIX}${padelPlayerId}`, JSON.stringify(request))
+}
+
+export function getCachedLinePlayerLinkRequest(
+  padelPlayerId: string,
+): LinePlayerLinkRequest | null {
+  return cachedPlayerLinkRequest(padelPlayerId)
+}
+
 /** Create a single-use link request for QR display. Never redirects. */
 export async function createLinePlayerLinkRequest(
   competitionId: string | null,
@@ -232,6 +257,12 @@ export async function createLinePlayerLinkRequest(
 ): Promise<{ request?: LinePlayerLinkRequest; error?: string }> {
   if (!channelId) return { error: 'LINE login is not configured' }
   if (!hasLiffId()) return { error: 'LINE app link is not configured' }
+
+  const cached = cachedPlayerLinkRequest(padelPlayerId)
+  if (cached) {
+    rememberPlayerLinkCompetition(cached.linkToken, competitionId)
+    return { request: cached }
+  }
 
   const { data: linkToken, error } = await supabase.rpc('create_player_line_link_request', {
     p_competition_id: competitionId,
@@ -247,12 +278,12 @@ export async function createLinePlayerLinkRequest(
   const resolvedQrUrl = lineAppEntryUrl(liffEntryPath)
   if (!resolvedQrUrl) return { error: 'LINE app link is not configured' }
 
-  return {
-    request: {
-      linkToken,
-      qrUrl: resolvedQrUrl,
-    },
+  const request: LinePlayerLinkRequest = {
+    linkToken,
+    qrUrl: resolvedQrUrl,
   }
+  cachePlayerLinkRequest(padelPlayerId, request)
+  return { request }
 }
 
 export type LineLinkResult = {

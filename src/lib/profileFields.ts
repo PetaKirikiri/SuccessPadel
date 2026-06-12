@@ -1,4 +1,20 @@
 import type { PlaySide } from './types'
+import { SKILL_LEVELS } from './competitionPresets'
+
+export const PLAYER_GENDERS = ['Male', 'Female'] as const
+export type PlayerGender = (typeof PLAYER_GENDERS)[number]
+
+export { SKILL_LEVELS }
+
+export const DOMINANT_HANDS: { value: 'left' | 'right'; label: string }[] = [
+  { value: 'left', label: 'Left' },
+  { value: 'right', label: 'Right' },
+]
+
+export function dominantHandLabel(hand: 'left' | 'right' | null | undefined): string | null {
+  if (!hand) return null
+  return DOMINANT_HANDS.find((h) => h.value === hand)?.label ?? hand
+}
 
 export const PLAY_SIDES: { value: PlaySide; label: string }[] = [
   { value: 'left', label: 'Left' },

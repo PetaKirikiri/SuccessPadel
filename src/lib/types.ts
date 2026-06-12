@@ -8,6 +8,7 @@ export type WhoCanLog = 'admin_only' | 'roster_members' | 'any_member'
 export type MatchTeam = 'a' | 'b'
 
 export type PlaySide = 'left' | 'right' | 'both'
+export type DominantHand = 'left' | 'right'
 
 export type Profile = {
   id: string
@@ -22,6 +23,9 @@ export type Profile = {
   preferred_side: PlaySide | null
   enjoys_fun_games: boolean
   usually_free: string | null
+  gender: string | null
+  dominant_hand: DominantHand | null
+  skill_level: string | null
 }
 
 export type Season = {

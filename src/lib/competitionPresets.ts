@@ -134,12 +134,22 @@ export function partnershipModeToRules(
   return { format: 'king_of_court', partners: 'swapped' }
 }
 
+export function buildCompetitionAutoTitle(
+  level: string,
+  gender: string,
+  startsAt: Date,
+): string {
+  return `${level} · ${gender} · ${formatClubDateShort(startsAt)} · ${formatClubTime(startsAt)}`
+}
+
 export function buildCompetitionTitle(
   level: string,
   startsAt: Date,
   customTitle?: string,
+  gender?: string,
 ): string {
   const trimmed = customTitle?.trim()
   if (trimmed) return trimmed
+  if (gender) return buildCompetitionAutoTitle(level, gender, startsAt)
   return `${level} · ${formatClubDateShort(startsAt)} · ${formatClubTime(startsAt)}`
 }

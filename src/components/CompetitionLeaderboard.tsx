@@ -9,12 +9,19 @@ import type {
   MatchAward,
 } from '../lib/competitionAchievements'
 import type { AmericanoScoringUnit } from '../lib/competitionPresets'
-import { compactDisplayNames, compactLeaderboardDisplayNames, leaderboardEntryLookupIds } from '../lib/leaderboardEntries'
+import {
+  compactDisplayNames,
+  compactLeaderboardDisplayNames,
+  leaderboardEntryLookupIds,
+} from '../lib/leaderboardEntries'
+import { isDuoLeaderboardEntry } from '../lib/leaderboardFilters'
 
 export type LeaderboardEntry = {
   profile_id: string
   padel_player_id?: string | null
   member_profile_id?: string | null
+  player_a_id?: string | null
+  player_b_id?: string | null
   is_guest?: boolean
   display_name: string
   avatar_url?: string | null
@@ -31,6 +38,7 @@ type Props = {
   scoreColumnLabel?: string
   headerTitle?: string | null
   headerSubtitle?: string | null
+  headerExtra?: React.ReactNode
   currentUserId?: string | null
   competitionId?: string | null
   achievements?: CompetitionAchievements | null
@@ -122,7 +130,7 @@ function LeaderboardRow({
   entry: LeaderboardEntry
   isMe: boolean
   badges: Achievement[]
-  onOpenProfile: () => void
+  onOpenProfile?: () => void
   onSelectAchievement: (info: AchievementInfo) => void
   t: TranslateFn
 }) {
@@ -131,9 +139,9 @@ function LeaderboardRow({
   return (
     <li
       onClick={onOpenProfile}
-      className={`${ROW_GRID} cursor-pointer border-b border-brand-border/60 py-2.5 transition last:border-0 hover:bg-brand-bg-alt/60 md:py-3.5 ${
-        isMe ? 'bg-brand-bg-alt' : ''
-      }`}
+      className={`${ROW_GRID} border-b border-brand-border/60 py-2.5 transition last:border-0 md:py-3.5 ${
+        onOpenProfile ? 'cursor-pointer hover:bg-brand-bg-alt/60' : ''
+      } ${isMe ? 'bg-brand-bg-alt' : ''}`}
     >
       <span
         className={`text-center font-display text-sm font-semibold md:text-base ${
@@ -256,6 +264,7 @@ export function CompetitionLeaderboard({
   scoreColumnLabel,
   headerTitle = null,
   headerSubtitle = null,
+  headerExtra = null,
   currentUserId = null,
   competitionId = null,
   achievements = null,
@@ -287,17 +296,18 @@ export function CompetitionLeaderboard({
   }
 
   const displayEntries = compactLeaderboardDisplayNames(entries)
-  const showHeader = Boolean(headerTitle || headerSubtitle || compact)
+  const showHeader = Boolean(headerTitle || headerSubtitle || headerExtra || compact)
 
   const shellClass = embedded
-    ? 'overflow-hidden'
+    ? 'min-h-full overflow-hidden bg-brand-surface'
     : `game-card overflow-hidden p-0 ${flushBottom ? 'rounded-b-none' : ''}`
 
   return (
     <div className={shellClass}>
+      {headerExtra}
       {showHeader && (
         <div
-          className={`border-b border-brand-border bg-brand-bg-alt px-3 py-2 md:px-4 md:py-3 ${embedded ? 'bg-brand-bg-alt/40' : ''}`}
+          className={`border-b border-brand-border px-3 py-2 md:px-4 md:py-3 ${embedded ? 'bg-brand-surface' : 'bg-brand-bg-alt'}`}
         >
           {headerTitle ? (
             <p className="font-display text-base font-semibold text-brand-primary md:text-lg">
@@ -327,7 +337,10 @@ export function CompetitionLeaderboard({
           const source = entries[i]!
           const isMe = Boolean(
             currentUserId &&
-              (e.member_profile_id === currentUserId || e.profile_id === currentUserId),
+              (e.member_profile_id === currentUserId ||
+                e.profile_id === currentUserId ||
+                e.player_a_id === currentUserId ||
+                e.player_b_id === currentUserId),
           )
 
           return (
@@ -338,7 +351,10 @@ export function CompetitionLeaderboard({
               isMe={isMe}
               badges={badgesFor(source, i + 1)}
               onSelectAchievement={setInfo}
-              onOpenProfile={() => {
+              onOpenProfile={
+                isDuoLeaderboardEntry(source.profile_id)
+                  ? undefined
+                  : () => {
                 const playerId =
                   source.member_profile_id ?? source.padel_player_id ?? source.profile_id
                 const params = competitionId ? `?competition=${competitionId}` : ''

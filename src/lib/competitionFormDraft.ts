@@ -1,29 +1,15 @@
-import type {
-  AmericanoScoringChoice,
-  Gender,
-  PartnerStyle,
-  RuleFormat,
-  SkillLevel,
-} from './competitionPresets'
-
 const STORAGE_PREFIX = 'successpadel:competition-draft:'
 
 export type CompetitionFormDraft = {
-  v: 1
+  v: 5
   savedAt: string
   day: string
   startHour: number
-  duration: number
-  skillLevel: SkillLevel
-  gender: Gender
-  targetPlayers: 4 | 8 | 12 | 16
-  ruleFormat: RuleFormat
-  partnerStyle: PartnerStyle
-  americanoScoring: AmericanoScoringChoice
-  gameCount: number
-  gameMinutes: number
-  breakMinutes: number
+  startMinute: number
+  skillLevel: string
+  gender: string
   title: string
+  titleEdited: boolean
   playerSlots: string[]
   previewSeed: number
 }
@@ -37,7 +23,7 @@ export function loadCompetitionFormDraft(scope: 'new' | string): CompetitionForm
     const raw = localStorage.getItem(competitionDraftKey(scope))
     if (!raw) return null
     const parsed = JSON.parse(raw) as CompetitionFormDraft
-    if (parsed?.v !== 1) return null
+    if (parsed?.v !== 5) return null
     return parsed
   } catch {
     return null
@@ -50,7 +36,7 @@ export function saveCompetitionFormDraft(
 ): void {
   try {
     const payload: CompetitionFormDraft = {
-      v: 1,
+      v: 5,
       savedAt: new Date().toISOString(),
       ...draft,
     }

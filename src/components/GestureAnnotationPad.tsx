@@ -112,6 +112,7 @@ import {
   isVolleyZoneStart,
   measureCourtInset,
   padNormToCourtNorm,
+  resolveCourtLayout,
   PADEL_NET_Y,
   PADEL_SERVICE_LINE_TOP_Y,
   PADEL_SERVICE_LINE_BOTTOM_Y,
@@ -119,6 +120,7 @@ import {
   PADEL_ENCLOSURE_FULL_DEPTH_ALONG_WIDTH_FR,
   PADEL_ENCLOSURE_GLASS_DEPTH_ALONG_WIDTH_FR,
   type CourtInsetBounds,
+  type CourtLayout,
   type CourtShotZone,
   type EnclosureZoneId,
   pct,
@@ -126,7 +128,8 @@ import {
 import { isMatchComplete, matchWinner } from '../lib/matchFormat'
 import { debugSessionLog, devDebugLog } from '../lib/debug/devDebug'
 import { quadrantTeam } from '../lib/gestureScoring'
-import { isFriendlySession, applyFriendlyPadReset } from '../lib/friendlyMatch'
+import { isFriendlySession, applyFriendlyPadReset, resetPadGameState } from '../lib/friendlyMatch'
+import { practiceReadySetup } from '../lib/practiceCourt'
 import { applyTennisPoint, INITIAL_TENNIS_SCORE, type TennisScore } from '../lib/tennisScore'
 import {
   currentServeSideQuadrant,
@@ -182,6 +185,8 @@ import { GlassAnchorDrag } from './GlassAnchorDrag'
 import { PadelCourtMarkings } from './PadelCourtMarkings'
 import { RallyShotWheel } from './RallyShotWheel'
 import { ShotDrawKey } from './ShotDrawKey'
+import { PracticeOutcomeKey } from './PracticeOutcomeKey'
+import { GestureCourtInset } from './GestureCourtFrame'
 import { useGesturePadChrome } from '../lib/gesturePadChrome'
 import { useDeviceClass, useIsLandscape } from '../hooks/useDeviceClass'
 import { useTranslation } from '../hooks/useTranslation'
@@ -203,12 +208,7 @@ function advanceBallPathPick(
   return next
 }
 
-// Court is height-led, so inset-y drives its actual size. Larger vertical inset
-// shrinks the whole court, leaving margin above/below the baselines to draw
-// "out" shots. Horizontal inset is symmetric so the court stays centered.
-const COURT_INSET = 'inset-y-[13%] inset-x-[8%] sm:inset-y-[12%] sm:inset-x-[9%]'
-/** FIP 10 m × 20 m interior — height-led aspect box inside the margin. */
-const COURT_ASPECT_BOX = 'relative h-full max-w-full aspect-[10/20]'
+// Court is height-led in portrait; GestureCourtInset handles landscape rotation.
 
 type ShotRecord = {
   entryId: string
@@ -254,6 +254,12 @@ type Props = {
   padResetAt?: string | null
   /** Open a concluded match read-only: side log on, no winner overlay, no input. */
   reviewMode?: boolean
+  /** Sandbox court — skip setup, no server writes, endless rally. */
+  practiceMode?: boolean
+  /** Full-screen court canvas — hide scoreboard, log, and pad chrome. */
+  courtOnly?: boolean
+  /** Do not rotate the pad on landscape tablets — follow device orientation. */
+  naturalOrientation?: boolean
   /** Bumped by the dashboard undo button to undo the last action. */
   undoSignal?: number
 }
@@ -305,13 +311,17 @@ export function GestureAnnotationPad({
   endlessMatch = false,
   padResetAt = null,
   reviewMode = false,
+  practiceMode = false,
+  courtOnly = false,
+  naturalOrientation = false,
   undoSignal = 0,
 }: Props) {
   useGesturePadChrome()
   const { t } = useTranslation()
   const deviceClass = useDeviceClass()
   const isLandscape = useIsLandscape()
-  const rotatePad = deviceClass === 'tablet' && isLandscape
+  const rotatePad = !naturalOrientation && deviceClass === 'tablet' && isLandscape
+  const courtLayout: CourtLayout = resolveCourtLayout(naturalOrientation, isLandscape)
   const isFriendly = friendly || isFriendlySession(courtSetupKey)
   const padRef = useRef<HTMLDivElement>(null)
   const courtInset = useCourtInset(padRef)
@@ -551,7 +561,7 @@ export function GestureAnnotationPad({
 
   const sessionTeams = useMemo(() => teamsFromSessionRoster(roster), [roster])
 
-  const needsSetup = roster.length >= 4
+  const needsSetup = !practiceMode && roster.length >= 4
   const matchComplete = isMatchComplete(tennisScore, { endless: endlessMatch })
   const matchWinnerTeam = matchWinner(tennisScore, { endless: endlessMatch })
 
@@ -629,6 +639,12 @@ export function GestureAnnotationPad({
   const rosterKey = roster.length >= 4 ? roster.map(playerKey).join('|') : ''
 
   useEffect(() => {
+    if (practiceMode && courtSetupKey) {
+      resetPadGameState(courtSetupKey)
+      applyLoadedSetup(practiceReadySetup())
+      setSetupHydrated(true)
+      return
+    }
     if (!needsSetup || !courtSetupKey) {
       setSetupPhase('ready')
       setInitialServeQuadrant(null)
@@ -764,6 +780,7 @@ export function GestureAnnotationPad({
     padResetAt,
     padPlayers,
     reviewMode,
+    practiceMode,
     roster,
     rosterKey,
     refreshPointEvents,
@@ -889,6 +906,7 @@ export function GestureAnnotationPad({
     logStage?: SetupLogStage
     setup?: Parameters<typeof buildSetupStateForSync>[2]
   }) => {
+    if (practiceMode) return { error: undefined }
     if (!courtSetupKey || roster.length < 4) return { error: 'No session' as const }
     const rosterForLog = statsAssignments
     const session = loadMatchSession(courtSetupKey) ?? {
@@ -972,6 +990,7 @@ export function GestureAnnotationPad({
     setupPhase,
     statsAssignments,
     tennisScore,
+    practiceMode,
   ])
 
   const handleResetCourt = useCallback(async () => {
@@ -1332,7 +1351,7 @@ export function GestureAnnotationPad({
       pendingBallPath.glassAnchorPad ??
       pendingBallPath.line[pendingBallPath.line.length - 1]
     if (!anchor) return null
-    return enclosureZoneAtPad(anchor, courtInset)
+    return enclosureZoneAtPad(anchor, courtInset, courtLayout)
   }, [ballPathGlassFinish, courtInset, pendingBallPath])
   const enclosureHighlightOn =
     (isDrawing && (ballPathRally || ballPathGlassFinish)) || ballPathGlassFinish
@@ -1819,10 +1838,10 @@ export function GestureAnnotationPad({
     if (!pad) return
     const inset = measureCourtInset(pad)
     if (!inset) return
-    const court = padNormToCourtNorm(tipPad, inset)
+    const court = padNormToCourtNorm(tipPad, inset, courtLayout)
     const padZone = enclosureZoneAtPadNorm(tipPad, inset)
     const courtZone = enclosureZoneAtCourtNorm(court)
-    const zone = enclosureZoneAtPad(tipPad, inset)
+    const zone = enclosureZoneAtPad(tipPad, inset, courtLayout)
     // #region agent log
     const inMargin =
       court.x < 0 || court.x > 1 || court.y < 0 || court.y > 1
@@ -1876,7 +1895,7 @@ export function GestureAnnotationPad({
     isStart: boolean,
     inset?: CourtInsetBounds | null,
   ) => {
-    const enclosureZone = inset ? enclosureZoneAtPad(point, inset) : null
+    const enclosureZone = inset ? enclosureZoneAtPad(point, inset, courtLayout) : null
     if (enclosureZone != null) {
       if (!isStart && activeQuadrantRef.current != null) {
         setActiveQuadrant(null)
@@ -1885,7 +1904,7 @@ export function GestureAnnotationPad({
       return
     }
 
-    const courtPoint = inset ? padNormToCourtNorm(point, inset) : point
+    const courtPoint = inset ? padNormToCourtNorm(point, inset, courtLayout) : point
     const inPlayableCourt =
       courtPoint.x >= 0 &&
       courtPoint.x <= 1 &&
@@ -2454,9 +2473,9 @@ export function GestureAnnotationPad({
       const startInset = measureCourtInset(pad)
       const startPad = clientToPadNormalized(clientX, clientY, pad, rotatePad)
       if (startInset) {
-        const c = padNormToCourtNorm(startPad, startInset)
+        const c = padNormToCourtNorm(startPad, startInset, courtLayout)
         const onCourt = c.x >= 0 && c.x <= 1 && c.y >= 0 && c.y <= 1
-        const inEnclosure = enclosureZoneAtPad(startPad, startInset) != null
+        const inEnclosure = enclosureZoneAtPad(startPad, startInset, courtLayout) != null
         if (!onCourt && !inEnclosure) return
       }
     }
@@ -2496,7 +2515,7 @@ export function GestureAnnotationPad({
     if (ballPathRallyRef.current) {
       const inset = measureCourtInset(pad) ?? courtInset
       const nextHalf = inset
-        ? padNormToCourtNorm(startPoint, inset).y < PADEL_NET_Y
+        ? padNormToCourtNorm(startPoint, inset, courtLayout).y < PADEL_NET_Y
           ? 'top'
           : 'bottom'
         : null
@@ -2552,6 +2571,7 @@ export function GestureAnnotationPad({
                 effectiveServeSideQuadrant,
                 servingPlayerQuadrant,
                 inset,
+                courtLayout,
               ),
             )
           }
@@ -2559,7 +2579,10 @@ export function GestureAnnotationPad({
           updateGlassBandFeedback(point, false)
           // Pad-normal hit test matches the rendered glass band — finger depth
           // into the margin is preserved as wall height (never clamped/snapped).
-          const zone = enclosureZoneAtPadNorm(point, inset)
+          const zone =
+            courtLayout === 'landscape'
+              ? enclosureZoneAtPad(point, inset, courtLayout)
+              : enclosureZoneAtPadNorm(point, inset)
           tip = point
           if (zone && isGlassEnclosureZone(zone)) {
             const verts = ballPathVerticesRef.current
@@ -2570,7 +2593,7 @@ export function GestureAnnotationPad({
           }
           liveTipRef.current = tip
           freehandRef.current = [...ballPathVerticesRef.current, tip]
-          const endCourt = padNormToCourtNorm(tip, inset)
+          const endCourt = padNormToCourtNorm(tip, inset, courtLayout)
           if (courtNormDistanceToNet(endCourt) <= NET_SHORT_APPROACH_COURT) {
             if (netHoverSinceRef.current == null) {
               netHoverSinceRef.current = performance.now()
@@ -2701,6 +2724,7 @@ export function GestureAnnotationPad({
             effectiveServeSideQuadrant,
             servingPlayerQuadrant,
             courtInset,
+            courtLayout,
           )
           const attempt = serveAttemptRef.current
           const serveMeta = shotDrawMetaFromOrigin(strokePath, servingPlayerQuadrant, origin)
@@ -2805,6 +2829,7 @@ export function GestureAnnotationPad({
             finish,
             inset,
             netHoverHeld,
+            courtLayout,
           )
           if (!ballResult || ballResult.outcome === 'glass') {
             wipeCanvas()
@@ -2901,7 +2926,7 @@ export function GestureAnnotationPad({
               : [rawPath[0]!]
           const attackerStart = vertices[0]!
           const finish = rawPath[rawPath.length - 1]!
-          const ballResult = resolveBallPath(attackerStart, finish, inset, netHoverHeld)
+          const ballResult = resolveBallPath(attackerStart, finish, inset, netHoverHeld, courtLayout)
           if (!ballResult) {
             wipeCanvas()
             gestureHapticComplete()
@@ -3066,6 +3091,8 @@ export function GestureAnnotationPad({
             buildServePath(gestureCaptured.pathPoints, serveOrigin!),
             servingPlayerQuadrant,
             effectiveServeSideQuadrant,
+            courtInset,
+            courtLayout,
           )
 
         if (!awaitLoser && looksLikeServe) {
@@ -3334,6 +3361,7 @@ export function GestureAnnotationPad({
   }
 
   const showPointNavigator =
+    !courtOnly &&
     Boolean(matchStartedAt) &&
     setupPhase === 'ready' &&
     (!matchComplete || reviewMode) &&
@@ -3345,8 +3373,9 @@ export function GestureAnnotationPad({
     <div
       className={`gesture-pad-root relative flex h-full min-h-0 flex-1 flex-col${
         rotatePad ? ' gesture-pad-rotated' : ''
-      }`}
+      }${courtOnly ? ' gesture-pad-court-only' : ''}`}
     >
+      {!courtOnly ? (
       <div className="gesture-pad-header shrink-0 flex flex-col items-center gap-1 px-2 pb-1.5 sm:px-3 sm:pb-2">
         <div className="relative flex w-full justify-center">
           <div
@@ -3373,6 +3402,7 @@ export function GestureAnnotationPad({
           </div>
         </div>
       </div>
+      ) : null}
       <div
         ref={padRef}
         className="gesture-court-pad touch-none select-none"
@@ -3393,7 +3423,12 @@ export function GestureAnnotationPad({
           className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#1e6bb5] via-[#1a5fa8] to-[#165a9c]"
           aria-hidden
         />
-        {!reviewMode ? (
+        {practiceMode && !courtOnly ? (
+          <div className="pointer-events-none absolute left-1.5 top-1.5 z-[7] sm:left-2 sm:top-2">
+            <PracticeOutcomeKey />
+          </div>
+        ) : null}
+        {!reviewMode && !courtOnly ? (
           <button
             type="button"
             onPointerDown={(e) => e.stopPropagation()}
@@ -3403,7 +3438,7 @@ export function GestureAnnotationPad({
             Reset
           </button>
         ) : null}
-        {!reviewMode && !matchComplete ? (
+        {!reviewMode && !courtOnly && (!matchComplete || practiceMode) ? (
           <button
             type="button"
             onPointerDown={(e) => e.stopPropagation()}
@@ -3421,11 +3456,13 @@ export function GestureAnnotationPad({
           </button>
         ) : null}
         {ballPathRally || ballPathGlassFinish ? (
+          !courtOnly ? (
           <div className="pointer-events-none absolute right-1.5 top-16 z-[7] sm:right-2 sm:top-[4.5rem]">
             <ShotDrawKey />
           </div>
+          ) : null
         ) : null}
-        {showResetConfirm ? (
+        {!courtOnly && showResetConfirm ? (
           <div
             className="absolute inset-0 z-[30] flex items-center justify-center bg-black/60 p-4"
             onPointerDown={(e) => e.stopPropagation()}
@@ -3457,8 +3494,7 @@ export function GestureAnnotationPad({
             </div>
           </div>
         ) : null}
-        <div className={`absolute ${COURT_INSET} z-[2] flex items-center justify-center overflow-visible`}>
-          <div className={`relative ${COURT_ASPECT_BOX}`}>
+        <GestureCourtInset layout={courtLayout} insetMode={courtOnly ? 'max' : 'default'} zIndex={2}>
             <PadelCourtEnclosure
               glassBandFeedback={enclosureHighlightOn}
               startGlassBand={enclosureStartBand}
@@ -3468,6 +3504,7 @@ export function GestureAnnotationPad({
               <GlassAnchorDrag
                 padRef={padRef}
                 rotatePad={rotatePad}
+                courtLayout={courtLayout}
                 anchorPad={
                   pendingBallPath.glassAnchorPad ?? pendingBallPath.line[pendingBallPath.line.length - 1]!
                 }
@@ -3661,6 +3698,7 @@ export function GestureAnnotationPad({
                 players={watermarkPlayers}
                 padRef={padRef}
                 rotatePad={rotatePad}
+                courtLayout={courtLayout}
                 coinPlacements={coinPlacements}
                 activeOrigin={shotOriginLock}
                 freezeCoins={ballPathGlassFinish}
@@ -3701,12 +3739,14 @@ export function GestureAnnotationPad({
               />
             ) : null}
             {pendingBallPath &&
-            pendingBallPath.phase !== 'glass_finish' ? (
+            pendingBallPath.phase !== 'glass_finish' &&
+            !courtOnly ? (
               <>
                 <RallyShotWheel
                   anchor={wheelAnchor(
                     pendingBallPath.line[0]!,
                     courtInset,
+                    courtLayout,
                   )}
                   quadrant={pendingBallPath.attackerQuadrant}
                   role="attacker"
@@ -3733,6 +3773,7 @@ export function GestureAnnotationPad({
                     pendingBallPath.defenderReachPad ??
                       pendingBallPath.line[pendingBallPath.line.length - 1]!,
                     courtInset,
+                    courtLayout,
                   )}
                   quadrant={pendingBallPath.defenderQuadrant}
                   role="defender"
@@ -3756,7 +3797,7 @@ export function GestureAnnotationPad({
                 />
               </>
             ) : null}
-            {pendingBallPath?.phase === 'confirm' ? (
+            {pendingBallPath?.phase === 'confirm' && !courtOnly ? (
               <BallPathConfirmBar
                 onCancel={handleBallPathCancel}
                 onAccept={handleBallPathAccept}
@@ -3786,13 +3827,14 @@ export function GestureAnnotationPad({
               />
             ) : null}
             </div>
-          </div>
-        </div>
+        </GestureCourtInset>
         <canvas ref={canvasRef} className="pointer-events-none absolute inset-0 z-[4] touch-none" />
-        <div
-          className={`pointer-events-none absolute ${COURT_INSET} z-[1] flex items-center justify-center`}
+        <GestureCourtInset
+          layout={courtLayout}
+          insetMode={courtOnly ? 'max' : 'default'}
+          zIndex={1}
+          className="grid grid-cols-2 grid-rows-2 pointer-events-none"
         >
-          <div className={`${COURT_ASPECT_BOX} grid grid-cols-2 grid-rows-2`}>
           {QUADRANT_LABELS.map((label) => (
             <div
               key={label}
@@ -3815,11 +3857,10 @@ export function GestureAnnotationPad({
               }
             />
           ))}
-          </div>
-        </div>
-        {horizVerdictLabel ? <HorizVerdictPrompt label={horizVerdictLabel} /> : null}
+        </GestureCourtInset>
+        {!courtOnly && horizVerdictLabel ? <HorizVerdictPrompt label={horizVerdictLabel} /> : null}
 
-        {matchComplete && matchWinnerTeam && !reviewMode ? (
+        {!courtOnly && matchComplete && matchWinnerTeam && !reviewMode ? (
           <GesturePadMatchComplete
             score={tennisScore}
             winner={matchWinnerTeam}
@@ -3833,7 +3874,7 @@ export function GestureAnnotationPad({
           />
         ) : null}
 
-        {statsPlayer ? (
+        {!courtOnly && statsPlayer ? (
           <PlayerGameStatsModal stats={statsPlayer} onClose={() => setStatsPlayer(null)} />
         ) : null}
 

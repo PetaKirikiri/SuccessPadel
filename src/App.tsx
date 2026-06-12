@@ -23,6 +23,7 @@ import { FriendlyHomePage } from './pages/FriendlyHomePage'
 import { FriendlyCourtPage } from './pages/FriendlyCourtPage'
 import { FriendlyPadPage } from './pages/FriendlyPadPage'
 import { GesturePadPage } from './pages/GesturePadPage'
+import { PracticeCourtPage } from './pages/PracticeCourtPage'
 import { FriendlyHeatMapPage } from './pages/FriendlyHeatMapPage'
 import { AuthCallback } from './pages/AuthCallback'
 import { LineAuthCallback } from './pages/LineAuthCallback'
@@ -32,6 +33,7 @@ import { PlayerProfilePage } from './pages/PlayerProfilePage'
 import { Profile } from './pages/Profile'
 import { ResetPassword } from './pages/ResetPassword'
 import { MakeGame } from './pages/MakeGame'
+import { MembersPage } from './pages/MembersPage'
 import { MatchNew } from './pages/MatchNew'
 import { Week } from './pages/Week'
 import { NativeDeepLinkHandler } from './components/NativeDeepLinkHandler'
@@ -116,6 +118,7 @@ function MainAppRoutes() {
         />
         <Route path="friendly/:id/pad" element={<FriendlyPadPage />} />
         <Route path="friendly/:id/heatmap" element={<FriendlyHeatMapPage />} />
+        <Route path="practice" element={<PracticeCourtPage />} />
         <Route
           path="friendly/:id/games/:gameNumber/courts/:courtSlug"
           element={<FriendlyCourtPage />}
@@ -128,6 +131,14 @@ function MainAppRoutes() {
         <Route path="competitive" element={<CompetitiveHomePage />} />
         <Route path="competitions" element={<Navigate to="/competitive" replace />} />
         <Route path="players/:playerId" element={<PlayerProfilePage />} />
+        <Route
+          path="members"
+          element={
+            <ProtectedRoute>
+              <MembersPage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="fun/new"
           element={
@@ -143,16 +154,6 @@ function MainAppRoutes() {
         <Route path="make" element={<MakeGame />} />
         <Route
           path="competitions/:id/edit"
-          element={
-            <AdminRoute>
-              <AdminOnly>
-                <CompetitionForm />
-              </AdminOnly>
-            </AdminRoute>
-          }
-        />
-        <Route
-          path="competitions/new"
           element={
             <AdminRoute>
               <AdminOnly>
@@ -267,9 +268,7 @@ export default function App() {
                 path="/competitions/new"
                 element={
                   <AppFrame>
-                    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-                      <Layout />
-                    </div>
+                    <Layout />
                   </AppFrame>
                 }
               >

@@ -5,7 +5,7 @@ import {
   CompetitionRulesSetup,
   type CompetitionRulesSetupValues,
 } from '../components/CompetitionRulesSetup'
-import { MemberPlayerSlots } from '../components/MemberPlayerSlots'
+import { MemberPlayerSlots, type PadelPlayerOption } from '../components/MemberPlayerSlots'
 import { SessionTimeSetup } from '../components/SessionTimeSetup'
 import { useAuth } from '../hooks/useAuth'
 import { useFriendlyFormDraft } from '../hooks/useFriendlyFormDraft'
@@ -38,6 +38,7 @@ export function FriendlyGameForm() {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { profile, user, session, loading: authLoading } = useAuth()
+  const isAdmin = Boolean(profile?.is_admin)
   const { game, loading: gameLoading } = useFriendlyGame(isEdit ? editId : undefined)
   const initial = useMemo(
     () => (isEdit ? friendlyFormDefaults() : friendlyFormInitialState()),
@@ -48,8 +49,12 @@ export function FriendlyGameForm() {
   const [startHour, setStartHour] = useState(initial.startHour)
   const [startMinute, setStartMinute] = useState(initial.startMinute ?? 0)
   const [profiles, setProfiles] = useState<Profile[]>([])
+  const [padelPlayers, setPadelPlayers] = useState<PadelPlayerOption[]>([])
   const [playerSlots, setPlayerSlots] = useState(initial.playerSlots)
   const [profileIds, setProfileIds] = useState(initial.profileIds)
+  const [padelPlayerIds, setPadelPlayerIds] = useState<(string | null)[]>(() =>
+    initial.profileIds.map(() => null),
+  )
   const [visibility, setVisibility] = useState<FriendlyVisibility>(initial.visibility)
   const [playMode, setPlayMode] = useState<FriendlyPlayMode>(initial.playMode)
   const [rulesSetup, setRulesSetup] = useState<CompetitionRulesSetupValues>(initial.rulesSetup)
@@ -89,6 +94,7 @@ export function FriendlyGameForm() {
     setStartMinute(values.startMinute)
     setPlayerSlots(values.playerSlots)
     setProfileIds(values.profileIds)
+    setPadelPlayerIds(values.profileIds.map(() => null))
     setVisibility(values.visibility)
     setPlayMode(values.playMode)
     setRulesSetup(values.rulesSetup)
@@ -98,11 +104,24 @@ export function FriendlyGameForm() {
 
   useEffect(() => {
     void supabase
+      .from('padel_players')
+      .select('id, display_name, profile_id')
+      .is('profile_id', null)
+      .order('display_name')
+      .then(({ data }) => setPadelPlayers((data as PadelPlayerOption[]) ?? []))
+  }, [])
+
+  useEffect(() => {
+    if (!isAdmin) {
+      setProfiles([])
+      return
+    }
+    void supabase
       .from('profiles')
       .select('id, display_name, avatar_url')
       .order('display_name')
       .then(({ data }) => setProfiles((data as Profile[]) ?? []))
-  }, [])
+  }, [isAdmin])
 
   useEffect(() => {
     let active = true
@@ -157,15 +176,21 @@ export function FriendlyGameForm() {
     [trimmedSlots, organizedConfig, courtNames],
   )
 
-  const handlePlayersChange = (names: string[], ids: (string | null)[]) => {
+  const handlePlayersChange = (
+    names: string[],
+    ids: (string | null)[],
+    padelIds: (string | null)[],
+  ) => {
     setPlayerSlots(names)
     setProfileIds(ids)
+    setPadelPlayerIds(padelIds)
   }
 
   const addPlayerSlot = () => {
     if (playerSlots.length >= FRIENDLY_MAX_PLAYERS) return
     setPlayerSlots((prev) => [...prev, ''])
     setProfileIds((prev) => [...prev, null])
+    setPadelPlayerIds((prev) => [...prev, null])
   }
 
   const accept = async () => {
@@ -284,13 +309,17 @@ export function FriendlyGameForm() {
           <MemberPlayerSlots
             count={playerSlots.length}
             profiles={profiles}
+            padelPlayers={padelPlayers}
             names={playerSlots}
             profileIds={profileIds}
+            padelPlayerIds={padelPlayerIds}
             onChange={handlePlayersChange}
             onAdd={addPlayerSlot}
             canAdd={playerSlots.length < FRIENDLY_MAX_PLAYERS}
             addLabel={t('friendly.addPlayerSlot')}
             disabled={busy}
+            showMembers={isAdmin}
+            showPlayerProfiles
           />
           <div className="grid grid-cols-2 gap-2">
             <button

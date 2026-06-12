@@ -63,33 +63,41 @@ export function PlayerProfileBanner({
     <div
       className={`flex items-center gap-3 px-4 py-4 ${embedded ? 'border-b border-brand-border/60' : 'game-card'}`}
     >
-      {avatar}
-      <div className="min-w-0 flex-1">
-        <h1 className="truncate font-display text-lg font-bold text-brand-primary md:text-xl">{name}</h1>
-        {onChangePhoto && changePhotoLabel && (
-          <button
-            type="button"
-            onClick={onChangePhoto}
-            className="mt-0.5 text-xs font-medium text-brand-accent"
-          >
-            {changePhotoLabel}
-          </button>
-        )}
-        {memberSince && !onChangePhoto && (
-          <p className="mt-0.5 text-xs text-brand-muted">
-            {t('playerProfile.memberSince', { date: memberSince })}
-          </p>
-        )}
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        {avatar}
+        <div className="min-w-0">
+          <h1 className="truncate font-display text-lg font-bold text-brand-primary md:text-xl">{name}</h1>
+          {onChangePhoto && changePhotoLabel && (
+            <button
+              type="button"
+              onClick={onChangePhoto}
+              className="mt-0.5 text-xs font-medium text-brand-accent"
+            >
+              {changePhotoLabel}
+            </button>
+          )}
+          {memberSince && !onChangePhoto && (
+            <p className="mt-0.5 text-xs text-brand-muted">
+              {t('playerProfile.memberSince', { date: memberSince })}
+            </p>
+          )}
+        </div>
       </div>
       {canAddLine && onAddLine && (
         <button
           type="button"
           onClick={onAddLine}
-          aria-label={t('leaderboard.addLine')}
-          className="flex shrink-0 items-center gap-2 rounded-lg border border-brand-border bg-brand-surface py-1.5 pl-3 pr-1.5 md:py-2 md:pl-3.5 md:pr-2"
+          aria-label={t('playerProfile.connectLine')}
+          className="ml-auto flex shrink-0 flex-col items-center gap-1.5 rounded-xl border-2 border-[#06C755] bg-[#06C755]/12 px-3 py-2.5 shadow-sm active:scale-[0.98]"
         >
-          <span className="text-sm font-semibold text-brand-text">{t('leaderboard.add')}</span>
-          <img src="/brand/line-logo.png" alt="" className="h-8 w-8 rounded-md object-cover md:h-9 md:w-9" />
+          <img
+            src="/brand/line-logo.png"
+            alt=""
+            className="h-10 w-10 rounded-lg object-cover shadow-md ring-2 ring-[#06C755]/45 md:h-11 md:w-11"
+          />
+          <span className="max-w-[5.5rem] text-center text-[10px] font-bold leading-tight text-[#06C755]">
+            {t('playerProfile.connectLine')}
+          </span>
         </button>
       )}
     </div>

@@ -14,6 +14,7 @@ import {
   padNormToCourtNorm,
   pct,
   type CourtInsetBounds,
+  type CourtLayout,
 } from '../lib/padelCourtLayout'
 import { quadrantTeam } from '../lib/gestureScoring'
 import {
@@ -53,6 +54,7 @@ type Props = {
   draggableTeam?: MatchTeam | null
   /** When true, all coins are display-only (e.g. glass second stroke). */
   freezeCoins?: boolean
+  courtLayout?: CourtLayout
   currentUserId?: string | null
   currentUserAvatarUrl?: string | null
   onDragActiveChange: (active: boolean) => void
@@ -81,9 +83,10 @@ function resolveCoinCourtPosition(
   label: Quadrant,
   coinPlacements: Partial<Record<Quadrant, NormalizedPoint>>,
   inset: CourtInsetBounds | null,
+  layout: CourtLayout = 'portrait',
 ): NormalizedPoint {
   if (coinPlacements[label] && inset) {
-    return padNormToCourtNorm(coinPlacements[label]!, inset)
+    return padNormToCourtNorm(coinPlacements[label]!, inset, layout)
   }
   return QUADRANT_ANCHOR[label]
 }
@@ -93,6 +96,7 @@ function DraggableCoin({
   player,
   padRef,
   rotatePad,
+  courtLayout,
   courtPosition,
   courtInset,
   serviceLinePlacement,
@@ -113,6 +117,7 @@ function DraggableCoin({
   player: NonNullable<QuadrantPlayers[Quadrant]>
   padRef: RefObject<HTMLDivElement | null>
   rotatePad: boolean
+  courtLayout: CourtLayout
   courtPosition: NormalizedPoint
   courtInset: CourtInsetBounds | null
   serviceLinePlacement: { left: string; top: string; transform: string } | null
@@ -146,7 +151,9 @@ function DraggableCoin({
   }
 
   const ghostCourtPoint =
-    ghostPadPoint && courtInset ? padNormToCourtNorm(ghostPadPoint, courtInset) : ghostPadPoint
+    ghostPadPoint && courtInset
+      ? padNormToCourtNorm(ghostPadPoint, courtInset, courtLayout)
+      : ghostPadPoint
 
   const updateGhost = useCallback(
     (clientX: number, clientY: number) => {
@@ -154,12 +161,12 @@ function DraggableCoin({
       if (!pad) return
       let pt = clientToPadNormalized(clientX, clientY, pad, rotatePad)
       if (serveDragSide && courtInset) {
-        pt = clampPadPointToServerBox(pt, serveDragSide, courtInset)
+        pt = clampPadPointToServerBox(pt, serveDragSide, courtInset, courtLayout)
       }
       setGhostPadPoint(pt)
       onOriginMove?.(quadrant, pt)
     },
-    [courtInset, onOriginMove, padRef, quadrant, rotatePad, serveDragSide],
+    [courtInset, courtLayout, onOriginMove, padRef, quadrant, rotatePad, serveDragSide],
   )
 
   const padPointFromClient = useCallback(
@@ -168,11 +175,11 @@ function DraggableCoin({
       if (!pad) return null
       let pt = clientToPadNormalized(clientX, clientY, pad, rotatePad)
       if (serveDragSide && courtInset) {
-        pt = clampPadPointToServerBox(pt, serveDragSide, courtInset)
+        pt = clampPadPointToServerBox(pt, serveDragSide, courtInset, courtLayout)
       }
       return pt
     },
-    [courtInset, padRef, rotatePad, serveDragSide],
+    [courtInset, courtLayout, padRef, rotatePad, serveDragSide],
   )
 
   const endDrag = useCallback(
@@ -364,6 +371,7 @@ export function PlayerShotOriginDrag({
   draggableQuadrant = null,
   draggableTeam = null,
   freezeCoins = false,
+  courtLayout = 'portrait',
   currentUserId,
   currentUserAvatarUrl,
   onDragActiveChange,
@@ -404,7 +412,8 @@ export function PlayerShotOriginDrag({
             player={player}
             padRef={padRef}
             rotatePad={rotatePad}
-            courtPosition={resolveCoinCourtPosition(label, coinPlacements, courtInset)}
+            courtLayout={courtLayout}
+            courtPosition={resolveCoinCourtPosition(label, coinPlacements, courtInset, courtLayout)}
             courtInset={courtInset}
             serviceLinePlacement={serviceLinePlacement}
             serveDragSide={serveDragSide}

@@ -10,6 +10,7 @@ import { CompetitionCurrentGameCard } from './CompetitionCurrentGameCard'
 import { CompetitionGuestRoster } from './CompetitionGuestRoster'
 import { CompetitionSetupPanel } from './CompetitionSetupPanel'
 import type { CompetitionRow } from '../hooks/useCompetitions'
+import { competitionIsPast } from '../lib/competitionListCard'
 
 export type CompetitionListTab = 'current' | 'past'
 
@@ -24,11 +25,11 @@ type Props = {
   showListTabs?: boolean
 }
 
-export function splitCompetitionRows(rows: CompetitionRow[]) {
+export function splitCompetitionRows(rows: CompetitionRow[], now = Date.now()) {
   const current: CompetitionRow[] = []
   const past: CompetitionRow[] = []
   for (const row of rows) {
-    if (row.status === 'complete') past.push(row)
+    if (competitionIsPast(row, now)) past.push(row)
     else current.push(row)
   }
   past.sort((a, b) => {
@@ -112,6 +113,7 @@ function CompetitionCard({
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const isLive = Boolean(row.competition_started_at) && row.status !== 'complete'
   const isComplete = row.status === 'complete'
+  const canReviewScores = isComplete || Boolean(row.competition_started_at)
   const roster = row.session_players ?? []
   const playedOn = formatPastDate(row.competition_started_at ?? row.starts_at)
   const rosterCount = roster.length
@@ -226,7 +228,7 @@ function CompetitionCard({
             </div>
           )}
 
-          {isComplete && (
+          {canReviewScores && (
             <Link
               to={`/competitions/${row.id}`}
               className="brand-btn block w-full py-2 text-center"
@@ -333,7 +335,7 @@ export function CompetitionTable({
     if (currentRows.length === 0 && pastRows.length > 0) setInternalTab('past')
   }, [showListTabs, loading, currentRows.length, pastRows.length])
 
-  const listClass = showListTabs ? 'space-y-3' : '-mx-3 space-y-2'
+  const listClass = showListTabs ? 'space-y-3' : 'space-y-4'
 
   return (
     <div className={listClass}>
@@ -395,6 +397,7 @@ export function CompetitionTable({
             key={row.id}
             row={row}
             isAdmin={isAdmin}
+            userId={userId}
             onRefresh={onRefresh}
           />
         ))

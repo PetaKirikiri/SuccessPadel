@@ -1,6 +1,13 @@
 import type { TranslateFn } from '../i18n'
 import { ACHIEVEMENT_IMAGE, type Achievement } from '../lib/competitionAchievements'
-import { parsePlayStyles, playSideLabel } from '../lib/profileFields'
+import { parsePlayStyles } from '../lib/profileFields'
+import {
+  profileGenderFromStored,
+  profileHandFromStored,
+  profilePlayStyleLabel,
+  profileSideFromStored,
+  profileSkillFromStored,
+} from '../lib/profileI18n'
 import type { PublicPlayerProfile } from '../lib/playerProfile'
 
 type CompetitionStats = {
@@ -48,7 +55,7 @@ export function PlayerProfileView({
 }: Props) {
   const displayName = profile?.display_name?.trim() || fallbackName
   const playStyles = parsePlayStyles(profile?.play_style)
-  const sideLabel = playSideLabel(profile?.preferred_side)
+  const sideLabel = profileSideFromStored(profile?.preferred_side, t)
   const notSet = <span className="text-brand-muted">{t('playerProfile.notSet')}</span>
 
   const bodyClass = embedded ? 'px-4 py-3 md:px-5' : 'game-card px-4 py-3 md:px-5'
@@ -66,6 +73,18 @@ export function PlayerProfileView({
         <div className={embedded ? '' : 'mt-1'}>
           <Field label={t('profile.displayName')} value={displayName || notSet} />
           <Field
+            label={t('playerProfile.gender')}
+            value={profileGenderFromStored(profile?.gender, t) || notSet}
+          />
+          <Field
+            label={t('playerProfile.hand')}
+            value={profileHandFromStored(profile?.dominant_hand, t) || notSet}
+          />
+          <Field
+            label={t('playerProfile.level')}
+            value={profileSkillFromStored(profile?.skill_level, t) || notSet}
+          />
+          <Field
             label={t('playerProfile.playtomic')}
             value={profile?.playtomic_number?.trim() || notSet}
           />
@@ -76,7 +95,7 @@ export function PlayerProfileView({
               playStyles.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
                   {playStyles.map((style) => (
-                    <ReadChip key={style}>{style}</ReadChip>
+                    <ReadChip key={style}>{profilePlayStyleLabel(style, t)}</ReadChip>
                   ))}
                 </div>
               ) : (

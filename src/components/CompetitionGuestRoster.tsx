@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { competitionPlayUrl } from '../lib/siteUrl'
 import { rosterLabel } from '../lib/playerCaps'
+import { buildCompetitionRosterSlots } from '../lib/competitionRosterSlots'
 import { sortRosterByRank } from '../lib/rankedSchedule'
 import { supabase } from '../lib/supabaseClient'
 import type { CompetitionPlayer } from '../hooks/useCompetitions'
@@ -71,7 +72,11 @@ export function CompetitionGuestRoster({ sessionId, session, roster, isAdmin, on
       setError(null)
       const { error: err } = await supabase.rpc('sync_competition_roster_slots', {
         p_session_id: sessionId,
-        p_names: trimmed,
+        p_slots: buildCompetitionRosterSlots(
+          trimmed,
+          Array.from({ length: trimmed.length }, () => null),
+          Array.from({ length: trimmed.length }, () => null),
+        ),
       })
       setBusy(false)
       if (err) setError(err.message)

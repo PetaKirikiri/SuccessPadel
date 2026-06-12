@@ -9,7 +9,7 @@ import { PlayerProfileBanner } from '../components/PlayerProfileBanner'
 import { PlayerProfileCard } from '../components/PlayerProfileCard'
 import type { PlayerProfileTab } from '../components/PlayerProfileTabs'
 import { PlayerProfileView } from '../components/PlayerProfileView'
-import { ProfileDetailsForm } from '../components/ProfileDetailsForm'
+import { ProfileDetailsForm, type EditableProfile } from '../components/ProfileDetailsForm'
 import { useAuth } from '../hooks/useAuth'
 import { useLineClientProfile } from '../hooks/useLineClientProfile'
 import { useTranslation } from '../hooks/useTranslation'
@@ -30,6 +30,38 @@ type LocationState = {
   snapshot?: PlayerProfileSnapshot
 }
 
+function snapshotEntryMatchesRoute(
+  entry: LeaderboardEntry | null | undefined,
+  playerId: string | undefined,
+): boolean {
+  if (!entry || !playerId) return false
+  return (
+    entry.profile_id === playerId ||
+    entry.member_profile_id === playerId ||
+    entry.padel_player_id === playerId
+  )
+}
+
+function toEditableProfile(
+  source: EditableProfile | null | undefined,
+): EditableProfile | null {
+  if (!source) return null
+  return {
+    id: source.id,
+    display_name: source.display_name,
+    avatar_url: source.avatar_url,
+    playtomic_number: source.playtomic_number,
+    racket: source.racket,
+    play_style: source.play_style,
+    preferred_side: source.preferred_side,
+    enjoys_fun_games: source.enjoys_fun_games,
+    usually_free: source.usually_free,
+    gender: source.gender,
+    dominant_hand: source.dominant_hand,
+    skill_level: source.skill_level,
+  }
+}
+
 export function PlayerProfilePage() {
   const { playerId } = useParams()
   const [searchParams] = useSearchParams()
@@ -42,6 +74,9 @@ export function PlayerProfilePage() {
   const competitionId = searchParams.get('competition')
   const state = location.state as LocationState | null
   const snapshot = state?.snapshot ?? null
+  const routeEntry = snapshotEntryMatchesRoute(snapshot?.entry, playerId)
+    ? (snapshot?.entry ?? null)
+    : null
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [resolved, setResolved] = useState<Awaited<ReturnType<typeof resolvePlayerProfile>> | null>(
@@ -51,16 +86,63 @@ export function PlayerProfilePage() {
   const [linkTarget, setLinkTarget] = useState<{ id: string; name: string } | null>(null)
   const [tab, setTab] = useState<PlayerProfileTab>('profile')
 
-  const entry = snapshot?.entry ?? null
+  const isOwnProfile = Boolean(
+    user?.id && (user.id === playerId || user.id === resolved?.profile?.id),
+  )
 
-  const profileId =
-    resolved?.profile?.id ??
-    entry?.member_profile_id ??
-    (entry?.is_guest ? null : entry?.profile_id) ??
-    playerId ??
-    null
+  const isAdmin = Boolean(authProfile?.is_admin)
 
-  const isOwnProfile = Boolean(user?.id && profileId && user.id === profileId)
+  const profileId = useMemo(
+    () =>
+      resolved?.profile?.id ??
+      routeEntry?.member_profile_id ??
+      (routeEntry?.is_guest ? null : routeEntry?.profile_id) ??
+      playerId ??
+      null,
+    [playerId, resolved?.profile?.id, routeEntry],
+  )
+
+  const editableProfile = useMemo(() => {
+    if (isOwnProfile && authProfile) return toEditableProfile(authProfile)
+    if (isAdmin && resolved?.profile) return toEditableProfile(resolved.profile)
+    if (isOwnProfile && resolved?.profile) return toEditableProfile(resolved.profile)
+    return null
+  }, [authProfile, isAdmin, isOwnProfile, resolved?.profile])
+
+  const canEditProfile = Boolean(editableProfile && (isOwnProfile || isAdmin))
+
+  const displayName = useMemo(() => {
+    const viewedName =
+      resolved?.profile?.display_name ??
+      resolved?.guestName ??
+      routeEntry?.display_name ??
+      t('playerProfile.player')
+    if (!isOwnProfile) return viewedName
+    return authProfile?.display_name ?? viewedName
+  }, [
+    authProfile?.display_name,
+    isOwnProfile,
+    resolved?.guestName,
+    resolved?.profile?.display_name,
+    routeEntry?.display_name,
+    t,
+  ])
+
+  const avatarUrl = useMemo(() => {
+    const viewedAvatar =
+      resolved?.profile?.avatar_url ??
+      resolved?.guestAvatarUrl ??
+      routeEntry?.avatar_url ??
+      null
+    if (!isOwnProfile) return viewedAvatar
+    return authProfile?.avatar_url ?? viewedAvatar
+  }, [
+    authProfile?.avatar_url,
+    isOwnProfile,
+    resolved?.guestAvatarUrl,
+    resolved?.profile?.avatar_url,
+    routeEntry?.avatar_url,
+  ])
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -97,38 +179,46 @@ export function PlayerProfilePage() {
     void resolvePlayerProfile(playerId).then(setResolved)
   }
 
-  const displayName =
-    authProfile?.display_name ??
-    resolved?.profile?.display_name ??
-    resolved?.guestName ??
-    entry?.display_name ??
-    t('playerProfile.player')
+  const competitionStats =
+    snapshot && routeEntry
+      ? {
+          rank: snapshot.rank,
+          points: routeEntry.total_points,
+          games: routeEntry.games,
+          unit: snapshot.unit,
+        }
+      : null
 
-  const avatarUrl = authProfile?.avatar_url ?? resolved?.profile?.avatar_url ?? entry?.avatar_url ?? resolved?.guestAvatarUrl ?? null
+  const badges = routeEntry ? (snapshot?.badges ?? []) : []
 
   const memberSince = resolved?.profile?.created_at
     ? formatMemberSince(resolved.profile.created_at, locale)
     : null
 
-  const competitionStats =
-    snapshot && entry
-      ? {
-          rank: snapshot.rank,
-          points: entry.total_points,
-          games: entry.games,
-          unit: snapshot.unit,
-        }
-      : null
+  const linkablePadelPlayerId = useMemo(() => {
+    if (resolved?.linkablePadelPlayerId) return resolved.linkablePadelPlayerId
+    if (routeEntry?.padel_player_id && isClaimableGuest(routeEntry)) {
+      return routeEntry.padel_player_id
+    }
+    if (!resolved?.profile) {
+      return resolved?.padelPlayerId ?? playerId ?? null
+    }
+    return null
+  }, [playerId, resolved, routeEntry])
 
-  const badges = snapshot?.badges ?? []
+  const canConnectLine = useMemo(() => {
+    if (!linkablePadelPlayerId) return false
+    if (isAdmin) return true
+    if (user) return false
+    if (routeEntry) return isClaimableGuest(routeEntry)
+    return true
+  }, [isAdmin, linkablePadelPlayerId, routeEntry, user])
 
   const padelPlayerId =
-    entry?.padel_player_id ?? resolved?.padelPlayerId ?? (resolved?.profile ? null : playerId)
-
-  const claimable = useMemo(() => {
-    if (entry) return isClaimableGuest(entry) && !user
-    return Boolean(padelPlayerId && !resolved?.profile && !user)
-  }, [entry, user, padelPlayerId, resolved?.profile])
+    routeEntry?.padel_player_id ??
+    resolved?.padelPlayerId ??
+    linkablePadelPlayerId ??
+    (resolved?.profile ? null : playerId)
 
   const goBack = () => {
     if (state?.from) navigate(state.from)
@@ -186,16 +276,16 @@ export function PlayerProfilePage() {
                   name={displayName}
                   avatarUrl={avatarUrl}
                   memberSince={isOwnProfile ? null : memberSince}
-                  canAddLine={claimable}
+                  canAddLine={canConnectLine}
                   onAddLine={
-                    claimable && padelPlayerId
-                      ? () => setLinkTarget({ id: padelPlayerId, name: displayName })
+                    canConnectLine && linkablePadelPlayerId
+                      ? () => setLinkTarget({ id: linkablePadelPlayerId, name: displayName })
                       : undefined
                   }
                   onChangePhoto={
-                    isOwnProfile ? () => fileInputRef.current?.click() : undefined
+                    canEditProfile ? () => fileInputRef.current?.click() : undefined
                   }
-                  changePhotoLabel={isOwnProfile ? t('profile.changePhoto') : undefined}
+                  changePhotoLabel={canEditProfile ? t('profile.changePhoto') : undefined}
                   t={t}
                 />
               }
@@ -205,16 +295,15 @@ export function PlayerProfilePage() {
                   playerId={profileId ?? padelPlayerId ?? playerId}
                   embedded
                 />
-              ) : isOwnProfile && authProfile ? (
+              ) : canEditProfile && editableProfile ? (
                 <>
-                  <div className="px-4 py-3 md:px-5">
-                    <ProfileDetailsForm
-                      profile={authProfile}
-                      onSaved={reloadProfile}
-                      hideBanner
-                      fileInputRef={fileInputRef}
-                    />
-                  </div>
+                  <ProfileDetailsForm
+                    profile={editableProfile}
+                    isAdmin={isAdmin}
+                    onSaved={reloadProfile}
+                    hideBanner
+                    fileInputRef={fileInputRef}
+                  />
                   {competitionStats && (
                     <section className="border-t border-brand-border/60 px-4 py-3 md:px-5">
                       <h2 className="font-display text-sm font-semibold text-brand-primary md:text-base">

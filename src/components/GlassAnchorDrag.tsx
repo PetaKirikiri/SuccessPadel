@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import { clientToPadNormalized, type NormalizedPoint } from '../lib/gestureCapture'
-import { pct, padNormToCourtNorm, type CourtInsetBounds } from '../lib/padelCourtLayout'
+import { pct, padNormToCourtNorm, type CourtInsetBounds, type CourtLayout } from '../lib/padelCourtLayout'
 
 type Props = {
   padRef: RefObject<HTMLDivElement | null>
   rotatePad: boolean
+  courtLayout?: CourtLayout
   anchorPad: NormalizedPoint
   courtInset: CourtInsetBounds | null
   interactive?: boolean
@@ -15,6 +16,7 @@ type Props = {
 export function GlassAnchorDrag({
   padRef,
   rotatePad,
+  courtLayout = 'portrait',
   anchorPad,
   courtInset,
   interactive = true,
@@ -34,7 +36,7 @@ export function GlassAnchorDrag({
   )
 
   const courtPos = courtInset
-    ? padNormToCourtNorm(anchorPad, courtInset)
+    ? padNormToCourtNorm(anchorPad, courtInset, courtLayout)
     : anchorPad
 
   useEffect(() => {

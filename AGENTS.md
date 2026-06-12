@@ -22,13 +22,32 @@
 
 **TestFlight build:** `npm run ios:release` (needs `.env.production.local`)
 
+## Deployment (web)
+
+Deploys are **git-based** — not manual Vercel CLI deploys.
+
+1. Commit changes on `main` (only when the user asks to commit).
+2. `git push origin main`
+3. Vercel picks up the push and builds/deploys production automatically.
+
+Do **not** use `vercel deploy` or npx vercel for routine releases unless the user explicitly asks. Supabase migrations and edge functions are separate (`supabase db push`, `supabase functions deploy …`).
+
+## Local dev server
+
+| Where | URL |
+|--------|-----|
+| **Mac (this machine)** | `http://localhost:5173` — `npm run dev` |
+| **Phone/tablet (LAN)** | `http://172.20.10.2:5173` — `npm run dev:phone` |
+
+Peta’s Mac LAN IP (checked 2026-06-10): **172.20.10.2** (`en0`, often iPhone hotspot — re-check with `ipconfig getifaddr en0` if it stops working).
+
 ## Local dev debug ingest
 
 Phone/tablet on the same Wi‑Fi can POST debug logs back to your Mac while `npm run dev` / `npm run dev:phone` is running.
 
 1. Start dev server: `npm run dev:phone` (binds `0.0.0.0:5173`)
 2. Tail logs: `npm run debug:tail` (writes to `.debug/ingest.jsonl`)
-3. Open app with **`?debug=1`** once (sticky in localStorage), e.g. `http://192.168.x.x:5173/friendly/…/pad?debug=1`
+3. Open app with **`?debug=1`** once (sticky in localStorage), e.g. `http://172.20.10.2:5173/friendly/…/pad?debug=1`
 4. Or set `VITE_DEV_DEBUG=1` in `.env.local` for always-on ingest in DEV
 
 Client API: [`src/lib/debug/devDebug.ts`](src/lib/debug/devDebug.ts) — `devDebugLog(channel, message, data)`. Vite middleware: [`scripts/viteDebugIngestPlugin.ts`](scripts/viteDebugIngestPlugin.ts).

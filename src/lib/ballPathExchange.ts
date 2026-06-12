@@ -1,6 +1,6 @@
 import type { CapturedGesture, NormalizedPoint, Quadrant } from './gestureCapture'
 import { quadrantTeam } from './gestureScoring'
-import { padNormToCourtNorm, type CourtInsetBounds } from './padelCourtLayout'
+import { padNormToCourtNorm, type CourtInsetBounds, type CourtLayout } from './padelCourtLayout'
 import { partnerQuadrant } from './serveRotation'
 import type { BallPathResult } from './ballPathScoring'
 import type { RallyWheelShot, BallPathTagPhase, ShotWaveOption } from './rallyShotWheel'
@@ -42,8 +42,9 @@ export function defenderQuadrantForPath(result: BallPathResult): Quadrant {
 export function wheelAnchor(
   linePoint: NormalizedPoint,
   inset: CourtInsetBounds | null,
+  layout: CourtLayout = 'portrait',
 ): NormalizedPoint {
-  return inset ? padNormToCourtNorm(linePoint, inset) : linePoint
+  return inset ? padNormToCourtNorm(linePoint, inset, layout) : linePoint
 }
 
 export type FinalizedBallPath = {

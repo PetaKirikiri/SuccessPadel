@@ -9,6 +9,13 @@ export function parseScoreField(value: string): number | null {
   return n
 }
 
+export function bumpScoreField(value: string, delta: number, max?: number): string {
+  const current = parseScoreField(value) ?? 0
+  let next = Math.max(0, current + delta)
+  if (max != null) next = Math.min(max, next)
+  return String(next)
+}
+
 /** Score shown in inputs and used for submit — while editing, never fall back to saved. */
 export function effectiveScoreField(
   draftValue: string | undefined,

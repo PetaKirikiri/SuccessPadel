@@ -34,6 +34,14 @@ export function competitionScheduledLabel(
   return to ? `${date} · ${from}–${to}` : `${date} · ${from}`
 }
 
+/** Listed under Past when complete or the scheduled window has ended. */
+export function competitionIsPast(
+  row: Pick<GameSession, 'starts_at' | 'ends_at' | 'status' | 'scoring_config'>,
+  now: number = Date.now(),
+): boolean {
+  return competitionCardPhase(row, now) === 'finished'
+}
+
 export function competitionCardPhase(
   row: Pick<GameSession, 'starts_at' | 'ends_at' | 'status' | 'scoring_config'>,
   now: number,

@@ -126,6 +126,13 @@ export type Messages = {
     weekLeft: string
     weeksLeft: string
     gamesPlayed: string
+    filterAll: string
+    filterFormat: string
+    filterGender: string
+    filterLevel: string
+    filterSolo: string
+    filterDuos: string
+    noScoresFilterHint: string
   }
   achievements: {
     matchAwardsTitle: string
@@ -314,6 +321,36 @@ export type Messages = {
     preferredSide: string
     funGames: string
     usuallyFree: string
+    gender: string
+    hand: string
+    level: string
+    adminFields: string
+    adminSave: string
+    adminSaved: string
+    connectLine: string
+    save: string
+    genderMale: string
+    genderFemale: string
+    handLeft: string
+    handRight: string
+    sideLeft: string
+    sideRight: string
+    sideBoth: string
+    skillBeginner: string
+    skillLowInter: string
+    skillIntermediate: string
+    skillAdvanced: string
+    skillOpen: string
+    styleAggressive: string
+    styleDefensive: string
+    styleAllCourt: string
+    styleNetPlayer: string
+    styleBaseline: string
+    stylePower: string
+    styleControl: string
+    racketPlaceholder: string
+    usuallyFreePlaceholder: string
+    playtomicPlaceholder: string
     yes: string
     no: string
   }
@@ -476,6 +513,45 @@ export type Messages = {
       ballPath: string
       serve: string
     }
+  }
+  practice: {
+    courtButton: string
+    legendTitle: string
+    legendServe: string
+    legendRally: string
+    outcome: {
+      score: string
+      scoreDesc: string
+      out: string
+      outDesc: string
+      net: string
+      netDesc: string
+      glass: string
+      glassDesc: string
+      serveIn: string
+      serveInDesc: string
+      serveNet: string
+      serveNetDesc: string
+      serveOut: string
+      serveOutDesc: string
+    }
+  }
+  members: {
+    title: string
+    myProfile: string
+    empty: string
+    lineLinked: string
+    otherMembers: string
+    guestPlayers: string
+    noLineMembers: string
+    noOtherMembers: string
+    noGuestPlayers: string
+    gameInvolvement: string
+    linkLine: string
+    create: string
+    createHint: string
+    createAccept: string
+    createFailed: string
   }
   lang: {
     en: string

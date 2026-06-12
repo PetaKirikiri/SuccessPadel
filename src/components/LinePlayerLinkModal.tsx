@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from '../hooks/useTranslation'
-import { createLinePlayerLinkRequest, type LinePlayerLinkRequest } from '../lib/line/playerLink'
+import {
+  createLinePlayerLinkRequest,
+  getCachedLinePlayerLinkRequest,
+  type LinePlayerLinkRequest,
+} from '../lib/line/playerLink'
 import { LineSignUpQr } from './LineSignUpQr'
 
 const LINE_ADD_FRIEND_GUIDE_SRC = '/assets/line-add-friend-guide.png'
@@ -40,14 +44,24 @@ export function LinePlayerLinkModal({
   onClose,
 }: Props) {
   const { t } = useTranslation()
-  const [request, setRequest] = useState<LinePlayerLinkRequest | null>(null)
+  const [request, setRequest] = useState<LinePlayerLinkRequest | null>(
+    () => getCachedLinePlayerLinkRequest(padelPlayerId),
+  )
   const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() => !getCachedLinePlayerLinkRequest(padelPlayerId))
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     let active = true
+    const cached = getCachedLinePlayerLinkRequest(padelPlayerId)
+    if (cached) {
+      setRequest(cached)
+      setLoading(false)
+      setError(null)
+      return
+    }
+
     setLoading(true)
     setError(null)
     setQrDataUrl(null)
@@ -59,6 +73,7 @@ export function LinePlayerLinkModal({
       if (!active) return
       if (err || !req) {
         setError(err ?? t('lineLink.couldNotStart'))
+        setRequest(null)
       } else {
         setRequest(req)
       }
@@ -67,7 +82,7 @@ export function LinePlayerLinkModal({
     return () => {
       active = false
     }
-  }, [competitionId, padelPlayerId, attempt])
+  }, [competitionId, padelPlayerId, attempt, t])
 
   return createPortal(
     <div

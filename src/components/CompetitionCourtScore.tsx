@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { AmericanoScoringUnit } from '../lib/competitionPresets'
-import { parseScoreField, scoreDigitsOnly } from '../lib/competitionScoreInput'
+import { bumpScoreField, parseScoreField, scoreDigitsOnly } from '../lib/competitionScoreInput'
 import type { MatchTeam } from '../lib/types'
 import { supabase } from '../lib/supabaseClient'
 
@@ -93,30 +93,55 @@ function TeamPointsRow({
   value,
   onChange,
   scoreUnit = 'points',
+  scoreMax,
   large = false,
 }: {
   names: string
   value: string
   onChange: (v: string) => void
   scoreUnit?: AmericanoScoringUnit
+  scoreMax?: number
   large?: boolean
 }) {
   const fieldLabel = scoreFieldLabel(scoreUnit)
+  const inputClass = `rounded-lg border border-brand-border bg-brand-bg text-center font-semibold tabular-nums text-brand-primary ${
+    large ? 'w-16 px-2 py-3 text-3xl' : 'w-10 px-1 py-1.5 text-lg'
+  }`
+  const stepClass = `flex items-center justify-center rounded font-bold leading-none text-brand-muted active:bg-brand-bg-alt ${
+    large ? 'h-7 w-16 text-sm' : 'h-5 w-10 text-[10px]'
+  }`
+
   return (
     <div className={`flex items-center ${large ? 'gap-4' : 'gap-3'}`}>
       <TeamNames names={names} large={large} />
       <div className={`flex shrink-0 items-center ${large ? 'gap-3' : 'gap-2'}`}>
-        <input
-          type="text"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          value={value}
-          onChange={(e) => onChange(scoreDigitsOnly(e.target.value))}
-          className={`rounded-lg border border-brand-border bg-brand-bg text-center font-semibold tabular-nums text-brand-primary ${
-            large ? 'w-24 px-3 py-4 text-4xl' : 'w-[4.5rem] px-2 py-2 text-xl'
-          }`}
-          aria-label={`${fieldLabel} for ${names}`}
-        />
+        <div className="flex flex-col items-center gap-0.5">
+          <button
+            type="button"
+            aria-label={`Increase ${fieldLabel} for ${names}`}
+            className={stepClass}
+            onClick={() => onChange(bumpScoreField(value, 1, scoreMax))}
+          >
+            ▲
+          </button>
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={value}
+            onChange={(e) => onChange(scoreDigitsOnly(e.target.value))}
+            className={inputClass}
+            aria-label={`${fieldLabel} for ${names}`}
+          />
+          <button
+            type="button"
+            aria-label={`Decrease ${fieldLabel} for ${names}`}
+            className={stepClass}
+            onClick={() => onChange(bumpScoreField(value, -1, scoreMax))}
+          >
+            ▼
+          </button>
+        </div>
         <span
           className={`font-semibold text-brand-muted ${large ? 'text-xl' : 'text-base'}`}
         >
@@ -402,6 +427,7 @@ export function CompetitionCourtScore({
                       value={ourValue}
                       onChange={setOurValue}
                       scoreUnit={scoreUnit}
+                      scoreMax={playTo}
                       large={large}
                     />
                     {large && (
@@ -414,6 +440,7 @@ export function CompetitionCourtScore({
                       value={theirValue}
                       onChange={setTheirValue}
                       scoreUnit={scoreUnit}
+                      scoreMax={playTo}
                       large={large}
                     />
                   </>
@@ -424,6 +451,7 @@ export function CompetitionCourtScore({
                       value={teamAPoints}
                       onChange={markDirty(setTeamAPoints)}
                       scoreUnit={scoreUnit}
+                      scoreMax={playTo}
                       large={large}
                     />
                     <TeamPointsRow
@@ -431,6 +459,7 @@ export function CompetitionCourtScore({
                       value={teamBPoints}
                       onChange={markDirty(setTeamBPoints)}
                       scoreUnit={scoreUnit}
+                      scoreMax={playTo}
                       large={large}
                     />
                   </>

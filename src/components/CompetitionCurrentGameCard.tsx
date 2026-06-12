@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { FriendlyRosterList } from './FriendlyRosterList'
+import { FriendlyRuleSettings } from './FriendlyRuleSettings'
 import { useTranslation } from '../hooks/useTranslation'
 import { translateCountdownLabel, translatePhaseBadge } from '../i18n/competitionLabels'
 import type { CompetitionRow } from '../hooks/useCompetitions'
@@ -7,44 +9,50 @@ import {
   competitionCardPhase,
   competitionCountdown,
   competitionIsLiveByTime,
-  competitionLayoutSpiel,
-  competitionScheduledLabel,
 } from '../lib/competitionListCard'
-import { rosterLabel } from '../lib/playerCaps'
+import {
+  competitionRosterSlots,
+  competitionRuleChips,
+  competitionScheduleDisplay,
+} from '../lib/competitionGameDisplay'
 import { supabase } from '../lib/supabaseClient'
 
 type Props = {
   row: CompetitionRow
   isAdmin?: boolean
+  userId?: string | null
   onRefresh?: () => void
 }
 
-export function CompetitionCurrentGameCard({ row, isAdmin = false, onRefresh }: Props) {
+export function CompetitionCurrentGameCard({
+  row,
+  isAdmin = false,
+  userId,
+  onRefresh,
+}: Props) {
   const { t } = useTranslation()
   const [busy, setBusy] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [now, setNow] = useState(Date.now())
 
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(t)
+    const timer = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(timer)
   }, [])
 
   const phase = useMemo(() => competitionCardPhase(row, now), [row, now])
   const countdown = useMemo(() => competitionCountdown(row, now), [row, now])
-  const scheduled = useMemo(() => competitionScheduledLabel(row), [row])
-  const spiel = useMemo(() => competitionLayoutSpiel(row), [row])
+  const schedule = useMemo(() => competitionScheduleDisplay(row), [row])
+  const ruleChips = useMemo(() => competitionRuleChips(row, t), [row, t])
+  const slots = useMemo(() => competitionRosterSlots(row), [row])
   const badge = translatePhaseBadge(t, phase)
   const isLive = competitionIsLiveByTime(row, now)
 
-  const rosterCount = row.session_players?.length ?? 0
-  const target = row.target_players ?? row.max_players ?? null
-  const spots =
-    target != null
-      ? rosterLabel(rosterCount, target, row.player_cap_mode === 'flexible')
-      : String(rosterCount)
+  const statusLine = [badge, countdown && `${translateCountdownLabel(t, countdown.label)} ${countdown.value}`]
+    .filter(Boolean)
+    .join(' · ')
 
-  const metaParts = [badge, row.skill_level, row.gender, spots].filter(Boolean)
+  const detailTo = isAdmin ? `/competitions/${row.id}/run` : `/competitions/${row.id}`
 
   const remove = async () => {
     const warning = isLive
@@ -62,38 +70,63 @@ export function CompetitionCurrentGameCard({ row, isAdmin = false, onRefresh }: 
     else onRefresh?.()
   }
 
-  return (
-    <article className="game-card overflow-hidden p-0">
-      <Link
-        to={`/competitions/${row.id}`}
-        className="block transition-opacity active:opacity-80"
-      >
-        <div className="px-3 py-2.5">
-          <div className="flex min-w-0 items-center gap-2">
-            <div className="min-w-0 flex-1">
-              <p className="font-display text-sm font-semibold leading-snug text-brand-primary">
-                {row.title}
-              </p>
-              <p className="mt-0.5 text-[11px] leading-snug text-brand-muted">
-                {[scheduled, metaParts.join(' · ')].filter(Boolean).join(' · ')}
-              </p>
-              {countdown && (
-                <p className="mt-0.5 text-[11px] tabular-nums text-brand-muted">
-                  {translateCountdownLabel(t, countdown.label)} {countdown.value}
-                </p>
-              )}
-              <p className="mt-1 text-[11px] leading-snug text-brand-muted">{spiel}</p>
-            </div>
-            <span className="shrink-0 text-sm text-brand-muted">›</span>
+  const dateTitleRow = (
+    <div className="flex min-w-0 items-start justify-between gap-2 sm:gap-3">
+      <p className="min-w-0 flex-1 break-words font-display text-base font-bold leading-tight text-brand-primary sm:text-xl md:text-2xl">
+        {schedule.dateLine}
+      </p>
+      <p className="min-w-0 max-w-[46%] shrink-0 text-right font-display text-sm font-semibold leading-snug text-brand-primary line-clamp-2 sm:max-w-[42%] sm:text-base md:text-lg">
+        {row.title}
+      </p>
+    </div>
+  )
+
+  const timeRow = schedule.timeLine ? (
+    <p className="break-all font-display text-lg font-bold leading-tight tabular-nums text-brand-text sm:break-words sm:text-2xl md:text-3xl">
+      {schedule.timeLine}
+    </p>
+  ) : null
+
+  const inner = (
+    <div className="min-w-0 overflow-hidden px-3 py-3 sm:px-4 sm:py-4">
+      {ruleChips.length > 0 ? (
+        <div className="flex w-full min-w-0 max-w-full flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
+          <div className="flex min-w-0 max-w-full flex-1 flex-col justify-center gap-0.5 sm:gap-1">
+            {dateTitleRow}
+            {timeRow}
+            {statusLine ? (
+              <p className="text-xs font-semibold tabular-nums text-brand-accent">{statusLine}</p>
+            ) : null}
           </div>
+          <FriendlyRuleSettings chips={ruleChips} inline />
         </div>
+      ) : (
+        <div className="min-w-0 space-y-0.5">
+          {dateTitleRow}
+          {timeRow}
+          {statusLine ? (
+            <p className="text-xs font-semibold tabular-nums text-brand-accent">{statusLine}</p>
+          ) : null}
+        </div>
+      )}
+
+      <div className="mt-4 border-t-2 border-brand-border pt-3">
+        <FriendlyRosterList slots={slots} currentUserId={userId} />
+      </div>
+    </div>
+  )
+
+  return (
+    <article className="w-full min-w-0 max-w-full overflow-hidden rounded-2xl border-2 border-brand-primary/25 bg-brand-surface shadow-[0_4px_16px_-4px_rgba(96,45,36,0.22)]">
+      <Link to={detailTo} className="block min-w-0 overflow-hidden transition active:opacity-80">
+        {inner}
       </Link>
 
       {isAdmin ? (
-        <div className="flex gap-2 border-t border-brand-border/60 px-3 py-2.5">
+        <div className="flex gap-2 border-t-2 border-brand-border px-4 py-3">
           <Link
             to={`/competitions/${row.id}/edit`}
-            className="brand-btn-outline flex-1 py-2 text-center text-sm"
+            className="brand-btn-outline flex-1 py-2 text-center text-sm font-semibold"
           >
             {t('competition.edit')}
           </Link>
@@ -108,7 +141,7 @@ export function CompetitionCurrentGameCard({ row, isAdmin = false, onRefresh }: 
         </div>
       ) : null}
 
-      {deleteError && <p className="px-3 pb-2 text-xs text-red-600">{deleteError}</p>}
+      {deleteError ? <p className="px-4 pb-3 text-xs text-red-600">{deleteError}</p> : null}
     </article>
   )
 }

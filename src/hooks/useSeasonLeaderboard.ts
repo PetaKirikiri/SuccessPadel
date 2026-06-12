@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { LeaderboardEntry } from '../components/CompetitionLeaderboard'
+import {
+  DEFAULT_LEADERBOARD_FILTERS,
+  leaderboardFiltersToRpc,
+} from '../lib/leaderboardFilters'
 import { normalizeLeaderboardEntries } from '../lib/leaderboardEntries'
 import { supabase } from '../lib/supabaseClient'
 
@@ -18,7 +22,7 @@ type SeasonLeaderboardPayload = {
   has_live_competition: boolean
 }
 
-export function useSeasonLeaderboard(enabled = true) {
+export function useSeasonLeaderboard(enabled = true, filters = DEFAULT_LEADERBOARD_FILTERS) {
   const [season, setSeason] = useState<SeasonLeaderboardMeta | null>(null)
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [hasLiveCompetition, setHasLiveCompetition] = useState(false)
@@ -30,7 +34,9 @@ export function useSeasonLeaderboard(enabled = true) {
     if (!silent) setLoading(true)
     setError(null)
     try {
-      const { data, error: rpcErr } = await supabase.rpc('get_season_competition_leaderboard', {})
+      const { data, error: rpcErr } = await supabase.rpc('get_season_competition_leaderboard', {
+        ...leaderboardFiltersToRpc(filters),
+      })
       if (rpcErr) throw new Error(rpcErr.message)
 
       const payload = data as SeasonLeaderboardPayload | null
@@ -51,7 +57,7 @@ export function useSeasonLeaderboard(enabled = true) {
     } finally {
       if (!silent) setLoading(false)
     }
-  }, [enabled])
+  }, [enabled, filters])
 
   useEffect(() => {
     if (!enabled) {

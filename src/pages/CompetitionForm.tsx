@@ -1,59 +1,38 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
-  type AmericanoScoringChoice,
-  americanoScoringFromConfig,
-  buildAmericanoScoringConfig,
-  buildCompetitionTitle,
-  buildRulesText,
-  DURATIONS,
-  GENDERS,
-  partnershipModeToRules,
-  PLAYER_CAPS,
-  rulesToPartnershipMode,
-  SKILL_LEVELS,
-  type Gender,
-  type PartnerStyle,
-  type RuleFormat,
-  type SkillLevel,
-} from '../lib/competitionPresets'
-import {
+  clubTimePartsFromDate,
+  clubTimeSlotValue,
   formatDateInput,
-  formatHourLabel,
-  maxDurationFromStart,
-  scheduleGridHours,
+  parseClubTimeSlotValue,
+  scheduleHalfHourSlots,
+  snapToHalfHour,
   toIsoTimestamp,
 } from '../lib/courtSchedule'
 import { useAuth } from '../hooks/useAuth'
 import { useCompetitionFormDraft } from '../hooks/useCompetitionFormDraft'
-import {
-  formatDraftSavedAt,
-  type CompetitionFormDraft,
-} from '../lib/competitionFormDraft'
+import { type CompetitionFormDraft } from '../lib/competitionFormDraft'
 import type { CompetitionPlayer } from '../hooks/useCompetitions'
-import { CompetitionLayoutPreview } from '../components/CompetitionLayoutPreview'
-import { CompetitionRulesSetup } from '../components/CompetitionRulesSetup'
-import { MemberPlayerSlots } from '../components/MemberPlayerSlots'
-import { CompetitionSchedulePreview } from '../components/CompetitionSchedulePreview'
-import { CompetitionScheduleQualityFeedback } from '../components/CompetitionScheduleQualityFeedback'
+import { MemberPlayerSlots, type PadelPlayerOption } from '../components/MemberPlayerSlots'
+import { FriendlyRuleSettings } from '../components/FriendlyRuleSettings'
+import { useTranslation } from '../hooks/useTranslation'
 import { measureScheduleQuality, solveBalancedSchedule } from '../lib/balancedSchedule'
 import {
-  americanoGamesFromConfig,
-  breakMinutesFromConfig,
-  courtsNeeded,
-  gameMinutesFromConfig,
-  isValidCourtLayout,
-  planAmericanoSchedule,
-} from '../lib/competitionLayout'
-import { rosterFromSlots } from '../lib/rosterPreview'
-import {
   buildStoredSchedule,
-  planRankedSchedule,
   RANKED_SCHEDULE_VERSION,
   sortRosterByRank,
 } from '../lib/rankedSchedule'
+import {
+  LOCKED_COMPETITION,
+  lockedCompetitionEventMinutes,
+  lockedCompetitionRuleChips,
+  lockedCompetitionScoringConfig,
+  lockedCompetitionSessionFields,
+} from '../lib/lockedCompetitionFormat'
+import { buildCompetitionAutoTitle, GENDERS, SKILL_LEVELS, type Gender, type SkillLevel } from '../lib/competitionPresets'
+import { buildCompetitionRosterSlots } from '../lib/competitionRosterSlots'
 import { supabase } from '../lib/supabaseClient'
-import type { GameSession, Profile } from '../lib/types'
+import type { Profile } from '../lib/types'
 
 function Chip({
   active,
@@ -83,54 +62,69 @@ function bangkokDateFromIso(iso: string): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date(iso))
 }
 
+function padArray<T>(values: T[], count: number, fill: T): T[] {
+  const next = values.slice(0, count)
+  while (next.length < count) next.push(fill)
+  return next
+}
+
+function flushPendingInputs(): Promise<void> {
+  return new Promise((resolve) => {
+    const active = document.activeElement
+    if (active instanceof HTMLElement) active.blur()
+    window.setTimeout(() => resolve(), 160)
+  })
+}
+
 export function CompetitionForm() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { t } = useTranslation()
   const [day, setDay] = useState(formatDateInput(new Date()))
   const [startHour, setStartHour] = useState(18)
-  const [duration, setDuration] = useState(2)
+  const [startMinute, setStartMinute] = useState(0)
   const [skillLevel, setSkillLevel] = useState<SkillLevel>('Low Inter')
   const [gender, setGender] = useState<Gender>('Mixed')
-  const [targetPlayers, setTargetPlayers] = useState<4 | 8 | 12 | 16>(8)
-  const [ruleFormat, setRuleFormat] = useState<RuleFormat>('king_of_court')
-  const [partnerStyle, setPartnerStyle] = useState<PartnerStyle>('swapped')
-  const [americanoScoring, setAmericanoScoring] = useState<AmericanoScoringChoice>('open')
-  const [gameCount, setGameCount] = useState(7)
-  const [gameMinutes, setGameMinutes] = useState(14)
-  const [breakMinutes, setBreakMinutes] = useState(3)
   const [title, setTitle] = useState('')
+  const [titleEdited, setTitleEdited] = useState(Boolean(id))
   const [seasonId, setSeasonId] = useState('')
   const [seasonLoading, setSeasonLoading] = useState(true)
   const [seasonError, setSeasonError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [playerSlots, setPlayerSlots] = useState<string[]>(() => Array(8).fill(''))
-  const [profileIds, setProfileIds] = useState<(string | null)[]>(() => Array(8).fill(null))
+  const [playerSlots, setPlayerSlots] = useState<string[]>(() =>
+    Array(LOCKED_COMPETITION.targetPlayers).fill(''),
+  )
+  const [profileIds, setProfileIds] = useState<(string | null)[]>(() =>
+    Array(LOCKED_COMPETITION.targetPlayers).fill(null),
+  )
+  const [padelPlayerIds, setPadelPlayerIds] = useState<(string | null)[]>(() =>
+    Array(LOCKED_COMPETITION.targetPlayers).fill(null),
+  )
   const [profiles, setProfiles] = useState<Profile[]>([])
-  const [courtNames, setCourtNames] = useState<string[]>([])
+  const [padelPlayers, setPadelPlayers] = useState<PadelPlayerOption[]>([])
   const [previewSeed, setPreviewSeed] = useState(0)
-  const [editHydrated, setEditHydrated] = useState(!id)
-  const [wasStarted, setWasStarted] = useState(false)
+  const [slotCount, setSlotCount] = useState(LOCKED_COMPETITION.targetPlayers)
+  const [competitionStarted, setCompetitionStarted] = useState(false)
+  const [rosterHydrated, setRosterHydrated] = useState(!id)
 
   const draftScope = id ?? 'new'
   const applyDraft = useCallback((draft: CompetitionFormDraft) => {
     setDay(draft.day)
     setStartHour(draft.startHour)
-    setDuration(draft.duration)
-    setSkillLevel(draft.skillLevel)
-    setGender(draft.gender)
-    setTargetPlayers(draft.targetPlayers)
-    setRuleFormat(draft.ruleFormat)
-    setPartnerStyle(draft.partnerStyle)
-    setAmericanoScoring(draft.americanoScoring)
-    setGameCount(draft.gameCount)
-    setGameMinutes(draft.gameMinutes)
-    setBreakMinutes(draft.breakMinutes)
+    setStartMinute(draft.startMinute === 30 ? 30 : 0)
+    if (SKILL_LEVELS.includes(draft.skillLevel as SkillLevel)) {
+      setSkillLevel(draft.skillLevel as SkillLevel)
+    }
+    if (GENDERS.includes(draft.gender as Gender)) {
+      setGender(draft.gender as Gender)
+    }
     setTitle(draft.title)
+    setTitleEdited(draft.titleEdited)
     setPreviewSeed(draft.previewSeed)
-    const slots = Array(draft.targetPlayers).fill('')
-    for (let i = 0; i < Math.min(draft.playerSlots.length, draft.targetPlayers); i += 1) {
+    const slots = Array(LOCKED_COMPETITION.targetPlayers).fill('')
+    for (let i = 0; i < Math.min(draft.playerSlots.length, LOCKED_COMPETITION.targetPlayers); i += 1) {
       slots[i] = draft.playerSlots[i] ?? ''
     }
     setPlayerSlots(slots)
@@ -140,155 +134,69 @@ export function CompetitionForm() {
     (): Omit<CompetitionFormDraft, 'v' | 'savedAt'> => ({
       day,
       startHour,
-      duration,
+      startMinute,
       skillLevel,
       gender,
-      targetPlayers,
-      ruleFormat,
-      partnerStyle,
-      americanoScoring,
-      gameCount,
-      gameMinutes,
-      breakMinutes,
       title,
+      titleEdited,
       playerSlots,
       previewSeed,
     }),
-    [
-      day,
-      startHour,
-      duration,
-      skillLevel,
-      gender,
-      targetPlayers,
-      ruleFormat,
-      partnerStyle,
-      americanoScoring,
-      gameCount,
-      gameMinutes,
-      breakMinutes,
-      title,
-      playerSlots,
-      previewSeed,
-    ],
+    [day, startHour, startMinute, skillLevel, gender, title, titleEdited, playerSlots, previewSeed],
   )
 
-  const { restored: draftRestored, savedAt: draftSavedAt, clearDraft, dismissRestored } =
-    useCompetitionFormDraft({
+  const { clearDraft } = useCompetitionFormDraft({
       scope: draftScope,
       restore: !id,
-      persist: !id || editHydrated,
+      persist: !id,
       values: draftValues,
       onRestore: applyDraft,
     })
 
-  const hours = scheduleGridHours()
-  const maxDuration = useMemo(() => Math.min(3, maxDurationFromStart(startHour)), [startHour])
-  const startsAtIso = useMemo(() => toIsoTimestamp(day, startHour), [day, startHour])
-  const eventMinutes = duration * 60
-  const schedulePlan = useMemo(() => {
-    if (ruleFormat !== 'americano') return null
-    return planAmericanoSchedule(
-      startsAtIso,
-      gameCount,
-      gameMinutes,
-      breakMinutes,
-      eventMinutes,
-    )
-  }, [ruleFormat, startsAtIso, gameCount, gameMinutes, breakMinutes, eventMinutes])
-  const scheduleFits = schedulePlan?.fits ?? true
-  const trimmedSlots = useMemo(() => playerSlots.map((s) => s.trim()), [playerSlots])
-  const filledNameCount = useMemo(
-    () => trimmedSlots.slice(0, targetPlayers).filter(Boolean).length,
-    [trimmedSlots, targetPlayers],
+  const halfHourSlots = useMemo(() => scheduleHalfHourSlots(), [])
+  const startsAtIso = useMemo(
+    () => toIsoTimestamp(day, startHour, startMinute),
+    [day, startHour, startMinute],
   )
-  const allNamesFilled = filledNameCount === targetPlayers
-  const namesRemaining = targetPlayers - filledNameCount
-  const previewRoster = useMemo(
-    () => rosterFromSlots(playerSlots, targetPlayers),
-    [playerSlots, targetPlayers],
-  )
-  const previewGames = useMemo(() => {
-    if (ruleFormat !== 'americano' || !isValidCourtLayout(targetPlayers) || courtNames.length === 0) {
-      return null
-    }
-    return planRankedSchedule(
-      previewRoster,
-      courtNames.slice(0, courtsNeeded(targetPlayers)),
-      gameCount,
-      previewSeed,
-    )
-  }, [ruleFormat, targetPlayers, previewRoster, courtNames, gameCount, previewSeed])
-  const previewSchedule = useMemo(() => {
-    if (ruleFormat !== 'americano' || !isValidCourtLayout(targetPlayers)) return null
-    const rounds = solveBalancedSchedule(targetPlayers, gameCount, previewSeed)
-    return {
-      rounds,
-      quality: measureScheduleQuality(rounds, targetPlayers),
-    }
-  }, [ruleFormat, targetPlayers, gameCount, previewSeed])
-  const previewSession = useMemo(
-    (): Pick<GameSession, 'partnership_mode' | 'rules' | 'scoring_config'> => ({
-      partnership_mode: 'americano',
-      rules: buildRulesText('americano', null, {
-        target: americanoScoring === 'open' ? undefined : americanoScoring,
-        unit: americanoScoring === 'open' ? 'open' : 'games',
-      }),
-      scoring_config: buildAmericanoScoringConfig(americanoScoring, {
-        games: gameCount,
-        breakMinutes,
-        gameMinutes,
-      }),
-    }),
-    [americanoScoring, gameCount, breakMinutes, gameMinutes],
+  const autoTitle = useMemo(
+    () => buildCompetitionAutoTitle(skillLevel, gender, new Date(startsAtIso)),
+    [skillLevel, gender, startsAtIso],
   )
 
   useEffect(() => {
-    if (duration > maxDuration) setDuration(maxDuration)
-  }, [duration, maxDuration])
+    if (!titleEdited) setTitle(autoTitle)
+  }, [autoTitle, titleEdited])
+  const trimmedSlots = useMemo(
+    () => padArray(playerSlots, slotCount, '').map((s) => s.trim()),
+    [playerSlots, slotCount],
+  )
+  const filledNameCount = useMemo(() => trimmedSlots.filter(Boolean).length, [trimmedSlots])
+  const canBuildSchedule =
+    filledNameCount >= 4 && filledNameCount % 4 === 0
 
   useEffect(() => {
-    setPlayerSlots((prev) => {
-      const next = Array(targetPlayers).fill('')
-      for (let i = 0; i < Math.min(prev.length, targetPlayers); i++) next[i] = prev[i]
-      return next
+    void Promise.all([
+      supabase.from('profiles').select('id, display_name, avatar_url').order('display_name'),
+      supabase
+        .from('padel_players')
+        .select('id, display_name, profile_id')
+        .is('profile_id', null)
+        .order('display_name'),
+    ]).then(([profilesRes, playersRes]) => {
+      setProfiles((profilesRes.data as Profile[]) ?? [])
+      setPadelPlayers((playersRes.data as PadelPlayerOption[]) ?? [])
     })
-    setProfileIds((prev) => {
-      const next = Array<string | null>(targetPlayers).fill(null)
-      for (let i = 0; i < Math.min(prev.length, targetPlayers); i++) next[i] = prev[i]
-      return next
-    })
-  }, [targetPlayers])
-
-  useEffect(() => {
-    void supabase
-      .from('profiles')
-      .select('id, display_name, avatar_url')
-      .order('display_name')
-      .then(({ data }) => setProfiles((data as Profile[]) ?? []))
   }, [])
 
-  const handlePlayersChange = (names: string[], ids: (string | null)[]) => {
+  const handlePlayersChange = (
+    names: string[],
+    ids: (string | null)[],
+    padelIds: (string | null)[],
+  ) => {
     setPlayerSlots(names)
     setProfileIds(ids)
+    setPadelPlayerIds(padelIds)
   }
-
-  useEffect(() => {
-    let active = true
-    void (async () => {
-      const { data } = await supabase.rpc('list_setup_courts')
-      if (active && Array.isArray(data)) {
-        setCourtNames(
-          (data as { name: string; sort_order: number }[])
-            .sort((a, b) => a.sort_order - b.sort_order)
-            .map((c) => c.name),
-        )
-      }
-    })()
-    return () => {
-      active = false
-    }
-  }, [])
 
   useEffect(() => {
     setSeasonLoading(true)
@@ -312,161 +220,171 @@ export function CompetitionForm() {
 
   useEffect(() => {
     if (!id) return
-    void supabase
-      .from('game_sessions')
-      .select('*')
-      .eq('id', id)
-      .single()
-      .then(({ data }) => {
-        const g = data as GameSession | null
-        if (!g) {
-          setEditHydrated(true)
-          return
-        }
-        setWasStarted(Boolean(g.competition_started_at) || g.status === 'locked')
-        if (g.season_id) setSeasonId(g.season_id)
-        if (g.skill_level && SKILL_LEVELS.includes(g.skill_level as SkillLevel)) {
-          setSkillLevel(g.skill_level as SkillLevel)
-        }
-        if (g.gender && GENDERS.includes(g.gender as Gender)) {
-          setGender(g.gender as Gender)
-        }
-        const parsed = partnershipModeToRules(g.partnership_mode, g.rules)
-        setRuleFormat(parsed.format)
-        if (parsed.partners) setPartnerStyle(parsed.partners)
-        setTitle(g.title)
-        const cap = g.target_players ?? g.max_players
-        if (cap && PLAYER_CAPS.includes(cap as 4 | 8 | 12 | 16)) {
-          setTargetPlayers(cap as 4 | 8 | 12 | 16)
-        }
-        setAmericanoScoring(americanoScoringFromConfig(g.scoring_config))
-        const savedGames = americanoGamesFromConfig(g.scoring_config)
-        setGameCount(Math.max(5, Math.min(11, savedGames)))
-        setBreakMinutes(breakMinutesFromConfig(g.scoring_config))
-        setGameMinutes(
-          gameMinutesFromConfig(
-            g.scoring_config,
-            g.starts_at && g.ends_at
-              ? (new Date(g.ends_at).getTime() - new Date(g.starts_at).getTime()) / 60000
-              : 0,
-            savedGames,
-            breakMinutesFromConfig(g.scoring_config),
-          ),
-        )
-        if (g.starts_at) {
-          setDay(bangkokDateFromIso(g.starts_at))
-          setStartHour(
-            parseInt(
-              new Intl.DateTimeFormat('en-GB', {
-                hour: 'numeric',
-                hour12: false,
-                timeZone: 'Asia/Bangkok',
-              }).format(new Date(g.starts_at)),
-              10,
-            ),
-          )
-          if (g.ends_at) {
-            const startMs = new Date(g.starts_at).getTime()
-            const endMs = new Date(g.ends_at).getTime()
-            const hrs = Math.round((endMs - startMs) / (60 * 60 * 1000))
-            if (hrs >= 1 && hrs <= 3) setDuration(hrs)
-          }
-        } else if (g.starts_on) {
-          setDay(g.starts_on)
-        }
-        setEditHydrated(true)
-      })
+    setRosterHydrated(false)
+    void (async () => {
+      const { data, error: sessionErr } = await supabase
+        .from('game_sessions')
+        .select('*, scoring_config')
+        .eq('id', id)
+        .single()
 
-    void supabase
-      .from('session_players')
-      .select('guest_name, rank_order, profile_id, profiles(display_name)')
-      .eq('session_id', id)
-      .order('rank_order')
-      .then(({ data }) => {
-        if (!data?.length) return
-        const nextNames = Array(targetPlayers).fill('')
-        const nextIds = Array<string | null>(targetPlayers).fill(null)
-        for (const row of data) {
-          const r = row as unknown as {
-            guest_name: string | null
-            rank_order: number | null
-            profile_id: string | null
-            profiles: { display_name: string } | null
-          }
-          const idx = r.rank_order ?? 0
-          if (idx >= 0 && idx < nextNames.length) {
-            nextNames[idx] = r.profiles?.display_name ?? r.guest_name ?? ''
-            nextIds[idx] = r.profile_id
-          }
+      if (sessionErr || !data) {
+        setRosterHydrated(true)
+        if (sessionErr) setError(sessionErr.message)
+        return
+      }
+
+      const target =
+        data.target_players ?? data.max_players ?? LOCKED_COMPETITION.targetPlayers
+      setSlotCount(target)
+      setCompetitionStarted(Boolean(data.competition_started_at))
+      if (data.season_id) setSeasonId(data.season_id)
+      if (data.skill_level && SKILL_LEVELS.includes(data.skill_level as SkillLevel)) {
+        setSkillLevel(data.skill_level as SkillLevel)
+      }
+      if (data.gender && GENDERS.includes(data.gender as Gender)) {
+        setGender(data.gender as Gender)
+      }
+      setTitle(data.title)
+      setTitleEdited(true)
+      const config = data.scoring_config as { schedule_seed?: number } | null
+      if (typeof config?.schedule_seed === 'number') {
+        setPreviewSeed(config.schedule_seed)
+      }
+      if (data.starts_at) {
+        setDay(bangkokDateFromIso(data.starts_at))
+        const parts = clubTimePartsFromDate(new Date(data.starts_at))
+        const snapped = snapToHalfHour(parts.hour, parts.minute)
+        const slots = scheduleHalfHourSlots()
+        const match =
+          slots.find((s) => s.hour === snapped.hour && s.minute === snapped.minute) ??
+          slots.find((s) => s.hour === snapped.hour) ??
+          slots[0]
+        if (match) {
+          setStartHour(match.hour)
+          setStartMinute(match.minute)
         }
-        setPlayerSlots(nextNames)
-        setProfileIds(nextIds)
-      })
-  }, [id, targetPlayers])
+      } else if (data.starts_on) {
+        setDay(data.starts_on)
+      }
+
+      const { data: rosterRows, error: rosterErr } = await supabase
+        .from('session_players')
+        .select('guest_name, rank_order, profile_id, padel_player_id, profiles(display_name)')
+        .eq('session_id', id)
+        .order('rank_order')
+
+      if (rosterErr) {
+        setError(rosterErr.message)
+        setRosterHydrated(true)
+        return
+      }
+
+      const nextNames = Array(target).fill('')
+      const nextIds = Array<string | null>(target).fill(null)
+      const nextPadelIds = Array<string | null>(target).fill(null)
+      const padelIdsOnRoster = new Set<string>()
+
+      for (const row of rosterRows ?? []) {
+        const r = row as unknown as {
+          guest_name: string | null
+          rank_order: number | null
+          profile_id: string | null
+          padel_player_id: string | null
+          profiles: { display_name: string } | null
+        }
+        const idx = r.rank_order ?? 0
+        if (idx >= 0 && idx < nextNames.length) {
+          nextNames[idx] = r.profiles?.display_name ?? r.guest_name ?? ''
+          nextIds[idx] = r.profile_id
+          nextPadelIds[idx] = r.padel_player_id
+          if (r.padel_player_id) padelIdsOnRoster.add(r.padel_player_id)
+        }
+      }
+
+      setPlayerSlots(nextNames)
+      setProfileIds(nextIds)
+      setPadelPlayerIds(nextPadelIds)
+
+      if (padelIdsOnRoster.size > 0) {
+        const { data: rosterPadel } = await supabase
+          .from('padel_players')
+          .select('id, display_name, profile_id')
+          .in('id', [...padelIdsOnRoster])
+        if (rosterPadel?.length) {
+          setPadelPlayers((prev) => {
+            const byId = new Map(prev.map((p) => [p.id, p]))
+            for (const row of rosterPadel as PadelPlayerOption[]) {
+              if (!row.profile_id) byId.set(row.id, row)
+            }
+            return [...byId.values()].sort((a, b) =>
+              a.display_name.localeCompare(b.display_name),
+            )
+          })
+        }
+      }
+
+      setRosterHydrated(true)
+    })()
+  }, [id])
 
   const save = async () => {
+    await flushPendingInputs()
+
     if (!seasonId) {
       setError('No active season.')
       return
     }
-    if (!allNamesFilled) {
+    const rosterPayload = buildCompetitionRosterSlots(
+      trimmedSlots,
+      profileIds,
+      padelPlayerIds,
+    ).filter((slot) => slot.name)
+    const playerCount = rosterPayload.length
+    if (!id && playerCount !== LOCKED_COMPETITION.targetPlayers) {
       setError('Enter every player name.')
       return
     }
-    if (ruleFormat === 'americano' && !scheduleFits) {
-      setError('Schedule does not fit in the session time.')
+    if (playerCount < 4 || playerCount % 4 !== 0) {
+      setError('Could not build match-ups.')
+      return
+    }
+    const scheduleRounds = solveBalancedSchedule(
+      playerCount,
+      LOCKED_COMPETITION.gameCount,
+      previewSeed,
+    )
+    if (!scheduleRounds.length) {
+      setError('Could not build match-ups.')
       return
     }
     setBusy(true)
     setError(null)
 
-    const startsAtIso = toIsoTimestamp(day, startHour)
     const startsAt = new Date(startsAtIso)
-    const endsAt = new Date(startsAt.getTime() + duration * 60 * 60 * 1000)
-    const finalTitle = buildCompetitionTitle(skillLevel, startsAt, title)
-    const partners = ruleFormat === 'americano' ? null : partnerStyle
-    const partnershipMode = rulesToPartnershipMode(ruleFormat, partners)
-    const americanoConfig =
-      ruleFormat === 'americano'
-        ? buildAmericanoScoringConfig(americanoScoring, {
-            games: gameCount,
-            breakMinutes,
-            gameMinutes,
-          })
-        : null
+    const eventMinutes = lockedCompetitionEventMinutes()
+    const endsAt = new Date(startsAt.getTime() + eventMinutes * 60 * 1000)
+    const finalTitle = title.trim() || autoTitle
+    const americanoConfig = lockedCompetitionScoringConfig()
 
-    const payload = {
+    const lockedFields = lockedCompetitionSessionFields({ skillLevel, gender })
+    const sessionFields = {
       season_id: seasonId,
       title: finalTitle,
       starts_on: day,
       ends_on: bangkokDateFromIso(endsAt.toISOString()),
       starts_at: startsAt.toISOString(),
       ends_at: endsAt.toISOString(),
-      status: 'open' as const,
       game_kind: 'competition' as const,
       visibility: 'open' as const,
-      skill_level: skillLevel,
-      gender,
-      rules: buildRulesText(
-        ruleFormat,
-        partners,
-        americanoConfig
-          ? {
-              target: americanoConfig.americano_target,
-              unit: americanoConfig.americano_unit ?? 'points',
-            }
-          : undefined,
-      ),
-      target_players: targetPlayers,
-      max_players: targetPlayers,
-      player_cap_mode: 'strict' as const,
-      partnership_mode: partnershipMode,
-      scoring_preset: 'standard' as const,
-      scoring_config: americanoConfig ?? {},
-      who_can_log_matches: 'roster_members' as const,
-      margin_bonus_enabled: true,
       created_by: user?.id ?? null,
+      ...lockedFields,
+      target_players: playerCount,
+      max_players: playerCount,
     }
+    const payload = id
+      ? sessionFields
+      : { ...sessionFields, status: 'open' as const }
 
     let sessionId = id
     if (id) {
@@ -492,7 +410,7 @@ export function CompetitionForm() {
 
     const { error: rosterErr } = await supabase.rpc('sync_competition_roster_slots', {
       p_session_id: sessionId,
-      p_names: trimmedSlots,
+      p_slots: rosterPayload,
     })
     if (rosterErr) {
       setBusy(false)
@@ -500,114 +418,113 @@ export function CompetitionForm() {
       return
     }
 
-    if (ruleFormat === 'americano' && previewGames?.length) {
-      const { data: rosterRows, error: rosterLoadErr } = await supabase
-        .from('session_players')
-        .select('id, guest_name, rank_order, profile_id, profiles(display_name)')
-        .eq('session_id', sessionId)
-        .order('rank_order')
-      if (rosterLoadErr || !rosterRows?.length) {
-        setBusy(false)
-        setError(rosterLoadErr?.message ?? 'Could not load roster')
-        return
-      }
-      const ranked = sortRosterByRank(rosterRows as unknown as CompetitionPlayer[])
-      const schedule = buildStoredSchedule(
-        ranked,
-        solveBalancedSchedule(ranked.length, gameCount, previewSeed),
-      )
-      const nextConfig = {
-        ...(americanoConfig ?? {}),
-        schedule_seed: previewSeed,
-        schedule_version: RANKED_SCHEDULE_VERSION,
-        schedule,
-      }
-      const { error: cfgErr } = await supabase.rpc('save_competition_scoring_config', {
-        p_session_id: sessionId,
-        p_scoring_config: nextConfig,
-      })
-      if (cfgErr) {
-        setBusy(false)
-        setError(cfgErr.message)
-        return
-      }
+    const { data: rosterRows, error: rosterLoadErr } = await supabase
+      .from('session_players')
+      .select('id, guest_name, rank_order, profile_id, profiles(display_name)')
+      .eq('session_id', sessionId)
+      .order('rank_order')
+    if (rosterLoadErr || !rosterRows?.length) {
+      setBusy(false)
+      setError(rosterLoadErr?.message ?? 'Could not load roster')
+      return
+    }
+    const ranked = sortRosterByRank(rosterRows as unknown as CompetitionPlayer[])
+    const schedule = buildStoredSchedule(
+      ranked,
+      solveBalancedSchedule(ranked.length, LOCKED_COMPETITION.gameCount, previewSeed),
+    )
+    const nextConfig = {
+      ...americanoConfig,
+      schedule_seed: previewSeed,
+      schedule_version: RANKED_SCHEDULE_VERSION,
+      schedule,
+    }
+    const { error: cfgErr } = await supabase.rpc('save_competition_scoring_config', {
+      p_session_id: sessionId,
+      p_scoring_config: nextConfig,
+    })
+    if (cfgErr) {
+      setBusy(false)
+      setError(cfgErr.message)
+      return
     }
 
-    if (!wasStarted) {
-      const { error: startErr } = await supabase.rpc('start_competition', {
+    if (competitionStarted) {
+      const { error: rebuildErr } = await supabase.rpc('rebuild_competition_schedule', {
         p_session_id: sessionId,
       })
-      if (startErr) {
+      if (rebuildErr) {
         setBusy(false)
-        setError(startErr.message)
+        setError(rebuildErr.message)
         return
       }
     }
 
     clearDraft()
     setBusy(false)
-    navigate('/competitions')
+    navigate(id ? `/competitions/${sessionId}/run` : '/competitive')
   }
 
-  const canSave =
-    allNamesFilled &&
-    scheduleFits &&
-    (ruleFormat !== 'americano' || Boolean(previewGames?.length))
+  const saveDisabled =
+    busy || (Boolean(id) && !rosterHydrated) || (!id && seasonLoading)
+  const scheduleQuality = useMemo(() => {
+    if (!canBuildSchedule) return null
+    const rounds = solveBalancedSchedule(
+      filledNameCount,
+      LOCKED_COMPETITION.gameCount,
+      previewSeed,
+    )
+    return measureScheduleQuality(rounds, filledNameCount)
+  }, [previewSeed, filledNameCount, canBuildSchedule])
+  const ruleChips = useMemo(() => lockedCompetitionRuleChips(t), [t])
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div data-scroll-y className="scroll-y min-h-0 flex-1 space-y-3 pb-24">
-        <Link to="/competitions" className="text-sm font-medium text-brand-accent">
+    <form
+      className="flex h-full min-h-0 flex-col"
+      onSubmit={(e) => {
+        e.preventDefault()
+        void save()
+      }}
+    >
+      <div data-scroll-y className="scroll-y min-h-0 flex-1 space-y-3 pb-6">
+        <Link to="/competitive" className="text-sm font-medium text-brand-accent">
           ← Back
         </Link>
 
-        {draftRestored && (
-          <p className="rounded-lg border border-brand-accent/30 bg-brand-accent/10 px-3 py-2 text-xs text-brand-text">
-            Restored your last draft
-            {draftSavedAt ? ` from ${formatDraftSavedAt(draftSavedAt)}` : ''}.{' '}
-            <button type="button" onClick={dismissRestored} className="font-semibold text-brand-accent">
-              OK
-            </button>
-          </p>
-        )}
-        {draftSavedAt && !draftRestored && (
-          <p className="text-[10px] text-brand-muted">Draft saved locally at {formatDraftSavedAt(draftSavedAt)}</p>
-        )}
-
         <section className="game-card space-y-3">
-          <label className="block space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">Day</span>
-            <input
-              type="date"
-              value={day}
-              onChange={(e) => setDay(e.target.value)}
-              className="brand-input"
-            />
-          </label>
+          <FriendlyRuleSettings chips={ruleChips} />
 
-          <div className="space-y-1.5">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">Start</span>
-            <div className="flex flex-wrap gap-1.5">
-              {hours.map((h) => (
-                <Chip key={h} active={startHour === h} onClick={() => setStartHour(h)}>
-                  {formatHourLabel(h)}
-                </Chip>
-              ))}
-            </div>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="block min-w-0 space-y-1">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">Day</span>
+              <input
+                type="date"
+                value={day}
+                onChange={(e) => setDay(e.target.value)}
+                className="brand-input h-11"
+              />
+            </label>
+
+            <label className="block min-w-0 space-y-1">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">Start</span>
+              <select
+                value={clubTimeSlotValue(startHour, startMinute)}
+                onChange={(e) => {
+                  const { hour, minute } = parseClubTimeSlotValue(e.target.value)
+                  setStartHour(hour)
+                  setStartMinute(minute)
+                }}
+                className="brand-input h-11"
+              >
+                {halfHourSlots.map((slot) => (
+                  <option key={slot.label} value={slot.label}>
+                    {slot.label}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
 
-          <div className="space-y-1.5">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">Hours</span>
-            <div className="flex flex-wrap gap-1.5">
-              {DURATIONS.filter((h) => h <= maxDuration).map((h) => (
-                <Chip key={h} active={duration === h} onClick={() => setDuration(h)}>
-                  {h}h
-                </Chip>
-              ))}
-            </div>
-          </div>
-
-          <div className="border-t border-brand-border/40 pt-3" />
           <div className="space-y-1.5">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">Level</span>
             <div className="flex flex-wrap gap-1.5">
@@ -630,44 +547,16 @@ export function CompetitionForm() {
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">Spots</span>
-            <div className="flex flex-wrap gap-1.5">
-              {PLAYER_CAPS.map((n) => (
-                <Chip key={n} active={targetPlayers === n} onClick={() => setTargetPlayers(n)}>
-                  {n}
-                </Chip>
-              ))}
-            </div>
-          </div>
-
-          <CompetitionRulesSetup
-            value={{
-              ruleFormat,
-              partnerStyle,
-              americanoScoring,
-              gameCount,
-              gameMinutes,
-              breakMinutes,
-            }}
-            onChange={(patch) => {
-              if (patch.ruleFormat !== undefined) setRuleFormat(patch.ruleFormat)
-              if (patch.partnerStyle !== undefined) setPartnerStyle(patch.partnerStyle)
-              if (patch.americanoScoring !== undefined) setAmericanoScoring(patch.americanoScoring)
-              if (patch.gameCount !== undefined) setGameCount(patch.gameCount)
-              if (patch.gameMinutes !== undefined) setGameMinutes(patch.gameMinutes)
-              if (patch.breakMinutes !== undefined) setBreakMinutes(patch.breakMinutes)
-            }}
-            eventMinutes={eventMinutes}
-          />
-
           <label className="block space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">Name</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">Title</span>
             <input
               type="text"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Auto from level + date + time"
+              onChange={(e) => {
+                setTitle(e.target.value)
+                setTitleEdited(true)
+              }}
+              placeholder={autoTitle}
               className="brand-input"
             />
           </label>
@@ -677,85 +566,50 @@ export function CompetitionForm() {
           <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
             Player names
           </p>
-          <p className="text-[10px] text-brand-muted">Enter names in rank order — strongest first.</p>
-          <MemberPlayerSlots
-            count={targetPlayers}
-            profiles={profiles}
-            names={playerSlots}
-            profileIds={profileIds}
-            onChange={handlePlayersChange}
-            disabled={busy}
-          />
-          {!allNamesFilled && (
-            <p className="text-xs text-brand-muted">
-              {namesRemaining} name{namesRemaining === 1 ? '' : 's'} left — accept unlocks when all{' '}
-              {targetPlayers} are filled.
-            </p>
+          {!rosterHydrated && id ? (
+            <p className="text-sm text-brand-muted">{t('common.loading')}</p>
+          ) : (
+            <MemberPlayerSlots
+              count={slotCount}
+              profiles={profiles}
+              padelPlayers={padelPlayers}
+              names={playerSlots}
+              profileIds={profileIds}
+              padelPlayerIds={padelPlayerIds}
+              onChange={handlePlayersChange}
+              disabled={busy}
+              showMembers
+              showPlayerProfiles
+            />
           )}
 
-          {ruleFormat === 'americano' && (
-            <>
-              <div className="border-t border-brand-border/40 pt-3" />
-              <CompetitionSchedulePreview
-                startsAtIso={startsAtIso}
-                eventMinutes={eventMinutes}
-                gameCount={gameCount}
-                gameMinutes={gameMinutes}
-                breakMinutes={breakMinutes}
-                playerCount={targetPlayers}
-              />
-              {!allNamesFilled && (
-                <p className="text-[10px] text-brand-muted">
-                  Match-up preview uses placeholders until every name is entered.
-                </p>
-              )}
-              {previewGames && previewGames.length > 0 ? (
-                <div className="overflow-hidden rounded-lg border border-brand-border/60">
-                  <CompetitionLayoutPreview
-                    session={previewSession}
-                    games={previewGames}
-                    eventStartsAt={startsAtIso}
-                    gameMinutes={gameMinutes}
-                  />
-                </div>
-              ) : (
-                <p className="text-xs text-brand-muted">Loading courts…</p>
-              )}
-              {previewSchedule && (
-                <CompetitionScheduleQualityFeedback
-                  rounds={previewSchedule.rounds}
-                  roster={previewRoster}
-                  quality={previewSchedule.quality}
-                />
-              )}
+          {scheduleQuality && scheduleQuality.maxPartnerCount > 1 && (
+            <p className="text-xs text-brand-muted">
+              Partner repeats: up to {scheduleQuality.maxPartnerCount}× —{' '}
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => setPreviewSeed((s) => s + 1)}
-                className="brand-btn-outline w-full py-2 text-sm font-semibold"
+                className="font-semibold text-brand-accent"
               >
-                Shuffle match-ups
+                shuffle match-ups
               </button>
-            </>
+            </p>
           )}
+
+          {(seasonError || error) && (
+            <p className="text-sm text-red-600">{error ?? seasonError}</p>
+          )}
+
+          <button
+            type="submit"
+            disabled={saveDisabled}
+            className="brand-btn w-full py-2.5 text-sm font-semibold disabled:opacity-50"
+          >
+            {busy ? 'Saving…' : id ? 'Save' : 'Create competition'}
+          </button>
         </section>
-
-        {error && <p className="text-sm text-red-600">{error}</p>}
       </div>
-
-      <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-50 border-t border-brand-border bg-brand-surface/95 px-4 py-3 backdrop-blur-md">
-        {(seasonError || error) && (
-          <p className="mb-2 text-center text-xs text-red-600">{error ?? seasonError}</p>
-        )}
-        <button
-          type="button"
-          disabled={busy || seasonLoading || !seasonId || !canSave}
-          onClick={() => void save()}
-          className="brand-btn w-full text-sm font-semibold disabled:opacity-50"
-        >
-          {busy ? 'Saving…' : seasonLoading ? 'Loading…' : id ? 'Save' : 'Accept'}
-        </button>
-      </div>
-    </div>
+    </form>
   )
 }

@@ -13,6 +13,7 @@ import {
   PADEL_ENCLOSURE_GLASS_DEPTH_ALONG_LENGTH_FR,
   pct,
   type CourtInsetBounds,
+  type CourtLayout,
 } from './padelCourtLayout'
 import type { MatchTeam } from './types'
 import type { TennisScore } from './tennisScore'
@@ -370,9 +371,10 @@ export function clampPadPointToServerBox(
   padPoint: NormalizedPoint,
   serveSide: Quadrant,
   inset: CourtInsetBounds,
+  layout: CourtLayout = 'portrait',
 ): NormalizedPoint {
-  const court = padNormToCourtNorm(padPoint, inset)
-  return courtNormToPadNorm(clampCourtPointToServerBox(court, serveSide), inset)
+  const court = padNormToCourtNorm(padPoint, inset, layout)
+  return courtNormToPadNorm(clampCourtPointToServerBox(court, serveSide), inset, layout)
 }
 
 const SERVICE_BOX_INSET = 0.012

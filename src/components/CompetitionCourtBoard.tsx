@@ -13,6 +13,7 @@ import { playTwoMinuteAlarm, TWO_MINUTES_MS } from '../lib/gameCountdownAlarm'
 import { RANKED_GAME_MINUTES } from '../lib/competitionLayout'
 import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
 import {
+  bumpScoreField,
   effectiveScoreField,
   parseScoreField,
   scoreDigitsOnly,
@@ -327,6 +328,63 @@ function CourtCard({
   return <article className={shellClass}>{body}</article>
 }
 
+function ScoreStepper({
+  value,
+  onChange,
+  disabled,
+  finished,
+  ariaLabel,
+  scoreMax,
+}: {
+  value: string
+  onChange: (v: string) => void
+  disabled?: boolean
+  finished?: boolean
+  ariaLabel: string
+  scoreMax?: number
+}) {
+  const inputClass = finished
+    ? 'h-8 w-8 rounded-lg border border-brand-border/50 bg-[#faf9f7] px-0.5 py-0.5 text-center text-sm font-semibold tabular-nums text-brand-sage disabled:text-brand-muted/60 md:h-10 md:w-10 md:text-base'
+    : 'h-8 w-8 rounded-lg border border-brand-border/80 bg-brand-surface px-0.5 py-0.5 text-center text-sm font-semibold tabular-nums text-brand-primary disabled:text-brand-muted/60 md:h-10 md:w-10 md:text-base'
+  const stepClass =
+    'flex h-5 w-8 items-center justify-center rounded text-[10px] font-bold leading-none text-brand-muted active:bg-brand-bg-alt disabled:opacity-30 md:h-6 md:w-10 md:text-xs'
+
+  return (
+    <div className="flex flex-col items-center gap-0.5">
+      <button
+        type="button"
+        disabled={disabled}
+        aria-label={`Increase ${ariaLabel}`}
+        className={stepClass}
+        onClick={() => onChange(bumpScoreField(value, 1, scoreMax))}
+      >
+        ▲
+      </button>
+      <input
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        value={value}
+        placeholder="0"
+        disabled={disabled}
+        onChange={(e) => onChange(scoreDigitsOnly(e.target.value))}
+        onFocus={(e) => e.currentTarget.scrollIntoView({ block: 'center', behavior: 'smooth' })}
+        className={inputClass}
+        aria-label={ariaLabel}
+      />
+      <button
+        type="button"
+        disabled={disabled}
+        aria-label={`Decrease ${ariaLabel}`}
+        className={stepClass}
+        onClick={() => onChange(bumpScoreField(value, -1, scoreMax))}
+      >
+        ▼
+      </button>
+    </div>
+  )
+}
+
 function CourtMatchCell({
   teamA,
   teamB,
@@ -337,6 +395,7 @@ function CourtMatchCell({
   onScoreB,
   disabled = false,
   finished = false,
+  scoreMax,
   teamAPlayers,
   teamBPlayers,
   currentUserId,
@@ -353,6 +412,7 @@ function CourtMatchCell({
   onScoreB?: (v: string) => void
   disabled?: boolean
   finished?: boolean
+  scoreMax?: number
   teamAPlayers?: CourtPlayer[]
   teamBPlayers?: CourtPlayer[]
   currentUserId?: string | null
@@ -385,21 +445,14 @@ function CourtMatchCell({
           : 'px-0 text-brand-text'
     }`
 
-  const scoreInputClass = finished
-    ? 'h-8 w-8 rounded-lg border border-brand-border/50 bg-[#faf9f7] px-0.5 py-0.5 text-center text-sm font-semibold tabular-nums text-brand-sage disabled:text-brand-muted/60 md:h-10 md:w-10 md:text-base'
-    : 'h-8 w-8 rounded-lg border border-brand-border/80 bg-brand-surface px-0.5 py-0.5 text-center text-sm font-semibold tabular-nums text-brand-primary disabled:text-brand-muted/60 md:h-10 md:w-10 md:text-base'
-
   const scoreAEl = editable ? (
-    <input
-      type="text"
-      inputMode="numeric"
-      pattern="[0-9]*"
+    <ScoreStepper
       value={scoreA ?? ''}
-      placeholder="0"
-      onChange={(e) => onScoreA?.(e.target.value.replace(/\D/g, ''))}
-      onFocus={(e) => e.currentTarget.scrollIntoView({ block: 'center', behavior: 'smooth' })}
-      className={scoreInputClass}
-      aria-label={t('aria.teamAScore', { unit: fieldLabel })}
+      onChange={(v) => onScoreA?.(v)}
+      disabled={disabled}
+      finished={finished}
+      ariaLabel={t('aria.teamAScore', { unit: fieldLabel })}
+      scoreMax={scoreMax}
     />
   ) : scoreA ? (
     <span className="text-base font-bold tabular-nums text-brand-accent md:text-lg">{scoreA}</span>
@@ -408,16 +461,13 @@ function CourtMatchCell({
   )
 
   const scoreBEl = editable ? (
-    <input
-      type="text"
-      inputMode="numeric"
-      pattern="[0-9]*"
+    <ScoreStepper
       value={scoreB ?? ''}
-      placeholder="0"
-      onChange={(e) => onScoreB?.(e.target.value.replace(/\D/g, ''))}
-      onFocus={(e) => e.currentTarget.scrollIntoView({ block: 'center', behavior: 'smooth' })}
-      className={scoreInputClass}
-      aria-label={t('aria.teamBScore', { unit: fieldLabel })}
+      onChange={(v) => onScoreB?.(v)}
+      disabled={disabled}
+      finished={finished}
+      ariaLabel={t('aria.teamBScore', { unit: fieldLabel })}
+      scoreMax={scoreMax}
     />
   ) : scoreB ? (
     <span className="text-base font-bold tabular-nums text-brand-accent md:text-lg">{scoreB}</span>
@@ -858,6 +908,7 @@ function GameScoringCourts({
   sessionId,
   competitionId,
   courtRefs,
+  playTo,
   t,
 }: {
   game: ScoringGame
@@ -871,6 +922,7 @@ function GameScoringCourts({
   canEdit: boolean
   dirty: boolean
   finished: boolean
+  playTo?: number
   currentUserId?: string | null
   currentUserAvatarUrl?: string | null
   liveCourtEnabled: boolean
@@ -944,6 +996,7 @@ function GameScoringCourts({
               onScoreB={canEdit && courtId ? (v) => setDraft(courtId, 'teamB', v) : undefined}
               disabled={!canEdit}
               finished={finished}
+              scoreMax={playTo}
               currentUserId={currentUserId}
               currentUserAvatarUrl={currentUserAvatarUrl}
               embedded
@@ -1152,6 +1205,7 @@ function ScoringGameCard({
   courtIdByLabel,
   matchForCourt,
   scoreUnit,
+  playTo,
   canEdit,
   onSubmitScores,
   onSaved,
@@ -1177,6 +1231,7 @@ function ScoringGameCard({
   courtIdByLabel?: Map<string, string>
   matchForCourt: NonNullable<Props['matchForCourt']>
   scoreUnit: AmericanoScoringUnit
+  playTo?: number
   canEdit: boolean
   onSubmitScores?: (entries: CourtScoreSubmit[]) => Promise<void>
   onSaved?: () => void
@@ -1242,6 +1297,7 @@ function ScoringGameCard({
               courtIdByLabel={courtIdByLabel}
               matchForCourt={matchForCourt}
               scoreUnit={scoreUnit}
+              playTo={playTo}
               drafts={drafts}
               setDraft={setDraft}
               canEdit={editable}
@@ -1379,6 +1435,7 @@ export function CompetitionCourtBoard({
   mode,
   activeGameNumber,
   scoreUnit = 'sets',
+  playTo,
   roundId,
   liveCourtsByGame,
   canLog,
@@ -1555,6 +1612,7 @@ export function CompetitionCourtBoard({
               courtIdByLabel={courtIdByLabel}
               matchForCourt={matchForCourt}
               scoreUnit={scoreUnit}
+              playTo={playTo}
               canEdit={canEditGame}
               onSubmitScores={onSubmitScores}
               onSaved={onSaved}
@@ -1677,6 +1735,7 @@ export function CompetitionCourtBoard({
                         scoreUnit={scoreUnit}
                         scoreA={liveScore?.scoreA ?? (saved?.teamAPoints != null ? String(saved.teamAPoints) : undefined)}
                         scoreB={liveScore?.scoreB ?? (saved?.teamBPoints != null ? String(saved.teamBPoints) : undefined)}
+                        scoreMax={playTo}
                         disabled
                         finished={finished}
                         currentUserId={currentUserId}

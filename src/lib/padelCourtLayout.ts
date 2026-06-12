@@ -111,6 +111,27 @@ export function pct(fraction: number): string {
   return `${(fraction * 100).toFixed(3)}%`
 }
 
+/** Out-band depth used when drawing beyond the baseline (matches pad overlay). */
+export const COURT_OUT_BAND_ALONG_LENGTH_FR = 0.065
+export const COURT_OUT_BAND_ALONG_WIDTH_FR = 0.13
+
+/** Minimal pad inset so enclosure + out bands fit without clipping (portrait). */
+export function courtPadInsetFractions(layout: CourtLayout): { x: number; y: number } {
+  const gL = PADEL_ENCLOSURE_FULL_DEPTH_ALONG_LENGTH_FR
+  const gW = PADEL_ENCLOSURE_FULL_DEPTH_ALONG_WIDTH_FR
+  const buffer = 0.012
+  if (layout === 'landscape') {
+    return {
+      x: COURT_OUT_BAND_ALONG_LENGTH_FR + gL + buffer,
+      y: COURT_OUT_BAND_ALONG_WIDTH_FR + gW + buffer,
+    }
+  }
+  return {
+    y: COURT_OUT_BAND_ALONG_LENGTH_FR + gL + buffer,
+    x: COURT_OUT_BAND_ALONG_WIDTH_FR + gW + buffer,
+  }
+}
+
 /** Glass margin segments — matches PadelCourtEnclosure layout. */
 export type GlassBandId =
   | 'top'
@@ -254,10 +275,13 @@ export function enclosureZoneAtPadNorm(
 export function enclosureZoneAtPad(
   pad: NormalizedPoint,
   inset: CourtInsetBounds,
+  layout: CourtLayout = 'portrait',
 ): EnclosureZoneId | null {
-  const padHit = enclosureZoneAtPadNorm(pad, inset)
-  if (padHit) return padHit
-  return enclosureZoneAtCourtNorm(padNormToCourtNorm(pad, inset))
+  if (layout === 'portrait') {
+    const padHit = enclosureZoneAtPadNorm(pad, inset)
+    if (padHit) return padHit
+  }
+  return enclosureZoneAtCourtNorm(padNormToCourtNorm(pad, inset, layout))
 }
 
 export function isMeshEnclosureZone(
@@ -287,8 +311,9 @@ export function glassBandAtCourtNorm(point: NormalizedPoint): GlassBandId | null
 export function glassBandAtPadNorm(
   pad: NormalizedPoint,
   inset: CourtInsetBounds,
+  layout: CourtLayout = 'portrait',
 ): GlassBandId | null {
-  const zone = enclosureZoneAtPad(pad, inset)
+  const zone = enclosureZoneAtPad(pad, inset, layout)
   return isGlassEnclosureZone(zone) ? zone : null
 }
 
@@ -299,28 +324,31 @@ export function isCourtNormInGlassBand(point: NormalizedPoint): boolean {
 export function clampPadToGlassZone(
   pad: NormalizedPoint,
   inset: CourtInsetBounds,
+  layout: CourtLayout = 'portrait',
 ): NormalizedPoint {
-  const zone = enclosureZoneAtPad(pad, inset)
+  const zone = enclosureZoneAtPad(pad, inset, layout)
   if (!isGlassEnclosureZone(zone)) return pad
-  return clampPadToZoneBounds(pad, inset, zone)
+  return clampPadToZoneBounds(pad, inset, zone, layout)
 }
 
 /** Clamp onto whichever enclosure wall (glass or mesh) the point falls in. */
 export function clampPadToEnclosureZone(
   pad: NormalizedPoint,
   inset: CourtInsetBounds,
+  layout: CourtLayout = 'portrait',
 ): NormalizedPoint {
-  const zone = enclosureZoneAtPad(pad, inset)
+  const zone = enclosureZoneAtPad(pad, inset, layout)
   if (!zone) return pad
-  return clampPadToZoneBounds(pad, inset, zone)
+  return clampPadToZoneBounds(pad, inset, zone, layout)
 }
 
 function clampPadToZoneBounds(
   pad: NormalizedPoint,
   inset: CourtInsetBounds,
   zone: EnclosureZoneId,
+  layout: CourtLayout = 'portrait',
 ): NormalizedPoint {
-  const court = padNormToCourtNorm(pad, inset)
+  const court = padNormToCourtNorm(pad, inset, layout)
   const b = enclosureZoneBounds(zone)
   const edge = 0.006
   return courtNormToPadNorm(
@@ -329,6 +357,7 @@ function clampPadToZoneBounds(
       y: Math.max(b.yMin + edge, Math.min(b.yMax - edge, court.y)),
     },
     inset,
+    layout,
   )
 }
 
@@ -342,6 +371,16 @@ export type CourtInsetBounds = {
   top: number
   width: number
   height: number
+}
+
+/** Device orientation for on-screen court layout. */
+export type CourtLayout = 'portrait' | 'landscape'
+
+export function resolveCourtLayout(
+  naturalOrientation: boolean,
+  isLandscape: boolean,
+): CourtLayout {
+  return naturalOrientation && isLandscape ? 'landscape' : 'portrait'
 }
 
 export function measureCourtInset(pad: HTMLElement): CourtInsetBounds | null {
@@ -361,7 +400,14 @@ export function measureCourtInset(pad: HTMLElement): CourtInsetBounds | null {
 export function courtNormToPadNorm(
   point: NormalizedPoint,
   inset: CourtInsetBounds,
+  layout: CourtLayout = 'portrait',
 ): NormalizedPoint {
+  if (layout === 'landscape') {
+    return {
+      x: inset.left + point.y * inset.width,
+      y: inset.top + point.x * inset.height,
+    }
+  }
   return {
     x: inset.left + point.x * inset.width,
     y: inset.top + point.y * inset.height,
@@ -371,11 +417,14 @@ export function courtNormToPadNorm(
 export function padNormToCourtNorm(
   point: NormalizedPoint,
   inset: CourtInsetBounds,
+  layout: CourtLayout = 'portrait',
 ): NormalizedPoint {
-  return {
-    x: (point.x - inset.left) / inset.width,
-    y: (point.y - inset.top) / inset.height,
+  const sx = (point.x - inset.left) / inset.width
+  const sy = (point.y - inset.top) / inset.height
+  if (layout === 'landscape') {
+    return { x: sy, y: sx }
   }
+  return { x: sx, y: sy }
 }
 
 /** Back court vs volley band (inner 30% of each side, closest to net). */

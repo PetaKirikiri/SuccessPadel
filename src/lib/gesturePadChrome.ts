@@ -5,7 +5,8 @@ export function isGesturePadRoute(pathname: string): boolean {
     /\/gesture-pad\/?$/.test(pathname) ||
     /\/live-court\/?$/.test(pathname) ||
     /\/friendly\/[^/]+\/(pad|heatmap)\/?$/.test(pathname) ||
-    /\/friendly\/[^/]+\/games\/[^/]+\/courts\/[^/]+\/?$/.test(pathname)
+    /\/friendly\/[^/]+\/games\/[^/]+\/courts\/[^/]+\/?$/.test(pathname) ||
+    /^\/practice\/?$/.test(pathname)
   )
 }
 

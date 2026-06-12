@@ -84,6 +84,44 @@ export function scheduleGridHours(): number[] {
   return hours
 }
 
+export type ClubHalfHourSlot = {
+  hour: number
+  minute: 0 | 30
+  label: string
+}
+
+/** Club open hours at :00 and :30 (last start is on the hour). */
+export function scheduleHalfHourSlots(): ClubHalfHourSlot[] {
+  const slots: ClubHalfHourSlot[] = []
+  for (let h = OPEN_HOUR; h <= LAST_SLOT_START_HOUR; h++) {
+    slots.push({ hour: h, minute: 0, label: formatHourLabel(h, 0) })
+    if (h < LAST_SLOT_START_HOUR) {
+      slots.push({ hour: h, minute: 30, label: formatHourLabel(h, 30) })
+    }
+  }
+  return slots
+}
+
+export function clubTimeSlotValue(hour: number, minute: number): string {
+  return formatHourLabel(hour, minute)
+}
+
+export function parseClubTimeSlotValue(value: string): { hour: number; minute: number } {
+  const [hRaw, mRaw] = value.split(':')
+  const hour = Number(hRaw)
+  const minute = Number(mRaw)
+  return {
+    hour: Number.isFinite(hour) ? hour : 18,
+    minute: minute === 30 ? 30 : 0,
+  }
+}
+
+export function snapToHalfHour(hour: number, minute: number): { hour: number; minute: 0 | 30 } {
+  if (minute < 15) return { hour, minute: 0 }
+  if (minute < 45) return { hour, minute: 30 }
+  return { hour: hour + 1, minute: 0 }
+}
+
 export function rangesOverlap(
   aStart: Date,
   aEnd: Date,

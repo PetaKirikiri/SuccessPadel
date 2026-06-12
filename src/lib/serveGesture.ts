@@ -9,6 +9,7 @@ import {
   enclosureZoneAtPad,
   padNormToCourtNorm,
   type CourtInsetBounds,
+  type CourtLayout,
 } from './padelCourtLayout'
 import {
   isServeNetLanding,
@@ -31,8 +32,9 @@ export function serveOriginInServerBox(
   originPad: NormalizedPoint,
   serveSide: Quadrant,
   inset: CourtInsetBounds,
+  layout: CourtLayout = 'portrait',
 ): boolean {
-  const court = padNormToCourtNorm(originPad, inset)
+  const court = padNormToCourtNorm(originPad, inset, layout)
   const b = serveStartBoxBounds(serveSide)
   return (
     court.x >= b.xMin - SERVER_BOX_LINE_TOL &&
@@ -78,6 +80,8 @@ export function isServeCrossCourtStroke(
   path: NormalizedPoint[],
   servingPlayerQuadrant: Quadrant,
   serveSideQuadrant: Quadrant,
+  inset?: CourtInsetBounds | null,
+  layout: CourtLayout = 'portrait',
 ): boolean {
   if (path.length < 2) return false
   if (pathLength(path) < SERVE_MIN_TRAVEL) return false
@@ -88,8 +92,12 @@ export function isServeCrossCourtStroke(
 
   const start = path[0]!
   const end = path[path.length - 1]!
-  const startHalf = start.y < 0.5 ? 'top' : 'bottom'
-  const endHalf = end.y < 0.5 ? 'top' : 'bottom'
+  const halfFromPoint = (pt: NormalizedPoint) => {
+    const c = inset ? padNormToCourtNorm(pt, inset, layout) : pt
+    return c.y < 0.5 ? ('top' as const) : ('bottom' as const)
+  }
+  const startHalf = halfFromPoint(start)
+  const endHalf = halfFromPoint(end)
 
   if (startHalf !== serverHalf || endHalf !== receiveHalf) return false
 
@@ -128,10 +136,11 @@ export function serveEndCourtPoint(
   pathPoints: NormalizedPoint[],
   origin: NormalizedPoint,
   inset: CourtInsetBounds,
+  layout: CourtLayout = 'portrait',
 ): NormalizedPoint {
   const path = buildServePath(pathPoints, origin)
   const endPad = path[path.length - 1]!
-  return padNormToCourtNorm(endPad, inset)
+  return padNormToCourtNorm(endPad, inset, layout)
 }
 
 export function serveLandingInBox(
@@ -169,14 +178,15 @@ export function classifyServeLandingInServePhase(
   serveSideQuadrant: Quadrant,
   servingPlayerQuadrant: Quadrant,
   inset: CourtInsetBounds,
+  layout: CourtLayout = 'portrait',
 ): ServeLanding {
-  const endCourt = serveEndCourtPoint(pathPoints, origin, inset)
+  const endCourt = serveEndCourtPoint(pathPoints, origin, inset, layout)
   const receive = serveReceiveQuadrant(serveSideQuadrant)
   if (pointInServiceBox(endCourt, receive)) return 'in'
   // Off the receiver-side glass or metal wall is a good serve; drawing past the
   // wall (beyond the enclosure, off court) falls through to 'out'.
   const endPad = serveLandingPadPoint(pathPoints, origin)
-  if (enclosureZoneAtPad(endPad, inset) != null) return 'in'
+  if (enclosureZoneAtPad(endPad, inset, layout) != null) return 'in'
   if (isServeNetLanding(endCourt, servingPlayerQuadrant)) return 'net'
   return 'out'
 }
