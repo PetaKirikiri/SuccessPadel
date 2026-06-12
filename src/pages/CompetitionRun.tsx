@@ -40,7 +40,6 @@ import {
   type StoredScheduleRound,
 } from '../lib/rankedSchedule'
 import type { CourtPlayer } from '../lib/americanoSchedule'
-import { formatClubTime } from '../lib/courtSchedule'
 import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
 import { linkGuestRostersByEmail } from '../lib/authProfile'
 import { competitionPlayUrl } from '../lib/siteUrl'
@@ -351,16 +350,6 @@ export function CompetitionRun() {
   const matchForCourt = (roundId: string, courtId: string) =>
     courtMatches.find((m) => m.competition_round_id === roundId && m.court_id === courtId)
 
-  const nextRound = async () => {
-    if (!id) return
-    setBusy(true)
-    setActionError(null)
-    const { error: err } = await supabase.rpc('advance_competition_round', { p_session_id: id })
-    setBusy(false)
-    if (err) setActionError(err.message)
-    else void refresh()
-  }
-
   const buildSchedulePayload = (seed: number): StoredScheduleRound[] => {
     const ranked = sortRosterByRank(roster)
     const rounds = solveBalancedSchedule(ranked.length, totalGames, seed)
@@ -384,23 +373,6 @@ export function CompetitionRun() {
     setScheduleSeed(seed)
   }
 
-  const rebuildSchedule = async () => {
-    if (!id) return
-    setBusy(true)
-    setActionError(null)
-    try {
-      await persistScheduleConfig(scheduleSeed)
-      const { error: err } = await supabase.rpc('rebuild_competition_schedule', {
-        p_session_id: id,
-      })
-      if (err) throw new Error(err.message)
-      void refresh()
-    } catch (e) {
-      setActionError(e instanceof Error ? e.message : 'Rebuild failed')
-    }
-    setBusy(false)
-  }
-
   const handleSubmitScores = useCallback(async (entries: CourtScoreSubmit[]) => {
     for (const entry of entries) {
       const winTeam = entry.teamA >= entry.teamB ? 'a' : 'b'
@@ -416,6 +388,20 @@ export function CompetitionRun() {
       if (err) throw new Error(err.message)
     }
   }, [])
+
+  const matchForCourtBoard = useCallback((roundId: string, courtId: string) => {
+    const saved = courtMatches.find(
+      (m) => m.competition_round_id === roundId && m.court_id === courtId,
+    )
+    if (!saved) return undefined
+    const parts = saved.score_summary?.split('-').map((n) => Number(n.trim()))
+    return {
+      score_summary: saved.score_summary,
+      teamAPoints: parts?.[0],
+      teamBPoints: parts?.[1],
+      winner: matchWinnerTeam(saved),
+    }
+  }, [courtMatches])
 
   const startCompetition = async () => {
     if (!id) return
@@ -551,187 +537,73 @@ export function CompetitionRun() {
         />
       )}
 
-      {started && activeRound && isAdmin && (
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-baseline justify-between gap-2 px-1">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-              {activeRound.is_final ? 'Final' : `Game ${activeRound.round_number}`}
-            </p>
-            {timeLeft && (
-              <p className="text-xs tabular-nums text-brand-accent">{timeLeft} left</p>
-            )}
-          </div>
-          {courts.length === 0 ? (
-            <p className="game-card px-3 py-4 text-sm text-brand-muted">No court assignments.</p>
-          ) : isAmericano && courtBoardColumns.length > 0 ? (
-            <div className="game-card px-2 py-3">
-              <CompetitionCourtBoard
-                competitionId={id}
-                columns={courtBoardColumns}
-                mode="scoring"
-                activeGameNumber={activeRound.round_number}
-                scoreUnit={scoreUnit}
-                playTo={playTo}
-                liveCourtsByGame={liveCourtsByGame}
-                roundIdForGame={roundIdForGame}
-                canLog={canScore}
-                onSubmitScores={handleSubmitScores}
-                matchForCourt={(roundId, courtId) => {
-                  const saved = matchForCourt(roundId, courtId)
-                  if (!saved) return undefined
-                  const parts = saved.score_summary?.split('-').map((n) => Number(n.trim()))
-                  return {
-                    score_summary: saved.score_summary,
-                    teamAPoints: parts?.[0],
-                    teamBPoints: parts?.[1],
-                    winner: matchWinnerTeam(saved),
-                  }
-                }}
-                onSaved={() => void refresh()}
-                gameMinutes={gameMinutes}
-                currentUserId={userId ?? null}
-                currentUserAvatarUrl={profile?.avatar_url ?? null}
-                isAdmin={isAdmin}
-              />
-            </div>
-          ) : (
-            courts.map((c) => {
-              const saved = matchForCourt(activeRound.id, c.courtId)
-              const savedParts = saved?.score_summary?.split('-').map((n) => Number(n.trim()))
-              return (
-                <CompetitionCourtScore
-                  key={c.courtId}
-                  roundId={activeRound.id}
-                  courtId={c.courtId}
-                  courtName={c.courtName}
-                  teamA={c.a}
-                  teamB={c.b}
-                  isAmericano={isAmericano}
-                  playTo={playTo}
-                  scoreUnit={scoreUnit}
-                  savedScore={saved?.score_summary}
-                  savedTeamAPoints={isAmericano ? savedParts?.[0] : undefined}
-                  savedTeamBPoints={isAmericano ? savedParts?.[1] : undefined}
-                  savedWinner={saved ? matchWinnerTeam(saved) : undefined}
-                  canLog={canScore}
-                  showMargin={session.margin_bonus_enabled && !isAmericano}
-                  onSaved={() => void refresh()}
-                />
-              )
-            })
-          )}
+      {started && isAdmin && isAmericano && courtBoardColumns.length > 0 && (
+        <CompetitionCourtBoard
+          competitionId={id}
+          columns={courtBoardColumns}
+          mode="scoring"
+          activeGameNumber={activeRound?.round_number}
+          scoreUnit={scoreUnit}
+          playTo={playTo}
+          liveCourtsByGame={liveCourtsByGame}
+          roundIdForGame={roundIdForGame}
+          canLog={canScore}
+          onSubmitScores={handleSubmitScores}
+          matchForCourt={matchForCourtBoard}
+          onSaved={() => void refresh()}
+          now={now}
+          gameMinutes={gameMinutes}
+          roundTimesByGame={roundTimesByGame}
+          roundStatusByGame={roundStatusByGame}
+          currentUserId={userId ?? null}
+          currentUserAvatarUrl={profile?.avatar_url ?? null}
+          isAdmin={isAdmin}
+        />
+      )}
 
-          {isAdmin && (
-            <div className="flex flex-col gap-2">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void rebuildSchedule()}
-                className="brand-btn-outline w-full text-sm"
-              >
-                Refresh court layout
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void nextRound()}
-                className="brand-btn-outline w-full"
-              >
-                {activeRound.is_final ? 'Finish' : 'Next round'}
-              </button>
-            </div>
-          )}
+      {started && isAdmin && isAmericano && courtBoardColumns.length === 0 && (
+        <p className="game-card px-3 py-4 text-sm text-brand-muted">No court assignments.</p>
+      )}
+
+      {started && activeRound && isAdmin && !isAmericano && courts.length > 0 && (
+        <div className="space-y-2">
+          {courts.map((c) => {
+            const saved = matchForCourt(activeRound.id, c.courtId)
+            const savedParts = saved?.score_summary?.split('-').map((n) => Number(n.trim()))
+            return (
+              <CompetitionCourtScore
+                key={c.courtId}
+                roundId={activeRound.id}
+                courtId={c.courtId}
+                courtName={c.courtName}
+                teamA={c.a}
+                teamB={c.b}
+                isAmericano={isAmericano}
+                playTo={playTo}
+                scoreUnit={scoreUnit}
+                savedScore={saved?.score_summary}
+                savedTeamAPoints={isAmericano ? savedParts?.[0] : undefined}
+                savedTeamBPoints={isAmericano ? savedParts?.[1] : undefined}
+                savedWinner={saved ? matchWinnerTeam(saved) : undefined}
+                canLog={canScore}
+                showMargin={session.margin_bonus_enabled && !isAmericano}
+                onSaved={() => void refresh()}
+              />
+            )
+          })}
         </div>
       )}
 
-      {started && !activeRound && (
-        <div className="space-y-2">
-          {isAdmin && !finished && (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void rebuildSchedule()}
-              className="brand-btn-outline w-full text-sm"
-            >
-              Refresh court layout
-            </button>
-          )}
-          <div className="game-card space-y-2 px-3 py-4 text-center">
-            <p className="text-sm font-medium text-brand-primary">
-              {finished ? 'Competition complete' : 'Round break'}
-            </p>
-            {finished && leaderboard.length > 0 && (
-              <p className="text-sm text-brand-accent">
-                Winner: {leaderboard[0].display_name} ({leaderboard[0].total_points}{' '}
-                {scoreUnit === 'sets' ? 'sets' : 'pts'})
-              </p>
-            )}
-            <Link to="/" className="text-xs text-brand-muted">
-              View season leaderboard →
-            </Link>
-          </div>
-
-          {isAmericano && courtBoardColumns.length > 0 && (
-            <div className="game-card px-2 py-3">
-              <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-                All games
-              </p>
-              <CompetitionCourtBoard
-                competitionId={id}
-                columns={courtBoardColumns}
-                mode="scoring"
-                scoreUnit={scoreUnit}
-                playTo={playTo}
-                liveCourtsByGame={liveCourtsByGame}
-                roundIdForGame={roundIdForGame}
-                canLog={canScore}
-                onSubmitScores={handleSubmitScores}
-                matchForCourt={(roundId, courtId) => {
-                  const saved = matchForCourt(roundId, courtId)
-                  if (!saved) return undefined
-                  const parts = saved.score_summary?.split('-').map((n) => Number(n.trim()))
-                  return {
-                    score_summary: saved.score_summary,
-                    teamAPoints: parts?.[0],
-                    teamBPoints: parts?.[1],
-                    winner: matchWinnerTeam(saved),
-                  }
-                }}
-                onSaved={() => void refresh()}
-                now={now}
-                gameMinutes={gameMinutes}
-                roundTimesByGame={roundTimesByGame}
-                roundStatusByGame={roundStatusByGame}
-                currentUserId={userId ?? null}
-                currentUserAvatarUrl={profile?.avatar_url ?? null}
-                isAdmin={isAdmin}
-              />
-            </div>
-          )}
-
-          {standings.length > 0 && (isAdmin || finished) && (
-            <CompetitionLeaderboard
-              entries={standings}
-              scoreUnit={scoreUnit}
-              achievements={achievements}
-              {...guestLeaderboardProps}
-            />
-          )}
-        </div>
-      )}
-
-      {rounds.length > 0 && !liveFocus && isAdmin && (
-        <div className="game-card px-3 py-3">
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-brand-muted">Rounds</p>
-          <ul className="m-0 list-none space-y-1 p-0 text-xs text-brand-muted">
-            {rounds.map((r) => (
-              <li key={r.id}>
-                {r.is_final ? 'Final' : `R${r.round_number}`}{' '}
-                {formatClubTime(new Date(r.starts_at))}–{formatClubTime(new Date(r.ends_at))}{' '}
-                <span className="text-brand-accent">{r.status}</span>
-              </li>
-            ))}
-          </ul>
+      {started && finished && isAdmin && leaderboard.length > 0 && (
+        <div className="game-card space-y-2 px-3 py-4 text-center">
+          <p className="text-sm font-medium text-brand-primary">Competition complete</p>
+          <p className="text-sm text-brand-accent">
+            Winner: {leaderboard[0].display_name} ({leaderboard[0].total_points}{' '}
+            {scoreUnit === 'sets' ? 'sets' : 'pts'})
+          </p>
+          <Link to="/" className="text-xs text-brand-muted">
+            View season leaderboard →
+          </Link>
         </div>
       )}
 

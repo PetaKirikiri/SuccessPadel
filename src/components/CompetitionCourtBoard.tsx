@@ -788,8 +788,8 @@ function useFriendlyManualScoring({
 
   const [drafts, setDrafts] = useState<Record<string, CourtDraft>>({})
   const [dirty, setDirty] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [busyCourtKey, setBusyCourtKey] = useState<string | null>(null)
+  const [error, setError] = useState<{ courtKey: string; message: string } | null>(null)
 
   useEffect(() => {
     setDrafts((prev) => {
@@ -835,58 +835,35 @@ function useFriendlyManualScoring({
     })
   }, [courts, dirty, drafts, liveCourtScores])
 
-  const allCourtsReady =
-    courts.length > 0 &&
-    courtScoreRows.length === courts.length &&
-    courtScoreRows.every((row) => row.teamA !== null && row.teamB !== null)
-
-  const submitEntries = useMemo((): FriendlyCourtScoreSubmit[] => {
-    if (!allCourtsReady) return []
-    return courtScoreRows
-      .filter((row) => row.teamA !== null && row.teamB !== null)
-      .map((row) => ({
-        gameNumber: game.gameNumber,
-        courtLabel: row.courtLabel,
-        teamA: row.teamA!,
-        teamB: row.teamB!,
-        teamAPlayers: row.court.teamAPlayers,
-        teamBPlayers: row.court.teamBPlayers,
-      }))
-  }, [allCourtsReady, courtScoreRows, game.gameNumber])
-
-  const submitGame = async () => {
-    if (!onSubmit || submitEntries.length === 0) return
-    setBusy(true)
+  const submitCourt = async (courtKey: string) => {
+    const row = courtScoreRows.find((r) => r.courtKey === courtKey)
+    if (!onSubmit || !row || row.teamA === null || row.teamB === null) return
+    setBusyCourtKey(courtKey)
     setError(null)
     try {
-      await onSubmit(submitEntries)
+      await onSubmit([
+        {
+          gameNumber: game.gameNumber,
+          courtLabel: row.courtLabel,
+          teamA: row.teamA,
+          teamB: row.teamB,
+          teamAPlayers: row.court.teamAPlayers,
+          teamBPlayers: row.court.teamBPlayers,
+        },
+      ])
       setDirty(false)
       onSaved?.()
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('common.submitFailed'))
+      setError({
+        courtKey,
+        message: e instanceof Error ? e.message : t('common.submitFailed'),
+      })
     } finally {
-      setBusy(false)
+      setBusyCourtKey(null)
     }
   }
 
-  const submitFooter = onSubmit ? (
-    <div
-      className={`border-t px-3 py-2.5 md:px-4 ${
-        canEdit ? 'border-brand-border/60' : 'border-brand-border/40 bg-[#f1f0ee]'
-      }`}
-    >
-      <button
-        type="button"
-        disabled={busy || !allCourtsReady}
-        onClick={() => void submitGame()}
-        className="brand-btn w-full py-2.5 text-sm font-semibold disabled:opacity-40"
-      >
-        {busy ? '…' : t('common.submit')}
-      </button>
-    </div>
-  ) : null
-
-  return { courtScoreRows, setDraft, submitFooter, error, canEdit, dirty }
+  return { courtScoreRows, setDraft, submitCourt, busyCourtKey, error, canEdit, dirty }
 }
 
 function GameScoringCourts({
@@ -1270,7 +1247,7 @@ function ScoringGameCard({
   )
 
   return (
-    <div className={gameCardShellClass({ finished, isCurrentGame, isMyGame })}>
+    <div id={`game-${game.gameNumber}`} className={gameCardShellClass({ finished, isCurrentGame, isMyGame })}>
       <GameCardHeader
         gameNumber={game.gameNumber}
         isLiveNow={isLiveNow}
@@ -1357,7 +1334,7 @@ function FriendlyManualGameCard({
   currentUserAvatarUrl?: string | null
   t: TranslateFn
 }) {
-  const { courtScoreRows, setDraft, submitFooter, error, canEdit } = useFriendlyManualScoring({
+  const { courtScoreRows, setDraft, submitCourt, busyCourtKey, error, canEdit } = useFriendlyManualScoring({
     game,
     liveCourtScores,
     canEdit: Boolean(onSubmitFriendlyScores),
@@ -1367,7 +1344,7 @@ function FriendlyManualGameCard({
   })
 
   return (
-    <div className={gameCardShellClass({ finished, isCurrentGame })}>
+    <div id={`game-${game.gameNumber}`} className={gameCardShellClass({ finished, isCurrentGame })}>
       <GameCardHeader
         gameNumber={game.gameNumber}
         isLiveNow={isLiveNow}
@@ -1379,7 +1356,6 @@ function FriendlyManualGameCard({
         onToggleCollapsed={onToggleCollapsed}
         t={t}
       />
-      {error && <p className="px-3 pb-1 text-center text-xs text-red-600">{error}</p>}
       {!collapsed && (
         <>
           <div className="border-t border-brand-border/30 bg-brand-bg-alt px-3 pb-3.5 pt-3 md:px-4">
@@ -1387,6 +1363,7 @@ function FriendlyManualGameCard({
               {courtScoreRows.map((row, courtIndex) => {
                 const teamA = row.court.teamA
                 const teamB = row.court.teamB
+                const courtReady = row.teamA !== null && row.teamB !== null
                 return (
                   <CourtCard
                     key={row.courtLabel}
@@ -1415,12 +1392,26 @@ function FriendlyManualGameCard({
                       embedded
                       t={t}
                     />
+                    {canEdit ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={busyCourtKey === row.courtKey || !courtReady}
+                          onClick={() => void submitCourt(row.courtKey)}
+                          className="brand-btn mt-2 w-full py-2 text-xs font-semibold disabled:opacity-40"
+                        >
+                          {busyCourtKey === row.courtKey ? '…' : t('common.submit')}
+                        </button>
+                        {error?.courtKey === row.courtKey ? (
+                          <p className="mt-1 text-center text-xs text-red-600">{error.message}</p>
+                        ) : null}
+                      </>
+                    ) : null}
                   </CourtCard>
                 )
               })}
             </div>
           </div>
-          {submitFooter}
         </>
       )}
     </div>
@@ -1498,58 +1489,14 @@ export function CompetitionCourtBoard({
     }
   }, [clock, games, mode, roundStatusByGame, roundTimesByGame])
 
-  const orderedGames = useMemo(
-    () =>
-      [...games].sort((a, b) => {
-        const aTimes = roundTimesByGame?.get(a.gameNumber)
-        const bTimes = roundTimesByGame?.get(b.gameNumber)
-        const aRoundId = roundIdForGame?.(a.gameNumber)
-        const bRoundId = roundIdForGame?.(b.gameNumber)
-        const aCourts = liveCourtsByGame?.get(a.gameNumber) ?? []
-        const bCourts = liveCourtsByGame?.get(b.gameNumber) ?? []
-        const aSubmitted =
-          matchForCourt != null
-            ? isGameSubmitted(a, aRoundId, aCourts, courtIdByLabel, matchForCourt)
-            : false
-        const bSubmitted =
-          matchForCourt != null
-            ? isGameSubmitted(b, bRoundId, bCourts, courtIdByLabel, matchForCourt)
-            : false
-        const aTimeUp = isGameTimeUp(a.gameNumber, clock, roundTimesByGame, roundStatusByGame)
-        const bTimeUp = isGameTimeUp(b.gameNumber, clock, roundTimesByGame, roundStatusByGame)
-        const aLive = isGameLive(clock, aTimes)
-        const bLive = isGameLive(clock, bTimes)
-        const aCurrent = !aSubmitted && (aLive || activeGameNumber === a.gameNumber)
-        const bCurrent = !bSubmitted && (bLive || activeGameNumber === b.gameNumber)
-        const rank = (
-          isCurrent: boolean,
-          submitted: boolean,
-          timeUp: boolean,
-          times?: { startsAt: number },
-        ) => {
-          if (isCurrent) return 0
-          if (submitted) return 3
-          if (timeUp) return 1
-          if (times && clock < times.startsAt) return 2
-          return 2
-        }
-        const aRank = rank(aCurrent, aSubmitted, aTimeUp, aTimes)
-        const bRank = rank(bCurrent, bSubmitted, bTimeUp, bTimes)
-        if (aRank !== bRank) return aRank - bRank
-        return (aTimes?.startsAt ?? a.gameNumber) - (bTimes?.startsAt ?? b.gameNumber)
-      }),
-    [
-      activeGameNumber,
-      clock,
-      courtIdByLabel,
-      games,
-      liveCourtsByGame,
-      matchForCourt,
-      roundIdForGame,
-      roundStatusByGame,
-      roundTimesByGame,
-    ],
-  )
+  const orderedGames = useMemo(() => {
+    if (!roundTimesByGame?.size) return games
+    return [...games].sort((a, b) => {
+      const aStart = roundTimesByGame.get(a.gameNumber)?.startsAt ?? a.gameNumber
+      const bStart = roundTimesByGame.get(b.gameNumber)?.startsAt ?? b.gameNumber
+      return aStart - bStart
+    })
+  }, [games, roundTimesByGame])
 
   const toggleCollapsed = (gameNumber: number, defaultCollapsed: boolean) => {
     setCollapsedGames((prev) => ({
@@ -1658,6 +1605,7 @@ export function CompetitionCourtBoard({
         return (
           <div
             key={game.gameNumber}
+            id={`game-${game.gameNumber}`}
             className={gameCardShellClass({ finished, isCurrentGame })}
           >
             <GameCardHeader
