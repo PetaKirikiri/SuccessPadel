@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { IconDelete, IconEdit, IconOpenPad } from './ButtonIcons'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { CompetitionLayoutPreview } from './CompetitionLayoutPreview'
 import { FriendlyRosterList } from './FriendlyRosterList'
 import { FriendlyRuleSettings } from './FriendlyRuleSettings'
@@ -49,7 +49,6 @@ export function FriendlyGameCard({
   deleteBusy = false,
 }: Props) {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const isFree = isFreeFriendly(game)
   const canEdit = canEditFriendlySession(game, currentUserId, isAdmin)
   const slots = friendlyRosterSlots(game)
@@ -112,37 +111,21 @@ export function FriendlyGameCard({
     >
       <div className="relative min-w-0">
         {to ? (
-          <div
-            role="link"
-            tabIndex={0}
-            onClick={() => navigate(to)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault()
-                navigate(to)
-              }
-            }}
-            className="block min-w-0 cursor-pointer overflow-hidden transition active:opacity-80"
-          >
+          <Link to={to} className="block min-w-0 touch-manipulation overflow-hidden transition active:opacity-80">
             {inner}
-          </div>
+          </Link>
         ) : (
           inner
         )}
         {canEdit && to ? (
           <div className="absolute bottom-3 right-3 z-10 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                navigate(`/friendly/${game.id}/edit`)
-              }}
+            <Link
+              to={`/friendly/${game.id}/edit`}
               aria-label={t('friendly.edit')}
               className={`${adminCornerBtnClass} text-brand-primary`}
             >
               <IconEdit />
-            </button>
+            </Link>
             {isAdmin && onDelete ? (
               <button
                 type="button"
