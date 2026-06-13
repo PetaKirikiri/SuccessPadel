@@ -6,11 +6,9 @@ import { ACHIEVEMENT_IMAGE, podiumAchievementForRank, sortAchievementsForDisplay
 import type {
   Achievement,
   CompetitionAchievements,
-  MatchAward,
 } from '../lib/competitionAchievements'
 import type { AmericanoScoringUnit } from '../lib/competitionPresets'
 import {
-  compactDisplayNames,
   compactLeaderboardDisplayNames,
   leaderboardEntryLookupIds,
 } from '../lib/leaderboardEntries'
@@ -192,71 +190,6 @@ function LeaderboardRow({
   )
 }
 
-function MatchAwardsSection({
-  awards,
-  onSelectAchievement,
-  t,
-}: {
-  awards: MatchAward[]
-  onSelectAchievement: (info: AchievementInfo) => void
-  t: TranslateFn
-}) {
-  const groups = new Map<string, MatchAward[]>()
-  for (const award of awards) {
-    const list = groups.get(award.key) ?? []
-    list.push(award)
-    groups.set(award.key, list)
-  }
-
-  return (
-    <div className="border-t border-brand-border/60 px-3 py-3 md:px-4">
-      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-brand-muted md:text-xs">
-        {t('achievements.matchAwardsTitle')}
-      </p>
-      <ul className="m-0 list-none space-y-2 p-0">
-        {[...groups.values()].flatMap((list) => {
-          const shown = list.slice(0, 3)
-          const extra = list.length - shown.length
-          return shown.map((award, i) => {
-            const [nameA, nameB] = compactDisplayNames(award.playerNames)
-            const pair = [nameA, nameB].filter(Boolean).join(' + ')
-            const where = award.court
-              ? t('achievements.roundCourt', { round: award.round, court: award.court })
-              : t('achievements.round', { round: award.round })
-            return (
-              <li key={`${award.key}-${i}`} className="flex items-start gap-2">
-                <AchievementBadge
-                  iconKey={award.key}
-                  emoji={award.icon}
-                  labelKey={award.labelKey}
-                  label={t(award.labelKey)}
-                  onSelect={onSelectAchievement}
-                  sizeClass="h-6 w-6 md:h-7 md:w-7"
-                  emojiClass="text-base leading-none md:text-lg"
-                />
-                <span className="min-w-0">
-                  <span className="block text-sm text-brand-text">
-                    <span className="font-medium">{t(award.labelKey)}</span>
-                    <span className="text-brand-muted"> – {t(`${award.labelKey}Desc`)}</span>
-                  </span>
-                  <span className="block truncate text-xs text-brand-muted">
-                    {pair} · {award.scoreFor}–{award.scoreAgainst} · {where}
-                  </span>
-                  {i === shown.length - 1 && extra > 0 && (
-                    <span className="block text-[11px] text-brand-muted">
-                      {t('achievements.moreWinners', { count: extra })}
-                    </span>
-                  )}
-                </span>
-              </li>
-            )
-          })
-        })}
-      </ul>
-    </div>
-  )
-}
-
 export function CompetitionLeaderboard({
   entries,
   compact = false,
@@ -377,13 +310,6 @@ export function CompetitionLeaderboard({
           )
         })}
       </ol>
-      {achievements && achievements.matchAwards.length > 0 && (
-        <MatchAwardsSection
-          awards={achievements.matchAwards}
-          onSelectAchievement={setInfo}
-          t={t}
-        />
-      )}
       {info && (
         <div
           className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 px-6"
