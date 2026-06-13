@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { displayCourtLabel } from '../lib/courtDisplay'
 import { liveCourtScoreKey, type LiveCourtGamesScore } from '../lib/liveCourtScore'
@@ -92,7 +92,7 @@ function gameCardShellClass({
     parts.push('border-brand-primary/40')
   }
   if (isCurrentGame && !finished) {
-    parts.push('ring-2 ring-brand-accent/45')
+    parts.push('game-card-live border-brand-accent/55')
   }
   if (isMyGame && !finished) {
     parts.push('ring-2 ring-brand-accent/70')
@@ -133,6 +133,51 @@ function isGameSubmitted(
     const saved = matchForCourt(gameRoundId, courtId)
     return saved?.teamAPoints != null && saved?.teamBPoints != null
   })
+}
+
+function gameIsFinished(
+  game: ScoringGame,
+  {
+    previewTimed,
+    activeGameNumber,
+    roundId,
+    roundIdForGame,
+    liveCourtsByGame,
+    courtIdByLabel,
+    matchForCourt,
+    clock,
+    roundTimesByGame,
+    roundStatusByGame,
+  }: {
+    mode: Props['mode']
+    previewTimed: boolean
+    activeGameNumber?: number
+    roundId?: string
+    roundIdForGame?: Props['roundIdForGame']
+    liveCourtsByGame?: Map<number, LiveCourt[]>
+    courtIdByLabel?: Map<string, string>
+    matchForCourt?: Props['matchForCourt']
+    clock: number
+    roundTimesByGame?: Map<number, { startsAt: number; endsAt: number }>
+    roundStatusByGame?: Map<number, RoundStatus>
+  },
+): boolean {
+  const isActive = activeGameNumber === game.gameNumber
+  const roundStatus = roundStatusByGame?.get(game.gameNumber)
+  const courtsForGame = liveCourtsByGame?.get(game.gameNumber) ?? []
+  const gameRoundId =
+    roundIdForGame?.(game.gameNumber) ?? (isActive ? roundId : undefined)
+  const timeUp = isGameTimeUp(
+    game.gameNumber,
+    clock,
+    roundTimesByGame,
+    roundStatusByGame,
+  )
+  if (matchForCourt != null) {
+    return isGameSubmitted(game, gameRoundId, courtsForGame, courtIdByLabel, matchForCourt)
+  }
+  if (previewTimed) return timeUp
+  return timeUp && roundStatus === 'complete'
 }
 
 function formatCountdown(ms: number): string {
@@ -1045,6 +1090,7 @@ function courtLiveHref({
 function GameCardHeader({
   gameNumber,
   isLiveNow,
+  isCurrentGame = false,
   timeLabel,
   countdown,
   countdownLabelText,
@@ -1055,6 +1101,7 @@ function GameCardHeader({
 }: {
   gameNumber: number
   isLiveNow?: boolean
+  isCurrentGame?: boolean
   timeLabel?: string
   countdown?: string | null
   countdownLabelText: string
@@ -1063,12 +1110,14 @@ function GameCardHeader({
   onToggleCollapsed: () => void
   t: TranslateFn
 }) {
+  const showLiveBadge = !finished && (isLiveNow || isCurrentGame)
+
   return (
     <div
       className={`flex items-stretch border-b-2 ${
         finished
           ? 'border-brand-border/50 bg-[#e8e7e5]'
-          : 'border-brand-accent/50 bg-brand-primary'
+          : `border-brand-accent/50 bg-brand-primary${isCurrentGame ? ' game-card-live-header' : ''}`
       }`}
     >
       <div className="flex min-w-0 flex-1 items-center gap-2 px-3 py-3.5 md:gap-3 md:px-4 md:py-4">
@@ -1080,12 +1129,20 @@ function GameCardHeader({
           {t('competition.game', { number: gameNumber })}
         </p>
         <div className="min-w-0 flex-1">
-          {isLiveNow ? (
+          {showLiveBadge ? (
             <span
-              className={`text-xs font-semibold md:text-sm ${
-                finished ? 'text-brand-accent' : 'text-brand-bg-alt'
+              className={`live-badge-pulse inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider md:text-xs ${
+                finished
+                  ? 'bg-brand-accent/15 text-brand-accent'
+                  : 'bg-white/15 text-brand-bg-alt'
               }`}
             >
+              <span
+                className={`live-dot-pulse inline-block h-1.5 w-1.5 shrink-0 rounded-full ${
+                  finished ? 'bg-brand-accent' : 'bg-brand-accent-light'
+                }`}
+                aria-hidden
+              />
               {t('competition.live')}
             </span>
           ) : finished ? (
@@ -1218,6 +1275,7 @@ function ScoringGameCard({
       <GameCardHeader
         gameNumber={game.gameNumber}
         isLiveNow={isLiveNow}
+        isCurrentGame={isCurrentGame}
         timeLabel={game.timeLabel}
         countdown={countdown}
         countdownLabelText={countdownLabelText}
@@ -1305,6 +1363,7 @@ function FriendlyManualGameCard({
       <GameCardHeader
         gameNumber={game.gameNumber}
         isLiveNow={isLiveNow}
+        isCurrentGame={isCurrentGame}
         timeLabel={game.timeLabel}
         countdown={countdown}
         countdownLabelText={countdownLabelText}
@@ -1407,6 +1466,7 @@ export function CompetitionCourtBoard({
   const games = useMemo(() => pivotScheduleByGame(columns), [columns])
   const [tick, setTick] = useState(() => Date.now())
   const [collapsedGames, setCollapsedGames] = useState<Record<number, boolean>>({})
+  const collapseSeedKeyRef = useRef<string | null>(null)
   const sessionId = friendlySessionId ?? competitionId
   const liveCourtEnabled = Boolean(
     sessionId && isAdmin && currentUserId && !(friendly && onSubmitFriendlyScores),
@@ -1455,10 +1515,58 @@ export function CompetitionCourtBoard({
     })
   }, [games, roundTimesByGame])
 
-  const toggleCollapsed = (gameNumber: number, defaultCollapsed: boolean) => {
+  const finishedByGame = useMemo(() => {
+    const finishOpts = {
+      mode,
+      previewTimed,
+      activeGameNumber,
+      roundId,
+      roundIdForGame,
+      liveCourtsByGame,
+      courtIdByLabel,
+      matchForCourt,
+      clock,
+      roundTimesByGame,
+      roundStatusByGame,
+    }
+    const map = new Map<number, boolean>()
+    for (const game of orderedGames) {
+      map.set(game.gameNumber, gameIsFinished(game, finishOpts))
+    }
+    return map
+  }, [
+    orderedGames,
+    mode,
+    previewTimed,
+    activeGameNumber,
+    roundId,
+    roundIdForGame,
+    liveCourtsByGame,
+    courtIdByLabel,
+    matchForCourt,
+    clock,
+    roundTimesByGame,
+    roundStatusByGame,
+  ])
+
+  useLayoutEffect(() => {
+    if (scoringTimeUnlocked || !sessionId || orderedGames.length === 0) return
+    if (collapseSeedKeyRef.current === sessionId) return
+    collapseSeedKeyRef.current = sessionId
+
+    setCollapsedGames((prev) => {
+      const next: Record<number, boolean> = { ...prev }
+      for (const game of orderedGames) {
+        if (finishedByGame.get(game.gameNumber)) next[game.gameNumber] = true
+      }
+      return next
+    })
+  }, [sessionId, orderedGames, finishedByGame, scoringTimeUnlocked])
+
+  const toggleCollapsed = (gameNumber: number) => {
     setCollapsedGames((prev) => ({
       ...prev,
-      [gameNumber]: !(prev[gameNumber] ?? defaultCollapsed),
+      [gameNumber]: !(prev[gameNumber] ?? false),
     }))
   }
 
@@ -1479,19 +1587,14 @@ export function CompetitionCourtBoard({
           roundTimesByGame,
           roundStatusByGame,
         )
-        const submitted =
-          matchForCourt != null
-            ? isGameSubmitted(game, gameRoundId, courtsForGame, courtIdByLabel, matchForCourt)
-            : previewTimed
-              ? timeUp
-              : timeUp && roundStatus === 'complete'
+        const submitted = finishedByGame.get(game.gameNumber) ?? false
         const finished = submitted
         const countdown =
           timedMode && !submitted && times
             ? gameCountdown(clock, times, gameMinutes)
             : null
         const state = countdownState(clock, times, timeUp)
-        const collapsed = collapsedGames[game.gameNumber] ?? (scoringTimeUnlocked ? false : submitted)
+        const collapsed = collapsedGames[game.gameNumber] ?? false
         const isCurrentGame = !submitted && (isLiveNow || isActive)
         const canEditGame =
           Boolean(canLog) &&
@@ -1525,7 +1628,7 @@ export function CompetitionCourtBoard({
               countdownLabelText={countdownLabel(state, t)}
               finished={finished}
               collapsed={collapsed}
-              onToggleCollapsed={() => toggleCollapsed(game.gameNumber, finished)}
+              onToggleCollapsed={() => toggleCollapsed(game.gameNumber)}
               currentUserId={currentUserId}
               currentUserAvatarUrl={currentUserAvatarUrl}
               t={t}
@@ -1548,7 +1651,7 @@ export function CompetitionCourtBoard({
               countdownLabelText={countdownLabel(state, t)}
               finished={finished}
               collapsed={collapsed}
-              onToggleCollapsed={() => toggleCollapsed(game.gameNumber, finished)}
+              onToggleCollapsed={() => toggleCollapsed(game.gameNumber)}
               currentUserId={currentUserId}
               currentUserAvatarUrl={currentUserAvatarUrl}
               t={t}
@@ -1565,12 +1668,13 @@ export function CompetitionCourtBoard({
             <GameCardHeader
               gameNumber={game.gameNumber}
               isLiveNow={isLiveNow}
+              isCurrentGame={isCurrentGame}
               timeLabel={game.timeLabel}
               countdown={countdown}
               countdownLabelText={countdownLabel(state, t)}
               finished={finished}
               collapsed={collapsed}
-              onToggleCollapsed={() => toggleCollapsed(game.gameNumber, finished)}
+              onToggleCollapsed={() => toggleCollapsed(game.gameNumber)}
               t={t}
             />
             {!collapsed && (

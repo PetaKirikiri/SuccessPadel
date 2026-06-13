@@ -221,7 +221,8 @@ export function CompetitionPlay() {
               scoreUnit={scoreUnit}
               currentUserId={user?.id ?? null}
               competitionId={id ?? null}
-              achievements={started ? achievements : null}
+              achievements={achievements}
+              showAchievements={Boolean(achievements)}
               flushBottom
             />
           ) : null}

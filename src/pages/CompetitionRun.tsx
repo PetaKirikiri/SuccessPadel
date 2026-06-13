@@ -538,6 +538,7 @@ export function CompetitionRun() {
           compact={Boolean(activeRound)}
           scoreUnit={scoreUnit}
           achievements={achievements}
+          showAchievements={Boolean(achievements)}
           {...guestLeaderboardProps}
         />
       )}

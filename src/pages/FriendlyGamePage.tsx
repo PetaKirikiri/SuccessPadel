@@ -191,6 +191,7 @@ export function FriendlyGamePage() {
     () => (game ? isFriendlySessionStarted(game, scoredCourts, now) : false),
     [game, scoredCourts, now],
   )
+
   const achievements = useMemo(
     () =>
       sessionStarted
@@ -329,6 +330,7 @@ export function FriendlyGamePage() {
       currentUserId={user?.id ?? null}
       competitionId={null}
       achievements={achievements}
+      showAchievements={Boolean(achievements)}
       flushBottom
     />
   ) : (

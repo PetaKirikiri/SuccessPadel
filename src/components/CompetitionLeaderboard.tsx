@@ -42,6 +42,7 @@ type Props = {
   currentUserId?: string | null
   competitionId?: string | null
   achievements?: CompetitionAchievements | null
+  showAchievements?: boolean
   flushBottom?: boolean
   embedded?: boolean
 }
@@ -118,22 +119,52 @@ function entryRecord(
   return { wins, losses, draws }
 }
 
-function RecordStat({ value }: { value: number | null }) {
+function ScoreWithRecord({
+  score,
+  record,
+  t,
+}: {
+  score: number
+  record: { wins: number; losses: number; draws: number } | null
+  t: TranslateFn
+}) {
   return (
-    <span className="text-center text-xs tabular-nums text-brand-text md:text-sm">
-      {value == null ? '—' : value}
-    </span>
+    <div className="flex flex-col items-end justify-self-end text-right">
+      <span className="font-display text-lg font-bold tabular-nums text-brand-accent md:text-xl">
+        {score}
+      </span>
+      {record ? (
+        <p className="mt-0.5 flex items-center gap-1.5 text-[10px] font-medium tabular-nums text-brand-muted md:text-[11px]">
+          <span title={t('leaderboard.wins')}>
+            {record.wins}
+            {t('leaderboard.winsShort')}
+          </span>
+          <span title={t('leaderboard.losses')}>
+            {record.losses}
+            {t('leaderboard.lossesShort')}
+          </span>
+          <span title={t('leaderboard.draws')}>
+            {record.draws}
+            {t('leaderboard.drawsShort')}
+          </span>
+        </p>
+      ) : null}
+    </div>
   )
 }
 
 const ROW_GRID =
-  'grid items-center gap-x-1 px-1.5 md:gap-x-1.5 md:px-2 grid-cols-[1.25rem_1.75rem_minmax(0,1fr)_minmax(0,2rem)_1.25rem_1.25rem_1.25rem_2.25rem] md:grid-cols-[1.5rem_2.5rem_minmax(0,1fr)_minmax(0,3rem)_1.5rem_1.5rem_1.5rem_2.75rem]'
+  'grid items-center gap-x-1 px-1.5 md:gap-x-1.5 md:px-2 grid-cols-[1.25rem_1.75rem_minmax(0,1fr)_minmax(0,3rem)_3rem] md:grid-cols-[1.5rem_2.5rem_minmax(0,1fr)_minmax(0,3.5rem)_3.5rem]'
+
+const ROW_GRID_NO_BADGES =
+  'grid items-center gap-x-1 px-1.5 md:gap-x-1.5 md:px-2 grid-cols-[1.25rem_1.75rem_minmax(0,1fr)_3rem] md:grid-cols-[1.5rem_2.5rem_minmax(0,1fr)_3.5rem]'
 
 function LeaderboardRow({
   rank,
   entry,
   isMe,
   badges,
+  showBadges,
   onOpenProfile,
   onSelectAchievement,
   t,
@@ -142,6 +173,7 @@ function LeaderboardRow({
   entry: LeaderboardEntry
   isMe: boolean
   badges: Achievement[]
+  showBadges: boolean
   onOpenProfile?: () => void | Promise<void>
   onSelectAchievement: (info: AchievementInfo) => void
   t: TranslateFn
@@ -153,7 +185,7 @@ function LeaderboardRow({
       onClick={() => {
         if (onOpenProfile) void onOpenProfile()
       }}
-      className={`${ROW_GRID} border-b border-brand-border/60 py-2.5 transition last:border-0 md:py-3.5 ${
+      className={`${showBadges ? ROW_GRID : ROW_GRID_NO_BADGES} border-b border-brand-border/60 py-2.5 transition last:border-0 md:py-3.5 ${
         onOpenProfile ? 'cursor-pointer hover:bg-brand-bg-alt/60' : ''
       } ${isMe ? 'bg-brand-bg-alt' : ''}`}
     >
@@ -178,26 +210,23 @@ function LeaderboardRow({
       <span className="min-w-0 truncate text-sm font-medium text-brand-text md:text-base">
         {entry.display_name}
       </span>
-      <span className="flex min-w-0 items-center gap-1 md:gap-1.5">
-        {badges.slice(0, 3).map((b) => (
-          <AchievementBadge
-            key={b.key}
-            iconKey={b.key}
-            emoji={b.icon}
-            labelKey={b.labelKey}
-            label={t(b.labelKey)}
-            onSelect={onSelectAchievement}
-            sizeClass="h-7 w-7 md:h-10 md:w-10"
-            emojiClass="text-xl leading-none md:text-3xl"
-          />
-        ))}
-      </span>
-      <RecordStat value={record?.wins ?? null} />
-      <RecordStat value={record?.losses ?? null} />
-      <RecordStat value={record?.draws ?? null} />
-      <span className="justify-self-end text-right font-display text-lg font-bold tabular-nums text-brand-accent md:text-xl">
-        {entry.total_points}
-      </span>
+      {showBadges ? (
+        <span className="flex min-w-0 items-center gap-1 md:gap-1.5">
+          {badges.slice(0, 3).map((b) => (
+            <AchievementBadge
+              key={b.key}
+              iconKey={b.key}
+              emoji={b.icon}
+              labelKey={b.labelKey}
+              label={t(b.labelKey)}
+              onSelect={onSelectAchievement}
+              sizeClass="h-7 w-7 md:h-10 md:w-10"
+              emojiClass="text-xl leading-none md:text-3xl"
+            />
+          ))}
+        </span>
+      ) : null}
+      <ScoreWithRecord score={entry.total_points} record={record} t={t} />
     </li>
   )
 }
@@ -213,6 +242,7 @@ export function CompetitionLeaderboard({
   currentUserId = null,
   competitionId = null,
   achievements = null,
+  showAchievements = false,
   flushBottom = false,
   embedded = false,
 }: Props) {
@@ -232,7 +262,7 @@ export function CompetitionLeaderboard({
   const hasAnyScores = entries.some((entry) => entry.games > 0)
 
   const badgesFor = (entry: LeaderboardEntry, rank: number): Achievement[] => {
-    if (!achievements) return []
+    if (!showAchievements || !achievements) return []
     const map = achievements.individualAchievementsByPlayerId
     for (const id of leaderboardEntryLookupIds(entry)) {
       if (map[id]) return sortAchievementsForDisplay(map[id]!)
@@ -244,6 +274,7 @@ export function CompetitionLeaderboard({
 
   const displayEntries = compactLeaderboardDisplayNames(entries)
   const showHeader = Boolean(headerTitle || headerSubtitle || headerExtra || compact)
+  const rowGrid = showAchievements ? ROW_GRID : ROW_GRID_NO_BADGES
 
   const shellClass = embedded
     ? 'min-h-full overflow-hidden bg-brand-surface'
@@ -269,21 +300,12 @@ export function CompetitionLeaderboard({
         </div>
       )}
       <div
-        className={`${ROW_GRID} border-b border-brand-border/60 py-2 text-[10px] font-semibold uppercase tracking-wide text-brand-muted md:py-2.5 md:text-xs`}
+        className={`${rowGrid} border-b border-brand-border/60 py-2 text-[10px] font-semibold uppercase tracking-wide text-brand-muted md:py-2.5 md:text-xs`}
       >
         <span className="text-center">#</span>
         <span aria-hidden />
         <span>{t('leaderboard.player')}</span>
-        <span aria-hidden />
-        <span className="text-center" title={t('leaderboard.wins')}>
-          {t('leaderboard.winsShort')}
-        </span>
-        <span className="text-center" title={t('leaderboard.losses')}>
-          {t('leaderboard.lossesShort')}
-        </span>
-        <span className="text-center" title={t('leaderboard.draws')}>
-          {t('leaderboard.drawsShort')}
-        </span>
+        {showAchievements ? <span aria-hidden /> : null}
         <span className="justify-self-end text-right font-display text-xs uppercase text-brand-muted md:text-sm">
           {unit}
         </span>
@@ -306,6 +328,7 @@ export function CompetitionLeaderboard({
               entry={e}
               isMe={isMe}
               badges={badgesFor(source, i + 1)}
+              showBadges={showAchievements}
               onSelectAchievement={setInfo}
               onOpenProfile={
                 isDuoLeaderboardEntry(source.profile_id)
