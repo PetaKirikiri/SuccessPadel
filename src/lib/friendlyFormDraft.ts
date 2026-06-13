@@ -1,11 +1,17 @@
 import type {
   AmericanoScoringChoice,
+  Gender,
   PartnerStyle,
   RuleFormat,
+  SkillLevel,
 } from './competitionPresets'
 import { formatDateInput } from './courtSchedule'
 import type { FriendlyPlayMode, FriendlyVisibility } from './friendlyGames'
-import { DEFAULT_FRIENDLY_ORGANIZED_CONFIG, FRIENDLY_MIN_PLAYERS } from './friendlyGames'
+import {
+  DEFAULT_FRIENDLY_ORGANIZED_CONFIG,
+  FRIENDLY_MIN_PLAYERS,
+  lockedFriendlyOrganizedRules,
+} from './friendlyGames'
 import type { FriendlyGameRecord } from './friendlyGames'
 
 export type FriendlyFormRulesSetup = {
@@ -18,7 +24,7 @@ export type FriendlyFormRulesSetup = {
 }
 
 const STORAGE_KEY = 'successpadel:friendly-form-draft'
-const DRAFT_VERSION = 4
+const DRAFT_VERSION = 5
 
 export type FriendlyFormDraft = {
   v: typeof DRAFT_VERSION
@@ -33,14 +39,14 @@ export type FriendlyFormDraft = {
   playMode: FriendlyPlayMode
   rulesSetup: FriendlyFormRulesSetup
   previewSeed: number
+  skillLevel: SkillLevel
+  gender: Gender
 }
 
 export type FriendlyFormValues = Omit<FriendlyFormDraft, 'v' | 'savedAt'>
 
 function defaultRulesSetup(): FriendlyFormRulesSetup {
-  const { ruleFormat, partnerStyle, americanoScoring, gameCount, gameMinutes, breakMinutes } =
-    DEFAULT_FRIENDLY_ORGANIZED_CONFIG
-  return { ruleFormat, partnerStyle, americanoScoring, gameCount, gameMinutes, breakMinutes }
+  return lockedFriendlyOrganizedRules()
 }
 
 export function friendlyFormDefaults(): FriendlyFormValues {
@@ -55,6 +61,8 @@ export function friendlyFormDefaults(): FriendlyFormValues {
     playMode: 'free',
     rulesSetup: defaultRulesSetup(),
     previewSeed: 0,
+    skillLevel: DEFAULT_FRIENDLY_ORGANIZED_CONFIG.skillLevel ?? 'Low Inter',
+    gender: DEFAULT_FRIENDLY_ORGANIZED_CONFIG.gender ?? 'Mixed',
   }
 }
 
@@ -102,6 +110,9 @@ function migrateDraft(raw: Record<string, unknown>): FriendlyFormValues {
     playMode: raw.playMode === 'organized' ? 'organized' : 'free',
     rulesSetup: normalizeRulesSetup(raw.rulesSetup),
     previewSeed: typeof raw.previewSeed === 'number' ? raw.previewSeed : defaults.previewSeed,
+    skillLevel:
+      typeof raw.skillLevel === 'string' ? (raw.skillLevel as SkillLevel) : defaults.skillLevel,
+    gender: typeof raw.gender === 'string' ? (raw.gender as Gender) : defaults.gender,
   }
 }
 
@@ -112,7 +123,7 @@ export function loadFriendlyFormDraft(): FriendlyFormDraft | null {
     const parsed = JSON.parse(raw) as Record<string, unknown>
     if (!parsed || typeof parsed !== 'object') return null
     const v = parsed.v
-    if (v !== 1 && v !== 2 && v !== 3 && v !== 4) return null
+    if (v !== 1 && v !== 2 && v !== 3 && v !== 4 && v !== 5) return null
     const values = migrateDraft(parsed)
     return {
       v: DRAFT_VERSION,
@@ -151,6 +162,8 @@ export function friendlyFormValuesFromGame(game: FriendlyGameRecord): FriendlyFo
       breakMinutes: cfg.breakMinutes,
     }),
     previewSeed: cfg.previewSeed ?? 0,
+    skillLevel: cfg.skillLevel ?? defaults.skillLevel,
+    gender: cfg.gender ?? defaults.gender,
   }
 }
 

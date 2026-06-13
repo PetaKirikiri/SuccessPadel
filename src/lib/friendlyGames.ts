@@ -26,6 +26,8 @@ import {
 import { rosterFromSlots } from './rosterPreview'
 import { planRankedSchedule } from './rankedSchedule'
 import type { GameSession } from './types'
+import type { Gender, SkillLevel } from './competitionPresets'
+import { LOCKED_COMPETITION } from './lockedCompetitionFormat'
 
 /** Legacy key — published games live in Supabase only; cleared on friendly home load. */
 const STORAGE_KEY = 'sp-friendly-games'
@@ -57,6 +59,22 @@ export type FriendlyOrganizedConfig = {
   endless?: boolean
   /** Bump to clear on-device pad state for this friendly session. */
   padResetAt?: string
+  skillLevel?: SkillLevel
+  gender?: Gender
+}
+
+export function lockedFriendlyOrganizedRules(): Pick<
+  FriendlyOrganizedConfig,
+  'ruleFormat' | 'partnerStyle' | 'americanoScoring' | 'gameCount' | 'gameMinutes' | 'breakMinutes'
+> {
+  return {
+    ruleFormat: 'americano',
+    partnerStyle: 'swapped',
+    americanoScoring: LOCKED_COMPETITION.americanoTarget,
+    gameCount: LOCKED_COMPETITION.gameCount,
+    gameMinutes: LOCKED_COMPETITION.gameMinutes,
+    breakMinutes: LOCKED_COMPETITION.breakMinutes,
+  }
 }
 
 export function friendlyPlayMinutes(config: FriendlyOrganizedConfig): number {
@@ -249,13 +267,10 @@ export function friendlyEndsAtIso(config: FriendlyOrganizedConfig): string | und
 export const DEFAULT_FRIENDLY_ORGANIZED_CONFIG: FriendlyOrganizedConfig = {
   day: '',
   startHour: 18,
-  ruleFormat: 'king_of_court',
-  partnerStyle: 'swapped',
-  americanoScoring: 'open',
-  gameCount: 7,
-  gameMinutes: 14,
-  breakMinutes: 3,
+  ...lockedFriendlyOrganizedRules(),
   previewSeed: 0,
+  skillLevel: 'Low Inter',
+  gender: 'Mixed',
 }
 
 export type FriendlyGameRecord = {

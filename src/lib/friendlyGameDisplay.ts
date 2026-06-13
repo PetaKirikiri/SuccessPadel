@@ -22,6 +22,7 @@ import {
   isEndlessFriendly,
   type FriendlyGameRecord,
 } from './friendlyGames'
+import { LOCKED_COMPETITION, lockedCompetitionRuleChips } from './lockedCompetitionFormat'
 import type { GameSession } from './types'
 
 export type FriendlyRosterSlot = {
@@ -127,6 +128,13 @@ export function friendlyRulesSummary(game: FriendlyGameRecord): string {
 export function friendlyRuleChips(game: FriendlyGameRecord, t: TranslateFn): FriendlyRuleChip[] {
   if (game.playMode === 'free') return []
   const config = game.organizedConfig ?? DEFAULT_FRIENDLY_ORGANIZED_CONFIG
+  if (
+    config.ruleFormat === 'americano' &&
+    config.gameCount === LOCKED_COMPETITION.gameCount &&
+    config.gameMinutes === LOCKED_COMPETITION.gameMinutes
+  ) {
+    return lockedCompetitionRuleChips(t)
+  }
   const formatIcon: FriendlyRuleIcon =
     config.ruleFormat === 'americano' ? 'americano' : 'king'
   const chips: FriendlyRuleChip[] = [
