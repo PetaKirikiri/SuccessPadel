@@ -506,10 +506,17 @@ export function friendlyPreviewGames(
 
 /** Session roster — who is playing, with no court quadrant assignment. */
 export function friendlySessionRoster(game: FriendlyGameRecord): CourtPlayer[] {
-  const names = courtPlayerNames(game.players)
-  return names.map((name, i) =>
-    resolvePlayer(name, game.profileIds?.[i] ?? null, game.profileAvatars?.[i] ?? null),
-  )
+  const ids = game.profileIds ?? []
+  const avatars = game.profileAvatars ?? []
+  const len = Math.max(game.players.length, ids.length, avatars.length)
+  const roster: CourtPlayer[] = []
+  for (let i = 0; i < len; i++) {
+    const raw = game.players[i]?.trim() ?? ''
+    const profileId = ids[i] ?? null
+    if (!raw && !profileId) continue
+    roster.push(resolvePlayer(raw || `Player ${i + 1}`, profileId, avatars[i] ?? null))
+  }
+  return roster
 }
 
 export function friendlyQuadrantPlayers(game: FriendlyGameRecord): QuadrantPlayers {
