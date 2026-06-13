@@ -352,7 +352,10 @@ function ScoreStepper({
         placeholder="0"
         disabled={disabled}
         onChange={(e) => onChange(scoreDigitsOnly(e.target.value))}
-        onFocus={(e) => e.currentTarget.scrollIntoView({ block: 'center', behavior: 'smooth' })}
+        onFocus={(e) => {
+          e.currentTarget.select()
+          e.currentTarget.scrollIntoView({ block: 'center', behavior: 'smooth' })
+        }}
         className={inputClass}
         aria-label={ariaLabel}
       />
@@ -546,15 +549,8 @@ function CourtMatchCell({
 
 type CourtDraft = { teamA: string; teamB: string }
 
-const DEFAULT_COURT_SCORE = '0'
-
-function defaultCourtScore(value: string | undefined): string {
-  return value != null && value !== '' ? value : DEFAULT_COURT_SCORE
-}
-
 function courtScoresReady(teamAStr: string, teamBStr: string): boolean {
-  return parseScoreField(defaultCourtScore(teamAStr)) !== null &&
-    parseScoreField(defaultCourtScore(teamBStr)) !== null
+  return parseScoreField(teamAStr) !== null && parseScoreField(teamBStr) !== null
 }
 
 function courtSubmitReady(
@@ -563,8 +559,8 @@ function courtSubmitReady(
   saved?: { teamAPoints?: number; teamBPoints?: number },
 ): boolean {
   if (!courtScoresReady(teamAStr, teamBStr)) return false
-  const teamA = parseScoreField(defaultCourtScore(teamAStr))!
-  const teamB = parseScoreField(defaultCourtScore(teamBStr))!
+  const teamA = parseScoreField(teamAStr)!
+  const teamB = parseScoreField(teamBStr)!
   if (saved?.teamAPoints == null && saved?.teamBPoints == null) return true
   return saved?.teamAPoints !== teamA || saved?.teamBPoints !== teamB
 }
@@ -606,17 +602,13 @@ function scoreStringsForCourt(
 ): { teamAStr: string; teamBStr: string } {
   if (dirty && draft != null) {
     return {
-      teamAStr: defaultCourtScore(draft.teamA),
-      teamBStr: defaultCourtScore(draft.teamB),
+      teamAStr: draft.teamA ?? '',
+      teamBStr: draft.teamB ?? '',
     }
   }
   return {
-    teamAStr: defaultCourtScore(
-      effectiveScoreField(draft?.teamA, saved?.teamAPoints, false),
-    ),
-    teamBStr: defaultCourtScore(
-      effectiveScoreField(draft?.teamB, saved?.teamBPoints, false),
-    ),
+    teamAStr: effectiveScoreField(draft?.teamA, saved?.teamAPoints, false),
+    teamBStr: effectiveScoreField(draft?.teamB, saved?.teamBPoints, false),
   }
 }
 
@@ -686,8 +678,8 @@ function useGameScoring({
         if (dirtyCourts.has(courtId) && prev[courtId]) continue
         const saved = matchForCourt(gameRoundId, courtId)
         next[courtId] = {
-          teamA: saved?.teamAPoints != null ? String(saved.teamAPoints) : DEFAULT_COURT_SCORE,
-          teamB: saved?.teamBPoints != null ? String(saved.teamBPoints) : DEFAULT_COURT_SCORE,
+          teamA: saved?.teamAPoints != null ? String(saved.teamAPoints) : '',
+          teamB: saved?.teamBPoints != null ? String(saved.teamBPoints) : '',
         }
       }
       return next
@@ -699,8 +691,8 @@ function useGameScoring({
     setDrafts((prev) => ({
       ...prev,
       [courtId]: {
-        teamA: prev[courtId]?.teamA ?? DEFAULT_COURT_SCORE,
-        teamB: prev[courtId]?.teamB ?? DEFAULT_COURT_SCORE,
+        teamA: prev[courtId]?.teamA ?? '',
+        teamB: prev[courtId]?.teamB ?? '',
         [side]: scoreDigitsOnly(value),
       },
     }))
@@ -808,8 +800,8 @@ function useFriendlyManualScoring({
         if (dirtyCourts.has(courtKey) && prev[courtKey]) continue
         const live = liveCourtScores?.get(courtKey)
         next[courtKey] = {
-          teamA: defaultCourtScore(live?.scoreA),
-          teamB: defaultCourtScore(live?.scoreB),
+          teamA: live?.scoreA ?? '',
+          teamB: live?.scoreB ?? '',
         }
       }
       return next
@@ -821,8 +813,8 @@ function useFriendlyManualScoring({
     setDrafts((prev) => ({
       ...prev,
       [courtKey]: {
-        teamA: prev[courtKey]?.teamA ?? DEFAULT_COURT_SCORE,
-        teamB: prev[courtKey]?.teamB ?? DEFAULT_COURT_SCORE,
+        teamA: prev[courtKey]?.teamA ?? '',
+        teamB: prev[courtKey]?.teamB ?? '',
         [side]: scoreDigitsOnly(value),
       },
     }))
