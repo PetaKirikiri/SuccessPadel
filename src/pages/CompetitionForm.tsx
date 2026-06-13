@@ -339,25 +339,7 @@ export function CompetitionForm() {
       trimmedSlots,
       profileIds,
       padelPlayerIds,
-    ).filter((slot) => slot.name)
-    const playerCount = rosterPayload.length
-    if (!id && playerCount !== LOCKED_COMPETITION.targetPlayers) {
-      setError('Enter every player name.')
-      return
-    }
-    if (playerCount < 4 || playerCount % 4 !== 0) {
-      setError('Could not build match-ups.')
-      return
-    }
-    const scheduleRounds = solveBalancedSchedule(
-      playerCount,
-      LOCKED_COMPETITION.gameCount,
-      previewSeed,
     )
-    if (!scheduleRounds.length) {
-      setError('Could not build match-ups.')
-      return
-    }
     setBusy(true)
     setError(null)
 
@@ -379,8 +361,6 @@ export function CompetitionForm() {
       visibility: 'open' as const,
       created_by: user?.id ?? null,
       ...lockedFields,
-      target_players: playerCount,
-      max_players: playerCount,
     }
     const payload = id
       ? sessionFields
@@ -423,33 +403,39 @@ export function CompetitionForm() {
       .select('id, guest_name, rank_order, profile_id, profiles(display_name)')
       .eq('session_id', sessionId)
       .order('rank_order')
-    if (rosterLoadErr || !rosterRows?.length) {
+    if (rosterLoadErr) {
       setBusy(false)
-      setError(rosterLoadErr?.message ?? 'Could not load roster')
-      return
-    }
-    const ranked = sortRosterByRank(rosterRows as unknown as CompetitionPlayer[])
-    const schedule = buildStoredSchedule(
-      ranked,
-      solveBalancedSchedule(ranked.length, LOCKED_COMPETITION.gameCount, previewSeed),
-    )
-    const nextConfig = {
-      ...americanoConfig,
-      schedule_seed: previewSeed,
-      schedule_version: RANKED_SCHEDULE_VERSION,
-      schedule,
-    }
-    const { error: cfgErr } = await supabase.rpc('save_competition_scoring_config', {
-      p_session_id: sessionId,
-      p_scoring_config: nextConfig,
-    })
-    if (cfgErr) {
-      setBusy(false)
-      setError(cfgErr.message)
+      setError(rosterLoadErr.message)
       return
     }
 
-    if (competitionStarted) {
+    const ranked = sortRosterByRank((rosterRows ?? []) as unknown as CompetitionPlayer[])
+    const canSchedule = ranked.length >= 4 && ranked.length % 4 === 0
+
+    if (canSchedule || !id) {
+      const scheduleRounds = canSchedule
+        ? solveBalancedSchedule(ranked.length, LOCKED_COMPETITION.gameCount, previewSeed)
+        : []
+      const schedule =
+        scheduleRounds.length > 0 ? buildStoredSchedule(ranked, scheduleRounds) : []
+      const nextConfig = {
+        ...americanoConfig,
+        schedule_seed: previewSeed,
+        schedule_version: RANKED_SCHEDULE_VERSION,
+        schedule,
+      }
+      const { error: cfgErr } = await supabase.rpc('save_competition_scoring_config', {
+        p_session_id: sessionId,
+        p_scoring_config: nextConfig,
+      })
+      if (cfgErr) {
+        setBusy(false)
+        setError(cfgErr.message)
+        return
+      }
+    }
+
+    if (competitionStarted && canSchedule) {
       const { error: rebuildErr } = await supabase.rpc('rebuild_competition_schedule', {
         p_session_id: sessionId,
       })
