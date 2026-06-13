@@ -170,13 +170,13 @@ export function FriendlyGamePage() {
     () =>
       sessionStarted
         ? calculateFriendlySessionAchievements(
-            matchLogs,
+            scoringLogs,
             scoreUnit,
             sessionRoster,
             enrichedStandings,
           )
         : null,
-    [sessionStarted, matchLogs, scoreUnit, sessionRoster, enrichedStandings],
+    [sessionStarted, scoringLogs, scoreUnit, sessionRoster, enrichedStandings],
   )
 
   const handleSubmitFriendlyScores = useCallback(

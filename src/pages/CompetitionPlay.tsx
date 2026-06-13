@@ -187,7 +187,7 @@ export function CompetitionPlay() {
               {t('competition.waitingOrganiser')}
             </p>
           ) : null}
-          {session && tab === 'games' && started ? (
+          {started && tab === 'games' ? (
             showGamesBoard ? (
               <CompetitionCourtBoard
                 competitionId={id}
