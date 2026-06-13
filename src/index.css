@@ -486,72 +486,35 @@ body {
   color: rgba(255, 255, 255, 0.5);
 }
 
-@keyframes game-card-live-pulse {
-  0%,
-  100% {
-    border-color: rgba(232, 168, 56, 0.45);
-    box-shadow:
-      0 10px 30px -12px rgba(96, 45, 36, 0.35),
-      0 0 0 2px rgba(232, 168, 56, 0.35),
-      0 0 0 0 rgba(232, 168, 56, 0);
-  }
-  50% {
-    border-color: rgba(232, 168, 56, 0.9);
-    box-shadow:
-      0 10px 30px -12px rgba(96, 45, 36, 0.35),
-      0 0 0 3px rgba(232, 168, 56, 0.75),
-      0 0 22px 4px rgba(232, 168, 56, 0.28);
+.game-card-racetrack {
+  position: relative;
+  padding: 2px;
+  overflow: hidden;
+}
+
+.game-card-racetrack::before {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg 290deg,
+    rgba(232, 168, 56, 0.35) 310deg,
+    rgba(232, 168, 56, 0.8) 330deg,
+    rgba(232, 168, 56, 0.35) 350deg,
+    transparent 360deg
+  );
+  animation: game-card-racetrack-spin 3s linear infinite;
+}
+
+@keyframes game-card-racetrack-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 
-.game-card-live {
-  animation: game-card-live-pulse 1.6s ease-in-out infinite;
-}
-
-@keyframes game-card-live-header-pulse {
-  0%,
-  100% {
-    box-shadow: inset 0 0 0 0 rgba(255, 255, 255, 0);
-  }
-  50% {
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
-  }
-}
-
-.game-card-live-header {
-  animation: game-card-live-header-pulse 1.6s ease-in-out infinite;
-}
-
-@keyframes live-badge-pulse {
-  0%,
-  100% {
-    opacity: 1;
-    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.35);
-  }
-  50% {
-    opacity: 0.78;
-    box-shadow: 0 0 10px 1px rgba(255, 255, 255, 0.28);
-  }
-}
-
-.live-badge-pulse {
-  animation: live-badge-pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes live-dot-pulse {
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(0.82);
-    opacity: 0.45;
-  }
-}
-
-.live-dot-pulse {
-  animation: live-dot-pulse 1.5s ease-in-out infinite;
+.game-card-racetrack > * {
+  position: relative;
 }
 
 /* Tablet and up — slightly larger touch targets and readable type */

@@ -76,11 +76,9 @@ type CountdownState = 'starts' | 'playing' | 'finished' | 'scheduled'
 
 function gameCardShellClass({
   finished,
-  isCurrentGame,
   isMyGame = false,
 }: {
   finished: boolean
-  isCurrentGame: boolean
   isMyGame?: boolean
 }) {
   const parts = [
@@ -91,13 +89,41 @@ function gameCardShellClass({
   } else {
     parts.push('border-brand-primary/40')
   }
-  if (isCurrentGame && !finished) {
-    parts.push('game-card-live border-brand-accent/55')
-  }
   if (isMyGame && !finished) {
     parts.push('ring-2 ring-brand-accent/70')
   }
   return parts.join(' ')
+}
+
+function GameCardShell({
+  gameNumber,
+  finished,
+  isCurrentGame,
+  isMyGame = false,
+  children,
+}: {
+  gameNumber: number
+  finished: boolean
+  isCurrentGame: boolean
+  isMyGame?: boolean
+  children: ReactNode
+}) {
+  const shellClass = gameCardShellClass({ finished, isMyGame })
+  const live = isCurrentGame && !finished
+
+  if (live) {
+    return (
+      <div id={`game-${gameNumber}`} className="game-card-racetrack rounded-2xl">
+        <div className={`${shellClass} !rounded-[14px]`}>{children}</div>
+      </div>
+    )
+  }
+
+  return (
+    <div id={`game-${gameNumber}`} className={shellClass}>
+      {children}
+    </div>
+  )
 }
 
 function isGameTimeUp(
@@ -1117,7 +1143,7 @@ function GameCardHeader({
       className={`flex items-stretch border-b-2 ${
         finished
           ? 'border-brand-border/50 bg-[#e8e7e5]'
-          : `border-brand-accent/50 bg-brand-primary${isCurrentGame ? ' game-card-live-header' : ''}`
+          : 'border-brand-accent/50 bg-brand-primary'
       }`}
     >
       <div className="flex min-w-0 flex-1 items-center gap-2 px-3 py-3.5 md:gap-3 md:px-4 md:py-4">
@@ -1131,18 +1157,10 @@ function GameCardHeader({
         <div className="min-w-0 flex-1">
           {showLiveBadge ? (
             <span
-              className={`live-badge-pulse inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider md:text-xs ${
-                finished
-                  ? 'bg-brand-accent/15 text-brand-accent'
-                  : 'bg-white/15 text-brand-bg-alt'
+              className={`text-xs font-semibold md:text-sm ${
+                finished ? 'text-brand-accent' : 'text-brand-bg-alt'
               }`}
             >
-              <span
-                className={`live-dot-pulse inline-block h-1.5 w-1.5 shrink-0 rounded-full ${
-                  finished ? 'bg-brand-accent' : 'bg-brand-accent-light'
-                }`}
-                aria-hidden
-              />
               {t('competition.live')}
             </span>
           ) : finished ? (
@@ -1271,7 +1289,12 @@ function ScoringGameCard({
   )
 
   return (
-    <div id={`game-${game.gameNumber}`} className={gameCardShellClass({ finished, isCurrentGame, isMyGame })}>
+    <GameCardShell
+      gameNumber={game.gameNumber}
+      finished={finished}
+      isCurrentGame={isCurrentGame}
+      isMyGame={isMyGame}
+    >
       <GameCardHeader
         gameNumber={game.gameNumber}
         isLiveNow={isLiveNow}
@@ -1312,7 +1335,7 @@ function ScoringGameCard({
           />
         </div>
       )}
-    </div>
+    </GameCardShell>
   )
 }
 
@@ -1359,7 +1382,11 @@ function FriendlyManualGameCard({
   })
 
   return (
-    <div id={`game-${game.gameNumber}`} className={gameCardShellClass({ finished, isCurrentGame })}>
+    <GameCardShell
+      gameNumber={game.gameNumber}
+      finished={finished}
+      isCurrentGame={isCurrentGame}
+    >
       <GameCardHeader
         gameNumber={game.gameNumber}
         isLiveNow={isLiveNow}
@@ -1431,7 +1458,7 @@ function FriendlyManualGameCard({
           </div>
         </>
       )}
-    </div>
+    </GameCardShell>
   )
 }
 
@@ -1660,10 +1687,11 @@ export function CompetitionCourtBoard({
         }
 
         return (
-          <div
+          <GameCardShell
             key={game.gameNumber}
-            id={`game-${game.gameNumber}`}
-            className={gameCardShellClass({ finished, isCurrentGame })}
+            gameNumber={game.gameNumber}
+            finished={finished}
+            isCurrentGame={isCurrentGame}
           >
             <GameCardHeader
               gameNumber={game.gameNumber}
@@ -1746,7 +1774,7 @@ export function CompetitionCourtBoard({
               </div>
             </div>
             )}
-          </div>
+          </GameCardShell>
         )
       })}
     </div>

@@ -242,7 +242,13 @@ function cachedPlayerLinkRequest(padelPlayerId: string): LinePlayerLinkRequest |
 }
 
 function cachePlayerLinkRequest(padelPlayerId: string, request: LinePlayerLinkRequest): void {
+  if (typeof localStorage === 'undefined') return
   localStorage.setItem(`${LINK_QR_CACHE_PREFIX}${padelPlayerId}`, JSON.stringify(request))
+}
+
+function clearCachedPlayerLinkRequest(padelPlayerId: string): void {
+  if (typeof localStorage === 'undefined') return
+  localStorage.removeItem(`${LINK_QR_CACHE_PREFIX}${padelPlayerId}`)
 }
 
 export function getCachedLinePlayerLinkRequest(
@@ -251,7 +257,7 @@ export function getCachedLinePlayerLinkRequest(
   return cachedPlayerLinkRequest(padelPlayerId)
 }
 
-/** Create a per-player LINE link request (unique lpl_ token, no expiry). Never redirects. */
+/** Create a per-player LINE link request (one permanent lpl_ token per padel player). */
 export async function createLinePlayerLinkRequest(
   competitionId: string | null,
   padelPlayerId: string,
@@ -259,32 +265,46 @@ export async function createLinePlayerLinkRequest(
   if (!channelId) return { error: 'LINE login is not configured' }
   if (!hasLiffId()) return { error: 'LINE app link is not configured' }
 
+  const buildRequest = (linkToken: string): LinePlayerLinkRequest => {
+    const liffEntryPath = `${PLAYER_LINK_HANDOFF_PATH}?${playerLinkLoginQuery(linkToken, competitionId)}`
+    const resolvedQrUrl = lineAppEntryUrl(liffEntryPath)
+    if (!resolvedQrUrl) throw new Error('LINE app link is not configured')
+    return { linkToken, qrUrl: resolvedQrUrl }
+  }
+
   const cached = cachedPlayerLinkRequest(padelPlayerId)
   if (cached) {
     rememberPlayerLinkCompetition(cached.linkToken, competitionId)
     return { request: cached }
   }
 
-  const { data: linkToken, error } = await supabase.rpc('create_player_line_link_request', {
-    p_competition_id: competitionId,
-    p_padel_player_id: padelPlayerId,
-  })
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const { data: linkToken, error } = await supabase.rpc('create_player_line_link_request', {
+      p_competition_id: competitionId,
+      p_padel_player_id: padelPlayerId,
+    })
 
-  if (error) return { error: error.message }
-  if (!linkToken || typeof linkToken !== 'string') return { error: 'Could not start linking' }
+    if (!error && linkToken && typeof linkToken === 'string') {
+      rememberPlayerLinkCompetition(linkToken, competitionId)
+      try {
+        const request = buildRequest(linkToken)
+        cachePlayerLinkRequest(padelPlayerId, request)
+        return { request }
+      } catch (err) {
+        return { error: err instanceof Error ? err.message : 'LINE app link is not configured' }
+      }
+    }
 
-  rememberPlayerLinkCompetition(linkToken, competitionId)
+    const duplicate = error?.message?.toLowerCase().includes('duplicate') ?? false
+    if (duplicate && attempt === 0) {
+      clearCachedPlayerLinkRequest(padelPlayerId)
+      continue
+    }
 
-  const liffEntryPath = `${PLAYER_LINK_HANDOFF_PATH}?${playerLinkLoginQuery(linkToken, competitionId)}`
-  const resolvedQrUrl = lineAppEntryUrl(liffEntryPath)
-  if (!resolvedQrUrl) return { error: 'LINE app link is not configured' }
-
-  const request: LinePlayerLinkRequest = {
-    linkToken,
-    qrUrl: resolvedQrUrl,
+    return { error: error?.message ?? 'Could not start linking' }
   }
-  cachePlayerLinkRequest(padelPlayerId, request)
-  return { request }
+
+  return { error: 'Could not start linking' }
 }
 
 export type LineLinkResult = {

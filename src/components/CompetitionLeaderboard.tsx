@@ -154,10 +154,10 @@ function ScoreWithRecord({
 }
 
 const ROW_GRID =
-  'grid items-center gap-x-1 px-1.5 md:gap-x-1.5 md:px-2 grid-cols-[1.25rem_1.75rem_minmax(0,1fr)_minmax(0,3rem)_3rem] md:grid-cols-[1.5rem_2.5rem_minmax(0,1fr)_minmax(0,3.5rem)_3.5rem]'
+  'grid items-center gap-x-1 px-1.5 md:gap-x-1.5 md:px-2 grid-cols-[1.25rem_1.75rem_minmax(0,1fr)_4.5rem_3.25rem] md:grid-cols-[1.5rem_2.5rem_minmax(0,1fr)_7rem_3.75rem]'
 
 const ROW_GRID_NO_BADGES =
-  'grid items-center gap-x-1 px-1.5 md:gap-x-1.5 md:px-2 grid-cols-[1.25rem_1.75rem_minmax(0,1fr)_3rem] md:grid-cols-[1.5rem_2.5rem_minmax(0,1fr)_3.5rem]'
+  'grid items-center gap-x-1 px-1.5 md:gap-x-1.5 md:px-2 grid-cols-[1.25rem_1.75rem_minmax(0,1fr)_3.25rem] md:grid-cols-[1.5rem_2.5rem_minmax(0,1fr)_3.75rem]'
 
 function LeaderboardRow({
   rank,
@@ -211,7 +211,7 @@ function LeaderboardRow({
         {entry.display_name}
       </span>
       {showBadges ? (
-        <span className="flex min-w-0 items-center gap-1 md:gap-1.5">
+        <span className="flex items-center justify-center justify-self-center gap-0.5 md:gap-1">
           {badges.slice(0, 3).map((b) => (
             <AchievementBadge
               key={b.key}
@@ -220,8 +220,8 @@ function LeaderboardRow({
               labelKey={b.labelKey}
               label={t(b.labelKey)}
               onSelect={onSelectAchievement}
-              sizeClass="h-7 w-7 md:h-10 md:w-10"
-              emojiClass="text-xl leading-none md:text-3xl"
+              sizeClass="h-6 w-6 md:h-9 md:w-9"
+              emojiClass="text-lg leading-none md:text-2xl"
             />
           ))}
         </span>
