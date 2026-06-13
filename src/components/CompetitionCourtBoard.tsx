@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { ScoreTrackerIcon } from './ScoreTrackerIcon'
 import { Link, useNavigate } from 'react-router-dom'
 import { displayCourtLabel } from '../lib/courtDisplay'
 import { resolveCourtRef, type CourtRef, type CourtRefsLookup } from '../lib/courtRefs'
@@ -985,7 +986,7 @@ function CourtLabelRow({
   const titleClass = `${courtLabelClass(currentUserId, court, finished)} text-left`
   const refInitial = courtRef?.displayName ? firstDisplayName(courtRef.displayName).charAt(0) : ''
   return (
-    <div className="flex min-h-12 items-center gap-3 px-3 py-2">
+    <div className="flex min-h-12 items-center gap-2 px-3 py-2">
       <p className={`min-w-0 flex-1 truncate ${titleClass}`}>{label}</p>
       {courtRef ? (
         <div className="flex shrink-0 items-center gap-2">
@@ -1013,6 +1014,15 @@ function CourtLabelRow({
           )}
         </div>
       ) : null}
+      <button
+        type="button"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-brand-border/80 bg-brand-bg-alt text-brand-accent transition hover:border-brand-accent/50 hover:bg-brand-surface active:scale-95 md:h-11 md:w-11"
+        aria-label={t('court.scoreTrackerAria')}
+        title={t('court.scoreTrackerAria')}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <ScoreTrackerIcon className="h-5 w-5 md:h-6 md:w-6" />
+      </button>
     </div>
   )
 }

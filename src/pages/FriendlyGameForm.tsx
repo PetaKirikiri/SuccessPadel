@@ -1,4 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
+import {
+  IconFreePlay,
+  IconOrganized,
+  IconPrivate,
+  IconPublic,
+  IconSave,
+  IconShuffle,
+} from '../components/ButtonIcons'
+import { shellTabClass } from '../components/ShellTabIcons'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { CompetitionLayoutPreview } from '../components/CompetitionLayoutPreview'
 import {
@@ -289,16 +298,18 @@ export function FriendlyGameForm() {
           <button
             type="button"
             onClick={() => setVisibility('public')}
-            className={`game-tab game-tab-competition py-2.5 ${visibility === 'public' ? 'game-tab-selected' : ''}`}
+            className={`${shellTabClass(visibility === 'public', 'competition')} py-2.5`}
           >
-            {t('friendly.public')}
+            <IconPublic />
+            <span>{t('friendly.public')}</span>
           </button>
           <button
             type="button"
             onClick={() => setVisibility('private')}
-            className={`game-tab game-tab-competition py-2.5 ${visibility === 'private' ? 'game-tab-selected' : ''}`}
+            className={`${shellTabClass(visibility === 'private', 'competition')} py-2.5`}
           >
-            {t('friendly.private')}
+            <IconPrivate />
+            <span>{t('friendly.private')}</span>
           </button>
         </div>
 
@@ -325,16 +336,18 @@ export function FriendlyGameForm() {
             <button
               type="button"
               onClick={() => setPlayMode('free')}
-              className={`game-tab game-tab-competition py-2.5 ${playMode === 'free' ? 'game-tab-selected' : ''}`}
+              className={`${shellTabClass(playMode === 'free', 'competition')} py-2.5`}
             >
-              {t('friendly.freePlay')}
+              <IconFreePlay />
+              <span>{t('friendly.freePlay')}</span>
             </button>
             <button
               type="button"
               onClick={() => setPlayMode('organized')}
-              className={`game-tab game-tab-competition py-2.5 ${playMode === 'organized' ? 'game-tab-selected' : ''}`}
+              className={`${shellTabClass(playMode === 'organized', 'competition')} py-2.5`}
             >
-              {t('friendly.organizedPlay')}
+              <IconOrganized />
+              <span>{t('friendly.organizedPlay')}</span>
             </button>
           </div>
         </div>
@@ -376,6 +389,7 @@ export function FriendlyGameForm() {
                   onClick={() => setPreviewSeed((s) => s + 1)}
                   className="brand-btn-outline w-full py-2 text-sm font-semibold"
                 >
+                  <IconShuffle />
                   Shuffle match-ups
                 </button>
               </>
@@ -390,6 +404,7 @@ export function FriendlyGameForm() {
           onClick={() => void accept()}
           className="brand-btn w-full py-2.5 text-sm font-semibold disabled:opacity-50"
         >
+          <IconSave />
           {busy
             ? t('common.loading')
             : isEdit

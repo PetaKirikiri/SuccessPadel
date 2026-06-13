@@ -1,4 +1,4 @@
-import { SquareArrowUp, Trash2 } from 'lucide-react'
+import { Share2, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { FriendlyDeleteConfirm } from '../components/FriendlyDeleteConfirm'
@@ -90,7 +90,7 @@ function MemberListRow({
           aria-label={t('playerProfile.shareProfile')}
           className="my-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand-border bg-brand-bg-alt text-brand-primary active:scale-[0.98]"
         >
-          <SquareArrowUp className="h-4 w-4" aria-hidden />
+          <Share2 className="h-4 w-4" aria-hidden />
         </button>
       ) : null}
       {canDelete ? (

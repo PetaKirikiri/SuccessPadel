@@ -11,12 +11,21 @@ export const APP_SHELL_CLASS = `${APP_SHELL_GUTTER} ${APP_SHELL_INNER}`
 
 type Props = ComponentProps<'div'> & {
   children: ReactNode
+  /** When false, column does not grow (e.g. bottom dock bar). */
+  fill?: boolean
 }
 
-export function AppShellColumn({ children, className = '', ...props }: Props) {
+export function AppShellColumn({ children, className = '', fill = true, ...props }: Props) {
+  const outerClass = fill
+    ? `${APP_SHELL_GUTTER} flex min-h-0 min-w-0 w-full flex-1 basis-0 flex-col`
+    : `${APP_SHELL_GUTTER} w-full shrink-0`
+  const innerClass = fill
+    ? `${APP_SHELL_INNER} flex min-h-0 min-w-0 w-full flex-1 basis-0 flex-col`
+    : APP_SHELL_INNER
+
   return (
-    <div className={APP_SHELL_GUTTER}>
-      <div className={`${APP_SHELL_INNER}${className ? ` ${className}` : ''}`} {...props}>
+    <div className={outerClass}>
+      <div className={`${innerClass}${className ? ` ${className}` : ''}`} {...props}>
         {children}
       </div>
     </div>

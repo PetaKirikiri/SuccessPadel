@@ -5,6 +5,8 @@ import type { TranslateFn } from '../i18n'
 import { competitionJoinUrl } from '../lib/siteUrl'
 import { canJoinGame, rosterLabel } from '../lib/playerCaps'
 import { supabase } from '../lib/supabaseClient'
+import { IconAdd, IconDelete, IconJoin, IconPlay, IconReview } from './ButtonIcons'
+import { IconHubCurrent, IconHubPast, shellTabClass } from './ShellTabIcons'
 import { GamesHubEmpty, GamesHubLoading } from './GamesHubView'
 import { CompetitionCurrentGameCard } from './CompetitionCurrentGameCard'
 import { CompetitionGuestRoster } from './CompetitionGuestRoster'
@@ -68,9 +70,10 @@ function ListTabs({
       <button
         type="button"
         onClick={() => onTab('current')}
-        className={`game-tab game-tab-competition ${tab === 'current' ? 'game-tab-selected' : ''}`}
+        className={shellTabClass(tab === 'current', 'competition')}
       >
-        <span className="font-display text-sm leading-tight">
+        <IconHubCurrent />
+        <span className="truncate text-xs leading-tight md:text-sm">
           {t('competition.currentGames')}
           {currentCount > 0 ? ` (${currentCount})` : ''}
         </span>
@@ -78,9 +81,10 @@ function ListTabs({
       <button
         type="button"
         onClick={() => onTab('past')}
-        className={`game-tab game-tab-rank ${tab === 'past' ? 'game-tab-selected' : ''}`}
+        className={shellTabClass(tab === 'past', 'rank')}
       >
-        <span className="font-display text-sm leading-tight">
+        <IconHubPast />
+        <span className="truncate text-xs leading-tight md:text-sm">
           {t('competition.pastGames')}
           {pastCount > 0 ? ` (${pastCount})` : ''}
         </span>
@@ -231,9 +235,10 @@ function CompetitionCard({
           {canReviewScores && (
             <Link
               to={`/competitions/${row.id}`}
-              className="brand-btn block w-full py-2 text-center"
+              className="brand-btn w-full py-2"
               onClick={(e) => e.stopPropagation()}
             >
+              <IconReview />
               {t('competition.reviewScores')}
             </Link>
           )}
@@ -241,9 +246,10 @@ function CompetitionCard({
           {!isAdmin && isLive && !isComplete && (
             <Link
               to={`/competitions/${row.id}`}
-              className="brand-btn block w-full py-2 text-center"
+              className="brand-btn w-full py-2"
               onClick={(e) => e.stopPropagation()}
             >
+              <IconPlay />
               {t('competition.play')}
             </Link>
           )}
@@ -262,6 +268,7 @@ function CompetitionCard({
               }}
               className="brand-btn w-full py-2"
             >
+              <IconJoin />
               {t('competition.join')}
             </button>
           )}
@@ -269,9 +276,10 @@ function CompetitionCard({
           {expanded && !isAdmin && !isLive && spotsOpen && !joined && userId && (
             <a
               href={competitionJoinUrl(row.id)}
-              className="brand-btn block w-full py-2 text-center"
+              className="brand-btn w-full py-2"
               onClick={(e) => e.stopPropagation()}
             >
+              <IconJoin />
               {t('competition.addYourself')}
             </a>
           )}
@@ -295,8 +303,9 @@ function CompetitionCard({
                 e.stopPropagation()
                 void remove()
               }}
-              className="w-full rounded-lg border border-red-200 py-2 text-sm font-medium text-red-600 disabled:opacity-50"
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-red-200 py-2 text-sm font-medium text-red-600 disabled:opacity-50"
             >
+              <IconDelete />
               {t('competition.deleteCompetition')}
             </button>
           )}
@@ -365,7 +374,8 @@ export function CompetitionTable({
             </p>
             {tab === 'current' && isAdmin ? (
               <>
-                <Link to="/competitions/new" className="brand-btn inline-block px-6 py-2">
+                <Link to="/competitions/new" className="brand-btn px-6 py-2">
+                  <IconAdd />
                   {t('competition.addCompetition')}
                 </Link>
                 <p className="text-xs text-brand-muted">{t('competition.tapPlusHint')}</p>
@@ -381,7 +391,8 @@ export function CompetitionTable({
             </p>
             {tab === 'current' && isAdmin ? (
               <>
-                <Link to="/competitions/new" className="brand-btn inline-block px-6 py-2">
+                <Link to="/competitions/new" className="brand-btn px-6 py-2">
+                  <IconAdd />
                   {t('competition.addCompetition')}
                 </Link>
                 <p className="text-xs text-brand-muted">{t('competition.tapPlusHint')}</p>

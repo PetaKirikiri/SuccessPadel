@@ -1,4 +1,5 @@
 import { useTranslation } from '../hooks/useTranslation'
+import { IconHubPast, IconProfile, shellTabClass } from './ShellTabIcons'
 
 export type PlayerProfileTab = 'profile' | 'history'
 
@@ -46,16 +47,18 @@ export function PlayerProfileTabs({ tab, onTab, embedded = false }: Props) {
       <button
         type="button"
         onClick={() => onTab('profile')}
-        className={`game-tab game-tab-rank min-w-0 ${tab === 'profile' ? 'game-tab-selected' : ''}`}
+        className={shellTabClass(tab === 'profile', 'rank')}
       >
-        <span className="font-display text-sm leading-tight md:text-base">{t('playerProfile.tabProfile')}</span>
+        <IconProfile />
+        <span className="truncate text-xs leading-tight md:text-sm">{t('playerProfile.tabProfile')}</span>
       </button>
       <button
         type="button"
         onClick={() => onTab('history')}
-        className={`game-tab game-tab-competition min-w-0 ${tab === 'history' ? 'game-tab-selected' : ''}`}
+        className={shellTabClass(tab === 'history', 'competition')}
       >
-        <span className="font-display text-sm leading-tight md:text-base">{t('playerProfile.tabHistory')}</span>
+        <IconHubPast />
+        <span className="truncate text-xs leading-tight md:text-sm">{t('playerProfile.tabHistory')}</span>
       </button>
     </div>
   )

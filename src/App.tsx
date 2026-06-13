@@ -254,7 +254,7 @@ export default function App() {
         <AuthProvider>
           <AppShell>
             <NativeDeepLinkHandler />
-            <div className="viewport-lock flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
               <Routes>
               <Route
                 path="/competitions/:id/join"

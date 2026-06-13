@@ -1,4 +1,5 @@
 import { createPortal } from 'react-dom'
+import { IconCancel, IconDelete } from './ButtonIcons'
 import { useTranslation } from '../hooks/useTranslation'
 
 type Props = {
@@ -36,14 +37,16 @@ export function FriendlyDeleteConfirm({ title, message, busy = false, onConfirm,
             onClick={onCancel}
             className="brand-btn-outline flex-1 py-2.5 text-sm font-semibold disabled:opacity-50"
           >
+            <IconCancel />
             {t('pad.confirm.cancel')}
           </button>
           <button
             type="button"
             disabled={busy}
             onClick={onConfirm}
-            className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
           >
+            <IconDelete />
             {busy ? t('common.loading') : t('competition.delete')}
           </button>
         </div>

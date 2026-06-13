@@ -173,6 +173,7 @@ export type Messages = {
     openLiveCourt: string
     openCourtView: string
     liveCourt: string
+    scoreTrackerAria: string
   }
   competition: {
     games: string

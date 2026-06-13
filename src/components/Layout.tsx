@@ -3,6 +3,7 @@ import { useTranslation } from '../hooks/useTranslation'
 import { isGesturePadRoute } from '../lib/gesturePadChrome'
 import { AppBottomNav } from './AppBottomNav'
 import { AppShellColumn } from './AppShellColumn'
+import { AppShellPanel } from './AppShellPanel'
 import { AppTopBar } from './AppTopBar'
 import { LineBookmarkBanner } from './LineBookmarkBanner'
 
@@ -15,9 +16,9 @@ export function Layout() {
   const showBottomNav = !onPlayerProfile && !isGesturePadRoute(loc.pathname) && !isCompetitionRun
 
   return (
-    <div className="game-bg flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden">
+    <div className="game-bg flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">
       {!onPlayerProfile ? (
-        <AppTopBar className="py-3">
+        <AppTopBar>
           <img
             src="/brand/logo-padel.webp"
             alt={t('common.brandAlt')}
@@ -27,11 +28,11 @@ export function Layout() {
       ) : null}
 
       <main
-        data-scroll-y={onPlayerProfile || isGamesHub ? undefined : true}
-        className={`min-h-0 min-w-0 flex-1 ${
+        data-scroll-y={onPlayerProfile || isGamesHub || showBottomNav ? undefined : true}
+        className={`min-h-0 min-w-0 flex-1 basis-0 ${
           onPlayerProfile
             ? 'overflow-hidden p-0'
-            : isGamesHub
+            : isGamesHub || showBottomNav
               ? 'flex flex-col overflow-hidden'
               : 'scroll-y'
         }`}
@@ -41,18 +42,27 @@ export function Layout() {
         ) : (
           <AppShellColumn
             className={
-              isGamesHub
-                ? 'flex min-h-0 flex-1 flex-col overflow-hidden pb-2 pt-0'
-                : 'pb-2 pt-1'
+              showBottomNav
+                ? 'overflow-hidden pt-1'
+                : isGamesHub
+                  ? 'overflow-hidden pb-2 pt-0'
+                  : 'pb-2 pt-1'
             }
           >
-            {!isGamesHub ? <LineBookmarkBanner /> : null}
-            <Outlet />
+            {showBottomNav ? (
+              <AppShellPanel scrollBody={!isGamesHub} footer={<AppBottomNav embedded />}>
+                {!isGamesHub ? <LineBookmarkBanner /> : null}
+                <Outlet />
+              </AppShellPanel>
+            ) : (
+              <>
+                {!isGamesHub ? <LineBookmarkBanner /> : null}
+                <Outlet />
+              </>
+            )}
           </AppShellColumn>
         )}
       </main>
-
-      {showBottomNav ? <AppBottomNav /> : null}
     </div>
   )
 }

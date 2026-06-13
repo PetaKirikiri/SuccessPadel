@@ -480,18 +480,17 @@ export function CompetitionForm() {
 
   return (
     <form
-      className="flex h-full min-h-0 flex-col"
+      className="w-full min-w-0 space-y-3 pb-4"
       onSubmit={(e) => {
         e.preventDefault()
         void save()
       }}
     >
-      <div data-scroll-y className="scroll-y min-h-0 flex-1 space-y-3 pb-6">
-        <Link to="/competitive" className="text-sm font-medium text-brand-accent">
-          ← Back
-        </Link>
+      <Link to="/competitive" className="text-sm font-medium text-brand-accent">
+        ← Back
+      </Link>
 
-        <section className="game-card space-y-3">
+      <section className="game-card space-y-3">
           <FriendlyRuleSettings chips={ruleChips} />
 
           <div className="grid grid-cols-2 gap-2">
@@ -609,7 +608,6 @@ export function CompetitionForm() {
             {busy ? 'Saving…' : id ? 'Save' : 'Create competition'}
           </button>
         </section>
-      </div>
     </form>
   )
 }

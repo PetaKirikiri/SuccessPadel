@@ -1,4 +1,5 @@
 import { useRef, useState, type ReactNode } from 'react'
+import { IconDelete } from './ButtonIcons'
 
 const ACTION_WIDTH = 80
 const OPEN_THRESHOLD = 36
@@ -90,8 +91,9 @@ export function SwipeRevealActions({ enabled, actionLabel, onAction, children }:
         type="button"
         onPointerUp={fireAction}
         onClick={fireAction}
-        className="absolute inset-y-0 right-0 z-0 flex w-20 touch-manipulation select-none items-center justify-center bg-red-600 px-1 text-center text-xs font-semibold text-white"
+        className="absolute inset-y-0 right-0 z-0 flex w-20 touch-manipulation select-none flex-col items-center justify-center gap-0.5 bg-red-600 px-1 text-center text-xs font-semibold text-white"
       >
+        <IconDelete className="h-4 w-4" />
         {actionLabel}
       </button>
       <div

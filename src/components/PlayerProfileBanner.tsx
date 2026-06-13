@@ -1,4 +1,5 @@
-import { SquareArrowUp } from 'lucide-react'
+import { Share2 } from 'lucide-react'
+import { IconLink } from './ButtonIcons'
 import type { TranslateFn } from '../i18n'
 
 type Props = {
@@ -101,7 +102,7 @@ export function PlayerProfileBanner({
                 onClick={onShareProfile}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border bg-brand-bg-alt px-3 py-2 text-xs font-semibold text-brand-primary shadow-sm active:scale-[0.98]"
               >
-                <SquareArrowUp className="h-3.5 w-3.5" aria-hidden />
+                <Share2 className="h-3.5 w-3.5" aria-hidden />
                 {shareProfileLabel}
               </button>
               {shareFeedback && (
@@ -113,8 +114,9 @@ export function PlayerProfileBanner({
             <button
               type="button"
               onClick={onAddLine}
-              className="inline-flex items-center rounded-lg border border-brand-border bg-brand-bg-alt px-3 py-2 text-xs font-semibold text-brand-primary shadow-sm active:scale-[0.98]"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border bg-brand-bg-alt px-3 py-2 text-xs font-semibold text-brand-primary shadow-sm active:scale-[0.98]"
             >
+              <IconLink />
               {t('playerProfile.connectLine')}
             </button>
           )}

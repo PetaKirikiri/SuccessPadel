@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
+import { Plus } from 'lucide-react'
 import { CompetitionTable, splitCompetitionRows } from '../components/CompetitionTable'
 import { GamesHubView } from '../components/GamesHubView'
 import { useAuth } from '../hooks/useAuth'
@@ -38,9 +39,9 @@ export function CompetitiveHomePage() {
           <Link
             to="/competitions/new"
             aria-label={t('competition.addCompetitionFab')}
-            className="fixed right-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-brand-accent text-2xl font-semibold leading-none text-white shadow-lg bottom-[calc(4.75rem+env(safe-area-inset-bottom))]"
+            className="fixed right-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-brand-accent text-white shadow-lg bottom-[calc(var(--app-shell-dock-height)+0.75rem)]"
           >
-            +
+            <Plus className="h-6 w-6" strokeWidth={2.5} aria-hidden />
           </Link>
         ) : null
       }

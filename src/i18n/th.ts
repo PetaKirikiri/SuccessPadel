@@ -197,6 +197,7 @@ export const th: Messages = {
     openLiveCourt: 'เปิดสนามสด {name}',
     openCourtView: 'เปิดมุมมองสนาม',
     liveCourt: 'สนามสด',
+    scoreTrackerAria: 'ติดตามคะแนน',
   },
   competition: {
     games: 'เกม',

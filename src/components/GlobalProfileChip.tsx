@@ -14,7 +14,7 @@ export function GlobalProfileChip() {
 
   return (
     <div className="pointer-events-none fixed inset-x-0 top-[max(0.75rem,env(safe-area-inset-top))] z-[150]">
-      <AppShellColumn className="flex justify-end">
+      <AppShellColumn fill={false} className="flex justify-end">
         <div className="pointer-events-auto flex flex-row flex-nowrap items-center gap-2 md:gap-3" dir="ltr">
           <LanguagePicker />
           {!authLoading && <ProfileChip returnTo={returnTo} className="shrink-0" />}

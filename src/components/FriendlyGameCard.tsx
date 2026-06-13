@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { IconEdit, IconOpenPad } from './ButtonIcons'
 import { Link } from 'react-router-dom'
 import { CompetitionLayoutPreview } from './CompetitionLayoutPreview'
 import { FriendlyRosterList } from './FriendlyRosterList'
@@ -127,8 +128,9 @@ export function FriendlyGameCard({
         <div className="border-t-2 border-brand-border px-4 py-3">
           <Link
             to={`/friendly/${game.id}/edit`}
-            className="brand-btn-outline block w-full py-2 text-center text-sm font-semibold"
+            className="brand-btn-outline w-full py-2 text-sm font-semibold"
           >
+            <IconEdit />
             {t('friendly.edit')}
           </Link>
         </div>
@@ -138,8 +140,9 @@ export function FriendlyGameCard({
         <div className="border-t-2 border-brand-border px-4 py-3">
           <Link
             to={`/friendly/${game.id}/pad`}
-            className="brand-btn block w-full py-2 text-center text-sm font-semibold"
+            className="brand-btn w-full py-2 text-sm font-semibold"
           >
+            <IconOpenPad />
             {t('friendly.openPad')}
           </Link>
         </div>

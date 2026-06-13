@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState, useCallback } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { IconEdit, IconJoin, IconOpenPad } from '../components/ButtonIcons'
+import { IconHubLeaderboard, IconPlayGames } from '../components/ShellTabIcons'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { CompetitionLayoutPreview } from '../components/CompetitionLayoutPreview'
 import { CompetitionLeaderboard } from '../components/CompetitionLeaderboard'
@@ -175,7 +177,11 @@ export function FriendlyGamePage() {
       </Link>
 
       {isAdmin ? (
-        <Link to={`/friendly/${game.id}/edit`} className="block text-center text-xs text-brand-muted">
+        <Link
+          to={`/friendly/${game.id}/edit`}
+          className="inline-flex items-center justify-center gap-1.5 text-xs text-brand-muted"
+        >
+          <IconEdit className="h-3.5 w-3.5" />
           {t('friendly.edit')}
         </Link>
       ) : null}
@@ -184,9 +190,19 @@ export function FriendlyGamePage() {
         <button
           type="button"
           onClick={() => setViewTab(viewTab === 'leaderboard' ? 'games' : 'leaderboard')}
-          className="brand-btn-outline block w-full py-2.5 text-center text-sm font-semibold"
+          className="brand-btn-outline w-full py-2.5 text-sm font-semibold"
         >
-          {viewTab === 'leaderboard' ? t('competition.games') : t('friendly.leaderboard')}
+          {viewTab === 'leaderboard' ? (
+            <>
+              <IconPlayGames />
+              {t('competition.games')}
+            </>
+          ) : (
+            <>
+              <IconHubLeaderboard />
+              {t('friendly.leaderboard')}
+            </>
+          )}
         </button>
       ) : null}
 
@@ -241,6 +257,7 @@ export function FriendlyGamePage() {
             onClick={() => void join()}
             className="brand-btn w-full py-3 text-sm font-semibold disabled:opacity-50"
           >
+            <IconJoin />
             {joinBusy ? t('common.loading') : t('friendly.join')}
           </button>
         ) : null}
@@ -252,8 +269,9 @@ export function FriendlyGamePage() {
         {isAdmin && isFree ? (
           <Link
             to={`/friendly/${game.id}/pad`}
-            className="brand-btn block w-full py-3 text-center text-sm font-semibold"
+            className="brand-btn w-full py-3 text-sm font-semibold"
           >
+            <IconOpenPad />
             {t('friendly.openPad')}
           </Link>
         ) : null}

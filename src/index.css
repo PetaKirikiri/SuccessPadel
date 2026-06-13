@@ -24,6 +24,7 @@
 
 html {
   @apply m-0 bg-brand-bg;
+  --app-shell-dock-height: calc(3.75rem + max(0.5rem, env(safe-area-inset-bottom, 0px)));
   position: fixed;
   inset: 0;
   width: var(--app-width, 100%);
@@ -95,6 +96,80 @@ body {
     linear-gradient(180deg, var(--color-brand-bg) 0%, var(--color-brand-bg-alt) 100%);
 }
 
+/** Unified shell: scroll body + tab footer share one subtle frame (aligned with game cards). */
+.app-shell-panel {
+  @apply flex h-0 min-h-0 min-w-0 flex-1 basis-0 flex-col overflow-hidden rounded-2xl border border-brand-primary/25 bg-brand-bg-alt;
+  box-shadow:
+    0 4px 16px -4px rgb(96 45 36 / 0.18),
+    inset 0 1px 0 rgb(255 255 255 / 0.5);
+}
+
+.app-shell-panel-body {
+  @apply min-h-0 min-w-0 flex-1 basis-0 overflow-x-hidden bg-brand-bg-alt;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+.app-shell-panel-slot {
+  @apply flex min-h-0 min-w-0 flex-1 basis-0 flex-col overflow-hidden bg-brand-bg-alt;
+}
+
+/** Breathing room between the shell frame and inner cards/content. */
+.app-shell-panel-inset {
+  @apply px-2.5 pb-2.5 pt-2;
+}
+
+.app-shell-dock {
+  @apply shrink-0 w-full bg-brand-bg;
+}
+
+.app-shell-dock-inner {
+  @apply flex flex-row gap-1 rounded-b-2xl border-2 border-brand-primary/60 bg-brand-bg-alt p-1 pt-1.5;
+  box-shadow: 0 8px 22px -10px rgb(96 45 36 / 0.34);
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+.app-shell-panel-footer {
+  @apply flex w-full shrink-0 flex-row items-stretch gap-0 border-t border-brand-primary/20 bg-brand-bg-alt p-0;
+}
+
+.app-shell-panel-header {
+  @apply flex w-full shrink-0 flex-row items-stretch gap-0 border-b border-brand-primary/20 bg-brand-bg-alt p-0;
+}
+
+.app-shell-panel-footer .game-tab,
+.app-shell-panel-header .game-tab {
+  @apply flex min-h-[3rem] min-w-0 flex-1 basis-0 flex-row items-center justify-center self-stretch rounded-none border-0 border-r border-brand-primary/15 bg-transparent px-1 py-0 shadow-none;
+}
+
+.app-shell-panel-footer .game-tab {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+.app-shell-panel-header .game-tab {
+  @apply py-0;
+}
+
+.app-shell-panel-footer .game-tab:last-child,
+.app-shell-panel-header .game-tab:last-child {
+  @apply border-r-0;
+}
+
+.app-shell-panel-footer .game-tab-selected,
+.app-shell-panel-header .game-tab-selected {
+  @apply border-brand-accent bg-brand-bg-alt font-semibold text-brand-primary;
+  border-width: 0;
+  border-right-width: 1px;
+  box-shadow: inset 0 -3px 0 var(--color-brand-accent);
+}
+
+.app-shell-panel-footer .game-tab-selected:last-child,
+.app-shell-panel-header .game-tab-selected:last-child {
+  border-right-width: 0;
+}
+
 .game-dock {
   @apply shrink-0 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))];
 }
@@ -103,16 +178,24 @@ body {
   @apply flex min-w-0 max-w-full gap-1 overflow-hidden rounded-b-2xl border border-brand-border bg-brand-surface/95 p-1.5;
 }
 
+/** @deprecated Prefer app-shell-panel-footer inside app-shell-panel. */
+.game-dock-inner-flush {
+  @apply flex min-w-0 max-w-full gap-1 overflow-hidden rounded-none border-0 border-t border-brand-border/40 bg-brand-bg-alt p-1 pt-1.5 shadow-none;
+}
+
 .game-tab {
-  @apply flex min-h-[3rem] min-w-0 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl border border-transparent px-1 py-1.5 text-center text-brand-muted transition;
+  @apply flex min-h-[3rem] min-w-0 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl border-2 border-brand-primary/30 bg-brand-surface px-2 py-1.5 text-center font-display text-sm leading-tight text-brand-muted transition;
 }
 
 .game-tab-icon {
-  @apply h-5 w-5 shrink-0;
+  @apply h-5 w-5 shrink-0 md:h-[1.35rem] md:w-[1.35rem];
 }
 
-.game-tab-active {
-  @apply bg-gradient-to-b from-brand-accent to-brand-accent-light font-semibold text-white;
+.game-tab-active,
+.game-tab-selected {
+  @apply border-brand-accent bg-brand-bg-alt font-semibold text-brand-primary shadow-[inset_0_1px_0_rgb(255_255_255_/_0.65)];
+  /* Keep same border width as idle so selected tabs don't shift layout */
+  border-width: 2px;
 }
 
 .game-tab-idle {
@@ -134,35 +217,15 @@ body {
 }
 
 .game-tab-fun.game-tab-selected {
-  border-color: var(--color-brand-accent);
-}
-
-.game-tab-rank {
-  background: transparent;
+  @apply border-brand-accent bg-brand-bg-alt font-semibold text-brand-primary;
 }
 
 .game-tab-rank .game-tab-icon {
-  color: var(--color-brand-gold);
-}
-
-.game-tab-rank.game-tab-selected {
-  border-color: var(--color-brand-accent);
-}
-
-.game-tab-competition {
-  @apply bg-transparent;
+  @apply text-brand-gold;
 }
 
 .game-tab-competition .game-tab-icon {
-  @apply text-brand-primary;
-}
-
-.game-tab-competition.game-tab-selected {
-  border-color: var(--color-brand-accent);
-}
-
-.game-tab-selected {
-  @apply bg-brand-bg-alt font-semibold text-brand-primary ring-1 ring-brand-accent/40;
+  @apply text-brand-accent;
 }
 
 .game-card {
@@ -182,11 +245,11 @@ body {
 }
 
 .brand-btn {
-  @apply rounded-xl bg-brand-accent py-2.5 text-sm font-medium text-white shadow-sm transition hover:brightness-95 disabled:opacity-50;
+  @apply inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand-accent py-2.5 text-sm font-medium text-white shadow-sm transition hover:brightness-95 disabled:opacity-50;
 }
 
 .brand-btn-outline {
-  @apply rounded-xl border border-brand-border bg-brand-surface py-2.5 text-sm font-medium text-brand-text;
+  @apply inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-border bg-brand-surface py-2.5 text-sm font-medium text-brand-text;
 }
 
 .brand-link {
@@ -425,6 +488,26 @@ body {
 
 /* Tablet and up — slightly larger touch targets and readable type */
 @media (min-width: 768px) {
+  .app-shell-panel-footer .game-tab,
+  .app-shell-panel-header .game-tab {
+    min-height: 3rem;
+    padding-top: 0;
+  }
+
+  .app-shell-panel-footer .game-tab {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  .app-shell-panel-header .game-tab {
+    padding-bottom: 0;
+  }
+
+  .app-shell-panel-footer .game-tab .game-tab-icon,
+  .app-shell-panel-header .game-tab .game-tab-icon {
+    height: 1.35rem;
+    width: 1.35rem;
+  }
+
   .game-tab {
     min-height: 0;
     flex-direction: row;

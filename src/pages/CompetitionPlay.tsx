@@ -16,47 +16,13 @@ import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
 import { computeAmericanoStandings } from '../lib/competitionStandings'
 import { AppTopBar } from '../components/AppTopBar'
 import { AppShellColumn } from '../components/AppShellColumn'
+import { AppShellPanel } from '../components/AppShellPanel'
+import { IconHubLeaderboard, IconPlayGames, shellTabClass } from '../components/ShellTabIcons'
 import { useTranslation } from '../hooks/useTranslation'
 import { enrichStandingsWithAvatars } from '../lib/leaderboardEntries'
 import { supabase } from '../lib/supabaseClient'
 
 type PlayTab = 'games' | 'leaderboard'
-
-function GamesIcon() {
-  return (
-    <svg className="game-tab-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M5 5.5h14M5 12h14M5 18.5h14M8 3.5v17M16 3.5v17"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="2"
-      />
-    </svg>
-  )
-}
-
-function LeaderboardIcon() {
-  return (
-    <svg className="game-tab-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M8 21h8M12 17v4M7 4h10v3a5 5 0 0 1-10 0V4Z"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-      />
-      <path
-        d="M7 6H4.5A2.5 2.5 0 0 0 7 10M17 6h2.5A2.5 2.5 0 0 1 17 10"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="2"
-      />
-    </svg>
-  )
-}
 
 function PlayTabs({
   tab,
@@ -72,20 +38,18 @@ function PlayTabs({
       <button
         type="button"
         onClick={() => onTab('games')}
-        className={`game-tab game-tab-competition ${tab === 'games' ? 'game-tab-selected' : ''}`}
+        className={shellTabClass(tab === 'games', 'competition')}
       >
-        <GamesIcon />
-        <span className="font-display text-sm leading-tight md:text-base">{t('competition.games')}</span>
+        <IconPlayGames />
+        <span>{t('competition.games')}</span>
       </button>
       <button
         type="button"
         onClick={() => onTab('leaderboard')}
-        className={`game-tab game-tab-rank ${tab === 'leaderboard' ? 'game-tab-selected' : ''}`}
+        className={shellTabClass(tab === 'leaderboard', 'rank')}
       >
-        <LeaderboardIcon />
-        <span className="font-display text-sm leading-tight md:text-base">
-          {t('competition.leaderboard')}
-        </span>
+        <IconHubLeaderboard />
+        <span>{t('competition.leaderboard')}</span>
       </button>
     </>
   )
@@ -214,8 +178,8 @@ export function CompetitionPlay() {
   }, [started, complete, roster, rounds, courtMatches, clubCourts, standingsOrder])
 
   return (
-    <div className="flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-brand-bg">
-      <AppTopBar className="border-b border-brand-border/40 bg-brand-bg">
+    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden bg-brand-bg">
+      <AppTopBar className="shrink-0 border-b border-brand-border/40 bg-brand-bg">
         <div className="flex min-w-0 items-center gap-2">
           <button
             type="button"
@@ -233,8 +197,15 @@ export function CompetitionPlay() {
         </div>
       </AppTopBar>
 
-      <main data-scroll-y className="scroll-y min-h-0 min-w-0 flex-1 bg-brand-bg">
-        <AppShellColumn className="space-y-3 pb-3">
+      <AppShellColumn className="overflow-hidden pt-1">
+        <AppShellPanel
+          footer={
+            <nav className="app-shell-panel-footer gap-0" aria-label={t('aria.competitionViews')}>
+              <PlayTabs tab={tab} onTab={setTab} t={t} />
+            </nav>
+          }
+        >
+          <div className="app-shell-panel-inset space-y-3">
           {loading && !session ? (
             <p className="py-6 text-center text-xs text-brand-muted">{t('common.loading')}</p>
           ) : !session ? (
@@ -287,19 +258,9 @@ export function CompetitionPlay() {
           ) : null}
 
           {error && <p className="text-center text-sm text-red-600">{error}</p>}
-        </AppShellColumn>
-      </main>
-
-      <nav
-        className="w-full min-w-0 shrink-0 border-t border-brand-border/40 bg-brand-bg pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5"
-        aria-label={t('aria.competitionViews')}
-      >
-        <AppShellColumn>
-          <div className="game-dock-inner !mx-0 !max-w-none w-full !rounded-xl">
-            <PlayTabs tab={tab} onTab={setTab} t={t} />
           </div>
-        </AppShellColumn>
-      </nav>
+        </AppShellPanel>
+      </AppShellColumn>
     </div>
   )
 }

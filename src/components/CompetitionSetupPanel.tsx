@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { IconCopy, IconExternal, IconPublish, IconShuffle } from './ButtonIcons'
 import type { GameRound } from '../lib/americanoSchedule'
 import { supabase } from '../lib/supabaseClient'
 import { CompetitionLayoutPreview } from './CompetitionLayoutPreview'
@@ -129,6 +130,7 @@ export function CompetitionSetupPanel({ sessionId, session, roster, onRefresh }:
         onClick={computeMatchups}
         className="brand-btn-outline w-full py-2.5 text-sm font-semibold"
       >
+        <IconShuffle />
         Compute match-ups
       </button>
 
@@ -152,6 +154,7 @@ export function CompetitionSetupPanel({ sessionId, session, roster, onRefresh }:
           onClick={() => void publish()}
           className="brand-btn w-full py-3 text-base font-semibold"
         >
+          <IconPublish />
           {busy ? 'Publishing…' : 'Publish'}
         </button>
       )}
@@ -174,6 +177,7 @@ export function CompetitionSetupPanel({ sessionId, session, roster, onRefresh }:
               }}
               className="brand-btn flex-1 py-2 text-sm"
             >
+              <IconCopy />
               {copied ? 'Copied' : 'Copy link'}
             </button>
             <a
@@ -182,6 +186,7 @@ export function CompetitionSetupPanel({ sessionId, session, roster, onRefresh }:
               rel="noopener noreferrer"
               className="brand-btn-outline shrink-0 px-3 py-2 text-xs"
             >
+              <IconExternal />
               {session.status === 'complete' ? 'Review scores' : 'Open game'}
             </a>
           </div>

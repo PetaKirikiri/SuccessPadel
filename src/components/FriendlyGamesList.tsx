@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { IconAdd } from './ButtonIcons'
 import { FriendlyDeleteConfirm } from './FriendlyDeleteConfirm'
 import { FriendlyGameCard } from './FriendlyGameCard'
 import { GamesHubEmpty, GamesHubLoading } from './GamesHubView'
@@ -55,12 +56,18 @@ export function FriendlyGamesList({
     return (
       <GamesHubEmpty>
         <p className="text-brand-muted">
-          {past ? t('competition.noPastGames') : t('friendly.noGames')}
+          {past ? t('competition.noPastGames') : t('competition.noCurrentGames')}
         </p>
         {!past && isAdmin ? (
-          <Link to="/friendly/new" className="text-sm font-semibold text-brand-accent">
-            {t('friendly.addGame')}
-          </Link>
+          <>
+            <Link to="/friendly/new" className="brand-btn px-6 py-2">
+              <IconAdd />
+              {t('friendly.addGame')}
+            </Link>
+            <p className="text-xs text-brand-muted">{t('competition.tapPlusHint')}</p>
+          </>
+        ) : !past ? (
+          <p className="text-xs text-brand-muted">{t('competition.checkBackHint')}</p>
         ) : null}
       </GamesHubEmpty>
     )

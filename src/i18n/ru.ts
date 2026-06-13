@@ -198,6 +198,7 @@ export const ru: Messages = {
     openLiveCourt: 'Открыть живой корт {name}',
     openCourtView: 'Открыть вид корта',
     liveCourt: 'Живой корт',
+    scoreTrackerAria: 'Трекер счёта',
   },
   competition: {
     games: 'Игры',

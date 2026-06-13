@@ -80,13 +80,23 @@ async function fetchPadelPlayerIdForProfile(profileId: string): Promise<string |
   return data?.id ?? null
 }
 
-async function fetchUnlinkedPadelPlayerById(padelPlayerId: string): Promise<string | null> {
+async function fetchLinkablePadelPlayerById(padelPlayerId: string): Promise<string | null> {
   const { data } = await supabase
     .from('padel_players')
-    .select('id, profile_id')
+    .select('id, profile_id, line_user_id')
     .eq('id', padelPlayerId)
     .maybeSingle()
-  if (!data || data.profile_id) return null
+  if (!data || data.line_user_id) return null
+
+  if (data.profile_id) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('line_user_id')
+      .eq('id', data.profile_id)
+      .maybeSingle()
+    if (profile?.line_user_id) return null
+  }
+
   return data.id
 }
 
@@ -106,12 +116,13 @@ async function fetchUnlinkedPadelPlayerByName(displayName: string): Promise<stri
 
 async function resolveLinkablePadelPlayerId(
   profile: PublicPlayerProfile | null,
-  padel: { id: string; display_name: string; profile_id: string | null } | null,
+  padel: { id: string; display_name: string; profile_id: string | null; line_user_id?: string | null } | null,
   playerId: string,
 ): Promise<string | null> {
+  if (padel?.line_user_id) return null
   if (padel && !padel.profile_id) return padel.id
 
-  const byUrl = await fetchUnlinkedPadelPlayerById(playerId)
+  const byUrl = await fetchLinkablePadelPlayerById(playerId)
   if (byUrl) return byUrl
 
   if (!profile || profile.line_user_id) return null
@@ -175,6 +186,7 @@ export async function resolvePlayerProfile(playerId: string): Promise<ResolvedPl
     guestAvatarUrl: null,
     padelPlayerId: padelById.id,
     padelLineUserId: padelById.line_user_id ?? null,
-    linkablePadelPlayerId: padelById.profile_id ? null : padelById.id,
+    linkablePadelPlayerId:
+      padelById.line_user_id ? null : (await fetchLinkablePadelPlayerById(padelById.id)),
   }
 }

@@ -1,7 +1,13 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react'
 import { useTranslation } from '../hooks/useTranslation'
 import { useSeasonLeaderboard } from '../hooks/useSeasonLeaderboard'
 import { Leaderboard } from '../pages/Leaderboard'
+import {
+  IconHubCurrent,
+  IconHubLeaderboard,
+  IconHubPast,
+  shellTabClass,
+} from './ShellTabIcons'
 
 export type GamesHubTab = 'current' | 'past' | 'leaderboard'
 
@@ -31,30 +37,29 @@ function HubTab({
   active,
   onClick,
   label,
+  icon: Icon,
+  variant,
   addon,
 }: {
   active: boolean
   onClick: () => void
   label: string
+  icon: (props: { className?: string }) => ReactElement
+  variant: 'rank' | 'competition'
   addon?: ReactNode
 }) {
   return (
-    <div
-      className={`game-tab game-tab-competition min-w-0 flex-1 flex-row items-center gap-1 px-2 py-2 ${
-        active ? 'game-tab-active' : ''
-      }`}
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={shellTabClass(active, variant)}
     >
-      <button
-        type="button"
-        role="tab"
-        aria-selected={active}
-        onClick={onClick}
-        className="min-w-0 flex-1 truncate text-left font-display text-xs leading-tight md:text-sm"
-      >
-        {label}
-      </button>
+      <Icon />
+      <span className="min-w-0 flex-1 truncate text-left text-xs leading-tight md:text-sm">{label}</span>
       {addon ? <div className="shrink-0">{addon}</div> : null}
-    </div>
+    </button>
   )
 }
 
@@ -73,13 +78,11 @@ export function GamesHubList({ children }: { children: ReactNode }) {
 
 function HubTitleBar({ label, addon }: { label: string; addon?: ReactNode }) {
   return (
-    <nav className="shrink-0 bg-brand-bg pb-1.5">
-      <div className="game-dock-inner !mx-0 !max-w-none w-full !rounded-xl flex items-center gap-2 px-3 py-2">
-        <h2 className="min-w-0 flex-1 font-display text-sm font-semibold text-brand-primary md:text-base">
-          {label}
-        </h2>
-        {addon ? <div className="shrink-0">{addon}</div> : null}
-      </div>
+    <nav className="app-shell-panel-header items-center px-3 py-2">
+      <h2 className="min-w-0 flex-1 font-display text-sm font-semibold text-brand-primary md:text-base">
+        {label}
+      </h2>
+      {addon ? <div className="shrink-0">{addon}</div> : null}
     </nav>
   )
 }
@@ -115,7 +118,7 @@ export function GamesHubView({
 
   const listBody =
     hubNav !== 'tabs' ? (
-      <div className={`w-full min-w-0 max-w-full overflow-x-hidden pt-1 ${listClassName}`}>
+      <div className={`w-full min-w-0 max-w-full overflow-x-hidden ${listClassName}`}>
         {currentPanel}
       </div>
     ) : tab === 'leaderboard' ? (
@@ -123,24 +126,25 @@ export function GamesHubView({
         <Leaderboard embedded />
       </div>
     ) : (
-      <div className={`w-full min-w-0 max-w-full overflow-x-hidden pt-1 ${listClassName}`}>
+      <div className={`w-full min-w-0 max-w-full overflow-x-hidden ${listClassName}`}>
         {tab === 'current' ? currentPanel : pastPanel}
       </div>
     )
 
   return (
-    <div className="flex min-h-0 min-w-0 w-full max-w-full flex-1 flex-col overflow-hidden">
+    <div className="flex min-h-0 min-w-0 w-full max-w-full flex-1 basis-0 flex-col overflow-hidden">
       {fab}
 
       {hubNav === 'title' ? (
         <HubTitleBar label={titleLabel ?? t('friendly.games')} addon={titleAddon} />
       ) : hubNav === 'none' ? null : (
-        <nav className="shrink-0 bg-brand-bg pb-1.5" aria-label={t('aria.playModes')}>
-          <div className="game-dock-inner !mx-0 !max-w-none w-full !rounded-xl" role="tablist">
+        <nav className="app-shell-panel-header gap-0" role="tablist" aria-label={t('aria.playModes')}>
             <HubTab
               active={tab === 'current'}
               onClick={() => setTab('current')}
               label={`${t('competition.currentGames')}${currentCount > 0 ? ` (${currentCount})` : ''}`}
+              icon={IconHubCurrent}
+              variant="competition"
               addon={currentTabAddon}
             />
             {showPastTab ? (
@@ -148,20 +152,23 @@ export function GamesHubView({
                 active={tab === 'past'}
                 onClick={() => setTab('past')}
                 label={`${t('competition.pastGames')}${pastCount > 0 ? ` (${pastCount})` : ''}`}
+                icon={IconHubPast}
+                variant="competition"
               />
             ) : null}
             <HubTab
               active={tab === 'leaderboard'}
               onClick={() => setTab('leaderboard')}
               label={leaderboardLabel}
+              icon={IconHubLeaderboard}
+              variant="rank"
             />
-          </div>
         </nav>
       )}
 
       <div
         data-scroll-y
-        className="scroll-y min-h-0 min-w-0 w-full max-w-full flex-1"
+        className="app-shell-panel-inset scroll-y min-h-0 min-w-0 w-full max-w-full flex-1 basis-0"
         role="tabpanel"
       >
         {listBody}

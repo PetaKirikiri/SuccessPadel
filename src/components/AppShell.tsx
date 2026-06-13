@@ -31,11 +31,11 @@ export function AppShell({ children }: Props) {
 
   return (
     <GesturePadChromeContext.Provider value={setGesturePadActive}>
-      <div className="viewport-lock">
+      <div className="viewport-lock flex flex-col">
         {!hideGlobalChrome ? <GlobalProfileChip /> : null}
         <LineEntryGate>
           <LineOAuthReturnHandler />
-          {children}
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
           <LoginWithAPPDebugOverlay />
         </LineEntryGate>
       </div>

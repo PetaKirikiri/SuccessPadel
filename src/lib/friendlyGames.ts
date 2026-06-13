@@ -272,6 +272,33 @@ export type FriendlyGameRecord = {
   status: 'ready' | 'complete'
 }
 
+/** Listed under Past when complete or the scheduled window has ended. */
+export function friendlyIsPast(game: FriendlyGameRecord, now = Date.now()): boolean {
+  if (game.status === 'complete') return true
+  if (!isOrganizedFriendly(game) || !game.organizedConfig?.day) return false
+  const endsAt = friendlyEndsAtIso(game.organizedConfig)
+  if (!endsAt) return false
+  const endMs = Date.parse(endsAt)
+  return Number.isFinite(endMs) && now >= endMs
+}
+
+export function splitFriendlyGames(games: FriendlyGameRecord[], now = Date.now()) {
+  const currentGames: FriendlyGameRecord[] = []
+  const pastGames: FriendlyGameRecord[] = []
+  for (const game of games) {
+    if (friendlyIsPast(game, now)) pastGames.push(game)
+    else currentGames.push(game)
+  }
+  pastGames.sort((a, b) => {
+    const configA = a.organizedConfig ?? DEFAULT_FRIENDLY_ORGANIZED_CONFIG
+    const configB = b.organizedConfig ?? DEFAULT_FRIENDLY_ORGANIZED_CONFIG
+    const ta = Date.parse(friendlyEndsAtIso(configA) ?? a.createdAt)
+    const tb = Date.parse(friendlyEndsAtIso(configB) ?? b.createdAt)
+    return (Number.isFinite(tb) ? tb : 0) - (Number.isFinite(ta) ? ta : 0)
+  })
+  return { currentGames, pastGames }
+}
+
 export function isOrganizedFriendly(game: FriendlyGameRecord): boolean {
   return game.playMode === 'organized'
 }

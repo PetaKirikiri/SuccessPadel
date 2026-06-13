@@ -198,6 +198,7 @@ export const fr: Messages = {
     openLiveCourt: 'Ouvrir le court en direct {name}',
     openCourtView: 'Ouvrir la vue court',
     liveCourt: 'Court en direct',
+    scoreTrackerAria: 'Suivi du score',
   },
   competition: {
     games: 'Matchs',

@@ -250,7 +250,7 @@ export function getCachedLinePlayerLinkRequest(
   return cachedPlayerLinkRequest(padelPlayerId)
 }
 
-/** Create a single-use link request for QR display. Never redirects. */
+/** Create a per-player LINE link request (unique lpl_ token, no expiry). Never redirects. */
 export async function createLinePlayerLinkRequest(
   competitionId: string | null,
   padelPlayerId: string,

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { SquareArrowUp } from 'lucide-react'
+import { IconDelete, IconEdit, IconShare } from './ButtonIcons'
 import { Link } from 'react-router-dom'
 import { FriendlyRosterList } from './FriendlyRosterList'
 import { FriendlyRuleSettings } from './FriendlyRuleSettings'
@@ -100,13 +100,34 @@ export function CompetitionCurrentGameCard({
   )
 
   const timeRow = schedule.timeLine ? (
-    <p className="break-all font-display text-lg font-bold leading-tight tabular-nums text-brand-text sm:break-words sm:text-2xl md:text-3xl">
-      {schedule.timeLine}
-    </p>
+    <div className="flex min-w-0 items-center gap-2">
+      <p className="min-w-0 flex-1 break-all font-display text-lg font-bold leading-tight tabular-nums text-brand-text sm:break-words sm:text-2xl md:text-3xl">
+        {schedule.timeLine}
+      </p>
+      <div className="relative shrink-0">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            void shareInvite()
+          }}
+          aria-label={t('competition.shareInvite')}
+          className="flex h-9 w-9 items-center justify-center rounded-xl border border-brand-border bg-brand-bg-alt text-brand-primary shadow-sm active:scale-[0.98]"
+        >
+          <IconShare />
+        </button>
+        {shareFeedback ? (
+          <p className="absolute right-0 top-full z-10 mt-1 whitespace-nowrap rounded-lg bg-brand-surface px-2 py-0.5 text-[10px] font-medium text-brand-muted shadow-sm">
+            {shareFeedback}
+          </p>
+        ) : null}
+      </div>
+    </div>
   ) : null
 
   const inner = (
-    <div className="min-w-0 overflow-hidden px-3 py-3 pr-12 sm:px-4 sm:py-4 sm:pr-14">
+    <div className="min-w-0 overflow-hidden px-3 py-3 sm:px-4 sm:py-4">
       {ruleChips.length > 0 ? (
         <div className="flex w-full min-w-0 max-w-full flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
           <div className="flex min-w-0 max-w-full flex-1 flex-col justify-center gap-0.5 sm:gap-1">
@@ -137,19 +158,6 @@ export function CompetitionCurrentGameCard({
   return (
     <article className="w-full min-w-0 max-w-full overflow-hidden rounded-2xl border-2 border-brand-primary/25 bg-brand-surface shadow-[0_4px_16px_-4px_rgba(96,45,36,0.22)]">
       <div className="relative min-w-0">
-        <button
-          type="button"
-          onClick={() => void shareInvite()}
-          aria-label={t('competition.shareInvite')}
-          className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-xl border border-brand-border bg-brand-bg-alt text-brand-primary shadow-sm active:scale-[0.98] sm:right-4 sm:top-4"
-        >
-          <SquareArrowUp className="h-4 w-4" aria-hidden />
-        </button>
-        {shareFeedback ? (
-          <p className="absolute right-3 top-[3.25rem] z-10 rounded-lg bg-brand-surface px-2 py-0.5 text-[10px] font-medium text-brand-muted shadow-sm sm:right-4">
-            {shareFeedback}
-          </p>
-        ) : null}
         <Link to={detailTo} className="block min-w-0 overflow-hidden transition active:opacity-80">
           {inner}
         </Link>
@@ -159,16 +167,18 @@ export function CompetitionCurrentGameCard({
         <div className="flex gap-2 border-t-2 border-brand-border px-4 py-3">
           <Link
             to={`/competitions/${row.id}/edit`}
-            className="brand-btn-outline min-w-0 flex-1 py-2 text-center text-sm font-semibold"
+            className="brand-btn-outline min-w-0 flex-1 py-2 text-sm font-semibold"
           >
+            <IconEdit />
             {t('competition.edit')}
           </Link>
           <button
             type="button"
             disabled={busy}
             onClick={() => void remove()}
-            className="min-w-0 flex-1 rounded-xl border border-brand-border py-2 text-sm font-medium text-brand-muted disabled:opacity-50"
+            className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl border border-brand-border py-2 text-sm font-medium text-brand-muted disabled:opacity-50"
           >
+            <IconDelete />
             {t('competition.delete')}
           </button>
         </div>
