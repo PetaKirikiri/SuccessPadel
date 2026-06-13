@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { IconEdit, IconJoin, IconOpenPad } from '../components/ButtonIcons'
+import { IconJoin, IconOpenPad } from '../components/ButtonIcons'
 import { AppShellColumn } from '../components/AppShellColumn'
 import { AppShellPanel } from '../components/AppShellPanel'
 import { AppTopBar } from '../components/AppTopBar'
@@ -231,16 +231,6 @@ export function FriendlyGamePage() {
 
   const gamesContent = (
     <>
-      {isAdmin ? (
-        <Link
-          to={`/friendly/${game.id}/edit`}
-          className="inline-flex items-center justify-center gap-1.5 text-xs text-brand-muted"
-        >
-          <IconEdit className="h-3.5 w-3.5" />
-          {t('friendly.edit')}
-        </Link>
-      ) : null}
-
       {showPlayTabs ? (
         <CompetitionLayoutPreview
           session={previewSession}
