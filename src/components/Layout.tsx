@@ -12,12 +12,15 @@ export function Layout() {
   const loc = useLocation()
   const onPlayerProfile = loc.pathname.startsWith('/players/')
   const isGamesHub = loc.pathname === '/friendly' || loc.pathname === '/competitive'
+  const isFriendlySession = /^\/friendly\/[^/]+$/.test(loc.pathname)
   const isCompetitionRun = /^\/competitions\/[^/]+\/run$/.test(loc.pathname)
-  const showBottomNav = !onPlayerProfile && !isGesturePadRoute(loc.pathname) && !isCompetitionRun
+  const showBottomNav =
+    !onPlayerProfile && !isGesturePadRoute(loc.pathname) && !isCompetitionRun && !isFriendlySession
+  const useSessionShell = isGamesHub || showBottomNav || isFriendlySession
 
   return (
     <div className="game-bg flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">
-      {!onPlayerProfile ? (
+      {!onPlayerProfile && !isFriendlySession ? (
         <AppTopBar>
           <img
             src="/brand/logo-padel.webp"
@@ -28,11 +31,11 @@ export function Layout() {
       ) : null}
 
       <main
-        data-scroll-y={onPlayerProfile || isGamesHub || showBottomNav ? undefined : true}
+        data-scroll-y={onPlayerProfile || useSessionShell ? undefined : true}
         className={`min-h-0 min-w-0 flex-1 basis-0 ${
           onPlayerProfile
             ? 'overflow-hidden p-0'
-            : isGamesHub || showBottomNav
+            : useSessionShell
               ? 'flex flex-col overflow-hidden'
               : 'scroll-y'
         }`}
@@ -44,7 +47,7 @@ export function Layout() {
             className={
               showBottomNav
                 ? 'overflow-hidden pt-1'
-                : isGamesHub
+                : isGamesHub || isFriendlySession
                   ? 'overflow-hidden pb-2 pt-0'
                   : 'pb-2 pt-1'
             }
@@ -56,7 +59,7 @@ export function Layout() {
               </AppShellPanel>
             ) : (
               <>
-                {!isGamesHub ? <LineBookmarkBanner /> : null}
+                {!isGamesHub && !isFriendlySession ? <LineBookmarkBanner /> : null}
                 <Outlet />
               </>
             )}

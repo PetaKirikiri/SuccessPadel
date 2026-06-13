@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { IconEdit, IconJoin, IconOpenPad } from '../components/ButtonIcons'
-import { IconHubLeaderboard, IconPlayGames } from '../components/ShellTabIcons'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { AppShellColumn } from '../components/AppShellColumn'
+import { AppShellPanel } from '../components/AppShellPanel'
+import { AppTopBar } from '../components/AppTopBar'
+import { PlayViewTabs, type PlayViewTab } from '../components/PlayViewTabs'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { CompetitionLayoutPreview } from '../components/CompetitionLayoutPreview'
 import { CompetitionLeaderboard } from '../components/CompetitionLeaderboard'
 import { FriendlyLateStartPanel } from '../components/FriendlyLateStartPanel'
@@ -39,10 +42,9 @@ import { formatDateInput } from '../lib/courtSchedule'
 import { supabase } from '../lib/supabaseClient'
 import type { Profile } from '../lib/types'
 
-type FriendlyViewTab = 'games' | 'leaderboard'
-
 export function FriendlyGamePage() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const { t } = useTranslation()
   const { user, profile } = useAuth()
   const lineClient = useLineClientProfile()
@@ -53,7 +55,7 @@ export function FriendlyGamePage() {
   const finished = isReviewableLog(log)
   const [profiles, setProfiles] = useState<Profile[]>([])
   const { courtNames, courtRefs } = useSetupCourts()
-  const [viewTab, setViewTab] = useState<FriendlyViewTab>('games')
+  const [viewTab, setViewTab] = useState<PlayViewTab>('games')
   const [joinBusy, setJoinBusy] = useState(false)
   const [joinError, setJoinError] = useState<string | null>(null)
 
@@ -169,7 +171,13 @@ export function FriendlyGamePage() {
     await refresh()
   }
 
-  if (loading) return <p className="text-sm text-brand-muted">{t('common.loading')}</p>
+  if (loading) {
+    return (
+      <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden bg-brand-bg">
+        <p className="py-6 text-center text-sm text-brand-muted">{t('common.loading')}</p>
+      </div>
+    )
+  }
   if (!id || !game || !displayGame) return <Navigate to="/friendly" replace />
 
   const gameMinutes = organizedConfig.gameMinutes
@@ -178,13 +186,51 @@ export function FriendlyGamePage() {
   const joined = isOnFriendlyRoster(game, user?.id)
   const isFree = isFreeFriendly(game)
   const canScore = Boolean(user && (isAdmin || joined || game.createdBy === user.id))
+  const showPlayTabs = !isFree && previewGames.length > 0
 
-  return (
-    <div className="space-y-3 pb-6">
-      <Link to="/friendly" className="text-sm font-medium text-brand-accent">
-        {t('common.back')}
-      </Link>
+  const actionCard = (
+    <div className="game-card space-y-2 p-3">
+      {showJoin ? (
+        <button
+          type="button"
+          disabled={joinBusy}
+          onClick={() => void join()}
+          className="brand-btn w-full py-3 text-sm font-semibold disabled:opacity-50"
+        >
+          <IconJoin />
+          {joinBusy ? t('common.loading') : t('friendly.join')}
+        </button>
+      ) : null}
 
+      {joined && !isAdmin ? (
+        <p className="text-center text-xs text-brand-muted">{t('friendly.onRoster')}</p>
+      ) : null}
+
+      {isAdmin && isFree ? (
+        <Link
+          to={`/friendly/${game.id}/pad`}
+          className="brand-btn w-full py-3 text-sm font-semibold"
+        >
+          <IconOpenPad />
+          {t('friendly.openPad')}
+        </Link>
+      ) : null}
+
+      {isAdmin && finished ? (
+        <Link
+          to={`/friendly/${game.id}/heatmap`}
+          className="block w-full rounded-xl border border-brand-border bg-brand-surface py-3 text-center text-sm font-semibold text-brand-primary transition active:opacity-80"
+        >
+          {t('stats.title')}
+        </Link>
+      ) : null}
+
+      {joinError ? <p className="text-xs text-red-600">{joinError}</p> : null}
+    </div>
+  )
+
+  const gamesContent = (
+    <>
       {isAdmin ? (
         <Link
           to={`/friendly/${game.id}/edit`}
@@ -195,44 +241,7 @@ export function FriendlyGamePage() {
         </Link>
       ) : null}
 
-      {!isFree && previewGames.length > 0 ? (
-        <button
-          type="button"
-          onClick={() => setViewTab(viewTab === 'leaderboard' ? 'games' : 'leaderboard')}
-          className="brand-btn-outline w-full py-2.5 text-sm font-semibold"
-        >
-          {viewTab === 'leaderboard' ? (
-            <>
-              <IconPlayGames />
-              {t('competition.games')}
-            </>
-          ) : (
-            <>
-              <IconHubLeaderboard />
-              {t('friendly.leaderboard')}
-            </>
-          )}
-        </button>
-      ) : null}
-
-      {!isFree && previewGames.length > 0 && viewTab === 'leaderboard' ? (
-        hasStandings ? (
-          <CompetitionLeaderboard
-            entries={enrichedStandings}
-            scoreUnit={scoreUnit}
-            currentUserId={user?.id ?? null}
-            competitionId={null}
-            achievements={achievements}
-          />
-        ) : (
-          <div className="game-card space-y-1 px-3 py-4 text-center">
-            <p className="text-sm text-brand-muted">{t('friendly.noLeaderboardScores')}</p>
-            <p className="text-xs text-brand-muted">{t('friendly.noLeaderboardHint')}</p>
-          </div>
-        )
-      ) : null}
-
-      {!isFree && previewGames.length > 0 && viewTab === 'games' ? (
+      {showPlayTabs ? (
         <CompetitionLayoutPreview
           session={previewSession}
           games={previewGames}
@@ -251,51 +260,73 @@ export function FriendlyGamePage() {
       ) : null}
 
       {isAdmin && !isFree && game.status === 'ready' ? (
-        <FriendlyLateStartPanel
-          game={game}
-          config={organizedConfig}
-          onUpdated={refresh}
-        />
+        <FriendlyLateStartPanel game={game} config={organizedConfig} onUpdated={refresh} />
       ) : null}
 
-      <div className="game-card space-y-2 p-3">
-        {showJoin ? (
+      {actionCard}
+    </>
+  )
+
+  const leaderboardContent = hasStandings ? (
+    <CompetitionLeaderboard
+      entries={enrichedStandings}
+      scoreUnit={scoreUnit}
+      currentUserId={user?.id ?? null}
+      competitionId={null}
+      achievements={achievements}
+      flushBottom
+    />
+  ) : (
+    <div className="game-card space-y-1 px-3 py-4 text-center">
+      <p className="text-sm text-brand-muted">{t('friendly.noLeaderboardScores')}</p>
+      <p className="text-xs text-brand-muted">{t('friendly.noLeaderboardHint')}</p>
+    </div>
+  )
+
+  if (!showPlayTabs) {
+    return (
+      <div className="space-y-3 pb-6">
+        <Link to="/friendly" className="text-sm font-medium text-brand-accent">
+          {t('common.back')}
+        </Link>
+        {gamesContent}
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden bg-brand-bg">
+      <AppTopBar className="shrink-0 border-b border-brand-border/40 bg-brand-bg">
+        <div className="flex min-w-0 items-center gap-2">
           <button
             type="button"
-            disabled={joinBusy}
-            onClick={() => void join()}
-            className="brand-btn w-full py-3 text-sm font-semibold disabled:opacity-50"
+            onClick={() => navigate('/friendly')}
+            aria-label={t('aria.back')}
+            className="shrink-0 text-xl font-medium leading-none text-brand-accent"
           >
-            <IconJoin />
-            {joinBusy ? t('common.loading') : t('friendly.join')}
+            ←
           </button>
-        ) : null}
+          <img
+            src="/brand/logo-padel.webp"
+            alt={t('common.brandAlt')}
+            className="h-8 w-auto max-w-[7rem] shrink-0 md:h-10 md:max-w-[9rem]"
+          />
+        </div>
+      </AppTopBar>
 
-        {joined && !isAdmin ? (
-          <p className="text-center text-xs text-brand-muted">{t('friendly.onRoster')}</p>
-        ) : null}
-
-        {isAdmin && isFree ? (
-          <Link
-            to={`/friendly/${game.id}/pad`}
-            className="brand-btn w-full py-3 text-sm font-semibold"
-          >
-            <IconOpenPad />
-            {t('friendly.openPad')}
-          </Link>
-        ) : null}
-
-        {isAdmin && finished ? (
-          <Link
-            to={`/friendly/${game.id}/heatmap`}
-            className="block w-full rounded-xl border border-brand-border bg-brand-surface py-3 text-center text-sm font-semibold text-brand-primary transition active:opacity-80"
-          >
-            {t('stats.title')}
-          </Link>
-        ) : null}
-
-        {joinError ? <p className="text-xs text-red-600">{joinError}</p> : null}
-      </div>
+      <AppShellColumn className="overflow-hidden pt-1">
+        <AppShellPanel
+          footer={
+            <nav className="app-shell-panel-footer gap-0" aria-label={t('aria.competitionViews')}>
+              <PlayViewTabs tab={viewTab} onTab={setViewTab} t={t} />
+            </nav>
+          }
+        >
+          <div className="app-shell-panel-inset space-y-3">
+            {viewTab === 'games' ? gamesContent : leaderboardContent}
+          </div>
+        </AppShellPanel>
+      </AppShellColumn>
     </div>
   )
 }

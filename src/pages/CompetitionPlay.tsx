@@ -17,43 +17,12 @@ import { computeAmericanoStandings } from '../lib/competitionStandings'
 import { AppTopBar } from '../components/AppTopBar'
 import { AppShellColumn } from '../components/AppShellColumn'
 import { AppShellPanel } from '../components/AppShellPanel'
-import { IconHubLeaderboard, IconPlayGames, shellTabClass } from '../components/ShellTabIcons'
+import { PlayViewTabs, type PlayViewTab } from '../components/PlayViewTabs'
 import { useTranslation } from '../hooks/useTranslation'
 import { enrichStandingsWithAvatars } from '../lib/leaderboardEntries'
 import { supabase } from '../lib/supabaseClient'
 
-type PlayTab = 'games' | 'leaderboard'
-
-function PlayTabs({
-  tab,
-  onTab,
-  t,
-}: {
-  tab: PlayTab
-  onTab: (t: PlayTab) => void
-  t: (key: string) => string
-}) {
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => onTab('games')}
-        className={shellTabClass(tab === 'games', 'competition')}
-      >
-        <IconPlayGames />
-        <span>{t('competition.games')}</span>
-      </button>
-      <button
-        type="button"
-        onClick={() => onTab('leaderboard')}
-        className={shellTabClass(tab === 'leaderboard', 'rank')}
-      >
-        <IconHubLeaderboard />
-        <span>{t('competition.leaderboard')}</span>
-      </button>
-    </>
-  )
-}
+type PlayTab = PlayViewTab
 
 export function CompetitionPlay() {
   const { id } = useParams()
@@ -201,7 +170,7 @@ export function CompetitionPlay() {
         <AppShellPanel
           footer={
             <nav className="app-shell-panel-footer gap-0" aria-label={t('aria.competitionViews')}>
-              <PlayTabs tab={tab} onTab={setTab} t={t} />
+              <PlayViewTabs tab={tab} onTab={setTab} t={t} />
             </nav>
           }
         >
