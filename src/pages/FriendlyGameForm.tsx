@@ -345,7 +345,7 @@ export function FriendlyGameForm() {
   return (
     <div className="w-full min-w-0 space-y-3 pb-4">
       <Link to={backTo} className="text-sm font-medium text-brand-accent">
-        ← {t('common.back')}
+        {t('common.back')}
       </Link>
 
       <section className="game-card space-y-3" onBlur={isEdit ? undefined : persistNow}>
