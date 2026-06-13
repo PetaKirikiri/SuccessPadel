@@ -266,6 +266,7 @@ export const fr: Messages = {
     viewGame: 'Voir la partie',
     enterName: 'Saisissez votre nom',
     addCompetitionFab: 'Ajouter une compétition',
+    rosterBlankSlotsOk: 'Laissez les cases vides pour les joueurs pas encore confirmés.',
   },
   lineLink: {
     title: 'Ajouter LINE à {name}',

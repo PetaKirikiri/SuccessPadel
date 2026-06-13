@@ -264,6 +264,7 @@ export const th: Messages = {
     viewGame: 'ดูเกม',
     enterName: 'กรุณาใส่ชื่อ',
     addCompetitionFab: 'เพิ่มการแข่งขัน',
+    rosterBlankSlotsOk: 'ช่องว่างได้ — ใส่ชื่อทีหลังเมื่อผู้เล่นยืนยันแล้ว',
   },
   lineLink: {
     title: 'เพิ่ม LINE ให้ {name}',

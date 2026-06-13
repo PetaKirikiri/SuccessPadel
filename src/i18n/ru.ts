@@ -266,6 +266,7 @@ export const ru: Messages = {
     viewGame: 'Открыть игру',
     enterName: 'Введите имя',
     addCompetitionFab: 'Добавить соревнование',
+    rosterBlankSlotsOk: 'Пустые места можно оставить — имена добавите позже.',
   },
   lineLink: {
     title: 'Добавить LINE для {name}',

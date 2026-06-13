@@ -238,6 +238,7 @@ export type Messages = {
     viewGame: string
     enterName: string
     addCompetitionFab: string
+    rosterBlankSlotsOk: string
   }
   guestChip: {
     playTodayHint: string

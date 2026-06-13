@@ -196,6 +196,7 @@ export function CompetitionForm() {
     setPlayerSlots(names)
     setProfileIds(ids)
     setPadelPlayerIds(padelIds)
+    setError(null)
   }
 
   useEffect(() => {
@@ -548,9 +549,12 @@ export function CompetitionForm() {
 
           <div className="border-t border-brand-border/40 pt-3" />
 
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-            Player names
-          </p>
+          <div className="space-y-1">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
+              Player names
+            </p>
+            <p className="text-xs text-brand-muted">{t('competition.rosterBlankSlotsOk')}</p>
+          </div>
           {!rosterHydrated && id ? (
             <p className="text-sm text-brand-muted">{t('common.loading')}</p>
           ) : (
