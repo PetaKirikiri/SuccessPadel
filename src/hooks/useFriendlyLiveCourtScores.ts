@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import type { AmericanoScoringUnit } from '../lib/competitionPresets'
 import {
   liveCourtScoresFromLogs,
   type LiveCourtGamesScore,
@@ -30,7 +31,10 @@ function rowToLog(row: Record<string, unknown>): MatchGestureLog {
   }
 }
 
-export function useFriendlyLiveCourtScores(friendlySessionId: string | undefined) {
+export function useFriendlyLiveCourtScores(
+  friendlySessionId: string | undefined,
+  scoreUnit: AmericanoScoringUnit = 'games',
+) {
   const [scores, setScores] = useState<Map<string, LiveCourtGamesScore>>(() => new Map())
 
   const refresh = useCallback(async () => {
@@ -47,8 +51,8 @@ export function useFriendlyLiveCourtScores(friendlySessionId: string | undefined
       console.error('useFriendlyLiveCourtScores', error.message)
       return
     }
-    setScores(liveCourtScoresFromLogs((data ?? []).map((row) => rowToLog(row))))
-  }, [friendlySessionId])
+    setScores(liveCourtScoresFromLogs((data ?? []).map((row) => rowToLog(row)), scoreUnit))
+  }, [friendlySessionId, scoreUnit])
 
   useEffect(() => {
     void refresh()
@@ -74,5 +78,5 @@ export function useFriendlyLiveCourtScores(friendlySessionId: string | undefined
     }
   }, [friendlySessionId, refresh])
 
-  return scores
+  return { scores, refresh }
 }

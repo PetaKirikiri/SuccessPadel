@@ -53,8 +53,6 @@ export function FriendlyGamePage() {
   const finished = isReviewableLog(log)
   const [profiles, setProfiles] = useState<Profile[]>([])
   const { courtNames, courtRefs } = useSetupCourts()
-  const liveCourtScores = useFriendlyLiveCourtScores(id)
-  const { logs: matchLogs } = useFriendlyMatchLogs(id)
   const [viewTab, setViewTab] = useState<FriendlyViewTab>('games')
   const [joinBusy, setJoinBusy] = useState(false)
   const [joinError, setJoinError] = useState<string | null>(null)
@@ -99,6 +97,12 @@ export function FriendlyGamePage() {
   )
 
   const scoreUnit = useMemo(() => americanoScoringUnit(previewSession), [previewSession])
+
+  const { scores: liveCourtScores, refresh: refreshLiveScores } = useFriendlyLiveCourtScores(
+    id,
+    scoreUnit,
+  )
+  const { logs: matchLogs, refresh: refreshMatchLogs } = useFriendlyMatchLogs(id)
 
   const sessionRoster = useMemo(
     () => (displayGame ? friendlySessionRoster(displayGame) : []),
@@ -148,6 +152,10 @@ export function FriendlyGamePage() {
     [game, scoreUnit],
   )
 
+  const handleScoresSaved = useCallback(async () => {
+    await Promise.all([refreshLiveScores(), refreshMatchLogs(), refresh()])
+  }, [refresh, refreshLiveScores, refreshMatchLogs])
+
   const join = async () => {
     if (!game || !user) return
     setJoinBusy(true)
@@ -169,6 +177,7 @@ export function FriendlyGamePage() {
   const showJoin = canJoinFriendlyGame(game, user?.id)
   const joined = isOnFriendlyRoster(game, user?.id)
   const isFree = isFreeFriendly(game)
+  const canScore = Boolean(user && (isAdmin || joined))
 
   return (
     <div className="space-y-3 pb-6">
@@ -236,8 +245,8 @@ export function FriendlyGamePage() {
           currentUserAvatarUrl={headerAvatar}
           courtRefs={courtRefs}
           liveCourtScores={liveCourtScores}
-          onSubmitFriendlyScores={isAdmin ? handleSubmitFriendlyScores : undefined}
-          onFriendlyScoresSaved={refresh}
+          onSubmitFriendlyScores={canScore ? handleSubmitFriendlyScores : undefined}
+          onFriendlyScoresSaved={handleScoresSaved}
         />
       ) : null}
 

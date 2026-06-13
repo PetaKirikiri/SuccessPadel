@@ -62,7 +62,7 @@ type Props = {
   } | undefined
   onSubmitScores?: (entries: CourtScoreSubmit[]) => Promise<void>
   onSubmitFriendlyScores?: (entries: FriendlyCourtScoreSubmit[]) => Promise<void>
-  onSaved?: () => void
+  onSaved?: () => void | Promise<void>
   now?: number
   gameMinutes?: number
   roundTimesByGame?: Map<number, { startsAt: number; endsAt: number }>
@@ -620,7 +620,7 @@ function useGameScoring({
   matchForCourt: NonNullable<Props['matchForCourt']>
   canEdit: boolean
   onSubmitScores?: (entries: CourtScoreSubmit[]) => Promise<void>
-  onSaved?: () => void
+  onSaved?: () => void | Promise<void>
   t: TranslateFn
 }) {
   const [drafts, setDrafts] = useState<Record<string, CourtDraft>>({})
@@ -713,8 +713,12 @@ function useGameScoring({
           teamB: row.teamB,
         },
       ])
+      setDrafts((prev) => ({
+        ...prev,
+        [courtId]: { teamA: String(row.teamA), teamB: String(row.teamB) },
+      }))
+      await Promise.resolve(onSaved?.())
       setDirty(false)
-      onSaved?.()
     } catch (e) {
       setError({
         courtId,
@@ -740,7 +744,7 @@ function useFriendlyManualScoring({
   liveCourtScores?: Map<string, LiveCourtGamesScore>
   canEdit: boolean
   onSubmit?: (entries: FriendlyCourtScoreSubmit[]) => Promise<void>
-  onSaved?: () => void
+  onSaved?: () => void | Promise<void>
   t: TranslateFn
 }) {
   const courts = useMemo(
@@ -829,8 +833,12 @@ function useFriendlyManualScoring({
           teamBPlayers: row.court.teamBPlayers,
         },
       ])
+      setDrafts((prev) => ({
+        ...prev,
+        [courtKey]: { teamA: String(row.teamA), teamB: String(row.teamB) },
+      }))
+      await Promise.resolve(onSaved?.())
       setDirty(false)
-      onSaved?.()
     } catch (e) {
       setError({
         courtKey,
@@ -950,7 +958,10 @@ function GameScoringCourts({
                 <button
                   type="button"
                   disabled={busyCourtKey === courtId || !courtReady}
-                  onClick={() => void submitCourt(courtId)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    void submitCourt(courtId)
+                  }}
                   className="brand-btn mt-2 w-full py-2 text-xs font-semibold disabled:opacity-40"
                 >
                   {busyCourtKey === courtId ? '…' : t('common.submit')}
@@ -1201,7 +1212,7 @@ function ScoringGameCard({
   playTo?: number
   canEdit: boolean
   onSubmitScores?: (entries: CourtScoreSubmit[]) => Promise<void>
-  onSaved?: () => void
+  onSaved?: () => void | Promise<void>
   isLiveNow: boolean
   isCurrentGame: boolean
   countdown?: string | null
@@ -1307,7 +1318,7 @@ function FriendlyManualGameCard({
   liveCourtScores?: Map<string, LiveCourtGamesScore>
   courtRefs?: CourtRefsLookup
   onSubmitFriendlyScores?: (entries: FriendlyCourtScoreSubmit[]) => Promise<void>
-  onSaved?: () => void
+  onSaved?: () => void | Promise<void>
   isLiveNow: boolean
   isCurrentGame: boolean
   countdown?: string | null
@@ -1382,7 +1393,10 @@ function FriendlyManualGameCard({
                         <button
                           type="button"
                           disabled={busyCourtKey === row.courtKey || !courtReady}
-                          onClick={() => void submitCourt(row.courtKey)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            void submitCourt(row.courtKey)
+                          }}
                           className="brand-btn mt-2 w-full py-2 text-xs font-semibold disabled:opacity-40"
                         >
                           {busyCourtKey === row.courtKey ? '…' : t('common.submit')}
@@ -1439,7 +1453,7 @@ export function CompetitionCourtBoard({
   const liveCourtEnabled = Boolean(
     sessionId && isAdmin && currentUserId && !(friendly && onSubmitFriendlyScores),
   )
-  const friendlyManualScoring = Boolean(friendly && isAdmin && onSubmitFriendlyScores)
+  const friendlyManualScoring = Boolean(friendly && onSubmitFriendlyScores)
   const scoringTimeUnlocked = isScoringTimeUnlocked()
 
   const previewTimed = mode === 'preview' && Boolean(roundTimesByGame?.size)
