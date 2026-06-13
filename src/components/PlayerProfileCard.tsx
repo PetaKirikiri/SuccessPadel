@@ -6,13 +6,14 @@ type Props = {
   onTab: (tab: PlayerProfileTab) => void
   banner: ReactNode
   children: ReactNode
+  hideTabs?: boolean
 }
 
-export function PlayerProfileCard({ tab, onTab, banner, children }: Props) {
+export function PlayerProfileCard({ tab, onTab, banner, children, hideTabs = false }: Props) {
   return (
     <div className="game-card p-0">
       {banner}
-      <PlayerProfileTabs tab={tab} onTab={onTab} embedded />
+      {hideTabs ? null : <PlayerProfileTabs tab={tab} onTab={onTab} embedded />}
       <div className="min-w-0">{children}</div>
     </div>
   )

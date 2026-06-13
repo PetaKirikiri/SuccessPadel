@@ -5,13 +5,13 @@ import { AppShellColumn } from '../components/AppShellColumn'
 import type { LeaderboardEntry } from '../components/CompetitionLeaderboard'
 import { FriendlyDeleteConfirm } from '../components/FriendlyDeleteConfirm'
 import { LineAppBookmark } from '../components/LineAppBookmark'
-import { GuestPlayerSetupPrompt } from '../components/GuestPlayerSetupPrompt'
 import { LinePlayerLinkModal } from '../components/LinePlayerLinkModal'
+import { LinePlayerLinkPanel } from '../components/LinePlayerLinkPanel'
 import { PlayerMatchHistory } from '../components/PlayerMatchHistory'
 import { PlayerProfileBanner } from '../components/PlayerProfileBanner'
 import { PlayerProfileCard } from '../components/PlayerProfileCard'
 import type { PlayerProfileTab } from '../components/PlayerProfileTabs'
-import { PlayerProfileView } from '../components/PlayerProfileView'
+import { PlayerProfileDetailsDisplay } from '../components/PlayerProfileDetailsDisplay'
 import { ProfileDetailsForm, type EditableProfile } from '../components/ProfileDetailsForm'
 import { useAuth } from '../hooks/useAuth'
 import { useLineClientProfile } from '../hooks/useLineClientProfile'
@@ -91,10 +91,7 @@ export function PlayerProfilePage() {
   const [deleteBusy, setDeleteBusy] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [tab, setTab] = useState<PlayerProfileTab>('profile')
-
-  const isOwnProfile = Boolean(
-    user?.id && (user.id === playerId || user.id === resolved?.profile?.id),
-  )
+  const [ownedPadelPlayerId, setOwnedPadelPlayerId] = useState<string | null>(null)
 
   const isAdmin = Boolean(authProfile?.is_admin)
 
@@ -106,6 +103,36 @@ export function PlayerProfilePage() {
       playerId ??
       null,
     [playerId, resolved?.profile?.id, routeEntry],
+  )
+
+  const linkablePadelPlayerId = useMemo(() => {
+    if (resolved?.linkablePadelPlayerId) return resolved.linkablePadelPlayerId
+    if (routeEntry?.padel_player_id && isClaimableGuest(routeEntry)) {
+      return routeEntry.padel_player_id
+    }
+    if (!resolved?.profile) {
+      return resolved?.padelPlayerId ?? playerId ?? null
+    }
+    return null
+  }, [playerId, resolved, routeEntry])
+
+  const isOwnProfile = useMemo(
+    () =>
+      Boolean(
+        user?.id &&
+          (user.id === playerId ||
+            user.id === resolved?.profile?.id ||
+            (linkablePadelPlayerId && ownedPadelPlayerId === linkablePadelPlayerId) ||
+            (resolved?.padelPlayerId && ownedPadelPlayerId === resolved.padelPlayerId)),
+      ),
+    [
+      user?.id,
+      playerId,
+      resolved?.profile?.id,
+      resolved?.padelPlayerId,
+      linkablePadelPlayerId,
+      ownedPadelPlayerId,
+    ],
   )
 
   const editableProfile = useMemo(() => {
@@ -201,17 +228,6 @@ export function PlayerProfilePage() {
     ? formatMemberSince(resolved.profile.created_at, locale)
     : null
 
-  const linkablePadelPlayerId = useMemo(() => {
-    if (resolved?.linkablePadelPlayerId) return resolved.linkablePadelPlayerId
-    if (routeEntry?.padel_player_id && isClaimableGuest(routeEntry)) {
-      return routeEntry.padel_player_id
-    }
-    if (!resolved?.profile) {
-      return resolved?.padelPlayerId ?? playerId ?? null
-    }
-    return null
-  }, [playerId, resolved, routeEntry])
-
   const needsPlayerSignup = Boolean(
     linkablePadelPlayerId || (resolved?.profile && !resolved.profile.line_user_id),
   )
@@ -219,6 +235,13 @@ export function PlayerProfilePage() {
   const canConnectLine = useMemo(() => {
     if (!linkablePadelPlayerId) return false
     if (resolved?.profile?.line_user_id || resolved?.padelLineUserId) return false
+    if (
+      ownedPadelPlayerId &&
+      (ownedPadelPlayerId === linkablePadelPlayerId ||
+        ownedPadelPlayerId === resolved?.padelPlayerId)
+    ) {
+      return false
+    }
     if (isAdmin) return true
     if (user && resolved?.profile && resolved.profile.id !== user.id) return false
     if (routeEntry && user) return isClaimableGuest(routeEntry)
@@ -226,14 +249,16 @@ export function PlayerProfilePage() {
   }, [
     isAdmin,
     linkablePadelPlayerId,
+    ownedPadelPlayerId,
     resolved?.padelLineUserId,
+    resolved?.padelPlayerId,
     resolved?.profile,
     routeEntry,
     user,
   ])
 
-  const showGuestSetup = Boolean(
-    needsPlayerSignup && linkablePadelPlayerId && !canEditProfile,
+  const showInlineLineSetup = Boolean(
+    needsPlayerSignup && linkablePadelPlayerId && !canEditProfile && canConnectLine,
   )
 
   const playerNotFound = Boolean(
@@ -249,6 +274,45 @@ export function PlayerProfilePage() {
     if (resolved?.padelLineUserId) return
     saveClaimPadelPlayer(linkablePadelPlayerId)
   }, [linkablePadelPlayerId, loading, resolved?.padelLineUserId, resolved?.profile])
+
+  useEffect(() => {
+    if (!user?.id) {
+      setOwnedPadelPlayerId(null)
+      return
+    }
+    let active = true
+    void supabase
+      .from('padel_players')
+      .select('id')
+      .eq('profile_id', user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (active) setOwnedPadelPlayerId(data?.id ?? null)
+      })
+    return () => {
+      active = false
+    }
+  }, [user?.id, resolved?.profile?.id, resolved?.padelLineUserId])
+
+  useEffect(() => {
+    if (!user?.id || !playerId) return
+    reloadProfile()
+  }, [user?.id, playerId])
+
+  useEffect(() => {
+    const onProfileSynced = () => reloadProfile()
+    window.addEventListener('successpadel:profile-synced', onProfileSynced)
+    return () => window.removeEventListener('successpadel:profile-synced', onProfileSynced)
+  }, [user?.id, playerId])
+
+  useEffect(() => {
+    if (!showInlineLineSetup || !playerId) return
+    const poll = window.setInterval(() => {
+      void resolvePlayerProfile(playerId).then(setResolved)
+      if (user?.id) void refreshProfile()
+    }, 3000)
+    return () => window.clearInterval(poll)
+  }, [showInlineLineSetup, playerId, user?.id, refreshProfile])
 
   const canShareProfile = isAdmin && needsPlayerSignup
 
@@ -372,9 +436,9 @@ export function PlayerProfilePage() {
                   name={displayName}
                   avatarUrl={avatarUrl}
                   memberSince={isOwnProfile ? null : memberSince}
-                  canAddLine={canConnectLine}
+                  canAddLine={canConnectLine && !showInlineLineSetup}
                   onAddLine={
-                    canConnectLine && linkablePadelPlayerId
+                    canConnectLine && linkablePadelPlayerId && !showInlineLineSetup
                       ? () => setLinkTarget({ id: linkablePadelPlayerId, name: displayName })
                       : undefined
                   }
@@ -420,41 +484,41 @@ export function PlayerProfilePage() {
                     </section>
                   )}
                   {badges.length > 0 && (
-                    <PlayerProfileView
+                    <PlayerProfileDetailsDisplay
                       profile={null}
                       fallbackName={displayName}
                       badges={badges}
                       showDetails={false}
-                      embedded
                       t={t}
                     />
                   )}
                 </>
-              ) : (
+              ) : showInlineLineSetup && linkablePadelPlayerId ? (
                 <>
-                  <PlayerProfileView
-                    profile={resolved?.profile ?? null}
-                    fallbackName={displayName}
-                    competitionStats={competitionStats}
-                    badges={badges}
+                  <LinePlayerLinkPanel
                     embedded
-                    t={t}
+                    competitionId={competitionId}
+                    padelPlayerId={linkablePadelPlayerId}
+                    playerName={displayName}
                   />
-                  {showGuestSetup ? (
-                    <GuestPlayerSetupPrompt
-                      canConnectLine={canConnectLine}
-                      onConnectLine={
-                        canConnectLine && linkablePadelPlayerId
-                          ? () => setLinkTarget({ id: linkablePadelPlayerId, name: displayName })
-                          : undefined
-                      }
-                      canShareProfile={canShareProfile}
-                      onShareProfile={canShareProfile ? () => void handleShareProfile() : undefined}
-                      shareFeedback={shareFeedback}
+                  {resolved?.profile ? (
+                    <PlayerProfileDetailsDisplay
+                      profile={resolved.profile}
+                      fallbackName={displayName}
+                      competitionStats={competitionStats}
+                      badges={badges}
                       t={t}
                     />
                   ) : null}
                 </>
+              ) : (
+                <PlayerProfileDetailsDisplay
+                  profile={resolved?.profile ?? null}
+                  fallbackName={displayName}
+                  competitionStats={competitionStats}
+                  badges={badges}
+                  t={t}
+                />
               )}
             </PlayerProfileCard>
           )}

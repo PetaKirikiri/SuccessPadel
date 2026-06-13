@@ -8,7 +8,10 @@ export function computeAmericanoStandings(
   rounds: CompetitionRound[],
   courtMatches: CourtMatch[],
 ): LeaderboardEntry[] {
-  const totals = new Map<string, { points: number; games: number; wins: number; losses: number }>()
+  const totals = new Map<
+    string,
+    { points: number; games: number; wins: number; losses: number; draws: number }
+  >()
 
   for (const match of courtMatches) {
     const parts = match.score_summary?.split('-').map((s) => Number(s.trim()))
@@ -23,12 +26,13 @@ export function computeAmericanoStandings(
       const key = p.padel_player_id ?? p.profile_id ?? p.roster_entry_id
       const teamScore = p.team === 'a' ? scoreA! : scoreB!
       const oppScore = p.team === 'a' ? scoreB! : scoreA!
-      const cur = totals.get(key) ?? { points: 0, games: 0, wins: 0, losses: 0 }
+      const cur = totals.get(key) ?? { points: 0, games: 0, wins: 0, losses: 0, draws: 0 }
       totals.set(key, {
         points: cur.points + teamScore,
         games: cur.games + 1,
         wins: cur.wins + (teamScore > oppScore ? 1 : 0),
         losses: cur.losses + (teamScore < oppScore ? 1 : 0),
+        draws: cur.draws + (teamScore === oppScore ? 1 : 0),
       })
     }
   }
@@ -49,6 +53,7 @@ export function computeAmericanoStandings(
           games: scored?.games ?? 0,
           wins: scored?.wins ?? 0,
           losses: scored?.losses ?? 0,
+          draws: scored?.draws ?? 0,
         }
       })
       .sort((a, b) => {

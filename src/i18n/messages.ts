@@ -117,6 +117,11 @@ export type Messages = {
     sets: string
     games: string
     wins: string
+    losses: string
+    draws: string
+    winsShort: string
+    lossesShort: string
+    drawsShort: string
     add: string
     addLine: string
     leaderFooter: string
@@ -272,6 +277,7 @@ export type Messages = {
     step3Prefix: string
     step3Bold: string
     step3Suffix: string
+    step3SuffixGuide: string
     step4Prefix: string
     step4Bold: string
     step4Suffix: string

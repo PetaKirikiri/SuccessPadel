@@ -20,6 +20,7 @@ type PlayerTotals = {
   games: number
   wins: number
   losses: number
+  draws: number
 }
 
 function rosterKeyLookup(sessionRoster: CourtPlayer[]): Map<string, string> {
@@ -81,6 +82,7 @@ function emptyTotals(key: string, name: string, playerId: string | null): Player
     games: 0,
     wins: 0,
     losses: 0,
+    draws: 0,
   }
 }
 
@@ -126,9 +128,12 @@ export function computeFriendlySessionStandings(
         games: cur.games + 1,
         wins: cur.wins + (teamScore > oppScore ? 1 : 0),
         losses: cur.losses + (teamScore < oppScore ? 1 : 0),
+        draws: cur.draws + (teamScore === oppScore ? 1 : 0),
       })
     }
   }
+
+  const rosterOrder = new Map(sessionRoster.map((p, i) => [p.id ?? p.name, i]))
 
   const rows = [...totals.values()]
     .filter((row) => row.games > 0 || sessionRoster.some((p) => (p.id ?? p.name) === row.profile_id))
@@ -141,11 +146,13 @@ export function computeFriendlySessionStandings(
       games: row.games,
       wins: row.wins,
       losses: row.losses,
+      draws: row.draws,
     }))
     .sort(
       (a, b) =>
         b.total_points - a.total_points ||
         b.games - a.games ||
+        (rosterOrder.get(a.profile_id) ?? 999) - (rosterOrder.get(b.profile_id) ?? 999) ||
         a.display_name.localeCompare(b.display_name),
     )
 

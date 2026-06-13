@@ -1,27 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import {
-  Activity,
-  CircleDot,
-  Columns2,
-  Crosshair,
-  Flame,
-  Hand,
-  Hash,
-  Layers,
-  LayoutGrid,
-  Mars,
-  Minus,
-  Network,
-  Shield,
-  Smile,
-  ThumbsDown,
-  Trophy,
-  TrendingUp,
-  User,
-  Venus,
-  Zap,
-  type LucideIcon,
-} from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Activity, Columns2, Hash, Hand, Layers, LayoutGrid, Smile, ThumbsDown, User, Venus, Zap } from 'lucide-react'
 import { useTranslation } from '../hooks/useTranslation'
 import { uploadProfileAvatar, validateProfileAvatar } from '../lib/profileAvatar'
 import {
@@ -46,58 +24,20 @@ import {
 } from '../lib/profileI18n'
 import { supabase } from '../lib/supabaseClient'
 import type { DominantHand, PlaySide, Profile } from '../lib/types'
-
-const GENDER_ICONS: Record<PlayerGender, LucideIcon> = { Male: Mars, Female: Venus }
-const GENDER_CHIP_COLORS: Record<PlayerGender, string> = {
-  Male: 'text-blue-600',
-  Female: 'text-fuchsia-600',
-}
-const HAND_CHIP_COLORS: Record<DominantHand, string> = {
-  left: 'text-sky-600',
-  right: 'text-indigo-600',
-}
-const LEVEL_ICONS: Record<SkillLevel, LucideIcon> = {
-  Beginner: CircleDot,
-  'Low Inter': TrendingUp,
-  Intermediate: Activity,
-  Advanced: Flame,
-  Open: Trophy,
-}
-const LEVEL_CHIP_COLORS: Record<SkillLevel, string> = {
-  Beginner: 'text-stone-500',
-  'Low Inter': 'text-emerald-600',
-  Intermediate: 'text-blue-600',
-  Advanced: 'text-orange-600',
-  Open: 'text-amber-600',
-}
-const STYLE_ICONS: Record<PlayStyle, LucideIcon> = {
-  Aggressive: Flame,
-  Defensive: Shield,
-  'All-court': LayoutGrid,
-  'Net player': Network,
-  Baseline: Minus,
-  Power: Zap,
-  Control: Crosshair,
-}
-const STYLE_CHIP_COLORS: Record<PlayStyle, string> = {
-  Aggressive: 'text-red-600',
-  Defensive: 'text-blue-600',
-  'All-court': 'text-violet-600',
-  'Net player': 'text-cyan-600',
-  Baseline: 'text-stone-600',
-  Power: 'text-orange-600',
-  Control: 'text-teal-600',
-}
-const SIDE_ICONS: Record<PlaySide, LucideIcon> = {
-  left: Zap,
-  right: Crosshair,
-  both: Columns2,
-}
-const SIDE_CHIP_COLORS: Record<PlaySide, string> = {
-  left: 'text-orange-600',
-  right: 'text-teal-600',
-  both: 'text-violet-600',
-}
+import {
+  GENDER_CHIP_COLORS,
+  GENDER_ICONS,
+  HAND_CHIP_COLORS,
+  LEVEL_CHIP_COLORS,
+  LEVEL_ICONS,
+  ProfileFieldLabel,
+  ProfileFormSection,
+  ProfileIconChip,
+  SIDE_CHIP_COLORS,
+  SIDE_ICONS,
+  STYLE_CHIP_COLORS,
+  STYLE_ICONS,
+} from './profileFormUi'
 
 export type EditableProfile = Pick<
   Profile,
@@ -114,102 +54,6 @@ export type EditableProfile = Pick<
   | 'dominant_hand'
   | 'skill_level'
 >
-
-function FormSection({
-  icon: Icon,
-  title,
-  children,
-  iconClassName,
-  className,
-}: {
-  icon: LucideIcon
-  title: string
-  children: ReactNode
-  iconClassName: string
-  className?: string
-}) {
-  return (
-    <section
-      className={`rounded-xl border border-brand-border bg-[#f8f7f5] p-3 shadow-sm ${className ?? ''}`}
-    >
-      <h3 className="mb-2.5 flex items-center gap-1.5 border-b border-brand-border/70 pb-2 text-[11px] font-semibold uppercase tracking-wide text-brand-primary">
-        <span
-          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md ring-1 ${iconClassName}`}
-        >
-          <Icon className="h-3.5 w-3.5" aria-hidden strokeWidth={2.25} />
-        </span>
-        {title}
-      </h3>
-      {children}
-    </section>
-  )
-}
-
-function FieldLabel({
-  icon: Icon,
-  iconClassName,
-  children,
-}: {
-  icon: LucideIcon
-  iconClassName?: string
-  children: ReactNode
-}) {
-  return (
-    <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-brand-muted">
-      <Icon
-        className={`h-3 w-3 shrink-0 ${iconClassName ?? 'text-brand-muted'}`}
-        aria-hidden
-        strokeWidth={2.25}
-      />
-      {children}
-    </span>
-  )
-}
-
-function IconChip({
-  active,
-  onClick,
-  icon: Icon,
-  label,
-  iconClassName,
-  compact,
-  multilineLabel,
-}: {
-  active: boolean
-  onClick: () => void
-  icon: LucideIcon
-  label: string
-  iconClassName?: string
-  compact?: boolean
-  multilineLabel?: boolean
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex flex-col items-center justify-center gap-0.5 rounded-lg border transition active:scale-[0.98] ${
-        compact ? 'min-h-[3.25rem] px-1 py-1.5' : 'min-w-[4.25rem] px-2 py-2'
-      } ${
-        active
-          ? 'border-brand-accent bg-brand-surface text-brand-primary ring-1 ring-brand-accent/35'
-          : 'border-brand-border/80 bg-brand-surface text-brand-text'
-      }`}
-    >
-      <Icon
-        className={`shrink-0 ${compact ? 'h-4 w-4' : 'h-5 w-5'} ${iconClassName ?? (active ? 'text-brand-accent' : 'text-brand-muted')}`}
-        aria-hidden
-        strokeWidth={2}
-      />
-      <span
-        className={`max-w-full text-center font-semibold leading-tight ${
-          multilineLabel ? 'whitespace-normal text-[8px]' : 'truncate text-[9px]'
-        }`}
-      >
-        {label}
-      </span>
-    </button>
-  )
-}
 
 type Props = {
   profile: EditableProfile
@@ -392,16 +236,16 @@ export function ProfileDetailsForm({
         onChange={(e) => onAvatarPick(e.target.files?.[0])}
       />
 
-      <FormSection
+      <ProfileFormSection
         icon={User}
         title={t('playerProfile.details')}
         iconClassName="bg-brand-accent/15 text-brand-accent ring-brand-accent/35"
       >
         <div className="grid grid-cols-2 gap-2.5">
           <label className="col-span-2 block space-y-1 sm:col-span-1">
-            <FieldLabel icon={User} iconClassName="text-brand-accent">
+            <ProfileFieldLabel icon={User} iconClassName="text-brand-accent">
               {t('profile.displayName')}
-            </FieldLabel>
+            </ProfileFieldLabel>
             <input
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
@@ -411,9 +255,9 @@ export function ProfileDetailsForm({
             />
           </label>
           <label className="col-span-2 block space-y-1 sm:col-span-1">
-            <FieldLabel icon={Hash} iconClassName="text-slate-500">
+            <ProfileFieldLabel icon={Hash} iconClassName="text-slate-500">
               {t('playerProfile.playtomic')}
-            </FieldLabel>
+            </ProfileFieldLabel>
             <input
               value={playtomicNumber}
               onChange={(e) => setPlaytomicNumber(e.target.value)}
@@ -423,9 +267,9 @@ export function ProfileDetailsForm({
             />
           </label>
           <label className="col-span-2 block space-y-1">
-            <FieldLabel icon={Zap} iconClassName="text-orange-600">
+            <ProfileFieldLabel icon={Zap} iconClassName="text-orange-600">
               {t('playerProfile.racket')}
-            </FieldLabel>
+            </ProfileFieldLabel>
             <input
               value={racket}
               onChange={(e) => setRacket(e.target.value)}
@@ -434,19 +278,19 @@ export function ProfileDetailsForm({
             />
           </label>
         </div>
-      </FormSection>
+      </ProfileFormSection>
 
       {isAdmin ? (
         <>
           <div className="grid grid-cols-2 gap-3">
-            <FormSection
+            <ProfileFormSection
               icon={Venus}
               title={t('playerProfile.gender')}
               iconClassName="bg-fuchsia-100 text-fuchsia-600 ring-fuchsia-200"
             >
               <div className="grid grid-cols-2 gap-1.5">
                 {PLAYER_GENDERS.map((g) => (
-                  <IconChip
+                  <ProfileIconChip
                     key={g}
                     compact
                     active={gender === g}
@@ -457,15 +301,15 @@ export function ProfileDetailsForm({
                   />
                 ))}
               </div>
-            </FormSection>
-            <FormSection
+            </ProfileFormSection>
+            <ProfileFormSection
               icon={Hand}
               title={t('playerProfile.hand')}
               iconClassName="bg-sky-100 text-sky-600 ring-sky-200"
             >
               <div className="grid grid-cols-2 gap-1.5">
                 {DOMINANT_HANDS.map((h) => (
-                  <IconChip
+                  <ProfileIconChip
                     key={h.value}
                     compact
                     active={dominantHand === h.value}
@@ -476,16 +320,16 @@ export function ProfileDetailsForm({
                   />
                 ))}
               </div>
-            </FormSection>
+            </ProfileFormSection>
           </div>
-          <FormSection
+          <ProfileFormSection
             icon={Layers}
             title={t('playerProfile.level')}
             iconClassName="bg-amber-100 text-amber-700 ring-amber-200"
           >
             <div className="grid grid-cols-5 gap-1.5">
               {SKILL_LEVELS.map((level) => (
-                <IconChip
+                <ProfileIconChip
                   key={level}
                   compact
                   active={skillLevel === level}
@@ -497,18 +341,18 @@ export function ProfileDetailsForm({
                 />
               ))}
             </div>
-          </FormSection>
+          </ProfileFormSection>
         </>
       ) : null}
 
-      <FormSection
+      <ProfileFormSection
         icon={LayoutGrid}
         title={t('playerProfile.playStyle')}
         iconClassName="bg-violet-100 text-violet-600 ring-violet-200"
       >
         <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-7">
           {PLAY_STYLES.map((style) => (
-            <IconChip
+            <ProfileIconChip
               key={style}
               compact
               active={playStyles.includes(style)}
@@ -523,17 +367,17 @@ export function ProfileDetailsForm({
             />
           ))}
         </div>
-      </FormSection>
+      </ProfileFormSection>
 
       <div className="grid grid-cols-2 gap-3">
-        <FormSection
+        <ProfileFormSection
           icon={Columns2}
           title={t('playerProfile.preferredSide')}
           iconClassName="bg-teal-100 text-teal-600 ring-teal-200"
         >
           <div className="grid grid-cols-3 gap-1.5">
             {PLAY_SIDES.map((s) => (
-              <IconChip
+              <ProfileIconChip
                 key={s.value}
                 compact
                 active={preferredSide === s.value}
@@ -544,14 +388,14 @@ export function ProfileDetailsForm({
               />
             ))}
           </div>
-        </FormSection>
-        <FormSection
+        </ProfileFormSection>
+        <ProfileFormSection
           icon={Smile}
           title={t('playerProfile.funGames')}
           iconClassName="bg-lime-100 text-lime-700 ring-lime-200"
         >
           <div className="grid grid-cols-2 gap-1.5">
-            <IconChip
+            <ProfileIconChip
               compact
               active={enjoysFun}
               onClick={() => setEnjoysFun(true)}
@@ -559,7 +403,7 @@ export function ProfileDetailsForm({
               iconClassName="text-lime-600"
               label={t('playerProfile.yes')}
             />
-            <IconChip
+            <ProfileIconChip
               compact
               active={!enjoysFun}
               onClick={() => setEnjoysFun(false)}
@@ -568,10 +412,10 @@ export function ProfileDetailsForm({
               label={t('playerProfile.no')}
             />
           </div>
-        </FormSection>
+        </ProfileFormSection>
       </div>
 
-      <FormSection
+      <ProfileFormSection
         icon={Activity}
         title={t('playerProfile.usuallyFree')}
         iconClassName="bg-orange-100 text-orange-600 ring-orange-200"
@@ -583,7 +427,7 @@ export function ProfileDetailsForm({
           rows={2}
           className="brand-input w-full resize-none bg-brand-surface py-2 text-sm"
         />
-      </FormSection>
+      </ProfileFormSection>
 
       <div className="space-y-2 rounded-xl border border-brand-border bg-brand-surface p-3 shadow-sm">
         {error && <p className="text-xs text-red-600">{error}</p>}

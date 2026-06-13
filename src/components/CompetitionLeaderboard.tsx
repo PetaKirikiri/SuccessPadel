@@ -28,6 +28,7 @@ export type LeaderboardEntry = {
   games: number
   wins?: number
   losses?: number
+  draws?: number
 }
 
 type Props = {
@@ -104,17 +105,29 @@ function playerInitial(name: string): string {
   return t ? t[0]!.toUpperCase() : '?'
 }
 
-function winLossRecord(entry: LeaderboardEntry): string | null {
-  if (entry.games <= 0) return null
+function entryRecord(
+  entry: LeaderboardEntry,
+): { wins: number; losses: number; draws: number } | null {
+  if (entry.wins == null && entry.losses == null && entry.draws == null) {
+    if (entry.games <= 0) return { wins: 0, losses: 0, draws: 0 }
+    return null
+  }
   const wins = entry.wins ?? 0
   const losses = entry.losses ?? 0
-  const ties = Math.max(0, entry.games - wins - losses)
-  const record = ties > 0 ? `${wins}W · ${losses}L · ${ties}T` : `${wins}W · ${losses}L`
-  return `${entry.games}G · ${record}`
+  const draws = entry.draws ?? Math.max(0, entry.games - wins - losses)
+  return { wins, losses, draws }
+}
+
+function RecordStat({ value }: { value: number | null }) {
+  return (
+    <span className="text-center text-xs tabular-nums text-brand-text md:text-sm">
+      {value == null ? '—' : value}
+    </span>
+  )
 }
 
 const ROW_GRID =
-  'grid items-center gap-x-2 px-1.5 md:gap-x-3 md:px-2 grid-cols-[1.25rem_1.75rem_6rem_minmax(0,1fr)_auto] md:grid-cols-[1.5rem_2.5rem_9rem_minmax(0,1fr)_auto]'
+  'grid items-center gap-x-1 px-1.5 md:gap-x-1.5 md:px-2 grid-cols-[1.25rem_1.75rem_minmax(0,1fr)_minmax(0,2rem)_1.25rem_1.25rem_1.25rem_2.25rem] md:grid-cols-[1.5rem_2.5rem_minmax(0,1fr)_minmax(0,3rem)_1.5rem_1.5rem_1.5rem_2.75rem]'
 
 function LeaderboardRow({
   rank,
@@ -133,7 +146,7 @@ function LeaderboardRow({
   onSelectAchievement: (info: AchievementInfo) => void
   t: TranslateFn
 }) {
-  const record = winLossRecord(entry)
+  const record = entryRecord(entry)
 
   return (
     <li
@@ -179,15 +192,11 @@ function LeaderboardRow({
           />
         ))}
       </span>
-      <span className="flex flex-col items-end justify-self-end text-right leading-tight">
-        <span className="font-display text-lg font-bold tabular-nums text-brand-accent md:text-xl">
-          {entry.total_points}
-        </span>
-        {record ? (
-          <span className="text-[10px] font-medium tabular-nums text-brand-muted md:text-xs">
-            {record}
-          </span>
-        ) : null}
+      <RecordStat value={record?.wins ?? null} />
+      <RecordStat value={record?.losses ?? null} />
+      <RecordStat value={record?.draws ?? null} />
+      <span className="justify-self-end text-right font-display text-lg font-bold tabular-nums text-brand-accent md:text-xl">
+        {entry.total_points}
       </span>
     </li>
   )
@@ -266,6 +275,15 @@ export function CompetitionLeaderboard({
         <span aria-hidden />
         <span>{t('leaderboard.player')}</span>
         <span aria-hidden />
+        <span className="text-center" title={t('leaderboard.wins')}>
+          {t('leaderboard.winsShort')}
+        </span>
+        <span className="text-center" title={t('leaderboard.losses')}>
+          {t('leaderboard.lossesShort')}
+        </span>
+        <span className="text-center" title={t('leaderboard.draws')}>
+          {t('leaderboard.drawsShort')}
+        </span>
         <span className="justify-self-end text-right font-display text-xs uppercase text-brand-muted md:text-sm">
           {unit}
         </span>

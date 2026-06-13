@@ -164,8 +164,6 @@ export function FriendlyGamePage() {
     [sessionStarted, matchLogs, scoreUnit, sessionRoster, enrichedStandings],
   )
 
-  const hasStandings = enrichedStandings.some((row) => row.games > 0)
-
   const handleSubmitFriendlyScores = useCallback(
     async (entries: FriendlyCourtScoreSubmit[]) => {
       if (!game) return
@@ -282,7 +280,7 @@ export function FriendlyGamePage() {
     </>
   )
 
-  const leaderboardContent = hasStandings ? (
+  const leaderboardContent = enrichedStandings.length > 0 ? (
     <CompetitionLeaderboard
       entries={enrichedStandings}
       scoreUnit={scoreUnit}
