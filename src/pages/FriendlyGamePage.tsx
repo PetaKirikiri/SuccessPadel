@@ -24,6 +24,7 @@ import {
   friendlySessionRoster,
   friendlyStartsAtIso,
   isFreeFriendly,
+  isFriendlySessionStarted,
   isOnFriendlyRoster,
 } from '../lib/friendlyGames'
 import {
@@ -58,6 +59,12 @@ export function FriendlyGamePage() {
   const [viewTab, setViewTab] = useState<PlayViewTab>('games')
   const [joinBusy, setJoinBusy] = useState(false)
   const [joinError, setJoinError] = useState<string | null>(null)
+  const [now, setNow] = useState(Date.now())
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(timer)
+  }, [])
 
   useEffect(() => {
     void supabase
@@ -136,9 +143,26 @@ export function FriendlyGamePage() {
     [standings, avatarSources],
   )
 
+  const scoredCourts = useMemo(
+    () =>
+      new Set(matchLogs.filter((log) => log.matchEndedAt).map((log) => log.courtSetupKey)).size,
+    [matchLogs],
+  )
+  const sessionStarted = useMemo(
+    () => (game ? isFriendlySessionStarted(game, scoredCourts, now) : false),
+    [game, scoredCourts, now],
+  )
   const achievements = useMemo(
-    () => calculateFriendlySessionAchievements(matchLogs, scoreUnit, sessionRoster, enrichedStandings),
-    [matchLogs, scoreUnit, sessionRoster, enrichedStandings],
+    () =>
+      sessionStarted
+        ? calculateFriendlySessionAchievements(
+            matchLogs,
+            scoreUnit,
+            sessionRoster,
+            enrichedStandings,
+          )
+        : null,
+    [sessionStarted, matchLogs, scoreUnit, sessionRoster, enrichedStandings],
   )
 
   const hasStandings = enrichedStandings.some((row) => row.games > 0)
