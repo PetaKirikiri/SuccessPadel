@@ -54,7 +54,7 @@ export function FriendlyGamePage() {
   const { log } = useMatchGestureLog(id)
   const finished = isReviewableLog(log)
   const [profiles, setProfiles] = useState<Profile[]>([])
-  const { courtNames, courtRefs } = useSetupCourts()
+  const { courtNames } = useSetupCourts()
   const [viewTab, setViewTab] = useState<PlayViewTab>('games')
   const [joinBusy, setJoinBusy] = useState(false)
   const [joinError, setJoinError] = useState<string | null>(null)
@@ -252,7 +252,6 @@ export function FriendlyGamePage() {
           isAdmin={isAdmin}
           currentUserId={user?.id}
           currentUserAvatarUrl={headerAvatar}
-          courtRefs={courtRefs}
           liveCourtScores={liveCourtScores}
           onSubmitFriendlyScores={canScore ? handleSubmitFriendlyScores : undefined}
           onFriendlyScoresSaved={handleScoresSaved}

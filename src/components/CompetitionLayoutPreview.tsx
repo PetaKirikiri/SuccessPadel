@@ -3,7 +3,6 @@ import type { GameRound } from '../lib/americanoSchedule'
 import { breakMinutesFromConfig, gameSlotTimes } from '../lib/competitionLayout'
 import { americanoScoringUnit } from '../lib/competitionPresets'
 import { pivotScheduleByCourt } from '../lib/competitionCourtBoard'
-import type { CourtRefsLookup } from '../lib/courtRefs'
 import type { LiveCourtGamesScore } from '../lib/liveCourtScore'
 import type { FriendlyCourtScoreSubmit } from '../lib/friendlyManualScore'
 import type { GameSession } from '../lib/types'
@@ -19,7 +18,6 @@ type Props = {
   isAdmin?: boolean
   currentUserId?: string | null
   currentUserAvatarUrl?: string | null
-  courtRefs?: CourtRefsLookup
   liveCourtScores?: Map<string, LiveCourtGamesScore>
   onSubmitFriendlyScores?: (entries: FriendlyCourtScoreSubmit[]) => Promise<void>
   onFriendlyScoresSaved?: () => void
@@ -35,7 +33,6 @@ export function CompetitionLayoutPreview({
   isAdmin = false,
   currentUserId,
   currentUserAvatarUrl,
-  courtRefs,
   liveCourtScores,
   onSubmitFriendlyScores,
   onFriendlyScoresSaved,
@@ -73,7 +70,6 @@ export function CompetitionLayoutPreview({
       isAdmin={isAdmin}
       currentUserId={currentUserId}
       currentUserAvatarUrl={currentUserAvatarUrl}
-      courtRefs={courtRefs}
       liveCourtScores={liveCourtScores}
       onSubmitFriendlyScores={onSubmitFriendlyScores}
       onSaved={onFriendlyScoresSaved}

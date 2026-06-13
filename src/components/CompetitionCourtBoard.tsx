@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { ScoreTrackerIcon } from './ScoreTrackerIcon'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { displayCourtLabel } from '../lib/courtDisplay'
-import { resolveCourtRef, type CourtRef, type CourtRefsLookup } from '../lib/courtRefs'
 import { liveCourtScoreKey, type LiveCourtGamesScore } from '../lib/liveCourtScore'
-import { friendlyCourtLivePath } from '../lib/friendlyCourtLive'
 import { useTranslation } from '../hooks/useTranslation'
 import type { TranslateFn } from '../i18n'
 import type { AmericanoScoringUnit } from '../lib/competitionPresets'
@@ -19,7 +16,7 @@ import {
   parseScoreField,
   scoreDigitsOnly,
 } from '../lib/competitionScoreInput'
-import { compactDisplayNames, firstDisplayName } from '../lib/leaderboardEntries'
+import { compactDisplayNames } from '../lib/leaderboardEntries'
 import type { CourtPlayer } from '../lib/americanoSchedule'
 import type { FriendlyCourtScoreSubmit } from '../lib/friendlyManualScore'
 import type { MatchTeam } from '../lib/types'
@@ -70,7 +67,6 @@ type Props = {
   currentUserId?: string | null
   currentUserAvatarUrl?: string | null
   isAdmin?: boolean
-  courtRefs?: CourtRefsLookup
   liveCourtScores?: Map<string, LiveCourtGamesScore>
 }
 
@@ -249,22 +245,18 @@ function courtCardShellClass({
 
 function CourtCard({
   courtLabel,
-  courtRef,
   currentUserId,
   court,
   finished,
   href,
-  statsHref,
   children,
   t,
 }: {
   courtLabel: string
-  courtRef?: CourtRef
   currentUserId?: string | null
   court: LiveCourt | ScoringGame['courts'][number]
   finished: boolean
   href?: string
-  statsHref?: string
   children: ReactNode
   t: TranslateFn
 }) {
@@ -284,7 +276,6 @@ function CourtCard({
       >
         <CourtLabelRow
           courtLabel={courtLabel}
-          courtRef={courtRef}
           currentUserId={currentUserId}
           court={court}
           finished={finished}
@@ -293,15 +284,6 @@ function CourtCard({
       </div>
       <div className="p-2 md:p-2.5" onClick={href ? stopCardNav : undefined} onKeyDown={href ? stopCardNav : undefined}>
         {children}
-        {statsHref ? (
-          <Link
-            to={statsHref}
-            onClick={(e) => e.stopPropagation()}
-            className="brand-btn-outline mt-2 block w-full py-2 text-center text-xs font-semibold no-underline"
-          >
-            {t('pad.dashboard.stats')}
-          </Link>
-        ) : null}
       </div>
     </>
   )
@@ -917,7 +899,6 @@ function GameScoringCourts({
   friendly,
   sessionId,
   competitionId,
-  courtRefs,
   playTo,
   t,
 }: {
@@ -938,12 +919,11 @@ function GameScoringCourts({
   friendly: boolean
   sessionId?: string
   competitionId?: string
-  courtRefs?: CourtRefsLookup
   t: TranslateFn
 }) {
   return (
     <div className="space-y-3">
-      {courtScoreRows.map((row, courtIndex) => {
+      {courtScoreRows.map((row) => {
         const liveCourt = courtsForGame.find((c) => c.courtName === row.courtLabel)
         const courtId = row.courtId
         const court = row.court
@@ -964,23 +944,15 @@ function GameScoringCourts({
           courtId,
           canEditScores: canEdit,
         })
-        const statsHref = courtStatsHref(
-          friendly,
-          sessionId,
-          game.gameNumber,
-          row.courtLabel,
-        )
 
         return (
           <CourtCard
             key={row.courtLabel}
             courtLabel={row.courtLabel}
-            courtRef={resolveCourtRef(row.courtLabel, courtIndex, courtRefs)}
             currentUserId={currentUserId}
             court={liveCourt ?? court}
             finished={finished}
             href={href}
-            statsHref={statsHref}
             t={t}
           >
             <CourtMatchCell
@@ -1028,14 +1000,12 @@ function GameScoringCourts({
 
 function CourtLabelRow({
   courtLabel,
-  courtRef,
   currentUserId,
   court,
   finished,
   t,
 }: {
   courtLabel: string
-  courtRef?: CourtRef
   currentUserId?: string | null
   court: LiveCourt | ScoringGame['courts'][number]
   finished: boolean
@@ -1043,45 +1013,9 @@ function CourtLabelRow({
 }) {
   const label = displayCourtLabel(courtLabel, t)
   const titleClass = `${courtLabelClass(currentUserId, court, finished)} text-left`
-  const refInitial = courtRef?.displayName ? firstDisplayName(courtRef.displayName).charAt(0) : ''
   return (
     <div className="flex min-h-12 items-center gap-2 px-3 py-2">
       <p className={`min-w-0 flex-1 truncate ${titleClass}`}>{label}</p>
-      {courtRef ? (
-        <div className="flex shrink-0 items-center gap-2">
-          <div className="min-w-0 text-right">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-muted">
-              {t('court.ref')}
-            </p>
-            <p className="max-w-[9rem] truncate text-sm font-semibold text-brand-primary sm:max-w-[11rem] md:max-w-none md:text-base">
-              {firstDisplayName(courtRef.displayName)}
-            </p>
-          </div>
-          {courtRef.avatarUrl ? (
-            <img
-              src={courtRef.avatarUrl}
-              alt=""
-              className="h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-brand-accent/45 md:h-11 md:w-11"
-            />
-          ) : (
-            <span
-              aria-hidden
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-primary/10 font-display text-sm font-bold text-brand-primary md:h-11 md:w-11 md:text-base"
-            >
-              {refInitial}
-            </span>
-          )}
-        </div>
-      ) : null}
-      <button
-        type="button"
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-brand-border/80 bg-brand-bg-alt text-brand-accent transition hover:border-brand-accent/50 hover:bg-brand-surface active:scale-95 md:h-11 md:w-11"
-        aria-label={t('court.scoreTrackerAria')}
-        title={t('court.scoreTrackerAria')}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <ScoreTrackerIcon className="h-5 w-5 md:h-6 md:w-6" />
-      </button>
     </div>
   )
 }
@@ -1110,16 +1044,6 @@ function courtLiveHref({
     return `/competitions/${competitionId}/games/${gameNumber}/courts/${courtId}/live-court`
   }
   return undefined
-}
-
-function courtStatsHref(
-  friendly: boolean,
-  sessionId: string | undefined,
-  gameNumber: number,
-  courtLabel: string,
-): string | undefined {
-  if (!friendly || !sessionId) return undefined
-  return friendlyCourtLivePath(sessionId, gameNumber, courtLabel)
 }
 
 function GameCardHeader({
@@ -1225,7 +1149,6 @@ function ScoringGameCard({
   friendly,
   sessionId,
   competitionId,
-  courtRefs,
   gameRoundId,
   courtsForGame,
   courtIdByLabel,
@@ -1251,7 +1174,6 @@ function ScoringGameCard({
   friendly: boolean
   sessionId?: string
   competitionId?: string
-  courtRefs?: CourtRefsLookup
   gameRoundId?: string
   courtsForGame: LiveCourt[]
   courtIdByLabel?: Map<string, string>
@@ -1332,7 +1254,6 @@ function ScoringGameCard({
             friendly={friendly}
             sessionId={sessionId}
             competitionId={competitionId}
-            courtRefs={courtRefs}
             t={t}
           />
         </div>
@@ -1342,11 +1263,9 @@ function ScoringGameCard({
 }
 
 function FriendlyManualGameCard({
-  sessionId,
   game,
   scoreUnit,
   liveCourtScores,
-  courtRefs,
   onSubmitFriendlyScores,
   onSaved,
   isLiveNow,
@@ -1360,11 +1279,9 @@ function FriendlyManualGameCard({
   currentUserAvatarUrl,
   t,
 }: {
-  sessionId?: string
   game: ScoringGame
   scoreUnit: AmericanoScoringUnit
   liveCourtScores?: Map<string, LiveCourtGamesScore>
-  courtRefs?: CourtRefsLookup
   onSubmitFriendlyScores?: (entries: FriendlyCourtScoreSubmit[]) => Promise<void>
   onSaved?: () => void | Promise<void>
   isLiveNow: boolean
@@ -1404,7 +1321,7 @@ function FriendlyManualGameCard({
         <>
           <div className="border-t border-brand-border/30 bg-brand-bg-alt px-3 pb-3.5 pt-3 md:px-4">
             <div className="space-y-3.5">
-              {courtScoreRows.map((row, courtIndex) => {
+              {courtScoreRows.map((row) => {
                 const teamA = row.court.teamA
                 const teamB = row.court.teamB
                 const courtReady = row.canSubmit
@@ -1412,11 +1329,9 @@ function FriendlyManualGameCard({
                   <CourtCard
                     key={row.courtLabel}
                     courtLabel={row.courtLabel}
-                    courtRef={resolveCourtRef(row.courtLabel, courtIndex, courtRefs)}
                     currentUserId={currentUserId}
                     court={row.court}
                     finished={finished}
-                    statsHref={courtStatsHref(true, sessionId, game.gameNumber, row.courtLabel)}
                     t={t}
                   >
                     <CourtMatchCell
@@ -1490,7 +1405,6 @@ export function CompetitionCourtBoard({
   currentUserId,
   currentUserAvatarUrl,
   isAdmin = false,
-  courtRefs,
   liveCourtScores,
 }: Props) {
   const { t } = useTranslation()
@@ -1600,7 +1514,6 @@ export function CompetitionCourtBoard({
               friendly={friendly}
               sessionId={sessionId}
               competitionId={competitionId}
-              courtRefs={courtRefs}
               gameRoundId={gameRoundId}
               courtsForGame={courtsForGame}
               courtIdByLabel={courtIdByLabel}
@@ -1628,11 +1541,9 @@ export function CompetitionCourtBoard({
           return (
             <FriendlyManualGameCard
               key={game.gameNumber}
-              sessionId={friendlySessionId}
               game={game}
               scoreUnit={scoreUnit}
               liveCourtScores={liveCourtScores}
-              courtRefs={courtRefs}
               onSubmitFriendlyScores={onSubmitFriendlyScores}
               onSaved={onSaved}
               isLiveNow={isLiveNow}
@@ -1703,23 +1614,14 @@ export function CompetitionCourtBoard({
                     canEditScores: false,
                   })
 
-                  const statsHref = courtStatsHref(
-                    friendly,
-                    sessionId,
-                    game.gameNumber,
-                    court.courtLabel,
-                  )
-
                   return (
                     <CourtCard
                       key={court.courtLabel}
                       courtLabel={court.courtLabel}
-                      courtRef={resolveCourtRef(court.courtLabel, courtIndex, courtRefs)}
                       currentUserId={currentUserId}
                       court={liveCourt ?? court}
                       finished={finished}
                       href={href}
-                      statsHref={statsHref}
                       t={t}
                     >
                       <CourtMatchCell
