@@ -68,22 +68,29 @@ export function FriendlyGamePage() {
   }, [])
 
   useEffect(() => {
+    const rosterIds = (game?.profileIds ?? []).filter((id): id is string => Boolean(id))
+    if (!rosterIds.length) {
+      setProfiles([])
+      return
+    }
     void supabase
       .from('profiles')
       .select('id, display_name, avatar_url')
-      .order('display_name')
+      .in('id', rosterIds)
       .then(({ data }) => setProfiles((data as Profile[]) ?? []))
-  }, [])
+  }, [game?.profileIds])
 
   const displayGame = useMemo(() => {
     if (!game) return null
-    if (game.profileAvatars?.length) return game
-    if (!game.profileIds) return game
+    const ids = game.profileIds ?? []
+    const storedAvatars = game.profileAvatars ?? []
     return {
       ...game,
-      profileAvatars: game.profileIds.map((pid) =>
-        pid ? (profiles.find((p) => p.id === pid)?.avatar_url ?? null) : null,
-      ),
+      profileAvatars: ids.map((pid, i) => {
+        if (storedAvatars[i]) return storedAvatars[i]
+        if (pid) return profiles.find((p) => p.id === pid)?.avatar_url ?? null
+        return null
+      }),
     }
   }, [game, profiles])
 
@@ -157,10 +164,23 @@ export function FriendlyGamePage() {
     })
   }, [displayGame, profiles])
 
-  const enrichedStandings = useMemo(
-    () => enrichStandingsWithAvatars(standings, avatarSources),
-    [standings, avatarSources],
-  )
+  const enrichedStandings = useMemo(() => {
+    const rosterAvatars = new Map(
+      sessionRoster.flatMap((player) => {
+        if (!player.avatarUrl) return []
+        const key = player.id ?? player.name
+        return [[key, player.avatarUrl] as const]
+      }),
+    )
+    return enrichStandingsWithAvatars(standings, avatarSources).map((entry) => ({
+      ...entry,
+      avatar_url:
+        entry.avatar_url ??
+        (entry.member_profile_id ? rosterAvatars.get(entry.member_profile_id) : undefined) ??
+        rosterAvatars.get(entry.profile_id) ??
+        null,
+    }))
+  }, [standings, avatarSources, sessionRoster])
 
   const scoredCourts = useMemo(
     () =>
