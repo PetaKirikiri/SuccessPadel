@@ -4,7 +4,6 @@ import { IconAdd } from './ButtonIcons'
 import { FriendlyDeleteConfirm } from './FriendlyDeleteConfirm'
 import { FriendlyGameCard } from './FriendlyGameCard'
 import { GamesHubEmpty, GamesHubLoading } from './GamesHubView'
-import { SwipeRevealActions } from './SwipeRevealActions'
 import { useAuth } from '../hooks/useAuth'
 import { useLineClientProfile } from '../hooks/useLineClientProfile'
 import { useTranslation } from '../hooks/useTranslation'
@@ -29,7 +28,6 @@ export function FriendlyGamesList({
   const { t } = useTranslation()
   const { user, profile } = useAuth()
   const lineClient = useLineClientProfile()
-  const swipeDelete = isAdmin
   const [deleteBusyId, setDeleteBusyId] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<FriendlyGameRecord | null>(null)
@@ -79,22 +77,16 @@ export function FriendlyGamesList({
       <ul className="m-0 w-full min-w-0 max-w-full list-none space-y-4 p-0">
         {games.map((game) => (
           <li key={game.id} className="w-full min-w-0 max-w-full">
-            <SwipeRevealActions
-              enabled={swipeDelete}
-              actionLabel={t('competition.delete')}
-              onAction={() => setPendingDelete(game)}
-            >
-              <FriendlyGameCard
-                game={game}
-                to={`/friendly/${game.id}`}
-                currentUserId={user?.id}
-                currentUserAvatarUrl={headerAvatar}
-                isAdmin={isAdmin}
-                onDelete={() => setPendingDelete(game)}
-                deleteBusy={deleteBusyId === game.id}
-                className={deleteBusyId === game.id ? 'pointer-events-none opacity-60' : ''}
-              />
-            </SwipeRevealActions>
+            <FriendlyGameCard
+              game={game}
+              to={`/friendly/${game.id}`}
+              currentUserId={user?.id}
+              currentUserAvatarUrl={headerAvatar}
+              isAdmin={isAdmin}
+              onDelete={() => setPendingDelete(game)}
+              deleteBusy={deleteBusyId === game.id}
+              className={deleteBusyId === game.id ? 'pointer-events-none opacity-60' : ''}
+            />
           </li>
         ))}
       </ul>

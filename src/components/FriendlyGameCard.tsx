@@ -112,9 +112,20 @@ export function FriendlyGameCard({
     >
       <div className="relative min-w-0">
         {to ? (
-          <Link to={to} className="block min-w-0 overflow-hidden transition active:opacity-80">
+          <div
+            role="link"
+            tabIndex={0}
+            onClick={() => navigate(to)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                navigate(to)
+              }
+            }}
+            className="block min-w-0 cursor-pointer overflow-hidden transition active:opacity-80"
+          >
             {inner}
-          </Link>
+          </div>
         ) : (
           inner
         )}
