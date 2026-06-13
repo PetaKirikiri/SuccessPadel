@@ -177,7 +177,7 @@ export function FriendlyGamePage() {
   const showJoin = canJoinFriendlyGame(game, user?.id)
   const joined = isOnFriendlyRoster(game, user?.id)
   const isFree = isFreeFriendly(game)
-  const canScore = Boolean(user && (isAdmin || joined))
+  const canScore = Boolean(user && (isAdmin || joined || game.createdBy === user.id))
 
   return (
     <div className="space-y-3 pb-6">

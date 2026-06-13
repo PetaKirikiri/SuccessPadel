@@ -291,7 +291,7 @@ function CourtCard({
           t={t}
         />
       </div>
-      <div className="p-2 md:p-2.5">
+      <div className="p-2 md:p-2.5" onClick={href ? stopCardNav : undefined} onKeyDown={href ? stopCardNav : undefined}>
         {children}
         {statsHref ? (
           <Link
@@ -351,7 +351,7 @@ function ScoreStepper({
     'flex h-5 w-8 items-center justify-center rounded text-[10px] font-bold leading-none text-brand-muted active:bg-brand-bg-alt disabled:opacity-30 md:h-6 md:w-10 md:text-xs'
 
   return (
-    <div className="flex flex-col items-center gap-0.5">
+    <div className="flex flex-col items-center gap-0.5" onClick={stopCardNav} onKeyDown={stopCardNav}>
       <button
         type="button"
         disabled={disabled}
@@ -560,6 +560,33 @@ function CourtMatchCell({
 
 type CourtDraft = { teamA: string; teamB: string }
 
+const DEFAULT_COURT_SCORE = '0'
+
+function defaultCourtScore(value: string | undefined): string {
+  return value != null && value !== '' ? value : DEFAULT_COURT_SCORE
+}
+
+function courtScoresReady(teamAStr: string, teamBStr: string): boolean {
+  return parseScoreField(defaultCourtScore(teamAStr)) !== null &&
+    parseScoreField(defaultCourtScore(teamBStr)) !== null
+}
+
+function courtSubmitReady(
+  teamAStr: string,
+  teamBStr: string,
+  saved?: { teamAPoints?: number; teamBPoints?: number },
+): boolean {
+  if (!courtScoresReady(teamAStr, teamBStr)) return false
+  const teamA = parseScoreField(defaultCourtScore(teamAStr))!
+  const teamB = parseScoreField(defaultCourtScore(teamBStr))!
+  if (saved?.teamAPoints == null && saved?.teamBPoints == null) return true
+  return saved?.teamAPoints !== teamA || saved?.teamBPoints !== teamB
+}
+
+function stopCardNav(e: { stopPropagation: () => void }) {
+  e.stopPropagation()
+}
+
 function courtIdForLabel(
   courtLabel: string,
   courtIndex: number,
@@ -592,11 +619,18 @@ function scoreStringsForCourt(
   dirty: boolean,
 ): { teamAStr: string; teamBStr: string } {
   if (dirty && draft != null) {
-    return { teamAStr: draft.teamA, teamBStr: draft.teamB }
+    return {
+      teamAStr: defaultCourtScore(draft.teamA),
+      teamBStr: defaultCourtScore(draft.teamB),
+    }
   }
   return {
-    teamAStr: effectiveScoreField(draft?.teamA, saved?.teamAPoints, false),
-    teamBStr: effectiveScoreField(draft?.teamB, saved?.teamBPoints, false),
+    teamAStr: defaultCourtScore(
+      effectiveScoreField(draft?.teamA, saved?.teamAPoints, false),
+    ),
+    teamBStr: defaultCourtScore(
+      effectiveScoreField(draft?.teamB, saved?.teamBPoints, false),
+    ),
   }
 }
 
@@ -624,7 +658,7 @@ function useGameScoring({
   t: TranslateFn
 }) {
   const [drafts, setDrafts] = useState<Record<string, CourtDraft>>({})
-  const [dirty, setDirty] = useState(false)
+  const [dirtyCourts, setDirtyCourts] = useState<Set<string>>(() => new Set())
   const [busyCourtKey, setBusyCourtKey] = useState<string | null>(null)
   const [error, setError] = useState<{ courtId: string; message: string } | null>(null)
 
@@ -661,26 +695,26 @@ function useGameScoring({
   useEffect(() => {
     if (!gameRoundId) return
     setDrafts((prev) => {
-      const next = dirty ? { ...prev } : {}
+      const next = { ...prev }
       for (const { courtId } of scoringCourts) {
-        if (dirty && prev[courtId]) continue
+        if (dirtyCourts.has(courtId) && prev[courtId]) continue
         const saved = matchForCourt(gameRoundId, courtId)
         next[courtId] = {
-          teamA: saved?.teamAPoints != null ? String(saved.teamAPoints) : '',
-          teamB: saved?.teamBPoints != null ? String(saved.teamBPoints) : '',
+          teamA: saved?.teamAPoints != null ? String(saved.teamAPoints) : DEFAULT_COURT_SCORE,
+          teamB: saved?.teamBPoints != null ? String(saved.teamBPoints) : DEFAULT_COURT_SCORE,
         }
       }
       return next
     })
-  }, [dirty, gameRoundId, matchForCourt, savedSnapshot, scoringCourts])
+  }, [dirtyCourts, gameRoundId, matchForCourt, savedSnapshot, scoringCourts])
 
   const setDraft = useCallback((courtId: string, side: 'teamA' | 'teamB', value: string) => {
-    setDirty(true)
+    setDirtyCourts((prev) => new Set(prev).add(courtId))
     setDrafts((prev) => ({
       ...prev,
       [courtId]: {
-        teamA: prev[courtId]?.teamA ?? '',
-        teamB: prev[courtId]?.teamB ?? '',
+        teamA: prev[courtId]?.teamA ?? DEFAULT_COURT_SCORE,
+        teamB: prev[courtId]?.teamB ?? DEFAULT_COURT_SCORE,
         [side]: scoreDigitsOnly(value),
       },
     }))
@@ -691,17 +725,21 @@ function useGameScoring({
     return scoringCourts.map(({ courtId, courtLabel }) => {
       const draft = drafts[courtId]
       const saved = matchForCourt(gameRoundId, courtId)
-      const { teamAStr, teamBStr } = scoreStringsForCourt(draft, saved, dirty)
+      const isDirty = dirtyCourts.has(courtId)
+      const { teamAStr, teamBStr } = scoreStringsForCourt(draft, saved, isDirty)
       const teamA = parseScoreField(teamAStr)
       const teamB = parseScoreField(teamBStr)
       const court = game.courts.find((c) => c.courtLabel === courtLabel)
-      return { courtId, courtLabel, court, teamA, teamB, teamAStr, teamBStr, saved }
+      const canSubmit = courtSubmitReady(teamAStr, teamBStr, saved)
+      return { courtId, courtLabel, court, teamA, teamB, teamAStr, teamBStr, saved, canSubmit }
     })
-  }, [dirty, drafts, game.courts, gameRoundId, matchForCourt, scoringCourts])
+  }, [dirtyCourts, drafts, game.courts, gameRoundId, matchForCourt, scoringCourts])
 
   const submitCourt = async (courtId: string) => {
     const row = courtScoreRows.find((r) => r.courtId === courtId)
-    if (!onSubmitScores || !gameRoundId || !row || row.teamA === null || row.teamB === null) return
+    if (!onSubmitScores || !gameRoundId || !row || !row.canSubmit || row.teamA === null || row.teamB === null) {
+      return
+    }
     setBusyCourtKey(courtId)
     setError(null)
     try {
@@ -718,7 +756,11 @@ function useGameScoring({
         [courtId]: { teamA: String(row.teamA), teamB: String(row.teamB) },
       }))
       await Promise.resolve(onSaved?.())
-      setDirty(false)
+      setDirtyCourts((prev) => {
+        const next = new Set(prev)
+        next.delete(courtId)
+        return next
+      })
     } catch (e) {
       setError({
         courtId,
@@ -729,7 +771,7 @@ function useGameScoring({
     }
   }
 
-  return { courtScoreRows, setDraft, submitCourt, busyCourtKey, error, canEdit, dirty }
+  return { courtScoreRows, setDraft, submitCourt, busyCourtKey, error, canEdit }
 }
 
 function useFriendlyManualScoring({
@@ -769,32 +811,32 @@ function useFriendlyManualScoring({
   )
 
   const [drafts, setDrafts] = useState<Record<string, CourtDraft>>({})
-  const [dirty, setDirty] = useState(false)
+  const [dirtyCourts, setDirtyCourts] = useState<Set<string>>(() => new Set())
   const [busyCourtKey, setBusyCourtKey] = useState<string | null>(null)
   const [error, setError] = useState<{ courtKey: string; message: string } | null>(null)
 
   useEffect(() => {
     setDrafts((prev) => {
-      const next = dirty ? { ...prev } : {}
+      const next = { ...prev }
       for (const { courtKey } of courts) {
-        if (dirty && prev[courtKey]) continue
+        if (dirtyCourts.has(courtKey) && prev[courtKey]) continue
         const live = liveCourtScores?.get(courtKey)
         next[courtKey] = {
-          teamA: live?.scoreA ?? '',
-          teamB: live?.scoreB ?? '',
+          teamA: defaultCourtScore(live?.scoreA),
+          teamB: defaultCourtScore(live?.scoreB),
         }
       }
       return next
     })
-  }, [courts, dirty, liveCourtScores, savedSnapshot])
+  }, [courts, dirtyCourts, liveCourtScores, savedSnapshot])
 
   const setDraft = useCallback((courtKey: string, side: 'teamA' | 'teamB', value: string) => {
-    setDirty(true)
+    setDirtyCourts((prev) => new Set(prev).add(courtKey))
     setDrafts((prev) => ({
       ...prev,
       [courtKey]: {
-        teamA: prev[courtKey]?.teamA ?? '',
-        teamB: prev[courtKey]?.teamB ?? '',
+        teamA: prev[courtKey]?.teamA ?? DEFAULT_COURT_SCORE,
+        teamB: prev[courtKey]?.teamB ?? DEFAULT_COURT_SCORE,
         [side]: scoreDigitsOnly(value),
       },
     }))
@@ -810,16 +852,18 @@ function useFriendlyManualScoring({
             teamBPoints: live.scoreB !== '' ? Number(live.scoreB) : undefined,
           }
         : undefined
-      const { teamAStr, teamBStr } = scoreStringsForCourt(draft, saved, dirty)
+      const isDirty = dirtyCourts.has(courtKey)
+      const { teamAStr, teamBStr } = scoreStringsForCourt(draft, saved, isDirty)
       const teamA = parseScoreField(teamAStr)
       const teamB = parseScoreField(teamBStr)
-      return { courtKey, courtLabel, court, teamA, teamB, teamAStr, teamBStr }
+      const canSubmit = courtSubmitReady(teamAStr, teamBStr, saved)
+      return { courtKey, courtLabel, court, teamA, teamB, teamAStr, teamBStr, canSubmit }
     })
-  }, [courts, dirty, drafts, liveCourtScores])
+  }, [courts, dirtyCourts, drafts, liveCourtScores])
 
   const submitCourt = async (courtKey: string) => {
     const row = courtScoreRows.find((r) => r.courtKey === courtKey)
-    if (!onSubmit || !row || row.teamA === null || row.teamB === null) return
+    if (!onSubmit || !row || !row.canSubmit || row.teamA === null || row.teamB === null) return
     setBusyCourtKey(courtKey)
     setError(null)
     try {
@@ -838,7 +882,11 @@ function useFriendlyManualScoring({
         [courtKey]: { teamA: String(row.teamA), teamB: String(row.teamB) },
       }))
       await Promise.resolve(onSaved?.())
-      setDirty(false)
+      setDirtyCourts((prev) => {
+        const next = new Set(prev)
+        next.delete(courtKey)
+        return next
+      })
     } catch (e) {
       setError({
         courtKey,
@@ -849,7 +897,7 @@ function useFriendlyManualScoring({
     }
   }
 
-  return { courtScoreRows, setDraft, submitCourt, busyCourtKey, error, canEdit, dirty }
+  return { courtScoreRows, setDraft, submitCourt, busyCourtKey, error, canEdit }
 }
 
 function GameScoringCourts({
@@ -904,7 +952,7 @@ function GameScoringCourts({
         const teamB = liveCourt?.teamB ?? court.teamB
         const teamAPlayers = liveCourt?.teamAPlayers ?? court.teamAPlayers
         const teamBPlayers = liveCourt?.teamBPlayers ?? court.teamBPlayers
-        const courtReady = row.teamA !== null && row.teamB !== null
+        const courtReady = row.canSubmit
 
         const href = courtLiveHref({
           liveCourtEnabled,
@@ -1359,7 +1407,7 @@ function FriendlyManualGameCard({
               {courtScoreRows.map((row, courtIndex) => {
                 const teamA = row.court.teamA
                 const teamB = row.court.teamB
-                const courtReady = row.teamA !== null && row.teamB !== null
+                const courtReady = row.canSubmit
                 return (
                   <CourtCard
                     key={row.courtLabel}
