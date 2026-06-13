@@ -155,6 +155,9 @@ export function CompetitionCurrentGameCard({
     </div>
   )
 
+  const adminCornerBtnClass =
+    'flex h-9 w-9 items-center justify-center rounded-xl border border-brand-border bg-brand-bg-alt shadow-sm active:scale-[0.98]'
+
   return (
     <article className="w-full min-w-0 max-w-full overflow-hidden rounded-2xl border-2 border-brand-primary/25 bg-brand-surface shadow-[0_4px_16px_-4px_rgba(96,45,36,0.22)]">
       <div className="relative min-w-0">
@@ -162,33 +165,31 @@ export function CompetitionCurrentGameCard({
           {inner}
         </Link>
         {isAdmin ? (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              void remove()
-            }}
-            aria-label={t('competition.delete')}
-            className="absolute bottom-3 right-3 z-10 flex h-9 w-9 items-center justify-center rounded-xl border border-brand-border bg-brand-bg-alt text-brand-muted shadow-sm active:scale-[0.98] disabled:opacity-50"
-          >
-            <IconDelete />
-          </button>
+          <div className="absolute bottom-3 right-3 z-10 flex items-center gap-2">
+            <Link
+              to={`/competitions/${row.id}/edit`}
+              onClick={(e) => e.stopPropagation()}
+              aria-label={t('competition.edit')}
+              className={`${adminCornerBtnClass} text-brand-primary`}
+            >
+              <IconEdit />
+            </Link>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                void remove()
+              }}
+              aria-label={t('competition.delete')}
+              className={`${adminCornerBtnClass} text-brand-muted disabled:opacity-50`}
+            >
+              <IconDelete />
+            </button>
+          </div>
         ) : null}
       </div>
-
-      {isAdmin ? (
-        <div className="border-t-2 border-brand-border px-4 py-3">
-          <Link
-            to={`/competitions/${row.id}/edit`}
-            className="brand-btn-outline w-full py-2 text-sm font-semibold"
-          >
-            <IconEdit />
-            {t('competition.edit')}
-          </Link>
-        </div>
-      ) : null}
 
       {deleteError ? <p className="px-4 pb-3 text-xs text-red-600">{deleteError}</p> : null}
     </article>
