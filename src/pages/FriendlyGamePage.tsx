@@ -7,7 +7,6 @@ import { PlayViewTabs, type PlayViewTab } from '../components/PlayViewTabs'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { CompetitionLayoutPreview } from '../components/CompetitionLayoutPreview'
 import { CompetitionLeaderboard } from '../components/CompetitionLeaderboard'
-import { FriendlyLateStartPanel } from '../components/FriendlyLateStartPanel'
 import { useAuth } from '../hooks/useAuth'
 import { useLineClientProfile } from '../hooks/useLineClientProfile'
 import { useFriendlyGame } from '../hooks/useFriendlyGame'
@@ -211,8 +210,15 @@ export function FriendlyGamePage() {
   const isFree = isFreeFriendly(game)
   const canScore = Boolean(user && (isAdmin || joined || game.createdBy === user.id))
   const showPlayTabs = !isFree && previewGames.length > 0
+  const hasActionCard = Boolean(
+    showJoin ||
+      (joined && !isAdmin) ||
+      (isAdmin && isFree) ||
+      (isAdmin && finished) ||
+      joinError,
+  )
 
-  const actionCard = (
+  const actionCard = hasActionCard ? (
     <div className="game-card space-y-2 p-3">
       {showJoin ? (
         <button
@@ -251,7 +257,7 @@ export function FriendlyGamePage() {
 
       {joinError ? <p className="text-xs text-red-600">{joinError}</p> : null}
     </div>
-  )
+  ) : null
 
   const gamesContent = (
     <>
@@ -270,10 +276,6 @@ export function FriendlyGamePage() {
           onSubmitFriendlyScores={canScore ? handleSubmitFriendlyScores : undefined}
           onFriendlyScoresSaved={handleScoresSaved}
         />
-      ) : null}
-
-      {isAdmin && !isFree && game.status === 'ready' ? (
-        <FriendlyLateStartPanel game={game} config={organizedConfig} onUpdated={refresh} />
       ) : null}
 
       {actionCard}
