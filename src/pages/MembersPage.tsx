@@ -224,17 +224,19 @@ export function MembersPage() {
   }
 
   const handleShare = async (id: string, name: string) => {
-    const url = playerProfileShareUrl(id, null)
+    const { data } = await supabase.rpc('ensure_linkable_padel_player', { p_player_id: id })
+    const shareId = (data as string | null) ?? id
+    const url = playerProfileShareUrl(shareId, null)
     const result = await sharePlayerProfile({
       url,
       title: name,
       text: `${t('playerProfile.shareProfileMessage')}\n${url}`,
     })
     if (result === 'copied') {
-      setShareFeedback({ id, message: t('playerProfile.linkCopied') })
+      setShareFeedback({ id: shareId, message: t('playerProfile.linkCopied') })
       window.setTimeout(() => setShareFeedback(null), 2500)
     } else if (result === 'failed') {
-      setShareFeedback({ id, message: t('playerProfile.copyFailed') })
+      setShareFeedback({ id: shareId, message: t('playerProfile.copyFailed') })
       window.setTimeout(() => setShareFeedback(null), 2500)
     }
   }

@@ -20,6 +20,7 @@ import { compactDisplayNames } from '../lib/leaderboardEntries'
 import type { CourtPlayer } from '../lib/americanoSchedule'
 import type { FriendlyCourtScoreSubmit } from '../lib/friendlyManualScore'
 import type { MatchTeam } from '../lib/types'
+import { PlayerNameLink } from './PlayerNameLink'
 
 export type { FriendlyCourtScoreSubmit }
 
@@ -466,9 +467,12 @@ function CourtMatchCell({
       : null
     const [displayName] = compactDisplayNames([player.name])
     const nameEl = (
-      <span className="truncate text-lg font-semibold leading-tight text-brand-text md:text-xl">
-        {displayName}
-      </span>
+      <PlayerNameLink
+        displayName={displayName}
+        profileId={player.id}
+        padelPlayerId={player.padelPlayerId}
+        className="truncate text-lg font-semibold leading-tight text-brand-text md:text-xl"
+      />
     )
     const avatarEl = displayAvatarUrl ? (
       <img

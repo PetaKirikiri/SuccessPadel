@@ -25,6 +25,7 @@ export type GameRound = {
 
 export type CourtPlayer = {
   id: string | null
+  padelPlayerId?: string | null
   name: string
   avatarUrl: string | null
   preferredSide?: PlaySide | null

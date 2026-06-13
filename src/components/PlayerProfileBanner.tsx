@@ -1,5 +1,5 @@
 import { Share2 } from 'lucide-react'
-import { IconLink } from './ButtonIcons'
+import { LineLogoIcon } from './LineLogoIcon'
 import type { TranslateFn } from '../i18n'
 
 type Props = {
@@ -116,7 +116,7 @@ export function PlayerProfileBanner({
               onClick={onAddLine}
               className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border bg-brand-bg-alt px-3 py-2 text-xs font-semibold text-brand-primary shadow-sm active:scale-[0.98]"
             >
-              <IconLink />
+              <LineLogoIcon className="h-4 w-4" />
               {t('playerProfile.connectLine')}
             </button>
           )}

@@ -10,10 +10,10 @@ type Props = {
 
 export function PlayerProfileCard({ tab, onTab, banner, children }: Props) {
   return (
-    <div className="game-card overflow-hidden p-0">
+    <div className="game-card p-0">
       {banner}
       <PlayerProfileTabs tab={tab} onTab={onTab} embedded />
-      <div>{children}</div>
+      <div className="min-w-0">{children}</div>
     </div>
   )
 }

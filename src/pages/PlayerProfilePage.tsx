@@ -5,6 +5,7 @@ import { AppShellColumn } from '../components/AppShellColumn'
 import type { LeaderboardEntry } from '../components/CompetitionLeaderboard'
 import { FriendlyDeleteConfirm } from '../components/FriendlyDeleteConfirm'
 import { LineAppBookmark } from '../components/LineAppBookmark'
+import { GuestPlayerSetupPrompt } from '../components/GuestPlayerSetupPrompt'
 import { LinePlayerLinkModal } from '../components/LinePlayerLinkModal'
 import { PlayerMatchHistory } from '../components/PlayerMatchHistory'
 import { PlayerProfileBanner } from '../components/PlayerProfileBanner'
@@ -17,17 +18,14 @@ import { useLineClientProfile } from '../hooks/useLineClientProfile'
 import { useTranslation } from '../hooks/useTranslation'
 import { useLocale } from '../providers/LocaleProvider'
 import { isClaimableGuest } from '../lib/leaderboardEntries'
-import type { Achievement } from '../lib/competitionAchievements'
 import { resolvePlayerProfile } from '../lib/playerProfile'
+import { saveClaimPadelPlayer } from '../lib/authClaimPlayer'
 import { adminDeletePlayer, canAdminDeletePlayer } from '../lib/playerDelete'
 import { playerProfileShareUrl, sharePlayerProfile } from '../lib/playerProfileShare'
+import { supabase } from '../lib/supabaseClient'
+import type { PlayerProfileSnapshot } from '../lib/openPlayerProfile'
 
-export type PlayerProfileSnapshot = {
-  entry: LeaderboardEntry
-  rank: number
-  unit: string
-  badges: Achievement[]
-}
+export type { PlayerProfileSnapshot }
 
 type LocationState = {
   from?: string
@@ -214,17 +212,43 @@ export function PlayerProfilePage() {
     return null
   }, [playerId, resolved, routeEntry])
 
-  const canConnectLine = useMemo(() => {
-    if (!linkablePadelPlayerId) return false
-    if (isAdmin) return true
-    if (user) return false
-    if (routeEntry) return isClaimableGuest(routeEntry)
-    return true
-  }, [isAdmin, linkablePadelPlayerId, routeEntry, user])
-
   const needsPlayerSignup = Boolean(
     linkablePadelPlayerId || (resolved?.profile && !resolved.profile.line_user_id),
   )
+
+  const canConnectLine = useMemo(() => {
+    if (!linkablePadelPlayerId) return false
+    if (resolved?.profile?.line_user_id || resolved?.padelLineUserId) return false
+    if (isAdmin) return true
+    if (user && resolved?.profile && resolved.profile.id !== user.id) return false
+    if (routeEntry && user) return isClaimableGuest(routeEntry)
+    return true
+  }, [
+    isAdmin,
+    linkablePadelPlayerId,
+    resolved?.padelLineUserId,
+    resolved?.profile,
+    routeEntry,
+    user,
+  ])
+
+  const showGuestSetup = Boolean(
+    needsPlayerSignup && linkablePadelPlayerId && !canEditProfile,
+  )
+
+  const playerNotFound = Boolean(
+    !loading &&
+      resolved &&
+      !resolved.profile &&
+      !resolved.guestName &&
+      !resolved.padelPlayerId,
+  )
+
+  useEffect(() => {
+    if (loading || !linkablePadelPlayerId || resolved?.profile) return
+    if (resolved?.padelLineUserId) return
+    saveClaimPadelPlayer(linkablePadelPlayerId)
+  }, [linkablePadelPlayerId, loading, resolved?.padelLineUserId, resolved?.profile])
 
   const canShareProfile = isAdmin && needsPlayerSignup
 
@@ -251,7 +275,11 @@ export function PlayerProfilePage() {
 
   const handleShareProfile = async () => {
     if (!profileSharePlayerId) return
-    const url = playerProfileShareUrl(profileSharePlayerId, competitionId)
+    const { data } = await supabase.rpc('ensure_linkable_padel_player', {
+      p_player_id: profileSharePlayerId,
+    })
+    const shareId = (data as string | null) ?? profileSharePlayerId
+    const url = playerProfileShareUrl(shareId, competitionId)
     const result = await sharePlayerProfile({
       url,
       title: displayName,
@@ -293,7 +321,7 @@ export function PlayerProfilePage() {
 
   if (!playerId) {
     return (
-      <div className="game-bg flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden">
+      <div className="game-bg flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">
         <AppTopBar>
           <button
             type="button"
@@ -311,7 +339,7 @@ export function PlayerProfilePage() {
   }
 
   return (
-    <div className="game-bg flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden">
+    <div className="game-bg flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">
       <AppTopBar>
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <button
@@ -328,10 +356,12 @@ export function PlayerProfilePage() {
       </AppTopBar>
 
       <main data-scroll-y className="scroll-y min-h-0 min-w-0 flex-1 pt-2">
-        <AppShellColumn className="space-y-3 pb-8">
+        <AppShellColumn fill={false} className="space-y-3 pb-8">
           {inClient && !loading && !(isOwnProfile && authLoading) ? <LineAppBookmark /> : null}
           {loading || (isOwnProfile && authLoading) ? (
             <p className="py-8 text-center text-sm text-brand-muted">{t('common.loading')}</p>
+          ) : playerNotFound ? (
+            <p className="py-8 text-center text-sm text-brand-muted">{t('playerProfile.notFound')}</p>
           ) : (
             <PlayerProfileCard
               tab={tab}
@@ -401,14 +431,30 @@ export function PlayerProfilePage() {
                   )}
                 </>
               ) : (
-                <PlayerProfileView
-                  profile={resolved?.profile ?? null}
-                  fallbackName={displayName}
-                  competitionStats={competitionStats}
-                  badges={badges}
-                  embedded
-                  t={t}
-                />
+                <>
+                  <PlayerProfileView
+                    profile={resolved?.profile ?? null}
+                    fallbackName={displayName}
+                    competitionStats={competitionStats}
+                    badges={badges}
+                    embedded
+                    t={t}
+                  />
+                  {showGuestSetup ? (
+                    <GuestPlayerSetupPrompt
+                      canConnectLine={canConnectLine}
+                      onConnectLine={
+                        canConnectLine && linkablePadelPlayerId
+                          ? () => setLinkTarget({ id: linkablePadelPlayerId, name: displayName })
+                          : undefined
+                      }
+                      canShareProfile={canShareProfile}
+                      onShareProfile={canShareProfile ? () => void handleShareProfile() : undefined}
+                      shareFeedback={shareFeedback}
+                      t={t}
+                    />
+                  ) : null}
+                </>
               )}
             </PlayerProfileCard>
           )}

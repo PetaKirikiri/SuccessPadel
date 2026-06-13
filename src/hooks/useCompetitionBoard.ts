@@ -56,11 +56,18 @@ function groupLiveCourts(players: RoundPlayer[]): LiveCourt[] {
       } satisfies LiveCourt)
     const label = roundPlayerName(p)
     const pid = p.profile_id ?? p.session_players?.profile_id
+    const padelPlayerId = p.padel_player_id ?? p.session_players?.padel_player_id ?? null
     const avatarUrl = p.session_players?.profiles?.avatar_url ?? null
     const rawSide = p.session_players?.profiles?.preferred_side
     const preferredSide: PlaySide | null =
       rawSide === 'left' || rawSide === 'right' || rawSide === 'both' ? rawSide : null
-    const player = { id: pid ?? null, name: label, avatarUrl, preferredSide } satisfies CourtPlayer
+    const player = {
+      id: pid ?? null,
+      padelPlayerId,
+      name: label,
+      avatarUrl,
+      preferredSide,
+    } satisfies CourtPlayer
     if (p.team === 'a') {
       row.teamA.push(label)
       row.teamAPlayers.push(player)

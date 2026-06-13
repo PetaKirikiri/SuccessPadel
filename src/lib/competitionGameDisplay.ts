@@ -55,6 +55,7 @@ export function competitionRosterSlots(row: CompetitionRow): FriendlyRosterSlot[
   const slots: FriendlyRosterSlot[] = players.map((sp) => ({
     name: rosterDisplayName(sp),
     profileId: sp.profile_id,
+    padelPlayerId: sp.padel_player_id,
     avatarUrl: sp.profiles?.avatar_url ?? null,
     vacant: false,
   }))

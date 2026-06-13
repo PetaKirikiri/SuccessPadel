@@ -11,6 +11,7 @@ import type { Session, User } from '@supabase/supabase-js'
 import { AUTH_STORAGE_KEY, tryRestoreCachedSession } from '../lib/auth/cachedSession'
 import { installLoginWithAppLifecycleDebug } from '../lib/debug/loginWithAppDebug'
 import { syncProfileForUser } from '../lib/authProfile'
+import { claimPendingPadelPlayer } from '../lib/claimPadelPlayer'
 import { supabase } from '../lib/supabaseClient'
 import type { Profile } from '../lib/types'
 
@@ -33,6 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadProfile = useCallback(async (authUser: User) => {
     const next = await syncProfileForUser(authUser)
+    await claimPendingPadelPlayer()
     setProfile(next)
   }, [])
 

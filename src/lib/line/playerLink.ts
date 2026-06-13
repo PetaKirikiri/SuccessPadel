@@ -14,6 +14,7 @@ import { lineOAuthRedirectUri } from './oauth'
 import { handshakeSiteOrigin, siteOrigin } from '../siteUrl'
 import { supabase } from '../supabaseClient'
 import { syncProfileForUser } from '../authProfile'
+import { clearClaimPadelPlayer } from '../authClaimPlayer'
 
 const COMPETITION_ID_KEY_PREFIX = 'sp_lpl_cid_'
 const UUID_RE =
@@ -374,6 +375,7 @@ export async function consumeLineHandoffToken(handoffToken: string): Promise<{
   }
 
   await syncProfileForUser(confirmed.session.user)
+  clearClaimPadelPlayer()
 
   return { competitionId: payload.competition_id ?? null }
 }

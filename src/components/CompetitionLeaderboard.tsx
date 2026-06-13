@@ -13,6 +13,7 @@ import {
   leaderboardEntryLookupIds,
 } from '../lib/leaderboardEntries'
 import { isDuoLeaderboardEntry } from '../lib/leaderboardFilters'
+import { openPlayerProfile } from '../lib/openPlayerProfile'
 
 export type LeaderboardEntry = {
   profile_id: string
@@ -128,7 +129,7 @@ function LeaderboardRow({
   entry: LeaderboardEntry
   isMe: boolean
   badges: Achievement[]
-  onOpenProfile?: () => void
+  onOpenProfile?: () => void | Promise<void>
   onSelectAchievement: (info: AchievementInfo) => void
   t: TranslateFn
 }) {
@@ -136,7 +137,9 @@ function LeaderboardRow({
 
   return (
     <li
-      onClick={onOpenProfile}
+      onClick={() => {
+        if (onOpenProfile) void onOpenProfile()
+      }}
       className={`${ROW_GRID} border-b border-brand-border/60 py-2.5 transition last:border-0 md:py-3.5 ${
         onOpenProfile ? 'cursor-pointer hover:bg-brand-bg-alt/60' : ''
       } ${isMe ? 'bg-brand-bg-alt' : ''}`}
@@ -290,21 +293,21 @@ export function CompetitionLeaderboard({
                 isDuoLeaderboardEntry(source.profile_id)
                   ? undefined
                   : () => {
-                const playerId =
-                  source.member_profile_id ?? source.padel_player_id ?? source.profile_id
-                const params = competitionId ? `?competition=${competitionId}` : ''
-                navigate(`/players/${playerId}${params}`, {
-                  state: {
-                    from: location.pathname + location.search,
-                    snapshot: {
-                      entry: source,
-                      rank: i + 1,
-                      unit,
-                      badges: badgesFor(source, i + 1),
-                    },
-                  },
-                })
-              }}
+                      void openPlayerProfile(navigate, {
+                        profileId: source.member_profile_id ?? null,
+                        padelPlayerId: source.padel_player_id ?? null,
+                        displayName: source.display_name,
+                        competitionId,
+                        from: location.pathname + location.search,
+                        snapshot: {
+                          entry: source,
+                          rank: i + 1,
+                          unit,
+                          badges: badgesFor(source, i + 1),
+                        },
+                      })
+                    }
+              }
               t={t}
             />
           )

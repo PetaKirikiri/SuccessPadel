@@ -100,18 +100,12 @@ async function fetchLinkablePadelPlayerById(padelPlayerId: string): Promise<stri
   return data.id
 }
 
-async function fetchUnlinkedPadelPlayerByName(displayName: string): Promise<string | null> {
-  const normalized = displayName.trim().toLowerCase()
-  if (!normalized) return null
-  const { data } = await supabase
-    .from('padel_players')
-    .select('id')
-    .is('profile_id', null)
-    .eq('normalized_name', normalized)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  return data?.id ?? null
+async function ensureLinkablePadelPlayer(playerId: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc('ensure_linkable_padel_player', {
+    p_player_id: playerId,
+  })
+  if (error || !data) return null
+  return data as string
 }
 
 async function resolveLinkablePadelPlayerId(
@@ -130,7 +124,7 @@ async function resolveLinkablePadelPlayerId(
   const linkedPadelId = await fetchPadelPlayerIdForProfile(profile.id)
   if (linkedPadelId) return linkedPadelId
 
-  return fetchUnlinkedPadelPlayerByName(profile.display_name)
+  return ensureLinkablePadelPlayer(profile.id)
 }
 
 export async function resolvePlayerProfile(playerId: string): Promise<ResolvedPlayerProfile> {

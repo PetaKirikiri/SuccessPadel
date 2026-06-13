@@ -35,7 +35,7 @@ export function useCompetitions(_userId?: string) {
       .from('game_sessions')
       .select(
         `*,
-         session_players(id, profile_id, guest_name, guest_email, rank_order, profiles(id, display_name, avatar_url))`,
+         session_players(id, profile_id, padel_player_id, guest_name, guest_email, rank_order, profiles(id, display_name, avatar_url))`,
       )
       .eq('game_kind', 'competition')
       .in('status', ['open', 'locked', 'complete'])

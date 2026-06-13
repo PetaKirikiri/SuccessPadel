@@ -28,6 +28,7 @@ import type { GameSession } from './types'
 export type FriendlyRosterSlot = {
   name: string
   profileId: string | null
+  padelPlayerId?: string | null
   avatarUrl: string | null
   vacant: boolean
 }
@@ -56,6 +57,18 @@ export type FriendlyScheduleDisplay = {
 }
 
 const BANGKOK = 'Asia/Bangkok'
+
+export function friendlyDivisionLabels(game: FriendlyGameRecord): {
+  skillLevel: string | null
+  gender: string | null
+} {
+  if (game.playMode === 'free') return { skillLevel: null, gender: null }
+  const config = game.organizedConfig ?? DEFAULT_FRIENDLY_ORGANIZED_CONFIG
+  return {
+    skillLevel: config.skillLevel ?? null,
+    gender: config.gender ?? null,
+  }
+}
 
 export function friendlyScheduleDisplay(game: FriendlyGameRecord): FriendlyScheduleDisplay {
   const config = game.organizedConfig ?? DEFAULT_FRIENDLY_ORGANIZED_CONFIG

@@ -1,5 +1,6 @@
 import { FunctionsHttpError } from '@supabase/supabase-js'
 import { syncProfileForUser } from '../authProfile'
+import { claimPendingPadelPlayer } from '../claimPadelPlayer'
 import { supabase } from '../supabaseClient'
 import {
   clearLineProfileReconsentFlag,
@@ -177,6 +178,7 @@ export async function signInWithLine(): Promise<LineSignInResult> {
   }
 
   await syncProfileForUser(user)
+  await claimPendingPadelPlayer()
   window.dispatchEvent(new Event('successpadel:profile-synced'))
   return { error: null, redirected: false }
 }

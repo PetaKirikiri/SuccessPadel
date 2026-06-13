@@ -34,7 +34,7 @@ export function Layout() {
         data-scroll-y={onPlayerProfile || useSessionShell ? undefined : true}
         className={`min-h-0 min-w-0 flex-1 basis-0 ${
           onPlayerProfile
-            ? 'overflow-hidden p-0'
+            ? 'flex flex-col overflow-hidden p-0'
             : useSessionShell
               ? 'flex flex-col overflow-hidden'
               : 'scroll-y'
