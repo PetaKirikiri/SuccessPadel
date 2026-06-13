@@ -120,13 +120,13 @@ export function FriendlyGamePage() {
   )
 
   const scheduleLive = useMemo(
-    () => isFreeFriendly(game!) || friendlyScheduleLive(organizedConfig, now),
+    () => isFreeFriendly(game) || friendlyScheduleLive(organizedConfig, now),
     [game, organizedConfig, now],
   )
 
   const scoringLogs = useMemo(
     () =>
-      isFreeFriendly(game!)
+      isFreeFriendly(game)
         ? matchLogs
         : filterFriendlyMatchLogsForSchedule(matchLogs, organizedConfig, now),
     [game, matchLogs, organizedConfig, now],
@@ -137,20 +137,25 @@ export function FriendlyGamePage() {
     [scoringLogs, scoreUnit, sessionRoster],
   )
 
-  const avatarSources = useMemo(
-    () =>
-      profiles
-        .filter((p) => sessionRoster.some((player) => player.id === p.id))
-        .map((p) => ({
-          profile_id: p.id,
-          member_profile_id: p.id,
-          display_name: p.display_name,
-          avatar_url: p.avatar_url,
+  const avatarSources = useMemo(() => {
+    if (!displayGame) return []
+    const ids = displayGame.profileIds ?? []
+    const avatars = displayGame.profileAvatars ?? []
+    return ids.flatMap((pid, i) => {
+      if (!pid) return []
+      const profile = profiles.find((p) => p.id === pid)
+      return [
+        {
+          profile_id: pid,
+          member_profile_id: pid,
+          display_name: profile?.display_name ?? displayGame.players[i] ?? '',
+          avatar_url: avatars[i] ?? profile?.avatar_url ?? null,
           total_points: 0,
           games: 0,
-        })),
-    [profiles, sessionRoster],
-  )
+        },
+      ]
+    })
+  }, [displayGame, profiles])
 
   const enrichedStandings = useMemo(
     () => enrichStandingsWithAvatars(standings, avatarSources),
@@ -218,7 +223,7 @@ export function FriendlyGamePage() {
 
   const gameMinutes = organizedConfig.gameMinutes
   const startsAtIso = friendlyStartsAtIso(organizedConfig)
-  const showJoin = canJoinFriendlyGame(game, user?.id)
+  const showJoin = canJoinFriendlyGame(game, user?.id, profile?.display_name)
   const joined = isOnFriendlyRoster(game, user?.id)
   const isFree = isFreeFriendly(game)
   const canScore = Boolean(

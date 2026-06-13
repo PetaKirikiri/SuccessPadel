@@ -318,7 +318,8 @@ export function isOrganizedFriendly(game: FriendlyGameRecord): boolean {
   return game.playMode === 'organized'
 }
 
-export function isFreeFriendly(game: FriendlyGameRecord): boolean {
+export function isFreeFriendly(game: FriendlyGameRecord | null | undefined): boolean {
+  if (!game) return false
   return !isOrganizedFriendly(game)
 }
 
@@ -371,6 +372,27 @@ export function isOnFriendlyRoster(game: FriendlyGameRecord, userId: string | nu
   return (game.profileIds ?? []).some((id) => id === userId)
 }
 
+/** Guest slot name matches a LINE profile (e.g. admin typed Aew, player is Ae). */
+export function friendlyGuestSlotMatchesProfile(guestName: string, profileName: string): boolean {
+  const guest = guestName.trim().toLowerCase()
+  const profile = profileName.trim().toLowerCase()
+  if (!guest || !profile) return false
+  if (guest === profile) return true
+  if (profile.length >= 2 && guest.startsWith(profile) && guest.length - profile.length <= 2) return true
+  if (guest.length >= 2 && profile.startsWith(guest) && profile.length - guest.length <= 2) return true
+  return false
+}
+
+export function friendlyClaimableGuestSlotIndex(
+  game: FriendlyGameRecord,
+  profileName: string,
+): number {
+  const ids = game.profileIds ?? []
+  return game.players.findIndex(
+    (name, i) => Boolean(name.trim()) && !ids[i] && friendlyGuestSlotMatchesProfile(name, profileName),
+  )
+}
+
 export function canEditFriendlySession(
   game: Pick<FriendlyGameRecord, 'createdBy'>,
   userId: string | null | undefined,
@@ -382,11 +404,14 @@ export function canEditFriendlySession(
 export function canJoinFriendlyGame(
   game: FriendlyGameRecord,
   userId: string | null | undefined,
+  profileName?: string | null,
 ): boolean {
+  const canClaimGuest =
+    Boolean(profileName?.trim()) && friendlyClaimableGuestSlotIndex(game, profileName!) >= 0
   return (
     isPublicFriendly(game) &&
     game.status === 'ready' &&
-    friendlyVacantSlots(game) > 0 &&
+    (friendlyVacantSlots(game) > 0 || canClaimGuest) &&
     Boolean(userId) &&
     !isOnFriendlyRoster(game, userId)
   )
