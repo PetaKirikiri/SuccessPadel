@@ -20,6 +20,7 @@ import {
   DEFAULT_FRIENDLY_ORGANIZED_CONFIG,
   friendlyOrganizedSession,
   friendlyPreviewGames,
+  friendlyScheduleLive,
   friendlySessionRoster,
   friendlyStartsAtIso,
   isFreeFriendly,
@@ -29,6 +30,7 @@ import {
 import {
   calculateFriendlySessionAchievements,
   computeFriendlySessionStandings,
+  filterFriendlyMatchLogsForSchedule,
 } from '../lib/friendlySessionStandings'
 import { enrichStandingsWithAvatars } from '../lib/leaderboardEntries'
 import { joinFriendlySession } from '../lib/friendlyServer'
@@ -117,9 +119,22 @@ export function FriendlyGamePage() {
     [displayGame],
   )
 
+  const scheduleLive = useMemo(
+    () => isFreeFriendly(game!) || friendlyScheduleLive(organizedConfig, now),
+    [game, organizedConfig, now],
+  )
+
+  const scoringLogs = useMemo(
+    () =>
+      isFreeFriendly(game!)
+        ? matchLogs
+        : filterFriendlyMatchLogsForSchedule(matchLogs, organizedConfig, now),
+    [game, matchLogs, organizedConfig, now],
+  )
+
   const standings = useMemo(
-    () => computeFriendlySessionStandings(matchLogs, scoreUnit, sessionRoster),
-    [matchLogs, scoreUnit, sessionRoster],
+    () => computeFriendlySessionStandings(scoringLogs, scoreUnit, sessionRoster),
+    [scoringLogs, scoreUnit, sessionRoster],
   )
 
   const avatarSources = useMemo(
@@ -206,7 +221,9 @@ export function FriendlyGamePage() {
   const showJoin = canJoinFriendlyGame(game, user?.id)
   const joined = isOnFriendlyRoster(game, user?.id)
   const isFree = isFreeFriendly(game)
-  const canScore = Boolean(user && (isAdmin || joined || game.createdBy === user.id))
+  const canScore = Boolean(
+    user && (isAdmin || joined || game.createdBy === user.id) && scheduleLive,
+  )
   const showPlayTabs = !isFree && previewGames.length > 0
   const hasActionCard = Boolean(
     showJoin ||
@@ -270,7 +287,7 @@ export function FriendlyGamePage() {
           isAdmin={isAdmin}
           currentUserId={user?.id}
           currentUserAvatarUrl={headerAvatar}
-          liveCourtScores={liveCourtScores}
+          liveCourtScores={scheduleLive ? liveCourtScores : new Map()}
           onSubmitFriendlyScores={canScore ? handleSubmitFriendlyScores : undefined}
           onFriendlyScoresSaved={handleScoresSaved}
         />

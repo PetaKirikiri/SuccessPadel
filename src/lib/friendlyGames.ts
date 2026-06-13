@@ -322,17 +322,24 @@ export function isFreeFriendly(game: FriendlyGameRecord): boolean {
   return !isOrganizedFriendly(game)
 }
 
-/** Awards only after scheduled start or once a court has been scored. */
+export function friendlyScheduleLive(
+  config: FriendlyOrganizedConfig,
+  nowMs = Date.now(),
+): boolean {
+  const startsAt = friendlyStartsAtIso(config)
+  if (!startsAt) return false
+  const startsAtMs = Date.parse(startsAt)
+  return Number.isFinite(startsAtMs) && nowMs >= startsAtMs
+}
+
+/** Awards after scheduled start (organized) or once a court has been scored (free). */
 export function isFriendlySessionStarted(
   game: FriendlyGameRecord,
   scoredCourts = 0,
   nowMs = Date.now(),
 ): boolean {
-  if (scoredCourts > 0) return true
-  if (isFreeFriendly(game)) return false
-  const startsAt = friendlyStartsAtIso(game.organizedConfig ?? DEFAULT_FRIENDLY_ORGANIZED_CONFIG)
-  if (!startsAt) return false
-  return nowMs >= Date.parse(startsAt)
+  if (isFreeFriendly(game)) return scoredCourts > 0
+  return friendlyScheduleLive(game.organizedConfig ?? DEFAULT_FRIENDLY_ORGANIZED_CONFIG, nowMs)
 }
 
 export function isEndlessFriendly(game: Pick<FriendlyGameRecord, 'organizedConfig'>): boolean {

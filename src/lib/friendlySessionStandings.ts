@@ -6,6 +6,11 @@ import {
   type TeamGame,
 } from './competitionAchievements'
 import type { AmericanoScoringUnit } from './competitionPresets'
+import {
+  friendlyScheduleLive,
+  friendlyStartsAtIso,
+  type FriendlyOrganizedConfig,
+} from './friendlyGames'
 import { quadrantTeam } from './gestureScoring'
 import type { GameLogRosterSlot } from './gameLogSerialize'
 import { normalizeLeaderboardEntries } from './leaderboardEntries'
@@ -84,6 +89,23 @@ function emptyTotals(key: string, name: string, playerId: string | null): Player
     losses: 0,
     draws: 0,
   }
+}
+
+/** Ignore pre-start test scores until the scheduled session time. */
+export function filterFriendlyMatchLogsForSchedule(
+  logs: MatchGestureLog[],
+  config: FriendlyOrganizedConfig,
+  nowMs = Date.now(),
+): MatchGestureLog[] {
+  if (!friendlyScheduleLive(config, nowMs)) return []
+  const startsAt = friendlyStartsAtIso(config)
+  if (!startsAt) return logs
+  const startsAtMs = Date.parse(startsAt)
+  if (!Number.isFinite(startsAtMs)) return logs
+  return logs.filter((log) => {
+    const stamp = Date.parse(log.matchStartedAt)
+    return Number.isFinite(stamp) && stamp >= startsAtMs
+  })
 }
 
 export function computeFriendlySessionStandings(

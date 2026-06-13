@@ -182,12 +182,12 @@ export function CompetitionPlay() {
               {error ?? t('competition.notFound')}
             </p>
           ) : null}
-          {session && !started ? (
+          {session && !started && tab === 'games' ? (
             <p className="py-6 text-center text-sm text-brand-muted">
               {t('competition.waitingOrganiser')}
             </p>
           ) : null}
-          {started && tab === 'games' ? (
+          {session && tab === 'games' && started ? (
             showGamesBoard ? (
               <CompetitionCourtBoard
                 competitionId={id}
@@ -215,13 +215,13 @@ export function CompetitionPlay() {
                 {t('competition.courtLayoutNotReady')}
               </p>
             )
-          ) : started ? (
+          ) : session && tab === 'leaderboard' ? (
             <CompetitionLeaderboard
               entries={standings}
               scoreUnit={scoreUnit}
               currentUserId={user?.id ?? null}
               competitionId={id ?? null}
-              achievements={achievements}
+              achievements={started ? achievements : null}
               flushBottom
             />
           ) : null}
