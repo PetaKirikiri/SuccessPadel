@@ -336,6 +336,14 @@ export function isOnFriendlyRoster(game: FriendlyGameRecord, userId: string | nu
   return (game.profileIds ?? []).some((id) => id === userId)
 }
 
+export function canEditFriendlySession(
+  game: Pick<FriendlyGameRecord, 'createdBy'>,
+  userId: string | null | undefined,
+  isAdmin: boolean,
+): boolean {
+  return Boolean(isAdmin || (userId && game.createdBy === userId))
+}
+
 export function canJoinFriendlyGame(
   game: FriendlyGameRecord,
   userId: string | null | undefined,

@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AppShell } from './components/AppShell'
@@ -18,6 +18,8 @@ import { CompetitionRun } from './pages/CompetitionRun'
 import { CompetitiveHomePage } from './pages/CompetitiveHomePage'
 import { FindGame } from './pages/FindGame'
 import { FriendlyGameForm } from './pages/FriendlyGameForm'
+import { useFriendlyGame } from './hooks/useFriendlyGame'
+import { canEditFriendlySession } from './lib/friendlyGames'
 import { FriendlyGamePage } from './pages/FriendlyGamePage'
 import { FriendlyHomePage } from './pages/FriendlyHomePage'
 import { FriendlyCourtPage } from './pages/FriendlyCourtPage'
@@ -49,6 +51,22 @@ function AdminOnly({ children }: { children: React.ReactNode }) {
   }
   if (!profile?.is_admin) return <Navigate to="/competitive" replace />
   return children
+}
+
+function FriendlySessionEditRoute() {
+  const { id } = useParams()
+  const { profile, loading, user } = useAuth()
+  const { game, loading: gameLoading } = useFriendlyGame(id)
+  const isAdmin = Boolean(profile?.is_admin)
+
+  if (loading || (user && !profile) || gameLoading) {
+    return <p className="game-subtle p-4 text-center">Loading…</p>
+  }
+  if (!id || !game) return <Navigate to="/friendly" replace />
+  if (!canEditFriendlySession(game, user?.id, isAdmin)) {
+    return <Navigate to={`/friendly/${id}`} replace />
+  }
+  return <FriendlyGameForm />
 }
 
 function MainAppRoutes() {
@@ -110,9 +128,7 @@ function MainAppRoutes() {
           path="friendly/:id/edit"
           element={
             <AdminRoute>
-              <AdminOnly>
-                <FriendlyGameForm />
-              </AdminOnly>
+              <FriendlySessionEditRoute />
             </AdminRoute>
           }
         />

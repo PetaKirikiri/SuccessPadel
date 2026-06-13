@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { IconDelete, IconEdit, IconShare } from './ButtonIcons'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { FriendlyRosterList } from './FriendlyRosterList'
 import { FriendlyRuleSettings } from './FriendlyRuleSettings'
 import { useTranslation } from '../hooks/useTranslation'
@@ -33,6 +33,7 @@ export function CompetitionCurrentGameCard({
   onRefresh,
 }: Props) {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [shareFeedback, setShareFeedback] = useState<string | null>(null)
@@ -166,14 +167,18 @@ export function CompetitionCurrentGameCard({
         </Link>
         {isAdmin ? (
           <div className="absolute bottom-3 right-3 z-10 flex items-center gap-2">
-            <Link
-              to={`/competitions/${row.id}/edit`}
-              onClick={(e) => e.stopPropagation()}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                navigate(`/competitions/${row.id}/edit`)
+              }}
               aria-label={t('competition.edit')}
               className={`${adminCornerBtnClass} text-brand-primary`}
             >
               <IconEdit />
-            </Link>
+            </button>
             <button
               type="button"
               disabled={busy}

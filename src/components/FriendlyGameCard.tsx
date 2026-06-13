@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { IconDelete, IconEdit, IconOpenPad } from './ButtonIcons'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { CompetitionLayoutPreview } from './CompetitionLayoutPreview'
 import { FriendlyRosterList } from './FriendlyRosterList'
 import { FriendlyRuleSettings } from './FriendlyRuleSettings'
@@ -19,6 +19,7 @@ import {
   friendlyRuleChips,
   friendlyScheduleDisplay,
 } from '../lib/friendlyGameDisplay'
+import { canEditFriendlySession } from '../lib/friendlyGames'
 
 type Props = {
   game: FriendlyGameRecord
@@ -48,7 +49,9 @@ export function FriendlyGameCard({
   deleteBusy = false,
 }: Props) {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const isFree = isFreeFriendly(game)
+  const canEdit = canEditFriendlySession(game, currentUserId, isAdmin)
   const slots = friendlyRosterSlots(game)
   const schedule = friendlyScheduleDisplay(game)
   const ruleChips = friendlyRuleChips(game, t)
@@ -115,17 +118,21 @@ export function FriendlyGameCard({
         ) : (
           inner
         )}
-        {isAdmin && to ? (
+        {canEdit && to ? (
           <div className="absolute bottom-3 right-3 z-10 flex items-center gap-2">
-            <Link
-              to={`/friendly/${game.id}/edit`}
-              onClick={(e) => e.stopPropagation()}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                navigate(`/friendly/${game.id}/edit`)
+              }}
               aria-label={t('friendly.edit')}
               className={`${adminCornerBtnClass} text-brand-primary`}
             >
               <IconEdit />
-            </Link>
-            {onDelete ? (
+            </button>
+            {isAdmin && onDelete ? (
               <button
                 type="button"
                 disabled={deleteBusy}

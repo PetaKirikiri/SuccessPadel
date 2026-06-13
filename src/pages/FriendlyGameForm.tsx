@@ -28,6 +28,7 @@ import {
 import {
   clearFriendlyGamesCache,
   FRIENDLY_MAX_PLAYERS,
+  canEditFriendlySession,
   friendlyConfigWithSessionEnd,
   friendlyOrganizedGames,
   friendlyOrganizedSession,
@@ -266,6 +267,9 @@ export function FriendlyGameForm() {
     return <p className="text-sm text-brand-muted">{t('common.loading')}</p>
   }
   if (isEdit && !game) return <Navigate to="/friendly" replace />
+  if (isEdit && game && user && !canEditFriendlySession(game, user.id, isAdmin)) {
+    return <Navigate to={`/friendly/${editId}`} replace />
+  }
 
   const backTo = isEdit && editId ? `/friendly/${editId}` : '/friendly'
 
