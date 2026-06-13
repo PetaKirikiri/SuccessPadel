@@ -161,26 +161,32 @@ export function CompetitionCurrentGameCard({
         <Link to={detailTo} className="block min-w-0 overflow-hidden transition active:opacity-80">
           {inner}
         </Link>
+        {isAdmin ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              void remove()
+            }}
+            aria-label={t('competition.delete')}
+            className="absolute bottom-3 right-3 z-10 flex h-9 w-9 items-center justify-center rounded-xl border border-brand-border bg-brand-bg-alt text-brand-muted shadow-sm active:scale-[0.98] disabled:opacity-50"
+          >
+            <IconDelete />
+          </button>
+        ) : null}
       </div>
 
       {isAdmin ? (
-        <div className="flex gap-2 border-t-2 border-brand-border px-4 py-3">
+        <div className="border-t-2 border-brand-border px-4 py-3">
           <Link
             to={`/competitions/${row.id}/edit`}
-            className="brand-btn-outline min-w-0 flex-1 py-2 text-sm font-semibold"
+            className="brand-btn-outline w-full py-2 text-sm font-semibold"
           >
             <IconEdit />
             {t('competition.edit')}
           </Link>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void remove()}
-            className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl border border-brand-border py-2 text-sm font-medium text-brand-muted disabled:opacity-50"
-          >
-            <IconDelete />
-            {t('competition.delete')}
-          </button>
         </div>
       ) : null}
 

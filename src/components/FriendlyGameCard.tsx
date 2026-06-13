@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { IconEdit, IconOpenPad } from './ButtonIcons'
+import { IconDelete, IconEdit, IconOpenPad } from './ButtonIcons'
 import { Link } from 'react-router-dom'
 import { CompetitionLayoutPreview } from './CompetitionLayoutPreview'
 import { FriendlyRosterList } from './FriendlyRosterList'
@@ -30,6 +30,8 @@ type Props = {
   showCourts?: boolean
   footer?: ReactNode
   className?: string
+  onDelete?: () => void
+  deleteBusy?: boolean
 }
 
 export function FriendlyGameCard({
@@ -42,6 +44,8 @@ export function FriendlyGameCard({
   showCourts = false,
   footer,
   className = '',
+  onDelete,
+  deleteBusy = false,
 }: Props) {
   const { t } = useTranslation()
   const isFree = isFreeFriendly(game)
@@ -98,15 +102,32 @@ export function FriendlyGameCard({
 
   return (
     <article
-      className={`w-full min-w-0 max-w-full overflow-hidden rounded-2xl border-2 border-brand-primary/25 bg-brand-surface shadow-[0_4px_16px_-4px_rgba(96,45,36,0.22)] ${className}`}
+      className={`relative w-full min-w-0 max-w-full overflow-hidden rounded-2xl border-2 border-brand-primary/25 bg-brand-surface shadow-[0_4px_16px_-4px_rgba(96,45,36,0.22)] ${className}`}
     >
-      {to ? (
-        <Link to={to} className="block min-w-0 overflow-hidden transition active:opacity-80">
-          {inner}
-        </Link>
-      ) : (
-        inner
-      )}
+      <div className="relative min-w-0">
+        {to ? (
+          <Link to={to} className="block min-w-0 overflow-hidden transition active:opacity-80">
+            {inner}
+          </Link>
+        ) : (
+          inner
+        )}
+        {isAdmin && onDelete ? (
+          <button
+            type="button"
+            disabled={deleteBusy}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onDelete()
+            }}
+            aria-label={t('competition.delete')}
+            className="absolute bottom-3 right-3 z-10 flex h-9 w-9 items-center justify-center rounded-xl border border-brand-border bg-brand-bg-alt text-brand-muted shadow-sm active:scale-[0.98] disabled:opacity-50"
+          >
+            <IconDelete />
+          </button>
+        ) : null}
+      </div>
 
       {showCourtBoard ? (
         <div className="border-t-2 border-brand-border px-1 pb-2 pt-2">

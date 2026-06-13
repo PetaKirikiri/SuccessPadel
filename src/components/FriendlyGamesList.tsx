@@ -90,6 +90,8 @@ export function FriendlyGamesList({
                 currentUserId={user?.id}
                 currentUserAvatarUrl={headerAvatar}
                 isAdmin={isAdmin}
+                onDelete={() => setPendingDelete(game)}
+                deleteBusy={deleteBusyId === game.id}
                 className={deleteBusyId === game.id ? 'pointer-events-none opacity-60' : ''}
               />
             </SwipeRevealActions>
