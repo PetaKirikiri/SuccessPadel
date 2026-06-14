@@ -24,9 +24,9 @@ export function AppShellColumn({
   edgeToEdge = false,
   ...props
 }: Props) {
-  const gutter = edgeToEdge ? 'px-3 md:px-4 lg:px-0' : APP_SHELL_GUTTER
+  const gutter = edgeToEdge ? 'px-3 md:px-4 2xl:px-0' : APP_SHELL_GUTTER
   const inner = edgeToEdge
-    ? 'mx-auto w-full min-w-0 max-w-full lg:max-w-none'
+    ? 'mx-auto w-full min-w-0 max-w-full 2xl:max-w-none'
     : APP_SHELL_INNER
   const outerClass = fill
     ? `${gutter} flex min-h-0 min-w-0 w-full flex-1 basis-0 flex-col`

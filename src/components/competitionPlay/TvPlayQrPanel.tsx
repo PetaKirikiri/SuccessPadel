@@ -1,14 +1,15 @@
 import QRCode from 'qrcode'
 import { useEffect, useState } from 'react'
-import { useTranslation } from '../hooks/useTranslation'
+import { useTranslation } from '../../hooks/useTranslation'
 
-const QR_SIZE = 168
+/** TV standings column only — smaller QR, bottom-left, never fixed over scores. */
+const QR_SIZE = 120
 
 type Props = {
   url: string
 }
 
-export function LeaderboardViewAlongQrPanel({ url }: Props) {
+export function TvPlayQrPanel({ url }: Props) {
   const { t } = useTranslation()
   const [src, setSrc] = useState<string | null>(null)
 
@@ -28,18 +29,18 @@ export function LeaderboardViewAlongQrPanel({ url }: Props) {
   }, [url])
 
   return (
-    <aside className="leaderboard-view-along-qr" aria-label={t('leaderboard.viewAlongHint')}>
-      <p className="leaderboard-view-along-qr-label">{t('leaderboard.viewAlongHint')}</p>
+    <aside className="tv-play-qr" aria-label={t('leaderboard.viewAlongHint')}>
+      <p className="tv-play-qr-label">{t('leaderboard.viewAlongHint')}</p>
       {src ? (
         <img
           src={src}
           alt=""
           width={QR_SIZE}
           height={QR_SIZE}
-          className="leaderboard-view-along-qr-code"
+          className="tv-play-qr-code"
         />
       ) : (
-        <div className="leaderboard-view-along-qr-code leaderboard-view-along-qr-skeleton" aria-hidden />
+        <div className="tv-play-qr-code tv-play-qr-skeleton" aria-hidden />
       )}
     </aside>
   )

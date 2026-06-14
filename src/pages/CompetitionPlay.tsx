@@ -2,8 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { CompetitionCourtBoard } from '../components/CompetitionCourtBoard'
 import { CompetitionLeaderboard } from '../components/CompetitionLeaderboard'
-import { LeaderboardViewAlongQrPanel } from '../components/LeaderboardViewAlongQrPanel'
+import { CompetitionPlayStandardView } from '../components/competitionPlay/CompetitionPlayStandardView'
+import { CompetitionPlayTvView } from '../components/competitionPlay/CompetitionPlayTvView'
+import type { PlayViewTab } from '../components/PlayViewTabs'
 import { useAuth } from '../hooks/useAuth'
+import { useIsTvLayout } from '../hooks/useIsTvLayout'
 import { useCompetitionBoard } from '../hooks/useCompetitionBoard'
 import { useLineClientProfile } from '../hooks/useLineClientProfile'
 import { usePublicCompetition } from '../hooks/usePublicCompetition'
@@ -16,9 +19,6 @@ import { americanoScheduleFromSession, gameSlotTimes } from '../lib/competitionL
 import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
 import { computeAmericanoStandings } from '../lib/competitionStandings'
 import { AppTopBar } from '../components/AppTopBar'
-import { AppShellColumn } from '../components/AppShellColumn'
-import { AppShellPanel } from '../components/AppShellPanel'
-import { PlayViewTabs, type PlayViewTab } from '../components/PlayViewTabs'
 import { useTranslation } from '../hooks/useTranslation'
 import { enrichStandingsWithAvatars } from '../lib/leaderboardEntries'
 import { competitionViewAlongUrl } from '../lib/siteUrl'
@@ -35,6 +35,7 @@ export function CompetitionPlay() {
   const lineClient = useLineClientProfile()
   const headerAvatar = profile?.avatar_url ?? lineClient.pictureUrl ?? null
   const isAdmin = Boolean(user && profile?.is_admin)
+  const isTvLayout = useIsTvLayout()
   const [tab, setTab] = useState<PlayTab>(() =>
     searchParams.get('view') === 'leaderboard' ? 'leaderboard' : 'games',
   )
@@ -58,8 +59,8 @@ export function CompetitionPlay() {
     useCompetitionBoard(session, rounds, roster, clubCourts, courtMatches)
   const [now, setNow] = useState(Date.now())
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(t)
+    const timer = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(timer)
   }, [])
 
   useEffect(() => {
@@ -151,14 +152,40 @@ export function CompetitionPlay() {
       : calculateLiveAchievements(input, standingsOrder)
   }, [started, complete, roster, rounds, courtMatches, clubCourts, standingsOrder])
 
-  const gamesPaneClass =
-    tab === 'games' ? 'play-split-pane play-split-games' : 'play-split-pane play-split-games hidden lg:flex'
-  const leaderboardPaneClass =
-    tab === 'leaderboard'
-      ? 'play-split-pane play-split-leaderboard'
-      : 'play-split-pane play-split-leaderboard hidden lg:flex'
+  const leaderboardStandard =
+    standings.length > 0 ? (
+      <CompetitionLeaderboard
+        entries={standings}
+        scoreUnit={scoreUnit}
+        currentUserId={user?.id ?? null}
+        competitionId={id ?? null}
+        achievements={achievements}
+        showAchievements={Boolean(achievements)}
+        flushBottom
+      />
+    ) : (
+      <p className="game-card px-3 py-6 text-center text-sm text-brand-muted">
+        {t('leaderboard.standings')}
+      </p>
+    )
 
-  const gamesBoard = showGamesBoard ? (
+  const leaderboardTv =
+    standings.length > 0 ? (
+      <CompetitionLeaderboard
+        entries={standings}
+        scoreUnit={scoreUnit}
+        currentUserId={user?.id ?? null}
+        competitionId={id ?? null}
+        achievements={achievements}
+        showAchievements={Boolean(achievements)}
+        compact
+        embedded
+      />
+    ) : (
+      <p className="px-3 py-6 text-center text-sm text-brand-muted">{t('leaderboard.standings')}</p>
+    )
+
+  const gamesBody = showGamesBoard ? (
     <CompetitionCourtBoard
       competitionId={id}
       columns={columns}
@@ -186,26 +213,32 @@ export function CompetitionPlay() {
     </p>
   ) : null
 
-  const leaderboardPanel =
-    standings.length > 0 ? (
-      <CompetitionLeaderboard
-        entries={standings}
-        scoreUnit={scoreUnit}
-        currentUserId={user?.id ?? null}
-        competitionId={id ?? null}
-        achievements={achievements}
-        showAchievements={Boolean(achievements)}
-        compact
-        embedded
-      />
-    ) : (
-      <p className="px-3 py-6 text-center text-sm text-brand-muted">{t('leaderboard.standings')}</p>
-    )
-
   const viewAlongUrl = id ? competitionViewAlongUrl(id) : null
+  const showTvQr = Boolean(started && viewAlongUrl && standings.length > 0)
+
+  const loadOrError = (
+    <>
+      {loading && !session ? (
+        <p className="py-6 text-center text-xs text-brand-muted">{t('common.loading')}</p>
+      ) : !session ? (
+        <p className="py-6 text-center text-sm text-red-600">
+          {error ?? t('competition.notFound')}
+        </p>
+      ) : null}
+      {error && session ? <p className="text-center text-sm text-red-600">{error}</p> : null}
+    </>
+  )
+
+  const sharedViewProps = {
+    t,
+    loadOrError,
+    session,
+    started,
+    gamesBody,
+  }
 
   return (
-    <div className="competition-play-view flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden bg-brand-bg">
+    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden bg-brand-bg">
       <AppTopBar className="shrink-0 border-b border-brand-border/40 bg-brand-bg">
         <div className="flex min-w-0 items-center gap-2">
           <button
@@ -224,50 +257,25 @@ export function CompetitionPlay() {
         </div>
       </AppTopBar>
 
-      <AppShellColumn edgeToEdge className="overflow-hidden pt-1 lg:pt-0">
-        <AppShellPanel
-          scrollBody={false}
-          className="competition-play-panel"
-          footer={
-            <nav
-              className="app-shell-panel-footer gap-0 lg:hidden"
-              aria-label={t('aria.competitionViews')}
-            >
-              <PlayViewTabs tab={tab} onTab={setTab} t={t} />
-            </nav>
-          }
-        >
-          <div className="play-split-layout">
-            <div className={gamesPaneClass}>
-              <div className="play-split-pane-scroll app-shell-panel-inset space-y-3">
-                {loading && !session ? (
-                  <p className="py-6 text-center text-xs text-brand-muted">{t('common.loading')}</p>
-                ) : !session ? (
-                  <p className="py-6 text-center text-sm text-red-600">
-                    {error ?? t('competition.notFound')}
-                  </p>
-                ) : null}
-                {session && !started ? (
-                  <p className="py-6 text-center text-sm text-brand-muted">
-                    {t('competition.waitingOrganiser')}
-                  </p>
-                ) : null}
-                {session && started ? gamesBoard : null}
-                {error ? <p className="text-center text-sm text-red-600">{error}</p> : null}
-              </div>
-            </div>
-
-            {session ? (
-              <aside className={leaderboardPaneClass} aria-label={t('leaderboard.standings')}>
-                <div className="play-split-pane-scroll">{leaderboardPanel}</div>
-              </aside>
-            ) : null}
-          </div>
-        </AppShellPanel>
-      </AppShellColumn>
-      {started && viewAlongUrl && standings.length > 0 ? (
-        <LeaderboardViewAlongQrPanel url={viewAlongUrl} />
-      ) : null}
+      {isTvLayout ? (
+        <div className="tv-play-view flex min-h-0 flex-1 flex-col">
+          <CompetitionPlayTvView
+            {...sharedViewProps}
+            leaderboardBody={leaderboardTv}
+            viewAlongUrl={viewAlongUrl}
+            showQr={showTvQr}
+          />
+        </div>
+      ) : (
+        <div className="min-h-0 flex-1">
+          <CompetitionPlayStandardView
+            {...sharedViewProps}
+            tab={tab}
+            onTab={setTab}
+            leaderboardBody={leaderboardStandard}
+          />
+        </div>
+      )}
     </div>
   )
 }
