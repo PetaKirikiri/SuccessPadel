@@ -2,8 +2,8 @@ import QRCode from 'qrcode'
 import { useEffect, useState } from 'react'
 import { useTranslation } from '../../hooks/useTranslation'
 
-/** TV standings column only — smaller QR, bottom-left, never fixed over scores. */
-const QR_SIZE = 120
+/** TV standings column only — compact QR, bottom-left corner. */
+const QR_SIZE = 88
 
 type Props = {
   url: string
