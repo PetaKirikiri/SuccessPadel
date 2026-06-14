@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from '../hooks/useTranslation'
 import { consumeReturnTo } from '../lib/authReturnTo'
 import { completeLineOAuthFromUrl, lineOAuthCallbackCode } from '../lib/line/oauth'
+import { isLineLiffBrowser } from '../lib/line/liff'
 import { LineLinkReturnFlow } from './LineLinkReturnFlow'
 import { LineSigningInScreen } from './LineSigningInScreen'
 
@@ -18,6 +19,7 @@ export function LineOAuthReturnHandler() {
 
   useEffect(() => {
     if (!hasCode || isPlayerLink) return
+    if (isLineLiffBrowser()) return
 
     let active = true
     void (async () => {

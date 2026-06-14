@@ -1,8 +1,10 @@
-import { useEffect, useState, type ReactNode } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useTranslation } from '../hooks/useTranslation'
+import { consumeReturnTo } from '../lib/authReturnTo'
 import { lineHandshakeDebug } from '../lib/debug/lineHandshakeDebug'
+import { signInWithLine } from '../lib/line/auth'
 import {
   runLineInAppSignIn,
   shouldTryLineInAppSignIn,
@@ -20,10 +22,12 @@ function shouldSkipLineEntryGate(pathname: string, search: string): boolean {
 export function LineEntryGate({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
   const { pathname, search } = useLocation()
+  const navigate = useNavigate()
   const { t } = useTranslation()
   const [working, setWorking] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
+  const signInStarted = useRef(false)
 
   useEffect(() => {
     // #region agent log
@@ -75,6 +79,27 @@ export function LineEntryGate({ children }: { children: ReactNode }) {
       cancelled = true
     }
   }, [loading, user, pathname, search, attempt])
+
+  useEffect(() => {
+    if (loading || user) return
+    if (pathname !== '/login' || !isLineLiffBrowser()) return
+    if (!lineOAuthCallbackCode(search)) return
+    if (signInStarted.current) return
+    signInStarted.current = true
+
+    // #region agent log
+    lineHandshakeDebug('S5-auth', 'LineEntryGate.tsx:login-callback', 'LIFF /login callback sign-in', 'H7', {})
+    // #endregion
+
+    void signInWithLine().then(({ error }) => {
+      signInStarted.current = false
+      if (error) {
+        setError(error)
+        return
+      }
+      navigate(consumeReturnTo('/friendly'), { replace: true })
+    })
+  }, [loading, user, pathname, search, navigate])
 
   useEffect(() => {
     if (!hasLiffId() || user) return

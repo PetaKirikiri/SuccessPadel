@@ -19,6 +19,22 @@ function canInitLiffOnThisPage(): boolean {
 }
 
 const PROFILE_RECONSENT_KEY = 'sp-liff-profile-reconsent'
+const LIFF_LOGIN_COOLDOWN_KEY = 'sp-liff-login-cooldown'
+const LIFF_LOGIN_COOLDOWN_MS = 15_000
+
+export function clearLiffLoginCooldown(): void {
+  sessionStorage.removeItem(LIFF_LOGIN_COOLDOWN_KEY)
+}
+
+export function liffLoginCooldownActive(): boolean {
+  const raw = sessionStorage.getItem(LIFF_LOGIN_COOLDOWN_KEY)
+  if (!raw) return false
+  return Date.now() - Number(raw) < LIFF_LOGIN_COOLDOWN_MS
+}
+
+function markLiffLoginAttempt(): void {
+  sessionStorage.setItem(LIFF_LOGIN_COOLDOWN_KEY, String(Date.now()))
+}
 
 export function clearLineProfileReconsentFlag(): void {
   sessionStorage.removeItem(PROFILE_RECONSENT_KEY)
@@ -92,10 +108,12 @@ export function getDecodedLineClaims(): { sub?: string; name?: string; picture?:
 
 export function lineLoginRedirect(): void {
   if (!liffId) return
+  if (liffLoginCooldownActive()) return
   const returnPath = `${window.location.pathname}${window.location.search}`
   if (returnPath && returnPath !== '/login' && !returnPath.startsWith('/auth/')) {
     saveReturnTo(returnPath)
   }
+  markLiffLoginAttempt()
   const redirectUri = `${handshakeSiteOrigin()}/login`
   liff.login({ redirectUri })
 }

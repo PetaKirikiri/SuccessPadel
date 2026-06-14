@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
+import { LineSigningInScreen } from '../components/LineSigningInScreen'
 import { saveReturnTo } from '../lib/authReturnTo'
+import { isLineLiffBrowser } from '../lib/line/liff'
 import { linkTokenFromLocation } from '../lib/line/playerLink'
 import { lineOAuthCallbackCode } from '../lib/line/oauth'
 
@@ -15,12 +17,19 @@ export function Login() {
   const isPlayerLinkReturn = Boolean(linkState?.startsWith('lpl_'))
   const oauthReturning =
     Boolean(lineOAuthCallbackCode(location.search)) || isPlayerLinkReturn
+  const inLineBrowser = isLineLiffBrowser()
 
   useEffect(() => {
     if (fromPath) saveReturnTo(fromPath)
   }, [fromPath])
 
-  if (oauthReturning || playerLinkEntry) return null
+  if (playerLinkEntry) return null
+
+  if (inLineBrowser) {
+    return <LineSigningInScreen message="Signing in with LINE…" />
+  }
+
+  if (oauthReturning) return null
 
   return <Navigate to="/friendly" replace />
 }

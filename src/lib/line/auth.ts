@@ -5,6 +5,7 @@ import { lineHandshakeDebug } from '../debug/lineHandshakeDebug'
 import { supabase } from '../supabaseClient'
 import {
   clearLineProfileReconsentFlag,
+  clearLiffLoginCooldown,
   ensureLineProfileConsent,
   getLineAccessToken,
   getLineIdToken,
@@ -14,6 +15,7 @@ import {
   isLineLiffBrowser,
   isLineLoggedIn,
   lineLoginRedirect,
+  liffLoginCooldownActive,
 } from './liff'
 import { clubDisplayName, clubDisplayNameFromLine } from '../clubMemberDisplay'
 import { handshakeSiteOrigin } from '../siteUrl'
@@ -100,6 +102,15 @@ export async function signInWithLine(): Promise<LineSignInResult> {
   // #endregion
 
   if (!lineLoggedIn) {
+    if (liffLoginCooldownActive() && window.location.pathname === '/login') {
+      // #region agent log
+      lineHandshakeDebug('S4-liff-session', 'auth.ts:cooldown', 'LIFF login cooldown on /login', 'H7', {})
+      // #endregion
+      return {
+        error: 'LINE sign-in did not complete. Close this tab and reopen from LINE.',
+        redirected: false,
+      }
+    }
     const redirectUri = `${handshakeSiteOrigin()}/login`
     // #region agent log
     lineHandshakeDebug('S4-liff-session', 'auth.ts:redirect', 'calling lineLoginRedirect', 'H6', {
@@ -244,6 +255,7 @@ export async function signInWithLine(): Promise<LineSignInResult> {
 
   await syncProfileForUser(user)
   await claimPendingPadelPlayer()
+  clearLiffLoginCooldown()
   window.dispatchEvent(new Event('successpadel:profile-synced'))
   // #region agent log
   lineHandshakeDebug('S8-ui', 'auth.ts:done', 'signInWithLine complete', 'H5', {
