@@ -8,7 +8,6 @@ import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-r
 import { CompetitionLayoutPreview } from '../components/CompetitionLayoutPreview'
 import { CompetitionLeaderboard } from '../components/CompetitionLeaderboard'
 import { LeaderboardViewAlongQrPanel } from '../components/LeaderboardViewAlongQrPanel'
-import { PlayStandingsReport } from '../components/PlayStandingsReport'
 import { useAuth } from '../hooks/useAuth'
 import { useLineClientProfile } from '../hooks/useLineClientProfile'
 import { useFriendlyGame } from '../hooks/useFriendlyGame'
@@ -331,20 +330,6 @@ export function FriendlyGamePage() {
 
   const viewAlongUrl = game?.id ? friendlyViewAlongUrl(game.id) : null
 
-  const standingsReport =
-    enrichedStandings.length > 0 ? (
-      <CompetitionLeaderboard
-        entries={enrichedStandings}
-        scoreUnit={scoreUnit}
-        currentUserId={user?.id ?? null}
-        competitionId={null}
-        achievements={achievements}
-        showAchievements={Boolean(achievements)}
-        compact
-        embedded
-      />
-    ) : null
-
   const leaderboardContent = enrichedStandings.length > 0 ? (
     <CompetitionLeaderboard
       entries={enrichedStandings}
@@ -401,15 +386,8 @@ export function FriendlyGamePage() {
             </nav>
           }
         >
-          <div
-            className={`app-shell-panel-inset space-y-3 ${
-              viewTab === 'games' && standingsReport ? 'play-games-with-report' : ''
-            }`}
-          >
+          <div className="app-shell-panel-inset space-y-3">
             {viewTab === 'games' ? gamesContent : leaderboardContent}
-            {viewTab === 'games' && standingsReport ? (
-              <PlayStandingsReport>{standingsReport}</PlayStandingsReport>
-            ) : null}
           </div>
         </AppShellPanel>
       </AppShellColumn>

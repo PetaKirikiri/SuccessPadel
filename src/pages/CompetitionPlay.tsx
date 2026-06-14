@@ -3,7 +3,6 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { CompetitionCourtBoard } from '../components/CompetitionCourtBoard'
 import { CompetitionLeaderboard } from '../components/CompetitionLeaderboard'
 import { LeaderboardViewAlongQrPanel } from '../components/LeaderboardViewAlongQrPanel'
-import { PlayStandingsReport } from '../components/PlayStandingsReport'
 import { useAuth } from '../hooks/useAuth'
 import { useCompetitionBoard } from '../hooks/useCompetitionBoard'
 import { useLineClientProfile } from '../hooks/useLineClientProfile'
@@ -154,20 +153,6 @@ export function CompetitionPlay() {
 
   const viewAlongUrl = id ? competitionViewAlongUrl(id) : null
 
-  const standingsReport =
-    started && standings.length > 0 ? (
-      <CompetitionLeaderboard
-        entries={standings}
-        scoreUnit={scoreUnit}
-        currentUserId={user?.id ?? null}
-        competitionId={id ?? null}
-        achievements={achievements}
-        showAchievements={Boolean(achievements)}
-        compact
-        embedded
-      />
-    ) : null
-
   return (
     <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden bg-brand-bg">
       <AppTopBar className="shrink-0 border-b border-brand-border/40 bg-brand-bg">
@@ -196,11 +181,7 @@ export function CompetitionPlay() {
             </nav>
           }
         >
-          <div
-            className={`app-shell-panel-inset space-y-3 ${
-              tab === 'games' && standingsReport ? 'play-games-with-report' : ''
-            }`}
-          >
+          <div className="app-shell-panel-inset space-y-3">
           {loading && !session ? (
             <p className="py-6 text-center text-xs text-brand-muted">{t('common.loading')}</p>
           ) : !session ? (
@@ -254,9 +235,6 @@ export function CompetitionPlay() {
           ) : null}
 
           {error && <p className="text-center text-sm text-red-600">{error}</p>}
-          {tab === 'games' && standingsReport ? (
-            <PlayStandingsReport>{standingsReport}</PlayStandingsReport>
-          ) : null}
           </div>
         </AppShellPanel>
       </AppShellColumn>

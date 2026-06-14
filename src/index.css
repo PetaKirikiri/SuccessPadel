@@ -668,39 +668,9 @@ body {
   display: none;
 }
 
-.play-standings-report {
-  display: none;
-}
-
 @media (min-width: 1024px) {
   .game-dock-inner {
     max-width: 56rem;
-  }
-
-  /* Session standings report — top-right on large screens (TV / desktop). */
-  .play-standings-report {
-    display: block;
-    position: fixed;
-    z-index: 45;
-    top: max(5.25rem, calc(env(safe-area-inset-top, 0px) + 4.5rem));
-    right: max(0.75rem, env(safe-area-inset-right, 0px));
-    width: min(20rem, calc(100vw - 1.5rem));
-    max-height: min(55vh, 32rem);
-    overflow: hidden;
-    border-radius: 1rem;
-    border: 1px solid rgba(96, 45, 36, 0.2);
-    background: var(--color-brand-surface);
-    box-shadow: 0 12px 32px -12px rgba(96, 45, 36, 0.35);
-  }
-
-  .play-standings-report-body {
-    max-height: min(55vh, 32rem);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
-
-  .play-games-with-report {
-    padding-right: min(21rem, calc(100vw - 1.5rem));
   }
 
   /* Leaderboard tab — large QR in bottom-right white space (TV / desktop only). */
