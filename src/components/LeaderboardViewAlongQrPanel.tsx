@@ -29,6 +29,7 @@ export function LeaderboardViewAlongQrPanel({ url }: Props) {
 
   return (
     <aside className="leaderboard-view-along-qr" aria-label={t('leaderboard.viewAlongHint')}>
+      <p className="leaderboard-view-along-qr-label">{t('leaderboard.viewAlongHint')}</p>
       {src ? (
         <img
           src={src}
@@ -40,7 +41,6 @@ export function LeaderboardViewAlongQrPanel({ url }: Props) {
       ) : (
         <div className="leaderboard-view-along-qr-code leaderboard-view-along-qr-skeleton" aria-hidden />
       )}
-      <p className="leaderboard-view-along-qr-label">{t('leaderboard.viewAlongHint')}</p>
     </aside>
   )
 }

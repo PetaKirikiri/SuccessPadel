@@ -668,6 +668,31 @@ body {
   display: none;
 }
 
+.play-split-layout {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+}
+
+.play-split-pane {
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+}
+
+.play-split-pane-scroll {
+  min-height: 0;
+  flex: 1 1 0%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
 @media (min-width: 1024px) {
   .game-dock-inner {
     max-width: 56rem;
@@ -705,10 +730,49 @@ body {
   .leaderboard-view-along-qr-label {
     margin: 0;
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: 600;
     line-height: 1.35;
-    color: var(--color-brand-muted);
+    letter-spacing: 0.02em;
+    color: var(--color-brand-primary);
     max-width: 16rem;
+  }
+
+  /* Competition play — full-width TV view: games 60%, standings 40%. */
+  .competition-play-panel {
+    border-radius: 0;
+    border-left-width: 0;
+    border-right-width: 0;
+  }
+
+  .play-split-layout {
+    flex-direction: row;
+    height: 100%;
+  }
+
+  .play-split-games {
+    flex: 0 0 60%;
+    width: 60%;
+    max-width: 60%;
+  }
+
+  .play-split-leaderboard {
+    flex: 1 1 0%;
+    min-width: 0;
+    border-left: 1px solid rgba(96, 45, 36, 0.18);
+    background: var(--color-brand-surface);
+  }
+
+  .play-split-leaderboard .play-split-pane-scroll {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  .competition-play-panel .app-shell-panel-inset {
+    padding-left: max(1rem, env(safe-area-inset-left, 0px));
+    padding-right: 1rem;
+  }
+
+  .competition-play-view .leaderboard-view-along-qr {
+    bottom: max(1.25rem, env(safe-area-inset-bottom, 0px));
   }
 
   /* Point history report — top-right on large screens instead of left rail. */

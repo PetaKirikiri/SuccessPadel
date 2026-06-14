@@ -139,7 +139,7 @@ export const ru: Messages = {
   },
   leaderboard: {
     standings: 'Таблица',
-    viewAlongHint: 'Сканируйте, чтобы следить с телефона',
+    viewAlongHint: 'Сканируйте, чтобы следить',
     player: 'Игрок',
     pts: 'очки',
     sets: 'сеты',

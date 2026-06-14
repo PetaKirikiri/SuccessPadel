@@ -22,6 +22,7 @@ import { resolvePlayerProfile } from '../lib/playerProfile'
 import { saveClaimPadelPlayer } from '../lib/authClaimPlayer'
 import { adminDeletePlayer, canAdminDeletePlayer } from '../lib/playerDelete'
 import { playerProfileShareUrl, sharePlayerProfile } from '../lib/playerProfileShare'
+import { uploadProfileAvatar, validateProfileAvatar } from '../lib/profileAvatar'
 import { isLineLiffBrowser } from '../lib/line/liff'
 import { runLinePlayerProfileHandshake } from '../lib/line/profileHandshake'
 import { supabase } from '../lib/supabaseClient'
@@ -93,6 +94,8 @@ export function PlayerProfilePage() {
   const [deleteBusy, setDeleteBusy] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [tab, setTab] = useState<PlayerProfileTab>('profile')
+  const [avatarError, setAvatarError] = useState<string | null>(null)
+  const [avatarBusy, setAvatarBusy] = useState(false)
   const [ownedPadelPlayerId, setOwnedPadelPlayerId] = useState<string | null>(null)
   const [lineHandshakeWorking, setLineHandshakeWorking] = useState(false)
   const [lineHandshakeError, setLineHandshakeError] = useState<string | null>(null)
@@ -148,6 +151,32 @@ export function PlayerProfilePage() {
   }, [authProfile, isAdmin, isOwnProfile, resolved?.profile])
 
   const canEditProfile = Boolean(editableProfile && (isOwnProfile || isAdmin))
+
+  const handleAvatarPick = async (file: File | undefined) => {
+    if (!file || !editableProfile || avatarBusy) return
+    const validationError = validateProfileAvatar(file)
+    if (validationError) {
+      setAvatarError(validationError)
+      return
+    }
+    setAvatarError(null)
+    setAvatarBusy(true)
+    try {
+      const url = await uploadProfileAvatar(editableProfile.id, file)
+      const { error: err } = await supabase
+        .from('profiles')
+        .update({ avatar_url: url })
+        .eq('id', editableProfile.id)
+      if (err) throw new Error(err.message)
+      window.dispatchEvent(new Event('successpadel:profile-synced'))
+      reloadProfile()
+    } catch (e) {
+      setAvatarError(e instanceof Error ? e.message : t('profile.photoUploadFailed'))
+    } finally {
+      setAvatarBusy(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   const displayName = useMemo(() => {
     const viewedName =
@@ -463,6 +492,16 @@ export function PlayerProfilePage() {
         </div>
       </AppTopBar>
 
+      {canEditProfile && editableProfile ? (
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={(e) => void handleAvatarPick(e.target.files?.[0])}
+        />
+      ) : null}
+
       <main data-scroll-y className="scroll-y min-h-0 min-w-0 flex-1 pt-2">
         <AppShellColumn fill={false} className="space-y-3 pb-8">
           {lineHandshakeWorking ? (
@@ -501,9 +540,17 @@ export function PlayerProfilePage() {
                   shareProfileLabel={t('playerProfile.shareProfile')}
                   shareFeedback={shareFeedback}
                   onChangePhoto={
-                    canEditProfile ? () => fileInputRef.current?.click() : undefined
+                    canEditProfile && !avatarBusy
+                      ? () => fileInputRef.current?.click()
+                      : undefined
                   }
-                  changePhotoLabel={canEditProfile ? t('profile.changePhoto') : undefined}
+                  changePhotoLabel={
+                    canEditProfile
+                      ? avatarBusy
+                        ? t('common.loading')
+                        : t('profile.changePhoto')
+                      : undefined
+                  }
                   t={t}
                 />
               }
@@ -515,6 +562,9 @@ export function PlayerProfilePage() {
                 />
               ) : canEditProfile && editableProfile ? (
                 <>
+                  {avatarError ? (
+                    <p className="px-4 text-center text-xs text-red-600 md:px-5">{avatarError}</p>
+                  ) : null}
                   <ProfileDetailsForm
                     profile={editableProfile}
                     isAdmin={isAdmin}

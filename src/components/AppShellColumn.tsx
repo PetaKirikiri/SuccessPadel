@@ -13,15 +13,27 @@ type Props = ComponentProps<'div'> & {
   children: ReactNode
   /** When false, column does not grow (e.g. bottom dock bar). */
   fill?: boolean
+  /** Large screens: flush to viewport edges, no max-width cap (TV play views). */
+  edgeToEdge?: boolean
 }
 
-export function AppShellColumn({ children, className = '', fill = true, ...props }: Props) {
-  const outerClass = fill
-    ? `${APP_SHELL_GUTTER} flex min-h-0 min-w-0 w-full flex-1 basis-0 flex-col`
-    : `${APP_SHELL_GUTTER} w-full shrink-0`
-  const innerClass = fill
-    ? `${APP_SHELL_INNER} flex min-h-0 min-w-0 w-full flex-1 basis-0 flex-col`
+export function AppShellColumn({
+  children,
+  className = '',
+  fill = true,
+  edgeToEdge = false,
+  ...props
+}: Props) {
+  const gutter = edgeToEdge ? 'px-3 md:px-4 lg:px-0' : APP_SHELL_GUTTER
+  const inner = edgeToEdge
+    ? 'mx-auto w-full min-w-0 max-w-full lg:max-w-none'
     : APP_SHELL_INNER
+  const outerClass = fill
+    ? `${gutter} flex min-h-0 min-w-0 w-full flex-1 basis-0 flex-col`
+    : `${gutter} w-full shrink-0`
+  const innerClass = fill
+    ? `${inner} flex min-h-0 min-w-0 w-full flex-1 basis-0 flex-col`
+    : inner
 
   return (
     <div className={outerClass}>

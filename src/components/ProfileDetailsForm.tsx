@@ -131,7 +131,7 @@ export function ProfileDetailsForm({
   }, [profile])
 
   const onAvatarPick = (file: File | undefined) => {
-    if (!file) return
+    if (hideBanner || !file) return
     const validationError = validateProfileAvatar(file)
     if (validationError) {
       setError(validationError)
@@ -153,7 +153,7 @@ export function ProfileDetailsForm({
     setSaved(false)
 
     let avatarUrl = profile.avatar_url
-    if (pendingAvatar) {
+    if (!hideBanner && pendingAvatar) {
       try {
         avatarUrl = await uploadProfileAvatar(profile.id, pendingAvatar)
       } catch (uploadErr) {
@@ -228,13 +228,15 @@ export function ProfileDetailsForm({
           </button>
         </div>
       )}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        className="hidden"
-        onChange={(e) => onAvatarPick(e.target.files?.[0])}
-      />
+      {!hideBanner ? (
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={(e) => onAvatarPick(e.target.files?.[0])}
+        />
+      ) : null}
 
       <ProfileFormSection
         icon={User}

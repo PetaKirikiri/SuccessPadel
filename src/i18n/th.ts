@@ -138,7 +138,7 @@ export const th: Messages = {
   },
   leaderboard: {
     standings: 'อันดับ',
-    viewAlongHint: 'สแกนเพื่อติดตามบนมือถือ',
+    viewAlongHint: 'สแกนเพื่อติดตาม',
     player: 'ผู้เล่น',
     pts: 'คะแนน',
     sets: 'เซ็ต',

@@ -139,7 +139,7 @@ export const en: Messages = {
   },
   leaderboard: {
     standings: 'Standings',
-    viewAlongHint: 'Scan to follow on your phone',
+    viewAlongHint: 'Scan to follow',
     player: 'Player',
     pts: 'pts',
     sets: 'sets',
