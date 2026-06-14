@@ -129,7 +129,7 @@ function ScoreWithRecord({
   t: TranslateFn
 }) {
   return (
-    <div className="flex flex-col items-end justify-self-end text-right">
+    <div className="relative z-[1] flex shrink-0 flex-col items-end justify-self-end text-right">
       <span className="font-display text-lg font-bold tabular-nums text-brand-accent md:text-xl">
         {score}
       </span>
@@ -154,7 +154,7 @@ function ScoreWithRecord({
 }
 
 const ROW_GRID =
-  'grid items-center gap-x-1 px-1.5 md:gap-x-1.5 md:px-2 grid-cols-[1.25rem_1.75rem_minmax(0,1fr)_4.5rem_3.25rem] md:grid-cols-[1.5rem_2.5rem_minmax(0,1fr)_7rem_3.75rem]'
+  'grid items-center gap-x-1 px-1.5 md:gap-x-1.5 md:px-2 grid-cols-[1.25rem_1.75rem_minmax(0,1fr)_minmax(0,4.5rem)_3.25rem] md:grid-cols-[1.5rem_2.5rem_minmax(0,1fr)_minmax(0,7rem)_3.75rem]'
 
 const ROW_GRID_NO_BADGES =
   'grid items-center gap-x-1 px-1.5 md:gap-x-1.5 md:px-2 grid-cols-[1.25rem_1.75rem_minmax(0,1fr)_3.25rem] md:grid-cols-[1.5rem_2.5rem_minmax(0,1fr)_3.75rem]'
@@ -211,7 +211,7 @@ function LeaderboardRow({
         {entry.display_name}
       </span>
       {showBadges ? (
-        <span className="flex items-center justify-center justify-self-center gap-0.5 md:gap-1">
+        <span className="flex max-w-full items-center justify-center justify-self-center gap-0.5 overflow-hidden md:gap-1">
           {badges.slice(0, 3).map((b) => (
             <AchievementBadge
               key={b.key}

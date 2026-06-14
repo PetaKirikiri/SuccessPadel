@@ -114,6 +114,8 @@ export type Messages = {
   }
   leaderboard: {
     standings: string
+    largeScreen: string
+    viewAlongHint: string
     player: string
     pts: string
     sets: string

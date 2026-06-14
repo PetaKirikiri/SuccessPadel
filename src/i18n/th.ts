@@ -138,6 +138,8 @@ export const th: Messages = {
   },
   leaderboard: {
     standings: 'อันดับ',
+    largeScreen: 'จอใหญ่',
+    viewAlongHint: 'สแกนเพื่อติดตามบนมือถือ',
     player: 'ผู้เล่น',
     pts: 'คะแนน',
     sets: 'เซ็ต',

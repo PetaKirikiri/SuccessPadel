@@ -58,3 +58,16 @@ export function competitionJoinUrl(sessionId: string): string {
   return `${shareSiteOrigin()}/competitions/${sessionId}/join`
 }
 
+export function playViewAlongUrl(path: string): string {
+  const sep = path.includes('?') ? '&' : '?'
+  return `${path}${sep}view=leaderboard`
+}
+
+export function friendlyViewAlongUrl(sessionId: string): string {
+  return playViewAlongUrl(`${shareSiteOrigin()}/friendly/${sessionId}`)
+}
+
+export function competitionViewAlongUrl(sessionId: string): string {
+  return playViewAlongUrl(competitionPlayUrl(sessionId))
+}
+

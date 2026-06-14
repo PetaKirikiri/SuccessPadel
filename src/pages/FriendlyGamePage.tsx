@@ -4,9 +4,11 @@ import { AppShellColumn } from '../components/AppShellColumn'
 import { AppShellPanel } from '../components/AppShellPanel'
 import { AppTopBar } from '../components/AppTopBar'
 import { PlayViewTabs, type PlayViewTab } from '../components/PlayViewTabs'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { CompetitionLayoutPreview } from '../components/CompetitionLayoutPreview'
 import { CompetitionLeaderboard } from '../components/CompetitionLeaderboard'
+import { LeaderboardViewAlongQrPanel } from '../components/LeaderboardViewAlongQrPanel'
+import { PlayStandingsReport } from '../components/PlayStandingsReport'
 import { useAuth } from '../hooks/useAuth'
 import { useLineClientProfile } from '../hooks/useLineClientProfile'
 import { useFriendlyGame } from '../hooks/useFriendlyGame'
@@ -42,11 +44,13 @@ import { americanoScoringUnit } from '../lib/competitionPresets'
 import { useSetupCourts } from '../hooks/useSetupCourts'
 import { formatDateInput } from '../lib/courtSchedule'
 import { supabase } from '../lib/supabaseClient'
+import { friendlyViewAlongUrl } from '../lib/siteUrl'
 import type { Profile } from '../lib/types'
 
 export function FriendlyGamePage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { t } = useTranslation()
   const { user, profile } = useAuth()
   const lineClient = useLineClientProfile()
@@ -57,7 +61,9 @@ export function FriendlyGamePage() {
   const finished = isReviewableLog(log)
   const [profiles, setProfiles] = useState<Profile[]>([])
   const { courtNames } = useSetupCourts()
-  const [viewTab, setViewTab] = useState<PlayViewTab>('games')
+  const [viewTab, setViewTab] = useState<PlayViewTab>(() =>
+    searchParams.get('view') === 'leaderboard' ? 'leaderboard' : 'games',
+  )
   const [joinBusy, setJoinBusy] = useState(false)
   const [joinError, setJoinError] = useState<string | null>(null)
   const [now, setNow] = useState(Date.now())
@@ -323,6 +329,22 @@ export function FriendlyGamePage() {
     </>
   )
 
+  const viewAlongUrl = game?.id ? friendlyViewAlongUrl(game.id) : null
+
+  const standingsReport =
+    enrichedStandings.length > 0 ? (
+      <CompetitionLeaderboard
+        entries={enrichedStandings}
+        scoreUnit={scoreUnit}
+        currentUserId={user?.id ?? null}
+        competitionId={null}
+        achievements={achievements}
+        showAchievements={Boolean(achievements)}
+        compact
+        embedded
+      />
+    ) : null
+
   const leaderboardContent = enrichedStandings.length > 0 ? (
     <CompetitionLeaderboard
       entries={enrichedStandings}
@@ -379,11 +401,21 @@ export function FriendlyGamePage() {
             </nav>
           }
         >
-          <div className="app-shell-panel-inset space-y-3">
+          <div
+            className={`app-shell-panel-inset space-y-3 ${
+              viewTab === 'games' && standingsReport ? 'play-games-with-report' : ''
+            }`}
+          >
             {viewTab === 'games' ? gamesContent : leaderboardContent}
+            {viewTab === 'games' && standingsReport ? (
+              <PlayStandingsReport>{standingsReport}</PlayStandingsReport>
+            ) : null}
           </div>
         </AppShellPanel>
       </AppShellColumn>
+      {viewTab === 'leaderboard' && viewAlongUrl && enrichedStandings.length > 0 ? (
+        <LeaderboardViewAlongQrPanel url={viewAlongUrl} />
+      ) : null}
     </div>
   )
 }

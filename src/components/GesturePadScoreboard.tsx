@@ -87,14 +87,18 @@ export function GesturePadScoreboard({
         <div className="flex shrink-0 flex-col items-end justify-center gap-1">
           <SideChip player={teamA![0]} highlighted={chipHighlighted(teamA![0])} />
           <SideChip player={teamA![1]} highlighted={chipHighlighted(teamA![1])} />
-        </div>
-      ) : null}
-
-      <div className="flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 sm:gap-1">
-        <div className="flex items-baseline justify-center gap-1 sm:gap-1.5">
-          <span className="font-display text-base font-bold tabular-nums leading-none text-white/60 sm:text-lg">
+          <span className="pr-0.5 font-display text-base font-bold tabular-nums leading-none text-white/60 sm:text-lg">
             {score.gamesA}
           </span>
+        </div>
+      ) : (
+        <span className="shrink-0 font-display text-base font-bold tabular-nums leading-none text-white/60 sm:text-lg">
+          {score.gamesA}
+        </span>
+      )}
+
+      <div className="relative z-[1] flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 sm:gap-1">
+        <div className="flex items-baseline justify-center gap-1 sm:gap-1.5">
           <p className="font-display text-3xl font-bold leading-none tracking-wide text-white sm:text-4xl md:text-5xl">
             {leftPoint}
           </p>
@@ -104,9 +108,6 @@ export function GesturePadScoreboard({
           <p className="font-display text-3xl font-bold leading-none tracking-wide text-white sm:text-4xl md:text-5xl">
             {rightPoint}
           </p>
-          <span className="font-display text-base font-bold tabular-nums leading-none text-white/60 sm:text-lg">
-            {score.gamesB}
-          </span>
           {deuce ? (
             <span className="ml-0.5 text-sm font-bold leading-none text-amber-200 sm:text-base">
               GP
@@ -129,8 +130,15 @@ export function GesturePadScoreboard({
         <div className="flex shrink-0 flex-col items-start justify-center gap-1">
           <SideChip player={teamB![0]} highlighted={chipHighlighted(teamB![0])} />
           <SideChip player={teamB![1]} highlighted={chipHighlighted(teamB![1])} />
+          <span className="pl-0.5 font-display text-base font-bold tabular-nums leading-none text-white/60 sm:text-lg">
+            {score.gamesB}
+          </span>
         </div>
-      ) : null}
+      ) : (
+        <span className="shrink-0 font-display text-base font-bold tabular-nums leading-none text-white/60 sm:text-lg">
+          {score.gamesB}
+        </span>
+      )}
     </div>
   )
 }
