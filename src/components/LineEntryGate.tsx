@@ -2,9 +2,14 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useTranslation } from '../hooks/useTranslation'
-import { consumeReturnTo } from '../lib/authReturnTo'
+import { consumeReturnTo, peekReturnTo } from '../lib/authReturnTo'
 import { lineHandshakeDebug } from '../lib/debug/lineHandshakeDebug'
 import { signInWithLine } from '../lib/line/auth'
+import {
+  isPlayerProfilePath,
+  runLinePlayerProfileHandshake,
+} from '../lib/line/profileHandshake'
+import { resolvePlayerProfile } from '../lib/playerProfile'
 import {
   runLineInAppSignIn,
   shouldTryLineInAppSignIn,
@@ -15,7 +20,17 @@ import { hasLiffId, isLineLiffBrowser } from '../lib/line/liff'
 function shouldSkipLineEntryGate(pathname: string, search: string): boolean {
   if (pathname.startsWith('/auth/')) return true
   if (pathname === '/login' && lineOAuthCallbackCode(search)) return true
+  if (/^\/players\/[0-9a-f-]{36}$/i.test(pathname)) return true
   return false
+}
+
+function competitionIdFromReturn(returnTo: string): string | null {
+  try {
+    const q = returnTo.includes('?') ? returnTo.slice(returnTo.indexOf('?')) : ''
+    return new URLSearchParams(q).get('competition')
+  } catch {
+    return null
+  }
 }
 
 /** Prompt LINE Allow + sign-in when opened inside the LINE app. */
@@ -86,6 +101,44 @@ export function LineEntryGate({ children }: { children: ReactNode }) {
     if (!lineOAuthCallbackCode(search)) return
     if (signInStarted.current) return
     signInStarted.current = true
+
+    const returnTo = peekReturnTo('/friendly')
+    const returnPath = returnTo.split('?')[0]
+
+    if (isPlayerProfilePath(returnPath)) {
+      // #region agent log
+      lineHandshakeDebug(
+        'S9-profile',
+        'LineEntryGate.tsx:login-callback',
+        'LIFF /login → profile handshake',
+        'H9',
+        { returnPath },
+      )
+      // #endregion
+
+      const routePlayerId = returnPath.split('/').pop() ?? ''
+      void (async () => {
+        const resolved = await resolvePlayerProfile(routePlayerId)
+        const padelId =
+          resolved.linkablePadelPlayerId ?? resolved.padelPlayerId ?? routePlayerId
+        const result = await runLinePlayerProfileHandshake(padelId)
+        signInStarted.current = false
+        if (result.error) {
+          setError(result.error)
+          return
+        }
+        if (result.mode === 'login') {
+          const competitionId = competitionIdFromReturn(returnTo)
+          navigate(competitionId ? `/competitions/${competitionId}` : '/friendly', {
+            replace: true,
+          })
+          consumeReturnTo('/friendly')
+          return
+        }
+        navigate(consumeReturnTo('/friendly'), { replace: true })
+      })()
+      return
+    }
 
     // #region agent log
     lineHandshakeDebug('S5-auth', 'LineEntryGate.tsx:login-callback', 'LIFF /login callback sign-in', 'H7', {})

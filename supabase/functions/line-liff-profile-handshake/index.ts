@@ -14,26 +14,17 @@ type LineProfileInput = {
 
 type LineUser = { sub: string; name?: string; picture?: string }
 
-const BIA_LINE_USER_ID = 'U2131aeeeaaa787589d757995fb667e07'
-
-function clubLineDisplayName(sub: string, name?: string): string | undefined {
-  if (sub === BIA_LINE_USER_ID) return 'Bia'
-  return name
-}
-
 async function lineProfileFromAccessToken(accessToken: string): Promise<LineProfileInput | null> {
   const res = await fetch('https://api.line.me/v2/profile', {
     headers: { Authorization: `Bearer ${accessToken}` },
   })
   if (!res.ok) return null
-
   const data = (await res.json()) as {
     userId?: string
     displayName?: string
     pictureUrl?: string
   }
   if (!data.userId || !data.displayName?.trim()) return null
-
   return {
     user_id: data.userId,
     display_name: data.displayName.trim(),
@@ -46,15 +37,25 @@ async function lineProfileFromUserinfo(accessToken: string): Promise<LineProfile
     headers: { Authorization: `Bearer ${accessToken}` },
   })
   if (!res.ok) return null
-
   const data = (await res.json()) as { sub?: string; name?: string; picture?: string }
   if (!data.sub || !data.name?.trim()) return null
-
   return {
     user_id: data.sub,
     display_name: data.name.trim(),
     picture_url: data.picture,
   }
+}
+
+async function lineUserFromIdToken(idToken: string, channelId: string): Promise<LineUser | null> {
+  const verifyRes = await fetch('https://api.line.me/oauth2/v2.1/verify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ id_token: idToken, client_id: channelId }),
+  })
+  if (!verifyRes.ok) return null
+  const claims = (await verifyRes.json()) as { sub?: string; name?: string; picture?: string }
+  if (!claims.sub) return null
+  return { sub: claims.sub, name: claims.name, picture: claims.picture }
 }
 
 async function lineUserFromAccessToken(accessToken: string): Promise<LineUser | null> {
@@ -77,27 +78,6 @@ async function lineUserFromAccessToken(accessToken: string): Promise<LineUser | 
   return null
 }
 
-async function lineUserFromIdToken(idToken: string, channelId: string): Promise<LineUser | null> {
-  const verifyRes = await fetch('https://api.line.me/oauth2/v2.1/verify', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      id_token: idToken,
-      client_id: channelId,
-    }),
-  })
-
-  if (!verifyRes.ok) return null
-
-  const claims = (await verifyRes.json()) as {
-    sub?: string
-    name?: string
-    picture?: string
-  }
-  if (!claims.sub) return null
-  return { sub: claims.sub, name: claims.name, picture: claims.picture }
-}
-
 function mergeLineUser(
   tokenUser: LineUser,
   apiProfile?: LineProfileInput | null,
@@ -109,7 +89,6 @@ function mergeLineUser(
       throw new Error('LINE profile does not match signed-in user')
     }
   }
-
   const name =
     apiProfile?.display_name?.trim() ||
     clientProfile?.display_name?.trim() ||
@@ -132,7 +111,7 @@ async function magicLinkEmailForUser(
 
 async function sessionForLineUser(admin: ReturnType<typeof createClient>, lineUser: LineUser) {
   const lineSub = normalizeLineUserId(lineUser.sub)
-  lineUser = { ...lineUser, sub: lineSub, name: clubLineDisplayName(lineSub, lineUser.name) }
+  lineUser = { ...lineUser, sub: lineSub }
   const email = lineAuthEmail(lineSub)
 
   const { data: existing } = await admin
@@ -142,7 +121,6 @@ async function sessionForLineUser(admin: ReturnType<typeof createClient>, lineUs
     .maybeSingle()
 
   let userId = existing?.id as string | undefined
-  let createdNewUser = false
 
   if (!userId) {
     const { data: created, error } = await admin.auth.admin.createUser({
@@ -165,45 +143,29 @@ async function sessionForLineUser(admin: ReturnType<typeof createClient>, lineUs
       if (!userId) throw error
     } else {
       userId = created.user.id
-      createdNewUser = true
     }
   }
 
   const profilePatch: Record<string, string> = {
     id: userId,
-    line_user_id: lineUser.sub,
+    line_user_id: lineSub,
   }
-  if (lineUser.name) {
-    const staleName =
-      !existing?.display_name ||
-      existing.display_name === 'Player' ||
-      /^line_[0-9a-f]{32}$/i.test(existing.display_name)
-    if (!existing || staleName) profilePatch.display_name = lineUser.name
-  } else if (!existing?.display_name || existing.display_name === 'Player') {
-    profilePatch.display_name = existing?.display_name ?? 'Player'
+  if (lineUser.name && (!existing?.display_name || existing.display_name === 'Player')) {
+    profilePatch.display_name = lineUser.name
   }
-
-  if (lineUser.picture) {
-    const staleAvatar =
-      !existing?.avatar_url || existing.avatar_url.includes('profile.line-scdn.net')
-    if (!existing || staleAvatar) profilePatch.avatar_url = lineUser.picture
+  if (
+    lineUser.picture &&
+    (!existing?.avatar_url || existing.avatar_url.includes('profile.line-scdn.net'))
+  ) {
+    profilePatch.avatar_url = lineUser.picture
   }
 
   if (existing) {
-    const { error: profileErr } = await admin.from('profiles').update(profilePatch).eq('id', userId)
-    if (profileErr) throw profileErr
+    await admin.from('profiles').update(profilePatch).eq('id', userId)
   } else {
-    const { error: profileErr } = await admin.from('profiles').upsert(profilePatch)
-    if (profileErr) throw profileErr
-  }
-
-  if (lineUser.name || lineUser.picture) {
-    await admin.auth.admin.updateUserById(userId, {
-      user_metadata: {
-        display_name: lineUser.name ?? existing?.display_name ?? 'Player',
-        avatar_url: lineUser.picture ?? existing?.avatar_url ?? null,
-        line_user_id: lineUser.sub,
-      },
+    await admin.from('profiles').upsert({
+      ...profilePatch,
+      display_name: lineUser.name ?? 'Player',
     })
   }
 
@@ -221,21 +183,11 @@ async function sessionForLineUser(admin: ReturnType<typeof createClient>, lineUs
   })
   if (sessErr) throw sessErr
 
-  await admin
-    .from('padel_players')
-    .update({ profile_id: userId, linked_at: new Date().toISOString() })
-    .ilike('line_user_id', lineSub)
-    .is('profile_id', null)
-
   return {
+    profile_id: userId,
     access_token: session.session?.access_token,
     refresh_token: session.session?.refresh_token,
-    display_name: lineUser.name,
-    avatar_url: lineUser.picture,
-    matched_profile_id: userId,
-    matched_existing: Boolean(existing),
-    created_new_user: createdNewUser,
-    line_sub_normalized: lineSub,
+    had_existing_profile: Boolean(existing),
   }
 }
 
@@ -243,11 +195,13 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
 
   try {
-    const { id_token, access_token, profile } = (await req.json()) as {
+    const { id_token, access_token, profile, padel_player_id } = (await req.json()) as {
       id_token?: string
       access_token?: string
       profile?: LineProfileInput
+      padel_player_id?: string
     }
+
     if (!id_token) {
       return new Response(JSON.stringify({ error: 'Missing id_token' }), {
         status: 400,
@@ -257,16 +211,15 @@ Deno.serve(async (req) => {
 
     const channelId = Deno.env.get('LINE_CHANNEL_ID') ?? ''
     if (!channelId) {
-      return new Response(JSON.stringify({ error: 'LINE channel not configured on server' }), {
+      return new Response(JSON.stringify({ error: 'LINE channel not configured' }), {
         status: 500,
         headers: { ...cors, 'Content-Type': 'application/json' },
       })
     }
 
     const hasAccessToken = typeof access_token === 'string' && access_token.length > 0
-
     let tokenUser = await lineUserFromIdToken(id_token, channelId)
-    let idTokenVerifyFailed = !tokenUser
+    const idTokenVerifyFailed = !tokenUser
     if (!tokenUser && hasAccessToken) {
       tokenUser = await lineUserFromAccessToken(access_token)
     }
@@ -276,38 +229,67 @@ Deno.serve(async (req) => {
         headers: { ...cors, 'Content-Type': 'application/json' },
       })
     }
-    tokenUser = { ...tokenUser, sub: normalizeLineUserId(tokenUser.sub) }
 
     const apiProfile = hasAccessToken ? await lineProfileFromAccessToken(access_token) : null
     const userinfoProfile =
       hasAccessToken && !apiProfile ? await lineProfileFromUserinfo(access_token) : null
-
     const lineUser = mergeLineUser(tokenUser, apiProfile ?? userinfoProfile, profile)
+    const lineSub = lineUser.sub
 
     const admin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
+    const { data: registeredProfile } = await admin
+      .from('profiles')
+      .select('id')
+      .ilike('line_user_id', lineSub)
+      .maybeSingle()
+
     const session = await sessionForLineUser(admin, lineUser)
+    if (!session.access_token || !session.refresh_token || !session.profile_id) {
+      return new Response(JSON.stringify({ error: 'Could not create session' }), {
+        status: 500,
+        headers: { ...cors, 'Content-Type': 'application/json' },
+      })
+    }
+
+    let mode: 'login' | 'connected' = 'login'
+
+    if (!registeredProfile && padel_player_id) {
+      const { data: linkable } = await admin.rpc('padel_player_still_linkable', {
+        p_padel_player_id: padel_player_id,
+      })
+      if (linkable) {
+        const { error: linkErr } = await admin.rpc('link_padel_player_direct', {
+          p_padel_player_id: padel_player_id,
+          p_profile_id: session.profile_id,
+          p_line_user_id: lineSub,
+          p_line_display_name: lineUser.name ?? null,
+          p_line_picture_url: lineUser.picture ?? null,
+        })
+        if (linkErr) {
+          return new Response(JSON.stringify({ error: linkErr.message }), {
+            status: 400,
+            headers: { ...cors, 'Content-Type': 'application/json' },
+          })
+        }
+        mode = 'connected'
+      }
+    }
 
     return new Response(
       JSON.stringify({
-        ...session,
-        profile_resolved: Boolean(lineUser.name),
-        profile_sources: {
-          api_profile: Boolean(apiProfile?.display_name),
-          userinfo: Boolean(userinfoProfile?.display_name),
-          client_profile: Boolean(profile?.display_name),
-          token_name: Boolean(tokenUser.name),
-          had_access_token: hasAccessToken,
-          id_token_verify_failed: idTokenVerifyFailed,
-          used_access_token_fallback: idTokenVerifyFailed && hasAccessToken,
-        },
+        mode,
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+        profile_id: session.profile_id,
+        padel_player_id: padel_player_id ?? null,
+        line_sub_normalized: lineSub,
+        id_token_verify_failed: idTokenVerifyFailed,
       }),
-      {
-        headers: { ...cors, 'Content-Type': 'application/json' },
-      },
+      { headers: { ...cors, 'Content-Type': 'application/json' } },
     )
   } catch (e) {
     return new Response(JSON.stringify({ error: String(e) }), {

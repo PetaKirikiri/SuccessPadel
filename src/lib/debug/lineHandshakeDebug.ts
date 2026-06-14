@@ -30,6 +30,7 @@ export function lineHandshakeDebug(
     timestamp: Date.now(),
     pageUrl: window.location.pathname + window.location.search,
     userAgent: navigator.userAgent.slice(0, 120),
+    hostname: window.location.hostname,
   }
 
   // #region agent log

@@ -44,7 +44,7 @@ export function shouldTryLineInAppSignIn(isAuthenticated: boolean): boolean {
 
 /**
  * Inside LINE: read LIFF session → match line_user_id → Supabase session.
- * No player-link / QR flow here — that stays on /link and profile UI.
+ * No player-link / QR flow here — guest profile pages use profileHandshake instead.
  */
 export async function runLineInAppSignIn(
   isAuthenticated: boolean,

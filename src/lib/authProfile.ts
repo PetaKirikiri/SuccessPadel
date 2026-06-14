@@ -2,7 +2,6 @@ import type { User } from '@supabase/supabase-js'
 import { isLineCdnAvatarUrl, shouldRefreshLineAvatar } from './lineAvatar'
 import { mirrorLineAvatarToStorage } from './profileAvatar'
 import { syncLineProfileFromLiff } from './line/profileSync'
-import { isInLineClient } from './line/liff'
 import { supabase } from './supabaseClient'
 import type { Profile } from './types'
 
@@ -65,7 +64,7 @@ export async function syncProfileForUser(user: User): Promise<Profile | null> {
       }
     }
 
-    if (existing.line_user_id && (isInLineClient() || existing.display_name === 'Player')) {
+    if (existing.line_user_id && existing.display_name === 'Player') {
       await syncLineProfileFromLiff(user.id)
     }
 

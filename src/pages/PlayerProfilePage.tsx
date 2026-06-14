@@ -22,6 +22,8 @@ import { resolvePlayerProfile } from '../lib/playerProfile'
 import { saveClaimPadelPlayer } from '../lib/authClaimPlayer'
 import { adminDeletePlayer, canAdminDeletePlayer } from '../lib/playerDelete'
 import { playerProfileShareUrl, sharePlayerProfile } from '../lib/playerProfileShare'
+import { isLineLiffBrowser } from '../lib/line/liff'
+import { runLinePlayerProfileHandshake } from '../lib/line/profileHandshake'
 import { supabase } from '../lib/supabaseClient'
 import type { PlayerProfileSnapshot } from '../lib/openPlayerProfile'
 
@@ -92,6 +94,9 @@ export function PlayerProfilePage() {
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [tab, setTab] = useState<PlayerProfileTab>('profile')
   const [ownedPadelPlayerId, setOwnedPadelPlayerId] = useState<string | null>(null)
+  const [lineHandshakeWorking, setLineHandshakeWorking] = useState(false)
+  const [lineHandshakeError, setLineHandshakeError] = useState<string | null>(null)
+  const lineHandshakeStarted = useRef(false)
 
   const isAdmin = Boolean(authProfile?.is_admin)
 
@@ -270,10 +275,54 @@ export function PlayerProfilePage() {
   )
 
   useEffect(() => {
+    if (loading || authLoading || user) return
+    if (!isLineLiffBrowser() && !inClient) return
+    if (!linkablePadelPlayerId || !canConnectLine) return
+    if (lineHandshakeStarted.current) return
+
+    lineHandshakeStarted.current = true
+    setLineHandshakeWorking(true)
+    setLineHandshakeError(null)
+
+    void runLinePlayerProfileHandshake(linkablePadelPlayerId).then((result) => {
+      if (result.redirected) {
+        setLineHandshakeWorking(false)
+        lineHandshakeStarted.current = false
+        return
+      }
+
+      setLineHandshakeWorking(false)
+
+      if (result.error) {
+        setLineHandshakeError(result.error)
+        lineHandshakeStarted.current = false
+        return
+      }
+
+      if (result.mode === 'login') {
+        navigate(competitionId ? `/competitions/${competitionId}` : '/friendly', { replace: true })
+        return
+      }
+
+      reloadProfile()
+    })
+  }, [
+    loading,
+    authLoading,
+    user,
+    inClient,
+    linkablePadelPlayerId,
+    canConnectLine,
+    competitionId,
+    navigate,
+  ])
+
+  useEffect(() => {
     if (loading || !linkablePadelPlayerId || resolved?.profile) return
     if (resolved?.padelLineUserId) return
+    if (isLineLiffBrowser() || inClient) return
     saveClaimPadelPlayer(linkablePadelPlayerId)
-  }, [linkablePadelPlayerId, loading, resolved?.padelLineUserId, resolved?.profile])
+  }, [linkablePadelPlayerId, loading, resolved?.padelLineUserId, resolved?.profile, inClient])
 
   useEffect(() => {
     if (!user?.id) {
@@ -421,6 +470,16 @@ export function PlayerProfilePage() {
 
       <main data-scroll-y className="scroll-y min-h-0 min-w-0 flex-1 pt-2">
         <AppShellColumn fill={false} className="space-y-3 pb-8">
+          {lineHandshakeWorking ? (
+            <div className="pointer-events-none fixed inset-0 z-[300] flex items-center justify-center bg-white/80 px-6">
+              <p className="text-center text-sm text-brand-muted">{t('lineLink.signingInLine')}</p>
+            </div>
+          ) : null}
+          {lineHandshakeError ? (
+            <div className="mx-4 rounded-lg border border-red-200 bg-white px-3 py-2 text-center text-xs text-red-600">
+              {lineHandshakeError}
+            </div>
+          ) : null}
           {inClient && !loading && !(isOwnProfile && authLoading) ? <LineAppBookmark /> : null}
           {loading || (isOwnProfile && authLoading) ? (
             <p className="py-8 text-center text-sm text-brand-muted">{t('common.loading')}</p>

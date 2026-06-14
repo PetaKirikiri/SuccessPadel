@@ -568,6 +568,7 @@ export type Messages = {
     gameInvolvement: string
     linkLine: string
     create: string
+    createPlaceholder: string
     createHint: string
     createAccept: string
     createFailed: string

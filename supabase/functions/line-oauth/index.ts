@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
+import { lineAuthEmail, normalizeLineUserId } from '../_shared/lineUserId.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -39,7 +40,7 @@ async function lineUserFromAccessToken(accessToken: string): Promise<LineUser | 
   return { sub: u.sub, name: u.name, picture: u.picture }
 }
 
-LD async function magicLinkEmailForUser(
+async function magicLinkEmailForUser(
   admin: ReturnType<typeof createClient>,
   userId: string,
   fallbackEmail: string,
@@ -53,10 +54,11 @@ async function findAuthUserIdByEmail(
   admin: ReturnType<typeof createClient>,
   email: string,
 ): Promise<string | undefined> {
+  const needle = email.toLowerCase()
   for (let page = 1; page <= 20; page++) {
     const { data: list, error } = await admin.auth.admin.listUsers({ page, perPage: 200 })
     if (error) throw error
-    const found = list.users.find((u) => u.email === email)
+    const found = list.users.find((u) => u.email?.toLowerCase() === needle)
     if (found?.id) return found.id
     if (list.users.length < 200) break
   }
@@ -64,13 +66,14 @@ async function findAuthUserIdByEmail(
 }
 
 async function sessionForLineUser(admin: ReturnType<typeof createClient>, lineUser: LineUser) {
-  lineUser = { ...lineUser, name: clubLineDisplayName(lineUser.sub, lineUser.name) }
-  const email = `line_${lineUser.sub}@successpadel.local`
+  const lineSub = normalizeLineUserId(lineUser.sub)
+  lineUser = { ...lineUser, sub: lineSub, name: clubLineDisplayName(lineSub, lineUser.name) }
+  const email = lineAuthEmail(lineSub)
 
   const { data: existing } = await admin
     .from('profiles')
     .select('id, display_name, avatar_url')
-    .eq('line_user_id', lineUser.sub)
+    .ilike('line_user_id', lineSub)
     .maybeSingle()
 
   let userId = existing?.id as string | undefined
@@ -192,6 +195,7 @@ Deno.serve(async (req) => {
         headers: { ...cors, 'Content-Type': 'application/json' },
       })
     }
+    lineUser.sub = normalizeLineUserId(lineUser.sub)
 
     const admin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',

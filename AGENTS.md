@@ -37,17 +37,24 @@ Do **not** use `vercel deploy` or npx vercel for routine releases unless the use
 | Where | URL |
 |--------|-----|
 | **Mac (this machine)** | `http://localhost:5173` — `npm run dev` |
-| **Phone/tablet (LAN)** | `http://172.20.10.2:5173` — `npm run dev:phone` |
+| **Phone/tablet (LAN)** | `http://172.20.10.2:5173` — **`npm run dev:phone` only** |
 
-Peta’s Mac LAN IP (checked 2026-06-14): run `npm run dev:phone` and use the **Network** line Vite prints (currently **172.20.10.2** on iPhone hotspot — re-check with `ifconfig en0` if it stops working).
+Peta’s Mac LAN IP (checked 2026-06-14): **`172.20.10.2`** on iPhone hotspot (`en0`). Re-check with `ipconfig getifaddr en0` after switching networks. An old `npm run dev` session may still print a stale address like `192.168.1.70` — ignore it; use the **Network** line from `npm run dev:phone`.
+
+**LINE LIFF in the LINE app always loads production** (`https://success-padel-ffzt.vercel.app`) unless you change the LIFF Endpoint in LINE Developers. Local IP is for Safari/phone browser testing only.
 
 ## Local dev debug ingest
 
-Phone/tablet on the same Wi‑Fi can POST debug logs back to your Mac while `npm run dev` / `npm run dev:phone` is running.
+| Source | Where logs land |
+|--------|------------------|
+| **LINE app (production LIFF)** | Supabase `login_debug_events` (session `d2fcaa`) — not your Mac |
+| **Phone → Mac Vite** | `npm run debug:tail` → `.debug/ingest.jsonl` and `.cursor/debug-d2fcaa.log` |
 
-1. Start dev server: `npm run dev:phone` (binds `0.0.0.0:5173`)
-2. Tail logs: `npm run debug:tail` (writes to `.debug/ingest.jsonl`)
-3. Open app with **`?debug=1`** once (sticky in localStorage), e.g. `http://172.20.10.2:5173/friendly/…/pad?debug=1`
+Phone/tablet on hotspot can POST debug logs to your Mac while **`npm run dev:phone`** is running:
+
+1. Start dev server: `npm run dev:phone` (binds `0.0.0.0:5173`, Network line shows current IP)
+2. Tail logs: `npm run debug:tail`
+3. Open app at **`http://172.20.10.2:5173/friendly?debug=1`** (replace IP if `ipconfig getifaddr en0` differs)
 4. Or set `VITE_DEV_DEBUG=1` in `.env.local` for always-on ingest in DEV
 
 Client API: [`src/lib/debug/devDebug.ts`](src/lib/debug/devDebug.ts) — `devDebugLog(channel, message, data)`. Vite middleware: [`scripts/viteDebugIngestPlugin.ts`](scripts/viteDebugIngestPlugin.ts).

@@ -582,8 +582,9 @@ export const th: Messages = {
     gameInvolvement: '{count} รายการเกม',
     linkLine: 'QR LINE',
     create: 'เพิ่มผู้เล่น',
-    createHint: 'ใส่ชื่อ แล้วสแกน QR ใน LINE เมื่อพร้อม',
-    createAccept: 'สร้าง QR',
+    createPlaceholder: 'ชื่อผู้เล่นใหม่…',
+    createHint: 'พิมพ์ชื่อ แล้วกดเพิ่ม — ลิงก์โปรไฟล์จะเปิดให้แชร์ใน LINE',
+    createAccept: 'เพิ่ม',
     createFailed: 'สร้างผู้เล่นไม่ได้',
   },
   lang: {

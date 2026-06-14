@@ -585,8 +585,9 @@ export const ru: Messages = {
     gameInvolvement: '{count} игровых записей',
     linkLine: 'QR LINE',
     create: 'Добавить игрока',
-    createHint: 'Введите имя, затем отсканируйте QR в LINE, когда игрок готов.',
-    createAccept: 'Создать QR',
+    createPlaceholder: 'Имя игрока…',
+    createHint: 'Введите имя, нажмите Добавить — откроется ссылка для LINE.',
+    createAccept: 'Добавить',
     createFailed: 'Не удалось создать игрока',
   },
   lang: {

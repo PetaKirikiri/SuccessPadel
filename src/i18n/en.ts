@@ -585,8 +585,9 @@ export const en: Messages = {
     gameInvolvement: '{count} game entries',
     linkLine: 'LINE QR',
     create: 'Add player',
-    createHint: 'Enter a name, then scan the QR in LINE when they are ready.',
-    createAccept: 'Create QR',
+    createPlaceholder: 'New player name…',
+    createHint: 'Type a name, tap Add — profile link opens to share in LINE.',
+    createAccept: 'Add',
     createFailed: 'Could not create player',
   },
   lang: {

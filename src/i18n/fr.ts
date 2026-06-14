@@ -585,8 +585,9 @@ export const fr: Messages = {
     gameInvolvement: '{count} entrées de jeu',
     linkLine: 'QR LINE',
     create: 'Ajouter un joueur',
-    createHint: 'Entrez un nom, puis scannez le QR dans LINE quand il est prêt.',
-    createAccept: 'Créer QR',
+    createPlaceholder: 'Nom du joueur…',
+    createHint: 'Entrez un nom, appuyez sur Ajouter — le lien profil s’ouvre pour partager dans LINE.',
+    createAccept: 'Ajouter',
     createFailed: 'Impossible de créer le joueur',
   },
   lang: {

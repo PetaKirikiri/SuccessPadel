@@ -33,10 +33,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const loadProfile = useCallback(async (authUser: User) => {
+  const loadProfile = useCallback(async (authUser: User): Promise<Profile | null> => {
+    const { data: profileRow } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', authUser.id)
+      .maybeSingle()
+
+    if (!profileRow) {
+      // #region agent log
+      lineHandshakeDebug('S7-session', 'AuthProvider.tsx:orphan', 'no profile row — signing out', 'H8', {
+        userIdPrefix: authUser.id.slice(0, 8),
+        emailDomain: authUser.email?.split('@')[1] ?? null,
+      })
+      // #endregion
+      await supabase.auth.signOut()
+      return null
+    }
+
     const next = await syncProfileForUser(authUser)
+    if (!next) return null
+
     await claimPendingPadelPlayer()
+    // #region agent log
+    lineHandshakeDebug('S7-session', 'AuthProvider.tsx:profile', 'profile loaded', 'H8', {
+      userIdPrefix: authUser.id.slice(0, 8),
+      displayName: next.display_name?.slice(0, 24) ?? null,
+      hasLineId: Boolean(next.line_user_id),
+    })
+    // #endregion
     setProfile(next)
+    return next
   }, [])
 
   const applySession = useCallback(
@@ -49,8 +76,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // #endregion
       setSession(nextSession)
       setUser(nextSession?.user ?? null)
-      if (nextSession?.user) await loadProfile(nextSession.user)
-      else setProfile(null)
+      if (nextSession?.user) {
+        const loaded = await loadProfile(nextSession.user)
+        if (!loaded) {
+          setSession(null)
+          setUser(null)
+          setProfile(null)
+        }
+      } else {
+        setProfile(null)
+      }
     },
     [loadProfile],
   )

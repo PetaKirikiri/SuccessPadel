@@ -1,6 +1,6 @@
 import { Share2, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { FriendlyDeleteConfirm } from '../components/FriendlyDeleteConfirm'
 import { useAuth } from '../hooks/useAuth'
 import { useTranslation } from '../hooks/useTranslation'
@@ -152,7 +152,6 @@ function MemberSection({
 
 export function MembersPage() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const { user, profile } = useAuth()
   const isAdmin = Boolean(profile?.is_admin)
   const [members, setMembers] = useState<Profile[]>([])
@@ -213,14 +212,16 @@ export function MembersPage() {
       p_guest_email: null,
       p_profile_id: null,
     })
-    setCreateBusy(false)
     if (error || !data) {
+      setCreateBusy(false)
       setCreateError(error?.message ?? t('members.createFailed'))
       return
     }
+    const playerId = data as string
     setCreateName('')
-    void load()
-    navigate(`/players/${data as string}`)
+    await load()
+    setCreateBusy(false)
+    await handleShare(playerId, firstDisplayName(name))
   }
 
   const handleShare = async (id: string, name: string) => {
@@ -288,6 +289,44 @@ export function MembersPage() {
     <div className="space-y-5 px-3 pb-[calc(4.5rem+env(safe-area-inset-bottom))] pt-1 md:px-6">
       <h1 className="text-lg font-semibold text-brand-primary">{t('members.title')}</h1>
 
+      {isAdmin ? (
+        <section className="overflow-hidden rounded-2xl border border-brand-border bg-brand-surface">
+          <div className="border-b border-brand-border/60 px-3 py-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
+              {t('members.create')}
+            </p>
+            <p className="mt-0.5 text-xs text-brand-muted">{t('members.createHint')}</p>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-bg-alt text-sm font-semibold text-brand-muted ring-1 ring-brand-border/80">
+              +
+            </span>
+            <input
+              type="text"
+              value={createName}
+              onChange={(e) => setCreateName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && createName.trim() && !createBusy) {
+                  void createPlayer()
+                }
+              }}
+              placeholder={t('members.createPlaceholder')}
+              className="brand-input min-w-0 flex-1 border-0 bg-transparent px-0 shadow-none focus:ring-0"
+              autoComplete="off"
+            />
+            <button
+              type="button"
+              disabled={createBusy || !createName.trim()}
+              onClick={() => void createPlayer()}
+              className="brand-btn shrink-0 px-3 py-2 text-sm font-semibold disabled:opacity-50"
+            >
+              {createBusy ? t('common.loading') : t('members.createAccept')}
+            </button>
+          </div>
+          {createError ? <p className="px-3 pb-3 text-xs text-red-600">{createError}</p> : null}
+        </section>
+      ) : null}
+
       <MemberSection
         title={t('members.lineLinked')}
         empty={t('members.noLineMembers')}
@@ -335,33 +374,6 @@ export function MembersPage() {
           )
         })}
       </MemberSection>
-
-      {isAdmin ? (
-        <section className="space-y-2 rounded-2xl border border-brand-border bg-brand-surface p-3">
-          <h2 className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-            {t('members.create')}
-          </h2>
-          <p className="text-xs text-brand-muted">{t('members.createHint')}</p>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={createName}
-              onChange={(e) => setCreateName(e.target.value)}
-              className="brand-input min-w-0 flex-1"
-              autoComplete="off"
-            />
-            <button
-              type="button"
-              disabled={createBusy || !createName.trim()}
-              onClick={() => void createPlayer()}
-              className="brand-btn shrink-0 px-4 text-sm font-semibold disabled:opacity-50"
-            >
-              {createBusy ? t('common.loading') : t('members.createAccept')}
-            </button>
-          </div>
-          {createError ? <p className="text-xs text-red-600">{createError}</p> : null}
-        </section>
-      ) : null}
 
       {deleteTarget ? (
         <FriendlyDeleteConfirm

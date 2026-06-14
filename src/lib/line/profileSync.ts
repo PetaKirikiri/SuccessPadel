@@ -1,6 +1,6 @@
 import { supabase } from '../supabaseClient'
 import { mirrorLineAvatarToStorage } from '../profileAvatar'
-import { isLineCdnAvatarUrl } from '../lineAvatar'
+import { isLineCdnAvatarUrl, shouldRefreshLineAvatar } from '../lineAvatar'
 import {
   getDecodedLineClaims,
   getLineProfile,
@@ -51,20 +51,33 @@ export async function applyLineProfilePatch(
   userId: string,
   patch: LineProfilePatch,
 ): Promise<boolean> {
+  const { data: existing } = await supabase
+    .from('profiles')
+    .select('display_name, avatar_url')
+    .eq('id', userId)
+    .maybeSingle()
+
+  const staleName =
+    !existing?.display_name ||
+    existing.display_name === 'Player' ||
+    /^line_[0-9a-f]{32}$/i.test(existing.display_name)
+
   let avatarUrl = patch.picture_url ?? null
   if (avatarUrl && isLineCdnAvatarUrl(avatarUrl)) {
     const mirrored = await mirrorLineAvatarToStorage(userId, avatarUrl)
     if (mirrored) avatarUrl = mirrored
   }
 
-  const { error } = await supabase
-    .from('profiles')
-    .update({
-      display_name: patch.display_name,
-      avatar_url: avatarUrl,
-      ...(patch.user_id ? { line_user_id: patch.user_id } : {}),
-    })
-    .eq('id', userId)
+  const profileUpdate: Record<string, string | null> = {}
+  if (staleName && patch.display_name) profileUpdate.display_name = patch.display_name
+  if (avatarUrl && shouldRefreshLineAvatar(existing?.avatar_url, avatarUrl)) {
+    profileUpdate.avatar_url = avatarUrl
+  }
+  if (patch.user_id) profileUpdate.line_user_id = patch.user_id
+
+  if (Object.keys(profileUpdate).length === 0) return true
+
+  const { error } = await supabase.from('profiles').update(profileUpdate).eq('id', userId)
 
   return !error
 }

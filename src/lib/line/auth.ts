@@ -4,7 +4,6 @@ import { claimPendingPadelPlayer } from '../claimPadelPlayer'
 import { lineHandshakeDebug } from '../debug/lineHandshakeDebug'
 import { supabase } from '../supabaseClient'
 import {
-  clearLineProfileReconsentFlag,
   clearLiffLoginCooldown,
   ensureLineProfileConsent,
   getLineAccessToken,
@@ -17,9 +16,8 @@ import {
   lineLoginRedirect,
   liffLoginCooldownActive,
 } from './liff'
-import { clubDisplayName, clubDisplayNameFromLine } from '../clubMemberDisplay'
 import { handshakeSiteOrigin } from '../siteUrl'
-import { readLineProfilePatch, syncLineProfileFromLiff } from './profileSync'
+import { readLineProfilePatch } from './profileSync'
 import { hasLineOAuth, startLineOAuthLogin } from './oauth'
 
 export type LineSignInResult = {
@@ -176,6 +174,10 @@ export async function signInWithLine(): Promise<LineSignInResult> {
     refresh_token?: string
     display_name?: string
     avatar_url?: string
+    matched_profile_id?: string
+    matched_existing?: boolean
+    created_new_user?: boolean
+    line_sub_normalized?: string
   }
 
   // #region agent log
@@ -184,6 +186,10 @@ export async function signInWithLine(): Promise<LineSignInResult> {
     hasAccessToken: Boolean(payload.access_token),
     hasRefreshToken: Boolean(payload.refresh_token),
     displayName: payload.display_name ? 'yes' : 'no',
+    matchedProfileIdPrefix: payload.matched_profile_id?.slice(0, 8) ?? null,
+    matchedExisting: payload.matched_existing ?? null,
+    createdNewUser: payload.created_new_user ?? null,
+    lineSubNormalized: payload.line_sub_normalized?.slice(0, 6) ?? null,
   })
   // #endregion
 
@@ -223,35 +229,6 @@ export async function signInWithLine(): Promise<LineSignInResult> {
   }
 
   const user = confirmed.session.user
-  let resolvedName = payload.display_name ?? profilePayload?.display_name
-  let resolvedAvatar = payload.avatar_url ?? profilePayload?.picture_url
-
-  if (!resolvedName) {
-    const liffPatch = await readLineProfilePatch()
-    resolvedName = liffPatch?.display_name
-    resolvedAvatar = liffPatch?.picture_url
-  }
-
-  if (resolvedName) {
-    resolvedName = clubDisplayName(
-      user.id,
-      clubDisplayNameFromLine(profilePayload?.user_id, resolvedName) ?? resolvedName,
-    )
-  }
-
-  if (resolvedName) {
-    clearLineProfileReconsentFlag()
-    await supabase
-      .from('profiles')
-      .update({
-        display_name: resolvedName,
-        avatar_url: resolvedAvatar ?? null,
-        line_user_id: profilePayload?.user_id ?? undefined,
-      })
-      .eq('id', user.id)
-  } else if (isInLineClient()) {
-    await syncLineProfileFromLiff(user.id)
-  }
 
   await syncProfileForUser(user)
   await claimPendingPadelPlayer()
@@ -260,6 +237,7 @@ export async function signInWithLine(): Promise<LineSignInResult> {
   // #region agent log
   lineHandshakeDebug('S8-ui', 'auth.ts:done', 'signInWithLine complete', 'H5', {
     userIdPrefix: user.id.slice(0, 8),
+    emailDomain: user.email?.split('@')[1] ?? null,
   })
   // #endregion
   return { error: null, redirected: false }
