@@ -109,6 +109,78 @@ async function magicLinkEmailForUser(
   return data.user.email ?? fallbackEmail
 }
 
+async function sessionForProfileId(
+  admin: ReturnType<typeof createClient>,
+  profileId: string,
+  lineUser: LineUser,
+) {
+  const lineSub = normalizeLineUserId(lineUser.sub)
+  const email = lineAuthEmail(lineSub)
+
+  const { data: existing, error: loadErr } = await admin
+    .from('profiles')
+    .select('id, display_name, avatar_url, line_user_id')
+    .eq('id', profileId)
+    .maybeSingle()
+  if (loadErr) throw loadErr
+  if (!existing?.id) throw new Error('Profile not found')
+
+  const profilePatch: Record<string, string | null> = {
+    line_user_id: lineSub,
+    display_name: lineUser.name ?? existing.display_name ?? 'Player',
+    avatar_url: lineUser.picture ?? existing.avatar_url ?? null,
+  }
+  const { error: profileErr } = await admin.from('profiles').update(profilePatch).eq('id', profileId)
+  if (profileErr) throw profileErr
+
+  let userId = profileId
+  const { error: userErr } = await admin.auth.admin.getUserById(profileId)
+  if (userErr) {
+    const { data: created, error } = await admin.auth.admin.createUser({
+      id: profileId,
+      email,
+      email_confirm: true,
+      user_metadata: {
+        display_name: profilePatch.display_name,
+        avatar_url: profilePatch.avatar_url,
+        line_user_id: lineSub,
+      },
+    })
+    if (error) {
+      const { data: list } = await admin.auth.admin.listUsers()
+      userId =
+        list.users.find(
+          (u) =>
+            u.id === profileId ||
+            u.email?.toLowerCase() === email ||
+            normalizeLineUserId(String(u.user_metadata?.line_user_id ?? '')) === lineSub,
+        )?.id ?? profileId
+    } else {
+      userId = created.user.id
+    }
+  }
+
+  const linkEmail = await magicLinkEmailForUser(admin, userId, email)
+  const { data: link, error: linkErr } = await admin.auth.admin.generateLink({
+    type: 'magiclink',
+    email: linkEmail,
+  })
+  if (linkErr) throw linkErr
+
+  const tokenHash = link.properties?.hashed_token
+  const { data: session, error: sessErr } = await admin.auth.verifyOtp({
+    token_hash: tokenHash,
+    type: 'email',
+  })
+  if (sessErr) throw sessErr
+
+  return {
+    profile_id: profileId,
+    access_token: session.session?.access_token,
+    refresh_token: session.session?.refresh_token,
+  }
+}
+
 async function sessionForLineUser(admin: ReturnType<typeof createClient>, lineUser: LineUser) {
   const lineSub = normalizeLineUserId(lineUser.sub)
   lineUser = { ...lineUser, sub: lineSub }
@@ -247,7 +319,31 @@ Deno.serve(async (req) => {
       .ilike('line_user_id', lineSub)
       .maybeSingle()
 
-    const session = await sessionForLineUser(admin, lineUser)
+    let stubProfileId: string | null = null
+    if (!registeredProfile && padel_player_id) {
+      const { data: linkable } = await admin.rpc('padel_player_still_linkable', {
+        p_padel_player_id: padel_player_id,
+      })
+      if (linkable) {
+        const { data: padelRow } = await admin
+          .from('padel_players')
+          .select('profile_id')
+          .eq('id', padel_player_id)
+          .maybeSingle()
+        if (padelRow?.profile_id) {
+          const { data: prof } = await admin
+            .from('profiles')
+            .select('id, line_user_id')
+            .eq('id', padelRow.profile_id)
+            .maybeSingle()
+          if (prof?.id && !prof.line_user_id) stubProfileId = prof.id
+        }
+      }
+    }
+
+    const session = stubProfileId
+      ? await sessionForProfileId(admin, stubProfileId, lineUser)
+      : await sessionForLineUser(admin, lineUser)
     if (!session.access_token || !session.refresh_token || !session.profile_id) {
       return new Response(JSON.stringify({ error: 'Could not create session' }), {
         status: 500,

@@ -1,3 +1,4 @@
+import { lineAppEntryUrl } from './line/liff'
 import { shareSiteOrigin } from './siteUrl'
 
 export function playerProfileShareUrl(
@@ -5,7 +6,8 @@ export function playerProfileShareUrl(
   competitionId?: string | null,
 ): string {
   const params = competitionId ? `?competition=${encodeURIComponent(competitionId)}` : ''
-  return `${shareSiteOrigin()}/players/${playerId}${params}`
+  const path = `/players/${playerId}${params}`
+  return lineAppEntryUrl(path) ?? `${shareSiteOrigin()}${path}`
 }
 
 export type SharePlayerProfileResult = 'shared' | 'copied' | 'failed' | 'cancelled'
