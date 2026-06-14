@@ -285,8 +285,8 @@ function courtLabelClass(
   finished = false,
 ) {
   const base = finished
-    ? 'font-display text-2xl font-bold text-brand-sage md:text-3xl'
-    : 'font-display text-2xl font-bold md:text-3xl'
+    ? 'text-center font-display text-2xl font-bold text-brand-sage md:text-3xl'
+    : 'text-center font-display text-2xl font-bold md:text-3xl'
   return courtHasCurrentUser(currentUserId, court)
     ? `${base} ${CURRENT_PLAYER_HIGHLIGHT_CLASS}`
     : finished
@@ -1072,10 +1072,10 @@ function CourtLabelRow({
   t: TranslateFn
 }) {
   const label = displayCourtLabel(courtLabel, t)
-  const titleClass = `${courtLabelClass(currentUserId, court, finished)} text-left`
+  const titleClass = courtLabelClass(currentUserId, court, finished)
   return (
-    <div className="flex min-h-12 items-center gap-2 px-3 py-2">
-      <p className={`min-w-0 flex-1 truncate ${titleClass}`}>{label}</p>
+    <div className="flex min-h-12 items-center justify-center px-3 py-2">
+      <p className={`truncate text-center ${titleClass}`}>{label}</p>
     </div>
   )
 }
