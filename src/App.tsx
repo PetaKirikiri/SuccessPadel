@@ -7,6 +7,7 @@ import { useAuth } from './hooks/useAuth'
 import { useLockViewport } from './hooks/useLockViewport'
 import { AuthProvider } from './providers/AuthProvider'
 import { LocaleProvider } from './providers/LocaleProvider'
+import { ThemeProvider } from './providers/ThemeProvider'
 import { AdminGameForm } from './pages/AdminGameForm'
 import { CourtGameForm } from './pages/CourtGameForm'
 import { AdminGames } from './pages/AdminGames'
@@ -266,7 +267,8 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <LocaleProvider>
+      <ThemeProvider>
+        <LocaleProvider>
         <AuthProvider>
           <AppShell>
             <NativeDeepLinkHandler />
@@ -323,7 +325,8 @@ export default function App() {
             </div>
           </AppShell>
         </AuthProvider>
-      </LocaleProvider>
+        </LocaleProvider>
+      </ThemeProvider>
     </BrowserRouter>
   )
 }

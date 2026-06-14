@@ -41,6 +41,15 @@
     />
     <script>
       ;(function () {
+        try {
+          if (localStorage.getItem('sp-theme') === 'dark') {
+            document.documentElement.classList.add('dark')
+          }
+        } catch (e) {}
+      })()
+    </script>
+    <script>
+      ;(function () {
         function lockWidth() {
           var w = (window.visualViewport && window.visualViewport.width) || window.innerWidth
           var h = window.innerHeight

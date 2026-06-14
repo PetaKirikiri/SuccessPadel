@@ -15,6 +15,8 @@ export const ru: Messages = {
     submitFailed: 'Не удалось сохранить',
     copyLinkPrompt: 'Скопируйте ссылку и откройте в браузере:',
     copyBrowserLinkPrompt: 'Скопируйте ссылку:',
+    themeLight: 'Светлый режим',
+    themeDark: 'Тёмный режим',
   },
   guestChip: {
     playTodayHint:

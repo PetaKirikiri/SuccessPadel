@@ -15,6 +15,8 @@ export const en: Messages = {
     submitFailed: 'Submit failed',
     copyLinkPrompt: 'Copy this link and open it in your browser:',
     copyBrowserLinkPrompt: 'Copy this link:',
+    themeLight: 'Light view',
+    themeDark: 'Dark view',
   },
   guestChip: {
     playTodayHint:

@@ -15,6 +15,8 @@ export const th: Messages = {
     submitFailed: 'บันทึกไม่สำเร็จ',
     copyLinkPrompt: 'คัดลอกลิงก์นี้แล้วเปิดในเบราว์เซอร์:',
     copyBrowserLinkPrompt: 'คัดลอกลิงก์นี้:',
+    themeLight: 'โหมดสว่าง',
+    themeDark: 'โหมดมืด',
   },
   guestChip: {
     playTodayHint:

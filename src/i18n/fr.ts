@@ -15,6 +15,8 @@ export const fr: Messages = {
     submitFailed: 'Échec de l’enregistrement',
     copyLinkPrompt: 'Copiez ce lien et ouvrez-le dans votre navigateur :',
     copyBrowserLinkPrompt: 'Copiez ce lien :',
+    themeLight: 'Mode clair',
+    themeDark: 'Mode sombre',
   },
   guestChip: {
     playTodayHint:

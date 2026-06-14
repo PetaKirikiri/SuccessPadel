@@ -1,4 +1,4 @@
--- Exclusive Americano · Sunday 14 Jun 2026 · 12 players · 3 courts · 7:00–9:00 PM (2h)
+-- Exclusive Americano · Sunday 14 Jun 2026 · 12 players · 3 courts · 7:03–9:00 PM (2h, 3 min buffer at start)
 -- Session: f14e06aa-0614-4000-8000-000000000012
 
 insert into public.game_sessions (
@@ -30,7 +30,7 @@ insert into public.game_sessions (
   'Exclusive Americano Match',
   '2026-06-14',
   '2026-06-14',
-  '2026-06-14T19:00:00+07:00',
+  '2026-06-14T19:03:00+07:00',
   '2026-06-14T21:00:00+07:00',
   'open',
   'competition',

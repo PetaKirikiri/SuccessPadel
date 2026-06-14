@@ -13,6 +13,8 @@ export type Messages = {
     submitFailed: string
     copyLinkPrompt: string
     copyBrowserLinkPrompt: string
+    themeLight: string
+    themeDark: string
   }
   aria: {
     back: string
