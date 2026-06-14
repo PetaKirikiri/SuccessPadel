@@ -69,22 +69,31 @@ export function pivotScheduleByGame(columns: CourtColumn[]): GameRow[] {
   }))
 }
 
+export function formatGameTimeLabel(startsAtMs: number, endsAtMs: number): string {
+  return `${formatClubTime(new Date(startsAtMs))}–${formatClubTime(new Date(endsAtMs))}`
+}
+
 export function pivotScheduleByCourt(
   games: GameRound[],
   eventStartsAt: string | undefined,
   gameMinutes: number,
   breakMinutes = COMPETITION_BREAK_MINUTES,
+  eventEndsAt?: string,
 ): CourtColumn[] {
   const map = new Map<string, CourtColumn>()
   const order: string[] = []
+  const eventEndMs = eventEndsAt ? new Date(eventEndsAt).getTime() : null
 
   for (const game of games) {
     const slot = eventStartsAt
       ? gameSlotTimes(eventStartsAt, game.gameNumber, gameMinutes, breakMinutes)
       : null
-    const timeLabel = slot
-      ? `${formatClubTime(slot.startsAt)}–${formatClubTime(slot.endsAt)}`
-      : ''
+    let timeLabel = ''
+    if (slot) {
+      const endsAtMs =
+        eventEndMs != null ? Math.min(slot.endsAt.getTime(), eventEndMs) : slot.endsAt.getTime()
+      timeLabel = formatGameTimeLabel(slot.startsAt.getTime(), endsAtMs)
+    }
 
     for (const match of game.matches) {
       if (!map.has(match.courtLabel)) {

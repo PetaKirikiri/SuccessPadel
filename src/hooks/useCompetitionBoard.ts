@@ -171,8 +171,9 @@ export function useCompetitionBoard(
       session?.starts_at ?? undefined,
       gameMinutes || RANKED_GAME_MINUTES,
       scheduledBreakMinutes,
+      session?.ends_at ?? undefined,
     )
-  }, [americanoGames, gameMinutes, isAmericano, scheduledBreakMinutes, session?.starts_at])
+  }, [americanoGames, gameMinutes, isAmericano, scheduledBreakMinutes, session?.ends_at, session?.starts_at])
 
   const liveCourtsByGame = useMemo(() => {
     const sortOrderByCourtId = new Map(clubCourts.map((c) => [c.id, c.sort_order]))

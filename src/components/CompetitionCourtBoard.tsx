@@ -5,7 +5,7 @@ import { liveCourtScoreKey, type LiveCourtGamesScore } from '../lib/liveCourtSco
 import { useTranslation } from '../hooks/useTranslation'
 import type { TranslateFn } from '../i18n'
 import type { AmericanoScoringUnit } from '../lib/competitionPresets'
-import { pivotScheduleByGame, type CourtColumn } from '../lib/competitionCourtBoard'
+import { formatGameTimeLabel, pivotScheduleByGame, type CourtColumn } from '../lib/competitionCourtBoard'
 import { isScoringTimeUnlocked } from '../lib/competitionScoringUnlock'
 import { playTwoMinuteAlarm, TWO_MINUTES_MS } from '../lib/gameCountdownAlarm'
 import { RANKED_GAME_MINUTES } from '../lib/competitionLayout'
@@ -1209,6 +1209,7 @@ function GameCardHeader({
 
 function ScoringGameCard({
   game,
+  displayTimeLabel,
   liveCourtEnabled,
   friendly,
   sessionId,
@@ -1234,6 +1235,7 @@ function ScoringGameCard({
   t,
 }: {
   game: ScoringGame
+  displayTimeLabel: string
   liveCourtEnabled: boolean
   friendly: boolean
   sessionId?: string
@@ -1292,7 +1294,7 @@ function ScoringGameCard({
         gameNumber={game.gameNumber}
         isLiveNow={isLiveNow}
         isCurrentGame={isCurrentGame}
-        timeLabel={game.timeLabel}
+        timeLabel={displayTimeLabel}
         countdown={countdown}
         countdownLabelText={countdownLabelText}
         finished={finished}
@@ -1624,11 +1626,17 @@ export function CompetitionCourtBoard({
             isLiveNow ||
             timeUp)
 
+        const displayTimeLabel =
+          times != null
+            ? formatGameTimeLabel(times.startsAt, times.endsAt)
+            : game.timeLabel
+
         if (mode === 'scoring' && matchForCourt) {
           return (
             <ScoringGameCard
               key={game.gameNumber}
               game={game}
+              displayTimeLabel={displayTimeLabel}
               liveCourtEnabled={liveCourtEnabled}
               friendly={friendly}
               sessionId={sessionId}
@@ -1690,7 +1698,7 @@ export function CompetitionCourtBoard({
               gameNumber={game.gameNumber}
               isLiveNow={isLiveNow}
               isCurrentGame={isCurrentGame}
-              timeLabel={game.timeLabel}
+              timeLabel={displayTimeLabel}
               countdown={countdown}
               countdownLabelText={countdownLabel(state, t)}
               finished={finished}

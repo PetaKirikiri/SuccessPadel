@@ -318,8 +318,9 @@ export function CompetitionRun() {
       session?.starts_at ?? undefined,
       gameMinutes || RANKED_GAME_MINUTES,
       scheduledBreakMinutes,
+      session?.ends_at ?? undefined,
     )
-  }, [americanoGames, gameMinutes, isAmericano, reviewFromDb, scheduledBreakMinutes, session?.starts_at])
+  }, [americanoGames, gameMinutes, isAmericano, reviewFromDb, scheduledBreakMinutes, session?.ends_at, session?.starts_at])
 
   const scheduleComparison = useMemo(
     () => compareSchedules(liveCourtsByGame, americanoGames),
