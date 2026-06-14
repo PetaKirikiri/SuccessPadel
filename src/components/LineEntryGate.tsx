@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useTranslation } from '../hooks/useTranslation'
-import { runLineInAppConnect } from '../lib/line/lineInAppConnect'
+import {
+  runLineInAppSignIn,
+  shouldTryLineInAppSignIn,
+} from '../lib/line/lineInAppConnect'
 import { lineOAuthCallbackCode } from '../lib/line/oauth'
-import { hasLiffId } from '../lib/line/liff'
+import { hasLiffId, isLineLiffBrowser } from '../lib/line/liff'
 
 function shouldSkipLineEntryGate(pathname: string, search: string): boolean {
   if (pathname.startsWith('/auth/')) return true
@@ -17,39 +20,50 @@ export function LineEntryGate({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
   const { pathname, search } = useLocation()
   const { t } = useTranslation()
-  const started = useRef(false)
   const [working, setWorking] = useState(false)
-  const [linking, setLinking] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
-    if (!hasLiffId()) return
-    if (loading) return
-    if (shouldSkipLineEntryGate(pathname, search)) return
-    if (started.current) return
-
-    started.current = true
-    setWorking(true)
-    setLinking(pathname.startsWith('/players/'))
-
-    void runLineInAppConnect(pathname, search, Boolean(user)).then((result) => {
-      if (result.redirected) return
+    if (!hasLiffId() || loading || user) {
       setWorking(false)
-      if (result.error) {
-        setError(result.error)
-        return
-      }
-      setError(null)
-    })
-  }, [loading, user, pathname, search])
+      return
+    }
+    if (shouldSkipLineEntryGate(pathname, search)) return
+    if (!shouldTryLineInAppSignIn(false)) return
 
-  const statusLabel = linking ? t('lineLink.linkingAccount') : t('lineLink.signingInLine')
+    let cancelled = false
+    setWorking(true)
+    setError(null)
+
+    void runLineInAppSignIn(false).then((result) => {
+      if (cancelled) return
+      setWorking(false)
+      if (result.skipped || result.redirected) return
+      if (result.error) setError(result.error)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [loading, user, pathname, search, attempt])
+
+  useEffect(() => {
+    if (!hasLiffId() || user) return
+    const retry = () => {
+      if (document.visibilityState !== 'visible') return
+      if (!isLineLiffBrowser()) return
+      setAttempt((n) => n + 1)
+    }
+    document.addEventListener('visibilitychange', retry)
+    return () => document.removeEventListener('visibilitychange', retry)
+  }, [user])
 
   return (
     <>
       {working ? (
         <div className="pointer-events-none fixed inset-0 z-[300] flex items-center justify-center bg-white/80 px-6">
-          <p className="text-center text-sm text-brand-muted">{statusLabel}</p>
+          <p className="text-center text-sm text-brand-muted">{t('lineLink.signingInLine')}</p>
         </div>
       ) : null}
       {error ? (

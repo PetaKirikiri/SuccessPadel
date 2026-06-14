@@ -1,4 +1,3 @@
-import { probeLineClientProfile } from '../line/clientProfile'
 import { signInWithLine } from '../line/auth'
 import {
   detectInLineClient,
@@ -87,8 +86,6 @@ export async function runLoginWithAPP(): Promise<LoginWithAppResult> {
       inClient: false,
     }
   }
-
-  await probeLineClientProfile(true)
 
   const { error, redirected } = await signInWithLine()
   return { error, redirected, inClient: true }

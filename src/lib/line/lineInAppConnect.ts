@@ -1,94 +1,78 @@
-import { peekClaimPadelPlayer, saveClaimPadelPlayer } from '../authClaimPlayer'
-import { claimPadelPlayer, claimPendingPadelPlayer } from '../claimPadelPlayer'
-import { runLoginWithAPP, shouldRunLineHandshake } from '../auth/LoginWithAPP'
-import { supabase } from '../supabaseClient'
-import { linkPadelPlayerInLineApp } from './playerLink'
+import { peekClaimPadelPlayer } from '../authClaimPlayer'
+import { claimPendingPadelPlayer } from '../claimPadelPlayer'
+import { signInWithLine } from './auth'
+import { detectInLineClient, hasLiffId, initLiff, isInLineClient, isLineLiffBrowser } from './liff'
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const LIFF_INIT_MS = 12_000
 
-export function playerIdFromPath(pathname: string): string | null {
-  const match = pathname.match(/^\/players\/([^/]+)/)
-  const id = match?.[1]
-  return id && UUID_RE.test(id) ? id : null
-}
-
-async function linkablePadelPlayerId(playerId: string): Promise<string | null> {
-  const { data, error } = await supabase.rpc('ensure_linkable_padel_player', {
-    p_player_id: playerId,
-  })
-  if (error || !data) return null
-  return data as string
-}
-
-export type LineInAppConnectResult = {
+export type LineInAppSignInResult = {
   ok: boolean
   redirected: boolean
   error: string | null
-  linking: boolean
+  skipped: boolean
 }
 
-export async function runLineInAppConnect(
-  pathname: string,
-  search: string,
-  isAuthenticated: boolean,
-): Promise<LineInAppConnectResult> {
-  if (!(await shouldRunLineHandshake())) {
-    return { ok: true, redirected: false, error: null, linking: false }
+async function initLiffWithTimeout(): Promise<boolean> {
+  if (!hasLiffId()) return false
+  try {
+    await Promise.race([
+      initLiff(),
+      new Promise<never>((_, reject) => {
+        window.setTimeout(() => reject(new Error('LIFF init timed out')), LIFF_INIT_MS)
+      }),
+    ])
+    return true
+  } catch {
+    return false
   }
+}
 
-  const competitionParam = new URLSearchParams(search).get('competition')
-  const competitionId =
-    competitionParam && UUID_RE.test(competitionParam) ? competitionParam : null
-  const profilePlayerId = playerIdFromPath(pathname)
+/** True when we should try LIFF sign-in on this page load. */
+export function shouldTryLineInAppSignIn(isAuthenticated: boolean): boolean {
+  if (isAuthenticated || !hasLiffId()) return false
+  return isLineLiffBrowser()
+}
 
+/**
+ * Inside LINE: read LIFF session → match line_user_id → Supabase session.
+ * No player-link / QR flow here — that stays on /link and profile UI.
+ */
+export async function runLineInAppSignIn(
+  isAuthenticated: boolean,
+): Promise<LineInAppSignInResult> {
   if (isAuthenticated) {
-    const pending = peekClaimPadelPlayer()
-    if (pending) {
+    if (peekClaimPadelPlayer()) {
       const claimErr = await claimPendingPadelPlayer()
       if (claimErr && !/already linked/i.test(claimErr)) {
-        return { ok: false, redirected: false, error: claimErr, linking: true }
-      }
-      return { ok: true, redirected: false, error: null, linking: Boolean(pending) }
-    }
-
-    if (profilePlayerId) {
-      const linkable = await linkablePadelPlayerId(profilePlayerId)
-      if (linkable) {
-        const claimErr = await claimPadelPlayer(linkable)
-        if (claimErr && !/already linked/i.test(claimErr)) {
-          return { ok: false, redirected: false, error: claimErr, linking: true }
-        }
-        return { ok: true, redirected: false, error: null, linking: true }
+        return { ok: false, redirected: false, error: claimErr, skipped: false }
       }
     }
-
-    return { ok: true, redirected: false, error: null, linking: false }
+    return { ok: true, redirected: false, error: null, skipped: true }
   }
 
-  if (profilePlayerId) {
-    const linkable = await linkablePadelPlayerId(profilePlayerId)
-    if (linkable) {
-      saveClaimPadelPlayer(linkable)
-      const result = await linkPadelPlayerInLineApp(linkable, competitionId)
-      if (result.redirected) {
-        return { ok: false, redirected: true, error: null, linking: true }
-      }
-      return {
-        ok: !result.error,
-        redirected: false,
-        error: result.error ?? null,
-        linking: true,
-      }
+  if (!isLineLiffBrowser()) {
+    const inClient = await detectInLineClient()
+    if (!inClient) {
+      return { ok: true, redirected: false, error: null, skipped: true }
     }
   }
 
-  const { error, redirected, inClient } = await runLoginWithAPP()
+  if (!(await initLiffWithTimeout())) {
+    return {
+      ok: false,
+      redirected: false,
+      error: 'LINE could not start. Close this tab and reopen from LINE.',
+      skipped: false,
+    }
+  }
+
+  if (!isInLineClient()) {
+    return { ok: true, redirected: false, error: null, skipped: true }
+  }
+
+  const { error, redirected } = await signInWithLine()
   if (redirected) {
-    return { ok: false, redirected: true, error: null, linking: false }
+    return { ok: false, redirected: true, error: null, skipped: false }
   }
-  if (!inClient) {
-    return { ok: true, redirected: false, error: null, linking: false }
-  }
-  return { ok: !error, redirected: false, error, linking: false }
+  return { ok: !error, redirected: false, error, skipped: false }
 }

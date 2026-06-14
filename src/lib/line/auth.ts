@@ -104,13 +104,19 @@ export async function signInWithLine(): Promise<LineSignInResult> {
   const profilePayload = await readLineProfilePatch()
   const accessToken = await getLineAccessToken()
 
-  const { data, error } = await supabase.functions.invoke('line-liff-auth', {
+  const invokeAuth = supabase.functions.invoke('line-liff-auth', {
     body: {
       id_token: idToken,
       access_token: accessToken ?? undefined,
       profile: profilePayload,
     },
   })
+  const { data, error } = await Promise.race([
+    invokeAuth,
+    new Promise<never>((_, reject) => {
+      window.setTimeout(() => reject(new Error('LINE sign-in timed out. Try again.')), 25_000)
+    }),
+  ])
 
   if (error) {
     return { error: await edgeFunctionErrorMessage(error), redirected: false }
