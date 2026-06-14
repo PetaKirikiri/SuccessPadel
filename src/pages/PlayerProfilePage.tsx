@@ -258,7 +258,7 @@ export function PlayerProfilePage() {
   ])
 
   const showInlineLineSetup = Boolean(
-    needsPlayerSignup && linkablePadelPlayerId && !canEditProfile && canConnectLine,
+    needsPlayerSignup && linkablePadelPlayerId && !canEditProfile && canConnectLine && !inClient,
   )
 
   const playerNotFound = Boolean(

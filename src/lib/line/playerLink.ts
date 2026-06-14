@@ -400,6 +400,31 @@ export async function consumeLineHandoffToken(handoffToken: string): Promise<{
   return { competitionId: payload.competition_id ?? null }
 }
 
+/** Finish guest → LINE link inside the LINE app (no external browser handoff). */
+export async function linkPadelPlayerInLineApp(
+  padelPlayerId: string,
+  competitionId: string | null = null,
+): Promise<{ error?: string | null; redirected?: boolean }> {
+  if (!hasLiffId()) return { error: 'LINE app link is not configured' }
+
+  await initLiff()
+
+  const { request, error: reqErr } = await createLinePlayerLinkRequest(competitionId, padelPlayerId)
+  if (reqErr || !request) return { error: reqErr ?? 'Could not start linking' }
+
+  const { handoffToken, redirected, error: linkErr } = await completeLinePlayerLinkInLiff(
+    request.linkToken,
+  )
+  if (redirected) return { redirected: true }
+  if (linkErr || !handoffToken) return { error: linkErr ?? 'Link failed' }
+
+  const { error: handoffErr } = await consumeLineHandoffToken(handoffToken)
+  if (handoffErr) return { error: handoffErr }
+
+  window.dispatchEvent(new Event('successpadel:profile-synced'))
+  return { error: null }
+}
+
 export function competitionPathAfterLink(competitionId: string | null): string {
   return competitionId ? `/competitions/${competitionId}` : '/'
 }
