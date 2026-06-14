@@ -3,7 +3,18 @@ import {
   consumeClaimPadelPlayer,
   peekClaimPadelPlayer,
 } from './authClaimPlayer'
+import { peekReturnTo } from './authReturnTo'
+import { isPlayerProfilePath } from './line/profileHandshake'
 import { supabase } from './supabaseClient'
+
+/** Guest → account linking only runs from a player profile invite link. */
+export function shouldClaimPendingPadelPlayer(): boolean {
+  if (!peekClaimPadelPlayer()) return false
+  if (isPlayerProfilePath(window.location.pathname)) return true
+  const returnTo = peekReturnTo('')
+  if (!returnTo) return false
+  return isPlayerProfilePath(returnTo.split('?')[0])
+}
 
 export async function claimPadelPlayer(padelPlayerId: string): Promise<string | null> {
   const { error } = await supabase.rpc('claim_padel_player', {
@@ -27,8 +38,9 @@ export async function claimPadelPlayer(padelPlayerId: string): Promise<string | 
   return message
 }
 
-/** Link invite guest to the account that just signed in (same browser). */
+/** Link invite guest to the account that just signed in (player profile pages only). */
 export async function claimPendingPadelPlayer(): Promise<string | null> {
+  if (!shouldClaimPendingPadelPlayer()) return null
   const id = peekClaimPadelPlayer()
   if (!id) return null
   const err = await claimPadelPlayer(id)

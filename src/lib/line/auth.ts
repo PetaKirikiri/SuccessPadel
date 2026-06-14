@@ -1,6 +1,5 @@
 import { FunctionsHttpError } from '@supabase/supabase-js'
 import { syncProfileForUser } from '../authProfile'
-import { claimPendingPadelPlayer } from '../claimPadelPlayer'
 import { lineHandshakeDebug } from '../debug/lineHandshakeDebug'
 import { supabase } from '../supabaseClient'
 import {
@@ -231,7 +230,6 @@ export async function signInWithLine(): Promise<LineSignInResult> {
   const user = confirmed.session.user
 
   await syncProfileForUser(user)
-  await claimPendingPadelPlayer()
   clearLiffLoginCooldown()
   window.dispatchEvent(new Event('successpadel:profile-synced'))
   // #region agent log

@@ -1,4 +1,4 @@
-import { Plus, Share2, Trash2 } from 'lucide-react'
+import { Share2, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FriendlyDeleteConfirm } from '../components/FriendlyDeleteConfirm'
@@ -167,7 +167,6 @@ export function MembersPage() {
   const [guestPlayers, setGuestPlayers] = useState<GuestPlayerRow[]>([])
   const [padelLineByProfileId, setPadelLineByProfileId] = useState<Map<string, string>>(() => new Map())
   const [initialLoading, setInitialLoading] = useState(true)
-  const [createOpen, setCreateOpen] = useState(false)
   const [createName, setCreateName] = useState('')
   const [createBusy, setCreateBusy] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
@@ -211,11 +210,10 @@ export function MembersPage() {
       authLoading,
       profileIsAdmin: profile?.is_admin ?? null,
       initialLoading,
-      createOpen,
       userIdPrefix: user?.id?.slice(0, 8) ?? null,
     })
     // #endregion
-  }, [isAdmin, authLoading, profile?.is_admin, initialLoading, createOpen, user?.id])
+  }, [isAdmin, authLoading, profile?.is_admin, initialLoading, user?.id])
 
   const lineMembers = useMemo(
     () => members.filter((m) => Boolean(m.line_user_id?.trim())),
@@ -244,7 +242,6 @@ export function MembersPage() {
     }
     const playerId = data as string
     setCreateName('')
-    setCreateOpen(false)
     await load()
     setCreateBusy(false)
     await handleShare(playerId, firstDisplayName(name))
@@ -347,11 +344,7 @@ export function MembersPage() {
     <div className="space-y-5 px-3 pb-[calc(4.5rem+env(safe-area-inset-bottom))] pt-1 md:px-6">
       <h1 className="text-lg font-semibold text-brand-primary">{t('members.title')}</h1>
 
-      {isAdmin && createOpen ? (
-        <div className="sticky top-0 z-20 -mx-3 bg-brand-bg/95 px-3 pb-2 pt-1 backdrop-blur-sm md:-mx-6 md:px-6">
-          {createPlayerForm}
-        </div>
-      ) : null}
+      {isAdmin ? createPlayerForm : null}
 
       <MemberSection
         title={t('members.lineLinked')}
@@ -415,18 +408,6 @@ export function MembersPage() {
             setDeleteError(null)
           }}
         />
-      ) : null}
-
-      {isAdmin ? (
-        <button
-          type="button"
-          onClick={() => setCreateOpen((open) => !open)}
-          aria-label={t('members.create')}
-          aria-expanded={createOpen}
-          className="fixed right-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-brand-accent text-white shadow-lg bottom-[calc(var(--app-shell-dock-height)+0.75rem)]"
-        >
-          <Plus className="h-6 w-6" strokeWidth={2.5} aria-hidden />
-        </button>
       ) : null}
     </div>
   )

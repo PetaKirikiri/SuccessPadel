@@ -24,15 +24,6 @@ function shouldSkipLineEntryGate(pathname: string, search: string): boolean {
   return false
 }
 
-function competitionIdFromReturn(returnTo: string): string | null {
-  try {
-    const q = returnTo.includes('?') ? returnTo.slice(returnTo.indexOf('?')) : ''
-    return new URLSearchParams(q).get('competition')
-  } catch {
-    return null
-  }
-}
-
 /** Prompt LINE Allow + sign-in when opened inside the LINE app. */
 export function LineEntryGate({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -125,14 +116,6 @@ export function LineEntryGate({ children }: { children: ReactNode }) {
         signInStarted.current = false
         if (result.error) {
           setError(result.error)
-          return
-        }
-        if (result.mode === 'login') {
-          const competitionId = competitionIdFromReturn(returnTo)
-          navigate(competitionId ? `/competitions/${competitionId}` : '/friendly', {
-            replace: true,
-          })
-          consumeReturnTo('/friendly')
           return
         }
         navigate(consumeReturnTo('/friendly'), { replace: true })

@@ -299,11 +299,6 @@ export function PlayerProfilePage() {
         return
       }
 
-      if (result.mode === 'login') {
-        navigate(competitionId ? `/competitions/${competitionId}` : '/friendly', { replace: true })
-        return
-      }
-
       reloadProfile()
     })
   }, [

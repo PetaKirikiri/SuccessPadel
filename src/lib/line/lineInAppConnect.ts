@@ -1,5 +1,3 @@
-import { peekClaimPadelPlayer } from '../authClaimPlayer'
-import { claimPendingPadelPlayer } from '../claimPadelPlayer'
 import { lineHandshakeDebug } from '../debug/lineHandshakeDebug'
 import { signInWithLine } from './auth'
 import {
@@ -58,12 +56,6 @@ export async function runLineInAppSignIn(
   // #endregion
 
   if (isAuthenticated) {
-    if (peekClaimPadelPlayer()) {
-      const claimErr = await claimPendingPadelPlayer()
-      if (claimErr && !/already linked/i.test(claimErr)) {
-        return { ok: false, redirected: false, error: claimErr, skipped: false }
-      }
-    }
     return { ok: true, redirected: false, error: null, skipped: true }
   }
 
