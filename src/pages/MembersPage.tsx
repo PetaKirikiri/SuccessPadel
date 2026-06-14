@@ -1,4 +1,4 @@
-import { Share2, Trash2 } from 'lucide-react'
+import { Plus, Share2, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FriendlyDeleteConfirm } from '../components/FriendlyDeleteConfirm'
@@ -129,21 +129,29 @@ function MemberSection({
   title,
   empty,
   count,
+  headerAction,
+  addon,
   children,
 }: {
   title: string
   empty?: string
   count: number
+  headerAction?: React.ReactNode
+  addon?: React.ReactNode
   children: React.ReactNode
 }) {
   return (
     <section className="space-y-1.5">
-      <h2 className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">{title}</h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">{title}</h2>
+        {headerAction}
+      </div>
+      {addon}
       {count > 0 ? (
         <ul className="overflow-hidden rounded-2xl border border-brand-border bg-brand-surface">
           {children}
         </ul>
-      ) : empty ? (
+      ) : addon ? null : empty ? (
         <p className="text-sm text-brand-muted">{empty}</p>
       ) : null}
     </section>
@@ -158,6 +166,7 @@ export function MembersPage() {
   const [guestPlayers, setGuestPlayers] = useState<GuestPlayerRow[]>([])
   const [padelLineByProfileId, setPadelLineByProfileId] = useState<Map<string, string>>(() => new Map())
   const [loading, setLoading] = useState(true)
+  const [createOpen, setCreateOpen] = useState(false)
   const [createName, setCreateName] = useState('')
   const [createBusy, setCreateBusy] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
@@ -219,10 +228,43 @@ export function MembersPage() {
     }
     const playerId = data as string
     setCreateName('')
+    setCreateOpen(false)
     await load()
     setCreateBusy(false)
     await handleShare(playerId, firstDisplayName(name))
   }
+
+  const createPlayerForm = isAdmin ? (
+    <div className="overflow-hidden rounded-2xl border border-brand-border bg-brand-surface">
+      <div className="flex items-center gap-2 px-3 py-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-bg-alt text-sm font-semibold text-brand-muted ring-1 ring-brand-border/80">
+          +
+        </span>
+        <input
+          type="text"
+          value={createName}
+          onChange={(e) => setCreateName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && createName.trim() && !createBusy) {
+              void createPlayer()
+            }
+          }}
+          placeholder={t('members.createPlaceholder')}
+          className="brand-input min-w-0 flex-1 border-0 bg-transparent px-0 shadow-none focus:ring-0"
+          autoComplete="off"
+        />
+        <button
+          type="button"
+          disabled={createBusy || !createName.trim()}
+          onClick={() => void createPlayer()}
+          className="brand-btn shrink-0 px-3 py-2 text-sm font-semibold disabled:opacity-50"
+        >
+          {createBusy ? t('common.loading') : t('members.createAccept')}
+        </button>
+      </div>
+      {createError ? <p className="px-3 pb-3 text-xs text-red-600">{createError}</p> : null}
+    </div>
+  ) : null
 
   const handleShare = async (id: string, name: string) => {
     const { data } = await supabase.rpc('ensure_linkable_padel_player', { p_player_id: id })
@@ -289,44 +331,6 @@ export function MembersPage() {
     <div className="space-y-5 px-3 pb-[calc(4.5rem+env(safe-area-inset-bottom))] pt-1 md:px-6">
       <h1 className="text-lg font-semibold text-brand-primary">{t('members.title')}</h1>
 
-      {isAdmin ? (
-        <section className="overflow-hidden rounded-2xl border border-brand-border bg-brand-surface">
-          <div className="border-b border-brand-border/60 px-3 py-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-              {t('members.create')}
-            </p>
-            <p className="mt-0.5 text-xs text-brand-muted">{t('members.createHint')}</p>
-          </div>
-          <div className="flex items-center gap-2 px-3 py-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-bg-alt text-sm font-semibold text-brand-muted ring-1 ring-brand-border/80">
-              +
-            </span>
-            <input
-              type="text"
-              value={createName}
-              onChange={(e) => setCreateName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && createName.trim() && !createBusy) {
-                  void createPlayer()
-                }
-              }}
-              placeholder={t('members.createPlaceholder')}
-              className="brand-input min-w-0 flex-1 border-0 bg-transparent px-0 shadow-none focus:ring-0"
-              autoComplete="off"
-            />
-            <button
-              type="button"
-              disabled={createBusy || !createName.trim()}
-              onClick={() => void createPlayer()}
-              className="brand-btn shrink-0 px-3 py-2 text-sm font-semibold disabled:opacity-50"
-            >
-              {createBusy ? t('common.loading') : t('members.createAccept')}
-            </button>
-          </div>
-          {createError ? <p className="px-3 pb-3 text-xs text-red-600">{createError}</p> : null}
-        </section>
-      ) : null}
-
       <MemberSection
         title={t('members.lineLinked')}
         empty={t('members.noLineMembers')}
@@ -339,6 +343,20 @@ export function MembersPage() {
         title={t('members.otherMembers')}
         empty={t('members.noOtherMembers')}
         count={otherMembers.length}
+        headerAction={
+          isAdmin ? (
+            <button
+              type="button"
+              onClick={() => setCreateOpen((open) => !open)}
+              aria-label={t('members.create')}
+              aria-expanded={createOpen}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-brand-border bg-brand-bg-alt text-brand-primary active:scale-[0.98]"
+            >
+              <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden />
+            </button>
+          ) : null
+        }
+        addon={createOpen ? createPlayerForm : null}
       >
         {otherMembers.map(renderMemberRow)}
       </MemberSection>
