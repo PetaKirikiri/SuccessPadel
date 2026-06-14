@@ -39,7 +39,7 @@ Do **not** use `vercel deploy` or npx vercel for routine releases unless the use
 | **Mac (this machine)** | `http://localhost:5173` — `npm run dev` |
 | **Phone/tablet (LAN)** | `http://172.20.10.2:5173` — `npm run dev:phone` |
 
-Peta’s Mac LAN IP (checked 2026-06-10): **172.20.10.2** (`en0`, often iPhone hotspot — re-check with `ipconfig getifaddr en0` if it stops working).
+Peta’s Mac LAN IP (checked 2026-06-14): run `npm run dev:phone` and use the **Network** line Vite prints (currently **172.20.10.2** on iPhone hotspot — re-check with `ifconfig en0` if it stops working).
 
 ## Local dev debug ingest
 

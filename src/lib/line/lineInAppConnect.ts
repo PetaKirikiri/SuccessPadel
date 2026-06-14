@@ -97,9 +97,18 @@ export async function runLineInAppSignIn(
     }
   }
 
-  if (!isInLineClient()) {
+  const inClient = isInLineClient()
+  // #region agent log
+  lineHandshakeDebug('S3-liff', 'lineInAppConnect.ts:client', 'inClient check before signIn', 'H2', {
+    inClient,
+    isLineBrowser: isLineLiffBrowser(),
+    lineLoggedIn: isLineLoggedIn(),
+  })
+  // #endregion
+
+  if (!inClient && !isLineLiffBrowser()) {
     // #region agent log
-    lineHandshakeDebug('S3-liff', 'lineInAppConnect.ts:skip', 'not in LINE client after init', 'H2', {})
+    lineHandshakeDebug('S3-liff', 'lineInAppConnect.ts:skip', 'not LINE browser and not in client', 'H2', {})
     // #endregion
     return { ok: true, redirected: false, error: null, skipped: true }
   }
