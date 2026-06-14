@@ -22,6 +22,38 @@ export type GameRow = {
   courts: (CourtGameCell & { courtLabel: string })[]
 }
 
+/** Numeric key from labels like "Court 1" — unknown labels sort last. */
+export function courtLabelSortKey(label: string): number {
+  const match = /^Court\s*(\d+)$/i.exec(label.trim())
+  return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER
+}
+
+export function compareCourtLabels(a: string, b: string): number {
+  const keyDiff = courtLabelSortKey(a) - courtLabelSortKey(b)
+  return keyDiff !== 0 ? keyDiff : a.localeCompare(b)
+}
+
+export function sortMatchesByCourtLabel<T extends { courtLabel: string }>(matches: T[]): T[] {
+  return [...matches].sort((a, b) => compareCourtLabels(a.courtLabel, b.courtLabel))
+}
+
+export function sortGameRoundsByCourt(games: GameRound[]): GameRound[] {
+  return games.map((game) => ({
+    ...game,
+    matches: sortMatchesByCourtLabel(game.matches),
+  }))
+}
+
+export function sortLiveCourtsByClubOrder<
+  T extends { courtId: string; courtName: string },
+>(courts: T[], sortOrderByCourtId: Map<string, number>): T[] {
+  return [...courts].sort(
+    (a, b) =>
+      (sortOrderByCourtId.get(a.courtId) ?? courtLabelSortKey(a.courtName)) -
+      (sortOrderByCourtId.get(b.courtId) ?? courtLabelSortKey(b.courtName)),
+  )
+}
+
 export function pivotScheduleByGame(columns: CourtColumn[]): GameRow[] {
   const gameNumbers = columns[0]?.cells.map((c) => c.gameNumber) ?? []
   return gameNumbers.map((gameNumber) => ({
@@ -70,5 +102,5 @@ export function pivotScheduleByCourt(
     }
   }
 
-  return order.map((label) => map.get(label)!)
+  return order.sort(compareCourtLabels).map((label) => map.get(label)!)
 }

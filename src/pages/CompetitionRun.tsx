@@ -6,7 +6,7 @@ import { CompetitionCourtBoard } from '../components/CompetitionCourtBoard'
 import { CompetitionLayoutPreview } from '../components/CompetitionLayoutPreview'
 import { compareSchedules } from '../lib/competitionScheduleCompare'
 import { competitionScheduleDebugLog } from '../lib/debug/competitionScheduleDebug'
-import { pivotScheduleByCourt } from '../lib/competitionCourtBoard'
+import { pivotScheduleByCourt, sortGameRoundsByCourt, sortLiveCourtsByClubOrder } from '../lib/competitionCourtBoard'
 import { CompetitionLeaderboard } from '../components/CompetitionLeaderboard'
 import { computeAmericanoStandings } from '../lib/competitionStandings'
 import { enrichStandingsWithAvatars } from '../lib/leaderboardEntries'
@@ -213,6 +213,7 @@ export function CompetitionRun() {
   const courts = activeRound ? groupByCourt(activeRound.competition_round_players ?? []) : []
 
   const liveCourtsByGame = useMemo(() => {
+    const sortOrderByCourtId = new Map(clubCourts.map((c) => [c.id, c.sort_order]))
     const map = new Map<
       number,
       {
@@ -226,7 +227,7 @@ export function CompetitionRun() {
       }[]
     >()
     for (const round of rounds) {
-      const groups = groupByCourt(round.competition_round_players ?? [])
+      const groups = sortLiveCourtsByClubOrder(groupByCourt(round.competition_round_players ?? []), sortOrderByCourtId)
       if (groups.length === 0) continue
       map.set(
         round.round_number,
@@ -242,7 +243,7 @@ export function CompetitionRun() {
       )
     }
     return map
-  }, [rounds])
+  }, [rounds, clubCourts])
 
   const roundIdForGame = useCallback(
     (gameNumber: number) => rounds.find((r) => r.round_number === gameNumber)?.id,
@@ -282,15 +283,19 @@ export function CompetitionRun() {
 
   const americanoGames = useMemo(() => {
     if (!isAmericano) return []
-    if (reviewFromDb) return gamesFromDbRounds(rounds, clubCourts)
-    if (!layoutValid) return []
-    const stored = storedScheduleFromConfig(
-      session?.scoring_config as Record<string, unknown> | null | undefined,
-    )
-    if (stored.length > 0) {
-      return gamesFromStoredSchedule(rankedRoster, stored, courtNames)
+    let games: ReturnType<typeof gamesFromStoredSchedule>
+    if (reviewFromDb) games = gamesFromDbRounds(rounds, clubCourts)
+    else if (!layoutValid) return []
+    else {
+      const stored = storedScheduleFromConfig(
+        session?.scoring_config as Record<string, unknown> | null | undefined,
+      )
+      games =
+        stored.length > 0
+          ? gamesFromStoredSchedule(rankedRoster, stored, courtNames)
+          : planRankedSchedule(rankedRoster, courtNames, totalGames, scheduleSeed)
     }
-    return planRankedSchedule(rankedRoster, courtNames, totalGames, scheduleSeed)
+    return sortGameRoundsByCourt(games)
   }, [
     isAmericano,
     reviewFromDb,

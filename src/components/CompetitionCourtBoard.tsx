@@ -713,19 +713,12 @@ function useGameScoring({
 
   const scoringCourts = useMemo(() => {
     if (!gameRoundId) return []
-    if (courtsForGame.length > 0) {
-      return courtsForGame.map((court) => ({
-        courtId: court.courtId,
-        courtLabel: court.courtName,
-      }))
-    }
+    const liveByName = new Map(courtsForGame.map((court) => [court.courtName, court]))
     return game.courts.flatMap((court, courtIndex) => {
-      const courtId = courtIdForLabel(
-        court.courtLabel,
-        courtIndex,
-        courtsForGame,
-        courtIdByLabel,
-      )
+      const live = liveByName.get(court.courtLabel)
+      const courtId =
+        live?.courtId ??
+        courtIdForLabel(court.courtLabel, courtIndex, courtsForGame, courtIdByLabel)
       if (!courtId) return []
       return [{ courtId, courtLabel: court.courtLabel }]
     })

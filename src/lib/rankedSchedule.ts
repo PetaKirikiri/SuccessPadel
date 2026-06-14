@@ -131,25 +131,27 @@ export function gamesFromStoredSchedule(
   const courtsInUse = courtNames.slice(0, courts)
   return stored.map((round) => ({
     gameNumber: round.round,
-    matches: round.matches.map((match, courtIndex) => ({
-      courtLabel: courtsInUse[match.court - 1] ?? courtsInUse[courtIndex] ?? `Court ${match.court}`,
-      teamA: [
-        nameForRosterId(ranked, match.team_a[0]),
-        nameForRosterId(ranked, match.team_a[1]),
-      ],
-      teamB: [
-        nameForRosterId(ranked, match.team_b[0]),
-        nameForRosterId(ranked, match.team_b[1]),
-      ],
-      teamAPlayers: [
-        courtPlayerForRosterId(ranked, match.team_a[0]),
-        courtPlayerForRosterId(ranked, match.team_a[1]),
-      ],
-      teamBPlayers: [
-        courtPlayerForRosterId(ranked, match.team_b[0]),
-        courtPlayerForRosterId(ranked, match.team_b[1]),
-      ],
-    })),
+    matches: [...round.matches]
+      .sort((a, b) => a.court - b.court)
+      .map((match, courtIndex) => ({
+        courtLabel: courtsInUse[match.court - 1] ?? courtsInUse[courtIndex] ?? `Court ${match.court}`,
+        teamA: [
+          nameForRosterId(ranked, match.team_a[0]),
+          nameForRosterId(ranked, match.team_a[1]),
+        ],
+        teamB: [
+          nameForRosterId(ranked, match.team_b[0]),
+          nameForRosterId(ranked, match.team_b[1]),
+        ],
+        teamAPlayers: [
+          courtPlayerForRosterId(ranked, match.team_a[0]),
+          courtPlayerForRosterId(ranked, match.team_a[1]),
+        ],
+        teamBPlayers: [
+          courtPlayerForRosterId(ranked, match.team_b[0]),
+          courtPlayerForRosterId(ranked, match.team_b[1]),
+        ],
+      })),
   }))
 }
 

@@ -19,7 +19,7 @@ import {
 } from '../lib/rankedSchedule'
 import type { CourtPlayer, GameRound } from '../lib/americanoSchedule'
 import type { PlaySide } from '../lib/types'
-import { pivotScheduleByCourt, type CourtColumn } from '../lib/competitionCourtBoard'
+import { pivotScheduleByCourt, sortGameRoundsByCourt, sortLiveCourtsByClubOrder, type CourtColumn } from '../lib/competitionCourtBoard'
 import type { CompetitionPlayer } from './useCompetitions'
 import {
   matchWinnerTeam,
@@ -149,7 +149,7 @@ export function useCompetitionBoard(
     } else {
       games = planRankedSchedule(rankedRoster, courtNames, totalGames, scheduleSeed)
     }
-    return games
+    return sortGameRoundsByCourt(games)
   }, [
     isAmericano,
     hasLiveRounds,
@@ -173,14 +173,18 @@ export function useCompetitionBoard(
   }, [americanoGames, gameMinutes, isAmericano, session?.starts_at])
 
   const liveCourtsByGame = useMemo(() => {
+    const sortOrderByCourtId = new Map(clubCourts.map((c) => [c.id, c.sort_order]))
     const map = new Map<number, LiveCourt[]>()
     for (const round of rounds) {
-      const groups = groupLiveCourts(round.competition_round_players ?? [])
+      const groups = sortLiveCourtsByClubOrder(
+        groupLiveCourts(round.competition_round_players ?? []),
+        sortOrderByCourtId,
+      )
       if (groups.length === 0) continue
       map.set(round.round_number, groups)
     }
     return map
-  }, [rounds])
+  }, [rounds, clubCourts])
 
   const roundIdForGame = useCallback(
     (gameNumber: number) => rounds.find((r) => r.round_number === gameNumber)?.id,
