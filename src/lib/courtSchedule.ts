@@ -29,7 +29,12 @@ export function clubHourToDate(dateStr: string, hour: number, minute = 0): Date 
 }
 
 export function formatClubTime(d: Date): string {
-  return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })
+  return d.toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: CLUB_TIMEZONE,
+  })
 }
 
 export function formatClubDateShort(d: Date): string {

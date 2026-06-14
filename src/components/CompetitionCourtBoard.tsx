@@ -1485,7 +1485,20 @@ export function CompetitionCourtBoard({
   liveCourtScores,
 }: Props) {
   const { t } = useTranslation()
-  const games = useMemo(() => pivotScheduleByGame(columns), [columns])
+  const games = useMemo(() => {
+    const rows = pivotScheduleByGame(columns)
+    if (!roundTimesByGame?.size) return rows
+    return rows.map((game) => {
+      const times = roundTimesByGame.get(game.gameNumber)
+      if (!times) return game
+      const timeLabel = formatGameTimeLabel(times.startsAt, times.endsAt)
+      return {
+        ...game,
+        timeLabel,
+        courts: game.courts.map((court) => ({ ...court, timeLabel })),
+      }
+    })
+  }, [columns, roundTimesByGame])
   const [tick, setTick] = useState(() => Date.now())
   const [collapsedGames, setCollapsedGames] = useState<Record<number, boolean>>({})
   const collapseSeedKeyRef = useRef<string | null>(null)
