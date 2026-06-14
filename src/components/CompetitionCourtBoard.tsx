@@ -82,15 +82,17 @@ function gameCardShellClass({
   isMyGame?: boolean
 }) {
   const parts = [
-    'w-full min-w-0 overflow-hidden rounded-2xl border-2 bg-brand-surface shadow-[0_10px_30px_-12px_rgba(96,45,36,0.35)] transition-colors',
+    'w-full min-w-0 overflow-hidden rounded-2xl border-2 bg-brand-surface shadow-[0_10px_30px_-12px_rgba(96,45,36,0.35)] transition-colors dark:border-white/15 dark:bg-white/[0.07] dark:shadow-none',
   ]
   if (finished) {
-    parts.push('border-brand-border/55 !bg-[#f4f3f1] shadow-[0_4px_14px_-10px_rgba(96,45,36,0.2)]')
+    parts.push(
+      'border-brand-border/55 bg-[#f4f3f1] shadow-[0_4px_14px_-10px_rgba(96,45,36,0.2)] dark:border-white/12 dark:bg-white/[0.04] dark:shadow-none',
+    )
   } else {
-    parts.push('border-brand-primary/40')
+    parts.push('border-brand-primary/40 dark:border-brand-accent/35')
   }
   if (isMyGame && !finished) {
-    parts.push('ring-2 ring-brand-accent/70')
+    parts.push('ring-2 ring-brand-accent/70 dark:ring-brand-accent/50')
   }
   return parts.join(' ')
 }
@@ -275,9 +277,9 @@ function courtHasCurrentUser(
 }
 
 const COURT_LABEL_CLASS =
-  'text-center font-display text-2xl font-bold text-brand-accent md:text-3xl'
+  'text-center font-display text-2xl font-bold text-brand-accent dark:text-brand-tan md:text-3xl'
 const CURRENT_PLAYER_HIGHLIGHT_CLASS =
-  'animate-pulse rounded bg-brand-bg-alt px-1 text-brand-accent'
+  'animate-pulse rounded bg-brand-bg-alt px-1 text-brand-accent dark:bg-white/10 dark:text-brand-accent-light'
 
 function courtLabelClass(
   currentUserId: string | null | undefined,
@@ -285,7 +287,7 @@ function courtLabelClass(
   finished = false,
 ) {
   const base = finished
-    ? 'text-center font-display text-2xl font-bold text-brand-sage md:text-3xl'
+    ? 'text-center font-display text-2xl font-bold text-brand-sage dark:text-brand-muted md:text-3xl'
     : 'text-center font-display text-2xl font-bold md:text-3xl'
   return courtHasCurrentUser(currentUserId, court)
     ? `${base} ${CURRENT_PLAYER_HIGHLIGHT_CLASS}`
@@ -302,12 +304,14 @@ function courtCardShellClass({
   isMyCourt?: boolean
 }) {
   const parts = [
-    'w-full min-w-0 overflow-hidden rounded-xl border-2 bg-brand-surface shadow-[0_6px_18px_-8px_rgba(96,45,36,0.28)] transition',
+    'w-full min-w-0 overflow-hidden rounded-xl border-2 bg-brand-surface shadow-[0_6px_18px_-8px_rgba(96,45,36,0.28)] transition dark:border-white/15 dark:bg-white/[0.06] dark:shadow-none',
   ]
   if (finished) {
-    parts.push('border-brand-border/50 !bg-[#faf9f8] shadow-[0_2px_8px_-6px_rgba(96,45,36,0.15)]')
+    parts.push(
+      'border-brand-border/50 bg-[#faf9f8] shadow-[0_2px_8px_-6px_rgba(96,45,36,0.15)] dark:border-white/12 dark:bg-white/[0.04] dark:shadow-none',
+    )
   } else {
-    parts.push('border-brand-primary/35')
+    parts.push('border-brand-primary/35 dark:border-brand-accent/30')
   }
   if (isMyCourt && !finished) {
     parts.push('ring-2 ring-brand-accent/35')
@@ -343,7 +347,9 @@ function CourtCard({
     <>
       <div
         className={`border-b ${
-          finished ? 'border-brand-border/40 bg-brand-surface' : 'border-brand-border/50 bg-brand-surface'
+          finished
+            ? 'border-brand-border/40 bg-brand-surface dark:bg-white/[0.03]'
+            : 'border-brand-border/50 bg-brand-surface dark:bg-white/[0.04]'
         }`}
       >
         <CourtLabelRow
@@ -399,10 +405,10 @@ function ScoreStepper({
   scoreMax?: number
 }) {
   const inputClass = finished
-    ? 'h-8 w-8 rounded-lg border border-brand-border/50 bg-[#faf9f7] px-0.5 py-0.5 text-center text-sm font-semibold tabular-nums text-brand-sage disabled:text-brand-muted/60 md:h-10 md:w-10 md:text-base'
-    : 'h-8 w-8 rounded-lg border border-brand-border/80 bg-brand-surface px-0.5 py-0.5 text-center text-sm font-semibold tabular-nums text-brand-primary disabled:text-brand-muted/60 md:h-10 md:w-10 md:text-base'
+    ? 'h-8 w-8 rounded-lg border border-brand-border/50 bg-[#faf9f7] px-0.5 py-0.5 text-center text-sm font-semibold tabular-nums text-brand-sage disabled:text-brand-muted/60 dark:border-white/15 dark:bg-white/[0.08] dark:text-brand-text md:h-10 md:w-10 md:text-base'
+    : 'h-8 w-8 rounded-lg border border-brand-border/80 bg-brand-surface px-0.5 py-0.5 text-center text-sm font-semibold tabular-nums text-brand-primary disabled:text-brand-muted/60 dark:border-white/20 dark:bg-white/[0.08] dark:text-brand-text md:h-10 md:w-10 md:text-base'
   const stepClass =
-    'flex h-5 w-8 items-center justify-center rounded text-[10px] font-bold leading-none text-brand-muted active:bg-brand-bg-alt disabled:opacity-30 md:h-6 md:w-10 md:text-xs'
+    'flex h-5 w-8 items-center justify-center rounded text-[10px] font-bold leading-none text-brand-muted active:bg-brand-bg-alt disabled:opacity-30 dark:active:bg-white/10 md:h-6 md:w-10 md:text-xs'
 
   return (
     <div className="flex flex-col items-center gap-0.5" onClick={stopCardNav} onKeyDown={stopCardNav}>
@@ -608,8 +614,8 @@ function CourtMatchCell({
     <div
       className={
         finished
-          ? 'overflow-hidden rounded-lg border border-brand-border/40 bg-[#f3f2f0]'
-          : 'overflow-hidden rounded-lg border border-brand-border/60 bg-brand-surface'
+          ? 'overflow-hidden rounded-lg border border-brand-border/40 bg-[#f3f2f0] dark:border-white/12 dark:bg-white/[0.04]'
+          : 'overflow-hidden rounded-lg border border-brand-border/60 bg-brand-surface dark:border-white/15 dark:bg-white/[0.05]'
       }
       aria-label={`${teamA[0]} and ${teamA[1]} against ${teamB[0]} and ${teamB[1]}`}
     >
@@ -1135,14 +1141,14 @@ function GameCardHeader({
     <div
       className={`flex items-stretch border-b-2 ${
         finished
-          ? 'border-brand-border/50 bg-[#e8e7e5]'
-          : 'border-brand-accent/50 bg-brand-primary'
+          ? 'border-brand-border/50 bg-[#e8e7e5] dark:border-white/12 dark:bg-white/[0.06]'
+          : 'border-brand-accent/50 bg-brand-primary dark:border-brand-accent/40 dark:bg-white/[0.08]'
       }`}
     >
       <div className="flex min-w-0 flex-1 items-center gap-2 px-3 py-3.5 md:gap-3 md:px-4 md:py-4">
         <p
           className={`shrink-0 font-display text-2xl font-bold leading-none tabular-nums md:text-3xl ${
-            finished ? 'text-brand-sage' : 'text-brand-accent-light'
+            finished ? 'text-brand-sage dark:text-brand-muted' : 'text-brand-accent-light dark:text-brand-fun'
           }`}
         >
           {t('competition.game', { number: gameNumber })}
@@ -1151,21 +1157,21 @@ function GameCardHeader({
           {showLiveBadge ? (
             <span
               className={`text-xs font-semibold md:text-sm ${
-                finished ? 'text-brand-accent' : 'text-brand-bg-alt'
+                finished ? 'text-brand-accent' : 'text-brand-bg-alt dark:text-brand-fun'
               }`}
             >
               {t('competition.live')}
             </span>
           ) : finished ? (
             <span className="inline-flex items-center gap-1 text-xs font-medium text-brand-muted md:text-sm">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand-sage/60" aria-hidden />
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand-sage/60 dark:bg-brand-muted/60" aria-hidden />
               {t('competition.done')}
             </span>
           ) : null}
           {timeLabel ? (
             <span
               className={`mt-0.5 block text-[11px] tabular-nums md:text-sm ${
-                finished ? 'text-brand-muted' : 'text-white/75'
+                finished ? 'text-brand-muted' : 'text-white/75 dark:text-brand-muted'
               }`}
             >
               {timeLabel}
@@ -1176,14 +1182,14 @@ function GameCardHeader({
           <div className="shrink-0 text-right" aria-live="polite">
             <p
               className={`text-[10px] font-semibold uppercase tracking-wide md:text-xs ${
-                finished ? 'text-brand-muted' : 'text-white/65'
+                finished ? 'text-brand-muted' : 'text-white/65 dark:text-brand-muted'
               }`}
             >
               {countdownLabelText}
             </p>
             <p
               className={`font-display text-2xl font-bold leading-none tabular-nums md:text-3xl ${
-                finished ? 'text-brand-primary' : 'text-brand-bg-alt'
+                finished ? 'text-brand-primary dark:text-brand-text' : 'text-brand-bg-alt dark:text-brand-text'
               }`}
             >
               {countdown}
@@ -1197,8 +1203,8 @@ function GameCardHeader({
         aria-expanded={!collapsed}
         className={`flex min-w-12 shrink-0 items-center justify-center self-stretch border-l px-4 text-2xl leading-none transition active:opacity-70 md:min-w-14 md:px-5 md:text-3xl ${
           finished
-            ? 'border-brand-border/50 text-brand-sage/80'
-            : 'border-white/25 text-brand-bg-alt'
+            ? 'border-brand-border/50 text-brand-sage/80 dark:text-brand-muted'
+            : 'border-white/25 text-brand-bg-alt dark:border-white/15 dark:text-brand-muted'
         }`}
       >
         {collapsed ? '▸' : '▾'}

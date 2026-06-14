@@ -73,8 +73,19 @@ html.dark .app-shell-dock-inner {
 
 html.dark .game-card {
   border-color: rgb(255 255 255 / 0.15);
-  background: rgb(255 255 255 / 0.05);
+  background: rgb(255 255 255 / 0.07);
   box-shadow: none;
+}
+
+html.dark .game-card-racetrack::before {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg 290deg,
+    rgb(96 165 250 / 0.25) 310deg,
+    rgb(96 165 250 / 0.55) 330deg,
+    rgb(96 165 250 / 0.25) 350deg,
+    transparent 360deg
+  );
 }
 
 html.dark .game-tab-active,
@@ -749,7 +760,6 @@ body {
   }
 
   .tv-play-standings {
-    position: relative;
     display: flex;
     min-height: 0;
     min-width: 0;
@@ -757,6 +767,8 @@ body {
     flex-direction: column;
     border-left: 1px solid rgba(96, 45, 36, 0.18);
     background: var(--color-brand-surface);
+    /* Vercel preview toolbar (logged-in devs only) sits bottom-right — keep scores visible */
+    padding-right: max(3.75rem, env(safe-area-inset-right, 0px));
   }
 
   .tv-play-scroll {
@@ -770,7 +782,7 @@ body {
   }
 
   .tv-play-standings .tv-play-scroll {
-    padding-bottom: 6.5rem;
+    padding-bottom: 0.5rem;
   }
 
   .tv-play-panel .app-shell-panel-inset {
@@ -778,17 +790,26 @@ body {
     padding-right: 1rem;
   }
 
+  .tv-play-qr-dock {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    padding: 0.35rem 0.75rem 0.85rem;
+    border-top: 1px solid rgb(96 45 36 / 0.12);
+    background: var(--color-brand-surface);
+  }
+
+  html.dark .tv-play-qr-dock {
+    border-top-color: rgb(255 255 255 / 0.1);
+  }
+
   .tv-play-qr {
-    position: absolute;
-    z-index: 2;
-    bottom: 1.5rem;
-    left: 0.35rem;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
     gap: 0.25rem;
-    max-width: 5.75rem;
-    text-align: left;
+    max-width: 6rem;
+    text-align: center;
     pointer-events: none;
   }
 
@@ -799,7 +820,7 @@ body {
     line-height: 1.25;
     letter-spacing: 0.02em;
     color: var(--color-brand-primary);
-    max-width: 5.5rem;
+    max-width: 5.75rem;
   }
 
   .tv-play-qr-code {

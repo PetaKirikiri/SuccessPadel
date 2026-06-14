@@ -44,7 +44,11 @@ export function CompetitionPlayTvView({
           {session ? (
             <aside className="tv-play-standings" aria-label={t('leaderboard.standings')}>
               <div className="tv-play-scroll">{leaderboardBody}</div>
-              {showQr && viewAlongUrl ? <TvPlayQrPanel url={viewAlongUrl} /> : null}
+              {showQr && viewAlongUrl ? (
+                <div className="tv-play-qr-dock">
+                  <TvPlayQrPanel url={viewAlongUrl} />
+                </div>
+              ) : null}
             </aside>
           ) : null}
         </div>
