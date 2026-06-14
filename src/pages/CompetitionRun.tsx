@@ -276,7 +276,8 @@ export function CompetitionRun() {
 
   const layoutValid = isValidCourtLayout(roster.length)
   const rankedRoster = useMemo(() => sortRosterByRank(roster), [roster])
-  const { totalGames, gameMinutes: scheduledGameMinutes } = americanoScheduleFromSession(session)
+  const { totalGames, gameMinutes: scheduledGameMinutes, breakMinutes: scheduledBreakMinutes } =
+    americanoScheduleFromSession(session)
   const gameMinutes = isAmericano ? scheduledGameMinutes : 0
 
   const reviewFromDb = finished && rounds.length > 0
@@ -316,8 +317,9 @@ export function CompetitionRun() {
       americanoGames,
       session?.starts_at ?? undefined,
       gameMinutes || RANKED_GAME_MINUTES,
+      scheduledBreakMinutes,
     )
-  }, [americanoGames, gameMinutes, isAmericano, reviewFromDb, session?.starts_at])
+  }, [americanoGames, gameMinutes, isAmericano, reviewFromDb, scheduledBreakMinutes, session?.starts_at])
 
   const scheduleComparison = useMemo(
     () => compareSchedules(liveCourtsByGame, americanoGames),

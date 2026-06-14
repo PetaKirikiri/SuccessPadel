@@ -120,7 +120,8 @@ export function useCompetitionBoard(
   const layoutValid = isValidCourtLayout(roster.length)
   const neededCourts = courtsNeeded(roster.length)
   const scheduleSeed = scheduleSeedFromSession(session?.scoring_config)
-  const { totalGames, gameMinutes: scheduledGameMinutes } = americanoScheduleFromSession(session)
+  const { totalGames, gameMinutes: scheduledGameMinutes, breakMinutes: scheduledBreakMinutes } =
+    americanoScheduleFromSession(session)
   const gameMinutes = isAmericano ? scheduledGameMinutes : 0
 
   const courtNames = useMemo(() => {
@@ -169,8 +170,9 @@ export function useCompetitionBoard(
       americanoGames,
       session?.starts_at ?? undefined,
       gameMinutes || RANKED_GAME_MINUTES,
+      scheduledBreakMinutes,
     )
-  }, [americanoGames, gameMinutes, isAmericano, session?.starts_at])
+  }, [americanoGames, gameMinutes, isAmericano, scheduledBreakMinutes, session?.starts_at])
 
   const liveCourtsByGame = useMemo(() => {
     const sortOrderByCourtId = new Map(clubCourts.map((c) => [c.id, c.sort_order]))

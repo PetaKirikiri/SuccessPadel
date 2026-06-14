@@ -1,4 +1,4 @@
--- Exclusive Americano · Sunday 14 Jun 2026 · 12 players · 3 courts · 2 hours
+-- Exclusive Americano · Sunday 14 Jun 2026 · 12 players · 3 courts · 6:03–8:03 PM (2h)
 -- Session: f14e06aa-0614-4000-8000-000000000012
 
 insert into public.game_sessions (
@@ -30,8 +30,8 @@ insert into public.game_sessions (
   'Exclusive Americano Match',
   '2026-06-14',
   '2026-06-14',
-  '2026-06-14T19:00:00+07:00',
-  '2026-06-14T21:00:00+07:00',
+  '2026-06-14T18:03:00+07:00',
+  '2026-06-14T20:00:00+07:00',
   'open',
   'competition',
   'open',
@@ -43,7 +43,7 @@ insert into public.game_sessions (
   'strict',
   'americano',
   'standard',
-  $sc${"americano_target":6,"americano_unit":"games","americano_games":7,"break_minutes":3,"game_minutes":14,"schedule_seed":0,"schedule_version":10}$sc$::jsonb,
+  $sc${"americano_target":6,"americano_unit":"games","americano_games":7,"break_minutes":2,"game_minutes":15,"schedule_seed":0,"schedule_version":10}$sc$::jsonb,
   'roster_members',
   true,
   '7bdc33ac-7f21-4ebf-bfbf-343080724890'
