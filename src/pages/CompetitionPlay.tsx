@@ -258,7 +258,7 @@ export function CompetitionPlay() {
       </AppTopBar>
 
       {isTvLayout ? (
-        <div className="tv-play-view flex min-h-0 flex-1 flex-col">
+        <div className="tv-play-view flex min-h-0 flex-1 flex-col overflow-hidden">
           <CompetitionPlayTvView
             {...sharedViewProps}
             leaderboardBody={leaderboardTv}
@@ -267,14 +267,12 @@ export function CompetitionPlay() {
           />
         </div>
       ) : (
-        <div className="min-h-0 flex-1">
-          <CompetitionPlayStandardView
-            {...sharedViewProps}
-            tab={tab}
-            onTab={setTab}
-            leaderboardBody={leaderboardStandard}
-          />
-        </div>
+        <CompetitionPlayStandardView
+          {...sharedViewProps}
+          tab={tab}
+          onTab={setTab}
+          leaderboardBody={leaderboardStandard}
+        />
       )}
     </div>
   )

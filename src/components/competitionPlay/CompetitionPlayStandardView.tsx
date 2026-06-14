@@ -27,7 +27,7 @@ export function CompetitionPlayStandardView({
   leaderboardBody,
 }: Props) {
   return (
-    <AppShellColumn className="overflow-hidden pt-1">
+    <AppShellColumn className="min-h-0 flex-1 overflow-hidden pt-1">
       <AppShellPanel
         footer={
           <nav className="app-shell-panel-footer gap-0" aria-label={t('aria.competitionViews')}>
