@@ -1,11 +1,12 @@
 import { Plus, Share2, Trash2 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FriendlyDeleteConfirm } from '../components/FriendlyDeleteConfirm'
 import { useAuth } from '../hooks/useAuth'
 import { useTranslation } from '../hooks/useTranslation'
 import { adminDeletePlayer, canAdminDeletePlayer } from '../lib/playerDelete'
 import { clubDisplayName } from '../lib/clubMemberDisplay'
+import { lineHandshakeDebug } from '../lib/debug/lineHandshakeDebug'
 import { firstDisplayName } from '../lib/leaderboardEntries'
 import { playerProfileShareUrl, sharePlayerProfile } from '../lib/playerProfileShare'
 import { supabase } from '../lib/supabaseClient'
@@ -160,12 +161,12 @@ function MemberSection({
 
 export function MembersPage() {
   const { t } = useTranslation()
-  const { user, profile } = useAuth()
-  const isAdmin = Boolean(profile?.is_admin)
+  const { user, profile, loading: authLoading } = useAuth()
+  const isAdmin = !authLoading && Boolean(profile?.is_admin)
   const [members, setMembers] = useState<Profile[]>([])
   const [guestPlayers, setGuestPlayers] = useState<GuestPlayerRow[]>([])
   const [padelLineByProfileId, setPadelLineByProfileId] = useState<Map<string, string>>(() => new Map())
-  const [loading, setLoading] = useState(true)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [createOpen, setCreateOpen] = useState(false)
   const [createName, setCreateName] = useState('')
   const [createBusy, setCreateBusy] = useState(false)
@@ -174,9 +175,10 @@ export function MembersPage() {
   const [deleteBusy, setDeleteBusy] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [shareFeedback, setShareFeedback] = useState<{ id: string; message: string } | null>(null)
+  const firstLoad = useRef(true)
 
   const load = useCallback(async () => {
-    setLoading(true)
+    if (firstLoad.current) setInitialLoading(true)
     const [profilesRes, guestsRes, padelRes] = await Promise.all([
       supabase
         .from('profiles')
@@ -194,12 +196,26 @@ export function MembersPage() {
       }
     }
     setPadelLineByProfileId(lineMap)
-    setLoading(false)
+    setInitialLoading(false)
+    firstLoad.current = false
   }, [])
 
   useEffect(() => {
     void load()
   }, [load])
+
+  useEffect(() => {
+    // #region agent log
+    lineHandshakeDebug('M1-admin', 'MembersPage.tsx:state', 'members admin UI state', 'H1', {
+      isAdmin,
+      authLoading,
+      profileIsAdmin: profile?.is_admin ?? null,
+      initialLoading,
+      createOpen,
+      userIdPrefix: user?.id?.slice(0, 8) ?? null,
+    })
+    // #endregion
+  }, [isAdmin, authLoading, profile?.is_admin, initialLoading, createOpen, user?.id])
 
   const lineMembers = useMemo(
     () => members.filter((m) => Boolean(m.line_user_id?.trim())),
@@ -319,7 +335,7 @@ export function MembersPage() {
     )
   }
 
-  if (loading) {
+  if (initialLoading || (user && !profile && authLoading)) {
     return (
       <div className="px-3 pb-[calc(4.5rem+env(safe-area-inset-bottom))] pt-1 md:px-6">
         <p className="text-sm text-brand-muted">{t('common.loading')}</p>
@@ -330,6 +346,12 @@ export function MembersPage() {
   return (
     <div className="space-y-5 px-3 pb-[calc(4.5rem+env(safe-area-inset-bottom))] pt-1 md:px-6">
       <h1 className="text-lg font-semibold text-brand-primary">{t('members.title')}</h1>
+
+      {isAdmin && createOpen ? (
+        <div className="sticky top-0 z-20 -mx-3 bg-brand-bg/95 px-3 pb-2 pt-1 backdrop-blur-sm md:-mx-6 md:px-6">
+          {createPlayerForm}
+        </div>
+      ) : null}
 
       <MemberSection
         title={t('members.lineLinked')}
@@ -343,20 +365,6 @@ export function MembersPage() {
         title={t('members.otherMembers')}
         empty={t('members.noOtherMembers')}
         count={otherMembers.length}
-        headerAction={
-          isAdmin ? (
-            <button
-              type="button"
-              onClick={() => setCreateOpen((open) => !open)}
-              aria-label={t('members.create')}
-              aria-expanded={createOpen}
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-brand-border bg-brand-bg-alt text-brand-primary active:scale-[0.98]"
-            >
-              <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden />
-            </button>
-          ) : null
-        }
-        addon={createOpen ? createPlayerForm : null}
       >
         {otherMembers.map(renderMemberRow)}
       </MemberSection>
@@ -407,6 +415,18 @@ export function MembersPage() {
             setDeleteError(null)
           }}
         />
+      ) : null}
+
+      {isAdmin ? (
+        <button
+          type="button"
+          onClick={() => setCreateOpen((open) => !open)}
+          aria-label={t('members.create')}
+          aria-expanded={createOpen}
+          className="fixed right-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-brand-accent text-white shadow-lg bottom-[calc(var(--app-shell-dock-height)+0.75rem)]"
+        >
+          <Plus className="h-6 w-6" strokeWidth={2.5} aria-hidden />
+        </button>
       ) : null}
     </div>
   )
