@@ -16,6 +16,7 @@ import {
   lineLoginRedirect,
 } from './liff'
 import { clubDisplayName, clubDisplayNameFromLine } from '../clubMemberDisplay'
+import { handshakeSiteOrigin } from '../siteUrl'
 import { readLineProfilePatch, syncLineProfileFromLiff } from './profileSync'
 import { hasLineOAuth, startLineOAuthLogin } from './oauth'
 
@@ -99,9 +100,12 @@ export async function signInWithLine(): Promise<LineSignInResult> {
   // #endregion
 
   if (!lineLoggedIn) {
+    const redirectUri = `${handshakeSiteOrigin()}/login`
     // #region agent log
-    lineHandshakeDebug('S4-liff-session', 'auth.ts:redirect', 'calling lineLoginRedirect', 'H3', {
+    lineHandshakeDebug('S4-liff-session', 'auth.ts:redirect', 'calling lineLoginRedirect', 'H6', {
+      redirectUri,
       pathname: window.location.pathname,
+      inClient: isInLineClient(),
     })
     // #endregion
     lineLoginRedirect()

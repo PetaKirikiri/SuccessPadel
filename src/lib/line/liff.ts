@@ -1,4 +1,6 @@
 import liff from '@line/liff'
+import { saveReturnTo } from '../authReturnTo'
+import { handshakeSiteOrigin } from '../siteUrl'
 
 const liffId = (import.meta.env.VITE_LIFF_ID as string | undefined)?.trim() || undefined
 
@@ -90,8 +92,11 @@ export function getDecodedLineClaims(): { sub?: string; name?: string; picture?:
 
 export function lineLoginRedirect(): void {
   if (!liffId) return
-  const path = window.location.pathname.startsWith('/') ? window.location.pathname : '/login'
-  const redirectUri = `${window.location.origin}${path}${window.location.search}`
+  const returnPath = `${window.location.pathname}${window.location.search}`
+  if (returnPath && returnPath !== '/login' && !returnPath.startsWith('/auth/')) {
+    saveReturnTo(returnPath)
+  }
+  const redirectUri = `${handshakeSiteOrigin()}/login`
   liff.login({ redirectUri })
 }
 
