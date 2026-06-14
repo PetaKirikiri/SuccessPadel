@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useTranslation } from '../hooks/useTranslation'
+import { lineHandshakeDebug } from '../lib/debug/lineHandshakeDebug'
 import {
   runLineInAppSignIn,
   shouldTryLineInAppSignIn,
@@ -25,6 +26,19 @@ export function LineEntryGate({ children }: { children: ReactNode }) {
   const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
+    // #region agent log
+    lineHandshakeDebug('S1-gate', 'LineEntryGate.tsx:effect', 'gate effect tick', 'H1', {
+      loading,
+      hasUser: Boolean(user),
+      hasLiffId: hasLiffId(),
+      isLineBrowser: isLineLiffBrowser(),
+      pathname,
+      attempt,
+      skipAuth: shouldSkipLineEntryGate(pathname, search),
+      shouldTry: shouldTryLineInAppSignIn(Boolean(user)),
+    })
+    // #endregion
+
     if (!hasLiffId() || loading || user) {
       setWorking(false)
       return
@@ -36,8 +50,22 @@ export function LineEntryGate({ children }: { children: ReactNode }) {
     setWorking(true)
     setError(null)
 
+    // #region agent log
+    lineHandshakeDebug('S1-gate', 'LineEntryGate.tsx:run', 'starting runLineInAppSignIn', 'H1', {
+      attempt,
+    })
+    // #endregion
+
     void runLineInAppSignIn(false).then((result) => {
       if (cancelled) return
+      // #region agent log
+      lineHandshakeDebug('S1-gate', 'LineEntryGate.tsx:result', 'runLineInAppSignIn finished', 'H1', {
+        ok: result.ok,
+        skipped: result.skipped,
+        redirected: result.redirected,
+        error: result.error,
+      })
+      // #endregion
       setWorking(false)
       if (result.skipped || result.redirected) return
       if (result.error) setError(result.error)
@@ -53,11 +81,24 @@ export function LineEntryGate({ children }: { children: ReactNode }) {
     const retry = () => {
       if (document.visibilityState !== 'visible') return
       if (!isLineLiffBrowser()) return
+      // #region agent log
+      lineHandshakeDebug('S1-gate', 'LineEntryGate.tsx:retry', 'visibility retry', 'H3', {})
+      // #endregion
       setAttempt((n) => n + 1)
     }
     document.addEventListener('visibilitychange', retry)
     return () => document.removeEventListener('visibilitychange', retry)
   }, [user])
+
+  useEffect(() => {
+    // #region agent log
+    lineHandshakeDebug('S8-ui', 'LineEntryGate.tsx:auth', 'auth state for sign-in chip', 'H5', {
+      loading,
+      hasUser: Boolean(user),
+      userIdPrefix: user?.id?.slice(0, 8) ?? null,
+    })
+    // #endregion
+  }, [loading, user])
 
   return (
     <>

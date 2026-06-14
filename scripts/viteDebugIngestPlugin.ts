@@ -8,6 +8,7 @@ const LOG_FILE = path.join(LOG_DIR, 'ingest.jsonl')
 const CURSOR_DEBUG_LOGS: Record<string, string> = {
   c0312c: path.join(process.cwd(), '.cursor', 'debug-c0312c.log'),
   ce1aed: path.join(process.cwd(), '.cursor', 'debug-ce1aed.log'),
+  d2fcaa: path.join(process.cwd(), '.cursor', 'debug-d2fcaa.log'),
 }
 
 function appendCursorDebugLog(sessionId: string, record: Record<string, unknown>) {

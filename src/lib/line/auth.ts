@@ -1,6 +1,7 @@
 import { FunctionsHttpError } from '@supabase/supabase-js'
 import { syncProfileForUser } from '../authProfile'
 import { claimPendingPadelPlayer } from '../claimPadelPlayer'
+import { lineHandshakeDebug } from '../debug/lineHandshakeDebug'
 import { supabase } from '../supabaseClient'
 import {
   clearLineProfileReconsentFlag,
@@ -89,7 +90,20 @@ export async function signInWithLine(): Promise<LineSignInResult> {
 
   await initLiff()
 
-  if (!isLineLoggedIn()) {
+  const lineLoggedIn = isLineLoggedIn()
+  // #region agent log
+  lineHandshakeDebug('S4-liff-session', 'auth.ts:signIn', 'LIFF session check', 'H3', {
+    lineLoggedIn,
+    inClient: isInLineClient(),
+  })
+  // #endregion
+
+  if (!lineLoggedIn) {
+    // #region agent log
+    lineHandshakeDebug('S4-liff-session', 'auth.ts:redirect', 'calling lineLoginRedirect', 'H3', {
+      pathname: window.location.pathname,
+    })
+    // #endregion
     lineLoginRedirect()
     return { error: null, redirected: true }
   }
@@ -97,12 +111,25 @@ export async function signInWithLine(): Promise<LineSignInResult> {
   await ensureLineProfileConsent()
 
   const idToken = await getLineIdToken()
+  const profilePayload = await readLineProfilePatch()
+  const accessToken = await getLineAccessToken()
+
+  // #region agent log
+  lineHandshakeDebug('S4-liff-session', 'auth.ts:tokens', 'LINE tokens read', 'H3', {
+    hasIdToken: Boolean(idToken),
+    hasAccessToken: Boolean(accessToken),
+    profileName: profilePayload?.display_name ? 'yes' : 'no',
+    lineUserIdPrefix: profilePayload?.user_id?.slice(0, 6) ?? null,
+  })
+  // #endregion
+
   if (!idToken) {
     return { error: 'Could not read your LINE session.', redirected: false }
   }
 
-  const profilePayload = await readLineProfilePatch()
-  const accessToken = await getLineAccessToken()
+  // #region agent log
+  lineHandshakeDebug('S5-edge', 'auth.ts:invoke', 'calling line-liff-auth', 'H4', {})
+  // #endregion
 
   const invokeAuth = supabase.functions.invoke('line-liff-auth', {
     body: {
@@ -119,7 +146,13 @@ export async function signInWithLine(): Promise<LineSignInResult> {
   ])
 
   if (error) {
-    return { error: await edgeFunctionErrorMessage(error), redirected: false }
+    const msg = await edgeFunctionErrorMessage(error)
+    // #region agent log
+    lineHandshakeDebug('S6-edge', 'auth.ts:edge-error', 'line-liff-auth invoke error', 'H4', {
+      error: msg,
+    })
+    // #endregion
+    return { error: msg, redirected: false }
   }
 
   const payload = data as {
@@ -129,6 +162,15 @@ export async function signInWithLine(): Promise<LineSignInResult> {
     display_name?: string
     avatar_url?: string
   }
+
+  // #region agent log
+  lineHandshakeDebug('S6-edge', 'auth.ts:edge-ok', 'line-liff-auth response', 'H4', {
+    payloadError: payload.error ?? null,
+    hasAccessToken: Boolean(payload.access_token),
+    hasRefreshToken: Boolean(payload.refresh_token),
+    displayName: payload.display_name ? 'yes' : 'no',
+  })
+  // #endregion
 
   if (payload.error) {
     return { error: payload.error, redirected: false }
@@ -143,11 +185,24 @@ export async function signInWithLine(): Promise<LineSignInResult> {
     refresh_token: payload.refresh_token,
   })
 
+  // #region agent log
+  lineHandshakeDebug('S7-session', 'auth.ts:setSession', 'setSession result', 'H5', {
+    sessErr: sessErr?.message ?? null,
+  })
+  // #endregion
+
   if (sessErr) {
     return { error: sessErr.message, redirected: false }
   }
 
   const { data: confirmed } = await supabase.auth.getSession()
+  // #region agent log
+  lineHandshakeDebug('S7-session', 'auth.ts:confirmed', 'getSession after setSession', 'H5', {
+    hasSession: Boolean(confirmed.session?.user),
+    userIdPrefix: confirmed.session?.user?.id?.slice(0, 8) ?? null,
+  })
+  // #endregion
+
   if (!confirmed.session?.user) {
     return { error: 'Sign-in did not stick — try again.', redirected: false }
   }
@@ -186,5 +241,10 @@ export async function signInWithLine(): Promise<LineSignInResult> {
   await syncProfileForUser(user)
   await claimPendingPadelPlayer()
   window.dispatchEvent(new Event('successpadel:profile-synced'))
+  // #region agent log
+  lineHandshakeDebug('S8-ui', 'auth.ts:done', 'signInWithLine complete', 'H5', {
+    userIdPrefix: user.id.slice(0, 8),
+  })
+  // #endregion
   return { error: null, redirected: false }
 }

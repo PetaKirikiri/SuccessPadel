@@ -62,6 +62,7 @@ export function devDebugLog(
 
 /** POST debug payload to the Vite dev server on this machine (same host:port as the app). */
 export function postLocalDebugIngest(payload: unknown, sessionId = 'sp-dev'): void {
+  if (typeof window === 'undefined') return
   if (!import.meta.env.DEV || !isDevServerHost()) return
   fetch(INGEST_PATH, {
     method: 'POST',

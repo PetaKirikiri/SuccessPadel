@@ -9,6 +9,7 @@ import {
 } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { AUTH_STORAGE_KEY, tryRestoreCachedSession } from '../lib/auth/cachedSession'
+import { lineHandshakeDebug } from '../lib/debug/lineHandshakeDebug'
 import { installLoginWithAppLifecycleDebug } from '../lib/debug/loginWithAppDebug'
 import { syncProfileForUser } from '../lib/authProfile'
 import { claimPendingPadelPlayer } from '../lib/claimPadelPlayer'
@@ -40,6 +41,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const applySession = useCallback(
     async (nextSession: Session | null) => {
+      // #region agent log
+      lineHandshakeDebug('S7-session', 'AuthProvider.tsx:apply', 'applySession', 'H5', {
+        hasSession: Boolean(nextSession?.user),
+        userIdPrefix: nextSession?.user?.id?.slice(0, 8) ?? null,
+      })
+      // #endregion
       setSession(nextSession)
       setUser(nextSession?.user ?? null)
       if (nextSession?.user) await loadProfile(nextSession.user)
