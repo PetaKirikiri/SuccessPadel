@@ -61,54 +61,46 @@ export function InviteCard({
   className = '',
   gender = null,
 }: InviteCardProps) {
-  const dateTitleRow = (
-    <div className="flex min-w-0 items-start justify-between gap-2 sm:gap-3">
-      <p className="min-w-0 flex-1 break-words font-display text-base font-bold leading-tight text-brand-primary sm:text-xl md:text-2xl">
-        {dateLine}
-      </p>
-      <p className="min-w-0 max-w-[46%] shrink-0 text-right font-display text-sm font-semibold leading-snug text-brand-primary line-clamp-2 sm:max-w-[42%] sm:text-base md:text-lg">
-        {title}
-      </p>
-    </div>
-  )
-
-  const timeRow = timeLine ? (
-    <div className="flex min-w-0 items-center gap-2">
-      <p className="min-w-0 flex-1 break-all font-display text-lg font-bold leading-tight tabular-nums text-brand-text sm:break-words sm:text-2xl md:text-3xl">
-        {timeLine}
-      </p>
-      {onShare ? (
-        <div className="relative shrink-0">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              onShare()
-            }}
-            aria-label={shareAriaLabel}
-            className={`${adminCornerBtnClass} text-brand-primary`}
-          >
-            <IconShare />
-          </button>
-          {shareFeedback ? (
-            <p className="absolute right-0 top-full z-10 mt-1 whitespace-nowrap rounded-lg bg-brand-surface px-2 py-0.5 text-[10px] font-medium text-brand-muted shadow-sm">
-              {shareFeedback}
-            </p>
-          ) : null}
-        </div>
+  const shareButton = onShare ? (
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          onShare()
+        }}
+        aria-label={shareAriaLabel}
+        className={`${adminCornerBtnClass} text-brand-primary`}
+      >
+        <IconShare />
+      </button>
+      {shareFeedback ? (
+        <p className="absolute right-0 top-full z-10 mt-1 whitespace-nowrap rounded-lg bg-brand-surface px-2 py-0.5 text-[10px] font-medium text-brand-muted shadow-sm">
+          {shareFeedback}
+        </p>
       ) : null}
     </div>
   ) : null
 
   const scheduleBlock = (
-    <>
-      {dateTitleRow}
-      {timeRow}
+    <div className="min-w-0 space-y-1">
+      <p className="font-display text-base font-bold leading-tight text-brand-primary sm:text-xl md:text-2xl">
+        {dateLine}
+      </p>
+      <p className="break-words font-display text-sm font-semibold leading-snug text-brand-primary sm:text-base md:text-lg">
+        {title}
+      </p>
+      {timeLine ? (
+        <p className="break-all font-display text-lg font-bold leading-tight tabular-nums text-brand-text sm:break-words sm:text-2xl md:text-3xl">
+          {timeLine}
+        </p>
+      ) : null}
+      {shareButton ? <div className="flex justify-end pt-0.5">{shareButton}</div> : null}
       {statusLine ? (
         <p className="text-xs font-semibold tabular-nums text-brand-accent">{statusLine}</p>
       ) : null}
-    </>
+    </div>
   )
 
   const inner = (
