@@ -105,14 +105,8 @@ export function CompetitionPlay() {
 
   const roundTimesByGame = useMemo(() => {
     const map = new Map<number, { startsAt: number; endsAt: number }>()
-    for (const round of rounds) {
-      map.set(round.round_number, {
-        startsAt: new Date(round.starts_at).getTime(),
-        endsAt: new Date(round.ends_at).getTime(),
-      })
-    }
-    if (map.size === 0 && session?.starts_at) {
-      const games = rounds.length || schedule.totalGames
+    if (session?.starts_at) {
+      const games = Math.max(rounds.length, schedule.totalGames)
       for (let g = 1; g <= games; g++) {
         const slot = gameSlotTimes(
           session.starts_at,
@@ -122,6 +116,13 @@ export function CompetitionPlay() {
         )
         map.set(g, { startsAt: slot.startsAt.getTime(), endsAt: slot.endsAt.getTime() })
       }
+      return map
+    }
+    for (const round of rounds) {
+      map.set(round.round_number, {
+        startsAt: new Date(round.starts_at).getTime(),
+        endsAt: new Date(round.ends_at).getTime(),
+      })
     }
     return map
   }, [rounds, session?.starts_at, schedule.gameMinutes, schedule.breakMinutes, schedule.totalGames])
