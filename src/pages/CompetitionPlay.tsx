@@ -149,8 +149,9 @@ export function CompetitionPlay() {
         if (err) throw new Error(err.message)
         applyMatchScore(entry.roundId, entry.courtId, `${entry.teamA}-${entry.teamB}`)
       }
+      await refresh(true)
     },
-    [applyMatchScore],
+    [applyMatchScore, refresh],
   )
 
   const started = Boolean(session?.competition_started_at)

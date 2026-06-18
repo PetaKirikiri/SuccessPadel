@@ -51,18 +51,6 @@ export function usePublicCompetition(sessionId: string | undefined, options?: Op
     })
   }, [])
 
-  const mergeCourtMatches = useCallback((prev: CourtMatch[], incoming: CourtMatch[]) => {
-    const byKey = new Map(prev.map((m) => [`${m.competition_round_id}:${m.court_id}`, m]))
-    for (const m of incoming) {
-      const key = `${m.competition_round_id}:${m.court_id}`
-      const old = byKey.get(key)
-      const oldMs = old?.played_at ? Date.parse(old.played_at) : 0
-      const newMs = m.played_at ? Date.parse(m.played_at) : 0
-      if (!old || newMs >= oldMs) byKey.set(key, m)
-    }
-    return [...byKey.values()]
-  }, [])
-
   const refresh = useCallback(
     async (silent = false) => {
       if (!sessionId) return
@@ -81,12 +69,12 @@ export function usePublicCompetition(sessionId: string | undefined, options?: Op
         setRoster(d.roster ?? [])
         setClubCourts(d.courts ?? [])
         setRounds(d.rounds ?? [])
-        setCourtMatches((prev) => mergeCourtMatches(prev, d.matches ?? []))
+        setCourtMatches(d.matches ?? [])
         setLeaderboard(normalizeLeaderboardEntries(d.leaderboard ?? []))
       }
       if (!silent) setLoading(false)
     },
-    [mergeCourtMatches, sessionId],
+    [sessionId],
   )
 
   useEffect(() => {
