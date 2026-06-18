@@ -29,14 +29,12 @@ export function courtSubmitReady(
   teamAStr: string,
   teamBStr: string,
   playTo?: number,
-  saved?: { teamAPoints?: number; teamBPoints?: number },
 ): boolean {
   if (!courtScoresReady(teamAStr, teamBStr)) return false
   const teamA = parseScoreField(teamAStr)!
   const teamB = parseScoreField(teamBStr)!
   if (playTo != null && !isValidCappedGameScore(teamA, teamB, playTo)) return false
-  if (saved?.teamAPoints == null && saved?.teamBPoints == null) return true
-  return saved?.teamAPoints !== teamA || saved?.teamBPoints !== teamB
+  return true
 }
 
 export function bumpScoreField(value: string, delta: number, max?: number): string {

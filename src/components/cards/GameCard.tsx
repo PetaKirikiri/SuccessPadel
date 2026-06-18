@@ -6,6 +6,7 @@ import type { CourtScoreSubmit } from '../../lib/competitionScoreInput'
 import {
   courtSubmitReady,
   effectiveScoreField,
+  isValidCappedGameScore,
   parseScoreField,
   scoreDigitsOnly,
 } from '../../lib/competitionScoreInput'
@@ -248,7 +249,7 @@ function useGameScoring({
       const teamA = parseScoreField(teamAStr)
       const teamB = parseScoreField(teamBStr)
       const court = game.courts.find((c) => c.courtLabel === courtLabel)
-      const canSubmit = courtSubmitReady(teamAStr, teamBStr, playTo, saved)
+      const canSubmit = courtSubmitReady(teamAStr, teamBStr, playTo)
       return { courtId, courtLabel, court, teamA, teamB, teamAStr, teamBStr, saved, canSubmit }
     })
   }, [dirtyCourts, drafts, game.courts, gameRoundId, matchForCourt, playTo, scoringCourts])
@@ -376,7 +377,7 @@ function useFriendlyManualScoring({
       const { teamAStr, teamBStr } = scoreStringsForCourt(draft, saved, isDirty)
       const teamA = parseScoreField(teamAStr)
       const teamB = parseScoreField(teamBStr)
-      const canSubmit = courtSubmitReady(teamAStr, teamBStr, playTo, saved)
+      const canSubmit = courtSubmitReady(teamAStr, teamBStr, playTo)
       return { courtKey, courtLabel, court, teamA, teamB, teamAStr, teamBStr, canSubmit }
     })
   }, [courts, dirtyCourts, drafts, liveCourtScores, playTo])
@@ -529,7 +530,7 @@ export function GameScoringCourts({
                 {courtPlayTo != null &&
                 row.teamA !== null &&
                 row.teamB !== null &&
-                !courtReady ? (
+                !isValidCappedGameScore(row.teamA, row.teamB, courtPlayTo) ? (
                   <p className="mt-1 text-center text-xs text-red-600">
                     {t('competition.firstToScoreInvalid', { n: courtPlayTo })}
                   </p>
