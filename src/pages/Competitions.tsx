@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { CompetitionTable } from '../components/CompetitionTable'
+import { DuoLeaguePanel } from '../components/DuoLeaguePanel'
 import { useAuth } from '../hooks/useAuth'
 import { useTranslation } from '../hooks/useTranslation'
 import { useCompetitionSetup } from '../hooks/useCompetitionSetup'
@@ -35,6 +36,9 @@ export function Competitions() {
         userId={user?.id}
         onRefresh={refresh}
       />
+      <div className="mt-4">
+        <DuoLeaguePanel rows={rows} isAdmin={isAdmin} onRefresh={refresh} />
+      </div>
     </div>
   )
 }

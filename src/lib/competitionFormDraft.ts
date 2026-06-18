@@ -1,8 +1,17 @@
 const STORAGE_PREFIX = 'successpadel:competition-draft:'
 
+export type CompetitionPlayerMode = 'singles' | 'duos'
+
+export type DuoTeamDraftSlot = {
+  label: string
+  names: [string, string]
+}
+
 export type CompetitionFormDraft = {
-  v: 5
+  v: 6
   savedAt: string
+  playerMode: CompetitionPlayerMode
+  createLeague: boolean
   day: string
   startHour: number
   startMinute: number
@@ -11,6 +20,7 @@ export type CompetitionFormDraft = {
   title: string
   titleEdited: boolean
   playerSlots: string[]
+  duoTeams: DuoTeamDraftSlot[]
   previewSeed: number
 }
 
@@ -23,7 +33,7 @@ export function loadCompetitionFormDraft(scope: 'new' | string): CompetitionForm
     const raw = localStorage.getItem(competitionDraftKey(scope))
     if (!raw) return null
     const parsed = JSON.parse(raw) as CompetitionFormDraft
-    if (parsed?.v !== 5) return null
+    if (parsed?.v !== 6) return null
     return parsed
   } catch {
     return null
@@ -36,7 +46,7 @@ export function saveCompetitionFormDraft(
 ): void {
   try {
     const payload: CompetitionFormDraft = {
-      v: 5,
+      v: 6,
       savedAt: new Date().toISOString(),
       ...draft,
     }

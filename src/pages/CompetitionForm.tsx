@@ -11,9 +11,23 @@ import {
 } from '../lib/courtSchedule'
 import { useAuth } from '../hooks/useAuth'
 import { useCompetitionFormDraft } from '../hooks/useCompetitionFormDraft'
-import { type CompetitionFormDraft } from '../lib/competitionFormDraft'
+import {
+  type CompetitionFormDraft,
+  type CompetitionPlayerMode,
+} from '../lib/competitionFormDraft'
 import type { CompetitionPlayer } from '../hooks/useCompetitions'
 import { MemberPlayerSlots, type PadelPlayerOption } from '../components/MemberPlayerSlots'
+import {
+  DuoTeamSlots,
+  duoTeamsComplete,
+  duoTeamsToPairPayload,
+  duoTeamsToPairSlotPayload,
+  duoTeamsToRosterSlots,
+  duoTeamsToScheduleInput,
+  emptyDuoTeams,
+  filledDuoPlayerCount,
+  type DuoTeamDraft,
+} from '../components/DuoTeamSlots'
 import { FriendlyRuleSettings } from '../components/FriendlyRuleSettings'
 import { useTranslation } from '../hooks/useTranslation'
 import { measureScheduleQuality, solveBalancedSchedule } from '../lib/balancedSchedule'
@@ -22,17 +36,22 @@ import {
   RANKED_SCHEDULE_VERSION,
   sortRosterByRank,
 } from '../lib/rankedSchedule'
+import { buildDuoStoredSchedule } from '../lib/duoRoundRobinSchedule'
 import {
-  LOCKED_COMPETITION,
-  lockedCompetitionEventMinutes,
-  lockedCompetitionRuleChips,
-  lockedCompetitionScoringConfig,
-  lockedCompetitionSessionFields,
-} from '../lib/lockedCompetitionFormat'
+  competitionEventMinutes,
+  competitionFormatPreset,
+  competitionPlayerMode,
+  competitionRuleChips,
+  competitionScoringConfig,
+  competitionSessionFields,
+  DUO_COMPETITION,
+  SINGLES_COMPETITION,
+  type CompetitionTeamConfig,
+} from '../lib/competitionFormatPresets'
 import { buildCompetitionAutoTitle, GENDERS, SKILL_LEVELS, type Gender, type SkillLevel } from '../lib/competitionPresets'
 import { buildCompetitionRosterSlots } from '../lib/competitionRosterSlots'
 import { supabase } from '../lib/supabaseClient'
-import type { Profile } from '../lib/types'
+import type { Profile, ScoringConfig } from '../lib/types'
 
 function Chip({
   active,
@@ -76,11 +95,36 @@ function flushPendingInputs(): Promise<void> {
   })
 }
 
+function rosterIdsInOrder(rows: CompetitionPlayer[]): string[] {
+  return sortRosterByRank(rows).map((row) => row.id)
+}
+
+async function saveScheduleForSession(
+  sessionId: string,
+  baseConfig: ScoringConfig,
+  schedule: ReturnType<typeof buildStoredSchedule>,
+  previewSeed: number,
+): Promise<string | null> {
+  const nextConfig = {
+    ...baseConfig,
+    schedule_seed: previewSeed,
+    schedule_version: RANKED_SCHEDULE_VERSION,
+    schedule,
+  }
+  const { error: cfgErr } = await supabase.rpc('save_competition_scoring_config', {
+    p_session_id: sessionId,
+    p_scoring_config: nextConfig,
+  })
+  return cfgErr?.message ?? null
+}
+
 export function CompetitionForm() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
   const { t } = useTranslation()
+  const [playerMode, setPlayerMode] = useState<CompetitionPlayerMode>('singles')
+  const [createLeague, setCreateLeague] = useState(false)
   const [day, setDay] = useState(formatDateInput(new Date()))
   const [startHour, setStartHour] = useState(18)
   const [startMinute, setStartMinute] = useState(0)
@@ -94,23 +138,30 @@ export function CompetitionForm() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [playerSlots, setPlayerSlots] = useState<string[]>(() =>
-    Array(LOCKED_COMPETITION.targetPlayers).fill(''),
+    Array(SINGLES_COMPETITION.targetPlayers).fill(''),
   )
   const [profileIds, setProfileIds] = useState<(string | null)[]>(() =>
-    Array(LOCKED_COMPETITION.targetPlayers).fill(null),
+    Array(SINGLES_COMPETITION.targetPlayers).fill(null),
   )
   const [padelPlayerIds, setPadelPlayerIds] = useState<(string | null)[]>(() =>
-    Array(LOCKED_COMPETITION.targetPlayers).fill(null),
+    Array(SINGLES_COMPETITION.targetPlayers).fill(null),
   )
+  const [duoTeams, setDuoTeams] = useState<DuoTeamDraft[]>(() => emptyDuoTeams())
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [padelPlayers, setPadelPlayers] = useState<PadelPlayerOption[]>([])
   const [previewSeed, setPreviewSeed] = useState(0)
-  const [slotCount, setSlotCount] = useState(LOCKED_COMPETITION.targetPlayers)
+  const [slotCount, setSlotCount] = useState(SINGLES_COMPETITION.targetPlayers)
   const [competitionStarted, setCompetitionStarted] = useState(false)
   const [rosterHydrated, setRosterHydrated] = useState(!id)
+  const [isLeagueWeek, setIsLeagueWeek] = useState(false)
+
+  const isDuos = playerMode === 'duos'
+  const showDateFields = !createLeague || Boolean(id)
 
   const draftScope = id ?? 'new'
   const applyDraft = useCallback((draft: CompetitionFormDraft) => {
+    setPlayerMode(draft.playerMode)
+    setCreateLeague(draft.createLeague)
     setDay(draft.day)
     setStartHour(draft.startHour)
     setStartMinute(draft.startMinute === 30 ? 30 : 0)
@@ -123,15 +174,30 @@ export function CompetitionForm() {
     setTitle(draft.title)
     setTitleEdited(draft.titleEdited)
     setPreviewSeed(draft.previewSeed)
-    const slots = Array(LOCKED_COMPETITION.targetPlayers).fill('')
-    for (let i = 0; i < Math.min(draft.playerSlots.length, LOCKED_COMPETITION.targetPlayers); i += 1) {
+    const slots = Array(SINGLES_COMPETITION.targetPlayers).fill('')
+    for (let i = 0; i < Math.min(draft.playerSlots.length, SINGLES_COMPETITION.targetPlayers); i += 1) {
       slots[i] = draft.playerSlots[i] ?? ''
     }
     setPlayerSlots(slots)
+    if (draft.duoTeams?.length) {
+      setDuoTeams(
+        emptyDuoTeams().map((team, index) => {
+          const saved = draft.duoTeams[index]
+          if (!saved) return team
+          return {
+            ...team,
+            label: saved.label,
+            names: saved.names,
+          }
+        }),
+      )
+    }
   }, [])
 
   const draftValues = useMemo(
     (): Omit<CompetitionFormDraft, 'v' | 'savedAt'> => ({
+      playerMode,
+      createLeague,
       day,
       startHour,
       startMinute,
@@ -140,18 +206,32 @@ export function CompetitionForm() {
       title,
       titleEdited,
       playerSlots,
+      duoTeams: duoTeams.map((team) => ({ label: team.label, names: team.names })),
       previewSeed,
     }),
-    [day, startHour, startMinute, skillLevel, gender, title, titleEdited, playerSlots, previewSeed],
+    [
+      playerMode,
+      createLeague,
+      day,
+      startHour,
+      startMinute,
+      skillLevel,
+      gender,
+      title,
+      titleEdited,
+      playerSlots,
+      duoTeams,
+      previewSeed,
+    ],
   )
 
   const { clearDraft } = useCompetitionFormDraft({
-      scope: draftScope,
-      restore: !id,
-      persist: !id,
-      values: draftValues,
-      onRestore: applyDraft,
-    })
+    scope: draftScope,
+    restore: !id,
+    persist: !id,
+    values: draftValues,
+    onRestore: applyDraft,
+  })
 
   const halfHourSlots = useMemo(() => scheduleHalfHourSlots(), [])
   const startsAtIso = useMemo(
@@ -166,14 +246,15 @@ export function CompetitionForm() {
   useEffect(() => {
     if (!titleEdited) setTitle(autoTitle)
   }, [autoTitle, titleEdited])
+
   const trimmedSlots = useMemo(
     () => padArray(playerSlots, slotCount, '').map((s) => s.trim()),
     [playerSlots, slotCount],
   )
   const filledNameCount = useMemo(() => trimmedSlots.filter(Boolean).length, [trimmedSlots])
-  const canBuildSchedule =
-    filledNameCount >= 4 && filledNameCount % 4 === 0
-
+  const filledDuoCount = useMemo(() => filledDuoPlayerCount(duoTeams), [duoTeams])
+  const canBuildSinglesSchedule = filledNameCount >= 4 && filledNameCount % 4 === 0
+  const canBuildDuoSchedule = duoTeamsComplete(duoTeams)
   useEffect(() => {
     void Promise.all([
       supabase.from('profiles').select('id, display_name, avatar_url').order('display_name'),
@@ -235,8 +316,11 @@ export function CompetitionForm() {
         return
       }
 
+      const mode = competitionPlayerMode(data.scoring_config as ScoringConfig)
+      setPlayerMode(mode)
+      setIsLeagueWeek(Boolean(data.game_group_id))
       const target =
-        data.target_players ?? data.max_players ?? LOCKED_COMPETITION.targetPlayers
+        data.target_players ?? data.max_players ?? competitionFormatPreset(mode).targetPlayers
       setSlotCount(target)
       setCompetitionStarted(Boolean(data.competition_started_at))
       if (data.season_id) setSeasonId(data.season_id)
@@ -271,7 +355,7 @@ export function CompetitionForm() {
 
       const { data: rosterRows, error: rosterErr } = await supabase
         .from('session_players')
-        .select('guest_name, rank_order, profile_id, padel_player_id, profiles(display_name)')
+        .select('id, guest_name, rank_order, profile_id, padel_player_id, profiles(display_name)')
         .eq('session_id', id)
         .order('rank_order')
 
@@ -288,6 +372,7 @@ export function CompetitionForm() {
 
       for (const row of rosterRows ?? []) {
         const r = row as unknown as {
+          id: string
           guest_name: string | null
           rank_order: number | null
           profile_id: string | null
@@ -303,9 +388,46 @@ export function CompetitionForm() {
         }
       }
 
-      setPlayerSlots(nextNames)
-      setProfileIds(nextIds)
-      setPadelPlayerIds(nextPadelIds)
+      if (mode === 'duos') {
+        const teams = emptyDuoTeams().map((team, teamIndex) => {
+          const base = teamIndex * 2
+          return {
+            ...team,
+            names: [nextNames[base] ?? '', nextNames[base + 1] ?? ''] as [string, string],
+            profileIds: [nextIds[base] ?? null, nextIds[base + 1] ?? null] as [
+              string | null,
+              string | null,
+            ],
+            padelPlayerIds: [nextPadelIds[base] ?? null, nextPadelIds[base + 1] ?? null] as [
+              string | null,
+              string | null,
+            ],
+          }
+        })
+        const { data: pairRows } = await supabase
+          .from('session_pairs')
+          .select('pair_label, roster_a_id, roster_b_id')
+          .eq('session_id', id)
+        const rankByRosterId = new Map(
+          (rosterRows ?? []).map((row) => [
+            (row as { id: string }).id,
+            (row as { rank_order: number | null }).rank_order ?? 0,
+          ]),
+        )
+        for (const pair of pairRows ?? []) {
+          const rankA = rankByRosterId.get(pair.roster_a_id ?? '')
+          if (rankA == null) continue
+          const teamIndex = Math.floor(rankA / 2)
+          if (teamIndex >= 0 && teamIndex < teams.length && pair.pair_label) {
+            teams[teamIndex] = { ...teams[teamIndex], label: pair.pair_label }
+          }
+        }
+        setDuoTeams(teams)
+      } else {
+        setPlayerSlots(nextNames)
+        setProfileIds(nextIds)
+        setPadelPlayerIds(nextPadelIds)
+      }
 
       if (padelIdsOnRoster.size > 0) {
         const { data: rosterPadel } = await supabase
@@ -336,36 +458,111 @@ export function CompetitionForm() {
       setError('No active season.')
       return
     }
-    const rosterPayload = buildCompetitionRosterSlots(
-      trimmedSlots,
-      profileIds,
-      padelPlayerIds,
-    )
+
     setBusy(true)
     setError(null)
 
-    const startsAt = new Date(startsAtIso)
-    const eventMinutes = lockedCompetitionEventMinutes()
-    const endsAt = new Date(startsAt.getTime() + eventMinutes * 60 * 1000)
     const finalTitle = title.trim() || autoTitle
-    const americanoConfig = lockedCompetitionScoringConfig()
+    const baseConfig = competitionScoringConfig(playerMode)
+    const lockedFields = competitionSessionFields(playerMode, { skillLevel, gender })
 
-    const lockedFields = lockedCompetitionSessionFields({ skillLevel, gender })
+    const rosterPayload = isDuos
+      ? duoTeamsToRosterSlots(duoTeams)
+      : buildCompetitionRosterSlots(trimmedSlots, profileIds, padelPlayerIds)
+
+    if (isDuos && createLeague && !id) {
+      const { data: leagueResult, error: leagueErr } = await supabase.rpc('create_duo_league', {
+        p_season_id: seasonId,
+        p_title: finalTitle,
+        p_skill_level: skillLevel,
+        p_gender: gender,
+        p_slots: rosterPayload,
+        p_pairs: [],
+        p_scoring_config: baseConfig,
+        p_created_by: user?.id ?? null,
+      })
+      if (leagueErr || !leagueResult) {
+        setBusy(false)
+        setError(leagueErr?.message ?? 'Could not create league')
+        return
+      }
+
+      const sessionIds = (leagueResult.session_ids as string[] | undefined) ?? []
+      for (const sessionId of sessionIds) {
+        const { data: rosterRows, error: rosterLoadErr } = await supabase
+          .from('session_players')
+          .select('id, guest_name, rank_order, profile_id, profiles(display_name)')
+          .eq('session_id', sessionId)
+          .order('rank_order')
+        if (rosterLoadErr || !rosterRows) {
+          setBusy(false)
+          setError(rosterLoadErr?.message ?? 'Could not load league roster')
+          return
+        }
+        const ranked = sortRosterByRank(rosterRows as unknown as CompetitionPlayer[])
+        const rosterIds = rosterIdsInOrder(ranked)
+        const pairs = duoTeamsToPairPayload(duoTeams, rosterIds)
+        const { error: pairErr } = await supabase.rpc('sync_competition_pairs', {
+          p_session_id: sessionId,
+          p_pairs: pairs,
+        })
+        if (pairErr) {
+          setBusy(false)
+          setError(pairErr.message)
+          return
+        }
+        if (canBuildDuoSchedule) {
+          const schedule = buildDuoStoredSchedule(
+            duoTeamsToScheduleInput(duoTeams, rosterIds),
+            DUO_COMPETITION.gameCount,
+            previewSeed,
+          )
+          const teamsConfig: CompetitionTeamConfig[] = pairs.map((pair) => ({
+            label: pair.label,
+            roster_ids: [pair.roster_a_id, pair.roster_b_id],
+          }))
+          const cfgErr = await saveScheduleForSession(
+            sessionId,
+            { ...baseConfig, teams: teamsConfig },
+            schedule,
+            previewSeed,
+          )
+          if (cfgErr) {
+            setBusy(false)
+            setError(cfgErr)
+            return
+          }
+        }
+      }
+
+      clearDraft()
+      setBusy(false)
+      navigate('/competitive')
+      return
+    }
+
+    const eventMinutes = competitionEventMinutes(playerMode)
+    const startsAt = showDateFields ? new Date(startsAtIso) : null
+    const endsAt =
+      startsAt != null ? new Date(startsAt.getTime() + eventMinutes * 60 * 1000) : null
+
     const sessionFields = {
       season_id: seasonId,
       title: finalTitle,
-      starts_on: day,
-      ends_on: bangkokDateFromIso(endsAt.toISOString()),
-      starts_at: startsAt.toISOString(),
-      ends_at: endsAt.toISOString(),
+      ...(startsAt
+        ? {
+            starts_on: day,
+            ends_on: bangkokDateFromIso(endsAt!.toISOString()),
+            starts_at: startsAt.toISOString(),
+            ends_at: endsAt!.toISOString(),
+          }
+        : {}),
       game_kind: 'competition' as const,
       visibility: 'open' as const,
       created_by: user?.id ?? null,
       ...lockedFields,
     }
-    const payload = id
-      ? sessionFields
-      : { ...sessionFields, status: 'open' as const }
+    const payload = id ? sessionFields : { ...sessionFields, status: 'open' as const }
 
     let sessionId = id
     if (id) {
@@ -389,9 +586,12 @@ export function CompetitionForm() {
       sessionId = data.id
     }
 
+    const pairSlotPayload = isDuos ? duoTeamsToPairSlotPayload(duoTeams) : null
+
     const { error: rosterErr } = await supabase.rpc('sync_competition_roster_slots', {
       p_session_id: sessionId,
       p_slots: rosterPayload,
+      ...(pairSlotPayload?.length ? { p_pairs: pairSlotPayload } : {}),
     })
     if (rosterErr) {
       setBusy(false)
@@ -411,27 +611,40 @@ export function CompetitionForm() {
     }
 
     const ranked = sortRosterByRank((rosterRows ?? []) as unknown as CompetitionPlayer[])
-    const canSchedule = ranked.length >= 4 && ranked.length % 4 === 0
+    const rosterIds = rosterIdsInOrder(ranked)
+
+    const canSchedule = isDuos ? canBuildDuoSchedule : ranked.length >= 4 && ranked.length % 4 === 0
 
     if (canSchedule || !id) {
-      const scheduleRounds = canSchedule
-        ? solveBalancedSchedule(ranked.length, LOCKED_COMPETITION.gameCount, previewSeed)
-        : []
-      const schedule =
-        scheduleRounds.length > 0 ? buildStoredSchedule(ranked, scheduleRounds) : []
-      const nextConfig = {
-        ...americanoConfig,
-        schedule_seed: previewSeed,
-        schedule_version: RANKED_SCHEDULE_VERSION,
-        schedule,
+      let schedule: ReturnType<typeof buildStoredSchedule> = []
+      let teamsConfig: CompetitionTeamConfig[] | undefined
+
+      if (isDuos) {
+        schedule = buildDuoStoredSchedule(
+          duoTeamsToScheduleInput(duoTeams, rosterIds),
+          DUO_COMPETITION.gameCount,
+          previewSeed,
+        )
+        teamsConfig = duoTeamsToPairPayload(duoTeams, rosterIds).map((pair) => ({
+          label: pair.label,
+          roster_ids: [pair.roster_a_id, pair.roster_b_id],
+        }))
+      } else if (canSchedule) {
+        schedule = buildStoredSchedule(
+          ranked,
+          solveBalancedSchedule(ranked.length, SINGLES_COMPETITION.gameCount, previewSeed),
+        )
       }
-      const { error: cfgErr } = await supabase.rpc('save_competition_scoring_config', {
-        p_session_id: sessionId,
-        p_scoring_config: nextConfig,
-      })
+
+      const cfgErr = await saveScheduleForSession(
+        sessionId!,
+        { ...baseConfig, ...(teamsConfig ? { teams: teamsConfig } : {}) },
+        schedule,
+        previewSeed,
+      )
       if (cfgErr) {
         setBusy(false)
-        setError(cfgErr.message)
+        setError(cfgErr)
         return
       }
     }
@@ -448,22 +661,34 @@ export function CompetitionForm() {
     }
 
     clearDraft()
+
+    if (!competitionStarted && sessionId) {
+      const { error: startErr } = await supabase.rpc('start_competition', {
+        p_session_id: sessionId,
+      })
+      if (startErr) {
+        setBusy(false)
+        setError(startErr.message)
+        return
+      }
+    }
+
     setBusy(false)
-    navigate(id ? `/competitions/${sessionId}/run` : '/competitive')
+    navigate(`/competitions/${sessionId}`)
   }
 
   const saveDisabled =
     busy || (Boolean(id) && !rosterHydrated) || (!id && seasonLoading)
   const scheduleQuality = useMemo(() => {
-    if (!canBuildSchedule) return null
+    if (!canBuildSinglesSchedule || isDuos) return null
     const rounds = solveBalancedSchedule(
       filledNameCount,
-      LOCKED_COMPETITION.gameCount,
+      SINGLES_COMPETITION.gameCount,
       previewSeed,
     )
     return measureScheduleQuality(rounds, filledNameCount)
-  }, [previewSeed, filledNameCount, canBuildSchedule])
-  const ruleChips = useMemo(() => lockedCompetitionRuleChips(t), [t])
+  }, [previewSeed, filledNameCount, canBuildSinglesSchedule, isDuos])
+  const ruleChips = useMemo(() => competitionRuleChips(playerMode, t), [playerMode, t])
 
   return (
     <form
@@ -478,11 +703,44 @@ export function CompetitionForm() {
       </Link>
 
       <section className="game-card space-y-3">
-          <FriendlyRuleSettings chips={ruleChips} />
+        <div className="space-y-1.5">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
+            {t('competition.formatLabel')}
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            <Chip active={playerMode === 'singles'} onClick={() => setPlayerMode('singles')}>
+              {t('competition.formatSingles')}
+            </Chip>
+            <Chip active={playerMode === 'duos'} onClick={() => setPlayerMode('duos')}>
+              {t('competition.formatDuos')}
+            </Chip>
+          </div>
+        </div>
 
+        {isLeagueWeek ? (
+          <p className="text-xs text-brand-muted">{t('competition.leagueDatesLater')}</p>
+        ) : null}
+
+        {isDuos && !id ? (
+          <label className="flex items-center gap-2 text-sm text-brand-text">
+            <input
+              type="checkbox"
+              checked={createLeague}
+              onChange={(e) => setCreateLeague(e.target.checked)}
+              className="rounded border-brand-border"
+            />
+            {t('competition.createLeague')}
+          </label>
+        ) : null}
+
+        <FriendlyRuleSettings chips={ruleChips} />
+
+        {showDateFields ? (
           <div className="grid grid-cols-2 gap-2">
             <label className="block min-w-0 space-y-1">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">Day</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
+                Day
+              </span>
               <input
                 type="date"
                 value={day}
@@ -492,7 +750,9 @@ export function CompetitionForm() {
             </label>
 
             <label className="block min-w-0 space-y-1">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">Start</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
+                Start
+              </span>
               <select
                 value={clubTimeSlotValue(startHour, startMinute)}
                 onChange={(e) => {
@@ -510,94 +770,134 @@ export function CompetitionForm() {
               </select>
             </label>
           </div>
+        ) : (
+          <p className="text-xs text-brand-muted">{t('competition.leagueDatesLater')}</p>
+        )}
 
-          <div className="space-y-1.5">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">Level</span>
-            <div className="flex flex-wrap gap-1.5">
-              {SKILL_LEVELS.map((level) => (
-                <Chip key={level} active={skillLevel === level} onClick={() => setSkillLevel(level)}>
-                  {level}
-                </Chip>
-              ))}
-            </div>
+        <div className="space-y-1.5">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
+            Level
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {SKILL_LEVELS.map((level) => (
+              <Chip key={level} active={skillLevel === level} onClick={() => setSkillLevel(level)}>
+                {level}
+              </Chip>
+            ))}
           </div>
+        </div>
 
-          <div className="space-y-1.5">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">Gender</span>
-            <div className="flex flex-wrap gap-1.5">
-              {GENDERS.map((g) => (
-                <Chip key={g} active={gender === g} onClick={() => setGender(g)}>
-                  {g}
-                </Chip>
-              ))}
-            </div>
+        <div className="space-y-1.5">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
+            Gender
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {GENDERS.map((g) => (
+              <Chip key={g} active={gender === g} onClick={() => setGender(g)}>
+                {g}
+              </Chip>
+            ))}
           </div>
+        </div>
 
-          <label className="block space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">Title</span>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => {
-                setTitle(e.target.value)
-                setTitleEdited(true)
-              }}
-              placeholder={autoTitle}
-              className="brand-input"
-            />
-          </label>
+        <label className="block space-y-1">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
+            Title
+          </span>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => {
+              setTitle(e.target.value)
+              setTitleEdited(true)
+            }}
+            placeholder={autoTitle}
+            className="brand-input"
+          />
+        </label>
 
-          <div className="border-t border-brand-border/40 pt-3" />
+        <div className="border-t border-brand-border/40 pt-3" />
 
-          <div className="space-y-1">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-              Player names
-            </p>
-            <p className="text-xs text-brand-muted">{t('competition.rosterBlankSlotsOk')}</p>
-          </div>
-          {!rosterHydrated && id ? (
-            <p className="text-sm text-brand-muted">{t('common.loading')}</p>
-          ) : (
-            <MemberPlayerSlots
-              count={slotCount}
-              profiles={profiles}
-              padelPlayers={padelPlayers}
-              names={playerSlots}
-              profileIds={profileIds}
-              padelPlayerIds={padelPlayerIds}
-              onChange={handlePlayersChange}
+        <div className="space-y-1">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
+            {isDuos ? t('competition.duoTeams') : t('competition.playerNames')}
+          </p>
+          <p className="text-xs text-brand-muted">{t('competition.rosterBlankSlotsOk')}</p>
+        </div>
+        {!rosterHydrated && id ? (
+          <p className="text-sm text-brand-muted">{t('common.loading')}</p>
+        ) : isDuos ? (
+          <DuoTeamSlots
+            teams={duoTeams}
+            profiles={profiles}
+            padelPlayers={padelPlayers}
+            onChange={setDuoTeams}
+            disabled={busy}
+          />
+        ) : (
+          <MemberPlayerSlots
+            count={slotCount}
+            profiles={profiles}
+            padelPlayers={padelPlayers}
+            names={playerSlots}
+            profileIds={profileIds}
+            padelPlayerIds={padelPlayerIds}
+            onChange={handlePlayersChange}
+            disabled={busy}
+            showMembers
+            showPlayerProfiles
+          />
+        )}
+
+        {isDuos && filledDuoCount > 0 && !canBuildDuoSchedule ? (
+          <p className="text-xs text-brand-muted">{t('competition.duoTeamsIncomplete')}</p>
+        ) : null}
+
+        {scheduleQuality && scheduleQuality.maxPartnerCount > 1 ? (
+          <p className="text-xs text-brand-muted">
+            Partner repeats: up to {scheduleQuality.maxPartnerCount}× —{' '}
+            <button
+              type="button"
               disabled={busy}
-              showMembers
-              showPlayerProfiles
-            />
-          )}
+              onClick={() => setPreviewSeed((s) => s + 1)}
+              className="font-semibold text-brand-accent"
+            >
+              shuffle match-ups
+            </button>
+          </p>
+        ) : null}
 
-          {scheduleQuality && scheduleQuality.maxPartnerCount > 1 && (
-            <p className="text-xs text-brand-muted">
-              Partner repeats: up to {scheduleQuality.maxPartnerCount}× —{' '}
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => setPreviewSeed((s) => s + 1)}
-                className="font-semibold text-brand-accent"
-              >
-                shuffle match-ups
-              </button>
-            </p>
-          )}
+        {isDuos && canBuildDuoSchedule ? (
+          <p className="text-xs text-brand-muted">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setPreviewSeed((s) => s + 1)}
+              className="font-semibold text-brand-accent"
+            >
+              {t('competition.shuffleDuoRound')}
+            </button>
+          </p>
+        ) : null}
 
-          {(seasonError || error) && (
-            <p className="text-sm text-red-600">{error ?? seasonError}</p>
-          )}
+        {(seasonError || error) && (
+          <p className="text-sm text-red-600">{error ?? seasonError}</p>
+        )}
 
-          <button
-            type="submit"
-            disabled={saveDisabled}
-            className="brand-btn w-full py-2.5 text-sm font-semibold disabled:opacity-50"
-          >
-            {busy ? 'Saving…' : id ? 'Save' : 'Create competition'}
-          </button>
-        </section>
+        <button
+          type="submit"
+          disabled={saveDisabled}
+          className="brand-btn w-full py-2.5 text-sm font-semibold disabled:opacity-50"
+        >
+          {busy
+            ? 'Saving…'
+            : id
+              ? 'Save'
+              : createLeague && isDuos
+                ? t('competition.createLeagueBtn')
+                : 'Create competition'}
+        </button>
+      </section>
     </form>
   )
 }

@@ -2,8 +2,12 @@ import { useCallback, useMemo } from 'react'
 import {
   americanoScoringUnit,
   americanoTargetPoints,
-  usesAmericanoScoring,
 } from '../lib/competitionPresets'
+import {
+  isDuoCompetition,
+  teamsFromConfig,
+  usesCompetitionGameScoring,
+} from '../lib/competitionFormatPresets'
 import {
   americanoScheduleFromSession,
   courtsNeeded,
@@ -17,6 +21,8 @@ import {
   sortRosterByRank,
   storedScheduleFromConfig,
 } from '../lib/rankedSchedule'
+import { buildDuoStoredSchedule } from '../lib/duoRoundRobinSchedule'
+import { DUO_GAME_COUNT } from '../lib/competitionFormatPresets'
 import type { CourtPlayer, GameRound } from '../lib/americanoSchedule'
 import type { PlaySide } from '../lib/types'
 import { pivotScheduleByCourt, sortGameRoundsByCourt, sortLiveCourtsByClubOrder, type CourtColumn } from '../lib/competitionCourtBoard'
@@ -116,9 +122,13 @@ export function useCompetitionBoard(
   clubCourts: ClubCourt[],
   courtMatches: CourtMatch[],
 ) {
-  const isAmericano = session ? usesAmericanoScoring(session) : false
-  const layoutValid = isValidCourtLayout(roster.length)
-  const neededCourts = courtsNeeded(roster.length)
+  const isDuo = isDuoCompetition(session)
+  const teams = teamsFromConfig(session?.scoring_config)
+  const isAmericano = session ? usesCompetitionGameScoring(session) : false
+  const layoutValid = isDuo
+    ? roster.length === 12
+    : isValidCourtLayout(roster.length)
+  const neededCourts = isDuo ? 3 : courtsNeeded(roster.length)
   const scheduleSeed = scheduleSeedFromSession(session?.scoring_config)
   const { totalGames, gameMinutes: scheduledGameMinutes, breakMinutes: scheduledBreakMinutes } =
     americanoScheduleFromSession(session)
@@ -145,7 +155,17 @@ export function useCompetitionBoard(
     let games: GameRound[]
     if (hasLiveRounds) games = gamesFromDbRounds(rounds, clubCourts)
     else if (!layoutValid) return []
-    else if (storedSchedule.length > 0) {
+    else if (isDuo && teams.length >= 2) {
+      const duoSchedule =
+        storedSchedule.length > 0
+          ? storedSchedule
+          : buildDuoStoredSchedule(
+              teams.map((t) => ({ label: t.label, rosterIds: t.roster_ids })),
+              totalGames || DUO_GAME_COUNT,
+              scheduleSeed,
+            )
+      games = gamesFromStoredSchedule(rankedRoster, duoSchedule, courtNames)
+    } else if (storedSchedule.length > 0) {
       games = gamesFromStoredSchedule(rankedRoster, storedSchedule, courtNames)
     } else {
       games = planRankedSchedule(rankedRoster, courtNames, totalGames, scheduleSeed)
@@ -162,6 +182,8 @@ export function useCompetitionBoard(
     scheduleSeed,
     totalGames,
     storedSchedule,
+    isDuo,
+    teams,
   ])
 
   const columns: CourtColumn[] = useMemo(() => {
@@ -235,6 +257,8 @@ export function useCompetitionBoard(
 
   return {
     isAmericano,
+    isDuo,
+    teams,
     layoutValid,
     columns,
     liveCourtsByGame,

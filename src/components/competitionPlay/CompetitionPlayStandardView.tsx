@@ -11,6 +11,7 @@ type Props = {
   loadOrError: ReactNode
   session: unknown
   started: boolean
+  starting?: boolean
   gamesBody: ReactNode
   leaderboardBody: ReactNode
 }
@@ -23,6 +24,7 @@ export function CompetitionPlayStandardView({
   loadOrError,
   session,
   started,
+  starting = false,
   gamesBody,
   leaderboardBody,
 }: Props) {
@@ -41,7 +43,7 @@ export function CompetitionPlayStandardView({
             <>
               {!started ? (
                 <p className="py-6 text-center text-sm text-brand-muted">
-                  {t('competition.waitingOrganiser')}
+                  {starting ? t('common.loading') : t('competition.waitingOrganiser')}
                 </p>
               ) : null}
               {started ? gamesBody : null}

@@ -57,18 +57,9 @@ export function computeAmericanoStandings(
         }
       })
       .sort((a, b) => {
-        const spA = roster.find(
-          (sp) => (sp.padel_player_id ?? sp.profile_id ?? sp.id) === a.profile_id,
-        )
-        const spB = roster.find(
-          (sp) => (sp.padel_player_id ?? sp.profile_id ?? sp.id) === b.profile_id,
-        )
-        const rankA = spA?.rank_order ?? 999
-        const rankB = spB?.rank_order ?? 999
         return (
           b.total_points - a.total_points ||
           b.games - a.games ||
-          rankA - rankB ||
           a.display_name.localeCompare(b.display_name)
         )
       }),

@@ -104,7 +104,7 @@ export function competitionRuleChips(row: CompetitionRow, t: TranslateFn): Frien
       unit === 'open'
         ? t('friendly.chip.open')
         : unit === 'games'
-          ? t('friendly.chip.bestOfGames', { n: target ?? 6 })
+          ? t('friendly.chip.maxGamesPerSide', { n: target ?? 6 })
           : unit === 'sets'
             ? `${target ?? 4} sets`
             : `${target ?? 24} pts`

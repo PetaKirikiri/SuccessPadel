@@ -89,6 +89,8 @@ export type Messages = {
     chip: {
       open: string
       bestOfGames: string
+      firstToGames: string
+      maxGamesPerSide: string
       matches: string
       minsPerGame: string
       minBreaks: string
@@ -140,6 +142,7 @@ export type Messages = {
     filterLevel: string
     filterSolo: string
     filterDuos: string
+    teams: string
     noScoresFilterHint: string
   }
   achievements: {
@@ -247,6 +250,20 @@ export type Messages = {
     enterName: string
     addCompetitionFab: string
     rosterBlankSlotsOk: string
+    formatLabel: string
+    formatSingles: string
+    formatDuos: string
+    createLeague: string
+    leagueDatesLater: string
+    duoTeams: string
+    duoTeamsIncomplete: string
+    shuffleDuoRound: string
+    createLeagueBtn: string
+    playerNames: string
+    hintDuosFormat: string
+    duoLeagues: string
+    leagueWeek: string
+    setWeekSchedule: string
   }
   guestChip: {
     playTodayHint: string

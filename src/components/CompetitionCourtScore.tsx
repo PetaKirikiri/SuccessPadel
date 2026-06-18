@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { AmericanoScoringUnit } from '../lib/competitionPresets'
-import { bumpScoreField, parseScoreField, scoreDigitsOnly } from '../lib/competitionScoreInput'
+import { bumpScoreField, courtGameScoreMax, isValidCappedGameScore, parseScoreField, scoreDigitsOnly } from '../lib/competitionScoreInput'
 import type { MatchTeam } from '../lib/types'
 import { supabase } from '../lib/supabaseClient'
 
@@ -220,10 +220,20 @@ export function CompetitionCourtScore({
   const target = playTo ?? (scoreUnit === 'sets' ? 4 : 24)
   const sumLabel = scoreUnit === 'sets' ? 'Sets' : 'Scores'
   const scoresValid = parsedA !== null && parsedB !== null
-  const sumMatches = scoresValid && parsedA + parsedB === target
-  const readyToSave = scoresValid
+  const gamesTarget = scoreUnit === 'games' ? (playTo ?? target) : undefined
+  const scoreMatchesTarget =
+    scoresValid &&
+    parsedA !== null &&
+    parsedB !== null &&
+    (scoreUnit === 'games' && gamesTarget != null
+      ? isValidCappedGameScore(parsedA, parsedB, gamesTarget)
+      : scoreUnit === 'points'
+        ? parsedA + parsedB === target
+        : true)
+  const readyToSave = scoresValid && scoreMatchesTarget
   const differsFromSaved =
     savedTeamAPoints !== parsedA || savedTeamBPoints !== parsedB
+  const scoreMax = courtGameScoreMax(gamesTarget)
 
   const saveAmericano = useCallback(
     async (a: number, b: number) => {
@@ -364,9 +374,14 @@ export function CompetitionCourtScore({
           )
         ) : null}
         {canLog && busy && <p className="text-center text-[10px] text-brand-muted">Saving…</p>}
-        {canLog && scoreUnit === 'points' && scoresValid && !sumMatches && (
+        {canLog && scoreUnit === 'points' && scoresValid && !scoreMatchesTarget && (
           <p className="text-center text-[10px] text-red-600">
             {sumLabel} must add up to {target}
+          </p>
+        )}
+        {canLog && scoreUnit === 'games' && scoresValid && !scoreMatchesTarget && gamesTarget != null && (
+          <p className="text-center text-[10px] text-red-600">
+            Each side 0–{gamesTarget} games; one team must win
           </p>
         )}
         {canLog && isAmericano && (
@@ -427,7 +442,7 @@ export function CompetitionCourtScore({
                       value={ourValue}
                       onChange={setOurValue}
                       scoreUnit={scoreUnit}
-                      scoreMax={playTo}
+                      scoreMax={scoreMax}
                       large={large}
                     />
                     {large && (
@@ -440,7 +455,7 @@ export function CompetitionCourtScore({
                       value={theirValue}
                       onChange={setTheirValue}
                       scoreUnit={scoreUnit}
-                      scoreMax={playTo}
+                      scoreMax={scoreMax}
                       large={large}
                     />
                   </>
@@ -451,7 +466,7 @@ export function CompetitionCourtScore({
                       value={teamAPoints}
                       onChange={markDirty(setTeamAPoints)}
                       scoreUnit={scoreUnit}
-                      scoreMax={playTo}
+                      scoreMax={scoreMax}
                       large={large}
                     />
                     <TeamPointsRow
@@ -459,15 +474,20 @@ export function CompetitionCourtScore({
                       value={teamBPoints}
                       onChange={markDirty(setTeamBPoints)}
                       scoreUnit={scoreUnit}
-                      scoreMax={playTo}
+                      scoreMax={scoreMax}
                       large={large}
                     />
                   </>
                 )}
               </div>
-              {scoreUnit === 'points' && scoresValid && !sumMatches && (
+              {scoreUnit === 'points' && scoresValid && !scoreMatchesTarget && (
                 <p className={`text-red-600 ${large ? 'text-base' : 'text-xs'}`}>
                   {sumLabel} must add up to {target}
+                </p>
+              )}
+              {scoreUnit === 'games' && scoresValid && !scoreMatchesTarget && gamesTarget != null && (
+                <p className={`text-red-600 ${large ? 'text-base' : 'text-xs'}`}>
+                  Each side 0–{gamesTarget} games; one team must win
                 </p>
               )}
               <button

@@ -242,6 +242,52 @@ export function podiumMedalForRowIndex(index: number): Achievement | null {
   return null
 }
 
+type PointsStandingsRow = { total_points: number; games: number }
+
+/** Top three distinct point totals among active players (desc). */
+export function podiumPointTiers(rows: PointsStandingsRow[]): number[] {
+  return [...new Set(rows.filter((row) => row.games > 0).map((row) => row.total_points))].sort(
+    (a, b) => b - a,
+  ).slice(0, 3)
+}
+
+/** Podium medal from point total — tied scores share the same tier medal. */
+export function podiumAchievementForPoints(
+  entry: PointsStandingsRow,
+  tiers: number[],
+): Achievement | null {
+  if (entry.games <= 0) return null
+  const tierIndex = tiers.indexOf(entry.total_points)
+  if (tierIndex < 0 || tierIndex > 2) return null
+  return podiumMedalForRowIndex(tierIndex)
+}
+
+/** Display rank by points (1, 1, 3…) — not table row index. */
+export function standingsDisplayRank(entries: PointsStandingsRow[], index: number): number {
+  const row = entries[index]
+  if (!row || row.games <= 0) return index + 1
+  let rank = 1
+  for (let i = 0; i < index; i++) {
+    const prev = entries[i]!
+    if (prev.games > 0 && prev.total_points > row.total_points) rank++
+  }
+  return rank
+}
+
+/** @deprecated Use podiumAchievementForPoints — rank alone ignores tied scores. */
+export function podiumAchievementForRank(rank: number): Achievement | null {
+  return rank >= 1 && rank <= 3 ? podiumMedalForRowIndex(rank - 1) : null
+}
+
+type AchievementStandingsRow = {
+  profile_id: string
+  member_profile_id?: string | null
+  padel_player_id?: string | null
+  display_name: string
+  games: number
+  total_points: number
+}
+
 const PODIUM_BADGE_ORDER = ['winner', 'runnerUp', 'thirdPlace'] as const
 
 export function sortAchievementsForDisplay(badges: Achievement[]): Achievement[] {
@@ -253,18 +299,6 @@ export function sortAchievementsForDisplay(badges: Achievement[]): Achievement[]
     }
     return 0
   })
-}
-
-export function podiumAchievementForRank(rank: number): Achievement | null {
-  return rank >= 1 && rank <= 3 ? podiumMedalForRowIndex(rank - 1) : null
-}
-
-type AchievementStandingsRow = {
-  profile_id: string
-  member_profile_id?: string | null
-  padel_player_id?: string | null
-  display_name: string
-  games: number
 }
 
 export function mergeAchievementRecords(
@@ -287,23 +321,21 @@ export function mergeAchievementRecords(
 export function podiumAchievementsFromStandings(
   standings: AchievementStandingsRow[],
 ): Record<string, Achievement[]> {
+  const tiers = podiumPointTiers(standings)
   const out: Record<string, Achievement[]> = {}
-  standings
-    .filter((row) => row.games > 0)
-    .slice(0, 3)
-    .forEach((row, index) => {
-      const medal = podiumMedalForRowIndex(index)
-      if (!medal) return
-      const ids = [
-        row.padel_player_id,
-        row.member_profile_id,
-        row.profile_id,
-        row.display_name,
-      ].filter((id): id is string => Boolean(id))
-      for (const id of ids) {
-        out[id] = sortAchievementsForDisplay([medal])
-      }
-    })
+  for (const row of standings) {
+    const medal = podiumAchievementForPoints(row, tiers)
+    if (!medal) continue
+    const ids = [
+      row.padel_player_id,
+      row.member_profile_id,
+      row.profile_id,
+      row.display_name,
+    ].filter((id): id is string => Boolean(id))
+    for (const id of ids) {
+      out[id] = sortAchievementsForDisplay([medal])
+    }
+  }
   return out
 }
 
@@ -378,13 +410,21 @@ function buildIndividualAchievements(
     if (list.length > 0) byKey.set(key, list)
   }
 
-  order.slice(0, 3).forEach((key, index) => {
-    const medal = podiumMedalForRowIndex(index)
-    if (!medal) return
+  const podiumRows = order
+    .map((key) => stats.get(key))
+    .filter((stat): stat is PlayerStat => Boolean(stat?.played))
+    .map((stat) => ({ total_points: stat.points, games: stat.played }))
+  const tiers = podiumPointTiers(podiumRows)
+
+  for (const key of order) {
+    const stat = stats.get(key)
+    if (!stat || stat.played === 0) continue
+    const medal = podiumAchievementForPoints({ total_points: stat.points, games: stat.played }, tiers)
+    if (!medal) continue
     const list = byKey.get(key) ?? []
-    list.unshift(medal)
+    if (!list.some((badge) => badge.key === medal.key)) list.unshift(medal)
     byKey.set(key, list)
-  })
+  }
 
   return byKey
 }

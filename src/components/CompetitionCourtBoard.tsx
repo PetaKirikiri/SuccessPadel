@@ -12,6 +12,8 @@ import { RANKED_GAME_MINUTES } from '../lib/competitionLayout'
 import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
 import {
   bumpScoreField,
+  courtGameScoreMax,
+  courtSubmitReady,
   effectiveScoreField,
   parseScoreField,
   scoreDigitsOnly,
@@ -69,6 +71,10 @@ type Props = {
   currentUserAvatarUrl?: string | null
   isAdmin?: boolean
   liveCourtScores?: Map<string, LiveCourtGamesScore>
+  duoTeamLabels?: (
+    teamA: [string, string],
+    teamB: [string, string],
+  ) => { teamALabel?: string; teamBLabel?: string }
 }
 
 type RoundStatus = 'pending' | 'active' | 'complete'
@@ -462,6 +468,8 @@ function CourtMatchCell({
   scoreMax,
   teamAPlayers,
   teamBPlayers,
+  teamALabel,
+  teamBLabel,
   currentUserId,
   currentUserAvatarUrl,
   embedded = false,
@@ -479,6 +487,8 @@ function CourtMatchCell({
   scoreMax?: number
   teamAPlayers?: CourtPlayer[]
   teamBPlayers?: CourtPlayer[]
+  teamALabel?: string
+  teamBLabel?: string
   currentUserId?: string | null
   currentUserAvatarUrl?: string | null
   embedded?: boolean
@@ -582,9 +592,21 @@ function CourtMatchCell({
     )
   }
 
+  const teamTitle = (label: string | undefined, align: 'left' | 'right') =>
+    label ? (
+      <p
+        className={`truncate text-xs font-bold uppercase tracking-wide text-brand-primary md:text-sm ${
+          align === 'right' ? 'text-right' : ''
+        }`}
+      >
+        {label}
+      </p>
+    ) : null
+
   const grid = (
     <div className="grid grid-cols-[minmax(0,1fr)_auto_1px_auto_minmax(0,1fr)] items-center gap-x-2 gap-y-1 px-0.5 py-1 md:gap-x-3 md:px-1 md:py-1.5">
         <div className="min-w-0 justify-self-start space-y-1">
+          {teamTitle(teamALabel, 'left')}
           {playerEl(teamAPlayerList[0]!, 'left')}
           {playerEl(teamAPlayerList[1]!, 'left')}
         </div>
@@ -596,6 +618,7 @@ function CourtMatchCell({
           {scoreBEl}
         </div>
         <div className="min-w-0 justify-self-end space-y-1">
+          {teamTitle(teamBLabel, 'right')}
           {playerEl(teamBPlayerList[0]!, 'right')}
           {playerEl(teamBPlayerList[1]!, 'right')}
         </div>
@@ -625,22 +648,6 @@ function CourtMatchCell({
 }
 
 type CourtDraft = { teamA: string; teamB: string }
-
-function courtScoresReady(teamAStr: string, teamBStr: string): boolean {
-  return parseScoreField(teamAStr) !== null && parseScoreField(teamBStr) !== null
-}
-
-function courtSubmitReady(
-  teamAStr: string,
-  teamBStr: string,
-  saved?: { teamAPoints?: number; teamBPoints?: number },
-): boolean {
-  if (!courtScoresReady(teamAStr, teamBStr)) return false
-  const teamA = parseScoreField(teamAStr)!
-  const teamB = parseScoreField(teamBStr)!
-  if (saved?.teamAPoints == null && saved?.teamBPoints == null) return true
-  return saved?.teamAPoints !== teamA || saved?.teamBPoints !== teamB
-}
 
 function stopCardNav(e: { stopPropagation: () => void }) {
   e.stopPropagation()
@@ -700,6 +707,7 @@ function useGameScoring({
   canEdit,
   onSubmitScores,
   onSaved,
+  playTo,
   t,
 }: {
   game: ScoringGame
@@ -710,6 +718,7 @@ function useGameScoring({
   canEdit: boolean
   onSubmitScores?: (entries: CourtScoreSubmit[]) => Promise<void>
   onSaved?: () => void | Promise<void>
+  playTo?: number
   t: TranslateFn
 }) {
   const [drafts, setDrafts] = useState<Record<string, CourtDraft>>({})
@@ -778,10 +787,10 @@ function useGameScoring({
       const teamA = parseScoreField(teamAStr)
       const teamB = parseScoreField(teamBStr)
       const court = game.courts.find((c) => c.courtLabel === courtLabel)
-      const canSubmit = courtSubmitReady(teamAStr, teamBStr, saved)
+      const canSubmit = courtSubmitReady(teamAStr, teamBStr, playTo, saved)
       return { courtId, courtLabel, court, teamA, teamB, teamAStr, teamBStr, saved, canSubmit }
     })
-  }, [dirtyCourts, drafts, game.courts, gameRoundId, matchForCourt, scoringCourts])
+  }, [dirtyCourts, drafts, game.courts, gameRoundId, matchForCourt, playTo, scoringCourts])
 
   const submitCourt = async (courtId: string) => {
     const row = courtScoreRows.find((r) => r.courtId === courtId)
@@ -828,6 +837,7 @@ function useFriendlyManualScoring({
   canEdit,
   onSubmit,
   onSaved,
+  playTo,
   t,
 }: {
   game: ScoringGame
@@ -835,6 +845,7 @@ function useFriendlyManualScoring({
   canEdit: boolean
   onSubmit?: (entries: FriendlyCourtScoreSubmit[]) => Promise<void>
   onSaved?: () => void | Promise<void>
+  playTo?: number
   t: TranslateFn
 }) {
   const courts = useMemo(
@@ -904,10 +915,10 @@ function useFriendlyManualScoring({
       const { teamAStr, teamBStr } = scoreStringsForCourt(draft, saved, isDirty)
       const teamA = parseScoreField(teamAStr)
       const teamB = parseScoreField(teamBStr)
-      const canSubmit = courtSubmitReady(teamAStr, teamBStr, saved)
+      const canSubmit = courtSubmitReady(teamAStr, teamBStr, playTo, saved)
       return { courtKey, courtLabel, court, teamA, teamB, teamAStr, teamBStr, canSubmit }
     })
-  }, [courts, dirtyCourts, drafts, liveCourtScores])
+  }, [courts, dirtyCourts, drafts, liveCourtScores, playTo])
 
   const submitCourt = async (courtKey: string) => {
     const row = courtScoreRows.find((r) => r.courtKey === courtKey)
@@ -965,7 +976,9 @@ function GameScoringCourts({
   friendly,
   sessionId,
   competitionId,
-  playTo,
+  duoTeamLabels,
+  courtScoreMax,
+  courtPlayTo,
   t,
 }: {
   game: ScoringGame
@@ -978,13 +991,15 @@ function GameScoringCourts({
   courtError?: { courtId: string; message: string } | null
   canEdit: boolean
   finished: boolean
-  playTo?: number
   currentUserId?: string | null
   currentUserAvatarUrl?: string | null
   liveCourtEnabled: boolean
   friendly: boolean
   sessionId?: string
   competitionId?: string
+  duoTeamLabels?: Props['duoTeamLabels']
+  courtScoreMax?: number
+  courtPlayTo?: number
   t: TranslateFn
 }) {
   return (
@@ -998,6 +1013,10 @@ function GameScoringCourts({
         const teamB = liveCourt?.teamB ?? court.teamB
         const teamAPlayers = liveCourt?.teamAPlayers ?? court.teamAPlayers
         const teamBPlayers = liveCourt?.teamBPlayers ?? court.teamBPlayers
+        const sideLabels = duoTeamLabels?.(
+          [teamA[0] ?? '', teamA[1] ?? ''],
+          [teamB[0] ?? '', teamB[1] ?? ''],
+        )
         const courtReady = row.canSubmit
 
         const href = courtLiveHref({
@@ -1026,6 +1045,8 @@ function GameScoringCourts({
               teamB={teamB}
               teamAPlayers={teamAPlayers}
               teamBPlayers={teamBPlayers}
+              teamALabel={sideLabels?.teamALabel}
+              teamBLabel={sideLabels?.teamBLabel}
               scoreUnit={scoreUnit}
               scoreA={row.teamAStr}
               scoreB={row.teamBStr}
@@ -1033,7 +1054,7 @@ function GameScoringCourts({
               onScoreB={canEdit && courtId ? (v) => setDraft(courtId, 'teamB', v) : undefined}
               disabled={!canEdit}
               finished={finished}
-              scoreMax={playTo}
+              scoreMax={courtScoreMax}
               currentUserId={currentUserId}
               currentUserAvatarUrl={currentUserAvatarUrl}
               embedded
@@ -1041,6 +1062,14 @@ function GameScoringCourts({
             />
             {canEdit && submitCourt ? (
               <>
+                {courtPlayTo != null &&
+                row.teamA !== null &&
+                row.teamB !== null &&
+                !courtReady ? (
+                  <p className="mt-1 text-center text-xs text-red-600">
+                    {t('friendly.chip.maxGamesPerSide', { n: courtPlayTo })}
+                  </p>
+                ) : null}
                 <button
                   type="button"
                   disabled={busyCourtKey === courtId || !courtReady}
@@ -1225,10 +1254,12 @@ function ScoringGameCard({
   courtIdByLabel,
   matchForCourt,
   scoreUnit,
-  playTo,
   canEdit,
   onSubmitScores,
   onSaved,
+  playTo,
+  courtScoreMax,
+  courtPlayTo,
   isLiveNow,
   isCurrentGame,
   countdown,
@@ -1238,6 +1269,7 @@ function ScoringGameCard({
   onToggleCollapsed,
   currentUserId,
   currentUserAvatarUrl,
+  duoTeamLabels,
   t,
 }: {
   game: ScoringGame
@@ -1251,10 +1283,12 @@ function ScoringGameCard({
   courtIdByLabel?: Map<string, string>
   matchForCourt: NonNullable<Props['matchForCourt']>
   scoreUnit: AmericanoScoringUnit
-  playTo?: number
   canEdit: boolean
   onSubmitScores?: (entries: CourtScoreSubmit[]) => Promise<void>
   onSaved?: () => void | Promise<void>
+  playTo?: number
+  courtScoreMax?: number
+  courtPlayTo?: number
   isLiveNow: boolean
   isCurrentGame: boolean
   countdown?: string | null
@@ -1264,6 +1298,7 @@ function ScoringGameCard({
   onToggleCollapsed: () => void
   currentUserId?: string | null
   currentUserAvatarUrl?: string | null
+  duoTeamLabels?: Props['duoTeamLabels']
   t: TranslateFn
 }) {
   const { courtScoreRows, setDraft, submitCourt, busyCourtKey, error, canEdit: editable } =
@@ -1276,6 +1311,7 @@ function ScoringGameCard({
     canEdit,
     onSubmitScores,
     onSaved,
+    playTo,
     t,
   })
 
@@ -1318,7 +1354,6 @@ function ScoringGameCard({
             game={game}
             courtsForGame={courtsForGame}
             scoreUnit={scoreUnit}
-            playTo={playTo}
             courtScoreRows={courtScoreRows}
             setDraft={setDraft}
             submitCourt={onSubmitScores ? submitCourt : undefined}
@@ -1332,6 +1367,9 @@ function ScoringGameCard({
             friendly={friendly}
             sessionId={sessionId}
             competitionId={competitionId}
+            duoTeamLabels={duoTeamLabels}
+            courtScoreMax={courtScoreMax}
+            courtPlayTo={courtPlayTo}
             t={t}
           />
         </div>
@@ -1346,6 +1384,8 @@ function FriendlyManualGameCard({
   liveCourtScores,
   onSubmitFriendlyScores,
   onSaved,
+  courtScoreMax,
+  courtPlayTo,
   isLiveNow,
   isCurrentGame,
   countdown,
@@ -1362,6 +1402,8 @@ function FriendlyManualGameCard({
   liveCourtScores?: Map<string, LiveCourtGamesScore>
   onSubmitFriendlyScores?: (entries: FriendlyCourtScoreSubmit[]) => Promise<void>
   onSaved?: () => void | Promise<void>
+  courtScoreMax?: number
+  courtPlayTo?: number
   isLiveNow: boolean
   isCurrentGame: boolean
   countdown?: string | null
@@ -1379,6 +1421,7 @@ function FriendlyManualGameCard({
     canEdit: Boolean(onSubmitFriendlyScores),
     onSubmit: onSubmitFriendlyScores,
     onSaved,
+    playTo: courtPlayTo,
     t,
   })
 
@@ -1429,6 +1472,7 @@ function FriendlyManualGameCard({
                       onScoreB={canEdit ? (v) => setDraft(row.courtKey, 'teamB', v) : undefined}
                       disabled={!canEdit}
                       finished={finished}
+                      scoreMax={courtScoreMax}
                       currentUserId={currentUserId}
                       currentUserAvatarUrl={currentUserAvatarUrl}
                       embedded
@@ -1489,6 +1533,7 @@ export function CompetitionCourtBoard({
   currentUserAvatarUrl,
   isAdmin = false,
   liveCourtScores,
+  duoTeamLabels,
 }: Props) {
   const { t } = useTranslation()
   const games = useMemo(() => {
@@ -1514,6 +1559,8 @@ export function CompetitionCourtBoard({
   )
   const friendlyManualScoring = Boolean(friendly && onSubmitFriendlyScores)
   const scoringTimeUnlocked = isScoringTimeUnlocked()
+  const courtScoreMax = courtGameScoreMax(scoreUnit === 'games' ? playTo : undefined)
+  const courtPlayTo = scoreUnit === 'games' ? playTo : undefined
 
   const previewTimed = mode === 'preview' && Boolean(roundTimesByGame?.size)
 
@@ -1640,8 +1687,10 @@ export function CompetitionCourtBoard({
         const canEditGame =
           Boolean(canLog) &&
           (scoringTimeUnlocked ||
+            submitted ||
             roundStatus === 'active' ||
             roundStatus === 'complete' ||
+            roundStatus === 'pending' ||
             isLiveNow ||
             timeUp)
 
@@ -1665,10 +1714,12 @@ export function CompetitionCourtBoard({
               courtIdByLabel={courtIdByLabel}
               matchForCourt={matchForCourt}
               scoreUnit={scoreUnit}
-              playTo={playTo}
               canEdit={canEditGame}
               onSubmitScores={onSubmitScores}
               onSaved={onSaved}
+              playTo={courtPlayTo}
+              courtScoreMax={courtScoreMax}
+              courtPlayTo={courtPlayTo}
               isLiveNow={isLiveNow}
               isCurrentGame={isCurrentGame}
               countdown={countdown}
@@ -1678,6 +1729,7 @@ export function CompetitionCourtBoard({
               onToggleCollapsed={() => toggleCollapsed(game.gameNumber)}
               currentUserId={currentUserId}
               currentUserAvatarUrl={currentUserAvatarUrl}
+              duoTeamLabels={duoTeamLabels}
               t={t}
             />
           )
@@ -1692,6 +1744,8 @@ export function CompetitionCourtBoard({
               liveCourtScores={liveCourtScores}
               onSubmitFriendlyScores={onSubmitFriendlyScores}
               onSaved={onSaved}
+              courtScoreMax={courtScoreMax}
+              courtPlayTo={courtPlayTo}
               isLiveNow={isLiveNow}
               isCurrentGame={isCurrentGame}
               countdown={countdown}
@@ -1751,6 +1805,10 @@ export function CompetitionCourtBoard({
                   const teamB = liveCourt?.teamB ?? court.teamB
                   const teamAPlayers = liveCourt?.teamAPlayers ?? court.teamAPlayers
                   const teamBPlayers = liveCourt?.teamBPlayers ?? court.teamBPlayers
+                  const sideLabels = duoTeamLabels?.(
+                    [teamA[0] ?? '', teamA[1] ?? ''],
+                    [teamB[0] ?? '', teamB[1] ?? ''],
+                  )
                   const href = courtLiveHref({
                     liveCourtEnabled,
                     friendly,
@@ -1777,10 +1835,12 @@ export function CompetitionCourtBoard({
                         teamB={teamB}
                         teamAPlayers={teamAPlayers}
                         teamBPlayers={teamBPlayers}
+                        teamALabel={sideLabels?.teamALabel}
+                        teamBLabel={sideLabels?.teamBLabel}
                         scoreUnit={scoreUnit}
                         scoreA={liveScore?.scoreA ?? (saved?.teamAPoints != null ? String(saved.teamAPoints) : undefined)}
                         scoreB={liveScore?.scoreB ?? (saved?.teamBPoints != null ? String(saved.teamBPoints) : undefined)}
-                        scoreMax={playTo}
+                        scoreMax={courtScoreMax}
                         disabled
                         finished={finished}
                         currentUserId={currentUserId}

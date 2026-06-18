@@ -1,8 +1,14 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from '../hooks/useTranslation'
 import type { TranslateFn } from '../i18n'
-import { ACHIEVEMENT_IMAGE, podiumAchievementForRank, sortAchievementsForDisplay } from '../lib/competitionAchievements'
+import {
+  ACHIEVEMENT_IMAGE,
+  podiumAchievementForPoints,
+  podiumPointTiers,
+  sortAchievementsForDisplay,
+  standingsDisplayRank,
+} from '../lib/competitionAchievements'
 import type {
   Achievement,
   CompetitionAchievements,
@@ -33,6 +39,7 @@ export type LeaderboardEntry = {
 
 type Props = {
   entries: LeaderboardEntry[]
+  duoPlayerEntries?: LeaderboardEntry[]
   compact?: boolean
   scoreUnit?: AmericanoScoringUnit
   scoreColumnLabel?: string
@@ -233,6 +240,7 @@ function LeaderboardRow({
 
 export function CompetitionLeaderboard({
   entries,
+  duoPlayerEntries,
   compact = false,
   scoreUnit = 'points',
   scoreColumnLabel,
@@ -250,6 +258,10 @@ export function CompetitionLeaderboard({
   const navigate = useNavigate()
   const location = useLocation()
   const [info, setInfo] = useState<AchievementInfo | null>(null)
+  const [duoView, setDuoView] = useState<'teams' | 'players'>('teams')
+  const showDuoToggle = Boolean(duoPlayerEntries?.length)
+  const activeEntries =
+    showDuoToggle && duoView === 'players' ? duoPlayerEntries! : entries
   const unit =
     scoreColumnLabel ??
     (scoreUnit === 'sets'
@@ -257,24 +269,27 @@ export function CompetitionLeaderboard({
       : scoreUnit === 'games'
         ? t('leaderboard.games')
         : t('leaderboard.pts'))
-  if (entries.length === 0) return null
+  if (activeEntries.length === 0) return null
 
-  const hasAnyScores = entries.some((entry) => entry.games > 0)
+  const hasAnyScores = activeEntries.some((entry) => entry.games > 0)
+  const podiumTiers = useMemo(() => podiumPointTiers(activeEntries), [activeEntries])
 
-  const badgesFor = (entry: LeaderboardEntry, rank: number): Achievement[] => {
+  const badgesFor = (entry: LeaderboardEntry): Achievement[] => {
     if (!showAchievements || !achievements) return []
     const map = achievements.individualAchievementsByPlayerId
     for (const id of leaderboardEntryLookupIds(entry)) {
       if (map[id]) return sortAchievementsForDisplay(map[id]!)
     }
     if (!hasAnyScores || entry.games <= 0) return []
-    const podium = podiumAchievementForRank(rank)
+    const podium = podiumAchievementForPoints(entry, podiumTiers)
     return podium ? [podium] : []
   }
 
-  const displayEntries = compactLeaderboardDisplayNames(entries)
-  const showHeader = Boolean(headerTitle || headerSubtitle || headerExtra || compact)
+  const displayEntries = compactLeaderboardDisplayNames(activeEntries)
+  const showHeader = Boolean(headerTitle || headerSubtitle || headerExtra || compact || showDuoToggle)
   const rowGrid = showAchievements ? ROW_GRID : ROW_GRID_NO_BADGES
+  const nameColumnLabel =
+    showDuoToggle && duoView === 'teams' ? t('leaderboard.teams') : t('leaderboard.player')
 
   const shellClass = embedded
     ? 'min-h-full overflow-hidden bg-brand-surface'
@@ -283,6 +298,32 @@ export function CompetitionLeaderboard({
   return (
     <div className={shellClass}>
       {headerExtra}
+      {showDuoToggle ? (
+        <div className="flex gap-2 border-b border-brand-border/60 px-3 py-2 md:px-4">
+          <button
+            type="button"
+            onClick={() => setDuoView('teams')}
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${
+              duoView === 'teams'
+                ? 'bg-brand-accent text-white'
+                : 'bg-brand-bg-alt text-brand-muted'
+            }`}
+          >
+            {t('leaderboard.teams')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setDuoView('players')}
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${
+              duoView === 'players'
+                ? 'bg-brand-accent text-white'
+                : 'bg-brand-bg-alt text-brand-muted'
+            }`}
+          >
+            {t('leaderboard.player')}
+          </button>
+        </div>
+      ) : null}
       {showHeader && (
         <div
           className={`border-b border-brand-border px-3 py-2 md:px-4 md:py-3 ${embedded ? 'bg-brand-surface' : 'bg-brand-bg-alt'}`}
@@ -304,7 +345,7 @@ export function CompetitionLeaderboard({
       >
         <span className="text-center">#</span>
         <span aria-hidden />
-        <span>{t('leaderboard.player')}</span>
+        <span>{nameColumnLabel}</span>
         {showAchievements ? <span aria-hidden /> : null}
         <span className="justify-self-end text-right font-display text-xs uppercase text-brand-muted md:text-sm">
           {unit}
@@ -312,7 +353,8 @@ export function CompetitionLeaderboard({
       </div>
       <ol className="m-0 list-none p-0">
         {displayEntries.map((e, i) => {
-          const source = entries[i]!
+          const source = activeEntries[i]!
+          const rank = standingsDisplayRank(activeEntries, i)
           const isMe = Boolean(
             currentUserId &&
               (e.member_profile_id === currentUserId ||
@@ -324,10 +366,10 @@ export function CompetitionLeaderboard({
           return (
             <LeaderboardRow
               key={e.profile_id}
-              rank={i + 1}
+              rank={rank}
               entry={e}
               isMe={isMe}
-              badges={badgesFor(source, i + 1)}
+              badges={badgesFor(source)}
               showBadges={showAchievements}
               onSelectAchievement={setInfo}
               onOpenProfile={
@@ -342,9 +384,9 @@ export function CompetitionLeaderboard({
                         from: location.pathname + location.search,
                         snapshot: {
                           entry: source,
-                          rank: i + 1,
+                          rank,
                           unit,
-                          badges: badgesFor(source, i + 1),
+                          badges: badgesFor(source),
                         },
                       })
                     }

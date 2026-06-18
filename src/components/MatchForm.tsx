@@ -29,7 +29,7 @@ export function MatchForm({ session, roster, pairs, onSaved }: Props) {
   const applyPairs = () => {
     const a = pairs.find((p) => p.id === pairAId)
     const b = pairs.find((p) => p.id === pairBId)
-    if (!a || !b) return
+    if (!a || !b || !a.player_a_id || !a.player_b_id || !b.player_a_id || !b.player_b_id) return
     setSlots([
       { profile_id: a.player_a_id, team: 'a' },
       { profile_id: a.player_b_id, team: 'a' },

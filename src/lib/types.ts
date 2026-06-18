@@ -46,6 +46,13 @@ export type ScoringConfig = {
   americano_games?: number
   break_minutes?: number
   game_minutes?: number
+  competition_player_mode?: 'singles' | 'duos'
+  league_id?: string
+  league_week?: number
+  teams?: Array<{ label: string; roster_ids: [string, string] }>
+  schedule?: unknown
+  schedule_seed?: number
+  schedule_version?: number
 }
 
 export type Court = {
@@ -115,8 +122,10 @@ export type SessionPair = {
   id: string
   session_id: string
   pair_label: string | null
-  player_a_id: string
-  player_b_id: string
+  player_a_id: string | null
+  player_b_id: string | null
+  roster_a_id?: string | null
+  roster_b_id?: string | null
 }
 
 export type RankMode = 'solo' | 'duos'

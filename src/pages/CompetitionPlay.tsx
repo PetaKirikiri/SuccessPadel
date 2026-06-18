@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { CompetitionCourtBoard } from '../components/CompetitionCourtBoard'
 import { CompetitionLeaderboard } from '../components/CompetitionLeaderboard'
@@ -18,6 +18,9 @@ import {
 import { americanoScheduleFromSession, gameSlotTimes } from '../lib/competitionLayout'
 import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
 import { computeAmericanoStandings } from '../lib/competitionStandings'
+import { computeDuoStandings } from '../lib/computeDuoStandings'
+import { duoLabelsForMatch } from '../lib/competitionFormatPresets'
+import { rosterDisplayName } from '../hooks/useCompetitions'
 import { AppTopBar } from '../components/AppTopBar'
 import { useTranslation } from '../hooks/useTranslation'
 import { enrichStandingsWithAvatars } from '../lib/leaderboardEntries'
@@ -55,7 +58,7 @@ export function CompetitionPlay() {
   } = usePublicCompetition(id, {
     pollMs: 20_000,
   })
-  const { columns, liveCourtsByGame, roundIdForGame, courtIdByLabel, scoreUnit, playTo, matchForCourt } =
+  const { columns, liveCourtsByGame, roundIdForGame, courtIdByLabel, scoreUnit, playTo, matchForCourt, isDuo, teams } =
     useCompetitionBoard(session, rounds, roster, clubCourts, courtMatches)
   const [now, setNow] = useState(Date.now())
   useEffect(() => {
@@ -69,7 +72,18 @@ export function CompetitionPlay() {
 
   const schedule = useMemo(() => americanoScheduleFromSession(session), [session])
 
-  const liveStandings = useMemo(
+  const rosterNameById = useMemo(
+    () => new Map(roster.map((row) => [row.id, rosterDisplayName(row)])),
+    [roster],
+  )
+
+  const duoTeamLabels = useCallback(
+    (teamA: [string, string], teamB: [string, string]) =>
+      duoLabelsForMatch(teams, rosterNameById, teamA, teamB),
+    [teams, rosterNameById],
+  )
+
+  const playerStandings = useMemo(
     () =>
       enrichStandingsWithAvatars(
         computeAmericanoStandings(roster, rounds, courtMatches),
@@ -77,6 +91,16 @@ export function CompetitionPlay() {
       ),
     [roster, rounds, courtMatches, leaderboard],
   )
+
+  const liveStandings = useMemo(() => {
+    if (isDuo && teams.length >= 2) {
+      return enrichStandingsWithAvatars(
+        computeDuoStandings(roster, rounds, courtMatches, teams),
+        leaderboard,
+      )
+    }
+    return playerStandings
+  }, [isDuo, teams, roster, rounds, courtMatches, leaderboard, playerStandings])
 
   const roundTimesByGame = useMemo(() => {
     const map = new Map<number, { startsAt: number; endsAt: number }>()
@@ -129,13 +153,21 @@ export function CompetitionPlay() {
 
   const started = Boolean(session?.competition_started_at)
   const finished = session?.status === 'complete'
+  const [starting, setStarting] = useState(false)
+  const autoStartAttemptedRef = useRef(false)
 
   useEffect(() => {
-    if (isAdmin && session && !started && id) {
-      navigate(`/competitions/${id}/run`, { replace: true })
-    }
-  }, [isAdmin, session, started, id, navigate])
-  const canScore = started && !finished
+    if (!isAdmin || !id || !session || started || loading || autoStartAttemptedRef.current) return
+    if (session.status !== 'open') return
+    autoStartAttemptedRef.current = true
+    setStarting(true)
+    void supabase.rpc('start_competition', { p_session_id: id }).then(({ error: startErr }) => {
+      setStarting(false)
+      if (!startErr) void refresh(true)
+    })
+  }, [isAdmin, id, session, started, loading, refresh])
+
+  const canScore = started
   const showGamesBoard = started && (columns.length > 0 || (finished && rounds.length > 0))
   const standings = liveStandings
 
@@ -156,6 +188,7 @@ export function CompetitionPlay() {
     standings.length > 0 ? (
       <CompetitionLeaderboard
         entries={standings}
+        duoPlayerEntries={isDuo ? playerStandings : undefined}
         scoreUnit={scoreUnit}
         currentUserId={user?.id ?? null}
         competitionId={id ?? null}
@@ -173,6 +206,7 @@ export function CompetitionPlay() {
     standings.length > 0 ? (
       <CompetitionLeaderboard
         entries={standings}
+        duoPlayerEntries={isDuo ? playerStandings : undefined}
         scoreUnit={scoreUnit}
         currentUserId={user?.id ?? null}
         competitionId={id ?? null}
@@ -206,6 +240,7 @@ export function CompetitionPlay() {
       currentUserId={user?.id ?? null}
       currentUserAvatarUrl={headerAvatar}
       isAdmin={isAdmin}
+      duoTeamLabels={isDuo ? duoTeamLabels : undefined}
     />
   ) : started ? (
     <p className="game-card px-3 py-4 text-sm text-brand-muted">
@@ -234,6 +269,7 @@ export function CompetitionPlay() {
     loadOrError,
     session,
     started,
+    starting: isAdmin && starting,
     gamesBody,
   }
 
