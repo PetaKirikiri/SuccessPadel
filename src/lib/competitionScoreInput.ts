@@ -12,15 +12,9 @@ export function parseScoreField(value: string): number | null {
 /** Stepper max for a single court score — not the americano play-to target. */
 export const COURT_SCORE_INPUT_MAX = 99
 
-/** Each side 0..max; must differ (e.g. 4–2, 6–4; not 7–5 or 3–3). */
+/** Each side 0..max; ties ok (e.g. 4–2, 1–1; not 7–5 or 10–0). */
 export function isValidCappedGameScore(teamA: number, teamB: number, maxGames: number): boolean {
-  if (teamA === teamB) return false
-  return (
-    teamA >= 0 &&
-    teamB >= 0 &&
-    teamA <= maxGames &&
-    teamB <= maxGames
-  )
+  return teamA >= 0 && teamB >= 0 && teamA <= maxGames && teamB <= maxGames
 }
 
 export function courtScoresReady(teamAStr: string, teamBStr: string): boolean {

@@ -293,7 +293,7 @@ export const th: Messages = {
     createLeagueBtn: 'สร้างลีก',
     playerNames: 'ชื่อผู้เล่น',
     hintDuosFormat: 'คู่คงที่ — 6 ทีม 3 คอร์ต 6 เกมต่อคืน',
-    firstToScoreInvalid: 'ใส่คะแนน first-to-{n} ที่ถูกต้อง (เช่น 6–4, 4–2)',
+    firstToScoreInvalid: 'ใส่คะแนนที่ถูกต้อง (แต่ละฝ่าย 0–{n} เช่น 6–4 หรือ 1–1)',
     duoLeagues: 'ลีกคู่',
     leagueWeek: 'สัปดาห์ {n}',
     setWeekSchedule: 'ตั้งวันและเปิดสัปดาห์',

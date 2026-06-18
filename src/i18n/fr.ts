@@ -296,7 +296,7 @@ export const fr: Messages = {
     createLeagueBtn: 'Créer la ligue',
     playerNames: 'Noms des joueurs',
     hintDuosFormat: 'Paires fixes — 6 équipes, 3 courts, 6 matchs par soir.',
-    firstToScoreInvalid: 'Entrez un score valide en first-to-{n} (ex. 6–4, 4–2).',
+    firstToScoreInvalid: 'Entrez un score valide (0–{n} par équipe, ex. 6–4 ou 1–1).',
     duoLeagues: 'Ligues duos',
     leagueWeek: 'Semaine {n}',
     setWeekSchedule: 'Date et ouverture',

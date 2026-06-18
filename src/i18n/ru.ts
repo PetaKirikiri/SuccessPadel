@@ -296,7 +296,7 @@ export const ru: Messages = {
     createLeagueBtn: 'Создать лигу',
     playerNames: 'Имена игроков',
     hintDuosFormat: 'Фиксированные пары — 6 команд, 3 корта, 6 игр за вечер.',
-    firstToScoreInvalid: 'Введите корректный счёт first-to-{n} (например 6–4, 4–2).',
+    firstToScoreInvalid: 'Введите корректный счёт (0–{n} с каждой стороны, напр. 6–4 или 1–1).',
     duoLeagues: 'Лиги пар',
     leagueWeek: 'Неделя {n}',
     setWeekSchedule: 'Дата и открытие',
