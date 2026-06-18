@@ -33,12 +33,12 @@ export function CompetitionPlayTvView({
           <div className="tv-play-games">
             <div className="tv-play-scroll app-shell-panel-inset space-y-3">
               {loadOrError}
-              {session && !started ? (
+              {session && !started && !gamesBody ? (
                 <p className="py-6 text-center text-sm text-brand-muted">
                   {t('competition.waitingOrganiser')}
                 </p>
               ) : null}
-              {session && started ? gamesBody : null}
+              {session ? gamesBody : null}
             </div>
           </div>
           {session ? (

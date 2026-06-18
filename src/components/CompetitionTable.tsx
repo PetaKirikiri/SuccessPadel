@@ -9,8 +9,6 @@ import { IconAdd, IconDelete, IconJoin, IconPlay, IconReview } from './ButtonIco
 import { IconHubCurrent, IconHubPast, shellTabClass } from './ShellTabIcons'
 import { GamesHubEmpty, GamesHubLoading } from './GamesHubView'
 import { CompetitionCurrentGameCard } from './CompetitionCurrentGameCard'
-import { CompetitionGuestRoster } from './CompetitionGuestRoster'
-import { CompetitionSetupPanel } from './CompetitionSetupPanel'
 import type { CompetitionRow } from '../hooks/useCompetitions'
 import { competitionIsPast } from '../lib/competitionListCard'
 
@@ -220,18 +218,6 @@ function CompetitionCard({
             <p className="text-sm leading-relaxed text-brand-text">{row.rules}</p>
           )}
 
-          {expanded && isAdmin && !past && (
-            <div onClick={(e) => e.stopPropagation()}>
-              <CompetitionGuestRoster
-                sessionId={row.id}
-                session={row}
-                roster={roster}
-                isAdmin
-                onRefresh={onRefresh}
-              />
-            </div>
-          )}
-
           {canReviewScores && (
             <Link
               to={`/competitions/${row.id}`}
@@ -282,17 +268,6 @@ function CompetitionCard({
               <IconJoin />
               {t('competition.addYourself')}
             </a>
-          )}
-
-          {expanded && isAdmin && !past && rosterCount >= 4 && (
-            <div onClick={(e) => e.stopPropagation()}>
-              <CompetitionSetupPanel
-                sessionId={row.id}
-                session={row}
-                roster={roster}
-                onRefresh={onRefresh}
-              />
-            </div>
           )}
 
           {expanded && isAdmin && !past && (

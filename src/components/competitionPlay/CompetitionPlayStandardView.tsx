@@ -41,12 +41,15 @@ export function CompetitionPlayStandardView({
           {loadOrError}
           {session && tab === 'games' ? (
             <>
-              {!started ? (
+              {!started && !gamesBody && !starting ? (
                 <p className="py-6 text-center text-sm text-brand-muted">
-                  {starting ? t('common.loading') : t('competition.waitingOrganiser')}
+                  {t('competition.waitingOrganiser')}
                 </p>
               ) : null}
-              {started ? gamesBody : null}
+              {starting ? (
+                <p className="py-6 text-center text-sm text-brand-muted">{t('common.loading')}</p>
+              ) : null}
+              {gamesBody}
             </>
           ) : null}
           {session && tab === 'leaderboard' ? leaderboardBody : null}

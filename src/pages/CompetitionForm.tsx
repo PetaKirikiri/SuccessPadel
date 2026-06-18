@@ -33,7 +33,6 @@ import { useTranslation } from '../hooks/useTranslation'
 import { measureScheduleQuality, solveBalancedSchedule } from '../lib/balancedSchedule'
 import {
   buildStoredSchedule,
-  RANKED_SCHEDULE_VERSION,
   sortRosterByRank,
 } from '../lib/rankedSchedule'
 import { buildDuoStoredSchedule } from '../lib/duoRoundRobinSchedule'
@@ -51,7 +50,11 @@ import {
 import { buildCompetitionAutoTitle, GENDERS, SKILL_LEVELS, type Gender, type SkillLevel } from '../lib/competitionPresets'
 import { buildCompetitionRosterSlots } from '../lib/competitionRosterSlots'
 import { supabase } from '../lib/supabaseClient'
-import type { Profile, ScoringConfig } from '../lib/types'
+import {
+  ensureCompetitionScheduleSaved,
+  saveScheduleForSession,
+} from '../lib/persistCompetitionSchedule'
+import type { GameSession, Profile, ScoringConfig } from '../lib/types'
 
 function Chip({
   active,
@@ -97,25 +100,6 @@ function flushPendingInputs(): Promise<void> {
 
 function rosterIdsInOrder(rows: CompetitionPlayer[]): string[] {
   return sortRosterByRank(rows).map((row) => row.id)
-}
-
-async function saveScheduleForSession(
-  sessionId: string,
-  baseConfig: ScoringConfig,
-  schedule: ReturnType<typeof buildStoredSchedule>,
-  previewSeed: number,
-): Promise<string | null> {
-  const nextConfig = {
-    ...baseConfig,
-    schedule_seed: previewSeed,
-    schedule_version: RANKED_SCHEDULE_VERSION,
-    schedule,
-  }
-  const { error: cfgErr } = await supabase.rpc('save_competition_scoring_config', {
-    p_session_id: sessionId,
-    p_scoring_config: nextConfig,
-  })
-  return cfgErr?.message ?? null
 }
 
 export function CompetitionForm() {
@@ -663,12 +647,31 @@ export function CompetitionForm() {
     clearDraft()
 
     if (!competitionStarted && sessionId) {
+      const { data: freshSession } = await supabase
+        .from('game_sessions')
+        .select('*')
+        .eq('id', sessionId)
+        .single()
+
+      if (freshSession) {
+        const scheduleErr = await ensureCompetitionScheduleSaved(
+          sessionId,
+          freshSession as GameSession,
+          ranked,
+        )
+        if (scheduleErr) {
+          setBusy(false)
+          navigate(`/competitions/${sessionId}`, { state: { setupError: scheduleErr } })
+          return
+        }
+      }
+
       const { error: startErr } = await supabase.rpc('start_competition', {
         p_session_id: sessionId,
       })
       if (startErr) {
         setBusy(false)
-        setError(startErr.message)
+        navigate(`/competitions/${sessionId}`, { state: { setupError: startErr.message } })
         return
       }
     }
