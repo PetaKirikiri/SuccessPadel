@@ -6,7 +6,7 @@ import type { AmericanoScoringUnit } from '../lib/competitionPresets'
 import { formatGameTimeLabel, pivotScheduleByGame, type CourtColumn } from '../lib/competitionCourtBoard'
 import { isScoringTimeUnlocked } from '../lib/competitionScoringUnlock'
 import { playTwoMinuteAlarm, TWO_MINUTES_MS } from '../lib/gameCountdownAlarm'
-import { RANKED_GAME_MINUTES } from '../lib/competitionLayout'
+import { AMERICANO_SCHEDULE_LEAD_IN_MINUTES, RANKED_GAME_MINUTES } from '../lib/competitionLayout'
 import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
 import { courtGameScoreMax } from '../lib/competitionScoreInput'
 import type { FriendlyCourtScoreSubmit } from '../lib/friendlyManualScore'
@@ -167,14 +167,28 @@ function isGameLive(
   return Boolean(times && now >= times.startsAt && now < times.endsAt)
 }
 
+function isGameOneLeadIn(
+  gameNumber: number,
+  now: number,
+  times: { startsAt: number; endsAt: number },
+): boolean {
+  if (gameNumber !== 1) return false
+  const windowStart = times.startsAt - AMERICANO_SCHEDULE_LEAD_IN_MINUTES * 60_000
+  return now >= windowStart && now < times.startsAt
+}
+
 function gameCountdown(
   now: number,
   times: { startsAt: number; endsAt: number } | undefined,
   gameMinutes: number,
+  gameNumber?: number,
 ): string {
   const fullMs = gameMinutes * 60000
   if (!times) return formatCountdown(fullMs)
   if (now >= times.endsAt) return '0:00'
+  if (gameNumber != null && isGameOneLeadIn(gameNumber, now, times)) {
+    return formatCountdown(times.endsAt - now)
+  }
   if (now < times.startsAt) return formatCountdown(times.startsAt - now)
   return formatCountdown(times.endsAt - now)
 }
@@ -183,9 +197,11 @@ function countdownState(
   now: number,
   times: { startsAt: number; endsAt: number } | undefined,
   finished: boolean,
+  gameNumber?: number,
 ): CountdownState {
   if (finished) return 'finished'
   if (!times) return 'scheduled'
+  if (gameNumber != null && isGameOneLeadIn(gameNumber, now, times)) return 'playing'
   if (now < times.startsAt) return 'starts'
   if (now < times.endsAt) return 'playing'
   return 'finished'
@@ -370,8 +386,10 @@ export function GameBoard({
     const submitted = finishedByGame.get(game.gameNumber) ?? false
     const finished = submitted
     const countdown =
-      timedMode && !submitted && times ? gameCountdown(clock, times, gameMinutes) : null
-    const state = countdownState(clock, times, timeUp)
+      timedMode && !submitted && times
+        ? gameCountdown(clock, times, gameMinutes, game.gameNumber)
+        : null
+    const state = countdownState(clock, times, timeUp, game.gameNumber)
     const collapsed = tvCarousel ? false : (collapsedGames[game.gameNumber] ?? false)
     const isCurrentGame = !submitted && (isLiveNow || isActive)
     const canEditGame =
