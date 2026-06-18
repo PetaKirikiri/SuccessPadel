@@ -13,6 +13,7 @@ import {
   competitionIsLiveByTime,
 } from '../lib/competitionListCard'
 import { shareCompetitionInvite } from '../lib/competitionLink'
+import { competitionPlayUrl, shareSiteOrigin } from '../lib/siteUrl'
 import type { FriendlyGameRecord } from '../lib/friendlyGames'
 import {
   DEFAULT_FRIENDLY_ORGANIZED_CONFIG,
@@ -132,6 +133,8 @@ function CompetitionInviteCard({
       onShare={() => void shareInvite()}
       shareFeedback={shareFeedback}
       shareAriaLabel={t('competition.shareInvite')}
+      qrUrl={competitionPlayUrl(row.id)}
+      qrAriaLabel={t('leaderboard.viewAlongHint')}
       canEdit={isAdmin}
       editTo={isAdmin ? `/competitions/${row.id}/edit` : undefined}
       editAriaLabel={t('competition.edit')}
@@ -207,6 +210,8 @@ function FriendlyInviteCard({
       {...data}
       detailTo={detailTo}
       currentUserId={currentUserId}
+      qrUrl={`${shareSiteOrigin()}/friendly/${game.id}`}
+      qrAriaLabel={t('leaderboard.viewAlongHint')}
       canEdit={canEdit && Boolean(to)}
       editTo={canEdit && to ? `/friendly/${game.id}/edit` : undefined}
       editAriaLabel={t('friendly.edit')}

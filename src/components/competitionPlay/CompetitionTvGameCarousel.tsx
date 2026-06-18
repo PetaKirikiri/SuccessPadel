@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { TranslateFn } from '../../i18n'
 
 export type TvGameNav = {
@@ -21,18 +21,32 @@ export function CompetitionTvGameCarousel({
   renderGame,
 }: Props) {
   const [index, setIndex] = useState(0)
+  const userNavigatedRef = useRef(false)
+  const initializedRef = useRef(false)
 
   useEffect(() => {
-    if (activeGameNumber == null) return
-    const next = gameNumbers.indexOf(activeGameNumber)
-    if (next >= 0) setIndex(next)
-  }, [activeGameNumber, gameNumbers])
+    if (activeGameNumber == null || gameNumbers.length === 0) return
+    const activeIdx = gameNumbers.indexOf(activeGameNumber)
+    if (activeIdx < 0) return
+
+    if (!initializedRef.current) {
+      setIndex(activeIdx)
+      initializedRef.current = true
+      return
+    }
+
+    if (!userNavigatedRef.current) {
+      setIndex(activeIdx)
+    }
+  }, [activeGameNumber, gameNumbers.length])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft') {
+        userNavigatedRef.current = true
         setIndex((i) => Math.max(0, i - 1))
       } else if (e.key === 'ArrowRight') {
+        userNavigatedRef.current = true
         setIndex((i) => Math.min(gameNumbers.length - 1, i + 1))
       }
     }
@@ -46,8 +60,14 @@ export function CompetitionTvGameCarousel({
   const atStart = index <= 0
   const atEnd = index >= gameNumbers.length - 1
   const nav: TvGameNav = {
-    onPrev: () => setIndex((i) => Math.max(0, i - 1)),
-    onNext: () => setIndex((i) => Math.min(gameNumbers.length - 1, i + 1)),
+    onPrev: () => {
+      userNavigatedRef.current = true
+      setIndex((i) => Math.max(0, i - 1))
+    },
+    onNext: () => {
+      userNavigatedRef.current = true
+      setIndex((i) => Math.min(gameNumbers.length - 1, i + 1))
+    },
     atStart,
     atEnd,
   }

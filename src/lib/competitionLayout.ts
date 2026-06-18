@@ -8,6 +8,8 @@ export const AMERICANO_GAME_COUNTS = [5, 6, 7, 8, 9, 10, 11] as const
 export const BREAK_MINUTE_OPTIONS = [2, 3, 4, 5] as const
 export const DEFAULT_BREAK_MINUTES = 3
 export const DEFAULT_GAME_MINUTES = 14
+/** Minutes before game 1 so the last game ends on the event hour (e.g. 8:00). */
+export const AMERICANO_SCHEDULE_LEAD_IN_MINUTES = 4
 export const COMPETITION_BREAK_MINUTES = DEFAULT_BREAK_MINUTES
 export { RANKED_AMERICANO_GAMES, RANKED_GAME_MINUTES } from './rankedSchedule'
 
@@ -61,6 +63,14 @@ export function totalScheduleMinutes(
   return totalGames * gameMinutes + Math.max(0, totalGames - 1) * breakMinutes
 }
 
+export function americanoScheduleUsedMinutes(
+  totalGames: number,
+  gameMinutes: number,
+  breakMinutes: number,
+): number {
+  return AMERICANO_SCHEDULE_LEAD_IN_MINUTES + totalScheduleMinutes(totalGames, gameMinutes, breakMinutes)
+}
+
 export function planAmericanoSchedule(
   eventStartsAt: string,
   totalGames: number,
@@ -68,7 +78,7 @@ export function planAmericanoSchedule(
   breakMinutes: number,
   eventMinutes: number,
 ): SchedulePlan {
-  const usedMinutes = totalScheduleMinutes(totalGames, gameMinutes, breakMinutes)
+  const usedMinutes = americanoScheduleUsedMinutes(totalGames, gameMinutes, breakMinutes)
   const fits = usedMinutes <= eventMinutes
   const slots: ScheduleSlot[] = []
   const eventStart = new Date(eventStartsAt)
@@ -134,14 +144,15 @@ export function eventDurationMinutes(startsAt: string, endsAt: string): number {
   return Math.max(0, (new Date(endsAt).getTime() - new Date(startsAt).getTime()) / 60000)
 }
 
-/** floor(eventMinutes / totalGames − breakMinutes) — e.g. 120 min ÷ 11 games − 1 = 9 min play. */
+/** floor((eventMinutes − lead-in) / totalGames − breakMinutes) */
 export function gameDurationForEvent(
   eventMinutes: number,
   totalGames: number,
   breakMinutes = COMPETITION_BREAK_MINUTES,
 ): number {
   if (totalGames <= 0 || eventMinutes <= 0) return 0
-  return Math.max(1, Math.floor(eventMinutes / totalGames - breakMinutes))
+  const playMinutes = Math.max(0, eventMinutes - AMERICANO_SCHEDULE_LEAD_IN_MINUTES)
+  return Math.max(1, Math.floor(playMinutes / totalGames - breakMinutes))
 }
 
 export function gameSlotTimes(
@@ -150,7 +161,8 @@ export function gameSlotTimes(
   gameMinutes: number,
   breakMinutes = COMPETITION_BREAK_MINUTES,
 ): { startsAt: Date; endsAt: Date } {
-  const offsetMin = (gameNumber - 1) * (gameMinutes + breakMinutes)
+  const offsetMin =
+    AMERICANO_SCHEDULE_LEAD_IN_MINUTES + (gameNumber - 1) * (gameMinutes + breakMinutes)
   const startsAt = new Date(new Date(eventStartsAt).getTime() + offsetMin * 60000)
   const endsAt = new Date(startsAt.getTime() + gameMinutes * 60000)
   return { startsAt, endsAt }

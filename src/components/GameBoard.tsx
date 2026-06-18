@@ -344,6 +344,11 @@ export function GameBoard({
     })
   }, [sessionId, orderedGames, finishedByGame, scoringTimeUnlocked])
 
+  const gameNumbers = useMemo(
+    () => orderedGames.map((game) => game.gameNumber),
+    [orderedGames],
+  )
+
   const toggleCollapsed = (gameNumber: number) => {
     setCollapsedGames((prev) => ({
       ...prev,
@@ -556,7 +561,7 @@ export function GameBoard({
     const gameByNumber = new Map(orderedGames.map((game) => [game.gameNumber, game]))
     return (
       <CompetitionTvGameCarousel
-        gameNumbers={orderedGames.map((game) => game.gameNumber)}
+        gameNumbers={gameNumbers}
         activeGameNumber={activeGameNumber}
         renderGame={(gameNumber, nav) => {
           const game = gameByNumber.get(gameNumber)

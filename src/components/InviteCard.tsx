@@ -3,6 +3,7 @@ import { IconDelete, IconEdit, IconShare } from './ButtonIcons'
 import { Link } from 'react-router-dom'
 import { FriendlyRosterList } from './FriendlyRosterList'
 import { RuleChipGrid } from './RuleChipGrid'
+import { InviteCardQr } from './InviteCardQr'
 import type { RosterSlot, RuleChip } from '../lib/friendlyGameDisplay'
 import { genderFromRuleChips, inviteBannerForGender } from '../lib/inviteBanners'
 
@@ -18,6 +19,8 @@ export type InviteCardProps = {
   onShare?: () => void
   shareFeedback?: string | null
   shareAriaLabel?: string
+  qrUrl?: string | null
+  qrAriaLabel?: string
   canEdit?: boolean
   editTo?: string
   editAriaLabel?: string
@@ -48,6 +51,8 @@ export function InviteCard({
   onShare,
   shareFeedback,
   shareAriaLabel,
+  qrUrl,
+  qrAriaLabel,
   canEdit = false,
   editTo,
   editAriaLabel,
@@ -83,6 +88,14 @@ export function InviteCard({
     </div>
   ) : null
 
+  const inviteActions =
+    onShare || qrUrl ? (
+      <div className="flex items-center justify-end gap-2 pt-0.5">
+        {qrUrl ? <InviteCardQr url={qrUrl} title={qrAriaLabel} /> : null}
+        {shareButton}
+      </div>
+    ) : null
+
   const scheduleBlock = (
     <div className="min-w-0 space-y-1">
       <p className="font-display text-base font-bold leading-tight text-brand-primary sm:text-xl md:text-2xl">
@@ -96,7 +109,7 @@ export function InviteCard({
           {timeLine}
         </p>
       ) : null}
-      {shareButton ? <div className="flex justify-end pt-0.5">{shareButton}</div> : null}
+      {inviteActions}
       {statusLine ? (
         <p className="text-xs font-semibold tabular-nums text-brand-accent">{statusLine}</p>
       ) : null}

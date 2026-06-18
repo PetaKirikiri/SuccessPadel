@@ -6,7 +6,7 @@ import {
   type Gender,
   type SkillLevel,
 } from './competitionPresets'
-import { totalScheduleMinutes } from './competitionLayout'
+import { americanoScheduleUsedMinutes } from './competitionLayout'
 import { RANKED_AMERICANO_GAMES, RANKED_GAME_MINUTES } from './rankedSchedule'
 import type { TranslateFn } from '../i18n'
 import type { RuleChip } from './friendlyGameDisplay'
@@ -115,7 +115,7 @@ export function presetRuleChips(mode: CompetitionPlayerMode, t: TranslateFn): Ru
 
 export function competitionEventMinutes(mode: CompetitionPlayerMode): number {
   const preset = competitionFormatPreset(mode)
-  return totalScheduleMinutes(preset.gameCount, preset.gameMinutes, preset.breakMinutes)
+  return americanoScheduleUsedMinutes(preset.gameCount, preset.gameMinutes, preset.breakMinutes)
 }
 
 export function competitionScoringConfig(

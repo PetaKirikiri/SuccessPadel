@@ -242,7 +242,7 @@ export function CompetitionPlay() {
         currentUserAvatarUrl={headerAvatar}
         isAdmin={isAdmin}
         duoTeamLabels={isDuo ? duoTeamLabels : undefined}
-        tvCarousel={isTvLayout}
+        tvCarousel={columns.length > 0}
         viewAlongUrl={isTvLayout ? viewAlongUrl : null}
       />
     ) : started ? (

@@ -129,15 +129,21 @@ function entryRecord(
 function ScoreWithRecord({
   score,
   record,
+  compact = false,
   t,
 }: {
   score: number
   record: { wins: number; losses: number; draws: number } | null
+  compact?: boolean
   t: TranslateFn
 }) {
   return (
     <div className="relative z-[1] flex shrink-0 flex-col items-end justify-self-end text-right">
-      <span className="font-display text-lg font-bold tabular-nums text-brand-accent md:text-xl">
+      <span
+        className={`font-display font-bold tabular-nums text-brand-accent ${
+          compact ? 'text-base' : 'text-lg md:text-xl'
+        }`}
+      >
         {score}
       </span>
       {record ? (
@@ -166,12 +172,19 @@ const ROW_GRID =
 const ROW_GRID_NO_BADGES =
   'grid items-center gap-x-1 px-1.5 md:gap-x-1.5 md:px-2 grid-cols-[1.25rem_1.75rem_minmax(0,1fr)_3.25rem] md:grid-cols-[1.5rem_2.5rem_minmax(0,1fr)_3.75rem]'
 
+const COMPACT_ROW_GRID =
+  'grid h-full w-full items-center gap-x-2 px-2 grid-cols-[1.25rem_2rem_minmax(0,1fr)_2.75rem]'
+
+const COMPACT_ROW_GRID_BADGES =
+  'grid h-full w-full items-center gap-x-2 px-2 grid-cols-[1.25rem_2rem_minmax(0,1fr)_minmax(0,4rem)_2.75rem]'
+
 function LeaderboardRow({
   rank,
   entry,
   isMe,
   badges,
   showBadges,
+  compact = false,
   onOpenProfile,
   onSelectAchievement,
   t,
@@ -181,6 +194,7 @@ function LeaderboardRow({
   isMe: boolean
   badges: Achievement[]
   showBadges: boolean
+  compact?: boolean
   onOpenProfile?: () => void | Promise<void>
   onSelectAchievement: (info: AchievementInfo) => void
   t: TranslateFn
@@ -192,12 +206,20 @@ function LeaderboardRow({
       onClick={() => {
         if (onOpenProfile) void onOpenProfile()
       }}
-      className={`${showBadges ? ROW_GRID : ROW_GRID_NO_BADGES} border-b border-brand-border/60 py-2.5 transition last:border-0 md:py-3.5 ${
-        onOpenProfile ? 'cursor-pointer hover:bg-brand-bg-alt/60' : ''
-      } ${isMe ? 'bg-brand-bg-alt' : ''}`}
+      className={`${
+        compact
+          ? showBadges
+            ? COMPACT_ROW_GRID_BADGES
+            : COMPACT_ROW_GRID
+          : showBadges
+            ? ROW_GRID
+            : ROW_GRID_NO_BADGES
+      } min-h-0 border-b border-brand-border/60 transition last:border-0 ${
+        compact ? 'flex-1' : 'py-2.5 md:py-3.5'
+      } ${onOpenProfile ? 'cursor-pointer hover:bg-brand-bg-alt/60' : ''} ${isMe ? 'bg-brand-bg-alt' : ''}`}
     >
       <span
-        className={`text-center font-display text-sm font-semibold md:text-base ${
+        className={`text-center font-display text-sm font-semibold ${
           rank <= 3 ? 'text-brand-accent' : 'text-brand-muted'
         }`}
       >
@@ -207,10 +229,16 @@ function LeaderboardRow({
         <img
           src={entry.avatar_url}
           alt=""
-          className="h-7 w-7 rounded-full object-cover ring-1 ring-brand-border/60 md:h-10 md:w-10"
+          className={`rounded-full object-cover ring-1 ring-brand-border/60 ${
+            compact ? 'h-8 w-8' : 'h-7 w-7 md:h-10 md:w-10'
+          }`}
         />
       ) : (
-        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-bg-alt text-xs font-semibold text-brand-muted ring-1 ring-brand-border/40 md:h-10 md:w-10 md:text-sm">
+        <div
+          className={`flex items-center justify-center rounded-full bg-brand-bg-alt font-semibold text-brand-muted ring-1 ring-brand-border/40 ${
+            compact ? 'h-8 w-8 text-xs' : 'h-7 w-7 text-xs md:h-10 md:w-10 md:text-sm'
+          }`}
+        >
           {playerInitial(entry.display_name)}
         </div>
       )}
@@ -227,13 +255,13 @@ function LeaderboardRow({
               labelKey={b.labelKey}
               label={t(b.labelKey)}
               onSelect={onSelectAchievement}
-              sizeClass="h-6 w-6 md:h-9 md:w-9"
-              emojiClass="text-lg leading-none md:text-2xl"
+              sizeClass={compact ? 'h-7 w-7' : 'h-6 w-6 md:h-9 md:w-9'}
+              emojiClass={compact ? 'text-base leading-none' : 'text-lg leading-none md:text-2xl'}
             />
           ))}
         </span>
       ) : null}
-      <ScoreWithRecord score={entry.total_points} record={record} t={t} />
+      <ScoreWithRecord score={entry.total_points} record={compact ? null : record} compact={compact} t={t} />
     </li>
   )
 }
@@ -286,13 +314,15 @@ export function CompetitionLeaderboard({
   }
 
   const displayEntries = compactLeaderboardDisplayNames(activeEntries)
-  const showHeader = Boolean(headerTitle || headerSubtitle || headerExtra || compact || showDuoToggle)
+  const showHeader = Boolean(headerTitle || headerSubtitle || headerExtra || showDuoToggle)
   const rowGrid = showAchievements ? ROW_GRID : ROW_GRID_NO_BADGES
   const nameColumnLabel =
     showDuoToggle && duoView === 'teams' ? t('leaderboard.teams') : t('leaderboard.player')
 
   const shellClass = embedded
-    ? 'min-h-full overflow-hidden bg-brand-surface'
+    ? compact
+      ? 'flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-brand-surface'
+      : 'min-h-full overflow-hidden bg-brand-surface'
     : `game-card overflow-hidden p-0 ${flushBottom ? 'rounded-b-none' : ''}`
 
   return (
@@ -332,26 +362,24 @@ export function CompetitionLeaderboard({
             <p className="font-display text-base font-semibold text-brand-primary md:text-lg">
               {headerTitle}
             </p>
-          ) : compact ? (
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted md:text-xs">
-              {t('leaderboard.standings')}
-            </p>
           ) : null}
           {headerSubtitle && <p className="text-xs text-brand-muted md:text-sm">{headerSubtitle}</p>}
         </div>
       )}
-      <div
-        className={`${rowGrid} border-b border-brand-border/60 py-2 text-[10px] font-semibold uppercase tracking-wide text-brand-muted md:py-2.5 md:text-xs`}
-      >
-        <span className="text-center">#</span>
-        <span aria-hidden />
-        <span>{nameColumnLabel}</span>
-        {showAchievements ? <span aria-hidden /> : null}
-        <span className="justify-self-end text-right font-display text-xs uppercase text-brand-muted md:text-sm">
-          {unit}
-        </span>
-      </div>
-      <ol className="m-0 list-none p-0">
+      {!compact ? (
+        <div
+          className={`${rowGrid} border-b border-brand-border/60 py-2 text-[10px] font-semibold uppercase tracking-wide text-brand-muted md:py-2.5 md:text-xs`}
+        >
+          <span className="text-center">#</span>
+          <span aria-hidden />
+          <span>{nameColumnLabel}</span>
+          {showAchievements ? <span aria-hidden /> : null}
+          <span className="justify-self-end text-right font-display text-xs uppercase text-brand-muted md:text-sm">
+            {unit}
+          </span>
+        </div>
+      ) : null}
+      <ol className={compact ? 'm-0 flex min-h-0 flex-1 list-none flex-col p-0' : 'm-0 list-none p-0'}>
         {displayEntries.map((e, i) => {
           const source = activeEntries[i]!
           const rank = standingsDisplayRank(activeEntries, i)
@@ -371,6 +399,7 @@ export function CompetitionLeaderboard({
               isMe={isMe}
               badges={badgesFor(source)}
               showBadges={showAchievements}
+              compact={compact}
               onSelectAchievement={setInfo}
               onOpenProfile={
                 isDuoLeaderboardEntry(source.profile_id)

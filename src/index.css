@@ -945,6 +945,14 @@ body {
     padding-bottom: 0.5rem;
   }
 
+  .tv-play-standings-body {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 0%;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
   .tv-play-panel .app-shell-panel-inset {
     padding-left: max(1rem, env(safe-area-inset-left, 0px));
     padding-right: 1rem;

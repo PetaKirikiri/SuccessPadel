@@ -30,7 +30,7 @@ export function CompetitionPlayTvView({
           </div>
           {session ? (
             <aside className="tv-play-standings" aria-label={t('leaderboard.standings')}>
-              <div className="tv-play-scroll">{leaderboardBody}</div>
+              <div className="tv-play-standings-body">{leaderboardBody}</div>
             </aside>
           ) : null}
         </div>

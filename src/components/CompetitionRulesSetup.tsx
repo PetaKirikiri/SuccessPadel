@@ -9,7 +9,7 @@ import {
   type PartnerStyle,
   type RuleFormat,
 } from '../lib/competitionPresets'
-import { totalScheduleMinutes } from '../lib/competitionLayout'
+import { americanoScheduleUsedMinutes } from '../lib/competitionLayout'
 import { useEffect, useState, type ChangeEvent } from 'react'
 
 function clampInt(raw: string, min: number, max: number, fallback: number): number {
@@ -191,7 +191,7 @@ export function CompetitionRulesSetup({ value, onChange, eventMinutes }: Props) 
 
           {eventMinutes != null && (
             <p className="text-xs text-brand-muted tabular-nums">
-              Uses {totalScheduleMinutes(gameCount, gameMinutes, breakMinutes)} / {eventMinutes} min
+              Uses {americanoScheduleUsedMinutes(gameCount, gameMinutes, breakMinutes)} / {eventMinutes} min
             </p>
           )}
         </>
