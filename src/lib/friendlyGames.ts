@@ -27,7 +27,7 @@ import { rosterFromSlots } from './rosterPreview'
 import { planRankedSchedule } from './rankedSchedule'
 import type { GameSession } from './types'
 import type { Gender, SkillLevel } from './competitionPresets'
-import { LOCKED_COMPETITION } from './lockedCompetitionFormat'
+import { SINGLES_COMPETITION } from './competitionFormatPresets'
 
 /** Legacy key — published games live in Supabase only; cleared on friendly home load. */
 const STORAGE_KEY = 'sp-friendly-games'
@@ -70,10 +70,10 @@ export function lockedFriendlyOrganizedRules(): Pick<
   return {
     ruleFormat: 'americano',
     partnerStyle: 'swapped',
-    americanoScoring: LOCKED_COMPETITION.americanoTarget,
-    gameCount: LOCKED_COMPETITION.gameCount,
-    gameMinutes: LOCKED_COMPETITION.gameMinutes,
-    breakMinutes: LOCKED_COMPETITION.breakMinutes,
+    americanoScoring: SINGLES_COMPETITION.americanoTarget,
+    gameCount: SINGLES_COMPETITION.gameCount,
+    gameMinutes: SINGLES_COMPETITION.gameMinutes,
+    breakMinutes: SINGLES_COMPETITION.breakMinutes,
   }
 }
 

@@ -735,6 +735,11 @@ body {
 
 /* TV-only (2xl / 1536px+) — blended games + standings; QR lives in standings column. */
 @media (min-width: 1536px) {
+  .tv-play-view {
+    width: 100%;
+    max-width: 100%;
+  }
+
   .tv-play-panel {
     border-radius: 0;
     border-left-width: 0;
@@ -743,19 +748,17 @@ body {
 
   .tv-play-layout {
     display: flex;
+    width: 100%;
     min-height: 0;
     flex: 1 1 0%;
     flex-direction: row;
-    height: 100%;
   }
 
   .tv-play-games {
     display: flex;
     min-height: 0;
     min-width: 0;
-    flex: 0 0 60%;
-    width: 60%;
-    max-width: 60%;
+    flex: 1 1 0%;
     flex-direction: column;
   }
 
@@ -763,13 +766,170 @@ body {
     display: flex;
     min-height: 0;
     min-width: 0;
-    flex: 1 1 0%;
+    flex: 0 0 clamp(16rem, 24vw, 22rem);
     flex-direction: column;
     border-left: 1px solid rgba(96, 45, 36, 0.18);
     background: var(--color-brand-surface);
-    /* Vercel preview toolbar (logged-in devs only) sits bottom-right — keep scores visible */
-    padding-right: max(3.75rem, env(safe-area-inset-right, 0px));
+    padding-right: env(safe-area-inset-right, 0px);
   }
+
+  .tv-play-games .tv-play-scroll {
+    overflow: hidden;
+    display: flex;
+    min-height: 0;
+    flex: 1 1 0%;
+    flex-direction: column;
+  }
+
+  .tv-play-games .tv-play-scroll.app-shell-panel-inset {
+    padding-bottom: 0.5rem;
+  }
+
+  .tv-play-games .tv-play-scroll > .tv-game-carousel {
+    min-height: 0;
+    flex: 1 1 0%;
+  }
+
+  .tv-game-carousel {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 0%;
+    flex-direction: column;
+  }
+
+  .tv-game-carousel > * {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 0%;
+    flex-direction: column;
+  }
+
+  .tv-game-card-racetrack > .tv-game-card {
+    min-height: 0;
+    flex: 1 1 0%;
+  }
+
+  .tv-game-card {
+    min-height: 0;
+    flex: 1 1 0%;
+  }
+
+  .tv-game-courts-body {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 0%;
+    flex-direction: column;
+  }
+
+  .tv-game-card > :first-child {
+    flex-shrink: 0;
+  }
+
+  .tv-game-courts-grid {
+    display: grid;
+    min-height: 0;
+    flex: 1 1 0%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: stretch;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .tv-game-courts-grid > * {
+    min-height: 0;
+    height: 100%;
+    align-self: stretch;
+  }
+
+  .tv-game-courts-grid--single {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tv-court-card {
+    display: flex;
+    min-height: 0;
+    height: 100%;
+    flex-direction: column;
+  }
+
+  .tv-court-card > :first-child {
+    flex-shrink: 0;
+  }
+
+  .tv-court-card-body {
+    min-height: 0;
+    flex: 1 1 0%;
+  }
+
+  .tv-court-card-body > * {
+    min-height: 0;
+  }
+
+  .tv-court-match-grid {
+    height: 100%;
+    align-content: stretch;
+  }
+
+  .tv-court-match-grid > div:first-child,
+  .tv-court-match-grid > div:last-child {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+  }
+
+  .tv-court-match-grid > div:nth-child(2),
+  .tv-court-match-grid > div:nth-child(4),
+  .tv-court-match-grid > span {
+    align-self: center;
+  }
+
+  .tv-court-card-body .truncate {
+    font-size: clamp(0.875rem, 2.4vh, 1.35rem);
+  }
+
+  .tv-court-card-body img.rounded-full {
+    width: clamp(1.5rem, 4.5vh, 2.75rem);
+    height: clamp(1.5rem, 4.5vh, 2.75rem);
+  }
+
+  .tv-game-header-nav {
+    flex-shrink: 0;
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.5rem;
+    padding: 0 0.35rem;
+    font-size: 1.75rem;
+    line-height: 1;
+    transition: opacity 0.15s ease;
+  }
+
+  .tv-game-header-qr {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    align-self: center;
+    margin: 0 0.35rem;
+    border-radius: 0.375rem;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: #fff;
+  }
+
+  .tv-game-header-nav:disabled {
+    opacity: 0.35;
+  }
+
+  .tv-game-header-nav:not(:disabled):active {
+    opacity: 0.75;
+  }
+
+  .tv-game-card .game-card-racetrack {
+    min-height: 0;
+    flex: 1 1 0%;
+  }
+
+  /* Legacy selector — racetrack wraps .tv-game-card, not the reverse. */
 
   .tv-play-scroll {
     min-height: 0;

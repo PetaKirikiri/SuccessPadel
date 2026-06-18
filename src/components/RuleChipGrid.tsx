@@ -1,22 +1,22 @@
 import { useState } from 'react'
-import type { FriendlyRuleChip } from '../lib/friendlyGameDisplay'
-import { FriendlyRuleChipIcon } from './FriendlyRuleChipIcon'
-import { FriendlyRuleHintModal } from './FriendlyRuleHintModal'
+import type { RuleChip } from '../lib/friendlyGameDisplay'
+import { RuleChipIcon } from './RuleChipIcon'
+import { RuleHintModal } from './RuleHintModal'
 
 type Props = {
-  chips: FriendlyRuleChip[]
+  chips: RuleChip[]
   /** Inline chips in the schedule panel (right column). */
   inline?: boolean
 }
 
-function RuleChip({
+function RuleChipButton({
   chip,
   inline,
   onSelect,
 }: {
-  chip: FriendlyRuleChip
+  chip: RuleChip
   inline: boolean
-  onSelect: (chip: FriendlyRuleChip) => void
+  onSelect: (chip: RuleChip) => void
 }) {
   const open = (e: React.SyntheticEvent) => {
     e.preventDefault()
@@ -51,7 +51,7 @@ function RuleChip({
       >
         {chip.label}
       </span>
-      <FriendlyRuleChipIcon
+      <RuleChipIcon
         icon={chip.icon}
         className={inline ? 'h-5 w-5 shrink-0 text-brand-accent' : 'h-5 w-5 text-brand-accent'}
       />
@@ -59,8 +59,8 @@ function RuleChip({
   )
 }
 
-export function FriendlyRuleSettings({ chips, inline = false }: Props) {
-  const [active, setActive] = useState<FriendlyRuleChip | null>(null)
+export function RuleChipGrid({ chips, inline = false }: Props) {
+  const [active, setActive] = useState<RuleChip | null>(null)
 
   if (chips.length === 0) return null
 
@@ -74,10 +74,10 @@ export function FriendlyRuleSettings({ chips, inline = false }: Props) {
         }
       >
         {chips.map((chip) => (
-          <RuleChip key={chip.key} chip={chip} inline={inline} onSelect={setActive} />
+          <RuleChipButton key={chip.key} chip={chip} inline={inline} onSelect={setActive} />
         ))}
       </ul>
-      {active ? <FriendlyRuleHintModal chip={active} onClose={() => setActive(null)} /> : null}
+      {active ? <RuleHintModal chip={active} onClose={() => setActive(null)} /> : null}
     </>
   )
 }

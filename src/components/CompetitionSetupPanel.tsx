@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { IconCopy, IconExternal, IconPublish, IconShuffle } from './ButtonIcons'
 import type { GameRound } from '../lib/americanoSchedule'
 import { supabase } from '../lib/supabaseClient'
-import { CompetitionLayoutPreview } from './CompetitionLayoutPreview'
+import { GameBoardPreview } from './GameBoardPreview'
 import { usesAmericanoScoring } from '../lib/competitionPresets'
 import {
   americanoScheduleFromSession,
@@ -139,7 +139,7 @@ export function CompetitionSetupPanel({ sessionId, session, roster, onRefresh }:
       )}
 
       {previewGames && previewGames.length > 0 && (
-        <CompetitionLayoutPreview
+        <GameBoardPreview
           session={session}
           games={previewGames}
           eventStartsAt={session.starts_at ?? undefined}

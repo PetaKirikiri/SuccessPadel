@@ -2,21 +2,23 @@ import {
   Clock,
   Coffee,
   Crown,
+  Gauge,
   LayoutGrid,
   Link2,
   Pause,
   Shuffle,
   Target,
+  Users,
   type LucideIcon,
 } from 'lucide-react'
-import type { FriendlyRuleIcon } from '../lib/friendlyGameDisplay'
+import type { RuleIcon } from '../lib/friendlyGameDisplay'
 
 type Props = {
-  icon: FriendlyRuleIcon
+  icon: RuleIcon
   className?: string
 }
 
-const ICONS: Record<FriendlyRuleIcon, LucideIcon> = {
+const ICONS: Record<RuleIcon, LucideIcon> = {
   americano: Coffee,
   king: Crown,
   'partners-fixed': Link2,
@@ -25,9 +27,11 @@ const ICONS: Record<FriendlyRuleIcon, LucideIcon> = {
   rounds: LayoutGrid,
   'game-minutes': Clock,
   break: Pause,
+  level: Gauge,
+  gender: Users,
 }
 
-export function FriendlyRuleChipIcon({ icon, className = 'h-6 w-6' }: Props) {
+export function RuleChipIcon({ icon, className = 'h-6 w-6' }: Props) {
   const Icon = ICONS[icon]
   return <Icon className={`${className} shrink-0`} aria-hidden strokeWidth={2} />
 }

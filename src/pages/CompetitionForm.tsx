@@ -28,19 +28,20 @@ import {
   filledDuoPlayerCount,
   type DuoTeamDraft,
 } from '../components/DuoTeamSlots'
-import { FriendlyRuleSettings } from '../components/FriendlyRuleSettings'
+import { SetupCard } from '../components/cards/SetupCard'
 import { useTranslation } from '../hooks/useTranslation'
 import { measureScheduleQuality, solveBalancedSchedule } from '../lib/balancedSchedule'
 import {
   buildStoredSchedule,
+  padRosterToTarget,
   sortRosterByRank,
+  targetPlayerCount,
 } from '../lib/rankedSchedule'
 import { buildDuoStoredSchedule } from '../lib/duoRoundRobinSchedule'
 import {
   competitionEventMinutes,
   competitionFormatPreset,
   competitionPlayerMode,
-  competitionRuleChips,
   competitionScoringConfig,
   competitionSessionFields,
   DUO_COMPETITION,
@@ -49,12 +50,12 @@ import {
 } from '../lib/competitionFormatPresets'
 import { buildCompetitionAutoTitle, GENDERS, SKILL_LEVELS, type Gender, type SkillLevel } from '../lib/competitionPresets'
 import { buildCompetitionRosterSlots } from '../lib/competitionRosterSlots'
+import { ruleChips as sessionRuleChips } from '../lib/sessionDisplay'
 import { supabase } from '../lib/supabaseClient'
 import {
-  ensureCompetitionScheduleSaved,
   saveScheduleForSession,
 } from '../lib/persistCompetitionSchedule'
-import type { GameSession, Profile, ScoringConfig } from '../lib/types'
+import type { Profile, ScoringConfig } from '../lib/types'
 
 function Chip({
   active,
@@ -237,7 +238,6 @@ export function CompetitionForm() {
   )
   const filledNameCount = useMemo(() => trimmedSlots.filter(Boolean).length, [trimmedSlots])
   const filledDuoCount = useMemo(() => filledDuoPlayerCount(duoTeams), [duoTeams])
-  const canBuildSinglesSchedule = filledNameCount >= 4 && filledNameCount % 4 === 0
   const canBuildDuoSchedule = duoTeamsComplete(duoTeams)
   useEffect(() => {
     void Promise.all([
@@ -596,10 +596,17 @@ export function CompetitionForm() {
 
     const ranked = sortRosterByRank((rosterRows ?? []) as unknown as CompetitionPlayer[])
     const rosterIds = rosterIdsInOrder(ranked)
+    const effectiveSlotCount = targetPlayerCount(
+      { target_players: slotCount, max_players: slotCount },
+      ranked.length,
+      isDuos,
+    )
 
-    const canSchedule = isDuos ? canBuildDuoSchedule : ranked.length >= 4 && ranked.length % 4 === 0
+    const canSaveSchedule = isDuos
+      ? canBuildDuoSchedule
+      : ranked.length >= 4 && effectiveSlotCount >= 4 && effectiveSlotCount % 4 === 0
 
-    if (canSchedule || !id) {
+    if (canSaveSchedule) {
       let schedule: ReturnType<typeof buildStoredSchedule> = []
       let teamsConfig: CompetitionTeamConfig[] | undefined
 
@@ -613,10 +620,11 @@ export function CompetitionForm() {
           label: pair.label,
           roster_ids: [pair.roster_a_id, pair.roster_b_id],
         }))
-      } else if (canSchedule) {
+      } else {
+        const padded = padRosterToTarget(ranked, effectiveSlotCount)
         schedule = buildStoredSchedule(
-          ranked,
-          solveBalancedSchedule(ranked.length, SINGLES_COMPETITION.gameCount, previewSeed),
+          padded,
+          solveBalancedSchedule(effectiveSlotCount, SINGLES_COMPETITION.gameCount, previewSeed),
         )
       }
 
@@ -633,7 +641,7 @@ export function CompetitionForm() {
       }
     }
 
-    if (competitionStarted && canSchedule) {
+    if (competitionStarted && canSaveSchedule) {
       const { error: rebuildErr } = await supabase.rpc('rebuild_competition_schedule', {
         p_session_id: sessionId,
       })
@@ -647,33 +655,7 @@ export function CompetitionForm() {
     clearDraft()
 
     if (!competitionStarted && sessionId) {
-      const { data: freshSession } = await supabase
-        .from('game_sessions')
-        .select('*')
-        .eq('id', sessionId)
-        .single()
-
-      if (freshSession) {
-        const scheduleErr = await ensureCompetitionScheduleSaved(
-          sessionId,
-          freshSession as GameSession,
-          ranked,
-        )
-        if (scheduleErr) {
-          setBusy(false)
-          navigate(`/competitions/${sessionId}`, { state: { setupError: scheduleErr } })
-          return
-        }
-      }
-
-      const { error: startErr } = await supabase.rpc('start_competition', {
-        p_session_id: sessionId,
-      })
-      if (startErr) {
-        setBusy(false)
-        navigate(`/competitions/${sessionId}`, { state: { setupError: startErr.message } })
-        return
-      }
+      void supabase.rpc('start_competition', { p_session_id: sessionId })
     }
 
     setBusy(false)
@@ -683,15 +665,23 @@ export function CompetitionForm() {
   const saveDisabled =
     busy || (Boolean(id) && !rosterHydrated) || (!id && seasonLoading)
   const scheduleQuality = useMemo(() => {
-    if (!canBuildSinglesSchedule || isDuos) return null
-    const rounds = solveBalancedSchedule(
+    if (filledNameCount < 4 || isDuos) return null
+    const previewSlotCount = targetPlayerCount(
+      { target_players: slotCount, max_players: slotCount },
       filledNameCount,
+      false,
+    )
+    const rounds = solveBalancedSchedule(
+      previewSlotCount,
       SINGLES_COMPETITION.gameCount,
       previewSeed,
     )
-    return measureScheduleQuality(rounds, filledNameCount)
-  }, [previewSeed, filledNameCount, canBuildSinglesSchedule, isDuos])
-  const ruleChips = useMemo(() => competitionRuleChips(playerMode, t), [playerMode, t])
+    return measureScheduleQuality(rounds, previewSlotCount)
+  }, [previewSeed, filledNameCount, slotCount, isDuos])
+  const ruleChips = useMemo(
+    () => sessionRuleChips({ kind: 'preset', mode: playerMode }, t, { skillLevel, gender }),
+    [playerMode, t, skillLevel, gender],
+  )
 
   return (
     <form
@@ -705,7 +695,7 @@ export function CompetitionForm() {
         ← Back
       </Link>
 
-      <section className="game-card space-y-3">
+      <SetupCard ruleChips={ruleChips}>
         <div className="space-y-1.5">
           <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
             {t('competition.formatLabel')}
@@ -735,8 +725,6 @@ export function CompetitionForm() {
             {t('competition.createLeague')}
           </label>
         ) : null}
-
-        <FriendlyRuleSettings chips={ruleChips} />
 
         {showDateFields ? (
           <div className="grid grid-cols-2 gap-2">
@@ -900,7 +888,7 @@ export function CompetitionForm() {
                 ? t('competition.createLeagueBtn')
                 : 'Create competition'}
         </button>
-      </section>
+      </SetupCard>
     </form>
   )
 }

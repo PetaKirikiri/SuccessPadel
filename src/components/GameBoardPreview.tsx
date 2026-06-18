@@ -6,7 +6,7 @@ import { pivotScheduleByCourt } from '../lib/competitionCourtBoard'
 import type { LiveCourtGamesScore } from '../lib/liveCourtScore'
 import type { FriendlyCourtScoreSubmit } from '../lib/friendlyManualScore'
 import type { GameSession } from '../lib/types'
-import { CompetitionCourtBoard } from './CompetitionCourtBoard'
+import { GameBoard } from './GameBoard'
 
 type Props = {
   session: Pick<GameSession, 'partnership_mode' | 'rules' | 'scoring_config'>
@@ -23,7 +23,7 @@ type Props = {
   onFriendlyScoresSaved?: () => void
 }
 
-export function CompetitionLayoutPreview({
+export function GameBoardPreview({
   session,
   games,
   eventStartsAt,
@@ -59,7 +59,7 @@ export function CompetitionLayoutPreview({
   }, [breakMinutes, eventStartsAt, gameMinutes, games])
 
   return (
-    <CompetitionCourtBoard
+    <GameBoard
       columns={columns}
       mode="preview"
       scoreUnit={scoreUnit}

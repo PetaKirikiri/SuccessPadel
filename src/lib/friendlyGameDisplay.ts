@@ -22,10 +22,10 @@ import {
   isEndlessFriendly,
   type FriendlyGameRecord,
 } from './friendlyGames'
-import { LOCKED_COMPETITION, lockedCompetitionRuleChips } from './lockedCompetitionFormat'
+import { SINGLES_COMPETITION, presetRuleChips } from './competitionFormatPresets'
 import type { GameSession } from './types'
 
-export type FriendlyRosterSlot = {
+export type RosterSlot = {
   name: string
   profileId: string | null
   padelPlayerId?: string | null
@@ -33,7 +33,7 @@ export type FriendlyRosterSlot = {
   vacant: boolean
 }
 
-export type FriendlyRuleIcon =
+export type RuleIcon =
   | 'americano'
   | 'king'
   | 'partners-fixed'
@@ -42,12 +42,15 @@ export type FriendlyRuleIcon =
   | 'rounds'
   | 'game-minutes'
   | 'break'
+  | 'level'
+  | 'gender'
 
-export type FriendlyRuleChip = {
+export type RuleChip = {
   key: string
   label: string
   hintKey: string
-  icon: FriendlyRuleIcon
+  hintParams?: Record<string, string | number>
+  icon: RuleIcon
 }
 
 export type FriendlyScheduleDisplay = {
@@ -104,7 +107,7 @@ export function friendlyScheduleDisplay(game: FriendlyGameRecord): FriendlySched
   return { dateLine, timeLine, posted: true }
 }
 
-export function friendlyRosterSlots(game: FriendlyGameRecord): FriendlyRosterSlot[] {
+export function friendlyRosterSlots(game: FriendlyGameRecord): RosterSlot[] {
   const ids = game.profileIds ?? []
   const avatars = game.profileAvatars ?? []
   return game.players.map((name, i) => ({
@@ -138,19 +141,19 @@ export function friendlyRulesSummary(game: FriendlyGameRecord): string {
   return friendlyOrganizedSession(config).rules ?? ''
 }
 
-export function friendlyRuleChips(game: FriendlyGameRecord, t: TranslateFn): FriendlyRuleChip[] {
+export function friendlyRuleChips(game: FriendlyGameRecord, t: TranslateFn): RuleChip[] {
   if (game.playMode === 'free') return []
   const config = game.organizedConfig ?? DEFAULT_FRIENDLY_ORGANIZED_CONFIG
   if (
     config.ruleFormat === 'americano' &&
-    config.gameCount === LOCKED_COMPETITION.gameCount &&
-    config.gameMinutes === LOCKED_COMPETITION.gameMinutes
+    config.gameCount === SINGLES_COMPETITION.gameCount &&
+    config.gameMinutes === SINGLES_COMPETITION.gameMinutes
   ) {
-    return lockedCompetitionRuleChips(t)
+    return presetRuleChips('singles', t)
   }
-  const formatIcon: FriendlyRuleIcon =
+  const formatIcon: RuleIcon =
     config.ruleFormat === 'americano' ? 'americano' : 'king'
-  const chips: FriendlyRuleChip[] = [
+  const chips: RuleChip[] = [
     {
       key: 'format',
       label: ruleFormatLabel(config.ruleFormat),
@@ -167,16 +170,16 @@ export function friendlyRuleChips(game: FriendlyGameRecord, t: TranslateFn): Fri
     })
   }
   if (config.ruleFormat === 'americano') {
-    const scoring =
-      config.americanoScoring === 'open'
-        ? t('friendly.chip.open')
-        : t('friendly.chip.bestOfGames', {
-            n: config.americanoScoring as Exclude<AmericanoScoringChoice, 'open'>,
-          })
+    const isOpen = config.americanoScoring === 'open'
+    const scoring = isOpen
+      ? t('friendly.chip.open')
+      : t('friendly.chip.bestOfGames', {
+          n: config.americanoScoring as Exclude<AmericanoScoringChoice, 'open'>,
+        })
     chips.push({
       key: 'scoring',
       label: scoring,
-      hintKey: 'friendly.hint.scoring',
+      hintKey: isOpen ? 'friendly.hint.scoringOpen' : 'friendly.hint.scoring',
       icon: 'scoring',
     })
     chips.push({

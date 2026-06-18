@@ -103,6 +103,10 @@ export type Messages = {
       format: string
       partners: string
       scoring: string
+      scoringOpen: string
+      scoringFirstTo: string
+      skillLevel: string
+      gender: string
       rounds: string
       gameMinutes: string
       break: string
@@ -226,6 +230,8 @@ export type Messages = {
     finished: string
     gameTime: string
     game: string
+    prevGame: string
+    nextGame: string
     video: string
     scoreSets: string
     scoreGames: string
@@ -261,6 +267,7 @@ export type Messages = {
     createLeagueBtn: string
     playerNames: string
     hintDuosFormat: string
+    firstToScoreInvalid: string
     duoLeagues: string
     leagueWeek: string
     setWeekSchedule: string

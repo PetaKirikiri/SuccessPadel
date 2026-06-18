@@ -10,8 +10,6 @@ type Props = {
   t: TranslateFn
   loadOrError: ReactNode
   session: unknown
-  started: boolean
-  starting?: boolean
   gamesBody: ReactNode
   leaderboardBody: ReactNode
 }
@@ -23,8 +21,6 @@ export function CompetitionPlayStandardView({
   t,
   loadOrError,
   session,
-  started,
-  starting = false,
   gamesBody,
   leaderboardBody,
 }: Props) {
@@ -39,19 +35,7 @@ export function CompetitionPlayStandardView({
       >
         <div className="app-shell-panel-inset space-y-3">
           {loadOrError}
-          {session && tab === 'games' ? (
-            <>
-              {!started && !gamesBody && !starting ? (
-                <p className="py-6 text-center text-sm text-brand-muted">
-                  {t('competition.waitingOrganiser')}
-                </p>
-              ) : null}
-              {starting ? (
-                <p className="py-6 text-center text-sm text-brand-muted">{t('common.loading')}</p>
-              ) : null}
-              {gamesBody}
-            </>
-          ) : null}
+          {session && tab === 'games' ? gamesBody : null}
           {session && tab === 'leaderboard' ? leaderboardBody : null}
         </div>
       </AppShellPanel>

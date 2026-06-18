@@ -2,13 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from '../hooks/useTranslation'
 import type { TranslateFn } from '../i18n'
-import { competitionJoinUrl } from '../lib/siteUrl'
-import { canJoinGame, rosterLabel } from '../lib/playerCaps'
-import { supabase } from '../lib/supabaseClient'
-import { IconAdd, IconDelete, IconJoin, IconPlay, IconReview } from './ButtonIcons'
+import { IconAdd } from './ButtonIcons'
 import { IconHubCurrent, IconHubPast, shellTabClass } from './ShellTabIcons'
 import { GamesHubEmpty, GamesHubLoading } from './GamesHubView'
-import { CompetitionCurrentGameCard } from './CompetitionCurrentGameCard'
+import { SessionInviteCard } from './SessionInviteCard'
 import type { CompetitionRow } from '../hooks/useCompetitions'
 import { competitionIsPast } from '../lib/competitionListCard'
 
@@ -91,208 +88,6 @@ function ListTabs({
   )
 }
 
-function CompetitionCard({
-  row,
-  userId,
-  isAdmin,
-  expanded,
-  onToggle,
-  onRefresh,
-  past,
-  t,
-}: {
-  row: CompetitionRow
-  userId?: string
-  isAdmin: boolean
-  expanded: boolean
-  onToggle: () => void
-  onRefresh: () => void
-  past: boolean
-  t: TranslateFn
-}) {
-  const [busy, setBusy] = useState(false)
-  const [joinError, setJoinError] = useState<string | null>(null)
-  const [deleteError, setDeleteError] = useState<string | null>(null)
-  const isLive = Boolean(row.competition_started_at) && row.status !== 'complete'
-  const isComplete = row.status === 'complete'
-  const canReviewScores = isComplete || Boolean(row.competition_started_at)
-  const roster = row.session_players ?? []
-  const playedOn = formatPastDate(row.competition_started_at ?? row.starts_at)
-  const rosterCount = roster.length
-  const target = row.target_players ?? row.max_players ?? null
-  const joined = userId ? roster.some((sp) => sp.profile_id === userId) : false
-  const spotsOpen = canJoinGame(row, rosterCount) && row.status === 'open'
-  const canJoin = !joined && userId && spotsOpen
-
-  const spots =
-    target != null
-      ? rosterLabel(rosterCount, target, row.player_cap_mode === 'flexible')
-      : String(rosterCount)
-
-  const join = async () => {
-    setBusy(true)
-    setJoinError(null)
-    const { error: err } = await supabase.rpc('join_competition', { p_session_id: row.id })
-    setBusy(false)
-    if (err) setJoinError(err.message)
-    else onRefresh()
-  }
-
-  const remove = async () => {
-    const warning = isLive
-      ? t('competition.deleteLiveConfirm', { title: row.title })
-      : t('competition.deleteConfirm', { title: row.title })
-    if (!window.confirm(warning)) return
-
-    setBusy(true)
-    setDeleteError(null)
-    const { error: err } = await supabase.rpc('delete_competition_session', {
-      p_session_id: row.id,
-    })
-    setBusy(false)
-    if (err) setDeleteError(err.message)
-    else onRefresh()
-  }
-
-  const header = (
-    <>
-      <div className="min-w-0 flex-1 space-y-1">
-        <p className="font-display text-sm font-semibold leading-snug text-brand-primary">
-          {row.title}
-        </p>
-        {past && playedOn && (
-          <p className="text-[11px] text-brand-muted">
-            {t('competition.playedOn', { date: playedOn })}
-          </p>
-        )}
-        <div className="flex flex-wrap gap-1.5">
-            {isLive && (
-              <span className="rounded-full bg-brand-accent px-2 py-0.5 text-[10px] font-semibold text-white">
-                {t('competition.live')}
-              </span>
-            )}
-            {isComplete && (
-              <span className="rounded-full border border-brand-border px-2 py-0.5 text-[10px] font-medium text-brand-muted">
-                {t('competition.done')}
-              </span>
-            )}
-            {row.skill_level && (
-              <span className="rounded-full bg-brand-bg-alt px-2 py-0.5 text-[10px] font-semibold text-brand-accent">
-                {row.skill_level}
-              </span>
-            )}
-            {row.gender && (
-              <span className="rounded-full border border-brand-border px-2 py-0.5 text-[10px] font-semibold text-brand-sage">
-                {row.gender}
-              </span>
-            )}
-            <span className="rounded-full border border-brand-border px-2 py-0.5 text-[10px] font-medium text-brand-muted">
-              {spots}
-            </span>
-          </div>
-        </div>
-      {!past && (
-        <span className="shrink-0 pt-0.5 text-[10px] text-brand-muted">{expanded ? '▲' : '▼'}</span>
-      )}
-    </>
-  )
-
-  return (
-    <article className="game-card overflow-hidden p-0">
-      {past ? (
-        <div className="flex w-full min-w-0 items-start gap-2 px-3 py-3">{header}</div>
-      ) : (
-        <button
-          type="button"
-          onClick={onToggle}
-          className="flex w-full min-w-0 items-start gap-2 px-3 py-3 text-left"
-          aria-expanded={expanded}
-        >
-          {header}
-        </button>
-      )}
-
-      {(past || expanded) && (
-        <div className="space-y-3 border-t border-brand-border/50 px-3 py-3">
-          {expanded && row.rules && (
-            <p className="text-sm leading-relaxed text-brand-text">{row.rules}</p>
-          )}
-
-          {canReviewScores && (
-            <Link
-              to={`/competitions/${row.id}`}
-              className="brand-btn w-full py-2"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <IconReview />
-              {t('competition.reviewScores')}
-            </Link>
-          )}
-
-          {!isAdmin && isLive && !isComplete && (
-            <Link
-              to={`/competitions/${row.id}`}
-              className="brand-btn w-full py-2"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <IconPlay />
-              {t('competition.play')}
-            </Link>
-          )}
-
-          {!isAdmin && !isLive && joined && (
-            <p className="text-center text-sm text-brand-muted">{t('competition.onRoster')}</p>
-          )}
-
-          {expanded && canJoin && !isAdmin && (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={(e) => {
-                e.stopPropagation()
-                void join()
-              }}
-              className="brand-btn w-full py-2"
-            >
-              <IconJoin />
-              {t('competition.join')}
-            </button>
-          )}
-
-          {expanded && !isAdmin && !isLive && spotsOpen && !joined && userId && (
-            <a
-              href={competitionJoinUrl(row.id)}
-              className="brand-btn w-full py-2"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <IconJoin />
-              {t('competition.addYourself')}
-            </a>
-          )}
-
-          {expanded && isAdmin && !past && (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={(e) => {
-                e.stopPropagation()
-                void remove()
-              }}
-              className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-red-200 py-2 text-sm font-medium text-red-600 disabled:opacity-50"
-            >
-              <IconDelete />
-              {t('competition.deleteCompetition')}
-            </button>
-          )}
-
-          {joinError && <p className="text-xs text-red-600">{joinError}</p>}
-          {deleteError && <p className="text-xs text-red-600">{deleteError}</p>}
-        </div>
-      )}
-    </article>
-  )
-}
-
 export function CompetitionTable({
   rows,
   loading,
@@ -304,7 +99,6 @@ export function CompetitionTable({
   showListTabs = true,
 }: Props) {
   const { t } = useTranslation()
-  const [expandedId, setExpandedId] = useState<string | null>(null)
   const [internalTab, setInternalTab] = useState<CompetitionListTab>('current')
   const didDefaultTab = useRef(false)
 
@@ -377,30 +171,25 @@ export function CompetitionTable({
             ) : null}
           </GamesHubEmpty>
         )
-      ) : tab === 'current' ? (
-        visibleRows.map((row) => (
-          <CompetitionCurrentGameCard
-            key={row.id}
-            row={row}
-            isAdmin={isAdmin}
-            userId={userId}
-            onRefresh={onRefresh}
-          />
-        ))
       ) : (
-        visibleRows.map((row) => (
-          <CompetitionCard
-            key={row.id}
-            row={row}
-            userId={userId}
-            isAdmin={isAdmin}
-            past
-            expanded={expandedId === row.id}
-            onToggle={() => setExpandedId((id) => (id === row.id ? null : row.id))}
-            onRefresh={onRefresh}
-            t={t}
-          />
-        ))
+        visibleRows.map((row) => {
+          const playedOn = formatPastDate(row.competition_started_at ?? row.starts_at)
+          return (
+            <SessionInviteCard
+              key={row.id}
+              kind="competition"
+              row={row}
+              isAdmin={isAdmin}
+              userId={userId}
+              onRefresh={onRefresh}
+              statusLine={
+                tab === 'past' && playedOn
+                  ? t('competition.playedOn', { date: playedOn })
+                  : undefined
+              }
+            />
+          )
+        })
       )}
     </div>
   )

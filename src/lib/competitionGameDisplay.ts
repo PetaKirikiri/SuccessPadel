@@ -15,7 +15,7 @@ import {
   type PartnerStyle,
 } from './competitionPresets'
 import { formatClubTime, parseClubDate } from './courtSchedule'
-import type { FriendlyRosterSlot, FriendlyRuleChip } from './friendlyGameDisplay'
+import type { RosterSlot, RuleChip } from './friendlyGameDisplay'
 import type { GameSession } from './types'
 
 const BANGKOK = 'Asia/Bangkok'
@@ -50,9 +50,9 @@ export function competitionScheduleDisplay(
   return { dateLine: row.title, timeLine: '' }
 }
 
-export function competitionRosterSlots(row: CompetitionRow): FriendlyRosterSlot[] {
+export function competitionRosterSlots(row: CompetitionRow): RosterSlot[] {
   const players = row.session_players ?? []
-  const slots: FriendlyRosterSlot[] = players.map((sp) => ({
+  const slots: RosterSlot[] = players.map((sp) => ({
     name: rosterDisplayName(sp),
     profileId: sp.profile_id,
     padelPlayerId: sp.padel_player_id,
@@ -69,7 +69,7 @@ export function competitionRosterSlots(row: CompetitionRow): FriendlyRosterSlot[
   return slots
 }
 
-export function competitionRuleChips(row: CompetitionRow, t: TranslateFn): FriendlyRuleChip[] {
+export function competitionRuleChips(row: CompetitionRow, t: TranslateFn): RuleChip[] {
   const isAmericano = usesAmericanoScoring(row)
   const schedule = americanoScheduleFromSession(row)
   const breakMinutes = breakMinutesFromConfig(row.scoring_config)
@@ -80,7 +80,7 @@ export function competitionRuleChips(row: CompetitionRow, t: TranslateFn): Frien
     breakMinutes,
   )
 
-  const chips: FriendlyRuleChip[] = [
+  const chips: RuleChip[] = [
     {
       key: 'format',
       label: isAmericano ? ruleFormatLabel('americano') : ruleFormatLabel('king_of_court'),
@@ -100,20 +100,32 @@ export function competitionRuleChips(row: CompetitionRow, t: TranslateFn): Frien
   } else {
     const unit = americanoScoringUnit(row)
     const target = americanoScoreTarget(row)
-    const scoring =
-      unit === 'open'
-        ? t('friendly.chip.open')
-        : unit === 'games'
-          ? t('friendly.chip.maxGamesPerSide', { n: target ?? 6 })
-          : unit === 'sets'
-            ? `${target ?? 4} sets`
-            : `${target ?? 24} pts`
-    chips.push({
-      key: 'scoring',
-      label: scoring,
-      hintKey: 'friendly.hint.scoring',
-      icon: 'scoring',
-    })
+    if (unit === 'open') {
+      chips.push({
+        key: 'scoring',
+        label: t('friendly.chip.open'),
+        hintKey: 'friendly.hint.scoringOpen',
+        icon: 'scoring',
+      })
+    } else if (unit === 'games') {
+      const n = target ?? 6
+      chips.push({
+        key: 'scoring',
+        label: t('friendly.chip.firstToGames', { n }),
+        hintKey: 'friendly.hint.scoringFirstTo',
+        hintParams: { n },
+        icon: 'scoring',
+      })
+    } else {
+      const scoring =
+        unit === 'sets' ? `${target ?? 4} sets` : `${target ?? 24} pts`
+      chips.push({
+        key: 'scoring',
+        label: scoring,
+        hintKey: 'friendly.hint.scoring',
+        icon: 'scoring',
+      })
+    }
   }
 
   chips.push(

@@ -4,6 +4,64 @@ import { clubDisplayName } from './clubMemberDisplay'
 import type { CourtPlayer, GameRound } from './americanoSchedule'
 import { solveBalancedSchedule, type RoundAssignment } from './balancedSchedule'
 import { courtsNeeded } from './competitionLayout'
+import { DUO_PLAYER_COUNT, SINGLES_COMPETITION } from './competitionFormatPresets'
+import type { GameSession } from './types'
+
+export const OPEN_SLOT_NAME = 'Open'
+
+export function isOpenSlotId(id: string): boolean {
+  return id.startsWith('00000000-0000-4000-8000-')
+}
+
+export function openSlotId(rank: number): string {
+  return `00000000-0000-4000-8000-${String(rank).padStart(12, '0')}`
+}
+
+/** Pad roster to target size with open slots at missing rank positions. */
+export function padRosterToTarget(
+  roster: CompetitionPlayer[],
+  target: number,
+): CompetitionPlayer[] {
+  const sorted = sortRosterByRank(roster)
+  const byRank = new Map<number, CompetitionPlayer>()
+  for (const player of sorted) {
+    const rank = player.rank_order ?? 0
+    if (!byRank.has(rank)) byRank.set(rank, player)
+  }
+  return Array.from({ length: target }, (_, rank) => {
+    const existing = byRank.get(rank)
+    if (existing) return existing
+    return {
+      id: openSlotId(rank),
+      profile_id: null,
+      padel_player_id: null,
+      guest_name: null,
+      guest_email: null,
+      rank_order: rank,
+      profiles: null,
+    }
+  })
+}
+
+export function targetPlayerCount(
+  session: Pick<GameSession, 'target_players' | 'max_players'> | null | undefined,
+  rosterLength: number,
+  isDuo: boolean,
+): number {
+  if (isDuo) return DUO_PLAYER_COUNT
+
+  const cap = session?.target_players ?? session?.max_players
+
+  // e.g. 11 signed up, max 16 → 12 slots (3 courts), rank 12 is Open
+  if (rosterLength >= 4) {
+    const slotsForRoster = Math.ceil(rosterLength / 4) * 4
+    if (typeof cap === 'number' && cap >= 4) return Math.min(cap, slotsForRoster)
+    return slotsForRoster
+  }
+
+  if (typeof cap === 'number' && cap >= 4) return cap
+  return SINGLES_COMPETITION.targetPlayers
+}
 
 export const RANKED_AMERICANO_GAMES = 7
 export const RANKED_GAME_MINUTES = 14
@@ -35,6 +93,9 @@ export function nextScheduleSeed(current: number, playerCount: number): number {
 }
 
 export function courtPlayerFromRoster(sp: CompetitionPlayer): CourtPlayer {
+  if (isOpenSlotId(sp.id)) {
+    return { id: null, name: OPEN_SLOT_NAME, avatarUrl: null }
+  }
   const profileId = sp.profile_id ?? sp.profiles?.id ?? null
   const name = clubDisplayName(profileId, rosterDisplayName(sp))
   const avatarUrl = profileId ? (sp.profiles?.avatar_url ?? null) : null
@@ -113,11 +174,13 @@ export function storedScheduleFromConfig(
 }
 
 function nameForRosterId(ranked: CompetitionPlayer[], id: string): string {
+  if (isOpenSlotId(id)) return OPEN_SLOT_NAME
   const player = ranked.find((p) => p.id === id)
   return player ? rosterDisplayName(player) : 'Player'
 }
 
 function courtPlayerForRosterId(ranked: CompetitionPlayer[], id: string): CourtPlayer {
+  if (isOpenSlotId(id)) return { id: null, name: OPEN_SLOT_NAME, avatarUrl: null }
   const player = ranked.find((p) => p.id === id)
   return player ? courtPlayerFromRoster(player) : { id: null, name: 'Player', avatarUrl: null }
 }
@@ -133,6 +196,8 @@ export function gamesFromStoredSchedule(
     gameNumber: round.round,
     matches: [...round.matches]
       .sort((a, b) => a.court - b.court)
+      .filter((match) => match.court <= courts)
+      .slice(0, courts)
       .map((match, courtIndex) => ({
         courtLabel: courtsInUse[match.court - 1] ?? courtsInUse[courtIndex] ?? `Court ${match.court}`,
         teamA: [
@@ -160,12 +225,13 @@ export function planRankedSchedule(
   courtNames: string[],
   totalGames = RANKED_AMERICANO_GAMES,
   scheduleSeed = 0,
+  slotCount?: number,
 ): GameRound[] {
-  const ranked = sortRosterByRank(roster)
-  const n = ranked.length
+  const n = slotCount ?? sortRosterByRank(roster).length
   if (n < 4 || n % 4 !== 0) return []
 
+  const padded = padRosterToTarget(roster, n)
   const seed = Math.max(0, Math.floor(scheduleSeed))
   const rounds = solveBalancedSchedule(n, totalGames, seed)
-  return roundsToGames(ranked, rounds, courtNames)
+  return roundsToGames(padded, rounds, courtNames)
 }

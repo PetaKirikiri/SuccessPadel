@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { IconAdd } from './ButtonIcons'
 import { FriendlyDeleteConfirm } from './FriendlyDeleteConfirm'
-import { FriendlyGameCard } from './FriendlyGameCard'
+import { SessionInviteCard } from './SessionInviteCard'
 import { GamesHubEmpty, GamesHubLoading } from './GamesHubView'
 import { useAuth } from '../hooks/useAuth'
 import { useLineClientProfile } from '../hooks/useLineClientProfile'
@@ -77,7 +77,8 @@ export function FriendlyGamesList({
       <ul className="m-0 w-full min-w-0 max-w-full list-none space-y-4 p-0">
         {games.map((game) => (
           <li key={game.id} className="w-full min-w-0 max-w-full">
-            <FriendlyGameCard
+            <SessionInviteCard
+              kind="friendly"
               game={game}
               to={`/friendly/${game.id}`}
               currentUserId={user?.id}

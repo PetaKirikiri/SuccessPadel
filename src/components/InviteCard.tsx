@@ -2,19 +2,18 @@ import type { ReactNode } from 'react'
 import { IconDelete, IconEdit, IconShare } from './ButtonIcons'
 import { Link } from 'react-router-dom'
 import { FriendlyRosterList } from './FriendlyRosterList'
-import { FriendlyRuleSettings } from './FriendlyRuleSettings'
-import type { FriendlyRosterSlot, FriendlyRuleChip } from '../lib/friendlyGameDisplay'
+import { RuleChipGrid } from './RuleChipGrid'
+import type { RosterSlot, RuleChip } from '../lib/friendlyGameDisplay'
+import { genderFromRuleChips, inviteBannerForGender } from '../lib/inviteBanners'
 
-export type GameInviteCardProps = {
+export type InviteCardProps = {
   title: string
   dateLine: string
   timeLine: string
   detailTo: string
-  slots: FriendlyRosterSlot[]
+  slots: RosterSlot[]
   currentUserId?: string | null
-  ruleChips?: FriendlyRuleChip[]
-  skillLevel?: string | null
-  gender?: string | null
+  ruleChips?: RuleChip[]
   statusLine?: string | null
   onShare?: () => void
   shareFeedback?: string | null
@@ -30,12 +29,14 @@ export type GameInviteCardProps = {
   belowLink?: ReactNode
   footer?: ReactNode
   className?: string
+  /** Men / Women / Mixed — selects the top banner when a match exists. */
+  gender?: string | null
 }
 
 const adminCornerBtnClass =
   'flex h-9 w-9 items-center justify-center rounded-xl border border-brand-border bg-brand-bg-alt shadow-sm active:scale-[0.98]'
 
-export function GameInviteCard({
+export function InviteCard({
   title,
   dateLine,
   timeLine,
@@ -43,8 +44,6 @@ export function GameInviteCard({
   slots,
   currentUserId,
   ruleChips = [],
-  skillLevel,
-  gender,
   statusLine,
   onShare,
   shareFeedback,
@@ -60,7 +59,8 @@ export function GameInviteCard({
   belowLink,
   footer,
   className = '',
-}: GameInviteCardProps) {
+  gender = null,
+}: InviteCardProps) {
   const dateTitleRow = (
     <div className="flex min-w-0 items-start justify-between gap-2 sm:gap-3">
       <p className="min-w-0 flex-1 break-words font-display text-base font-bold leading-tight text-brand-primary sm:text-xl md:text-2xl">
@@ -101,27 +101,10 @@ export function GameInviteCard({
     </div>
   ) : null
 
-  const divisionChips =
-    skillLevel || gender ? (
-      <div className="mt-1 flex flex-wrap gap-1.5">
-        {skillLevel ? (
-          <span className="rounded-full bg-brand-bg-alt px-2 py-0.5 text-[10px] font-semibold text-brand-accent">
-            {skillLevel}
-          </span>
-        ) : null}
-        {gender ? (
-          <span className="rounded-full border border-brand-border px-2 py-0.5 text-[10px] font-semibold text-brand-sage">
-            {gender}
-          </span>
-        ) : null}
-      </div>
-    ) : null
-
   const scheduleBlock = (
     <>
       {dateTitleRow}
       {timeRow}
-      {divisionChips}
       {statusLine ? (
         <p className="text-xs font-semibold tabular-nums text-brand-accent">{statusLine}</p>
       ) : null}
@@ -135,7 +118,7 @@ export function GameInviteCard({
           <div className="flex min-w-0 max-w-full flex-1 flex-col justify-center gap-0.5 sm:gap-1">
             {scheduleBlock}
           </div>
-          <FriendlyRuleSettings chips={ruleChips} inline />
+          <RuleChipGrid chips={ruleChips} inline />
         </div>
       ) : (
         <div className="min-w-0 space-y-0.5">{scheduleBlock}</div>
@@ -149,10 +132,23 @@ export function GameInviteCard({
 
   const showAdminActions = (canEdit && editTo) || (canDelete && onDelete)
 
+  const bannerSrc = inviteBannerForGender(gender ?? genderFromRuleChips(ruleChips))
+  const banner = bannerSrc ? (
+    <div className="w-full overflow-hidden bg-brand-bg-alt" style={{ aspectRatio: '1024 / 344' }}>
+      <img
+        src={bannerSrc}
+        alt=""
+        className="h-full w-full object-cover object-[center_35%]"
+        decoding="async"
+      />
+    </div>
+  ) : null
+
   return (
     <article
       className={`relative w-full min-w-0 max-w-full overflow-hidden rounded-2xl border-2 border-brand-primary/25 bg-brand-surface shadow-[0_4px_16px_-4px_rgba(96,45,36,0.22)] ${className}`}
     >
+      {banner}
       <div className="relative min-w-0">
         <Link to={detailTo} className="block min-w-0 touch-manipulation overflow-hidden transition active:opacity-80">
           {inner}

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ensureCompetitionScheduleSaved } from '../lib/persistCompetitionSchedule'
-import { CompetitionCourtBoard } from '../components/CompetitionCourtBoard'
+import { GameBoard } from '../components/GameBoard'
 import { CompetitionLeaderboard } from '../components/CompetitionLeaderboard'
 import { CompetitionPlayStandardView } from '../components/competitionPlay/CompetitionPlayStandardView'
 import { CompetitionPlayTvView } from '../components/competitionPlay/CompetitionPlayTvView'
@@ -33,7 +33,6 @@ type PlayTab = PlayViewTab
 export function CompetitionPlay() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const location = useLocation()
   const [searchParams] = useSearchParams()
   const { t } = useTranslation()
   const { profile, user } = useAuth()
@@ -60,7 +59,7 @@ export function CompetitionPlay() {
   } = usePublicCompetition(id, {
     pollMs: 20_000,
   })
-  const { columns, liveCourtsByGame, roundIdForGame, courtIdByLabel, scoreUnit, playTo, matchForCourt, isDuo, teams, layoutValid } =
+  const { columns, liveCourtsByGame, roundIdForGame, courtIdByLabel, scoreUnit, playTo, matchForCourt, isDuo, teams } =
     useCompetitionBoard(session, rounds, roster, clubCourts, courtMatches)
   const [now, setNow] = useState(Date.now())
   useEffect(() => {
@@ -154,37 +153,20 @@ export function CompetitionPlay() {
   )
 
   const started = Boolean(session?.competition_started_at)
-  const finished = session?.status === 'complete'
-  const [starting, setStarting] = useState(false)
-  const [setupError, setSetupError] = useState<string | null>(
-    () => (location.state as { setupError?: string } | null)?.setupError ?? null,
-  )
   const autoStartAttemptedRef = useRef(false)
 
   useEffect(() => {
     if (!isAdmin || !id || !session || started || loading || autoStartAttemptedRef.current) return
     if (session.status !== 'open') return
     autoStartAttemptedRef.current = true
-    setStarting(true)
     void (async () => {
-      const scheduleErr = await ensureCompetitionScheduleSaved(id, session, roster)
-      if (scheduleErr) {
-        setSetupError(scheduleErr)
-        setStarting(false)
-        return
-      }
+      await ensureCompetitionScheduleSaved(id, session, roster)
       const { error: startErr } = await supabase.rpc('start_competition', { p_session_id: id })
-      setStarting(false)
-      if (startErr) {
-        setSetupError(startErr.message)
-        return
-      }
-      void refresh(true)
+      if (!startErr) void refresh(true)
     })()
   }, [isAdmin, id, session, roster, started, loading, refresh])
 
   const canScore = started
-  const showGamesBoard = columns.length > 0 || (finished && rounds.length > 0)
   const standings = liveStandings
 
   const complete = isCompetitionComplete(session, rounds, courtMatches)
@@ -235,48 +217,39 @@ export function CompetitionPlay() {
       <p className="px-3 py-6 text-center text-sm text-brand-muted">{t('leaderboard.standings')}</p>
     )
 
-  const gamesBody = showGamesBoard ? (
-    <CompetitionCourtBoard
-      competitionId={id}
-      columns={columns}
-      mode={started ? 'scoring' : 'preview'}
-      activeGameNumber={activeRound?.round_number}
-      scoreUnit={scoreUnit}
-      playTo={playTo}
-      liveCourtsByGame={liveCourtsByGame}
-      roundIdForGame={roundIdForGame}
-      courtIdByLabel={courtIdByLabel}
-      canLog={canScore}
-      matchForCourt={matchForCourt}
-      onSubmitScores={handleSubmitScores}
-      now={now}
-      gameMinutes={schedule.gameMinutes}
-      roundTimesByGame={roundTimesByGame}
-      roundStatusByGame={roundStatusByGame}
-      currentUserId={user?.id ?? null}
-      currentUserAvatarUrl={headerAvatar}
-      isAdmin={isAdmin}
-      duoTeamLabels={isDuo ? duoTeamLabels : undefined}
-    />
-  ) : !started && isAdmin && !layoutValid ? (
-    <div className="game-card space-y-3 px-3 py-4 text-center text-sm">
-      <p className="text-brand-muted">
-        Need a full roster in multiples of 4 (e.g. 16 players) to show match-ups.
-      </p>
-      {id ? (
-        <Link to={`/competitions/${id}/edit`} className="brand-btn inline-block px-4 py-2">
-          Edit competition
-        </Link>
-      ) : null}
-    </div>
-  ) : started ? (
-    <p className="game-card px-3 py-4 text-sm text-brand-muted">
-      {t('competition.courtLayoutNotReady')}
-    </p>
-  ) : null
-
   const viewAlongUrl = id ? competitionViewAlongUrl(id) : null
-  const showTvQr = Boolean(started && viewAlongUrl && standings.length > 0)
+
+  const gamesBody =
+    columns.length > 0 ? (
+      <GameBoard
+        competitionId={id}
+        columns={columns}
+        mode={started ? 'scoring' : 'preview'}
+        activeGameNumber={activeRound?.round_number}
+        scoreUnit={scoreUnit}
+        playTo={playTo}
+        liveCourtsByGame={liveCourtsByGame}
+        roundIdForGame={roundIdForGame}
+        courtIdByLabel={courtIdByLabel}
+        canLog={canScore}
+        matchForCourt={matchForCourt}
+        onSubmitScores={handleSubmitScores}
+        now={now}
+        gameMinutes={schedule.gameMinutes}
+        roundTimesByGame={roundTimesByGame}
+        roundStatusByGame={roundStatusByGame}
+        currentUserId={user?.id ?? null}
+        currentUserAvatarUrl={headerAvatar}
+        isAdmin={isAdmin}
+        duoTeamLabels={isDuo ? duoTeamLabels : undefined}
+        tvCarousel={isTvLayout}
+        viewAlongUrl={isTvLayout ? viewAlongUrl : null}
+      />
+    ) : started ? (
+      <p className="game-card px-3 py-4 text-sm text-brand-muted">
+        {t('competition.courtLayoutNotReady')}
+      </p>
+    ) : null
 
   const loadOrError = (
     <>
@@ -288,16 +261,6 @@ export function CompetitionPlay() {
         </p>
       ) : null}
       {error && session ? <p className="text-center text-sm text-red-600">{error}</p> : null}
-      {setupError ? (
-        <div className="game-card space-y-2 px-3 py-4 text-center text-sm">
-          <p className="text-red-600">{setupError}</p>
-          {isAdmin && id ? (
-            <Link to={`/competitions/${id}/edit`} className="brand-btn inline-block px-4 py-2">
-              Edit competition
-            </Link>
-          ) : null}
-        </div>
-      ) : null}
     </>
   )
 
@@ -305,8 +268,6 @@ export function CompetitionPlay() {
     t,
     loadOrError,
     session,
-    started,
-    starting: isAdmin && starting,
     gamesBody,
   }
 
@@ -335,8 +296,6 @@ export function CompetitionPlay() {
           <CompetitionPlayTvView
             {...sharedViewProps}
             leaderboardBody={leaderboardTv}
-            viewAlongUrl={viewAlongUrl}
-            showQr={showTvQr}
           />
         </div>
       ) : (

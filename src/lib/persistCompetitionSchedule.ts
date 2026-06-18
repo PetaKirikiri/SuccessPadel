@@ -5,10 +5,12 @@ import { solveBalancedSchedule } from './balancedSchedule'
 import type { CompetitionPlayer } from '../hooks/useCompetitions'
 import {
   buildStoredSchedule,
+  padRosterToTarget,
   RANKED_SCHEDULE_VERSION,
   scheduleSeedFromSession,
   sortRosterByRank,
   storedScheduleFromConfig,
+  targetPlayerCount,
 } from './rankedSchedule'
 import { supabase } from './supabaseClient'
 import type { GameSession, ScoringConfig } from './types'
@@ -45,25 +47,27 @@ export async function ensureCompetitionScheduleSaved(
   const ranked = sortRosterByRank(roster)
   const { totalGames } = americanoScheduleFromSession(session)
   const baseConfig = (session.scoring_config ?? {}) as ScoringConfig
+  const isDuo = isDuoCompetition(session)
+  const slotCount = targetPlayerCount(session, ranked.length, isDuo)
+
+  if (slotCount < 4 || slotCount % 4 !== 0) {
+    return null
+  }
 
   let schedule: ReturnType<typeof buildStoredSchedule> = []
-  if (isDuoCompetition(session)) {
+  if (isDuo) {
     const teams = teamsFromConfig(session.scoring_config)
-    if (teams.length < 2 || ranked.length < 12) {
-      return 'Need 12 players (6 teams) before match-ups can be saved.'
-    }
+    if (teams.length < 2) return null
     schedule = buildDuoStoredSchedule(
       teams.map((t) => ({ label: t.label, rosterIds: t.roster_ids })),
       totalGames || DUO_GAME_COUNT,
       seed,
     )
   } else {
-    if (ranked.length < 4 || ranked.length % 4 !== 0) {
-      return 'Need a full roster in multiples of 4 (e.g. 16 players) before match-ups can be saved.'
-    }
+    const padded = padRosterToTarget(ranked, slotCount)
     schedule = buildStoredSchedule(
-      ranked,
-      solveBalancedSchedule(ranked.length, totalGames, seed),
+      padded,
+      solveBalancedSchedule(slotCount, totalGames, seed),
     )
   }
 

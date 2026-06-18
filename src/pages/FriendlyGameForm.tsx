@@ -9,8 +9,8 @@ import {
 } from '../components/ButtonIcons'
 import { shellTabClass } from '../components/ShellTabIcons'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
-import { CompetitionLayoutPreview } from '../components/CompetitionLayoutPreview'
-import { FriendlyRuleSettings } from '../components/FriendlyRuleSettings'
+import { GameBoardPreview } from '../components/GameBoardPreview'
+import { SetupCard } from '../components/cards/SetupCard'
 import { MemberPlayerSlots, type PadelPlayerOption } from '../components/MemberPlayerSlots'
 import { useAuth } from '../hooks/useAuth'
 import { useFriendlyFormDraft } from '../hooks/useFriendlyFormDraft'
@@ -21,7 +21,7 @@ import {
   parseClubTimeSlotValue,
   scheduleHalfHourSlots,
 } from '../lib/courtSchedule'
-import { lockedCompetitionRuleChips } from '../lib/lockedCompetitionFormat'
+import { presetRuleChips } from '../lib/competitionFormatPresets'
 import {
   buildCompetitionAutoTitle,
   GENDERS,
@@ -243,7 +243,7 @@ export function FriendlyGameForm() {
     if (playMode === 'organized' && !titleEdited) setTitle(autoTitle)
   }, [autoTitle, playMode, titleEdited])
 
-  const ruleChips = useMemo(() => lockedCompetitionRuleChips(t), [t])
+  const ruleChips = useMemo(() => presetRuleChips('singles', t), [t])
 
   const previewSession = useMemo(
     () => friendlyOrganizedSession(organizedConfig),
@@ -348,11 +348,15 @@ export function FriendlyGameForm() {
         {t('common.back')}
       </Link>
 
-      <section className="game-card space-y-3" onBlur={isEdit ? undefined : persistNow}>
-        {isEdit ? (
-          <p className="text-sm font-semibold text-brand-primary">{t('friendly.editTitle')}</p>
-        ) : null}
-
+      <SetupCard
+        ruleChips={playMode === 'organized' ? ruleChips : []}
+        onBlur={isEdit ? undefined : persistNow}
+        header={
+          isEdit ? (
+            <p className="text-sm font-semibold text-brand-primary">{t('friendly.editTitle')}</p>
+          ) : null
+        }
+      >
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
@@ -407,7 +411,6 @@ export function FriendlyGameForm() {
           </label>
         ) : (
           <>
-            <FriendlyRuleSettings chips={ruleChips} />
             <div className="grid grid-cols-2 gap-2">
               <label className="block min-w-0 space-y-1">
                 <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
@@ -511,7 +514,7 @@ export function FriendlyGameForm() {
           <>
             {previewGames && previewGames.length > 0 ? (
               <div className="overflow-hidden rounded-lg border border-brand-border/60">
-                <CompetitionLayoutPreview
+                <GameBoardPreview
                   session={previewSession}
                   games={previewGames}
                   eventStartsAt={startsAtIso}
@@ -549,7 +552,7 @@ export function FriendlyGameForm() {
                 ? t('friendly.startMatch')
                 : t('friendly.accept')}
         </button>
-      </section>
+      </SetupCard>
     </div>
   )
 }

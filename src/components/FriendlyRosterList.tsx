@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from '../hooks/useTranslation'
 import { firstDisplayName } from '../lib/leaderboardEntries'
-import type { FriendlyRosterSlot } from '../lib/friendlyGameDisplay'
+import type { RosterSlot } from '../lib/friendlyGameDisplay'
 import { PlayerNameLink } from './PlayerNameLink'
 
 type Props = {
-  slots: FriendlyRosterSlot[]
+  slots: RosterSlot[]
   currentUserId?: string | null
   competitionId?: string | null
 }

@@ -9,7 +9,7 @@ import {
 import { totalScheduleMinutes } from './competitionLayout'
 import { RANKED_AMERICANO_GAMES, RANKED_GAME_MINUTES } from './rankedSchedule'
 import type { TranslateFn } from '../i18n'
-import type { FriendlyRuleChip } from './friendlyGameDisplay'
+import type { RuleChip } from './friendlyGameDisplay'
 import type { GameSession, ScoringConfig } from './types'
 
 export type CompetitionPlayerMode = 'singles' | 'duos'
@@ -74,7 +74,7 @@ export function competitionFormatPreset(mode: CompetitionPlayerMode) {
   return mode === 'duos' ? DUO_COMPETITION : SINGLES_COMPETITION
 }
 
-export function competitionRuleChips(mode: CompetitionPlayerMode, t: TranslateFn): FriendlyRuleChip[] {
+export function presetRuleChips(mode: CompetitionPlayerMode, t: TranslateFn): RuleChip[] {
   const preset = competitionFormatPreset(mode)
   const formatLabel =
     mode === 'duos' ? t('competition.formatDuos') : ruleFormatLabel('americano')
@@ -87,8 +87,9 @@ export function competitionRuleChips(mode: CompetitionPlayerMode, t: TranslateFn
     },
     {
       key: 'scoring',
-      label: t('friendly.chip.maxGamesPerSide', { n: preset.americanoTarget }),
-      hintKey: 'friendly.hint.scoring',
+      label: t('friendly.chip.firstToGames', { n: preset.americanoTarget }),
+      hintKey: 'friendly.hint.scoringFirstTo',
+      hintParams: { n: preset.americanoTarget },
       icon: 'scoring',
     },
     {

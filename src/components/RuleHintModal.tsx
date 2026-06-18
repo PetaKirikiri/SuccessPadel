@@ -1,14 +1,14 @@
 import { createPortal } from 'react-dom'
-import type { FriendlyRuleChip } from '../lib/friendlyGameDisplay'
+import type { RuleChip } from '../lib/friendlyGameDisplay'
 import { useTranslation } from '../hooks/useTranslation'
-import { FriendlyRuleChipIcon } from './FriendlyRuleChipIcon'
+import { RuleChipIcon } from './RuleChipIcon'
 
 type Props = {
-  chip: FriendlyRuleChip
+  chip: RuleChip
   onClose: () => void
 }
 
-export function FriendlyRuleHintModal({ chip, onClose }: Props) {
+export function RuleHintModal({ chip, onClose }: Props) {
   const { t } = useTranslation()
 
   return createPortal(
@@ -20,20 +20,22 @@ export function FriendlyRuleHintModal({ chip, onClose }: Props) {
         className="w-full max-w-sm rounded-2xl bg-brand-surface p-4 shadow-xl"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
-        aria-labelledby="friendly-rule-hint-title"
+        aria-labelledby="rule-hint-title"
       >
         <div className="mb-3 flex items-start gap-3">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-brand-border/70 bg-white">
-            <FriendlyRuleChipIcon icon={chip.icon} className="h-6 w-6 text-brand-accent" />
+            <RuleChipIcon icon={chip.icon} className="h-6 w-6 text-brand-accent" />
           </span>
           <div className="min-w-0 flex-1">
             <h2
-              id="friendly-rule-hint-title"
+              id="rule-hint-title"
               className="font-display text-lg font-semibold leading-snug text-brand-primary"
             >
               {chip.label}
             </h2>
-            <p className="mt-2 text-sm leading-relaxed text-brand-text">{t(chip.hintKey)}</p>
+            <p className="mt-2 text-sm leading-relaxed text-brand-text">
+              {t(chip.hintKey, chip.hintParams)}
+            </p>
           </div>
           <button
             type="button"

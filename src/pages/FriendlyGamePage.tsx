@@ -5,7 +5,7 @@ import { AppShellPanel } from '../components/AppShellPanel'
 import { AppTopBar } from '../components/AppTopBar'
 import { PlayViewTabs, type PlayViewTab } from '../components/PlayViewTabs'
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { CompetitionLayoutPreview } from '../components/CompetitionLayoutPreview'
+import { GameBoardPreview } from '../components/GameBoardPreview'
 import { CompetitionLeaderboard } from '../components/CompetitionLeaderboard'
 import { LeaderboardViewAlongQrPanel } from '../components/LeaderboardViewAlongQrPanel'
 import { useAuth } from '../hooks/useAuth'
@@ -308,7 +308,7 @@ export function FriendlyGamePage() {
   const gamesContent = (
     <>
       {showPlayTabs ? (
-        <CompetitionLayoutPreview
+        <GameBoardPreview
           session={previewSession}
           games={previewGames}
           eventStartsAt={startsAtIso}
