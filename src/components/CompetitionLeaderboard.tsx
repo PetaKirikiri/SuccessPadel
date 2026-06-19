@@ -20,6 +20,7 @@ import {
 } from '../lib/leaderboardEntries'
 import { isDuoLeaderboardEntry } from '../lib/leaderboardFilters'
 import { openPlayerProfile } from '../lib/openPlayerProfile'
+import { LeaderboardShareButton, type LeaderboardShareRow } from './LeaderboardShareButton'
 
 export type LeaderboardEntry = {
   profile_id: string
@@ -52,6 +53,7 @@ type Props = {
   showAchievements?: boolean
   flushBottom?: boolean
   embedded?: boolean
+  shareTitle?: string | null
 }
 
 type AchievementInfo = { iconKey: string; emoji: string; labelKey: string }
@@ -281,6 +283,7 @@ export function CompetitionLeaderboard({
   showAchievements = false,
   flushBottom = false,
   embedded = false,
+  shareTitle = null,
 }: Props) {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -319,6 +322,24 @@ export function CompetitionLeaderboard({
   const nameColumnLabel =
     showDuoToggle && duoView === 'teams' ? t('leaderboard.teams') : t('leaderboard.player')
 
+  const shareRows = useMemo((): LeaderboardShareRow[] => {
+    if (!shareTitle) return []
+    return displayEntries.slice(0, 15).map((entry, i) => {
+      const source = activeEntries[i]!
+      const badges = badgesFor(source)
+      return {
+        rank: standingsDisplayRank(activeEntries, i),
+        name: entry.display_name,
+        points: entry.total_points,
+        avatarUrl: entry.avatar_url,
+        badges: badges.map((badge) => ({
+          iconKey: badge.key,
+          emoji: badge.icon,
+        })),
+      }
+    })
+  }, [shareTitle, displayEntries, activeEntries, badgesFor])
+
   const shellClass = embedded
     ? compact
       ? 'flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-brand-surface'
@@ -327,6 +348,22 @@ export function CompetitionLeaderboard({
 
   return (
     <div className={shellClass}>
+      {shareTitle && shareRows.length > 0 ? (
+        <div
+          className={`flex items-center justify-end border-b border-brand-border/60 ${
+            compact ? 'px-2 py-2' : 'px-3 py-2 md:px-4'
+          }`}
+        >
+          <LeaderboardShareButton
+            title={shareTitle}
+            rows={shareRows}
+            scoreUnit={unit}
+            playerColumnLabel={nameColumnLabel}
+            t={t}
+            compact={compact}
+          />
+        </div>
+      ) : null}
       {headerExtra}
       {showDuoToggle ? (
         <div className="flex gap-2 border-b border-brand-border/60 px-3 py-2 md:px-4">

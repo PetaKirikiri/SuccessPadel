@@ -1,6 +1,6 @@
 import { buildDuoStoredSchedule } from './duoRoundRobinSchedule'
 import { DUO_GAME_COUNT, teamsFromConfig, isDuoCompetition } from './competitionFormatPresets'
-import { americanoScheduleFromSession } from './competitionLayout'
+import { americanoScheduleFromSession, duoGameCountFromTeamCount } from './competitionLayout'
 import { solveBalancedSchedule } from './balancedSchedule'
 import type { CompetitionPlayer } from '../hooks/useCompetitions'
 import {
@@ -14,6 +14,38 @@ import {
 } from './rankedSchedule'
 import { supabase } from './supabaseClient'
 import type { GameSession, ScoringConfig } from './types'
+
+export async function saveCompetitionTeamLabel(
+  sessionId: string,
+  scoringConfig: ScoringConfig | null | undefined,
+  teamIndex: number,
+  pairId: string | null | undefined,
+  label: string,
+): Promise<string | null> {
+  const trimmed = label.trim() || `Team ${teamIndex + 1}`
+
+  if (pairId) {
+    const { error } = await supabase
+      .from('session_pairs')
+      .update({ pair_label: trimmed })
+      .eq('id', pairId)
+    if (error) return error.message
+  }
+
+  const teams = teamsFromConfig(scoringConfig)
+  if (teamIndex < teams.length) {
+    const nextTeams = teams.map((team, index) =>
+      index === teamIndex ? { ...team, label: trimmed } : team,
+    )
+    const { error } = await supabase.rpc('save_competition_scoring_config', {
+      p_session_id: sessionId,
+      p_scoring_config: { ...(scoringConfig ?? {}), teams: nextTeams },
+    })
+    if (error) return error.message
+  }
+
+  return null
+}
 
 export async function saveScheduleForSession(
   sessionId: string,
@@ -60,7 +92,7 @@ export async function ensureCompetitionScheduleSaved(
     if (teams.length < 2) return null
     schedule = buildDuoStoredSchedule(
       teams.map((t) => ({ label: t.label, rosterIds: t.roster_ids })),
-      totalGames || DUO_GAME_COUNT,
+      totalGames || duoGameCountFromTeamCount(teams.length) || DUO_GAME_COUNT,
       seed,
     )
   } else {

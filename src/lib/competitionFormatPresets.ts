@@ -6,8 +6,8 @@ import {
   type Gender,
   type SkillLevel,
 } from './competitionPresets'
-import { americanoScheduleUsedMinutes } from './competitionLayout'
-import { RANKED_AMERICANO_GAMES, RANKED_GAME_MINUTES } from './rankedSchedule'
+import { americanoScheduleUsedMinutes, playersFromCourtCount, teamsFromCourtCount } from './competitionLayout'
+import { RANKED_AMERICANO_GAMES, RANKED_GAME_MINUTES } from './competitionScheduleConstants'
 import type { TranslateFn } from '../i18n'
 import type { RuleChip } from './friendlyGameDisplay'
 import type { GameSession, ScoringConfig } from './types'
@@ -22,8 +22,8 @@ export type CompetitionTeamConfig = {
 export const DUO_TEAM_COUNT = 6
 export const DUO_PLAYER_COUNT = 12
 export const DUO_COURT_COUNT = 3
-export const DUO_GAME_COUNT = 6
-export const DUO_GAME_MINUTES = 16
+export const DUO_GAME_COUNT = 5
+export const DUO_GAME_MINUTES = 20
 export const DUO_BREAK_MINUTES = 4
 export const DUO_LEAGUE_WEEKS = 6
 
@@ -74,17 +74,39 @@ export function competitionFormatPreset(mode: CompetitionPlayerMode) {
   return mode === 'duos' ? DUO_COMPETITION : SINGLES_COMPETITION
 }
 
-export function presetRuleChips(mode: CompetitionPlayerMode, t: TranslateFn): RuleChip[] {
+export function presetRuleChips(
+  mode: CompetitionPlayerMode,
+  t: TranslateFn,
+  opts?: { gameCount?: number; courtCount?: number },
+): RuleChip[] {
   const preset = competitionFormatPreset(mode)
+  const gameCount = opts?.gameCount ?? preset.gameCount
+  const courts = opts?.courtCount
   const formatLabel =
     mode === 'duos' ? t('competition.formatDuos') : ruleFormatLabel('americano')
-  return [
+  const chips: RuleChip[] = [
     {
       key: 'format',
       label: formatLabel,
       hintKey: mode === 'duos' ? 'competition.hintDuosFormat' : 'friendly.hint.format',
       icon: mode === 'duos' ? 'rounds' : 'americano',
     },
+  ]
+  if (courts != null) {
+    const players = playersFromCourtCount(courts)
+    chips.push({
+      key: 'courts',
+      label: t('competition.chipCourts', { n: courts }),
+      hintKey:
+        mode === 'duos' ? 'competition.courtsTeamsPlayers' : 'competition.courtsPlayers',
+      hintParams:
+        mode === 'duos'
+          ? { courts, teams: teamsFromCourtCount(courts), players }
+          : { courts, players },
+      icon: 'rounds',
+    })
+  }
+  chips.push(
     {
       key: 'scoring',
       label: t('friendly.chip.firstToGames', { n: preset.americanoTarget }),
@@ -94,7 +116,7 @@ export function presetRuleChips(mode: CompetitionPlayerMode, t: TranslateFn): Ru
     },
     {
       key: 'rounds',
-      label: t('friendly.chip.matches', { n: preset.gameCount }),
+      label: t('friendly.chip.matches', { n: gameCount }),
       hintKey: 'friendly.hint.rounds',
       icon: 'rounds',
     },
@@ -110,22 +132,33 @@ export function presetRuleChips(mode: CompetitionPlayerMode, t: TranslateFn): Ru
       hintKey: 'friendly.hint.break',
       icon: 'break',
     },
-  ]
+  )
+  return chips
 }
 
-export function competitionEventMinutes(mode: CompetitionPlayerMode): number {
+export function competitionEventMinutes(
+  mode: CompetitionPlayerMode,
+  gameCount?: number,
+): number {
   const preset = competitionFormatPreset(mode)
-  return americanoScheduleUsedMinutes(preset.gameCount, preset.gameMinutes, preset.breakMinutes)
+  const games = gameCount ?? preset.gameCount
+  return americanoScheduleUsedMinutes(games, preset.gameMinutes, preset.breakMinutes)
 }
 
 export function competitionScoringConfig(
   mode: CompetitionPlayerMode,
-  extra?: { teams?: CompetitionTeamConfig[]; leagueId?: string; leagueWeek?: number },
+  extra?: {
+    teams?: CompetitionTeamConfig[]
+    leagueId?: string
+    leagueWeek?: number
+    gameCount?: number
+  },
 ): ScoringConfig {
   const preset = competitionFormatPreset(mode)
+  const gameCount = extra?.gameCount ?? preset.gameCount
   return {
     ...buildAmericanoScoringConfig(preset.americanoTarget, {
-      games: preset.gameCount,
+      games: gameCount,
       breakMinutes: preset.breakMinutes,
       gameMinutes: preset.gameMinutes,
     }),
@@ -138,13 +171,14 @@ export function competitionScoringConfig(
 
 export function competitionSessionFields(
   mode: CompetitionPlayerMode,
-  opts: { skillLevel: SkillLevel; gender: Gender },
+  opts: { skillLevel: SkillLevel; gender: Gender; targetPlayers: number; gameCount?: number },
 ) {
   const preset = competitionFormatPreset(mode)
-  const scoring_config = competitionScoringConfig(mode)
+  const gameCount = opts.gameCount ?? preset.gameCount
+  const scoring_config = competitionScoringConfig(mode, { gameCount })
   const rules =
     mode === 'duos'
-      ? `Duos · ${preset.americanoTarget} games · fixed pairs`
+      ? `Duos · ${preset.americanoTarget} games · fixed pairs · ${gameCount} rounds`
       : buildRulesText('americano', null, {
           target: preset.americanoTarget,
           unit: 'games',
@@ -154,8 +188,8 @@ export function competitionSessionFields(
     skill_level: opts.skillLevel,
     gender: opts.gender,
     rules,
-    target_players: preset.targetPlayers,
-    max_players: preset.targetPlayers,
+    target_players: opts.targetPlayers,
+    max_players: opts.targetPlayers,
     player_cap_mode: 'strict' as const,
     partnership_mode:
       mode === 'duos' ? ('fixed_pairs' as const) : rulesToPartnershipMode('americano', null),

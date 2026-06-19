@@ -1,17 +1,111 @@
 import type { CompetitionPlayer } from '../hooks/useCompetitions'
 import { rosterDisplayName } from '../hooks/useCompetitions'
+import {
+  formatHourLabel,
+  LAST_SLOT_START_HOUR,
+  OPEN_HOUR,
+  toIsoTimestamp,
+} from './courtSchedule'
 import type { GameSession, ScoringConfig } from './types'
 
 export const PLAYERS_PER_COURT = 4
+export const TEAMS_PER_COURT = 2
+export const COURT_COUNT_OPTIONS = [1, 2, 3, 4] as const
+export type CourtCount = (typeof COURT_COUNT_OPTIONS)[number]
+
+export function playersFromCourtCount(courts: number): number {
+  return Math.max(1, Math.min(4, courts)) * PLAYERS_PER_COURT
+}
+
+export function teamsFromCourtCount(courts: number): number {
+  return Math.max(1, Math.min(4, courts)) * TEAMS_PER_COURT
+}
+
+/** Full round-robin: each team plays every other team once. */
+export function duoGameCountFromTeamCount(teamCount: number): number {
+  return Math.max(1, teamCount - 1)
+}
+
+export function duoGameCountFromCourtCount(courts: number): number {
+  return duoGameCountFromTeamCount(teamsFromCourtCount(courts))
+}
+
+export function courtCountFromPlayers(players: number): CourtCount {
+  const courts = Math.floor(players / PLAYERS_PER_COURT)
+  if (courts <= 1) return 1
+  if (courts >= 4) return 4
+  return courts as CourtCount
+}
+
+export const DEFAULT_SINGLES_COURT_COUNT: CourtCount = 4
+export const DEFAULT_DUO_COURT_COUNT: CourtCount = 3
 export const DEFAULT_AMERICANO_GAMES = 7
 export const AMERICANO_GAME_COUNTS = [5, 6, 7, 8, 9, 10, 11] as const
 export const BREAK_MINUTE_OPTIONS = [2, 3, 4, 5] as const
 export const DEFAULT_BREAK_MINUTES = 3
 export const DEFAULT_GAME_MINUTES = 14
-/** Minutes before game 1 so the last game ends on the event hour (e.g. 8:00). */
+/** Minutes before game 1; play starts at :04 / :34 past the hour. */
 export const AMERICANO_SCHEDULE_LEAD_IN_MINUTES = 4
 export const COMPETITION_BREAK_MINUTES = DEFAULT_BREAK_MINUTES
-export { RANKED_AMERICANO_GAMES, RANKED_GAME_MINUTES } from './rankedSchedule'
+
+export type CompetitionPlayStartMinute = 4 | 34
+
+export type CompetitionStartSlot = {
+  hour: number
+  minute: CompetitionPlayStartMinute
+  label: string
+}
+
+/** Start times shown in the form — always :04 or :34 (4 min past the hour or half-hour). */
+export function scheduleCompetitionStartSlots(): CompetitionStartSlot[] {
+  const slots: CompetitionStartSlot[] = []
+  for (let h = OPEN_HOUR; h <= LAST_SLOT_START_HOUR; h += 1) {
+    slots.push({ hour: h, minute: 4, label: formatHourLabel(h, 4) })
+    if (h < LAST_SLOT_START_HOUR) {
+      slots.push({ hour: h, minute: 34, label: formatHourLabel(h, 34) })
+    }
+  }
+  return slots
+}
+
+export function snapToCompetitionPlayStart(
+  hour: number,
+  minute: number,
+): { hour: number; minute: CompetitionPlayStartMinute } {
+  if (minute < 15) return { hour, minute: 4 }
+  if (minute < 45) return { hour, minute: 34 }
+  return { hour: hour + 1, minute: 4 }
+}
+
+export function parseCompetitionStartSlotValue(value: string): {
+  hour: number
+  minute: CompetitionPlayStartMinute
+} {
+  const [hRaw, mRaw] = value.split(':')
+  const hour = Number(hRaw)
+  const minute = Number(mRaw)
+  if (!Number.isFinite(hour)) return { hour: 18, minute: 4 }
+  if (minute === 34) return { hour, minute: 34 }
+  return { hour, minute: 4 }
+}
+
+export function competitionAnchorMinute(playMinute: CompetitionPlayStartMinute): number {
+  return playMinute - AMERICANO_SCHEDULE_LEAD_IN_MINUTES
+}
+
+export function competitionStartsAtAnchorIso(
+  day: string,
+  hour: number,
+  playMinute: CompetitionPlayStartMinute,
+): string {
+  return toIsoTimestamp(day, hour, competitionAnchorMinute(playMinute))
+}
+
+export function competitionPlayStartFromAnchorIso(iso: string): Date {
+  return new Date(
+    new Date(iso).getTime() + AMERICANO_SCHEDULE_LEAD_IN_MINUTES * 60_000,
+  )
+}
 
 export type ScheduleSlot = {
   gameNumber: number

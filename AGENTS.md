@@ -22,6 +22,16 @@
 
 **TestFlight build:** `npm run ios:release` (needs `.env.production.local`)
 
+## White screen (module init)
+
+**Symptom:** Blank page, no React render — often after invite-card / schedule edits.
+
+**Root cause:** Circular imports between `competitionFormatPresets.ts` ↔ `rankedSchedule.ts` (or `lib/` importing `components/`). Constants like `RANKED_AMERICANO_GAMES` live in `src/lib/competitionScheduleConstants.ts` — never import `rankedSchedule` from `competitionFormatPresets`.
+
+**Before shipping schedule/competition changes:** `npm run check:cycles` (also run after touching `persistCompetitionSchedule`, `DuoTeamSlots`, invite roster).
+
+**Never:** import React components from `src/lib/` — use `src/lib/competitionDuoTeams.ts` for shared duo helpers.
+
 ## Deployment (web)
 
 Deploys are **git-based** — not manual Vercel CLI deploys.

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { AppTopBar } from '../components/AppTopBar'
+import { AppBottomNav } from '../components/AppBottomNav'
 import { AppShellColumn } from '../components/AppShellColumn'
 import type { LeaderboardEntry } from '../components/CompetitionLeaderboard'
 import { FriendlyDeleteConfirm } from '../components/FriendlyDeleteConfirm'
@@ -451,9 +452,15 @@ export function PlayerProfilePage() {
     linkablePadelPlayerId ??
     (resolved?.profile ? null : playerId)
 
+  const exitPath = competitionId ? `/competitions/${competitionId}` : '/friendly'
+
   const goBack = () => {
-    if (state?.from) navigate(state.from)
-    else navigate(-1)
+    const here = `${location.pathname}${location.search}`
+    if (state?.from && state.from !== here) {
+      navigate(state.from)
+      return
+    }
+    navigate(exitPath)
   }
 
   if (!playerId) {
@@ -462,7 +469,7 @@ export function PlayerProfilePage() {
         <AppTopBar>
           <button
             type="button"
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/friendly')}
             className="text-sm font-medium text-brand-accent md:text-base"
           >
             {t('common.back')}
@@ -502,7 +509,10 @@ export function PlayerProfilePage() {
         />
       ) : null}
 
-      <main data-scroll-y className="scroll-y min-h-0 min-w-0 flex-1 pt-2">
+      <main
+        data-scroll-y
+        className="scroll-y min-h-0 min-w-0 flex-1 pt-2 pb-[calc(var(--app-shell-dock-height)+0.5rem)]"
+      >
         <AppShellColumn fill={false} className="space-y-3 pb-8">
           {lineHandshakeWorking ? (
             <div className="pointer-events-none fixed inset-0 z-[300] flex items-center justify-center bg-white/80 px-6">
@@ -654,6 +664,8 @@ export function PlayerProfilePage() {
           )}
         </AppShellColumn>
       </main>
+
+      <AppBottomNav />
 
       {linkTarget && (
         <LinePlayerLinkModal

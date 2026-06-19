@@ -5,6 +5,7 @@ import type { CourtPlayer, GameRound } from './americanoSchedule'
 import { solveBalancedSchedule, type RoundAssignment } from './balancedSchedule'
 import { courtsNeeded } from './competitionLayout'
 import { DUO_PLAYER_COUNT, SINGLES_COMPETITION } from './competitionFormatPresets'
+import { RANKED_AMERICANO_GAMES } from './competitionScheduleConstants'
 import type { GameSession } from './types'
 
 export const OPEN_SLOT_NAME = 'Open'
@@ -48,9 +49,11 @@ export function targetPlayerCount(
   rosterLength: number,
   isDuo: boolean,
 ): number {
-  if (isDuo) return DUO_PLAYER_COUNT
-
   const cap = session?.target_players ?? session?.max_players
+  if (isDuo) {
+    if (typeof cap === 'number' && cap >= 4) return cap
+    return DUO_PLAYER_COUNT
+  }
 
   // e.g. 11 signed up, max 16 → 12 slots (3 courts), rank 12 is Open
   if (rosterLength >= 4) {
@@ -63,10 +66,10 @@ export function targetPlayerCount(
   return SINGLES_COMPETITION.targetPlayers
 }
 
-export const RANKED_AMERICANO_GAMES = 7
-export const RANKED_GAME_MINUTES = 14
 /** Bump when schedule logic changes — logged for debug. */
 export const RANKED_SCHEDULE_VERSION = 10
+
+export { RANKED_AMERICANO_GAMES, RANKED_GAME_MINUTES } from './competitionScheduleConstants'
 
 export type StoredScheduleMatch = {
   court: number

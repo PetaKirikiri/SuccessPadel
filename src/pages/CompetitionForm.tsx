@@ -2,12 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   clubTimePartsFromDate,
-  clubTimeSlotValue,
   formatDateInput,
-  parseClubTimeSlotValue,
-  scheduleHalfHourSlots,
-  snapToHalfHour,
-  toIsoTimestamp,
+  formatHourLabel,
 } from '../lib/courtSchedule'
 import { useAuth } from '../hooks/useAuth'
 import { useCompetitionFormDraft } from '../hooks/useCompetitionFormDraft'
@@ -44,12 +40,26 @@ import {
   competitionPlayerMode,
   competitionScoringConfig,
   competitionSessionFields,
-  DUO_COMPETITION,
   SINGLES_COMPETITION,
   type CompetitionTeamConfig,
 } from '../lib/competitionFormatPresets'
 import { buildCompetitionAutoTitle, GENDERS, SKILL_LEVELS, type Gender, type SkillLevel } from '../lib/competitionPresets'
 import { buildCompetitionRosterSlots } from '../lib/competitionRosterSlots'
+import {
+  COURT_COUNT_OPTIONS,
+  courtCountFromPlayers,
+  competitionPlayStartFromAnchorIso,
+  competitionStartsAtAnchorIso,
+  DEFAULT_SINGLES_COURT_COUNT,
+  duoGameCountFromCourtCount,
+  parseCompetitionStartSlotValue,
+  playersFromCourtCount,
+  scheduleCompetitionStartSlots,
+  snapToCompetitionPlayStart,
+  teamsFromCourtCount,
+  type CompetitionPlayStartMinute,
+  type CourtCount,
+} from '../lib/competitionLayout'
 import { ruleChips as sessionRuleChips } from '../lib/sessionDisplay'
 import { supabase } from '../lib/supabaseClient'
 import {
@@ -112,7 +122,7 @@ export function CompetitionForm() {
   const [createLeague, setCreateLeague] = useState(false)
   const [day, setDay] = useState(formatDateInput(new Date()))
   const [startHour, setStartHour] = useState(18)
-  const [startMinute, setStartMinute] = useState(0)
+  const [startMinute, setStartMinute] = useState<CompetitionPlayStartMinute>(4)
   const [skillLevel, setSkillLevel] = useState<SkillLevel>('Low Inter')
   const [gender, setGender] = useState<Gender>('Mixed')
   const [title, setTitle] = useState('')
@@ -123,19 +133,22 @@ export function CompetitionForm() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [playerSlots, setPlayerSlots] = useState<string[]>(() =>
-    Array(SINGLES_COMPETITION.targetPlayers).fill(''),
+    Array(playersFromCourtCount(DEFAULT_SINGLES_COURT_COUNT)).fill(''),
   )
   const [profileIds, setProfileIds] = useState<(string | null)[]>(() =>
-    Array(SINGLES_COMPETITION.targetPlayers).fill(null),
+    Array(playersFromCourtCount(DEFAULT_SINGLES_COURT_COUNT)).fill(null),
   )
   const [padelPlayerIds, setPadelPlayerIds] = useState<(string | null)[]>(() =>
-    Array(SINGLES_COMPETITION.targetPlayers).fill(null),
+    Array(playersFromCourtCount(DEFAULT_SINGLES_COURT_COUNT)).fill(null),
   )
-  const [duoTeams, setDuoTeams] = useState<DuoTeamDraft[]>(() => emptyDuoTeams())
+  const [duoTeams, setDuoTeams] = useState<DuoTeamDraft[]>(() =>
+    emptyDuoTeams(teamsFromCourtCount(DEFAULT_SINGLES_COURT_COUNT)),
+  )
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [padelPlayers, setPadelPlayers] = useState<PadelPlayerOption[]>([])
   const [previewSeed, setPreviewSeed] = useState(0)
-  const [slotCount, setSlotCount] = useState(SINGLES_COMPETITION.targetPlayers)
+  const [courtCount, setCourtCount] = useState<CourtCount>(DEFAULT_SINGLES_COURT_COUNT)
+  const [slotCount, setSlotCount] = useState(playersFromCourtCount(DEFAULT_SINGLES_COURT_COUNT))
   const [competitionStarted, setCompetitionStarted] = useState(false)
   const [rosterHydrated, setRosterHydrated] = useState(!id)
   const [isLeagueWeek, setIsLeagueWeek] = useState(false)
@@ -144,12 +157,36 @@ export function CompetitionForm() {
   const showDateFields = !createLeague || Boolean(id)
 
   const draftScope = id ?? 'new'
+
+  const applyCourtCount = useCallback((courts: CourtCount) => {
+    const players = playersFromCourtCount(courts)
+    const teams = teamsFromCourtCount(courts)
+    setCourtCount(courts)
+    setSlotCount(players)
+    setPlayerSlots((prev) => padArray(prev, players, ''))
+    setProfileIds((prev) => padArray(prev, players, null))
+    setPadelPlayerIds((prev) => padArray(prev, players, null))
+    setDuoTeams((prev) =>
+      emptyDuoTeams(teams).map((team, i) => {
+        const saved = prev[i]
+        if (!saved) return team
+        return {
+          ...team,
+          label: saved.label,
+          names: saved.names,
+          profileIds: saved.profileIds,
+          padelPlayerIds: saved.padelPlayerIds,
+        }
+      }),
+    )
+  }, [])
+
   const applyDraft = useCallback((draft: CompetitionFormDraft) => {
     setPlayerMode(draft.playerMode)
     setCreateLeague(draft.createLeague)
     setDay(draft.day)
     setStartHour(draft.startHour)
-    setStartMinute(draft.startMinute === 30 ? 30 : 0)
+    setStartMinute(draft.startMinute === 34 ? 34 : 4)
     if (SKILL_LEVELS.includes(draft.skillLevel as SkillLevel)) {
       setSkillLevel(draft.skillLevel as SkillLevel)
     }
@@ -159,29 +196,28 @@ export function CompetitionForm() {
     setTitle(draft.title)
     setTitleEdited(draft.titleEdited)
     setPreviewSeed(draft.previewSeed)
-    const slots = Array(SINGLES_COMPETITION.targetPlayers).fill('')
-    for (let i = 0; i < Math.min(draft.playerSlots.length, SINGLES_COMPETITION.targetPlayers); i += 1) {
-      slots[i] = draft.playerSlots[i] ?? ''
-    }
-    setPlayerSlots(slots)
-    if (draft.duoTeams?.length) {
-      setDuoTeams(
-        emptyDuoTeams().map((team, index) => {
-          const saved = draft.duoTeams[index]
-          if (!saved) return team
-          return {
-            ...team,
-            label: saved.label,
-            names: saved.names,
-          }
-        }),
-      )
-    }
+    const players = playersFromCourtCount(draft.courtCount)
+    const teams = teamsFromCourtCount(draft.courtCount)
+    setCourtCount(draft.courtCount)
+    setSlotCount(players)
+    setPlayerSlots(padArray(draft.playerSlots, players, ''))
+    setDuoTeams(
+      emptyDuoTeams(teams).map((team, index) => {
+        const saved = draft.duoTeams[index]
+        if (!saved) return team
+        return {
+          ...team,
+          label: saved.label,
+          names: saved.names,
+        }
+      }),
+    )
   }, [])
 
   const draftValues = useMemo(
     (): Omit<CompetitionFormDraft, 'v' | 'savedAt'> => ({
       playerMode,
+      courtCount,
       createLeague,
       day,
       startHour,
@@ -196,6 +232,7 @@ export function CompetitionForm() {
     }),
     [
       playerMode,
+      courtCount,
       createLeague,
       day,
       startHour,
@@ -218,13 +255,18 @@ export function CompetitionForm() {
     onRestore: applyDraft,
   })
 
-  const halfHourSlots = useMemo(() => scheduleHalfHourSlots(), [])
+  const competitionStartSlots = useMemo(() => scheduleCompetitionStartSlots(), [])
   const startsAtIso = useMemo(
-    () => toIsoTimestamp(day, startHour, startMinute),
+    () => competitionStartsAtAnchorIso(day, startHour, startMinute),
     [day, startHour, startMinute],
   )
   const autoTitle = useMemo(
-    () => buildCompetitionAutoTitle(skillLevel, gender, new Date(startsAtIso)),
+    () =>
+      buildCompetitionAutoTitle(
+        skillLevel,
+        gender,
+        competitionPlayStartFromAnchorIso(startsAtIso),
+      ),
     [skillLevel, gender, startsAtIso],
   )
 
@@ -306,6 +348,7 @@ export function CompetitionForm() {
       const target =
         data.target_players ?? data.max_players ?? competitionFormatPreset(mode).targetPlayers
       setSlotCount(target)
+      setCourtCount(courtCountFromPlayers(target))
       setCompetitionStarted(Boolean(data.competition_started_at))
       if (data.season_id) setSeasonId(data.season_id)
       if (data.skill_level && SKILL_LEVELS.includes(data.skill_level as SkillLevel)) {
@@ -323,12 +366,13 @@ export function CompetitionForm() {
       if (data.starts_at) {
         setDay(bangkokDateFromIso(data.starts_at))
         const parts = clubTimePartsFromDate(new Date(data.starts_at))
-        const snapped = snapToHalfHour(parts.hour, parts.minute)
-        const slots = scheduleHalfHourSlots()
+        const snapped = snapToCompetitionPlayStart(parts.hour, parts.minute)
         const match =
-          slots.find((s) => s.hour === snapped.hour && s.minute === snapped.minute) ??
-          slots.find((s) => s.hour === snapped.hour) ??
-          slots[0]
+          competitionStartSlots.find(
+            (s) => s.hour === snapped.hour && s.minute === snapped.minute,
+          ) ??
+          competitionStartSlots.find((s) => s.hour === snapped.hour) ??
+          competitionStartSlots[0]
         if (match) {
           setStartHour(match.hour)
           setStartMinute(match.minute)
@@ -373,21 +417,23 @@ export function CompetitionForm() {
       }
 
       if (mode === 'duos') {
-        const teams = emptyDuoTeams().map((team, teamIndex) => {
-          const base = teamIndex * 2
-          return {
-            ...team,
-            names: [nextNames[base] ?? '', nextNames[base + 1] ?? ''] as [string, string],
-            profileIds: [nextIds[base] ?? null, nextIds[base + 1] ?? null] as [
-              string | null,
-              string | null,
-            ],
-            padelPlayerIds: [nextPadelIds[base] ?? null, nextPadelIds[base + 1] ?? null] as [
-              string | null,
-              string | null,
-            ],
-          }
-        })
+        const teams = emptyDuoTeams(teamsFromCourtCount(courtCountFromPlayers(target))).map(
+          (team, teamIndex) => {
+            const base = teamIndex * 2
+            return {
+              ...team,
+              names: [nextNames[base] ?? '', nextNames[base + 1] ?? ''] as [string, string],
+              profileIds: [nextIds[base] ?? null, nextIds[base + 1] ?? null] as [
+                string | null,
+                string | null,
+              ],
+              padelPlayerIds: [nextPadelIds[base] ?? null, nextPadelIds[base + 1] ?? null] as [
+                string | null,
+                string | null,
+              ],
+            }
+          },
+        )
         const { data: pairRows } = await supabase
           .from('session_pairs')
           .select('pair_label, roster_a_id, roster_b_id')
@@ -447,8 +493,15 @@ export function CompetitionForm() {
     setError(null)
 
     const finalTitle = title.trim() || autoTitle
-    const baseConfig = competitionScoringConfig(playerMode)
-    const lockedFields = competitionSessionFields(playerMode, { skillLevel, gender })
+    const targetPlayers = playersFromCourtCount(courtCount)
+    const duoGameCount = isDuos ? duoGameCountFromCourtCount(courtCount) : undefined
+    const baseConfig = competitionScoringConfig(playerMode, { gameCount: duoGameCount })
+    const lockedFields = competitionSessionFields(playerMode, {
+      skillLevel,
+      gender,
+      targetPlayers,
+      gameCount: duoGameCount,
+    })
 
     const rosterPayload = isDuos
       ? duoTeamsToRosterSlots(duoTeams)
@@ -464,6 +517,7 @@ export function CompetitionForm() {
         p_pairs: [],
         p_scoring_config: baseConfig,
         p_created_by: user?.id ?? null,
+        p_target_players: targetPlayers,
       })
       if (leagueErr || !leagueResult) {
         setBusy(false)
@@ -498,7 +552,7 @@ export function CompetitionForm() {
         if (canBuildDuoSchedule) {
           const schedule = buildDuoStoredSchedule(
             duoTeamsToScheduleInput(duoTeams, rosterIds),
-            DUO_COMPETITION.gameCount,
+            duoGameCount!,
             previewSeed,
           )
           const teamsConfig: CompetitionTeamConfig[] = pairs.map((pair) => ({
@@ -525,7 +579,7 @@ export function CompetitionForm() {
       return
     }
 
-    const eventMinutes = competitionEventMinutes(playerMode)
+    const eventMinutes = competitionEventMinutes(playerMode, duoGameCount)
     const startsAt = showDateFields ? new Date(startsAtIso) : null
     const endsAt =
       startsAt != null ? new Date(startsAt.getTime() + eventMinutes * 60 * 1000) : null
@@ -613,7 +667,7 @@ export function CompetitionForm() {
       if (isDuos) {
         schedule = buildDuoStoredSchedule(
           duoTeamsToScheduleInput(duoTeams, rosterIds),
-          DUO_COMPETITION.gameCount,
+          duoGameCount!,
           previewSeed,
         )
         teamsConfig = duoTeamsToPairPayload(duoTeams, rosterIds).map((pair) => ({
@@ -678,10 +732,28 @@ export function CompetitionForm() {
     )
     return measureScheduleQuality(rounds, previewSlotCount)
   }, [previewSeed, filledNameCount, slotCount, isDuos])
+  const duoGameCount = isDuos ? duoGameCountFromCourtCount(courtCount) : undefined
   const ruleChips = useMemo(
-    () => sessionRuleChips({ kind: 'preset', mode: playerMode }, t, { skillLevel, gender }),
-    [playerMode, t, skillLevel, gender],
+    () =>
+      sessionRuleChips({ kind: 'preset', mode: playerMode }, t, {
+        skillLevel,
+        gender,
+        gameCount: duoGameCount,
+        courtCount,
+      }),
+    [playerMode, t, skillLevel, gender, duoGameCount, courtCount],
   )
+  const courtCaption = useMemo(() => {
+    const players = playersFromCourtCount(courtCount)
+    if (isDuos) {
+      return t('competition.courtsTeamsPlayers', {
+        courts: courtCount,
+        teams: teamsFromCourtCount(courtCount),
+        players,
+      })
+    }
+    return t('competition.courtsPlayers', { courts: courtCount, players })
+  }, [courtCount, isDuos, t])
 
   return (
     <form
@@ -701,13 +773,47 @@ export function CompetitionForm() {
             {t('competition.formatLabel')}
           </span>
           <div className="flex flex-wrap gap-1.5">
-            <Chip active={playerMode === 'singles'} onClick={() => setPlayerMode('singles')}>
+            <Chip
+              active={playerMode === 'singles'}
+              onClick={() => {
+                setPlayerMode('singles')
+                applyCourtCount(courtCount)
+              }}
+            >
               {t('competition.formatSingles')}
             </Chip>
-            <Chip active={playerMode === 'duos'} onClick={() => setPlayerMode('duos')}>
+            <Chip
+              active={playerMode === 'duos'}
+              onClick={() => {
+                setPlayerMode('duos')
+                applyCourtCount(courtCount)
+              }}
+            >
               {t('competition.formatDuos')}
             </Chip>
           </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
+            {t('competition.courts')}
+          </span>
+          <div
+            className={`flex flex-wrap gap-1.5 ${competitionStarted ? 'pointer-events-none opacity-60' : ''}`}
+          >
+            {COURT_COUNT_OPTIONS.map((n) => (
+              <Chip
+                key={n}
+                active={courtCount === n}
+                onClick={() => {
+                  if (!competitionStarted) applyCourtCount(n)
+                }}
+              >
+                {n}
+              </Chip>
+            ))}
+          </div>
+          <p className="text-xs text-brand-muted">{courtCaption}</p>
         </div>
 
         {isLeagueWeek ? (
@@ -745,15 +851,15 @@ export function CompetitionForm() {
                 Start
               </span>
               <select
-                value={clubTimeSlotValue(startHour, startMinute)}
+                value={formatHourLabel(startHour, startMinute)}
                 onChange={(e) => {
-                  const { hour, minute } = parseClubTimeSlotValue(e.target.value)
+                  const { hour, minute } = parseCompetitionStartSlotValue(e.target.value)
                   setStartHour(hour)
                   setStartMinute(minute)
                 }}
                 className="brand-input h-11"
               >
-                {halfHourSlots.map((slot) => (
+                {competitionStartSlots.map((slot) => (
                   <option key={slot.label} value={slot.label}>
                     {slot.label}
                   </option>

@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react'
 import { IconDelete, IconEdit, IconShare } from './ButtonIcons'
 import { Link } from 'react-router-dom'
+import { DuoTeamRosterList } from './DuoTeamRosterList'
 import { FriendlyRosterList } from './FriendlyRosterList'
 import { RuleChipGrid } from './RuleChipGrid'
 import { InviteCardQr } from './InviteCardQr'
+import type { CompetitionTeamSlot } from '../lib/competitionGameDisplay'
 import type { RosterSlot, RuleChip } from '../lib/friendlyGameDisplay'
 import { genderFromRuleChips, inviteBannerForGender } from '../lib/inviteBanners'
 
@@ -13,6 +15,8 @@ export type InviteCardProps = {
   timeLine: string
   detailTo: string
   slots: RosterSlot[]
+  duoTeams?: CompetitionTeamSlot[] | null
+  competitionId?: string | null
   currentUserId?: string | null
   ruleChips?: RuleChip[]
   statusLine?: string | null
@@ -24,6 +28,7 @@ export type InviteCardProps = {
   canEdit?: boolean
   editTo?: string
   editAriaLabel?: string
+  rosterSection?: ReactNode
   canDelete?: boolean
   onDelete?: () => void
   deleteBusy?: boolean
@@ -45,6 +50,8 @@ export function InviteCard({
   timeLine,
   detailTo,
   slots,
+  duoTeams = null,
+  competitionId = null,
   currentUserId,
   ruleChips = [],
   statusLine,
@@ -56,6 +63,7 @@ export function InviteCard({
   canEdit = false,
   editTo,
   editAriaLabel,
+  rosterSection,
   canDelete = false,
   onDelete,
   deleteBusy = false,
@@ -130,7 +138,20 @@ export function InviteCard({
       )}
 
       <div className="mt-4 border-t-2 border-brand-border pt-3">
-        <FriendlyRosterList slots={slots} currentUserId={currentUserId} />
+        {rosterSection ??
+          (duoTeams ? (
+            <DuoTeamRosterList
+              teams={duoTeams}
+              currentUserId={currentUserId}
+              competitionId={competitionId}
+            />
+          ) : (
+            <FriendlyRosterList
+              slots={slots}
+              currentUserId={currentUserId}
+              competitionId={competitionId}
+            />
+          ))}
       </div>
     </div>
   )
@@ -139,11 +160,11 @@ export function InviteCard({
 
   const bannerSrc = inviteBannerForGender(gender ?? genderFromRuleChips(ruleChips))
   const banner = bannerSrc ? (
-    <div className="w-full overflow-hidden bg-brand-bg-alt" style={{ aspectRatio: '1024 / 344' }}>
+    <div className="aspect-[1024/172] w-full overflow-hidden bg-brand-bg-alt">
       <img
         src={bannerSrc}
         alt=""
-        className="h-full w-full object-cover object-[center_35%]"
+        className="h-full w-full object-cover object-[center_30%]"
         decoding="async"
       />
     </div>

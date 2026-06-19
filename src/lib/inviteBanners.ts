@@ -3,10 +3,12 @@ import { GENDERS } from './competitionPresets'
 import type { RuleChip } from './friendlyGameDisplay'
 import menBanner from '../assets/invite-banners/invite-banner-men.jpg'
 import womenBanner from '../assets/invite-banners/invite-banner-women.jpg'
+import mixedBanner from '../assets/invite-banners/invite-banner-mixed.jpg'
 
 const INVITE_BANNERS: Partial<Record<Gender, string>> = {
   Men: menBanner,
   Women: womenBanner,
+  Mixed: mixedBanner,
 }
 
 export function normalizeSessionGender(gender: string | null | undefined): Gender | null {
@@ -27,6 +29,6 @@ export function genderFromRuleChips(chips: RuleChip[]): Gender | null {
 
 export function inviteBannerForGender(gender: string | null | undefined): string | null {
   const normalized = normalizeSessionGender(gender)
-  if (!normalized || normalized === 'Mixed') return null
+  if (!normalized) return null
   return INVITE_BANNERS[normalized] ?? null
 }

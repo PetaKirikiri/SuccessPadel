@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  clubTimeSlotValue,
-  formatDateInput,
-  parseClubTimeSlotValue,
-  scheduleHalfHourSlots,
-  toIsoTimestamp,
-} from '../lib/courtSchedule'
+import { formatDateInput, formatHourLabel } from '../lib/courtSchedule'
 import { competitionPlayerMode } from '../lib/competitionFormatPresets'
+import {
+  competitionStartsAtAnchorIso,
+  parseCompetitionStartSlotValue,
+  scheduleCompetitionStartSlots,
+  type CompetitionPlayStartMinute,
+} from '../lib/competitionLayout'
 import type { CompetitionRow } from '../hooks/useCompetitions'
 import { useTranslation } from '../hooks/useTranslation'
 import { supabase } from '../lib/supabaseClient'
@@ -33,7 +33,7 @@ export function DuoLeaguePanel({ rows, isAdmin, onRefresh }: Props) {
   const { t } = useTranslation()
   const [busyWeekId, setBusyWeekId] = useState<string | null>(null)
   const [weekDrafts, setWeekDrafts] = useState<
-    Record<string, { day: string; hour: number; minute: number }>
+    Record<string, { day: string; hour: number; minute: CompetitionPlayStartMinute }>
   >({})
 
   const leagues = useMemo(() => {
@@ -64,10 +64,12 @@ export function DuoLeaguePanel({ rows, isAdmin, onRefresh }: Props) {
     const draft = weekDrafts[row.id] ?? {
       day: formatDateInput(new Date()),
       hour: 18,
-      minute: 0,
+      minute: 4 as CompetitionPlayStartMinute,
     }
     setBusyWeekId(row.id)
-    const startsAt = new Date(toIsoTimestamp(draft.day, draft.hour, draft.minute))
+    const startsAt = new Date(
+      competitionStartsAtAnchorIso(draft.day, draft.hour, draft.minute),
+    )
     const eventMinutes = 116
     const endsAt = new Date(startsAt.getTime() + eventMinutes * 60 * 1000)
     const { error } = await supabase.rpc('update_league_week_schedule', {
@@ -90,7 +92,7 @@ export function DuoLeaguePanel({ rows, isAdmin, onRefresh }: Props) {
               const draft = weekDrafts[week.id] ?? {
                 day: week.starts_on ?? formatDateInput(new Date()),
                 hour: 18,
-                minute: 0,
+                minute: 4 as CompetitionPlayStartMinute,
               }
               return (
                 <li key={week.id} className="rounded-lg bg-brand-bg-alt/60 p-2 text-sm">
@@ -114,9 +116,9 @@ export function DuoLeaguePanel({ rows, isAdmin, onRefresh }: Props) {
                         className="brand-input h-9 text-xs"
                       />
                       <select
-                        value={clubTimeSlotValue(draft.hour, draft.minute)}
+                        value={formatHourLabel(draft.hour, draft.minute)}
                         onChange={(e) => {
-                          const { hour, minute } = parseClubTimeSlotValue(e.target.value)
+                          const { hour, minute } = parseCompetitionStartSlotValue(e.target.value)
                           setWeekDrafts((prev) => ({
                             ...prev,
                             [week.id]: { ...draft, hour, minute },
@@ -124,7 +126,7 @@ export function DuoLeaguePanel({ rows, isAdmin, onRefresh }: Props) {
                         }}
                         className="brand-input h-9 text-xs"
                       >
-                        {scheduleHalfHourSlots().map((slot) => (
+                        {scheduleCompetitionStartSlots().map((slot) => (
                           <option key={slot.label} value={slot.label}>
                             {slot.label}
                           </option>

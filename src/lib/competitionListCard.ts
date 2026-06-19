@@ -2,6 +2,7 @@ import type { CompetitionRow } from '../hooks/useCompetitions'
 import { formatClubDateShort, formatClubTime } from './courtSchedule'
 import {
   americanoScheduleFromSession,
+  competitionPlayStartFromAnchorIso,
   courtsNeeded,
   gameSlotTimes,
 } from './competitionLayout'
@@ -27,7 +28,7 @@ export function competitionScheduledLabel(
   row: Pick<GameSession, 'starts_at' | 'ends_at'>,
 ): string | null {
   if (!row.starts_at) return null
-  const start = new Date(row.starts_at)
+  const start = competitionPlayStartFromAnchorIso(row.starts_at)
   const date = formatClubDateShort(start)
   const from = formatClubTime(start)
   const to = row.ends_at ? formatClubTime(new Date(row.ends_at)) : null

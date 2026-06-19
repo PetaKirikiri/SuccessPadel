@@ -11,11 +11,12 @@ import {
 import {
   americanoScheduleFromSession,
   courtsNeeded,
-  RANKED_GAME_MINUTES,
+  duoGameCountFromTeamCount,
 } from '../lib/competitionLayout'
 import {
   gamesFromStoredSchedule,
   planRankedSchedule,
+  RANKED_GAME_MINUTES,
   scheduleSeedFromSession,
   sortRosterByRank,
   storedScheduleFromConfig,
@@ -127,8 +128,8 @@ export function useCompetitionBoard(
   const teams = teamsFromConfig(session?.scoring_config)
   const isAmericano = session ? usesCompetitionGameScoring(session) : false
   const slotCount = targetPlayerCount(session, roster.length, isDuo)
-  const layoutValid = isDuo ? slotCount === 12 : slotCount >= 4 && slotCount % 4 === 0
-  const neededCourts = isDuo ? 3 : courtsNeeded(slotCount)
+  const layoutValid = slotCount >= 4 && slotCount % 4 === 0
+  const neededCourts = courtsNeeded(slotCount)
   const scheduleSeed = scheduleSeedFromSession(session?.scoring_config)
   const { totalGames, gameMinutes: scheduledGameMinutes, breakMinutes: scheduledBreakMinutes } =
     americanoScheduleFromSession(session)
@@ -164,7 +165,7 @@ export function useCompetitionBoard(
           ? storedSchedule
           : buildDuoStoredSchedule(
               teams.map((t) => ({ label: t.label, rosterIds: t.roster_ids })),
-              totalGames || DUO_GAME_COUNT,
+              totalGames || duoGameCountFromTeamCount(teams.length) || DUO_GAME_COUNT,
               scheduleSeed,
             )
       games = gamesFromStoredSchedule(paddedRoster, duoSchedule, courtNames)

@@ -148,6 +148,11 @@ export type Messages = {
     filterDuos: string
     teams: string
     noScoresFilterHint: string
+    shareImage: string
+    imageCopied: string
+    imageShared: string
+    imageDownloaded: string
+    imageCopyFailed: string
   }
   achievements: {
     matchAwardsTitle: string
@@ -259,6 +264,10 @@ export type Messages = {
     formatLabel: string
     formatSingles: string
     formatDuos: string
+    courts: string
+    chipCourts: string
+    courtsPlayers: string
+    courtsTeamsPlayers: string
     createLeague: string
     leagueDatesLater: string
     duoTeams: string

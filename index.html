@@ -50,6 +50,49 @@
     </script>
     <script>
       ;(function () {
+        var TV_MIN = 1536
+        var isTvKiosk =
+          /^\/competitions\/[^/]+$/.test(location.pathname) &&
+          window.matchMedia('(min-width: ' + TV_MIN + 'px)').matches
+        if (isTvKiosk) document.documentElement.setAttribute('data-tv-kiosk', '')
+
+        function hide(el) {
+          if (!el || el.id === 'root' || el === document.body || el === document.documentElement) return
+          el.style.setProperty('display', 'none', 'important')
+          el.style.setProperty('visibility', 'hidden', 'important')
+          el.style.setProperty('pointer-events', 'none', 'important')
+        }
+        function isToolbar(el) {
+          if (!el || el.nodeType !== 1) return false
+          if (el.tagName === 'IFRAME') {
+            var src = el.src || ''
+            return src.indexOf('vercel.live') !== -1 || src.indexOf('vercel.com/_toolbar') !== -1
+          }
+          if (/^vercel-/i.test(el.tagName)) return true
+          if (el.id === 'vercel-toolbar' || el.id === '__vercel-toolbar') return true
+          return el.hasAttribute && el.hasAttribute('data-vercel-toolbar')
+        }
+        function run() {
+          if (document.body && isTvKiosk) {
+            Array.prototype.slice.call(document.body.children).forEach(function (child) {
+              if (child.id !== 'root') hide(child)
+            })
+          }
+          document.querySelectorAll('iframe, [data-vercel-toolbar], #vercel-toolbar, #__vercel-toolbar').forEach(function (el) {
+            if (isToolbar(el)) {
+              hide(el)
+              var parent = el.parentElement
+              if (parent && isToolbar(parent)) hide(parent)
+            }
+          })
+        }
+        run()
+        new MutationObserver(run).observe(document.documentElement, { childList: true, subtree: true })
+        window.setInterval(run, 1500)
+      })()
+    </script>
+    <script>
+      ;(function () {
         function lockWidth() {
           var w = (window.visualViewport && window.visualViewport.width) || window.innerWidth
           var h = window.innerHeight

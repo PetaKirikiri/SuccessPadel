@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
+import { useIsTvLayout } from '../hooks/useIsTvLayout'
+import { setTvKioskMode } from '../lib/suppressVercelToolbar'
 import { GlobalProfileChip } from './GlobalProfileChip'
 import { LineEntryGate } from './LineEntryGate'
 import { LineOAuthReturnHandler } from './LineOAuthReturnHandler'
@@ -15,10 +17,21 @@ type Props = {
   children: ReactNode
 }
 
+const COMPETITION_PLAY_PATH = /^\/competitions\/[^/]+$/
+
 export function AppShell({ children }: Props) {
   const { pathname, search } = useLocation()
+  const isTvLayout = useIsTvLayout()
   const [gesturePadActive, setGesturePadActive] = useState(false)
-  const hideGlobalChrome = gesturePadActive || isGesturePadRoute(pathname)
+  const isTvKiosk = COMPETITION_PLAY_PATH.test(pathname) && isTvLayout
+
+  useEffect(() => {
+    setTvKioskMode(isTvKiosk)
+    return () => setTvKioskMode(false)
+  }, [isTvKiosk])
+
+  const hideGlobalChrome =
+    gesturePadActive || isGesturePadRoute(pathname) || isTvKiosk
 
   if (isPlayerLinkHandoffSearch(search)) {
     return (

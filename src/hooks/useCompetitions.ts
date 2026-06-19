@@ -19,6 +19,14 @@ export function rosterDisplayName(sp: CompetitionPlayer): string {
 
 export type CompetitionRow = GameSession & {
   session_players: CompetitionPlayer[]
+  session_pairs?: CompetitionSessionPair[]
+}
+
+export type CompetitionSessionPair = {
+  id: string
+  pair_label: string | null
+  roster_a_id: string | null
+  roster_b_id: string | null
 }
 
 export function useCompetitions(_userId?: string) {

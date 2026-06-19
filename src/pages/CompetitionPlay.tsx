@@ -195,6 +195,7 @@ export function CompetitionPlay() {
         achievements={achievements}
         showAchievements={Boolean(achievements)}
         flushBottom
+        shareTitle={session?.title ?? null}
       />
     ) : (
       <p className="game-card px-3 py-6 text-center text-sm text-brand-muted">
@@ -214,6 +215,7 @@ export function CompetitionPlay() {
         showAchievements={Boolean(achievements)}
         compact
         embedded
+        shareTitle={session?.title ?? null}
       />
     ) : (
       <p className="px-3 py-6 text-center text-sm text-brand-muted">{t('leaderboard.standings')}</p>

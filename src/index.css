@@ -733,6 +733,25 @@ body {
   }
 }
 
+/* Vercel platform toolbar (team-only) — never show on kiosk / TV scoreboard */
+iframe[src*='vercel.live'],
+iframe[src*='vercel.com/_toolbar'],
+vercel-live-feedback,
+#vercel-toolbar,
+#__vercel-toolbar,
+[data-vercel-toolbar] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* TV competition scoreboard — hide anything Vercel injects beside #root */
+html[data-tv-kiosk] body > :not(#root) {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 /* TV-only (2xl / 1536px+) — blended games + standings; QR lives in standings column. */
 @media (min-width: 1536px) {
   .tv-play-view {

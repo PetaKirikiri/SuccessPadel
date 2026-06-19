@@ -1,3 +1,10 @@
+import {
+  courtCountFromPlayers,
+  DEFAULT_DUO_COURT_COUNT,
+  DEFAULT_SINGLES_COURT_COUNT,
+  type CourtCount,
+} from './competitionLayout'
+
 const STORAGE_PREFIX = 'successpadel:competition-draft:'
 
 export type CompetitionPlayerMode = 'singles' | 'duos'
@@ -8,9 +15,10 @@ export type DuoTeamDraftSlot = {
 }
 
 export type CompetitionFormDraft = {
-  v: 6
+  v: 7
   savedAt: string
   playerMode: CompetitionPlayerMode
+  courtCount: CourtCount
   createLeague: boolean
   day: string
   startHour: number
@@ -24,6 +32,18 @@ export type CompetitionFormDraft = {
   previewSeed: number
 }
 
+type LegacyDraftV6 = Omit<CompetitionFormDraft, 'v' | 'courtCount'> & { v: 6 }
+
+function courtCountFromLegacyDraft(draft: LegacyDraftV6): CourtCount {
+  if (draft.playerMode === 'duos' && draft.duoTeams.length >= 2) {
+    return courtCountFromPlayers(draft.duoTeams.length * 2)
+  }
+  if (draft.playerSlots.length >= 4) {
+    return courtCountFromPlayers(draft.playerSlots.length)
+  }
+  return draft.playerMode === 'duos' ? DEFAULT_DUO_COURT_COUNT : DEFAULT_SINGLES_COURT_COUNT
+}
+
 export function competitionDraftKey(scope: 'new' | string): string {
   return `${STORAGE_PREFIX}${scope}`
 }
@@ -32,9 +52,16 @@ export function loadCompetitionFormDraft(scope: 'new' | string): CompetitionForm
   try {
     const raw = localStorage.getItem(competitionDraftKey(scope))
     if (!raw) return null
-    const parsed = JSON.parse(raw) as CompetitionFormDraft
-    if (parsed?.v !== 6) return null
-    return parsed
+    const parsed = JSON.parse(raw) as CompetitionFormDraft | LegacyDraftV6
+    if (parsed?.v === 7) return parsed
+    if (parsed?.v === 6) {
+      return {
+        ...parsed,
+        v: 7,
+        courtCount: courtCountFromLegacyDraft(parsed),
+      }
+    }
+    return null
   } catch {
     return null
   }
@@ -46,7 +73,7 @@ export function saveCompetitionFormDraft(
 ): void {
   try {
     const payload: CompetitionFormDraft = {
-      v: 6,
+      v: 7,
       savedAt: new Date().toISOString(),
       ...draft,
     }
