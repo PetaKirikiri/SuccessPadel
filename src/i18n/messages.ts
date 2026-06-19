@@ -90,6 +90,7 @@ export type Messages = {
       open: string
       bestOfGames: string
       firstToGames: string
+      firstToPoints: string
       maxGamesPerSide: string
       matches: string
       minsPerGame: string
@@ -105,6 +106,7 @@ export type Messages = {
       scoring: string
       scoringOpen: string
       scoringFirstTo: string
+      scoringFirstToPoints: string
       skillLevel: string
       gender: string
       rounds: string
@@ -219,6 +221,10 @@ export type Messages = {
     addCompetition: string
     noCurrentGames: string
     noPastGames: string
+    filterMen: string
+    filterWomen: string
+    filterMixed: string
+    noGamesForGender: string
     tapPlusHint: string
     checkBackHint: string
     playedOn: string

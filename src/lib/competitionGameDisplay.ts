@@ -2,52 +2,44 @@ import type { CompetitionRow, CompetitionPlayer } from '../hooks/useCompetitions
 import { rosterDisplayName } from '../hooks/useCompetitions'
 import type { TranslateFn } from '../i18n'
 import type { DuoTeamDraft } from './competitionDuoTeams'
-import { isDuoCompetition, teamsFromConfig } from './competitionFormatPresets'
+import { isDuoCompetition, teamsFromConfig, usesCompetitionGameScoring } from './competitionFormatPresets'
 import { teamsFromCourtCount, courtCountFromPlayers } from './competitionLayout'
 import {
-  americanoScheduleFromSession,
-  breakMinutesFromConfig,
-  competitionPlayStartFromAnchorIso,
-  gameMinutesFromConfig,
+  resolveCompetitionSchedule,
 } from './competitionLayout'
 import {
+  AMERICANO_DEFAULT_GAMES,
+  AMERICANO_DEFAULT_TARGET,
   americanoScoreTarget,
   americanoScoringUnit,
   partnerStyleLabel,
   ruleFormatLabel,
-  usesAmericanoScoring,
   type PartnerStyle,
 } from './competitionPresets'
-import { formatClubTime, parseClubDate } from './courtSchedule'
+import { formatClubDateInvite, formatClubTimeLocalized, parseClubDate } from './courtSchedule'
+import type { AppLocale } from './locale'
 import type { RosterSlot, RuleChip } from './friendlyGameDisplay'
 import type { GameSession } from './types'
 
-const BANGKOK = 'Asia/Bangkok'
-
 export function competitionScheduleDisplay(
-  row: Pick<GameSession, 'starts_at' | 'ends_at' | 'starts_on' | 'title'>,
+  row: Pick<
+    GameSession,
+    'starts_at' | 'ends_at' | 'starts_on' | 'title' | 'scoring_config' | 'target_players' | 'max_players'
+  > & { session_pairs?: unknown[] },
+  locale: AppLocale,
 ): { dateLine: string; timeLine: string } {
-  if (row.starts_at) {
-    const start = competitionPlayStartFromAnchorIso(row.starts_at)
-    const dateLine = start.toLocaleDateString('en-GB', {
-      timeZone: BANGKOK,
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-    })
-    const from = formatClubTime(start)
-    const to = row.ends_at ? formatClubTime(new Date(row.ends_at)) : null
+  const resolved = resolveCompetitionSchedule(row)
+  if (resolved.playStartsAt) {
+    const start = resolved.playStartsAt
+    const dateLine = formatClubDateInvite(start, locale)
+    const from = formatClubTimeLocalized(start, locale)
+    const to = resolved.eventEndsAt ? formatClubTimeLocalized(resolved.eventEndsAt, locale) : null
     return { dateLine, timeLine: to ? `${from}–${to}` : from }
   }
 
   if (row.starts_on) {
     const start = parseClubDate(row.starts_on)
-    const dateLine = start.toLocaleDateString('en-GB', {
-      timeZone: BANGKOK,
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-    })
+    const dateLine = formatClubDateInvite(start, locale)
     return { dateLine, timeLine: '' }
   }
 
@@ -185,28 +177,53 @@ export function competitionInviteRoster(row: CompetitionRow): {
   return { slots: competitionRosterSlots(row), duoTeams: null }
 }
 
+function americanoScoringChip(
+  row: Pick<GameSession, 'scoring_config' | 'partnership_mode' | 'rules'>,
+  t: TranslateFn,
+): { label: string; hintKey: string; hintParams?: Record<string, number> } | null {
+  if (!usesCompetitionGameScoring(row)) return null
+  const unit = americanoScoringUnit(row)
+  const target = americanoScoreTarget(row)
+  if (unit === 'open') {
+    return { label: t('friendly.chip.open'), hintKey: 'friendly.hint.scoringOpen' }
+  }
+  if (unit === 'games' || unit === 'points') {
+    const n = target ?? (unit === 'points' ? AMERICANO_DEFAULT_TARGET : AMERICANO_DEFAULT_GAMES)
+    return {
+      label: t('friendly.chip.firstToPoints', { n }),
+      hintKey: 'friendly.hint.scoringFirstToPoints',
+      hintParams: { n },
+    }
+  }
+  const scoring = unit === 'sets' ? `${target ?? 4} sets` : `${target ?? 24} pts`
+  return { label: scoring, hintKey: 'friendly.hint.scoring' }
+}
+
+export function competitionInviteScoringHeadline(
+  row: CompetitionRow,
+  t: TranslateFn,
+): string | null {
+  return americanoScoringChip(row, t)?.label ?? null
+}
+
 export function competitionRuleChips(row: CompetitionRow, t: TranslateFn): RuleChip[] {
   const isDuos = isDuoCompetition(row)
-  const isAmericano = usesAmericanoScoring(row)
-  const schedule = americanoScheduleFromSession(row)
-  const breakMinutes = breakMinutesFromConfig(row.scoring_config)
-  const gameMinutes = gameMinutesFromConfig(
-    row.scoring_config,
-    0,
-    schedule.totalGames,
-    breakMinutes,
-  )
+  const usesGameScoring = usesCompetitionGameScoring(row)
+  const schedule = resolveCompetitionSchedule(row)
+  const { breakMinutes, gameMinutes, totalGames } = schedule
 
   const chips: RuleChip[] = [
     {
       key: 'format',
-      label: isDuos ? t('competition.formatDuos') : ruleFormatLabel(isAmericano ? 'americano' : 'king_of_court'),
+      label: isDuos
+        ? t('competition.formatDuos')
+        : ruleFormatLabel(usesGameScoring ? 'americano' : 'king_of_court'),
       hintKey: isDuos ? 'competition.hintDuosFormat' : 'friendly.hint.format',
-      icon: isDuos ? 'rounds' : isAmericano ? 'americano' : 'king',
+      icon: isDuos ? 'rounds' : usesGameScoring ? 'americano' : 'king',
     },
   ]
 
-  if (!isAmericano) {
+  if (!isDuos && !usesGameScoring) {
     const style: PartnerStyle = row.partnership_mode === 'fixed_pairs' ? 'fixed' : 'swapped'
     chips.push({
       key: 'partners',
@@ -214,41 +231,12 @@ export function competitionRuleChips(row: CompetitionRow, t: TranslateFn): RuleC
       hintKey: 'friendly.hint.partners',
       icon: style === 'fixed' ? 'partners-fixed' : 'partners-swapped',
     })
-  } else {
-    const unit = americanoScoringUnit(row)
-    const target = americanoScoreTarget(row)
-    if (unit === 'open') {
-      chips.push({
-        key: 'scoring',
-        label: t('friendly.chip.open'),
-        hintKey: 'friendly.hint.scoringOpen',
-        icon: 'scoring',
-      })
-    } else if (unit === 'games') {
-      const n = target ?? 6
-      chips.push({
-        key: 'scoring',
-        label: t('friendly.chip.firstToGames', { n }),
-        hintKey: 'friendly.hint.scoringFirstTo',
-        hintParams: { n },
-        icon: 'scoring',
-      })
-    } else {
-      const scoring =
-        unit === 'sets' ? `${target ?? 4} sets` : `${target ?? 24} pts`
-      chips.push({
-        key: 'scoring',
-        label: scoring,
-        hintKey: 'friendly.hint.scoring',
-        icon: 'scoring',
-      })
-    }
   }
 
   chips.push(
     {
       key: 'rounds',
-      label: t('friendly.chip.matches', { n: schedule.totalGames }),
+      label: t('friendly.chip.matches', { n: totalGames }),
       hintKey: 'friendly.hint.rounds',
       icon: 'rounds',
     },

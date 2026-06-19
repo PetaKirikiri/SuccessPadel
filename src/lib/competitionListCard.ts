@@ -1,10 +1,10 @@
 import type { CompetitionRow } from '../hooks/useCompetitions'
 import { formatClubDateShort, formatClubTime } from './courtSchedule'
 import {
-  americanoScheduleFromSession,
-  competitionPlayStartFromAnchorIso,
   courtsNeeded,
+  gameSlotOptsFromSchedule,
   gameSlotTimes,
+  resolveCompetitionSchedule,
 } from './competitionLayout'
 import {
   americanoScoreTarget,
@@ -25,28 +25,30 @@ export function formatCountdown(ms: number): string {
 }
 
 export function competitionScheduledLabel(
-  row: Pick<GameSession, 'starts_at' | 'ends_at'>,
+  row: Pick<GameSession, 'starts_at' | 'ends_at' | 'scoring_config' | 'target_players' | 'max_players'> & {
+    session_pairs?: unknown[]
+  },
 ): string | null {
-  if (!row.starts_at) return null
-  const start = competitionPlayStartFromAnchorIso(row.starts_at)
+  const resolved = resolveCompetitionSchedule(row)
+  if (!resolved.playStartsAt) return null
+  const start = resolved.playStartsAt
   const date = formatClubDateShort(start)
   const from = formatClubTime(start)
-  const to = row.ends_at ? formatClubTime(new Date(row.ends_at)) : null
+  const to = resolved.eventEndsAt ? formatClubTime(resolved.eventEndsAt) : null
   return to ? `${date} · ${from}–${to}` : `${date} · ${from}`
 }
 
+type CompetitionScheduleRow = Pick<
+  GameSession,
+  'starts_at' | 'ends_at' | 'status' | 'scoring_config' | 'target_players' | 'max_players'
+> & { session_pairs?: unknown[] }
+
 /** Listed under Past when complete or the scheduled window has ended. */
-export function competitionIsPast(
-  row: Pick<GameSession, 'starts_at' | 'ends_at' | 'status' | 'scoring_config'>,
-  now: number = Date.now(),
-): boolean {
+export function competitionIsPast(row: CompetitionScheduleRow, now: number = Date.now()): boolean {
   return competitionCardPhase(row, now) === 'finished'
 }
 
-export function competitionCardPhase(
-  row: Pick<GameSession, 'starts_at' | 'ends_at' | 'status' | 'scoring_config'>,
-  now: number,
-): CompetitionCardPhase {
+export function competitionCardPhase(row: CompetitionScheduleRow, now: number): CompetitionCardPhase {
   if (row.status === 'complete') return 'finished'
   const startMs = row.starts_at ? Date.parse(row.starts_at) : NaN
   const endMs = row.ends_at ? Date.parse(row.ends_at) : NaN
@@ -54,14 +56,15 @@ export function competitionCardPhase(
   if (now >= endMs) return 'finished'
   if (now < startMs) return 'upcoming'
 
-  const schedule = americanoScheduleFromSession(row)
+  const schedule = resolveCompetitionSchedule(row)
+  const slotOpts = gameSlotOptsFromSchedule(schedule)
   for (let g = 1; g <= schedule.totalGames; g += 1) {
-    const slot = gameSlotTimes(row.starts_at!, g, schedule.gameMinutes, schedule.breakMinutes)
+    const slot = gameSlotTimes(row.starts_at!, g, schedule.gameMinutes, schedule.breakMinutes, slotOpts)
     const slotStart = slot.startsAt.getTime()
     const slotEnd = slot.endsAt.getTime()
     if (now >= slotStart && now < slotEnd) return 'live'
     if (g < schedule.totalGames) {
-      const next = gameSlotTimes(row.starts_at!, g + 1, schedule.gameMinutes, schedule.breakMinutes)
+      const next = gameSlotTimes(row.starts_at!, g + 1, schedule.gameMinutes, schedule.breakMinutes, slotOpts)
       if (now >= slotEnd && now < next.startsAt.getTime()) return 'break'
     }
   }
@@ -69,10 +72,7 @@ export function competitionCardPhase(
   return 'finished'
 }
 
-export function competitionCountdown(
-  row: Pick<GameSession, 'starts_at' | 'ends_at' | 'status' | 'scoring_config'>,
-  now: number,
-): { label: string; value: string } | null {
+export function competitionCountdown(row: CompetitionScheduleRow, now: number): { label: string; value: string } | null {
   const phase = competitionCardPhase(row, now)
   const startMs = row.starts_at ? Date.parse(row.starts_at) : NaN
   const endMs = row.ends_at ? Date.parse(row.ends_at) : NaN
@@ -83,16 +83,17 @@ export function competitionCountdown(
   if (phase === 'finished') return null
   if (!Number.isFinite(startMs) || !row.starts_at) return null
 
-  const schedule = americanoScheduleFromSession(row)
+  const schedule = resolveCompetitionSchedule(row)
+  const slotOpts = gameSlotOptsFromSchedule(schedule)
   for (let g = 1; g <= schedule.totalGames; g += 1) {
-    const slot = gameSlotTimes(row.starts_at, g, schedule.gameMinutes, schedule.breakMinutes)
+    const slot = gameSlotTimes(row.starts_at, g, schedule.gameMinutes, schedule.breakMinutes, slotOpts)
     const slotStart = slot.startsAt.getTime()
     const slotEnd = slot.endsAt.getTime()
     if (now >= slotStart && now < slotEnd) {
       return { label: `Game ${g} · ${schedule.gameMinutes} min`, value: formatCountdown(slotEnd - now) }
     }
     if (g < schedule.totalGames) {
-      const next = gameSlotTimes(row.starts_at, g + 1, schedule.gameMinutes, schedule.breakMinutes)
+      const next = gameSlotTimes(row.starts_at, g + 1, schedule.gameMinutes, schedule.breakMinutes, slotOpts)
       if (now >= slotEnd && now < next.startsAt.getTime()) {
         return { label: 'Break', value: formatCountdown(next.startsAt.getTime() - now) }
       }
@@ -107,7 +108,7 @@ export function competitionCountdown(
 export function competitionLayoutSpiel(row: CompetitionRow): string {
   const rosterCount = row.session_players?.length ?? 0
   const courts = courtsNeeded(rosterCount)
-  const schedule = americanoScheduleFromSession(row)
+  const schedule = resolveCompetitionSchedule(row)
   const parts: string[] = []
 
   if (usesAmericanoScoring(row)) {
@@ -143,9 +144,6 @@ export function competitionPhaseBadge(phase: CompetitionCardPhase): string | nul
   return null
 }
 
-export function competitionIsLiveByTime(
-  row: Pick<GameSession, 'starts_at' | 'ends_at' | 'status' | 'scoring_config'>,
-  now: number,
-): boolean {
+export function competitionIsLiveByTime(row: CompetitionScheduleRow, now: number): boolean {
   return competitionCardPhase(row, now) === 'live'
 }

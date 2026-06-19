@@ -16,7 +16,7 @@ import {
   calculateLiveAchievements,
   isCompetitionComplete,
 } from '../lib/competitionAchievements'
-import { americanoScheduleFromSession, gameSlotTimes } from '../lib/competitionLayout'
+import { americanoScheduleFromSession, gameSlotOptsFromSchedule, gameSlotTimes } from '../lib/competitionLayout'
 import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
 import { computeAmericanoStandings } from '../lib/competitionStandings'
 import { computeDuoStandings } from '../lib/computeDuoStandings'
@@ -73,7 +73,10 @@ export function CompetitionPlay() {
     if (tab === 'leaderboard') void refresh(true)
   }, [tab, refresh])
 
-  const schedule = useMemo(() => americanoScheduleFromSession(session), [session])
+  const schedule = useMemo(
+    () => americanoScheduleFromSession(session),
+    [session, sessionPairs?.length],
+  )
 
   const rosterNameById = useMemo(
     () => new Map(roster.map((row) => [row.id, rosterDisplayName(row)])),
@@ -121,12 +124,14 @@ export function CompetitionPlay() {
     const map = new Map<number, { startsAt: number; endsAt: number }>()
     if (session?.starts_at) {
       const games = Math.max(rounds.length, schedule.totalGames)
+      const slotOpts = gameSlotOptsFromSchedule(schedule)
       for (let g = 1; g <= games; g++) {
         const slot = gameSlotTimes(
           session.starts_at,
           g,
           schedule.gameMinutes,
           schedule.breakMinutes,
+          slotOpts,
         )
         map.set(g, { startsAt: slot.startsAt.getTime(), endsAt: slot.endsAt.getTime() })
       }

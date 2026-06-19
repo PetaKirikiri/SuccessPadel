@@ -77,6 +77,7 @@ function scoreStringsForCourt(
 function courtsGridClass(tvCompact: boolean, courtCount: number): string {
   if (!tvCompact) return 'space-y-3.5'
   if (courtCount <= 1) return 'tv-game-courts-grid tv-game-courts-grid--single'
+  if (courtCount === 2) return 'tv-game-courts-grid tv-game-courts-grid--duo'
   return 'tv-game-courts-grid'
 }
 

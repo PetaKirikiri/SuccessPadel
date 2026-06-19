@@ -11,7 +11,6 @@ import {
 import {
   americanoScheduleFromSession,
   courtsNeeded,
-  duoGameCountFromTeamCount,
 } from '../lib/competitionLayout'
 import {
   gamesFromStoredSchedule,
@@ -170,7 +169,7 @@ export function useCompetitionBoard(
           ? storedSchedule
           : buildDuoStoredSchedule(
               teams.map((t) => ({ label: t.label, rosterIds: t.roster_ids })),
-              totalGames || duoGameCountFromTeamCount(teams.length) || DUO_GAME_COUNT,
+              totalGames || DUO_GAME_COUNT,
               scheduleSeed,
             )
       games = gamesFromStoredSchedule(paddedRoster, duoSchedule, courtNames)

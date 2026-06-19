@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useGamesGenderFilter } from '../contexts/GamesGenderFilterContext'
 import { useTranslation } from '../hooks/useTranslation'
 import type { TranslateFn } from '../i18n'
 import { IconAdd } from './ButtonIcons'
 import { IconHubCurrent, IconHubPast, shellTabClass } from './ShellTabIcons'
+import { GamesGenderFilterBannerOverlay, GamesGenderFilterEmptyBar } from './GamesGenderFilterButtons'
 import { GamesHubEmpty, GamesHubLoading } from './GamesHubView'
 import { SessionInviteCard } from './SessionInviteCard'
 import type { CompetitionRow } from '../hooks/useCompetitions'
 import { competitionIsPast } from '../lib/competitionListCard'
+import { matchesGamesGenderFilter, genderFilterLabel } from '../lib/gamesGenderFilter'
 
 export type CompetitionListTab = 'current' | 'past'
 
@@ -35,16 +38,6 @@ export function splitCompetitionRows(rows: CompetitionRow[], now = Date.now()) {
     return (Number.isFinite(tb) ? tb : 0) - (Number.isFinite(ta) ? ta : 0)
   })
   return { currentRows: current, pastRows: past }
-}
-
-function formatPastDate(iso: string | null | undefined): string | null {
-  if (!iso) return null
-  return new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Asia/Bangkok',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(iso))
 }
 
 function ListTabs({
@@ -105,7 +98,12 @@ export function CompetitionTable({
   const { currentRows, pastRows } = useMemo(() => splitCompetitionRows(rows), [rows])
 
   const tab = listTab ?? internalTab
+  const genderFilter = useGamesGenderFilter()
   const visibleRows = tab === 'past' ? pastRows : currentRows
+  const filteredRows = useMemo(() => {
+    if (!genderFilter) return visibleRows
+    return visibleRows.filter((row) => matchesGamesGenderFilter(row.gender, genderFilter))
+  }, [visibleRows, genderFilter])
 
   useEffect(() => {
     if (!showListTabs || loading || didDefaultTab.current) return
@@ -135,11 +133,18 @@ export function CompetitionTable({
         ) : (
           <GamesHubLoading />
         )
-      ) : visibleRows.length === 0 ? (
+      ) : filteredRows.length === 0 ? (
         showListTabs ? (
           <div className="game-card space-y-2 px-4 py-5 text-center">
+            <GamesGenderFilterEmptyBar />
             <p className="text-sm text-brand-text">
-              {tab === 'past' ? t('competition.noPastGames') : t('competition.noCurrentGames')}
+              {genderFilter
+                ? t('competition.noGamesForGender', {
+                    gender: genderFilterLabel(genderFilter, t),
+                  })
+                : tab === 'past'
+                  ? t('competition.noPastGames')
+                  : t('competition.noCurrentGames')}
             </p>
             {tab === 'current' && isAdmin ? (
               <>
@@ -155,8 +160,15 @@ export function CompetitionTable({
           </div>
         ) : (
           <GamesHubEmpty>
+            <GamesGenderFilterEmptyBar />
             <p>
-              {tab === 'past' ? t('competition.noPastGames') : t('competition.noCurrentGames')}
+              {genderFilter
+                ? t('competition.noGamesForGender', {
+                    gender: genderFilterLabel(genderFilter, t),
+                  })
+                : tab === 'past'
+                  ? t('competition.noPastGames')
+                  : t('competition.noCurrentGames')}
             </p>
             {tab === 'current' && isAdmin ? (
               <>
@@ -172,9 +184,9 @@ export function CompetitionTable({
           </GamesHubEmpty>
         )
       ) : (
-        visibleRows.map((row) => {
-          const playedOn = formatPastDate(row.competition_started_at ?? row.starts_at)
-          return (
+        <div className="relative space-y-4">
+          <GamesGenderFilterBannerOverlay />
+          {filteredRows.map((row) => (
             <SessionInviteCard
               key={row.id}
               kind="competition"
@@ -182,14 +194,9 @@ export function CompetitionTable({
               isAdmin={isAdmin}
               userId={userId}
               onRefresh={onRefresh}
-              statusLine={
-                tab === 'past' && playedOn
-                  ? t('competition.playedOn', { date: playedOn })
-                  : undefined
-              }
             />
-          )
-        })
+          ))}
+        </div>
       )}
     </div>
   )

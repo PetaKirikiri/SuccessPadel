@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { IconDelete, IconEdit, IconShare } from './ButtonIcons'
+import { IconDelete, IconEdit } from './ButtonIcons'
 import { Link } from 'react-router-dom'
 import { DuoTeamRosterList } from './DuoTeamRosterList'
 import { FriendlyRosterList } from './FriendlyRosterList'
@@ -7,7 +7,7 @@ import { RuleChipGrid } from './RuleChipGrid'
 import { InviteCardQr } from './InviteCardQr'
 import type { CompetitionTeamSlot } from '../lib/competitionGameDisplay'
 import type { RosterSlot, RuleChip } from '../lib/friendlyGameDisplay'
-import { genderFromRuleChips, inviteBannerForGender } from '../lib/inviteBanners'
+import { genderFromRuleChips, inviteBannerForSession } from '../lib/inviteBanners'
 
 export type InviteCardProps = {
   title: string
@@ -19,10 +19,7 @@ export type InviteCardProps = {
   competitionId?: string | null
   currentUserId?: string | null
   ruleChips?: RuleChip[]
-  statusLine?: string | null
-  onShare?: () => void
-  shareFeedback?: string | null
-  shareAriaLabel?: string
+  scoringHeadline?: string | null
   qrUrl?: string | null
   qrAriaLabel?: string
   canEdit?: boolean
@@ -54,10 +51,7 @@ export function InviteCard({
   competitionId = null,
   currentUserId,
   ruleChips = [],
-  statusLine,
-  onShare,
-  shareFeedback,
-  shareAriaLabel,
+  scoringHeadline = null,
   qrUrl,
   qrAriaLabel,
   canEdit = false,
@@ -74,68 +68,37 @@ export function InviteCard({
   className = '',
   gender = null,
 }: InviteCardProps) {
-  const shareButton = onShare ? (
-    <div className="relative shrink-0">
-      <button
-        type="button"
-        onClick={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          onShare()
-        }}
-        aria-label={shareAriaLabel}
-        className={`${adminCornerBtnClass} text-brand-primary`}
-      >
-        <IconShare />
-      </button>
-      {shareFeedback ? (
-        <p className="absolute right-0 top-full z-10 mt-1 whitespace-nowrap rounded-lg bg-brand-surface px-2 py-0.5 text-[10px] font-medium text-brand-muted shadow-sm">
-          {shareFeedback}
+  const headerRow = (
+    <div className="flex w-full min-w-0 items-start gap-2 sm:gap-3">
+      <div className="min-w-0 shrink space-y-1">
+        <p className="font-display text-base font-bold leading-tight text-brand-primary sm:text-xl md:text-2xl">
+          {dateLine}
         </p>
-      ) : null}
-    </div>
-  ) : null
-
-  const inviteActions =
-    onShare || qrUrl ? (
-      <div className="flex items-center justify-end gap-2 pt-0.5">
-        {qrUrl ? <InviteCardQr url={qrUrl} title={qrAriaLabel} /> : null}
-        {shareButton}
+        <p className="break-words font-display text-sm font-semibold leading-snug text-brand-primary sm:text-base md:text-lg">
+          {title}
+        </p>
+        {timeLine ? (
+          <p className="break-all font-display text-lg font-bold leading-tight tabular-nums text-brand-text sm:break-words sm:text-2xl md:text-3xl">
+            {timeLine}
+          </p>
+        ) : null}
       </div>
-    ) : null
-
-  const scheduleBlock = (
-    <div className="min-w-0 space-y-1">
-      <p className="font-display text-base font-bold leading-tight text-brand-primary sm:text-xl md:text-2xl">
-        {dateLine}
-      </p>
-      <p className="break-words font-display text-sm font-semibold leading-snug text-brand-primary sm:text-base md:text-lg">
-        {title}
-      </p>
-      {timeLine ? (
-        <p className="break-all font-display text-lg font-bold leading-tight tabular-nums text-brand-text sm:break-words sm:text-2xl md:text-3xl">
-          {timeLine}
-        </p>
+      {qrUrl ? (
+        <div className="w-[4.75rem] shrink-0 sm:w-24 md:w-28">
+          <InviteCardQr url={qrUrl} title={qrAriaLabel} />
+        </div>
       ) : null}
-      {inviteActions}
-      {statusLine ? (
-        <p className="text-xs font-semibold tabular-nums text-brand-accent">{statusLine}</p>
+      {ruleChips.length > 0 ? (
+        <div className="min-w-0 flex-1">
+          <RuleChipGrid chips={ruleChips} inline />
+        </div>
       ) : null}
     </div>
   )
 
   const inner = (
     <div className="min-w-0 overflow-hidden px-3 py-3 sm:px-4 sm:py-4">
-      {ruleChips.length > 0 ? (
-        <div className="flex w-full min-w-0 max-w-full flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
-          <div className="flex min-w-0 max-w-full flex-1 flex-col justify-center gap-0.5 sm:gap-1">
-            {scheduleBlock}
-          </div>
-          <RuleChipGrid chips={ruleChips} inline />
-        </div>
-      ) : (
-        <div className="min-w-0 space-y-0.5">{scheduleBlock}</div>
-      )}
+      {headerRow}
 
       <div className="mt-4 border-t-2 border-brand-border pt-3">
         {rosterSection ??
@@ -158,15 +121,29 @@ export function InviteCard({
 
   const showAdminActions = (canEdit && editTo) || (canDelete && onDelete)
 
-  const bannerSrc = inviteBannerForGender(gender ?? genderFromRuleChips(ruleChips))
+  const bannerSrc = inviteBannerForSession({
+    gender: gender ?? genderFromRuleChips(ruleChips),
+    isDuo: Boolean(duoTeams?.length),
+  })
   const banner = bannerSrc ? (
-    <div className="aspect-[1024/172] w-full overflow-hidden bg-brand-bg-alt">
+    <div className="relative aspect-[1024/172] w-full overflow-hidden bg-brand-bg-alt">
       <img
         src={bannerSrc}
         alt=""
         className="h-full w-full object-cover object-[center_30%]"
         decoding="async"
       />
+      {scoringHeadline ? (
+        <div className="pointer-events-none absolute right-3 top-3 z-40">
+          <div className="game-card-racetrack rounded-xl">
+            <div className="rounded-[10px] bg-brand-surface px-3 py-1.5 shadow-sm">
+              <p className="whitespace-nowrap font-display text-sm font-bold leading-tight text-brand-primary sm:text-base">
+                {scoringHeadline}
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   ) : null
 

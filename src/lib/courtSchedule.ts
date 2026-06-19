@@ -28,6 +28,45 @@ export function clubHourToDate(dateStr: string, hour: number, minute = 0): Date 
   return d
 }
 
+import type { AppLocale } from './locale'
+
+export function intlLocaleTag(locale: AppLocale): string {
+  switch (locale) {
+    case 'th':
+      return 'th-TH'
+    case 'fr':
+      return 'fr-FR'
+    case 'ru':
+      return 'ru-RU'
+    default:
+      return 'en-GB'
+  }
+}
+
+/** Invite card date line — weekday, day, month in the user's language. */
+export function formatClubDateInvite(d: Date, locale: AppLocale): string {
+  return new Intl.DateTimeFormat(intlLocaleTag(locale), {
+    timeZone: CLUB_TIMEZONE,
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  }).format(d)
+}
+
+/** 24h club time in the user's language (digits/format follow locale). */
+export function formatClubTimeLocalized(d: Date, locale: AppLocale): string {
+  return new Intl.DateTimeFormat(intlLocaleTag(locale), {
+    timeZone: CLUB_TIMEZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(d)
+}
+
+export function formatClubTimeRange(from: Date, to: Date, locale: AppLocale): string {
+  return `${formatClubTimeLocalized(from, locale)}–${formatClubTimeLocalized(to, locale)}`
+}
+
 export function formatClubTime(d: Date): string {
   return d.toLocaleTimeString('en-GB', {
     hour: '2-digit',

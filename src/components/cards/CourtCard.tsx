@@ -195,6 +195,7 @@ export function ScoreStepper({
   finished,
   ariaLabel,
   scoreMax,
+  tv = false,
 }: {
   value: string
   onChange: (v: string) => void
@@ -202,15 +203,20 @@ export function ScoreStepper({
   finished?: boolean
   ariaLabel: string
   scoreMax?: number
+  tv?: boolean
 }) {
   const inputClass = finished
     ? 'h-8 w-8 rounded-lg border border-brand-border/50 bg-[#faf9f7] px-0.5 py-0.5 text-center text-sm font-semibold tabular-nums text-brand-sage disabled:text-brand-muted/60 dark:border-white/15 dark:bg-white/[0.08] dark:text-brand-text md:h-10 md:w-10 md:text-base'
     : 'h-8 w-8 rounded-lg border border-brand-border/80 bg-brand-surface px-0.5 py-0.5 text-center text-sm font-semibold tabular-nums text-brand-primary disabled:text-brand-muted/60 dark:border-white/20 dark:bg-white/[0.08] dark:text-brand-text md:h-10 md:w-10 md:text-base'
   const stepClass =
-    'flex h-5 w-8 items-center justify-center rounded text-[10px] font-bold leading-none text-brand-muted active:bg-brand-bg-alt disabled:opacity-30 dark:active:bg-white/10 md:h-6 md:w-10 md:text-xs'
+    'tv-score-step-btn flex h-5 w-8 items-center justify-center rounded text-[10px] font-bold leading-none text-brand-muted active:bg-brand-bg-alt disabled:opacity-30 dark:active:bg-white/10 md:h-6 md:w-10 md:text-xs'
 
   return (
-    <div className="flex flex-col items-center gap-0.5" onClick={stopCardNav} onKeyDown={stopCardNav}>
+    <div
+      className={`flex flex-col items-center gap-0.5${tv ? ' tv-score-stepper' : ''}`}
+      onClick={stopCardNav}
+      onKeyDown={stopCardNav}
+    >
       <button
         type="button"
         disabled={disabled}
@@ -232,7 +238,7 @@ export function ScoreStepper({
           e.currentTarget.select()
           e.currentTarget.scrollIntoView({ block: 'center', behavior: 'smooth' })
         }}
-        className={inputClass}
+        className={`tv-score-input ${inputClass}`}
         aria-label={ariaLabel}
       />
       <button
@@ -322,9 +328,16 @@ export function CourtMatchCell({
       finished={finished}
       ariaLabel={t('aria.teamAScore', { unit: fieldLabel })}
       scoreMax={scoreMax}
+      tv={compact}
     />
   ) : scoreA ? (
-    <span className="text-base font-bold tabular-nums text-brand-accent md:text-lg">{scoreA}</span>
+    <span
+      className={`font-bold tabular-nums text-brand-accent ${
+        compact ? 'tv-score-readout text-base md:text-lg' : 'text-base md:text-lg'
+      }`}
+    >
+      {scoreA}
+    </span>
   ) : (
     <span className="inline-block min-w-[1.25rem]" aria-hidden />
   )
@@ -337,9 +350,16 @@ export function CourtMatchCell({
       finished={finished}
       ariaLabel={t('aria.teamBScore', { unit: fieldLabel })}
       scoreMax={scoreMax}
+      tv={compact}
     />
   ) : scoreB ? (
-    <span className="text-base font-bold tabular-nums text-brand-accent md:text-lg">{scoreB}</span>
+    <span
+      className={`font-bold tabular-nums text-brand-accent ${
+        compact ? 'tv-score-readout text-base md:text-lg' : 'text-base md:text-lg'
+      }`}
+    >
+      {scoreB}
+    </span>
   ) : (
     <span className="inline-block min-w-[1.25rem]" aria-hidden />
   )
@@ -393,47 +413,55 @@ export function CourtMatchCell({
   const teamTitle = (label: string | undefined, align: 'left' | 'right') =>
     label ? (
       <p
-        className={`truncate text-xs font-bold uppercase tracking-wide text-brand-primary md:text-sm ${
-          align === 'right' ? 'text-right' : ''
-        }`}
+        className={`truncate font-bold uppercase tracking-wide text-brand-primary ${
+          compact ? 'tv-team-label text-xs md:text-sm' : 'text-xs md:text-sm'
+        } ${align === 'right' ? 'text-right' : ''}`}
       >
         {label}
       </p>
     ) : null
 
-  const grid = (
-    <div
-      className={`grid grid-cols-[minmax(0,1fr)_auto_1px_auto_minmax(0,1fr)] items-center ${
-        compact
-          ? 'tv-court-match-grid min-h-0 flex-1 items-stretch gap-x-1 gap-y-0.5 px-0 py-0'
-          : 'gap-x-2 gap-y-1 px-0.5 py-1 md:gap-x-3 md:px-1 md:py-1.5'
-      }`}
-    >
-        <div className="min-w-0 justify-self-start space-y-1">
-          {teamTitle(teamALabel, 'left')}
-          {playerEl(teamAPlayerList[0]!, 'left')}
-          {playerEl(teamAPlayerList[1]!, 'left')}
-        </div>
-        <div className="flex min-w-[1.25rem] items-center justify-center tabular-nums">
-          {scoreAEl}
-        </div>
-        <span className={`w-px bg-brand-border/60 ${compact ? 'self-stretch' : 'h-full min-h-[2.5rem]'}`} aria-hidden="true" />
-        <div className="flex min-w-[1.25rem] items-center justify-center tabular-nums">
-          {scoreBEl}
-        </div>
-        <div className="min-w-0 justify-self-end space-y-1">
-          {teamTitle(teamBLabel, 'right')}
-          {playerEl(teamBPlayerList[0]!, 'right')}
-          {playerEl(teamBPlayerList[1]!, 'right')}
-        </div>
+  const grid = compact ? (
+    <div className="tv-court-match-grid grid min-h-0 w-full flex-1 grid-cols-[1fr_auto_1fr] items-center gap-x-2 px-2">
+      <div className="flex min-w-0 flex-col justify-center gap-1 justify-self-start">
+        {teamTitle(teamALabel, 'left')}
+        {playerEl(teamAPlayerList[0]!, 'left')}
+        {playerEl(teamAPlayerList[1]!, 'left')}
       </div>
+      <div className="tv-court-match-scores flex shrink-0 items-stretch gap-2 justify-self-center">
+        <div className="flex items-center justify-center tabular-nums">{scoreAEl}</div>
+        <span className="w-px self-stretch bg-brand-border/60" aria-hidden="true" />
+        <div className="flex items-center justify-center tabular-nums">{scoreBEl}</div>
+      </div>
+      <div className="flex min-w-0 flex-col justify-center gap-1 justify-self-end">
+        {teamTitle(teamBLabel, 'right')}
+        {playerEl(teamBPlayerList[0]!, 'right')}
+        {playerEl(teamBPlayerList[1]!, 'right')}
+      </div>
+    </div>
+  ) : (
+    <div className="grid grid-cols-[minmax(0,1fr)_auto_1px_auto_minmax(0,1fr)] items-center gap-x-2 gap-y-1 px-0.5 py-1 md:gap-x-3 md:px-1 md:py-1.5">
+      <div className="min-w-0 justify-self-start space-y-1">
+        {teamTitle(teamALabel, 'left')}
+        {playerEl(teamAPlayerList[0]!, 'left')}
+        {playerEl(teamAPlayerList[1]!, 'left')}
+      </div>
+      <div className="flex min-w-[1.25rem] items-center justify-center tabular-nums">{scoreAEl}</div>
+      <span className="h-full min-h-[2.5rem] w-px bg-brand-border/60" aria-hidden="true" />
+      <div className="flex min-w-[1.25rem] items-center justify-center tabular-nums">{scoreBEl}</div>
+      <div className="min-w-0 justify-self-end space-y-1">
+        {teamTitle(teamBLabel, 'right')}
+        {playerEl(teamBPlayerList[0]!, 'right')}
+        {playerEl(teamBPlayerList[1]!, 'right')}
+      </div>
+    </div>
   )
 
   if (embedded) {
     return (
       <div
         aria-label={`${teamA[0]} and ${teamA[1]} against ${teamB[0]} and ${teamB[1]}`}
-        className={compact ? 'tv-court-match flex min-h-0 flex-1 flex-col' : undefined}
+        className={compact ? 'tv-court-match flex min-h-0 w-full flex-1 flex-col' : undefined}
       >
         {grid}
       </div>
@@ -473,10 +501,10 @@ function CourtLabelRow({
   return (
     <div
       className={`flex items-center justify-center px-2 ${
-        tvCompact ? 'min-h-9 py-1' : 'min-h-12 px-3 py-2'
+        tvCompact ? 'tv-court-label-row min-h-11 py-1.5' : 'min-h-12 px-3 py-2'
       }`}
     >
-      <p className={`truncate text-center ${titleClass}`}>{label}</p>
+      <p className={`truncate text-center ${titleClass}${tvCompact ? ' tv-court-label' : ''}`}>{label}</p>
     </div>
   )
 }

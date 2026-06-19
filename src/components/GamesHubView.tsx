@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react'
+import { GamesGenderFilterProvider } from '../contexts/GamesGenderFilterContext'
 import { useTranslation } from '../hooks/useTranslation'
 import { useSeasonLeaderboard } from '../hooks/useSeasonLeaderboard'
+import type { Gender } from '../lib/competitionPresets'
 import { Leaderboard } from '../pages/Leaderboard'
 import {
   IconHubCurrent,
@@ -31,6 +33,8 @@ type Props = {
   leaderboardVariant?: LeaderboardVariant
   /** Background for the tab content area (e.g. friendly list on cream). */
   listClassName?: string
+  /** Gender filter on invite card banners. */
+  showGenderFilter?: boolean
 }
 
 function HubTab({
@@ -100,10 +104,12 @@ export function GamesHubView({
   pastPanel,
   leaderboardVariant = 'competition',
   listClassName = '',
+  showGenderFilter = true,
 }: Props) {
   const { t } = useTranslation()
   const { season } = useSeasonLeaderboard(leaderboardVariant === 'competition')
   const [tab, setTab] = useState<GamesHubTab>('current')
+  const [genderFilter, setGenderFilter] = useState<Gender>('Men')
   const didDefaultTab = useRef(false)
 
   useEffect(() => {
@@ -116,7 +122,10 @@ export function GamesHubView({
     ? t('hub.seasonLeaderboard', { name: season.name })
     : t('nav.leaderboard')
 
-  const listBody =
+  const showGenderFilterControls =
+    showGenderFilter && (hubNav !== 'tabs' || tab !== 'leaderboard')
+
+  const listContent =
     hubNav !== 'tabs' ? (
       <div className={`w-full min-w-0 max-w-full overflow-x-hidden ${listClassName}`}>
         {currentPanel}
@@ -130,6 +139,14 @@ export function GamesHubView({
         {tab === 'current' ? currentPanel : pastPanel}
       </div>
     )
+
+  const listBody = showGenderFilterControls ? (
+    <GamesGenderFilterProvider gender={genderFilter} setGender={setGenderFilter}>
+      {listContent}
+    </GamesGenderFilterProvider>
+  ) : (
+    listContent
+  )
 
   return (
     <div className="flex min-h-0 min-w-0 w-full max-w-full flex-1 basis-0 flex-col overflow-hidden">

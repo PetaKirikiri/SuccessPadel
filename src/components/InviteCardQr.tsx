@@ -1,20 +1,21 @@
 import QRCode from 'qrcode'
 import { useEffect, useState } from 'react'
 
-const SIZE = 56
+const RENDER_PX = 512
 
 type Props = {
   url: string
   title?: string
+  className?: string
 }
 
-export function InviteCardQr({ url, title }: Props) {
+export function InviteCardQr({ url, title, className = '' }: Props) {
   const [src, setSrc] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
     void QRCode.toDataURL(url, {
-      width: SIZE * 4,
+      width: RENDER_PX,
       margin: 1,
       errorCorrectionLevel: 'M',
       color: { dark: '#000000', light: '#ffffff' },
@@ -26,10 +27,13 @@ export function InviteCardQr({ url, title }: Props) {
     }
   }, [url])
 
+  const frameClass =
+    'block w-full aspect-square shrink-0 rounded-xl border-2 border-brand-border bg-white shadow-sm'
+
   if (!src) {
     return (
       <div
-        className="h-14 w-14 shrink-0 animate-pulse rounded-xl border border-brand-border bg-brand-bg-alt"
+        className={`${frameClass} animate-pulse bg-brand-bg-alt ${className}`}
         aria-hidden
       />
     )
@@ -39,10 +43,8 @@ export function InviteCardQr({ url, title }: Props) {
     <img
       src={src}
       alt=""
-      width={SIZE}
-      height={SIZE}
       title={title}
-      className="h-14 w-14 shrink-0 rounded-xl border border-brand-border bg-white p-0.5 shadow-sm"
+      className={`${frameClass} object-contain p-1 ${className}`}
     />
   )
 }

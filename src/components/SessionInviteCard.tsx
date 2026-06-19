@@ -1,18 +1,12 @@
-import { useEffect, useMemo, useState, lazy, Suspense, type ReactNode } from 'react'
+import { useMemo, useState, lazy, Suspense, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { IconOpenPad } from './ButtonIcons'
 import { GameBoardPreview } from './GameBoardPreview'
 import { InviteCard } from './InviteCard'
 import { useTranslation } from '../hooks/useTranslation'
-import { translateCountdownLabel, translatePhaseBadge } from '../i18n/competitionLabels'
 import type { TranslateFn } from '../i18n'
 import type { CompetitionRow } from '../hooks/useCompetitions'
-import {
-  competitionCardPhase,
-  competitionCountdown,
-  competitionIsLiveByTime,
-} from '../lib/competitionListCard'
-import { shareCompetitionInvite } from '../lib/competitionLink'
+import { competitionIsLiveByTime } from '../lib/competitionListCard'
 import { competitionPlayUrl, shareSiteOrigin } from '../lib/siteUrl'
 import type { FriendlyGameRecord } from '../lib/friendlyGames'
 import {
@@ -25,6 +19,8 @@ import {
   isOrganizedFriendly,
 } from '../lib/friendlyGames'
 import { inviteCardData, type SessionSource } from '../lib/sessionDisplay'
+import type { AppLocale } from '../lib/locale'
+import { useLocale } from '../providers/LocaleProvider'
 import { supabase } from '../lib/supabaseClient'
 
 const CompetitionInviteRosterEditor = lazy(() =>
@@ -39,7 +35,6 @@ type CompetitionProps = {
   isAdmin?: boolean
   userId?: string | null
   onRefresh?: () => void
-  statusLine?: string | null
 }
 
 type FriendlyProps = {
@@ -61,11 +56,12 @@ type Props = CompetitionProps | FriendlyProps
 
 export function SessionInviteCard(props: Props) {
   const { t } = useTranslation()
+  const { locale } = useLocale()
 
   if (props.kind === 'competition') {
-    return <CompetitionInviteCard {...props} t={t} />
+    return <CompetitionInviteCard {...props} t={t} locale={locale} />
   }
-  return <FriendlyInviteCard {...props} t={t} />
+  return <FriendlyInviteCard {...props} t={t} locale={locale} />
 }
 
 function CompetitionInviteCard({
@@ -73,50 +69,18 @@ function CompetitionInviteCard({
   isAdmin = false,
   userId,
   onRefresh,
-  statusLine: statusLineOverride,
   t,
-}: CompetitionProps & { t: TranslateFn }) {
+  locale,
+}: CompetitionProps & { t: TranslateFn; locale: AppLocale }) {
   const [busy, setBusy] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
-  const [shareFeedback, setShareFeedback] = useState<string | null>(null)
-  const [now, setNow] = useState(Date.now())
-
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(timer)
-  }, [])
-
-  const source: SessionSource = { kind: 'competition', row }
-  const data = useMemo(() => inviteCardData(source, t), [row, t])
-  const phase = useMemo(() => competitionCardPhase(row, now), [row, now])
-  const countdown = useMemo(() => competitionCountdown(row, now), [row, now])
-  const badge = translatePhaseBadge(t, phase)
-  const isLive = competitionIsLiveByTime(row, now)
   const canEditRoster = isAdmin && row.status !== 'complete'
 
-  const statusLine =
-    statusLineOverride ??
-    ([badge, countdown && `${translateCountdownLabel(t, countdown.label)} ${countdown.value}`]
-      .filter(Boolean)
-      .join(' · ') ||
-      null)
-
-  const shareInvite = async () => {
-    const result = await shareCompetitionInvite({
-      sessionId: row.id,
-      title: row.title,
-      text: t('competition.shareInviteMessage', { title: row.title }),
-    })
-    if (result === 'shared' || result === 'copied') {
-      setShareFeedback(t('competition.linkCopied'))
-      setTimeout(() => setShareFeedback(null), 2000)
-    } else if (result === 'failed') {
-      setShareFeedback(t('competition.copyFailed'))
-      setTimeout(() => setShareFeedback(null), 2000)
-    }
-  }
+  const source: SessionSource = { kind: 'competition', row }
+  const data = useMemo(() => inviteCardData(source, t, { locale }), [row, t, locale])
 
   const remove = async () => {
+    const isLive = competitionIsLiveByTime(row, Date.now())
     const warning = isLive
       ? t('competition.deleteLiveConfirm', { title: row.title })
       : t('competition.deleteConfirm', { title: row.title })
@@ -137,10 +101,6 @@ function CompetitionInviteCard({
       {...data}
       competitionId={row.id}
       currentUserId={userId}
-      statusLine={statusLine}
-      onShare={() => void shareInvite()}
-      shareFeedback={shareFeedback}
-      shareAriaLabel={t('competition.shareInvite')}
       qrUrl={competitionPlayUrl(row.id)}
       qrAriaLabel={t('leaderboard.viewAlongHint')}
       canEdit={isAdmin}
@@ -175,11 +135,12 @@ function FriendlyInviteCard({
   onDelete,
   deleteBusy = false,
   t,
-}: FriendlyProps & { t: TranslateFn }) {
+  locale,
+}: FriendlyProps & { t: TranslateFn; locale: AppLocale }) {
   const isFree = isFreeFriendly(game)
   const canEdit = canEditFriendlySession(game, currentUserId, isAdmin)
   const source: SessionSource = { kind: 'friendly', game }
-  const data = useMemo(() => inviteCardData(source, t, { detailTo: to }), [game, t, to])
+  const data = useMemo(() => inviteCardData(source, t, { detailTo: to, locale }), [game, t, to, locale])
 
   const organizedConfig = game.organizedConfig ?? DEFAULT_FRIENDLY_ORGANIZED_CONFIG
   const previewGames = friendlyPreviewGames(game, courtNames, game.profileAvatars)

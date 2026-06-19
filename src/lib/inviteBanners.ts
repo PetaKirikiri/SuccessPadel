@@ -1,6 +1,7 @@
 import type { Gender } from './competitionPresets'
 import { GENDERS } from './competitionPresets'
 import type { RuleChip } from './friendlyGameDisplay'
+import duoMenBanner from '../assets/invite-banners/invite-banner-duo-men.png'
 import menBanner from '../assets/invite-banners/invite-banner-men.jpg'
 import womenBanner from '../assets/invite-banners/invite-banner-women.jpg'
 import mixedBanner from '../assets/invite-banners/invite-banner-mixed.jpg'
@@ -27,8 +28,12 @@ export function genderFromRuleChips(chips: RuleChip[]): Gender | null {
   return normalizeSessionGender(chip?.label)
 }
 
-export function inviteBannerForGender(gender: string | null | undefined): string | null {
-  const normalized = normalizeSessionGender(gender)
+export function inviteBannerForSession(opts: {
+  gender?: string | null
+  isDuo?: boolean
+}): string | null {
+  const normalized = normalizeSessionGender(opts.gender)
   if (!normalized) return null
+  if (normalized === 'Men' && opts.isDuo) return duoMenBanner
   return INVITE_BANNERS[normalized] ?? null
 }

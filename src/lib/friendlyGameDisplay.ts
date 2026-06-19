@@ -6,11 +6,14 @@ import {
 } from './competitionPresets'
 import type { TranslateFn } from '../i18n'
 import {
+  formatClubDateInvite,
   formatClubDateShort,
   formatClubTime,
+  formatClubTimeLocalized,
   formatHourLabel,
   parseClubDate,
 } from './courtSchedule'
+import type { AppLocale } from './locale'
 import {
   DEFAULT_FRIENDLY_ORGANIZED_CONFIG,
   friendlyFilledSlots,
@@ -73,7 +76,10 @@ export function friendlyDivisionLabels(game: FriendlyGameRecord): {
   }
 }
 
-export function friendlyScheduleDisplay(game: FriendlyGameRecord): FriendlyScheduleDisplay {
+export function friendlyScheduleDisplay(
+  game: FriendlyGameRecord,
+  locale: AppLocale,
+): FriendlyScheduleDisplay {
   const config = game.organizedConfig ?? DEFAULT_FRIENDLY_ORGANIZED_CONFIG
   if (game.playMode !== 'free' && config.day) {
     const timing = friendlySessionTiming(config)
@@ -81,29 +87,14 @@ export function friendlyScheduleDisplay(game: FriendlyGameRecord): FriendlySched
       return { dateLine: '', timeLine: '', posted: false }
     }
     const { sessionStart, sessionEnd } = timing
-    const dateLine = sessionStart.toLocaleDateString('en-GB', {
-      timeZone: BANGKOK,
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-    })
-    const timeLine = `${formatClubTime(sessionStart)}–${formatClubTime(sessionEnd)}`
+    const dateLine = formatClubDateInvite(sessionStart, locale)
+    const timeLine = `${formatClubTimeLocalized(sessionStart, locale)}–${formatClubTimeLocalized(sessionEnd, locale)}`
     return { dateLine, timeLine, posted: false }
   }
 
   const postedAt = new Date(game.createdAt)
-  const dateLine = postedAt.toLocaleDateString('en-GB', {
-    timeZone: BANGKOK,
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-  })
-  const timeLine = postedAt.toLocaleTimeString('en-GB', {
-    timeZone: BANGKOK,
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  })
+  const dateLine = formatClubDateInvite(postedAt, locale)
+  const timeLine = formatClubTimeLocalized(postedAt, locale)
   return { dateLine, timeLine, posted: true }
 }
 

@@ -45,7 +45,7 @@ function RuleChipButton({
       <span
         className={
           inline
-            ? 'min-w-0 flex-1 truncate text-[11px] font-bold leading-snug text-brand-primary sm:text-sm'
+            ? 'min-w-0 flex-1 break-words text-[11px] font-bold leading-snug text-brand-primary sm:text-sm'
             : 'text-sm font-bold leading-snug text-brand-primary'
         }
       >
@@ -69,7 +69,7 @@ export function RuleChipGrid({ chips, inline = false }: Props) {
       <ul
         className={
           inline
-            ? 'm-0 grid w-full min-w-0 list-none grid-cols-2 gap-1.5 p-0 sm:min-w-0 sm:max-w-[58%] sm:shrink-0 sm:grid-cols-3 sm:gap-2'
+            ? 'm-0 grid w-full min-w-0 list-none grid-cols-2 gap-1.5 p-0 sm:gap-2'
             : 'm-0 grid list-none grid-cols-3 gap-1.5 p-0'
         }
       >

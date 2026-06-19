@@ -1,7 +1,9 @@
 import type { CompetitionRow } from '../hooks/useCompetitions'
 import type { TranslateFn } from '../i18n'
+import type { AppLocale } from './locale'
 import {
   competitionInviteRoster,
+  competitionInviteScoringHeadline,
   competitionRuleChips as ruleChipsFromCompetitionRow,
   competitionScheduleDisplay,
   type CompetitionTeamSlot,
@@ -36,6 +38,7 @@ export type InviteCardData = {
   slots: RosterSlot[]
   duoTeams: CompetitionTeamSlot[] | null
   ruleChips: RuleChip[]
+  scoringHeadline: string | null
   gender: string | null
 }
 
@@ -70,12 +73,12 @@ function withDivisionChips(
   return [...chips, ...extra]
 }
 
-export function scheduleDisplay(source: SessionSource): SessionScheduleDisplay {
+export function scheduleDisplay(source: SessionSource, locale: AppLocale): SessionScheduleDisplay {
   if (source.kind === 'competition') {
-    return competitionScheduleDisplay(source.row)
+    return competitionScheduleDisplay(source.row, locale)
   }
   if (source.kind === 'friendly') {
-    const { dateLine, timeLine } = friendlyScheduleDisplay(source.game)
+    const { dateLine, timeLine } = friendlyScheduleDisplay(source.game, locale)
     return { dateLine, timeLine }
   }
   return { dateLine: '', timeLine: '' }
@@ -96,7 +99,7 @@ export function ruleChips(
     return withDivisionChips(
       ruleChipsFromCompetitionRow(source.row, t),
       source.row.skill_level,
-      source.row.gender,
+      null,
     )
   }
   if (source.kind === 'friendly') {
@@ -105,7 +108,6 @@ export function ruleChips(
   }
   return withDivisionChips(
     presetRuleChips(source.mode, t, {
-      gameCount: division?.gameCount,
       courtCount: division?.courtCount,
     }),
     division?.skillLevel,
@@ -116,11 +118,12 @@ export function ruleChips(
 export function inviteCardData(
   source: SessionSource,
   t: TranslateFn,
-  opts?: { detailTo?: string; statusLine?: string | null },
+  opts?: { detailTo?: string; statusLine?: string | null; locale: AppLocale },
 ): InviteCardData {
-  const schedule = scheduleDisplay(source)
+  const schedule = scheduleDisplay(source, opts?.locale ?? 'en')
   if (source.kind === 'competition') {
     const roster = competitionInviteRoster(source.row)
+    const scoringHeadline = competitionInviteScoringHeadline(source.row, t)
     return {
       title: source.row.title,
       dateLine: schedule.dateLine,
@@ -128,7 +131,10 @@ export function inviteCardData(
       detailTo: opts?.detailTo ?? `/competitions/${source.row.id}`,
       slots: roster.slots,
       duoTeams: roster.duoTeams,
-      ruleChips: ruleChips(source, t),
+      ruleChips: ruleChips(source, t).filter(
+        (chip) => chip.key !== 'scoring' && chip.key !== 'gender',
+      ),
+      scoringHeadline,
       gender: sessionGender(source),
     }
   }
@@ -141,6 +147,7 @@ export function inviteCardData(
       slots: rosterSlots(source),
       duoTeams: null,
       ruleChips: ruleChips(source, t),
+      scoringHeadline: null,
       gender: sessionGender(source),
     }
   }
@@ -152,6 +159,7 @@ export function inviteCardData(
     slots: [],
     duoTeams: null,
     ruleChips: ruleChips(source, t),
+    scoringHeadline: null,
     gender: null,
   }
 }

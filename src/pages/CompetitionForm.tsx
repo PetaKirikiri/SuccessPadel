@@ -40,6 +40,7 @@ import {
   competitionPlayerMode,
   competitionScoringConfig,
   competitionSessionFields,
+  DUO_GAME_COUNT,
   SINGLES_COMPETITION,
   type CompetitionTeamConfig,
 } from '../lib/competitionFormatPresets'
@@ -51,7 +52,6 @@ import {
   competitionPlayStartFromAnchorIso,
   competitionStartsAtAnchorIso,
   DEFAULT_SINGLES_COURT_COUNT,
-  duoGameCountFromCourtCount,
   parseCompetitionStartSlotValue,
   playersFromCourtCount,
   scheduleCompetitionStartSlots,
@@ -494,13 +494,11 @@ export function CompetitionForm() {
 
     const finalTitle = title.trim() || autoTitle
     const targetPlayers = playersFromCourtCount(courtCount)
-    const duoGameCount = isDuos ? duoGameCountFromCourtCount(courtCount) : undefined
-    const baseConfig = competitionScoringConfig(playerMode, { gameCount: duoGameCount })
+    const baseConfig = competitionScoringConfig(playerMode)
     const lockedFields = competitionSessionFields(playerMode, {
       skillLevel,
       gender,
       targetPlayers,
-      gameCount: duoGameCount,
     })
 
     const rosterPayload = isDuos
@@ -552,7 +550,7 @@ export function CompetitionForm() {
         if (canBuildDuoSchedule) {
           const schedule = buildDuoStoredSchedule(
             duoTeamsToScheduleInput(duoTeams, rosterIds),
-            duoGameCount!,
+            DUO_GAME_COUNT,
             previewSeed,
           )
           const teamsConfig: CompetitionTeamConfig[] = pairs.map((pair) => ({
@@ -579,7 +577,7 @@ export function CompetitionForm() {
       return
     }
 
-    const eventMinutes = competitionEventMinutes(playerMode, duoGameCount)
+    const eventMinutes = competitionEventMinutes()
     const startsAt = showDateFields ? new Date(startsAtIso) : null
     const endsAt =
       startsAt != null ? new Date(startsAt.getTime() + eventMinutes * 60 * 1000) : null
@@ -667,7 +665,7 @@ export function CompetitionForm() {
       if (isDuos) {
         schedule = buildDuoStoredSchedule(
           duoTeamsToScheduleInput(duoTeams, rosterIds),
-          duoGameCount!,
+          DUO_GAME_COUNT,
           previewSeed,
         )
         teamsConfig = duoTeamsToPairPayload(duoTeams, rosterIds).map((pair) => ({
@@ -732,16 +730,14 @@ export function CompetitionForm() {
     )
     return measureScheduleQuality(rounds, previewSlotCount)
   }, [previewSeed, filledNameCount, slotCount, isDuos])
-  const duoGameCount = isDuos ? duoGameCountFromCourtCount(courtCount) : undefined
   const ruleChips = useMemo(
     () =>
       sessionRuleChips({ kind: 'preset', mode: playerMode }, t, {
         skillLevel,
         gender,
-        gameCount: duoGameCount,
         courtCount,
       }),
-    [playerMode, t, skillLevel, gender, duoGameCount, courtCount],
+    [playerMode, t, skillLevel, gender, courtCount],
   )
   const courtCaption = useMemo(() => {
     const players = playersFromCourtCount(courtCount)
