@@ -2,13 +2,14 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import type { LeaderboardEntry } from '../components/CompetitionLeaderboard'
 import { normalizeLeaderboardEntries } from '../lib/leaderboardEntries'
-import type { CompetitionPlayer } from './useCompetitions'
+import type { CompetitionPlayer, CompetitionSessionPair } from './useCompetitions'
 import type { ClubCourt, CompetitionRound, CourtMatch } from './useCompetitionRun'
 import type { GameSession } from '../lib/types'
 
 type PublicCompetition = {
   session: GameSession
   roster: CompetitionPlayer[]
+  session_pairs?: CompetitionSessionPair[]
   courts: ClubCourt[]
   rounds: CompetitionRound[]
   matches: CourtMatch[]
@@ -26,6 +27,7 @@ export function usePublicCompetition(sessionId: string | undefined, options?: Op
   const [rounds, setRounds] = useState<CompetitionRound[]>([])
   const [courtMatches, setCourtMatches] = useState<CourtMatch[]>([])
   const [roster, setRoster] = useState<CompetitionPlayer[]>([])
+  const [sessionPairs, setSessionPairs] = useState<CompetitionSessionPair[]>([])
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [clubCourts, setClubCourts] = useState<ClubCourt[]>([])
   const [loading, setLoading] = useState(true)
@@ -55,11 +57,12 @@ export function usePublicCompetition(sessionId: string | undefined, options?: Op
     async (silent = false) => {
       if (!sessionId) return
       if (!silent) setLoading(true)
-      const { data, error: err } = await supabase.rpc('get_public_competition', {
-        p_session_id: sessionId,
-      })
-      if (err) {
-        setError(err.message)
+      const [{ data, error: err }, { data: pairsData, error: pairsErr }] = await Promise.all([
+        supabase.rpc('get_public_competition', { p_session_id: sessionId }),
+        supabase.rpc('get_public_competition_session_pairs', { p_session_id: sessionId }),
+      ])
+      if (err || pairsErr) {
+        setError(err?.message ?? pairsErr?.message ?? 'Failed to load competition')
       } else if (!data) {
         setError('Not found')
       } else {
@@ -67,6 +70,7 @@ export function usePublicCompetition(sessionId: string | undefined, options?: Op
         setError(null)
         setSession(d.session)
         setRoster(d.roster ?? [])
+        setSessionPairs((pairsData as CompetitionSessionPair[]) ?? d.session_pairs ?? [])
         setClubCourts(d.courts ?? [])
         setRounds(d.rounds ?? [])
         setCourtMatches(d.matches ?? [])
@@ -95,6 +99,7 @@ export function usePublicCompetition(sessionId: string | undefined, options?: Op
     activeRound,
     courtMatches,
     roster,
+    sessionPairs,
     clubCourts,
     leaderboard,
     onRoster: false,

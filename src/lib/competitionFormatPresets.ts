@@ -6,8 +6,9 @@ import {
   type Gender,
   type SkillLevel,
 } from './competitionPresets'
-import { americanoScheduleUsedMinutes, playersFromCourtCount, teamsFromCourtCount } from './competitionLayout'
+import { americanoScheduleUsedMinutes, courtCountFromPlayers, playersFromCourtCount, teamsFromCourtCount } from './competitionLayout'
 import { RANKED_AMERICANO_GAMES, RANKED_GAME_MINUTES } from './competitionScheduleConstants'
+import { OPEN_SLOT_NAME } from './rankedSchedule'
 import type { TranslateFn } from '../i18n'
 import type { RuleChip } from './friendlyGameDisplay'
 import type { GameSession, ScoringConfig } from './types'
@@ -215,7 +216,43 @@ export function teamsFromConfig(
 }
 
 function duoNameKey(names: string[]): string {
-  return names.map((n) => n.trim().toLowerCase()).sort().join('|')
+  return names.map((n) => n.trim()).sort().join('|')
+}
+
+function activeSideNames(names: string[]): string[] {
+  return names.map((n) => n.trim()).filter((n) => n && n !== OPEN_SLOT_NAME)
+}
+
+/** Build duo teams for play UI from config, session pairs, and roster slot positions. */
+export function duoTeamsForPlay(
+  roster: Array<{ id: string; rank_order?: number | null }>,
+  config: ScoringConfig | null | undefined,
+  slotCount: number,
+  pairs?: Array<{
+    pair_label?: string | null
+    roster_a_id?: string | null
+    roster_b_id?: string | null
+  }>,
+): CompetitionTeamConfig[] {
+  const configTeams = teamsFromConfig(config)
+  const teamCount = Math.max(2, teamsFromCourtCount(courtCountFromPlayers(slotCount)))
+  const byRank = new Map(
+    roster
+      .filter((player) => player.rank_order != null)
+      .map((player) => [player.rank_order as number, player.id]),
+  )
+
+  return Array.from({ length: teamCount }, (_, index) => {
+    const pair = pairs?.[index]
+    const cfg = configTeams[index]
+    return {
+      label: pair?.pair_label?.trim() || cfg?.label?.trim() || `Team ${index + 1}`,
+      roster_ids: [
+        pair?.roster_a_id ?? cfg?.roster_ids?.[0] ?? byRank.get(index * 2) ?? '',
+        pair?.roster_b_id ?? cfg?.roster_ids?.[1] ?? byRank.get(index * 2 + 1) ?? '',
+      ] as [string, string],
+    }
+  })
 }
 
 /** Match live court side names to configured duo team labels. */
@@ -224,23 +261,36 @@ export function duoLabelsForMatch(
   rosterNamesById: Map<string, string>,
   teamANames: string[],
   teamBNames: string[],
+  teamARosterIds?: (string | null)[],
+  teamBRosterIds?: (string | null)[],
 ): { teamALabel?: string; teamBLabel?: string } {
-  const labelForSide = (names: string[]) => {
-    const key = duoNameKey(names)
+  const labelForSide = (names: string[], rosterIds?: (string | null)[]) => {
+    const activeNames = activeSideNames(names)
+    const activeRosterIds = (rosterIds ?? []).filter((id): id is string => Boolean(id))
+
     for (const team of teams) {
-      const nameA = rosterNamesById.get(team.roster_ids[0]) ?? ''
-      const nameB = rosterNamesById.get(team.roster_ids[1]) ?? ''
-      if (!nameA || !nameB) continue
-      const teamKey = duoNameKey([nameA, nameB])
-      if (teamKey === key) {
-        const fallback = `${nameA} & ${nameB}`
-        return team.label.trim() || fallback
+      const [ridA, ridB] = team.roster_ids
+      const teamRosterIds = [ridA, ridB].filter(Boolean)
+      const teamNames = teamRosterIds
+        .map((id) => rosterNamesById.get(id) ?? '')
+        .filter((name) => name.trim() && name !== OPEN_SLOT_NAME)
+
+      if (activeRosterIds.some((id) => teamRosterIds.includes(id))) {
+        return team.label.trim() || teamNames.join(' & ') || undefined
+      }
+
+      if (activeNames.some((name) => teamNames.some((tn) => tn.toLowerCase() === name.toLowerCase()))) {
+        return team.label.trim() || teamNames.join(' & ') || undefined
+      }
+
+      if (activeNames.length >= 2 && teamNames.length >= 2 && duoNameKey(activeNames) === duoNameKey(teamNames)) {
+        return team.label.trim() || teamNames.join(' & ')
       }
     }
     return undefined
   }
   return {
-    teamALabel: labelForSide(teamANames),
-    teamBLabel: labelForSide(teamBNames),
+    teamALabel: labelForSide(teamANames, teamARosterIds),
+    teamBLabel: labelForSide(teamBNames, teamBRosterIds),
   }
 }

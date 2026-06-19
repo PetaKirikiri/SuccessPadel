@@ -97,12 +97,12 @@ export function nextScheduleSeed(current: number, playerCount: number): number {
 
 export function courtPlayerFromRoster(sp: CompetitionPlayer): CourtPlayer {
   if (isOpenSlotId(sp.id)) {
-    return { id: null, name: OPEN_SLOT_NAME, avatarUrl: null }
+    return { id: null, rosterId: null, name: OPEN_SLOT_NAME, avatarUrl: null }
   }
   const profileId = sp.profile_id ?? sp.profiles?.id ?? null
   const name = clubDisplayName(profileId, rosterDisplayName(sp))
   const avatarUrl = profileId ? (sp.profiles?.avatar_url ?? null) : null
-  return { id: profileId, name, avatarUrl }
+  return { id: profileId, rosterId: sp.id, name, avatarUrl }
 }
 
 export function sortRosterByRank(roster: CompetitionPlayer[]): CompetitionPlayer[] {
@@ -183,9 +183,11 @@ function nameForRosterId(ranked: CompetitionPlayer[], id: string): string {
 }
 
 function courtPlayerForRosterId(ranked: CompetitionPlayer[], id: string): CourtPlayer {
-  if (isOpenSlotId(id)) return { id: null, name: OPEN_SLOT_NAME, avatarUrl: null }
+  if (isOpenSlotId(id)) return { id: null, rosterId: null, name: OPEN_SLOT_NAME, avatarUrl: null }
   const player = ranked.find((p) => p.id === id)
-  return player ? courtPlayerFromRoster(player) : { id: null, name: 'Player', avatarUrl: null }
+  return player
+    ? { ...courtPlayerFromRoster(player), rosterId: id }
+    : { id: null, rosterId: isOpenSlotId(id) ? null : id, name: 'Player', avatarUrl: null }
 }
 
 export function gamesFromStoredSchedule(

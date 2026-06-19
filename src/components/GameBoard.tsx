@@ -15,6 +15,7 @@ import type { MatchTeam } from '../lib/types'
 import { CompetitionTvGameCarousel, type TvGameNav } from './competitionPlay/CompetitionTvGameCarousel'
 import { CourtCard, CourtMatchCell, courtLiveHref } from './cards/CourtCard'
 import type { LiveCourt } from './cards/gameBoardTypes'
+import type { CourtPlayer } from '../lib/americanoSchedule'
 import {
   FriendlyManualGameCard,
   GameCardHeader,
@@ -66,6 +67,8 @@ type Props = {
   duoTeamLabels?: (
     teamA: [string, string],
     teamB: [string, string],
+    teamAPlayers?: CourtPlayer[],
+    teamBPlayers?: CourtPlayer[],
   ) => { teamALabel?: string; teamBLabel?: string }
   tvCarousel?: boolean
   viewAlongUrl?: string | null
@@ -518,6 +521,8 @@ export function GameBoard({
                 const sideLabels = duoTeamLabels?.(
                   [teamA[0] ?? '', teamA[1] ?? ''],
                   [teamB[0] ?? '', teamB[1] ?? ''],
+                  teamAPlayers,
+                  teamBPlayers,
                 )
                 const href = courtLiveHref({
                   liveCourtEnabled,

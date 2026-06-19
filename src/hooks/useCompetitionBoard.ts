@@ -4,8 +4,8 @@ import {
   americanoTargetPoints,
 } from '../lib/competitionPresets'
 import {
+  duoTeamsForPlay,
   isDuoCompetition,
-  teamsFromConfig,
   usesCompetitionGameScoring,
 } from '../lib/competitionFormatPresets'
 import {
@@ -28,7 +28,7 @@ import { DUO_GAME_COUNT } from '../lib/competitionFormatPresets'
 import type { CourtPlayer, GameRound } from '../lib/americanoSchedule'
 import type { PlaySide } from '../lib/types'
 import { pivotScheduleByCourt, sortGameRoundsByCourt, sortLiveCourtsByClubOrder, type CourtColumn } from '../lib/competitionCourtBoard'
-import type { CompetitionPlayer } from './useCompetitions'
+import type { CompetitionPlayer, CompetitionSessionPair } from './useCompetitions'
 import {
   matchWinnerTeam,
   roundPlayerName,
@@ -71,6 +71,7 @@ function groupLiveCourts(players: RoundPlayer[]): LiveCourt[] {
       rawSide === 'left' || rawSide === 'right' || rawSide === 'both' ? rawSide : null
     const player = {
       id: pid ?? null,
+      rosterId: p.roster_entry_id ?? null,
       padelPlayerId,
       name: label,
       avatarUrl,
@@ -123,11 +124,15 @@ export function useCompetitionBoard(
   roster: CompetitionPlayer[],
   clubCourts: ClubCourt[],
   courtMatches: CourtMatch[],
+  sessionPairs: CompetitionSessionPair[] = [],
 ) {
   const isDuo = isDuoCompetition(session)
-  const teams = teamsFromConfig(session?.scoring_config)
-  const isAmericano = session ? usesCompetitionGameScoring(session) : false
   const slotCount = targetPlayerCount(session, roster.length, isDuo)
+  const teams = useMemo(
+    () => duoTeamsForPlay(roster, session?.scoring_config, slotCount, sessionPairs),
+    [roster, session?.scoring_config, slotCount, sessionPairs],
+  )
+  const isAmericano = session ? usesCompetitionGameScoring(session) : false
   const layoutValid = slotCount >= 4 && slotCount % 4 === 0
   const neededCourts = courtsNeeded(slotCount)
   const scheduleSeed = scheduleSeedFromSession(session?.scoring_config)

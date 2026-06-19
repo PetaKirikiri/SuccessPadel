@@ -21,6 +21,7 @@ import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
 import { computeAmericanoStandings } from '../lib/competitionStandings'
 import { computeDuoStandings } from '../lib/computeDuoStandings'
 import { duoLabelsForMatch } from '../lib/competitionFormatPresets'
+import type { CourtPlayer } from '../lib/americanoSchedule'
 import { rosterDisplayName } from '../hooks/useCompetitions'
 import { AppTopBar } from '../components/AppTopBar'
 import { useTranslation } from '../hooks/useTranslation'
@@ -52,6 +53,7 @@ export function CompetitionPlay() {
     roster,
     clubCourts,
     leaderboard,
+    sessionPairs,
     loading,
     error,
     refresh,
@@ -60,7 +62,7 @@ export function CompetitionPlay() {
     pollMs: 20_000,
   })
   const { columns, liveCourtsByGame, roundIdForGame, courtIdByLabel, scoreUnit, playTo, matchForCourt, isDuo, teams } =
-    useCompetitionBoard(session, rounds, roster, clubCourts, courtMatches)
+    useCompetitionBoard(session, rounds, roster, clubCourts, courtMatches, sessionPairs)
   const [now, setNow] = useState(Date.now())
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000)
@@ -79,8 +81,20 @@ export function CompetitionPlay() {
   )
 
   const duoTeamLabels = useCallback(
-    (teamA: [string, string], teamB: [string, string]) =>
-      duoLabelsForMatch(teams, rosterNameById, teamA, teamB),
+    (
+      teamA: [string, string],
+      teamB: [string, string],
+      teamAPlayers?: CourtPlayer[],
+      teamBPlayers?: CourtPlayer[],
+    ) =>
+      duoLabelsForMatch(
+        teams,
+        rosterNameById,
+        teamA,
+        teamB,
+        teamAPlayers?.map((player) => player.rosterId ?? null),
+        teamBPlayers?.map((player) => player.rosterId ?? null),
+      ),
     [teams, rosterNameById],
   )
 

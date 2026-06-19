@@ -17,6 +17,7 @@ import { TvPlayQrPanel } from '../competitionPlay/TvPlayQrPanel'
 import type { TvGameNav } from '../competitionPlay/CompetitionTvGameCarousel'
 import { CourtCard, CourtMatchCell, courtLiveHref } from './CourtCard'
 import type { LiveCourt } from './gameBoardTypes'
+import type { CourtPlayer } from '../../lib/americanoSchedule'
 
 export type ScoringGame = ReturnType<typeof pivotScheduleByGame>[number]
 
@@ -25,6 +26,8 @@ type CourtDraft = { teamA: string; teamB: string }
 type DuoTeamLabels = (
   teamA: [string, string],
   teamB: [string, string],
+  teamAPlayers?: CourtPlayer[],
+  teamBPlayers?: CourtPlayer[],
 ) => { teamALabel?: string; teamBLabel?: string }
 
 type MatchForCourt = (
@@ -479,6 +482,8 @@ export function GameScoringCourts({
         const sideLabels = duoTeamLabels?.(
           [teamA[0] ?? '', teamA[1] ?? ''],
           [teamB[0] ?? '', teamB[1] ?? ''],
+          teamAPlayers,
+          teamBPlayers,
         )
         const courtReady = row.canSubmit
 

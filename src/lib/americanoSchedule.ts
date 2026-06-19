@@ -25,6 +25,8 @@ export type GameRound = {
 
 export type CourtPlayer = {
   id: string | null
+  /** session_players.id — used for duo team label lookup */
+  rosterId?: string | null
   padelPlayerId?: string | null
   name: string
   avatarUrl: string | null
