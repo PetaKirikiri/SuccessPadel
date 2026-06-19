@@ -8,6 +8,8 @@ type Props = {
   profiles: Profile[]
   padelPlayers?: PadelPlayerOption[]
   onChange: (teams: DuoTeamDraft[]) => void
+  onFieldCommit?: () => void
+  onRosterCommit?: () => void
   disabled?: boolean
   layout?: 'stack' | 'grid'
 }
@@ -17,6 +19,8 @@ export function DuoTeamSlots({
   profiles,
   padelPlayers,
   onChange,
+  onFieldCommit,
+  onRosterCommit,
   disabled,
   layout = 'stack',
 }: Props) {
@@ -86,6 +90,7 @@ export function DuoTeamSlots({
                 next[teamIndex] = { ...team, label: e.target.value }
                 onChange(next)
               }}
+              onBlur={() => onFieldCommit?.()}
               className={`brand-input min-w-0 flex-1 text-xs font-semibold uppercase tracking-wide ${
                 layout === 'grid' ? 'h-8 px-2' : 'h-9 text-sm'
               }`}
@@ -110,6 +115,7 @@ export function DuoTeamSlots({
               flatPadel[base] = padelPlayerIds[0] ?? null
               flatPadel[base + 1] = padelPlayerIds[1] ?? null
               handleSlotChange(flatNames, flatProfiles, flatPadel)
+              onRosterCommit?.()
             }}
             disabled={disabled}
             showMembers

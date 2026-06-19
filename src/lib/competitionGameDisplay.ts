@@ -101,33 +101,39 @@ export function competitionDuoTeamSlots(row: CompetitionRow): CompetitionTeamSlo
     (a, b) => (a.rank_order ?? 0) - (b.rank_order ?? 0),
   )
   const rosterById = new Map(sorted.map((player) => [player.id, player]))
+  const rosterByRank = new Map(
+    sorted
+      .filter((player) => player.rank_order != null)
+      .map((player) => [player.rank_order as number, player]),
+  )
   const cap = row.max_players ?? row.target_players ?? sorted.length
   const teamCount = Math.max(1, teamsFromCourtCount(courtCountFromPlayers(cap)))
   const configTeams = teamsFromConfig(row.scoring_config)
   const pairs = row.session_pairs ?? []
 
   if (pairs.length > 0) {
-    return pairs.map((pair, index) => {
-      const playerA = pair.roster_a_id ? rosterById.get(pair.roster_a_id) : undefined
-      const playerB = pair.roster_b_id ? rosterById.get(pair.roster_b_id) : undefined
+    return Array.from({ length: teamCount }, (_, index) => {
+      const pair = pairs[index]
+      const playerA = pair?.roster_a_id ? rosterById.get(pair.roster_a_id) : undefined
+      const playerB = pair?.roster_b_id ? rosterById.get(pair.roster_b_id) : undefined
       const slotA = playerA ? playerRosterSlot(playerA) : vacantRosterSlot()
       const slotB = playerB ? playerRosterSlot(playerB) : vacantRosterSlot()
       return {
         label:
-          pair.pair_label?.trim() ||
+          pair?.pair_label?.trim() ||
           configTeams[index]?.label?.trim() ||
           `Team ${index + 1}`,
         players: [slotA, slotB],
         vacant: slotA.vacant && slotB.vacant,
-        pairId: pair.id,
+        pairId: pair?.id ?? null,
         teamIndex: index,
       }
     })
   }
 
   return Array.from({ length: teamCount }, (_, index) => {
-    const playerA = sorted[index * 2]
-    const playerB = sorted[index * 2 + 1]
+    const playerA = rosterByRank.get(index * 2)
+    const playerB = rosterByRank.get(index * 2 + 1)
     const slotA = playerA ? playerRosterSlot(playerA) : vacantRosterSlot()
     const slotB = playerB ? playerRosterSlot(playerB) : vacantRosterSlot()
     return {

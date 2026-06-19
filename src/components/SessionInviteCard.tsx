@@ -149,7 +149,7 @@ function CompetitionInviteCard({
       rosterSection={
         canEditRoster ? (
           <Suspense fallback={<p className="text-xs text-brand-muted">{t('common.loading')}</p>}>
-            <CompetitionInviteRosterEditor row={row} onRefresh={onRefresh} />
+            <CompetitionInviteRosterEditor row={row} />
           </Suspense>
         ) : undefined
       }

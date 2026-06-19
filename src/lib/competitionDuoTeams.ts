@@ -31,16 +31,11 @@ export function duoTeamsToRosterSlots(teams: DuoTeamDraft[]) {
 export function duoTeamsToPairSlotPayload(
   teams: DuoTeamDraft[],
 ): Array<{ label: string; slot_a: number; slot_b: number }> {
-  return teams.flatMap((team, index) => {
-    if (!team.names[0]?.trim() || !team.names[1]?.trim()) return []
-    return [
-      {
-        label: team.label.trim() || `Team ${index + 1}`,
-        slot_a: index * 2,
-        slot_b: index * 2 + 1,
-      },
-    ]
-  })
+  return teams.map((team, index) => ({
+    label: team.label.trim() || `Team ${index + 1}`,
+    slot_a: index * 2,
+    slot_b: index * 2 + 1,
+  }))
 }
 
 export function duoTeamsToPairPayload(

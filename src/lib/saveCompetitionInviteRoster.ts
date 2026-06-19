@@ -15,7 +15,7 @@ export async function saveCompetitionInviteDuoRoster(
   const { error } = await supabase.rpc('sync_competition_roster_slots', {
     p_session_id: sessionId,
     p_slots: slots,
-    ...(pairs.length ? { p_pairs: pairs } : {}),
+    p_pairs: pairs,
   })
   return error?.message ?? null
 }
