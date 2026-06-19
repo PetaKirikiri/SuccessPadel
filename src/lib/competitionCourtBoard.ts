@@ -1,5 +1,5 @@
 import type { CourtPlayer, GameRound } from './americanoSchedule'
-import { COMPETITION_BREAK_MINUTES, gameSlotTimes } from './competitionLayout'
+import { COMPETITION_BREAK_MINUTES, gameSlotTimes, type GameSlotOpts } from './competitionLayout'
 import { formatClubTime } from './courtSchedule'
 
 export type CourtGameCell = {
@@ -79,6 +79,7 @@ export function pivotScheduleByCourt(
   gameMinutes: number,
   breakMinutes = COMPETITION_BREAK_MINUTES,
   eventEndsAt?: string,
+  slotOpts?: GameSlotOpts,
 ): CourtColumn[] {
   const map = new Map<string, CourtColumn>()
   const order: string[] = []
@@ -86,7 +87,7 @@ export function pivotScheduleByCourt(
 
   for (const game of games) {
     const slot = eventStartsAt
-      ? gameSlotTimes(eventStartsAt, game.gameNumber, gameMinutes, breakMinutes)
+      ? gameSlotTimes(eventStartsAt, game.gameNumber, gameMinutes, breakMinutes, slotOpts)
       : null
     let timeLabel = ''
     if (slot) {

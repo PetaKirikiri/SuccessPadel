@@ -362,7 +362,13 @@ export function scheduleLeadInMinutes(
 ): number {
   const playBlock = totalScheduleMinutes(totalGames, gameMinutes, breakMinutes)
   if (eventMinutes <= 0) return COMPETITION_SCHEDULE.leadInMinutes
-  // All slack before game 1 — play must finish by ends_at, never after.
+  const canonical =
+    totalGames === COMPETITION_SCHEDULE.games &&
+    gameMinutes === COMPETITION_SCHEDULE.gameMinutes &&
+    breakMinutes === COMPETITION_SCHEDULE.breakMinutes
+  if (canonical && eventMinutes >= playBlock + COMPETITION_SCHEDULE.leadInMinutes) {
+    return COMPETITION_SCHEDULE.leadInMinutes
+  }
   return Math.max(0, eventMinutes - playBlock)
 }
 
@@ -405,6 +411,78 @@ export function gameSlotTimes(
   const startsAt = new Date(new Date(eventStartsAt).getTime() + offsetMin * 60000)
   const endsAt = new Date(startsAt.getTime() + gameMinutes * 60000)
   return { startsAt, endsAt }
+}
+
+/** Display + countdown times — always from canonical schedule, not DB round rows. */
+export function competitionRoundTimesByGame(
+  session: Pick<
+    GameSession,
+    'starts_at' | 'ends_at' | 'scoring_config' | 'target_players' | 'max_players'
+  > | null,
+  gameCount?: number,
+): Map<number, { startsAt: number; endsAt: number }> {
+  const map = new Map<number, { startsAt: number; endsAt: number }>()
+  if (!session?.starts_at) return map
+  const schedule = resolveCompetitionSchedule(session)
+  const count = gameCount ?? schedule.totalGames
+  const slotOpts = gameSlotOptsFromSchedule(schedule)
+  for (let g = 1; g <= count; g++) {
+    const slot = gameSlotTimes(
+      session.starts_at,
+      g,
+      schedule.gameMinutes,
+      schedule.breakMinutes,
+      slotOpts,
+    )
+    map.set(g, { startsAt: slot.startsAt.getTime(), endsAt: slot.endsAt.getTime() })
+  }
+  return map
+}
+
+export type GameSlotTimes = { startsAt: number; endsAt: number }
+
+export function isGameSlotLive(now: number, times: GameSlotTimes | undefined): boolean {
+  return Boolean(times && now >= times.startsAt && now < times.endsAt)
+}
+
+/** True during the rest window after this game ends and before the next game starts. */
+export function isGameSlotInBreakAfter(
+  now: number,
+  gameNumber: number,
+  timesByGame: Map<number, GameSlotTimes>,
+): boolean {
+  const times = timesByGame.get(gameNumber)
+  if (!times || now < times.endsAt) return false
+  const next = timesByGame.get(gameNumber + 1)
+  if (!next) return now >= times.endsAt
+  return now < next.startsAt
+}
+
+/** TV carousel + scroll focus: live game, else break scoring window, else next upcoming. */
+export function competitionFocusGameNumber(
+  now: number,
+  timesByGame: Map<number, GameSlotTimes>,
+  gameNumbers: number[],
+  dbActive?: number,
+): number | undefined {
+  const sorted = [...gameNumbers].sort((a, b) => a - b)
+  if (sorted.length === 0) return dbActive
+
+  for (const g of sorted) {
+    if (isGameSlotLive(now, timesByGame.get(g))) return g
+  }
+
+  for (let i = 0; i < sorted.length; i += 1) {
+    const g = sorted[i]!
+    if (isGameSlotInBreakAfter(now, g, timesByGame)) return g
+  }
+
+  for (const g of sorted) {
+    const times = timesByGame.get(g)
+    if (times && now < times.startsAt) return g
+  }
+
+  return dbActive ?? sorted[sorted.length - 1]
 }
 
 export function eventScheduleSummary(

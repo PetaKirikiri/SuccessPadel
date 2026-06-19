@@ -11,6 +11,7 @@ import {
 import {
   americanoScheduleFromSession,
   courtsNeeded,
+  gameSlotOptsFromSchedule,
 } from '../lib/competitionLayout'
 import {
   gamesFromStoredSchedule,
@@ -135,7 +136,7 @@ export function useCompetitionBoard(
   const layoutValid = slotCount >= 4 && slotCount % 4 === 0
   const neededCourts = courtsNeeded(slotCount)
   const scheduleSeed = scheduleSeedFromSession(session?.scoring_config)
-  const { totalGames, gameMinutes: scheduledGameMinutes, breakMinutes: scheduledBreakMinutes } =
+  const { totalGames, gameMinutes: scheduledGameMinutes, breakMinutes: scheduledBreakMinutes, eventMinutes } =
     americanoScheduleFromSession(session)
   const gameMinutes = isAmericano ? scheduledGameMinutes : 0
 
@@ -204,8 +205,9 @@ export function useCompetitionBoard(
       gameMinutes || RANKED_GAME_MINUTES,
       scheduledBreakMinutes,
       session?.ends_at ?? undefined,
+      gameSlotOptsFromSchedule({ eventMinutes, totalGames }),
     )
-  }, [americanoGames, gameMinutes, isAmericano, scheduledBreakMinutes, session?.ends_at, session?.starts_at])
+  }, [americanoGames, eventMinutes, gameMinutes, isAmericano, scheduledBreakMinutes, session?.ends_at, session?.starts_at, totalGames])
 
   const liveCourtsByGame = useMemo(() => {
     const sortOrderByCourtId = new Map(clubCourts.map((c) => [c.id, c.sort_order]))

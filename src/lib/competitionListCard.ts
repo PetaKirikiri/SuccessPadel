@@ -57,6 +57,7 @@ export function competitionCardPhase(row: CompetitionScheduleRow, now: number): 
   if (now < startMs) return 'upcoming'
 
   const schedule = resolveCompetitionSchedule(row)
+  if (schedule.playStartsAt && now < schedule.playStartsAt.getTime()) return 'upcoming'
   const slotOpts = gameSlotOptsFromSchedule(schedule)
   for (let g = 1; g <= schedule.totalGames; g += 1) {
     const slot = gameSlotTimes(row.starts_at!, g, schedule.gameMinutes, schedule.breakMinutes, slotOpts)
@@ -77,8 +78,12 @@ export function competitionCountdown(row: CompetitionScheduleRow, now: number): 
   const startMs = row.starts_at ? Date.parse(row.starts_at) : NaN
   const endMs = row.ends_at ? Date.parse(row.ends_at) : NaN
 
-  if (phase === 'upcoming' && Number.isFinite(startMs)) {
-    return { label: 'Starts in', value: formatCountdown(startMs - now) }
+  if (phase === 'upcoming') {
+    const schedule = resolveCompetitionSchedule(row)
+    const targetMs = schedule.playStartsAt?.getTime() ?? startMs
+    if (Number.isFinite(targetMs)) {
+      return { label: 'Starts in', value: formatCountdown(targetMs - now) }
+    }
   }
   if (phase === 'finished') return null
   if (!Number.isFinite(startMs) || !row.starts_at) return null

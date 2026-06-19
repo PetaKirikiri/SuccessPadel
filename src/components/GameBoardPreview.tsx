@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import type { GameRound } from '../lib/americanoSchedule'
-import { breakMinutesFromConfig, gameSlotTimes } from '../lib/competitionLayout'
+import { breakMinutesFromConfig, competitionRoundTimesByGame, gameSlotOptsFromSchedule, gameSlotTimes, eventDurationMinutes } from '../lib/competitionLayout'
 import { americanoScoringUnit } from '../lib/competitionPresets'
 import { pivotScheduleByCourt } from '../lib/competitionCourtBoard'
 import type { LiveCourtGamesScore } from '../lib/liveCourtScore'
@@ -9,7 +9,8 @@ import type { GameSession } from '../lib/types'
 import { GameBoard } from './GameBoard'
 
 type Props = {
-  session: Pick<GameSession, 'partnership_mode' | 'rules' | 'scoring_config'>
+  session: Pick<GameSession, 'partnership_mode' | 'rules' | 'scoring_config'> &
+    Partial<Pick<GameSession, 'starts_at' | 'ends_at' | 'target_players' | 'max_players'>>
   games: GameRound[]
   eventStartsAt?: string
   gameMinutes: number
@@ -46,17 +47,36 @@ export function GameBoardPreview({
   )
 
   const roundTimesByGame = useMemo(() => {
+    if (session.starts_at && session.ends_at) {
+      return competitionRoundTimesByGame(
+        {
+          starts_at: session.starts_at,
+          ends_at: session.ends_at,
+          scoring_config: session.scoring_config,
+          target_players: session.target_players ?? null,
+          max_players: session.max_players ?? null,
+        },
+        games.length,
+      )
+    }
     if (!eventStartsAt) return undefined
     const map = new Map<number, { startsAt: number; endsAt: number }>()
+    const slotOpts =
+      eventStartsAt && session.ends_at
+        ? gameSlotOptsFromSchedule({
+            eventMinutes: eventDurationMinutes(eventStartsAt, session.ends_at),
+            totalGames: games.length,
+          })
+        : undefined
     for (const game of games) {
-      const slot = gameSlotTimes(eventStartsAt, game.gameNumber, gameMinutes, breakMinutes)
+      const slot = gameSlotTimes(eventStartsAt, game.gameNumber, gameMinutes, breakMinutes, slotOpts)
       map.set(game.gameNumber, {
         startsAt: slot.startsAt.getTime(),
         endsAt: slot.endsAt.getTime(),
       })
     }
     return map
-  }, [breakMinutes, eventStartsAt, gameMinutes, games])
+  }, [breakMinutes, eventStartsAt, gameMinutes, games, session])
 
   return (
     <GameBoard

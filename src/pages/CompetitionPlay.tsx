@@ -16,7 +16,7 @@ import {
   calculateLiveAchievements,
   isCompetitionComplete,
 } from '../lib/competitionAchievements'
-import { americanoScheduleFromSession, gameSlotOptsFromSchedule, gameSlotTimes } from '../lib/competitionLayout'
+import { americanoScheduleFromSession, competitionRoundTimesByGame } from '../lib/competitionLayout'
 import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
 import { computeAmericanoStandings } from '../lib/competitionStandings'
 import { computeDuoStandings } from '../lib/computeDuoStandings'
@@ -120,31 +120,10 @@ export function CompetitionPlay() {
     return playerStandings
   }, [isDuo, teams, roster, rounds, courtMatches, leaderboard, playerStandings])
 
-  const roundTimesByGame = useMemo(() => {
-    const map = new Map<number, { startsAt: number; endsAt: number }>()
-    if (session?.starts_at) {
-      const games = Math.max(rounds.length, schedule.totalGames)
-      const slotOpts = gameSlotOptsFromSchedule(schedule)
-      for (let g = 1; g <= games; g++) {
-        const slot = gameSlotTimes(
-          session.starts_at,
-          g,
-          schedule.gameMinutes,
-          schedule.breakMinutes,
-          slotOpts,
-        )
-        map.set(g, { startsAt: slot.startsAt.getTime(), endsAt: slot.endsAt.getTime() })
-      }
-      return map
-    }
-    for (const round of rounds) {
-      map.set(round.round_number, {
-        startsAt: new Date(round.starts_at).getTime(),
-        endsAt: new Date(round.ends_at).getTime(),
-      })
-    }
-    return map
-  }, [rounds, session?.starts_at, schedule.gameMinutes, schedule.breakMinutes, schedule.totalGames])
+  const roundTimesByGame = useMemo(
+    () => competitionRoundTimesByGame(session, Math.max(rounds.length, schedule.totalGames)),
+    [session, rounds.length, schedule.totalGames],
+  )
 
   const roundStatusByGame = useMemo(() => {
     const map = new Map<number, 'pending' | 'active' | 'complete'>()

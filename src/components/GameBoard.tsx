@@ -6,8 +6,12 @@ import type { AmericanoScoringUnit } from '../lib/competitionPresets'
 import { formatGameTimeLabel, pivotScheduleByGame, type CourtColumn } from '../lib/competitionCourtBoard'
 import { isScoringTimeUnlocked } from '../lib/competitionScoringUnlock'
 import { playTwoMinuteAlarm, TWO_MINUTES_MS } from '../lib/gameCountdownAlarm'
-import { AMERICANO_SCHEDULE_LEAD_IN_MINUTES } from '../lib/competitionLayout'
 import { RANKED_GAME_MINUTES } from '../lib/rankedSchedule'
+import {
+  competitionFocusGameNumber,
+  isGameSlotInBreakAfter,
+  isGameSlotLive,
+} from '../lib/competitionLayout'
 import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
 import { courtGameScoreMax } from '../lib/competitionScoreInput'
 import type { FriendlyCourtScoreSubmit } from '../lib/friendlyManualScore'
@@ -75,7 +79,7 @@ type Props = {
 }
 
 type RoundStatus = 'pending' | 'active' | 'complete'
-type CountdownState = 'starts' | 'playing' | 'finished' | 'scheduled'
+type CountdownState = 'starts' | 'playing' | 'break' | 'finished' | 'scheduled'
 
 function isGameTimeUp(
   gameNumber: number,
@@ -168,30 +172,24 @@ function isGameLive(
   now: number,
   times: { startsAt: number; endsAt: number } | undefined,
 ): boolean {
-  return Boolean(times && now >= times.startsAt && now < times.endsAt)
-}
-
-function isGameOneLeadIn(
-  gameNumber: number,
-  now: number,
-  times: { startsAt: number; endsAt: number },
-): boolean {
-  if (gameNumber !== 1) return false
-  const windowStart = times.startsAt - AMERICANO_SCHEDULE_LEAD_IN_MINUTES * 60_000
-  return now >= windowStart && now < times.startsAt
+  return isGameSlotLive(now, times)
 }
 
 function gameCountdown(
   now: number,
   times: { startsAt: number; endsAt: number } | undefined,
   gameMinutes: number,
-  gameNumber?: number,
+  gameNumber: number,
+  timesByGame?: Map<number, { startsAt: number; endsAt: number }>,
 ): string {
   const fullMs = gameMinutes * 60000
   if (!times) return formatCountdown(fullMs)
-  if (now >= times.endsAt) return '0:00'
-  if (gameNumber != null && isGameOneLeadIn(gameNumber, now, times)) {
-    return formatCountdown(times.endsAt - now)
+  if (now >= times.endsAt) {
+    if (timesByGame && isGameSlotInBreakAfter(now, gameNumber, timesByGame)) {
+      const next = timesByGame.get(gameNumber + 1)
+      if (next) return formatCountdown(next.startsAt - now)
+    }
+    return '0:00'
   }
   if (now < times.startsAt) return formatCountdown(times.startsAt - now)
   return formatCountdown(times.endsAt - now)
@@ -201,19 +199,21 @@ function countdownState(
   now: number,
   times: { startsAt: number; endsAt: number } | undefined,
   finished: boolean,
-  gameNumber?: number,
+  gameNumber: number,
+  timesByGame?: Map<number, { startsAt: number; endsAt: number }>,
 ): CountdownState {
   if (finished) return 'finished'
   if (!times) return 'scheduled'
-  if (gameNumber != null && isGameOneLeadIn(gameNumber, now, times)) return 'playing'
   if (now < times.startsAt) return 'starts'
   if (now < times.endsAt) return 'playing'
+  if (timesByGame && isGameSlotInBreakAfter(now, gameNumber, timesByGame)) return 'break'
   return 'finished'
 }
 
 function countdownLabel(state: CountdownState, t: TranslateFn): string {
   if (state === 'starts') return t('competition.startsIn')
   if (state === 'playing') return t('competition.timeLeft')
+  if (state === 'break') return t('competition.break')
   if (state === 'finished') return t('competition.finished')
   return t('competition.gameTime')
 }
@@ -369,6 +369,14 @@ export function GameBoard({
     [orderedGames],
   )
 
+  const focusGameNumber = useMemo(
+    () =>
+      roundTimesByGame?.size
+        ? competitionFocusGameNumber(clock, roundTimesByGame, gameNumbers, activeGameNumber)
+        : activeGameNumber,
+    [activeGameNumber, clock, gameNumbers, roundTimesByGame],
+  )
+
   const toggleCollapsed = (gameNumber: number) => {
     setCollapsedGames((prev) => ({
       ...prev,
@@ -391,18 +399,19 @@ export function GameBoard({
     const finished = submitted
     const countdown =
       timedMode && !submitted && times
-        ? gameCountdown(clock, times, gameMinutes, game.gameNumber)
+        ? gameCountdown(clock, times, gameMinutes, game.gameNumber, roundTimesByGame)
         : null
-    const state = countdownState(clock, times, timeUp, game.gameNumber)
+    const state = countdownState(clock, times, timeUp, game.gameNumber, roundTimesByGame)
     const collapsed = tvCarousel ? false : (collapsedGames[game.gameNumber] ?? false)
-    const isCurrentGame = !submitted && (isLiveNow || isActive)
+    const inBreakAfter = Boolean(
+      times && roundTimesByGame && isGameSlotInBreakAfter(clock, game.gameNumber, roundTimesByGame),
+    )
+    const isCurrentGame = !submitted && (isLiveNow || inBreakAfter)
     const canEditGame =
       Boolean(canLog) &&
       (scoringTimeUnlocked ||
         submitted ||
-        roundStatus === 'active' ||
         roundStatus === 'complete' ||
-        roundStatus === 'pending' ||
         isLiveNow ||
         timeUp)
     const displayTimeLabel =
@@ -586,7 +595,7 @@ export function GameBoard({
     return (
       <CompetitionTvGameCarousel
         gameNumbers={gameNumbers}
-        activeGameNumber={activeGameNumber}
+        activeGameNumber={focusGameNumber}
         renderGame={(gameNumber, nav) => {
           const game = gameByNumber.get(gameNumber)
           return game ? renderGameCard(game, nav) : null
