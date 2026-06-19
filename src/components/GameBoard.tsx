@@ -198,16 +198,16 @@ function gameCountdown(
 function countdownState(
   now: number,
   times: { startsAt: number; endsAt: number } | undefined,
-  finished: boolean,
+  submitted: boolean,
   gameNumber: number,
   timesByGame?: Map<number, { startsAt: number; endsAt: number }>,
 ): CountdownState {
-  if (finished) return 'finished'
   if (!times) return 'scheduled'
+  if (isGameSlotLive(now, times)) return 'playing'
   if (now < times.startsAt) return 'starts'
-  if (now < times.endsAt) return 'playing'
   if (timesByGame && isGameSlotInBreakAfter(now, gameNumber, timesByGame)) return 'break'
-  return 'finished'
+  if (submitted || now >= times.endsAt) return 'finished'
+  return 'scheduled'
 }
 
 function countdownLabel(state: CountdownState, t: TranslateFn): string {
@@ -397,16 +397,21 @@ export function GameBoard({
     const timeUp = isGameTimeUp(game.gameNumber, clock, roundTimesByGame, roundStatusByGame)
     const submitted = finishedByGame.get(game.gameNumber) ?? false
     const finished = submitted
-    const countdown =
-      timedMode && !submitted && times
-        ? gameCountdown(clock, times, gameMinutes, game.gameNumber, roundTimesByGame)
-        : null
-    const state = countdownState(clock, times, timeUp, game.gameNumber, roundTimesByGame)
-    const collapsed = tvCarousel ? false : (collapsedGames[game.gameNumber] ?? false)
     const inBreakAfter = Boolean(
       times && roundTimesByGame && isGameSlotInBreakAfter(clock, game.gameNumber, roundTimesByGame),
     )
-    const isCurrentGame = !submitted && (isLiveNow || inBreakAfter)
+    const awaitingStart = Boolean(times && clock < times.startsAt)
+    const showTimer =
+      timedMode && times && (!submitted || isLiveNow || inBreakAfter || awaitingStart)
+    const countdown = showTimer
+      ? gameCountdown(clock, times, gameMinutes, game.gameNumber, roundTimesByGame)
+      : null
+    const state = countdownState(clock, times, submitted, game.gameNumber, roundTimesByGame)
+    const collapsed = tvCarousel ? false : (collapsedGames[game.gameNumber] ?? false)
+    const isCurrentGame =
+      isLiveNow ||
+      inBreakAfter ||
+      (awaitingStart && focusGameNumber === game.gameNumber)
     const canEditGame =
       Boolean(canLog) &&
       (scoringTimeUnlocked ||

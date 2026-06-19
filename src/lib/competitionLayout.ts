@@ -458,7 +458,17 @@ export function isGameSlotInBreakAfter(
   return now < next.startsAt
 }
 
-/** TV carousel + scroll focus: live game, else break scoring window, else next upcoming. */
+/** True during the break before this game starts (after the previous game ended). */
+export function isGameSlotInBreakBefore(
+  now: number,
+  gameNumber: number,
+  timesByGame: Map<number, GameSlotTimes>,
+): boolean {
+  if (gameNumber <= 1) return false
+  return isGameSlotInBreakAfter(now, gameNumber - 1, timesByGame)
+}
+
+/** TV carousel + scroll focus: live game, else next game during break, else upcoming. */
 export function competitionFocusGameNumber(
   now: number,
   timesByGame: Map<number, GameSlotTimes>,
@@ -474,7 +484,9 @@ export function competitionFocusGameNumber(
 
   for (let i = 0; i < sorted.length; i += 1) {
     const g = sorted[i]!
-    if (isGameSlotInBreakAfter(now, g, timesByGame)) return g
+    if (isGameSlotInBreakAfter(now, g, timesByGame)) {
+      return sorted[i + 1] ?? g
+    }
   }
 
   for (const g of sorted) {
