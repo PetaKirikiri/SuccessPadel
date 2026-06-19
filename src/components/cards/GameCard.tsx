@@ -6,7 +6,6 @@ import type { CourtScoreSubmit } from '../../lib/competitionScoreInput'
 import {
   courtSubmitReady,
   effectiveScoreField,
-  isValidCappedGameScore,
   parseScoreField,
   scoreDigitsOnly,
 } from '../../lib/competitionScoreInput'
@@ -443,7 +442,6 @@ export function GameScoringCourts({
   competitionId,
   duoTeamLabels,
   courtScoreMax,
-  courtPlayTo,
   tvCompact = false,
   t,
 }: {
@@ -465,7 +463,6 @@ export function GameScoringCourts({
   competitionId?: string
   duoTeamLabels?: DuoTeamLabels
   courtScoreMax?: number
-  courtPlayTo?: number
   tvCompact?: boolean
   t: TranslateFn
 }) {
@@ -533,14 +530,6 @@ export function GameScoringCourts({
             />
             {canEdit && submitCourt ? (
               <>
-                {courtPlayTo != null &&
-                row.teamA !== null &&
-                row.teamB !== null &&
-                !isValidCappedGameScore(row.teamA, row.teamB, courtPlayTo) ? (
-                  <p className="mt-1 text-center text-xs text-red-600">
-                    {t('competition.firstToScoreInvalid', { n: courtPlayTo })}
-                  </p>
-                ) : null}
                 <button
                   type="button"
                   disabled={busyCourtKey === courtId || !courtReady}
@@ -785,7 +774,6 @@ export function ScoringGameCard({
   onSaved,
   playTo,
   courtScoreMax,
-  courtPlayTo,
   isLiveNow,
   isCurrentGame,
   countdown,
@@ -817,7 +805,6 @@ export function ScoringGameCard({
   onSaved?: () => void | Promise<void>
   playTo?: number
   courtScoreMax?: number
-  courtPlayTo?: number
   isLiveNow: boolean
   isCurrentGame: boolean
   countdown?: string | null
@@ -902,7 +889,6 @@ export function ScoringGameCard({
             competitionId={competitionId}
             duoTeamLabels={duoTeamLabels}
             courtScoreMax={courtScoreMax}
-            courtPlayTo={courtPlayTo}
             tvCompact={tvCompact}
             t={t}
           />

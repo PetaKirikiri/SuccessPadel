@@ -437,7 +437,6 @@ export function GameBoard({
           onSaved={onSaved}
           playTo={courtPlayTo}
           courtScoreMax={courtScoreMax}
-          courtPlayTo={courtPlayTo}
           isLiveNow={isLiveNow}
           isCurrentGame={isCurrentGame}
           countdown={countdown}

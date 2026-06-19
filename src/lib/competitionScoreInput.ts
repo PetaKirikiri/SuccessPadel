@@ -12,11 +12,6 @@ export function parseScoreField(value: string): number | null {
 /** Stepper max for a single court score — not the americano play-to target. */
 export const COURT_SCORE_INPUT_MAX = 99
 
-/** Each side 0..max; ties ok (e.g. 4–2, 1–1; not 7–5 or 10–0). */
-export function isValidCappedGameScore(teamA: number, teamB: number, maxGames: number): boolean {
-  return teamA >= 0 && teamB >= 0 && teamA <= maxGames && teamB <= maxGames
-}
-
 export function courtScoresReady(teamAStr: string, teamBStr: string): boolean {
   return parseScoreField(teamAStr) !== null && parseScoreField(teamBStr) !== null
 }
@@ -25,16 +20,8 @@ export function courtGameScoreMax(playTo?: number): number {
   return playTo ?? COURT_SCORE_INPUT_MAX
 }
 
-export function courtSubmitReady(
-  teamAStr: string,
-  teamBStr: string,
-  playTo?: number,
-): boolean {
-  if (!courtScoresReady(teamAStr, teamBStr)) return false
-  const teamA = parseScoreField(teamAStr)!
-  const teamB = parseScoreField(teamBStr)!
-  if (playTo != null && !isValidCappedGameScore(teamA, teamB, playTo)) return false
-  return true
+export function courtSubmitReady(teamAStr: string, teamBStr: string, _playTo?: number): boolean {
+  return courtScoresReady(teamAStr, teamBStr)
 }
 
 export function bumpScoreField(value: string, delta: number, max?: number): string {
