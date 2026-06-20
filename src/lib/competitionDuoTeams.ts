@@ -83,3 +83,26 @@ export function filledDuoPlayerCount(teams: DuoTeamDraft[]): number {
 export function duoTeamsComplete(teams: DuoTeamDraft[]): boolean {
   return teams.every((team) => team.names[0].trim() && team.names[1].trim())
 }
+
+type SessionPairRef = {
+  roster_a_id?: string | null
+  roster_b_id?: string | null
+}
+
+/** Map session_pairs to team slots (0..teamCount-1) using roster rank_order. */
+export function orderSessionPairsByTeamIndex<T extends SessionPairRef>(
+  pairs: T[],
+  rankByRosterId: Map<string, number>,
+  teamCount: number,
+): (T | undefined)[] {
+  const ordered: (T | undefined)[] = Array.from({ length: teamCount })
+  for (const pair of pairs) {
+    const rankA = pair.roster_a_id ? rankByRosterId.get(pair.roster_a_id) : undefined
+    const rankB = pair.roster_b_id ? rankByRosterId.get(pair.roster_b_id) : undefined
+    const rank = rankA ?? rankB
+    if (rank == null || rank < 0) continue
+    const teamIndex = Math.floor(rank / 2)
+    if (teamIndex >= 0 && teamIndex < teamCount) ordered[teamIndex] = pair
+  }
+  return ordered
+}

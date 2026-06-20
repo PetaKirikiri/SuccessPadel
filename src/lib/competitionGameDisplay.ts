@@ -2,6 +2,7 @@ import type { CompetitionRow, CompetitionPlayer } from '../hooks/useCompetitions
 import { rosterDisplayName } from '../hooks/useCompetitions'
 import type { TranslateFn } from '../i18n'
 import type { DuoTeamDraft } from './competitionDuoTeams'
+import { orderSessionPairsByTeamIndex } from './competitionDuoTeams'
 import { isDuoCompetition, teamsFromConfig, usesCompetitionGameScoring } from './competitionFormatPresets'
 import { teamsFromCourtCount, courtCountFromPlayers } from './competitionLayout'
 import {
@@ -46,11 +47,15 @@ export function competitionScheduleDisplay(
   return { dateLine: row.title, timeLine: '' }
 }
 
+function rosterProfileId(sp: CompetitionPlayer): string | null {
+  return sp.profile_id ?? sp.profiles?.id ?? null
+}
+
 export function competitionRosterSlots(row: CompetitionRow): RosterSlot[] {
   const players = row.session_players ?? []
   const slots: RosterSlot[] = players.map((sp) => ({
     name: rosterDisplayName(sp),
-    profileId: sp.profile_id,
+    profileId: rosterProfileId(sp),
     padelPlayerId: sp.padel_player_id,
     avatarUrl: sp.profiles?.avatar_url ?? null,
     vacant: false,
@@ -81,7 +86,7 @@ function playerRosterSlot(sp: CompetitionPlayer): RosterSlot {
   const name = rosterDisplayName(sp)
   return {
     name,
-    profileId: sp.profile_id,
+    profileId: rosterProfileId(sp),
     padelPlayerId: sp.padel_player_id,
     avatarUrl: sp.profiles?.avatar_url ?? null,
     vacant: !name.trim(),
@@ -102,10 +107,14 @@ export function competitionDuoTeamSlots(row: CompetitionRow): CompetitionTeamSlo
   const teamCount = Math.max(1, teamsFromCourtCount(courtCountFromPlayers(cap)))
   const configTeams = teamsFromConfig(row.scoring_config)
   const pairs = row.session_pairs ?? []
+  const rankByRosterId = new Map(
+    sorted.map((player) => [player.id, player.rank_order ?? 0]),
+  )
+  const orderedPairs = orderSessionPairsByTeamIndex(pairs, rankByRosterId, teamCount)
 
   if (pairs.length > 0) {
     return Array.from({ length: teamCount }, (_, index) => {
-      const pair = pairs[index]
+      const pair = orderedPairs[index]
       const playerA = pair?.roster_a_id ? rosterById.get(pair.roster_a_id) : undefined
       const playerB = pair?.roster_b_id ? rosterById.get(pair.roster_b_id) : undefined
       const slotA = playerA ? playerRosterSlot(playerA) : vacantRosterSlot()

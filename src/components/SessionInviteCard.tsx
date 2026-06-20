@@ -1,4 +1,4 @@
-import { useMemo, useState, lazy, Suspense, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { IconOpenPad } from './ButtonIcons'
 import { GameBoardPreview } from './GameBoardPreview'
@@ -22,12 +22,7 @@ import { inviteCardData, type SessionSource } from '../lib/sessionDisplay'
 import type { AppLocale } from '../lib/locale'
 import { useLocale } from '../providers/LocaleProvider'
 import { supabase } from '../lib/supabaseClient'
-
-const CompetitionInviteRosterEditor = lazy(() =>
-  import('./CompetitionInviteRosterEditor').then((m) => ({
-    default: m.CompetitionInviteRosterEditor,
-  })),
-)
+import { CompetitionInviteRosterEditor } from './CompetitionInviteRosterEditor'
 
 type CompetitionProps = {
   kind: 'competition'
@@ -103,14 +98,12 @@ function CompetitionInviteCard({
       currentUserId={userId}
       qrUrl={competitionPlayUrl(row.id)}
       qrAriaLabel={t('leaderboard.viewAlongHint')}
-      canEdit={isAdmin}
-      editTo={isAdmin ? `/competitions/${row.id}/edit` : undefined}
+      canEdit={isAdmin && !canEditRoster}
+      editTo={isAdmin && !canEditRoster ? `/competitions/${row.id}/edit` : undefined}
       editAriaLabel={t('competition.edit')}
       rosterSection={
         canEditRoster ? (
-          <Suspense fallback={<p className="text-xs text-brand-muted">{t('common.loading')}</p>}>
-            <CompetitionInviteRosterEditor row={row} />
-          </Suspense>
+          <CompetitionInviteRosterEditor row={row} onSaved={onRefresh} />
         ) : undefined
       }
       canDelete={isAdmin}

@@ -18,6 +18,7 @@ import {
   mergeScheduleIntoScoringConfig,
 } from './competitionScheduleLayout'
 import { OPEN_SLOT_NAME } from './rankedSchedule'
+import { orderSessionPairsByTeamIndex } from './competitionDuoTeams'
 import type { TranslateFn } from '../i18n'
 import type { RuleChip } from './friendlyGameDisplay'
 import type { GameSession, ScoringConfig } from './types'
@@ -256,9 +257,13 @@ export function duoTeamsForPlay(
       .filter((player) => player.rank_order != null)
       .map((player) => [player.rank_order as number, player.id]),
   )
+  const rankByRosterId = new Map(
+    roster.map((player) => [player.id, player.rank_order ?? 0]),
+  )
+  const orderedPairs = orderSessionPairsByTeamIndex(pairs ?? [], rankByRosterId, teamCount)
 
   return Array.from({ length: teamCount }, (_, index) => {
-    const pair = pairs?.[index]
+    const pair = orderedPairs[index]
     const cfg = configTeams[index]
     return {
       label: pair?.pair_label?.trim() || cfg?.label?.trim() || `Team ${index + 1}`,

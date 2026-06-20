@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import type { GameSession, Profile } from '../lib/types'
+import { clubDisplayName } from '../lib/clubMemberDisplay'
 
 export type CompetitionPlayer = {
   id: string
@@ -14,7 +15,13 @@ export type CompetitionPlayer = {
 }
 
 export function rosterDisplayName(sp: CompetitionPlayer): string {
-  return sp.profiles?.display_name ?? sp.guest_name ?? 'Player'
+  const fromProfile = sp.profiles?.display_name?.trim()
+  if (fromProfile) {
+    return clubDisplayName(sp.profile_id ?? sp.profiles?.id, fromProfile)
+  }
+  const guest = sp.guest_name?.trim()
+  if (guest) return guest
+  return 'Player'
 }
 
 export type CompetitionRow = GameSession & {

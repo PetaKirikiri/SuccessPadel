@@ -7,6 +7,7 @@ import { bumpScoreField, scoreDigitsOnly } from '../../lib/competitionScoreInput
 import { compactDisplayNames } from '../../lib/leaderboardEntries'
 import type { CourtPlayer } from '../../lib/americanoSchedule'
 import { PlayerNameLink } from '../PlayerNameLink'
+import { PlayerAvatarLink } from '../PlayerAvatarLink'
 import type { LiveCourt, ScoringGameCourt } from './gameBoardTypes'
 
 export function stopCardNav(e: { stopPropagation: () => void }) {
@@ -386,8 +387,14 @@ export function CourtMatchCell({
         className={nameClass}
       />
     )
-    const avatarEl = displayAvatarUrl ? (
-      <img src={displayAvatarUrl} alt="" className={avatarClass} />
+    const avatarEl = isRegistered ? (
+      <PlayerAvatarLink
+        displayName={player.name}
+        avatarUrl={displayAvatarUrl}
+        profileId={player.id}
+        padelPlayerId={player.padelPlayerId}
+        imgClassName={avatarClass}
+      />
     ) : null
     return (
       <p

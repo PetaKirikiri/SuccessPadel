@@ -6,6 +6,7 @@ import type { DuoTeamDraft } from '../lib/competitionDuoTeams'
 import { duoTeamDraftsFromRow, competitionRosterSlots } from '../lib/competitionGameDisplay'
 import { isDuoCompetition } from '../lib/competitionFormatPresets'
 import {
+  clearInviteRosterDraft,
   loadInviteRosterDraft,
   saveInviteRosterDraft,
 } from '../lib/competitionInviteRosterDraft'
@@ -19,6 +20,7 @@ import type { CompetitionRow } from '../hooks/useCompetitions'
 
 type Props = {
   row: CompetitionRow
+  onSaved?: () => void
 }
 
 const CACHE_MS = 250
@@ -53,7 +55,7 @@ function draftFromRow(row: CompetitionRow, isDuos: boolean) {
   }
 }
 
-export function CompetitionInviteRosterEditor({ row }: Props) {
+export function CompetitionInviteRosterEditor({ row, onSaved }: Props) {
   const { t } = useTranslation()
   const isDuos = isDuoCompetition(row)
   const sessionId = row.id
@@ -182,9 +184,10 @@ export function CompetitionInviteRosterEditor({ row }: Props) {
     }
     dirtyRef.current = false
     setDirty(false)
-    persistCache()
+    clearInviteRosterDraft(sessionId)
+    onSaved?.()
     return true
-  }, [sessionId, persistCache])
+  }, [sessionId, onSaved])
 
   const noteEdit = useCallback(() => {
     dirtyRef.current = true
@@ -237,6 +240,8 @@ export function CompetitionInviteRosterEditor({ row }: Props) {
           padelPlayers={padelPlayers}
           onChange={handleDuoChange}
           layout="grid"
+          linkAvatarsToProfile
+          competitionId={sessionId}
         />
       ) : (
         <MemberPlayerSlots
@@ -249,6 +254,8 @@ export function CompetitionInviteRosterEditor({ row }: Props) {
           onChange={handleSinglesChange}
           showMembers
           showPlayerProfiles
+          linkAvatarsToProfile
+          competitionId={sessionId}
         />
       )}
       {error ? <p className="mt-2 text-xs text-red-600">{error}</p> : null}

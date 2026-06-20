@@ -12,6 +12,8 @@ type Props = {
   onShareProfile?: () => void
   shareProfileLabel?: string
   shareFeedback?: string | null
+  /** When set, avatar and change-photo use a <label htmlFor> (reliable on mobile web). */
+  photoInputId?: string
   onChangePhoto?: () => void
   changePhotoLabel?: string
   embedded?: boolean
@@ -33,40 +35,44 @@ export function PlayerProfileBanner({
   onShareProfile,
   shareProfileLabel = 'Share profile',
   shareFeedback = null,
+  photoInputId,
   onChangePhoto,
   changePhotoLabel,
   embedded = false,
   t,
 }: Props) {
-  const avatar = onChangePhoto ? (
-    <button
-      type="button"
-      onClick={onChangePhoto}
-      className="relative shrink-0"
-      aria-label={changePhotoLabel}
-    >
-      {avatarUrl ? (
-        <img
-          src={avatarUrl}
-          alt=""
-          className="h-16 w-16 rounded-full object-cover ring-2 ring-brand-border md:h-20 md:w-20"
-        />
-      ) : (
-        <span className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-bg-alt text-xl font-semibold text-brand-muted ring-2 ring-brand-border md:h-20 md:w-20">
-          {initial(name)}
-        </span>
-      )}
-    </button>
-  ) : avatarUrl ? (
+  const canChangePhoto = Boolean(photoInputId || onChangePhoto)
+  const avatarClass =
+    'relative shrink-0 cursor-pointer'
+  const avatarVisual = avatarUrl ? (
     <img
       src={avatarUrl}
       alt=""
-      className="h-16 w-16 shrink-0 rounded-full object-cover ring-2 ring-brand-border md:h-20 md:w-20"
+      className="h-16 w-16 rounded-full object-cover ring-2 ring-brand-border md:h-20 md:w-20"
     />
   ) : (
-    <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-brand-bg-alt text-xl font-semibold text-brand-muted ring-2 ring-brand-border md:h-20 md:w-20">
+    <span className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-bg-alt text-xl font-semibold text-brand-muted ring-2 ring-brand-border md:h-20 md:w-20">
       {initial(name)}
     </span>
+  )
+
+  const avatar = canChangePhoto ? (
+    photoInputId ? (
+      <label htmlFor={photoInputId} className={avatarClass} aria-label={changePhotoLabel}>
+        {avatarVisual}
+      </label>
+    ) : (
+      <button
+        type="button"
+        onClick={onChangePhoto}
+        className={avatarClass}
+        aria-label={changePhotoLabel}
+      >
+        {avatarVisual}
+      </button>
+    )
+  ) : (
+    <span className="relative shrink-0">{avatarVisual}</span>
   )
 
   return (
@@ -77,16 +83,25 @@ export function PlayerProfileBanner({
         {avatar}
         <div className="min-w-0">
           <h1 className="truncate font-display text-lg font-bold text-brand-primary md:text-xl">{name}</h1>
-          {onChangePhoto && changePhotoLabel && (
-            <button
-              type="button"
-              onClick={onChangePhoto}
-              className="mt-0.5 text-xs font-medium text-brand-accent"
-            >
-              {changePhotoLabel}
-            </button>
-          )}
-          {memberSince && !onChangePhoto && (
+          {canChangePhoto && changePhotoLabel ? (
+            photoInputId ? (
+              <label
+                htmlFor={photoInputId}
+                className="mt-0.5 block cursor-pointer text-xs font-medium text-brand-accent"
+              >
+                {changePhotoLabel}
+              </label>
+            ) : (
+              <button
+                type="button"
+                onClick={onChangePhoto}
+                className="mt-0.5 text-xs font-medium text-brand-accent"
+              >
+                {changePhotoLabel}
+              </button>
+            )
+          ) : null}
+          {memberSince && !canChangePhoto && (
             <p className="mt-0.5 text-xs text-brand-muted">
               {t('playerProfile.memberSince', { date: memberSince })}
             </p>

@@ -5,6 +5,7 @@ import type {
   FriendlyVisibility,
 } from './friendlyGames'
 import { isLocalFriendlyId } from './friendlyGames'
+import { clubDisplayName } from './clubMemberDisplay'
 import { supabase } from './supabaseClient'
 
 type FriendlySessionRow = {
@@ -97,8 +98,9 @@ export async function fetchFriendlyHomeGames(): Promise<{
     return { games: [], error: error.message }
   }
   if (!Array.isArray(data)) return { games: [], error: null }
+  const games = (data as FriendlySessionRow[]).map(friendlyFromServerRow)
   return {
-    games: (data as FriendlySessionRow[]).map(friendlyFromServerRow),
+    games: await enrichFriendlyGameRosters(games),
     error: null,
   }
 }
@@ -106,13 +108,59 @@ export async function fetchFriendlyHomeGames(): Promise<{
 export async function fetchPublicFriendlyGames(): Promise<FriendlyGameRecord[]> {
   const { data, error } = await supabase.rpc('list_public_friendly_sessions')
   if (error || !Array.isArray(data)) return []
-  return (data as FriendlySessionRow[]).map(friendlyFromServerRow)
+  const games = (data as FriendlySessionRow[]).map(friendlyFromServerRow)
+  return enrichFriendlyGameRosters(games)
 }
 
 export async function fetchFriendlySession(id: string): Promise<FriendlyGameRecord | null> {
   const { data, error } = await supabase.rpc('get_friendly_session', { p_id: id })
   if (error || !data) return null
-  return friendlyFromServerRow(data as FriendlySessionRow)
+  const [game] = await enrichFriendlyGameRosters([
+    friendlyFromServerRow(data as FriendlySessionRow),
+  ])
+  return game ?? null
+}
+
+async function enrichFriendlyGameRosters(
+  games: FriendlyGameRecord[],
+): Promise<FriendlyGameRecord[]> {
+  const profileIds = [
+    ...new Set(
+      games.flatMap((game) =>
+        (game.profileIds ?? []).filter((id): id is string => Boolean(id)),
+      ),
+    ),
+  ]
+  if (profileIds.length === 0) return games
+
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, display_name, avatar_url')
+    .in('id', profileIds)
+
+  if (!profiles?.length) return games
+
+  const byId = new Map(profiles.map((p) => [p.id, p]))
+
+  return games.map((game) => {
+    const ids = game.profileIds ?? []
+    const avatars = game.profileAvatars ?? []
+    return {
+      ...game,
+      players: game.players.map((name, index) => {
+        const profileId = ids[index]
+        if (!profileId) return name
+        const profile = byId.get(profileId)
+        const displayName = profile?.display_name?.trim()
+        return displayName ? clubDisplayName(profileId, displayName) : name
+      }),
+      profileAvatars: game.players.map((_, index) => {
+        const profileId = ids[index]
+        if (!profileId) return avatars[index] ?? null
+        return byId.get(profileId)?.avatar_url ?? avatars[index] ?? null
+      }),
+    }
+  })
 }
 
 export async function joinFriendlySession(id: string): Promise<string | null> {

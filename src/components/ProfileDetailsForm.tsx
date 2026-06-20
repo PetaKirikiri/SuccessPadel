@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useId } from 'react'
 import { Activity, Columns2, Hash, Hand, Layers, LayoutGrid, Smile, ThumbsDown, User, Venus, Zap } from 'lucide-react'
 import { useTranslation } from '../hooks/useTranslation'
 import { uploadProfileAvatar, validateProfileAvatar } from '../lib/profileAvatar'
@@ -72,6 +72,7 @@ export function ProfileDetailsForm({
 }: Props) {
   const { t } = useTranslation()
   const localFileInputRef = useRef<HTMLInputElement>(null)
+  const photoInputId = useId()
   const fileInputRef = fileInputRefProp ?? localFileInputRef
   const [displayName, setDisplayName] = useState(profile.display_name)
   const [pendingAvatar, setPendingAvatar] = useState<File | null>(null)
@@ -201,10 +202,9 @@ export function ProfileDetailsForm({
     >
       {!hideBanner && (
         <div className="mb-3 flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="relative shrink-0"
+          <label
+            htmlFor={photoInputId}
+            className="relative shrink-0 cursor-pointer"
             aria-label={t('profile.changePhoto')}
           >
             {avatarPreview ? (
@@ -218,22 +218,22 @@ export function ProfileDetailsForm({
                 {avatarInitial}
               </span>
             )}
-          </button>
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="text-xs font-medium text-brand-accent"
+          </label>
+          <label
+            htmlFor={photoInputId}
+            className="cursor-pointer text-xs font-medium text-brand-accent"
           >
             {t('profile.changePhoto')}
-          </button>
+          </label>
         </div>
       )}
       {!hideBanner ? (
         <input
+          id={photoInputId}
           ref={fileInputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp"
-          className="hidden"
+          accept="image/*"
+          className="sr-only"
           onChange={(e) => onAvatarPick(e.target.files?.[0])}
         />
       ) : null}

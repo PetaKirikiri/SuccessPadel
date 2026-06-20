@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useId } from 'react'
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { AppTopBar } from '../components/AppTopBar'
 import { AppBottomNav } from '../components/AppBottomNav'
@@ -84,6 +84,7 @@ export function PlayerProfilePage() {
     ? (snapshot?.entry ?? null)
     : null
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const photoInputId = useId()
 
   const [resolved, setResolved] = useState<Awaited<ReturnType<typeof resolvePlayerProfile>> | null>(
     null,
@@ -501,10 +502,12 @@ export function PlayerProfilePage() {
 
       {canEditProfile && editableProfile ? (
         <input
+          id={photoInputId}
           ref={fileInputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp"
-          className="hidden"
+          accept="image/*"
+          className="sr-only"
+          disabled={avatarBusy}
           onChange={(e) => void handleAvatarPick(e.target.files?.[0])}
         />
       ) : null}
@@ -549,11 +552,7 @@ export function PlayerProfilePage() {
                   onShareProfile={canShareProfile ? () => void handleShareProfile() : undefined}
                   shareProfileLabel={t('playerProfile.shareProfile')}
                   shareFeedback={shareFeedback}
-                  onChangePhoto={
-                    canEditProfile && !avatarBusy
-                      ? () => fileInputRef.current?.click()
-                      : undefined
-                  }
+                  photoInputId={canEditProfile && !avatarBusy ? photoInputId : undefined}
                   changePhotoLabel={
                     canEditProfile
                       ? avatarBusy

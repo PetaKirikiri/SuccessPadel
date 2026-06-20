@@ -12,6 +12,8 @@ type Props = {
   onRosterCommit?: () => void
   disabled?: boolean
   layout?: 'stack' | 'grid'
+  linkAvatarsToProfile?: boolean
+  competitionId?: string | null
 }
 
 export function DuoTeamSlots({
@@ -23,6 +25,8 @@ export function DuoTeamSlots({
   onRosterCommit,
   disabled,
   layout = 'stack',
+  linkAvatarsToProfile = false,
+  competitionId = null,
 }: Props) {
   const slotNames = useMemo(
     () => teams.flatMap((team) => team.names),
@@ -120,6 +124,8 @@ export function DuoTeamSlots({
             disabled={disabled}
             showMembers
             showPlayerProfiles
+            linkAvatarsToProfile={linkAvatarsToProfile}
+            competitionId={competitionId}
           />
         </div>
       ))}

@@ -96,28 +96,21 @@ export function InviteCard({
     </div>
   )
 
-  const inner = (
-    <div className="min-w-0 overflow-hidden px-3 py-3 sm:px-4 sm:py-4">
-      {headerRow}
-
-      <div className="mt-4 border-t-2 border-brand-border pt-3">
-        {rosterSection ??
-          (duoTeams ? (
-            <DuoTeamRosterList
-              teams={duoTeams}
-              currentUserId={currentUserId}
-              competitionId={competitionId}
-            />
-          ) : (
-            <FriendlyRosterList
-              slots={slots}
-              currentUserId={currentUserId}
-              competitionId={competitionId}
-            />
-          ))}
-      </div>
-    </div>
-  )
+  const rosterContent =
+    rosterSection ??
+    (duoTeams ? (
+      <DuoTeamRosterList
+        teams={duoTeams}
+        currentUserId={currentUserId}
+        competitionId={competitionId}
+      />
+    ) : (
+      <FriendlyRosterList
+        slots={slots}
+        currentUserId={currentUserId}
+        competitionId={competitionId}
+      />
+    ))
 
   const showAdminActions = (canEdit && editTo) || (canDelete && onDelete)
 
@@ -153,9 +146,19 @@ export function InviteCard({
     >
       {banner}
       <div className="relative min-w-0">
-        <Link to={detailTo} className="block min-w-0 touch-manipulation overflow-hidden transition active:opacity-80">
-          {inner}
-        </Link>
+        <div
+          className={`min-w-0 overflow-hidden px-3 py-3 sm:px-4 sm:py-4 ${
+            showAdminActions ? 'pb-12' : ''
+          }`}
+        >
+          <Link
+            to={detailTo}
+            className="block min-w-0 touch-manipulation transition active:opacity-80"
+          >
+            {headerRow}
+          </Link>
+          <div className="mt-4 border-t-2 border-brand-border pt-3">{rosterContent}</div>
+        </div>
         {showAdminActions ? (
           <div className="absolute bottom-3 right-3 z-10 flex items-center gap-2">
             {canEdit && editTo ? (

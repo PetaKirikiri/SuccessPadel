@@ -1,6 +1,7 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { clubDisplayName } from '../lib/clubMemberDisplay'
 import type { Profile } from '../lib/types'
+import { PlayerAvatarLink } from './PlayerAvatarLink'
 
 export type PadelPlayerOption = {
   id: string
@@ -26,6 +27,8 @@ type Props = {
   disabled?: boolean
   showMembers?: boolean
   showPlayerProfiles?: boolean
+  linkAvatarsToProfile?: boolean
+  competitionId?: string | null
 }
 
 type Suggestion =
@@ -189,6 +192,8 @@ const PlayerSlotCombobox = memo(function PlayerSlotCombobox({
         role="combobox"
         aria-expanded={open}
         aria-autocomplete="list"
+        onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
         onChange={(e) => {
           setText(e.target.value)
           setOpen(true)
@@ -316,6 +321,8 @@ export function MemberPlayerSlots({
   disabled,
   showMembers = false,
   showPlayerProfiles = true,
+  linkAvatarsToProfile = false,
+  competitionId = null,
 }: Props) {
   const paddedNames = pad(names, count, '')
   const paddedIds = pad(profileIds, count, null)
@@ -387,6 +394,7 @@ export function MemberPlayerSlots({
       <div className="grid grid-cols-1 gap-y-2 sm:grid-cols-2 sm:gap-x-3 sm:gap-y-2">
         {Array.from({ length: count }, (_, index) => {
           const profileId = paddedIds[index] ?? null
+          const padelPlayerId = paddedPadelIds[index] ?? null
           const selectedProfile = profileId ? profileById.get(profileId) : null
           const slotName = paddedNames[index] ?? ''
           return (
@@ -394,7 +402,18 @@ export function MemberPlayerSlots({
             <span className="w-5 shrink-0 text-center text-[10px] tabular-nums text-brand-muted">
               {index + 1}
             </span>
-            <SlotAvatar url={selectedProfile?.avatar_url ?? null} name={slotName} />
+            {linkAvatarsToProfile ? (
+              <PlayerAvatarLink
+                displayName={slotName}
+                avatarUrl={selectedProfile?.avatar_url ?? null}
+                profileId={profileId}
+                padelPlayerId={padelPlayerId}
+                competitionId={competitionId}
+                imgClassName="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-brand-border/80"
+              />
+            ) : (
+              <SlotAvatar url={selectedProfile?.avatar_url ?? null} name={slotName} />
+            )}
             {usePicker ? (
               <PlayerSlotCombobox
                 availableMembers={availableMembersBySlot[index] ?? []}

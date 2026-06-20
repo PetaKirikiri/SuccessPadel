@@ -1,35 +1,13 @@
-import { useState } from 'react'
 import { useTranslation } from '../hooks/useTranslation'
 import { firstDisplayName } from '../lib/leaderboardEntries'
 import type { RosterSlot } from '../lib/friendlyGameDisplay'
+import { PlayerAvatarLink } from './PlayerAvatarLink'
 import { PlayerNameLink } from './PlayerNameLink'
 
 type Props = {
   slots: RosterSlot[]
   currentUserId?: string | null
   competitionId?: string | null
-}
-
-function RosterAvatar({ name, avatarUrl }: { name: string; avatarUrl: string | null }) {
-  const [broken, setBroken] = useState(false)
-  const initial = firstDisplayName(name || 'Player')[0]?.toUpperCase() ?? '?'
-
-  if (avatarUrl && !broken) {
-    return (
-      <img
-        src={avatarUrl}
-        alt=""
-        onError={() => setBroken(true)}
-        className="h-7 w-7 shrink-0 rounded-full object-cover"
-      />
-    )
-  }
-
-  return (
-    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-primary/10 text-[11px] font-semibold text-brand-primary">
-      {initial}
-    </span>
-  )
 }
 
 export function FriendlyRosterList({ slots, currentUserId, competitionId }: Props) {
@@ -63,7 +41,13 @@ export function FriendlyRosterList({ slots, currentUserId, competitionId }: Prop
                 : 'border-brand-primary/20 bg-brand-bg-alt'
             }`}
           >
-            <RosterAvatar name={slot.name} avatarUrl={slot.avatarUrl ?? null} />
+            <PlayerAvatarLink
+              displayName={slot.name}
+              avatarUrl={slot.avatarUrl}
+              profileId={slot.profileId}
+              padelPlayerId={slot.padelPlayerId}
+              competitionId={competitionId}
+            />
             <PlayerNameLink
               displayName={name}
               profileId={slot.profileId}
