@@ -347,6 +347,10 @@ export type Messages = {
     displayNamePlaceholder: string
     displayNameRequired: string
     changePhoto: string
+    showdownTitle: string
+    showdownHint: string
+    showdownNone: string
+    showdownPick: string
     photoUploadFailed: string
     bookmarkTitle: string
     bookmarkHint: string

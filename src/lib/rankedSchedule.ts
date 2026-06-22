@@ -1,6 +1,7 @@
 import type { CompetitionPlayer } from '../hooks/useCompetitions'
 import { rosterDisplayName } from '../hooks/useCompetitions'
 import { clubDisplayName } from './clubMemberDisplay'
+import { courtPlayerFromProfile } from './courtPlayerFromProfile'
 import type { CourtPlayer, GameRound } from './americanoSchedule'
 import { solveBalancedSchedule, type RoundAssignment } from './balancedSchedule'
 import { courtsNeeded } from './competitionLayout'
@@ -97,12 +98,16 @@ export function nextScheduleSeed(current: number, playerCount: number): number {
 
 export function courtPlayerFromRoster(sp: CompetitionPlayer): CourtPlayer {
   if (isOpenSlotId(sp.id)) {
-    return { id: null, rosterId: null, name: OPEN_SLOT_NAME, avatarUrl: null }
+    return { id: null, rosterId: null, name: OPEN_SLOT_NAME, avatarUrl: null, gameSpriteUrl: null }
   }
   const profileId = sp.profile_id ?? sp.profiles?.id ?? null
   const name = clubDisplayName(profileId, rosterDisplayName(sp))
-  const avatarUrl = profileId ? (sp.profiles?.avatar_url ?? null) : null
-  return { id: profileId, rosterId: sp.id, name, avatarUrl }
+  return courtPlayerFromProfile({
+    profileId,
+    rosterId: sp.id,
+    name,
+    profile: profileId ? sp.profiles : null,
+  })
 }
 
 export function sortRosterByRank(roster: CompetitionPlayer[]): CompetitionPlayer[] {

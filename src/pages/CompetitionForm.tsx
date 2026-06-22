@@ -25,6 +25,7 @@ import {
   type DuoTeamDraft,
 } from '../components/DuoTeamSlots'
 import { SetupCard } from '../components/cards/SetupCard'
+import { GameScheduleSetup, type GameScheduleSetupValues } from '../components/GameScheduleSetup'
 import { useTranslation } from '../hooks/useTranslation'
 import { measureScheduleQuality, solveBalancedSchedule } from '../lib/balancedSchedule'
 import {
@@ -40,15 +41,18 @@ import {
   competitionPlayerMode,
   competitionScoringConfig,
   competitionSessionFields,
-  DUO_GAME_COUNT,
   SINGLES_COMPETITION,
   type CompetitionTeamConfig,
 } from '../lib/competitionFormatPresets'
 import { buildCompetitionAutoTitle, GENDERS, SKILL_LEVELS, type Gender, type SkillLevel } from '../lib/competitionPresets'
+import { storeCompetitiveGenderFilter } from '../lib/gamesGenderFilter'
 import { buildCompetitionRosterSlots } from '../lib/competitionRosterSlots'
 import {
   COURT_COUNT_OPTIONS,
+  americanoGamesFromConfig,
+  breakMinutesFromConfig,
   courtCountFromPlayers,
+  gameMinutesFromConfig,
   competitionPlayStartFromAnchorIso,
   competitionStartsAtAnchorIso,
   DEFAULT_SINGLES_COURT_COUNT,
@@ -60,6 +64,7 @@ import {
   type CompetitionPlayStartMinute,
   type CourtCount,
 } from '../lib/competitionLayout'
+import { GAME_SETUP_MIN_BREAK_MINUTES } from '../lib/gameSchedule'
 import { ruleChips as sessionRuleChips } from '../lib/sessionDisplay'
 import { supabase } from '../lib/supabaseClient'
 import {
@@ -148,6 +153,11 @@ export function CompetitionForm() {
   const [padelPlayers, setPadelPlayers] = useState<PadelPlayerOption[]>([])
   const [previewSeed, setPreviewSeed] = useState(0)
   const [courtCount, setCourtCount] = useState<CourtCount>(DEFAULT_SINGLES_COURT_COUNT)
+  const [scheduleSetup, setScheduleSetup] = useState<GameScheduleSetupValues>(() => ({
+    gameCount: SINGLES_COMPETITION.gameCount,
+    gameMinutes: SINGLES_COMPETITION.gameMinutes,
+    breakMinutes: Math.max(GAME_SETUP_MIN_BREAK_MINUTES, SINGLES_COMPETITION.breakMinutes),
+  }))
   const [slotCount, setSlotCount] = useState(playersFromCourtCount(DEFAULT_SINGLES_COURT_COUNT))
   const [competitionStarted, setCompetitionStarted] = useState(false)
   const [rosterHydrated, setRosterHydrated] = useState(!id)
@@ -196,6 +206,11 @@ export function CompetitionForm() {
     setTitle(draft.title)
     setTitleEdited(draft.titleEdited)
     setPreviewSeed(draft.previewSeed)
+    setScheduleSetup({
+      gameCount: draft.gameCount,
+      gameMinutes: draft.gameMinutes,
+      breakMinutes: Math.max(GAME_SETUP_MIN_BREAK_MINUTES, draft.breakMinutes),
+    })
     const players = playersFromCourtCount(draft.courtCount)
     const teams = teamsFromCourtCount(draft.courtCount)
     setCourtCount(draft.courtCount)
@@ -218,6 +233,9 @@ export function CompetitionForm() {
     (): Omit<CompetitionFormDraft, 'v' | 'savedAt'> => ({
       playerMode,
       courtCount,
+      gameCount: scheduleSetup.gameCount,
+      gameMinutes: scheduleSetup.gameMinutes,
+      breakMinutes: Math.max(GAME_SETUP_MIN_BREAK_MINUTES, scheduleSetup.breakMinutes),
       createLeague,
       day,
       startHour,
@@ -233,6 +251,7 @@ export function CompetitionForm() {
     [
       playerMode,
       courtCount,
+      scheduleSetup,
       createLeague,
       day,
       startHour,
@@ -259,6 +278,14 @@ export function CompetitionForm() {
   const startsAtIso = useMemo(
     () => competitionStartsAtAnchorIso(day, startHour, startMinute),
     [day, startHour, startMinute],
+  )
+  const competitionSchedule = useMemo(
+    () => ({
+      games: scheduleSetup.gameCount,
+      gameMinutes: scheduleSetup.gameMinutes,
+      breakMinutes: Math.max(GAME_SETUP_MIN_BREAK_MINUTES, scheduleSetup.breakMinutes),
+    }),
+    [scheduleSetup],
   )
   const autoTitle = useMemo(
     () =>
@@ -359,10 +386,15 @@ export function CompetitionForm() {
       }
       setTitle(data.title)
       setTitleEdited(true)
-      const config = data.scoring_config as { schedule_seed?: number } | null
+      const config = data.scoring_config as ScoringConfig | null
       if (typeof config?.schedule_seed === 'number') {
         setPreviewSeed(config.schedule_seed)
       }
+      setScheduleSetup({
+        gameCount: americanoGamesFromConfig(config),
+        gameMinutes: gameMinutesFromConfig(config, 0, americanoGamesFromConfig(config), breakMinutesFromConfig(config)),
+        breakMinutes: Math.max(GAME_SETUP_MIN_BREAK_MINUTES, breakMinutesFromConfig(config)),
+      })
       if (data.starts_at) {
         setDay(bangkokDateFromIso(data.starts_at))
         const parts = clubTimePartsFromDate(new Date(data.starts_at))
@@ -494,11 +526,12 @@ export function CompetitionForm() {
 
     const finalTitle = title.trim() || autoTitle
     const targetPlayers = playersFromCourtCount(courtCount)
-    const baseConfig = competitionScoringConfig(playerMode)
+    const baseConfig = competitionScoringConfig(playerMode, { schedule: competitionSchedule })
     const lockedFields = competitionSessionFields(playerMode, {
       skillLevel,
       gender,
       targetPlayers,
+      schedule: competitionSchedule,
     })
 
     const rosterPayload = isDuos
@@ -550,7 +583,7 @@ export function CompetitionForm() {
         if (canBuildDuoSchedule) {
           const schedule = buildDuoStoredSchedule(
             duoTeamsToScheduleInput(duoTeams, rosterIds),
-            DUO_GAME_COUNT,
+            scheduleSetup.gameCount,
             previewSeed,
           )
           const teamsConfig: CompetitionTeamConfig[] = pairs.map((pair) => ({
@@ -573,11 +606,12 @@ export function CompetitionForm() {
 
       clearDraft()
       setBusy(false)
+      storeCompetitiveGenderFilter(gender)
       navigate('/competitive')
       return
     }
 
-    const eventMinutes = competitionEventMinutes()
+    const eventMinutes = competitionEventMinutes(competitionSchedule)
     const startsAt = showDateFields ? new Date(startsAtIso) : null
     const endsAt =
       startsAt != null ? new Date(startsAt.getTime() + eventMinutes * 60 * 1000) : null
@@ -665,7 +699,7 @@ export function CompetitionForm() {
       if (isDuos) {
         schedule = buildDuoStoredSchedule(
           duoTeamsToScheduleInput(duoTeams, rosterIds),
-          DUO_GAME_COUNT,
+          scheduleSetup.gameCount,
           previewSeed,
         )
         teamsConfig = duoTeamsToPairPayload(duoTeams, rosterIds).map((pair) => ({
@@ -676,7 +710,7 @@ export function CompetitionForm() {
         const padded = padRosterToTarget(ranked, effectiveSlotCount)
         schedule = buildStoredSchedule(
           padded,
-          solveBalancedSchedule(effectiveSlotCount, SINGLES_COMPETITION.gameCount, previewSeed),
+          solveBalancedSchedule(effectiveSlotCount, scheduleSetup.gameCount, previewSeed),
         )
       }
 
@@ -711,6 +745,7 @@ export function CompetitionForm() {
     }
 
     setBusy(false)
+    storeCompetitiveGenderFilter(gender)
     navigate(`/competitions/${sessionId}`)
   }
 
@@ -725,19 +760,20 @@ export function CompetitionForm() {
     )
     const rounds = solveBalancedSchedule(
       previewSlotCount,
-      SINGLES_COMPETITION.gameCount,
+      scheduleSetup.gameCount,
       previewSeed,
     )
     return measureScheduleQuality(rounds, previewSlotCount)
-  }, [previewSeed, filledNameCount, slotCount, isDuos])
+  }, [previewSeed, filledNameCount, slotCount, isDuos, scheduleSetup.gameCount])
   const ruleChips = useMemo(
     () =>
       sessionRuleChips({ kind: 'preset', mode: playerMode }, t, {
         skillLevel,
         gender,
         courtCount,
+        schedule: competitionSchedule,
       }),
-    [playerMode, t, skillLevel, gender, courtCount],
+    [playerMode, t, skillLevel, gender, courtCount, competitionSchedule],
   )
   const courtCaption = useMemo(() => {
     const players = playersFromCourtCount(courtCount)
@@ -811,6 +847,24 @@ export function CompetitionForm() {
           </div>
           <p className="text-xs text-brand-muted">{courtCaption}</p>
         </div>
+
+        <GameScheduleSetup
+          value={{
+            gameCount: scheduleSetup.gameCount,
+            gameMinutes: scheduleSetup.gameMinutes,
+            breakMinutes: Math.max(GAME_SETUP_MIN_BREAK_MINUTES, scheduleSetup.breakMinutes),
+          }}
+          onChange={(patch) => {
+            setScheduleSetup((prev) => ({
+              ...prev,
+              ...patch,
+              breakMinutes: Math.max(
+                GAME_SETUP_MIN_BREAK_MINUTES,
+                patch.breakMinutes ?? prev.breakMinutes,
+              ),
+            }))
+          }}
+        />
 
         {isLeagueWeek ? (
           <p className="text-xs text-brand-muted">{t('competition.leagueDatesLater')}</p>

@@ -50,13 +50,13 @@ export function competitionIsPast(row: CompetitionScheduleRow, now: number = Dat
 
 export function competitionCardPhase(row: CompetitionScheduleRow, now: number): CompetitionCardPhase {
   if (row.status === 'complete') return 'finished'
-  const startMs = row.starts_at ? Date.parse(row.starts_at) : NaN
-  const endMs = row.ends_at ? Date.parse(row.ends_at) : NaN
+  const schedule = resolveCompetitionSchedule(row)
+  const startMs = schedule.anchorStartsAt?.getTime() ?? NaN
+  const endMs = schedule.eventEndsAt?.getTime() ?? NaN
   if (!Number.isFinite(startMs)) return 'unscheduled'
-  if (now >= endMs) return 'finished'
+  if (Number.isFinite(endMs) && now >= endMs) return 'finished'
   if (now < startMs) return 'upcoming'
 
-  const schedule = resolveCompetitionSchedule(row)
   if (schedule.playStartsAt && now < schedule.playStartsAt.getTime()) return 'upcoming'
   const slotOpts = gameSlotOptsFromSchedule(schedule)
   for (let g = 1; g <= schedule.totalGames; g += 1) {
@@ -69,7 +69,7 @@ export function competitionCardPhase(row: CompetitionScheduleRow, now: number): 
       if (now >= slotEnd && now < next.startsAt.getTime()) return 'break'
     }
   }
-  if (now >= startMs && now < endMs) return 'break'
+  if (now >= startMs && Number.isFinite(endMs) && now < endMs) return 'break'
   return 'finished'
 }
 

@@ -67,10 +67,26 @@ export const SIDE_ICONS: Record<PlaySide, LucideIcon> = {
   both: Columns2,
 }
 export const SIDE_CHIP_COLORS: Record<PlaySide, string> = {
-  left: 'text-orange-600',
-  right: 'text-teal-600',
-  both: 'text-violet-600',
+  left: 'text-orange-600 dark:text-orange-300',
+  right: 'text-teal-600 dark:text-teal-300',
+  both: 'text-violet-600 dark:text-violet-300',
 }
+
+/** Section header icon badges — readable in light and dark theme. */
+export const PROFILE_SECTION_ICONS = {
+  details: 'bg-brand-accent/15 text-brand-accent ring-brand-accent/35',
+  gender:
+    'bg-fuchsia-100 text-fuchsia-600 ring-fuchsia-200 dark:bg-fuchsia-500/20 dark:text-fuchsia-300 dark:ring-fuchsia-400/30',
+  hand: 'bg-sky-100 text-sky-600 ring-sky-200 dark:bg-sky-500/20 dark:text-sky-300 dark:ring-sky-400/30',
+  level:
+    'bg-amber-100 text-amber-700 ring-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:ring-amber-400/30',
+  playStyle:
+    'bg-violet-100 text-violet-600 ring-violet-200 dark:bg-violet-500/20 dark:text-violet-300 dark:ring-violet-400/30',
+  side: 'bg-teal-100 text-teal-600 ring-teal-200 dark:bg-teal-500/20 dark:text-teal-300 dark:ring-teal-400/30',
+  fun: 'bg-lime-100 text-lime-700 ring-lime-200 dark:bg-lime-500/20 dark:text-lime-300 dark:ring-lime-400/30',
+  usuallyFree:
+    'bg-orange-100 text-orange-600 ring-orange-200 dark:bg-orange-500/20 dark:text-orange-300 dark:ring-orange-400/30',
+} as const
 
 export function ProfileFormSection({
   icon: Icon,
@@ -89,7 +105,7 @@ export function ProfileFormSection({
 }) {
   return (
     <section
-      className={`rounded-xl border border-brand-border bg-[#f8f7f5] p-3 shadow-sm ${className ?? ''}`}
+      className={`rounded-xl border border-brand-border bg-brand-bg-alt p-3 shadow-sm dark:bg-white/[0.06] dark:shadow-none ${className ?? ''}`}
     >
       <h3 className="mb-2.5 flex items-center gap-1.5 border-b border-brand-border/70 pb-2 text-[11px] font-semibold uppercase tracking-wide text-brand-primary">
         <span
@@ -147,8 +163,8 @@ export function ProfileIconChip({
     compact ? 'min-h-[3.25rem] px-1 py-1.5' : 'min-w-[4.25rem] px-2 py-2'
   } ${
     active
-      ? 'border-brand-accent bg-brand-surface text-brand-primary ring-1 ring-brand-accent/35'
-      : 'border-brand-border/80 bg-brand-surface text-brand-text'
+      ? 'border-brand-accent bg-brand-accent/15 text-brand-primary ring-1 ring-brand-accent/35'
+      : 'border-brand-border/80 bg-brand-surface/80 text-brand-text dark:bg-black/20'
   }`
 
   const content = (
@@ -181,7 +197,7 @@ export function ProfileIconChip({
 
 export function ProfileReadonlyValue({ children }: { children: ReactNode }) {
   return (
-    <p className="rounded-lg border border-brand-border/80 bg-brand-surface px-3 py-2 text-sm text-brand-text">
+    <p className="rounded-lg border border-brand-border/80 bg-brand-surface/80 px-3 py-2 text-sm text-brand-text dark:bg-black/20">
       {children}
     </p>
   )

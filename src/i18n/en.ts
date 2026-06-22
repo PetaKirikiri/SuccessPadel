@@ -424,6 +424,10 @@ export const en: Messages = {
     displayNamePlaceholder: 'How you appear on the leaderboard',
     displayNameRequired: 'Enter a display name.',
     changePhoto: 'Change photo',
+    showdownTitle: 'Match showdown',
+    showdownHint: 'Pick a fighter for match cards. Your profile photo stays the same.',
+    showdownNone: 'None',
+    showdownPick: 'Pick fighter',
     photoUploadFailed: 'Could not upload photo. Try again.',
     bookmarkTitle: 'Bookmark in your browser',
     bookmarkHint:

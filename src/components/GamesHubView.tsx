@@ -3,6 +3,7 @@ import { GamesGenderFilterProvider } from '../contexts/GamesGenderFilterContext'
 import { useTranslation } from '../hooks/useTranslation'
 import { useSeasonLeaderboard } from '../hooks/useSeasonLeaderboard'
 import type { Gender } from '../lib/competitionPresets'
+import { consumeStoredCompetitiveGenderFilter } from '../lib/gamesGenderFilter'
 import { Leaderboard } from '../pages/Leaderboard'
 import {
   IconHubCurrent,
@@ -111,6 +112,11 @@ export function GamesHubView({
   const [tab, setTab] = useState<GamesHubTab>('current')
   const [genderFilter, setGenderFilter] = useState<Gender>('Men')
   const didDefaultTab = useRef(false)
+
+  useEffect(() => {
+    const stored = consumeStoredCompetitiveGenderFilter()
+    if (stored) setGenderFilter(stored)
+  }, [])
 
   useEffect(() => {
     if (!showPastTab || didDefaultTab.current) return

@@ -15,10 +15,13 @@ export type DuoTeamDraftSlot = {
 }
 
 export type CompetitionFormDraft = {
-  v: 7
+  v: 8
   savedAt: string
   playerMode: CompetitionPlayerMode
   courtCount: CourtCount
+  gameCount: number
+  gameMinutes: number
+  breakMinutes: number
   createLeague: boolean
   day: string
   startHour: number
@@ -32,7 +35,13 @@ export type CompetitionFormDraft = {
   previewSeed: number
 }
 
-type LegacyDraftV6 = Omit<CompetitionFormDraft, 'v' | 'courtCount'> & { v: 6 }
+type LegacyDraftV7 = Omit<
+  CompetitionFormDraft,
+  'v' | 'gameCount' | 'gameMinutes' | 'breakMinutes'
+> & {
+  v: 7
+}
+type LegacyDraftV6 = Omit<LegacyDraftV7, 'v' | 'courtCount'> & { v: 6 }
 
 function courtCountFromLegacyDraft(draft: LegacyDraftV6): CourtCount {
   if (draft.playerMode === 'duos' && draft.duoTeams.length >= 2) {
@@ -52,13 +61,25 @@ export function loadCompetitionFormDraft(scope: 'new' | string): CompetitionForm
   try {
     const raw = localStorage.getItem(competitionDraftKey(scope))
     if (!raw) return null
-    const parsed = JSON.parse(raw) as CompetitionFormDraft | LegacyDraftV6
-    if (parsed?.v === 7) return parsed
+    const parsed = JSON.parse(raw) as CompetitionFormDraft | LegacyDraftV7 | LegacyDraftV6
+    if (parsed?.v === 8) return parsed
+    if (parsed?.v === 7) {
+      return {
+        ...parsed,
+        v: 8,
+        gameCount: 7,
+        gameMinutes: 14,
+        breakMinutes: 3,
+      }
+    }
     if (parsed?.v === 6) {
       return {
         ...parsed,
-        v: 7,
+        v: 8,
         courtCount: courtCountFromLegacyDraft(parsed),
+        gameCount: 7,
+        gameMinutes: 14,
+        breakMinutes: 3,
       }
     }
     return null
@@ -73,7 +94,7 @@ export function saveCompetitionFormDraft(
 ): void {
   try {
     const payload: CompetitionFormDraft = {
-      v: 7,
+      v: 8,
       savedAt: new Date().toISOString(),
       ...draft,
     }

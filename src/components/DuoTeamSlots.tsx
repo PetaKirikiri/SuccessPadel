@@ -12,6 +12,7 @@ type Props = {
   onRosterCommit?: () => void
   disabled?: boolean
   layout?: 'stack' | 'grid'
+  nameInputMode?: 'text' | 'picker'
   linkAvatarsToProfile?: boolean
   competitionId?: string | null
 }
@@ -25,6 +26,7 @@ export function DuoTeamSlots({
   onRosterCommit,
   disabled,
   layout = 'stack',
+  nameInputMode = 'picker',
   linkAvatarsToProfile = false,
   competitionId = null,
 }: Props) {
@@ -124,6 +126,7 @@ export function DuoTeamSlots({
             disabled={disabled}
             showMembers
             showPlayerProfiles
+            nameInputMode={nameInputMode}
             linkAvatarsToProfile={linkAvatarsToProfile}
             competitionId={competitionId}
           />

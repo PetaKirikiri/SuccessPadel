@@ -5,6 +5,7 @@ import { useSignInChip } from '../hooks/useSignInChip'
 import { useTranslation } from '../hooks/useTranslation'
 import { useLineClientProfile } from '../hooks/useLineClientProfile'
 import { firstDisplayName } from '../lib/leaderboardEntries'
+import { resolveProfileAvatarUrl } from '../lib/resolveProfileAvatar'
 import { useTheme } from '../providers/ThemeProvider'
 import { LineSignInModal } from './LineSignInModal'
 import { ThemeToggleButton } from './ThemeToggleButton'
@@ -29,7 +30,11 @@ export function ProfileChip({ returnTo, className = '' }: Props) {
   const name = isSignedIn
     ? firstDisplayName(profile?.display_name ?? lineClient.displayName)
     : signInLabel
-  const avatarUrl = isSignedIn ? (profile?.avatar_url ?? lineClient.pictureUrl ?? null) : null
+  const avatarUrl = isSignedIn
+    ? profile
+      ? resolveProfileAvatarUrl(profile)
+      : (lineClient.pictureUrl ?? null)
+    : null
   const isAdmin = Boolean(profile?.is_admin)
   const isDark = theme === 'dark'
   const chipClass = isAdmin

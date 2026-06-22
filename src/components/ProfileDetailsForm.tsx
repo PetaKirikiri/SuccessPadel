@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState, useId } from 'react'
-import { Activity, Columns2, Hash, Hand, Layers, LayoutGrid, Smile, ThumbsDown, User, Venus, Zap } from 'lucide-react'
+import { Activity, Columns2, Hash, Hand, Layers, LayoutGrid, Smile, Swords, ThumbsDown, User, Venus, Zap } from 'lucide-react'
+import { PixelAvatarEditor } from './PixelAvatarEditor'
 import { useTranslation } from '../hooks/useTranslation'
+import { defaultPixelAvatarConfig, normalizePixelAvatarConfig } from '../lib/pixelAvatar/defaults'
+import type { PixelAvatarConfig } from '../lib/pixelAvatar/types'
 import { uploadProfileAvatar, validateProfileAvatar } from '../lib/profileAvatar'
 import {
   DOMINANT_HANDS,
@@ -33,6 +36,7 @@ import {
   ProfileFieldLabel,
   ProfileFormSection,
   ProfileIconChip,
+  PROFILE_SECTION_ICONS,
   SIDE_CHIP_COLORS,
   SIDE_ICONS,
   STYLE_CHIP_COLORS,
@@ -44,6 +48,9 @@ export type EditableProfile = Pick<
   | 'id'
   | 'display_name'
   | 'avatar_url'
+  | 'avatar_mode'
+  | 'pixel_avatar'
+  | 'pixel_avatar_url'
   | 'playtomic_number'
   | 'racket'
   | 'play_style'
@@ -72,6 +79,7 @@ export function ProfileDetailsForm({
 }: Props) {
   const { t } = useTranslation()
   const localFileInputRef = useRef<HTMLInputElement>(null)
+  const loadedProfileIdRef = useRef(profile.id)
   const photoInputId = useId()
   const fileInputRef = fileInputRefProp ?? localFileInputRef
   const [displayName, setDisplayName] = useState(profile.display_name)
@@ -91,6 +99,12 @@ export function ProfileDetailsForm({
       : null,
   )
   const [dominantHand, setDominantHand] = useState<DominantHand | null>(profile.dominant_hand)
+  const [showdownEnabled, setShowdownEnabled] = useState(
+    () => Boolean(normalizePixelAvatarConfig(profile.pixel_avatar)),
+  )
+  const [pixelConfig, setPixelConfig] = useState<PixelAvatarConfig>(
+    () => normalizePixelAvatarConfig(profile.pixel_avatar) ?? defaultPixelAvatarConfig(),
+  )
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
@@ -110,6 +124,11 @@ export function ProfileDetailsForm({
   const avatarInitial = firstDisplayName(displayName).trim()[0]?.toUpperCase() ?? '?'
 
   useEffect(() => {
+    // Background auth/profile refreshes replace the profile object even while the
+    // user is editing. Do not let those refreshes overwrite unsaved choices such
+    // as switching from photo to pixel avatar. Reset only for a different player.
+    if (loadedProfileIdRef.current === profile.id) return
+    loadedProfileIdRef.current = profile.id
     setDisplayName(profile.display_name)
     setPendingAvatar(null)
     setPlaytomicNumber(profile.playtomic_number ?? '')
@@ -129,6 +148,8 @@ export function ProfileDetailsForm({
         : null,
     )
     setDominantHand(profile.dominant_hand)
+    setShowdownEnabled(Boolean(normalizePixelAvatarConfig(profile.pixel_avatar)))
+    setPixelConfig(normalizePixelAvatarConfig(profile.pixel_avatar) ?? defaultPixelAvatarConfig())
   }, [profile])
 
   const onAvatarPick = (file: File | undefined) => {
@@ -154,6 +175,7 @@ export function ProfileDetailsForm({
     setSaved(false)
 
     let avatarUrl = profile.avatar_url
+
     if (!hideBanner && pendingAvatar) {
       try {
         avatarUrl = await uploadProfileAvatar(profile.id, pendingAvatar)
@@ -167,6 +189,8 @@ export function ProfileDetailsForm({
     const payload: Record<string, unknown> = {
       display_name: trimmedName,
       avatar_url: avatarUrl,
+      avatar_mode: 'photo',
+      pixel_avatar: showdownEnabled ? pixelConfig : null,
       playtomic_number: playtomicNumber.trim() || null,
       racket: racket.trim() || null,
       play_style: serializePlayStyles(playStyles),
@@ -200,33 +224,70 @@ export function ProfileDetailsForm({
         void save()
       }}
     >
-      {!hideBanner && (
-        <div className="mb-3 flex items-center gap-3">
-          <label
-            htmlFor={photoInputId}
-            className="relative shrink-0 cursor-pointer"
-            aria-label={t('profile.changePhoto')}
-          >
-            {avatarPreview ? (
-              <img
-                src={avatarPreview}
-                alt=""
-                className="h-14 w-14 rounded-full object-cover ring-2 ring-brand-border"
-              />
-            ) : (
-              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-bg-alt text-lg font-semibold text-brand-muted ring-2 ring-brand-border">
-                {avatarInitial}
-              </span>
-            )}
-          </label>
-          <label
-            htmlFor={photoInputId}
-            className="cursor-pointer text-xs font-medium text-brand-accent"
-          >
-            {t('profile.changePhoto')}
-          </label>
-        </div>
-      )}
+      <div className="mb-3 space-y-3">
+        {!hideBanner ? (
+          <div className="flex items-center gap-3">
+            <label
+              htmlFor={photoInputId}
+              className="relative shrink-0 cursor-pointer"
+              aria-label={t('profile.changePhoto')}
+            >
+              {avatarPreview ? (
+                <img
+                  src={avatarPreview}
+                  alt=""
+                  className="h-14 w-14 rounded-full object-cover ring-2 ring-brand-border"
+                />
+              ) : (
+                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-bg-alt text-lg font-semibold text-brand-muted ring-2 ring-brand-border">
+                  {avatarInitial}
+                </span>
+              )}
+            </label>
+            <label
+              htmlFor={photoInputId}
+              className="cursor-pointer text-xs font-medium text-brand-accent"
+            >
+              {t('profile.changePhoto')}
+            </label>
+          </div>
+        ) : null}
+
+        <ProfileFormSection
+          icon={Swords}
+          title={t('profile.showdownTitle')}
+          iconClassName="text-orange-600"
+        >
+          <p className="mb-2 text-xs text-brand-muted">{t('profile.showdownHint')}</p>
+          <div className="mb-2 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setShowdownEnabled(false)}
+              className={`rounded-lg border px-3 py-1.5 text-xs font-semibold ${
+                !showdownEnabled
+                  ? 'border-brand-accent bg-brand-accent/20 text-brand-accent'
+                  : 'border-brand-border text-brand-muted'
+              }`}
+            >
+              {t('profile.showdownNone')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowdownEnabled(true)}
+              className={`rounded-lg border px-3 py-1.5 text-xs font-semibold ${
+                showdownEnabled
+                  ? 'border-brand-accent bg-brand-accent/20 text-brand-accent'
+                  : 'border-brand-border text-brand-muted'
+              }`}
+            >
+              {t('profile.showdownPick')}
+            </button>
+          </div>
+          {showdownEnabled ? (
+            <PixelAvatarEditor config={pixelConfig} onChange={setPixelConfig} />
+          ) : null}
+        </ProfileFormSection>
+      </div>
       {!hideBanner ? (
         <input
           id={photoInputId}
@@ -241,7 +302,7 @@ export function ProfileDetailsForm({
       <ProfileFormSection
         icon={User}
         title={t('playerProfile.details')}
-        iconClassName="bg-brand-accent/15 text-brand-accent ring-brand-accent/35"
+        iconClassName={PROFILE_SECTION_ICONS.details}
       >
         <div className="grid grid-cols-2 gap-2.5">
           <label className="col-span-2 block space-y-1 sm:col-span-1">
@@ -252,7 +313,7 @@ export function ProfileDetailsForm({
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder={t('profile.displayNamePlaceholder')}
-              className="brand-input bg-brand-surface py-2 text-sm"
+              className="brand-input bg-brand-surface/80 py-2 text-sm dark:bg-black/20"
               autoComplete="name"
             />
           </label>
@@ -264,7 +325,7 @@ export function ProfileDetailsForm({
               value={playtomicNumber}
               onChange={(e) => setPlaytomicNumber(e.target.value)}
               placeholder={t('playerProfile.playtomicPlaceholder')}
-              className="brand-input bg-brand-surface py-2 text-sm"
+              className="brand-input bg-brand-surface/80 py-2 text-sm dark:bg-black/20"
               inputMode="numeric"
             />
           </label>
@@ -276,7 +337,7 @@ export function ProfileDetailsForm({
               value={racket}
               onChange={(e) => setRacket(e.target.value)}
               placeholder={t('playerProfile.racketPlaceholder')}
-              className="brand-input bg-brand-surface py-2 text-sm"
+              className="brand-input bg-brand-surface/80 py-2 text-sm dark:bg-black/20"
             />
           </label>
         </div>
@@ -288,7 +349,7 @@ export function ProfileDetailsForm({
             <ProfileFormSection
               icon={Venus}
               title={t('playerProfile.gender')}
-              iconClassName="bg-fuchsia-100 text-fuchsia-600 ring-fuchsia-200"
+              iconClassName={PROFILE_SECTION_ICONS.gender}
             >
               <div className="grid grid-cols-2 gap-1.5">
                 {PLAYER_GENDERS.map((g) => (
@@ -307,7 +368,7 @@ export function ProfileDetailsForm({
             <ProfileFormSection
               icon={Hand}
               title={t('playerProfile.hand')}
-              iconClassName="bg-sky-100 text-sky-600 ring-sky-200"
+              iconClassName={PROFILE_SECTION_ICONS.hand}
             >
               <div className="grid grid-cols-2 gap-1.5">
                 {DOMINANT_HANDS.map((h) => (
@@ -327,7 +388,7 @@ export function ProfileDetailsForm({
           <ProfileFormSection
             icon={Layers}
             title={t('playerProfile.level')}
-            iconClassName="bg-amber-100 text-amber-700 ring-amber-200"
+            iconClassName={PROFILE_SECTION_ICONS.level}
           >
             <div className="grid grid-cols-5 gap-1.5">
               {SKILL_LEVELS.map((level) => (
@@ -350,7 +411,7 @@ export function ProfileDetailsForm({
       <ProfileFormSection
         icon={LayoutGrid}
         title={t('playerProfile.playStyle')}
-        iconClassName="bg-violet-100 text-violet-600 ring-violet-200"
+        iconClassName={PROFILE_SECTION_ICONS.playStyle}
       >
         <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-7">
           {PLAY_STYLES.map((style) => (
@@ -375,7 +436,7 @@ export function ProfileDetailsForm({
         <ProfileFormSection
           icon={Columns2}
           title={t('playerProfile.preferredSide')}
-          iconClassName="bg-teal-100 text-teal-600 ring-teal-200"
+          iconClassName={PROFILE_SECTION_ICONS.side}
         >
           <div className="grid grid-cols-3 gap-1.5">
             {PLAY_SIDES.map((s) => (
@@ -394,7 +455,7 @@ export function ProfileDetailsForm({
         <ProfileFormSection
           icon={Smile}
           title={t('playerProfile.funGames')}
-          iconClassName="bg-lime-100 text-lime-700 ring-lime-200"
+          iconClassName={PROFILE_SECTION_ICONS.fun}
         >
           <div className="grid grid-cols-2 gap-1.5">
             <ProfileIconChip
@@ -420,19 +481,19 @@ export function ProfileDetailsForm({
       <ProfileFormSection
         icon={Activity}
         title={t('playerProfile.usuallyFree')}
-        iconClassName="bg-orange-100 text-orange-600 ring-orange-200"
+        iconClassName={PROFILE_SECTION_ICONS.usuallyFree}
       >
         <textarea
           value={usuallyFree}
           onChange={(e) => setUsuallyFree(e.target.value)}
           placeholder={t('playerProfile.usuallyFreePlaceholder')}
           rows={2}
-          className="brand-input w-full resize-none bg-brand-surface py-2 text-sm"
+          className="brand-input w-full resize-none bg-brand-surface/80 py-2 text-sm dark:bg-black/20"
         />
       </ProfileFormSection>
 
-      <div className="space-y-2 rounded-xl border border-brand-border bg-brand-surface p-3 shadow-sm">
-        {error && <p className="text-xs text-red-600">{error}</p>}
+      <div className="space-y-2 rounded-xl border border-brand-border bg-brand-bg-alt p-3 shadow-sm dark:bg-white/[0.06] dark:shadow-none">
+        {error && <p className="text-xs text-red-600 dark:text-red-300">{error}</p>}
         {saved && <p className="text-xs text-brand-accent">{t('playerProfile.adminSaved')}</p>}
         <button type="submit" disabled={busy} className="brand-btn w-full py-2.5 text-sm font-semibold">
           {busy ? t('common.loading') : t('playerProfile.save')}

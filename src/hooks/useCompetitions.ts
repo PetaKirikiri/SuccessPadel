@@ -11,7 +11,7 @@ export type CompetitionPlayer = {
   guest_name: string | null
   guest_email: string | null
   rank_order: number | null
-  profiles: Pick<Profile, 'id' | 'display_name' | 'avatar_url'> | null
+  profiles: Pick<Profile, 'id' | 'display_name' | 'avatar_url' | 'avatar_mode' | 'pixel_avatar'> | null
 }
 
 export function rosterDisplayName(sp: CompetitionPlayer): string {
@@ -50,7 +50,7 @@ export function useCompetitions(_userId?: string) {
       .from('game_sessions')
       .select(
         `*,
-         session_players(id, profile_id, padel_player_id, guest_name, guest_email, rank_order, profiles(id, display_name, avatar_url))`,
+         session_players(id, profile_id, padel_player_id, guest_name, guest_email, rank_order, profiles(id, display_name, avatar_url, avatar_mode, pixel_avatar))`,
       )
       .eq('game_kind', 'competition')
       .in('status', ['open', 'locked', 'complete'])

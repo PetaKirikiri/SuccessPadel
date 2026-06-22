@@ -8,6 +8,7 @@ import { compactDisplayNames } from '../../lib/leaderboardEntries'
 import type { CourtPlayer } from '../../lib/americanoSchedule'
 import { PlayerNameLink } from '../PlayerNameLink'
 import { PlayerAvatarLink } from '../PlayerAvatarLink'
+import { GameLineupSprite } from '../GameLineupSprite'
 import type { LiveCourt, ScoringGameCourt } from './gameBoardTypes'
 
 export function stopCardNav(e: { stopPropagation: () => void }) {
@@ -372,12 +373,16 @@ export function CourtMatchCell({
     ? 'h-6 w-6 shrink-0 rounded-full object-cover ring-1 ring-brand-border/60'
     : 'h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-brand-border/60 md:h-9 md:w-9'
 
+  const spriteClass = compact ? 'h-10 w-10' : 'h-12 w-12 md:h-14 md:w-14'
+  const spriteSize = compact ? 40 : 56
+
   const playerEl = (player: CourtPlayer, align: 'left' | 'right') => {
     const isCurrent = Boolean(currentUserId && player.id === currentUserId)
     const isRegistered = Boolean(player.id)
     const displayAvatarUrl = isRegistered
       ? player.avatarUrl ?? (isCurrent ? currentUserAvatarUrl ?? null : null)
       : null
+    const gameSpriteUrl = isRegistered ? player.gameSpriteUrl ?? null : null
     const [displayName] = compactDisplayNames([player.name])
     const nameEl = (
       <PlayerNameLink
@@ -387,15 +392,26 @@ export function CourtMatchCell({
         className={nameClass}
       />
     )
-    const avatarEl = isRegistered ? (
-      <PlayerAvatarLink
-        displayName={player.name}
-        avatarUrl={displayAvatarUrl}
-        profileId={player.id}
-        padelPlayerId={player.padelPlayerId}
-        imgClassName={avatarClass}
-      />
-    ) : null
+    const spriteEl =
+      gameSpriteUrl && isRegistered ? (
+        <GameLineupSprite
+          src={gameSpriteUrl}
+          facing={align === 'left' ? 'left' : 'right'}
+          size={spriteSize}
+          className={spriteClass}
+        />
+      ) : null
+    const avatarEl =
+      !gameSpriteUrl && isRegistered ? (
+        <PlayerAvatarLink
+          displayName={player.name}
+          avatarUrl={displayAvatarUrl}
+          profileId={player.id}
+          padelPlayerId={player.padelPlayerId}
+          imgClassName={avatarClass}
+        />
+      ) : null
+    const visualEl = spriteEl ?? avatarEl
     return (
       <p
         className={`${playerClass(isCurrent)} ${
@@ -405,11 +421,11 @@ export function CourtMatchCell({
         {align === 'right' ? (
           <>
             {nameEl}
-            {avatarEl}
+            {visualEl}
           </>
         ) : (
           <>
-            {avatarEl}
+            {visualEl}
             {nameEl}
           </>
         )}

@@ -20,7 +20,12 @@ export function useCompetitionSetup() {
       setRows([])
     } else {
       const listed = (data as CompetitionRow[]) ?? []
-      setRows(await enrichCompetitionRowsAvatars(listed))
+      try {
+        setRows(await enrichCompetitionRowsAvatars(listed))
+      } catch (enrichErr) {
+        console.error('useCompetitionSetup enrich', enrichErr)
+        setRows(listed)
+      }
     }
     setLoading(false)
   }, [])

@@ -45,6 +45,7 @@ import {
   ProfileFieldLabel,
   ProfileFormSection,
   ProfileIconChip,
+  PROFILE_SECTION_ICONS,
   ProfileReadonlyValue,
   SIDE_CHIP_COLORS,
   SIDE_ICONS,
@@ -111,7 +112,7 @@ export function PlayerProfileDetailsDisplay({
       <ProfileFormSection
         icon={User}
         title={t('playerProfile.details')}
-        iconClassName="bg-brand-accent/15 text-brand-accent ring-brand-accent/35"
+        iconClassName={PROFILE_SECTION_ICONS.details}
       >
         <div className="grid grid-cols-2 gap-2.5">
           <div className="col-span-2 space-y-1 sm:col-span-1">
@@ -141,7 +142,7 @@ export function PlayerProfileDetailsDisplay({
         <ProfileFormSection
           icon={Venus}
           title={t('playerProfile.gender')}
-          iconClassName="bg-fuchsia-100 text-fuchsia-600 ring-fuchsia-200"
+          iconClassName={PROFILE_SECTION_ICONS.gender}
         >
           {gender ? (
             <div className="grid grid-cols-2 gap-1.5">
@@ -160,7 +161,7 @@ export function PlayerProfileDetailsDisplay({
         <ProfileFormSection
           icon={Hand}
           title={t('playerProfile.hand')}
-          iconClassName="bg-sky-100 text-sky-600 ring-sky-200"
+          iconClassName={PROFILE_SECTION_ICONS.hand}
         >
           {dominantHand ? (
             <div className="grid grid-cols-2 gap-1.5">
@@ -181,7 +182,7 @@ export function PlayerProfileDetailsDisplay({
       <ProfileFormSection
         icon={Layers}
         title={t('playerProfile.level')}
-        iconClassName="bg-amber-100 text-amber-700 ring-amber-200"
+        iconClassName={PROFILE_SECTION_ICONS.level}
       >
         {skillLevel ? (
           <div className="grid grid-cols-5 gap-1.5">
@@ -202,7 +203,7 @@ export function PlayerProfileDetailsDisplay({
       <ProfileFormSection
         icon={LayoutGrid}
         title={t('playerProfile.playStyle')}
-        iconClassName="bg-violet-100 text-violet-600 ring-violet-200"
+        iconClassName={PROFILE_SECTION_ICONS.playStyle}
       >
         {playStyles.length > 0 ? (
           <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-7">
@@ -226,7 +227,7 @@ export function PlayerProfileDetailsDisplay({
         <ProfileFormSection
           icon={Columns2}
           title={t('playerProfile.preferredSide')}
-          iconClassName="bg-teal-100 text-teal-600 ring-teal-200"
+          iconClassName={PROFILE_SECTION_ICONS.side}
         >
           {preferredSide ? (
             <div className="grid grid-cols-3 gap-1.5">
@@ -245,7 +246,7 @@ export function PlayerProfileDetailsDisplay({
         <ProfileFormSection
           icon={Smile}
           title={t('playerProfile.funGames')}
-          iconClassName="bg-lime-100 text-lime-700 ring-lime-200"
+          iconClassName={PROFILE_SECTION_ICONS.fun}
         >
           {profile ? (
             <div className="grid grid-cols-2 gap-1.5">
@@ -273,7 +274,7 @@ export function PlayerProfileDetailsDisplay({
       <ProfileFormSection
         icon={Activity}
         title={t('playerProfile.usuallyFree')}
-        iconClassName="bg-orange-100 text-orange-600 ring-orange-200"
+        iconClassName={PROFILE_SECTION_ICONS.usuallyFree}
       >
         <ProfileReadonlyValue>{profile?.usually_free?.trim() || notSet}</ProfileReadonlyValue>
       </ProfileFormSection>
@@ -284,7 +285,7 @@ export function PlayerProfileDetailsDisplay({
         <ProfileFormSection
           icon={Trophy}
           title={t('playerProfile.competition')}
-          iconClassName="bg-amber-100 text-amber-700 ring-amber-200"
+          iconClassName={PROFILE_SECTION_ICONS.level}
         >
           <ProfileReadonlyValue>
             {t('playerProfile.competitionSummary', {
@@ -301,7 +302,7 @@ export function PlayerProfileDetailsDisplay({
         <ProfileFormSection
           icon={Trophy}
           title={t('playerProfile.achievements')}
-          iconClassName="bg-brand-accent/15 text-brand-accent ring-brand-accent/35"
+          iconClassName={PROFILE_SECTION_ICONS.details}
         >
           <ul className="m-0 list-none space-y-2 p-0">
             {badges.map((b) => {

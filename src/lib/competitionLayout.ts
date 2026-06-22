@@ -151,11 +151,11 @@ export function resolveCompetitionSchedule(
     'starts_at' | 'ends_at' | 'scoring_config' | 'target_players' | 'max_players'
   > | null,
 ): ResolvedCompetitionSchedule {
-  const totalGames = COMPETITION_SCHEDULE.games
-  const breakMinutes = COMPETITION_SCHEDULE.breakMinutes
-  const gameMinutes = COMPETITION_SCHEDULE.gameMinutes
   const eventMinutes =
     eventMinutesForSession(session) || competitionCanonicalEventMinutes()
+  const totalGames = americanoGamesFromConfig(session?.scoring_config)
+  const breakMinutes = breakMinutesFromConfig(session?.scoring_config)
+  const gameMinutes = gameMinutesFromConfig(session?.scoring_config, 0, totalGames, breakMinutes)
 
   const anchorStartsAt = session?.starts_at ? new Date(session.starts_at) : null
 
@@ -172,18 +172,26 @@ export function resolveCompetitionSchedule(
       ? new Date(anchorStartsAt.getTime() + leadInMinutes * 60_000)
       : null
 
+  const configEventMinutes = leadInMinutes + playBlockMinutes
   const eventEndsAt =
-    session?.ends_at != null
-      ? new Date(session.ends_at)
-      : anchorStartsAt != null && eventMinutes > 0
-        ? new Date(anchorStartsAt.getTime() + eventMinutes * 60_000)
-        : null
+    playStartsAt != null && playBlockMinutes > 0
+      ? new Date(playStartsAt.getTime() + playBlockMinutes * 60_000)
+      : session?.ends_at != null
+        ? new Date(session.ends_at)
+        : anchorStartsAt != null && configEventMinutes > 0
+          ? new Date(anchorStartsAt.getTime() + configEventMinutes * 60_000)
+          : null
+
+  const resolvedEventMinutes =
+    playBlockMinutes > 0 && eventMinutes > configEventMinutes + 1
+      ? configEventMinutes
+      : eventMinutes || configEventMinutes
 
   return {
     totalGames,
     breakMinutes,
     gameMinutes,
-    eventMinutes,
+    eventMinutes: resolvedEventMinutes,
     leadInMinutes,
     playBlockMinutes,
     usedMinutes,
@@ -227,11 +235,11 @@ export function gameMinutesFromConfig(
   totalGames: number = COMPETITION_SCHEDULE.games,
   breakMinutes: number = COMPETITION_SCHEDULE.breakMinutes,
 ): number {
+  const stored = config?.game_minutes
+  if (typeof stored === 'number' && stored >= 1 && stored <= 60) return Math.floor(stored)
   if (eventMinutes > 0 && totalGames > 0) {
     return gameDurationForEvent(eventMinutes, totalGames, breakMinutes)
   }
-  const stored = config?.game_minutes
-  if (typeof stored === 'number' && stored >= 1 && stored <= 60) return Math.floor(stored)
   return COMPETITION_SCHEDULE.gameMinutes
 }
 

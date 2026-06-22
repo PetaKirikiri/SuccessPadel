@@ -25,6 +25,7 @@ import {
 } from '../lib/rankedSchedule'
 import { buildDuoStoredSchedule } from '../lib/duoRoundRobinSchedule'
 import { DUO_GAME_COUNT } from '../lib/competitionFormatPresets'
+import { courtPlayerFromProfile } from '../lib/courtPlayerFromProfile'
 import type { CourtPlayer, GameRound } from '../lib/americanoSchedule'
 import type { PlaySide } from '../lib/types'
 import { pivotScheduleByCourt, sortGameRoundsByCourt, sortLiveCourtsByClubOrder, type CourtColumn } from '../lib/competitionCourtBoard'
@@ -63,20 +64,26 @@ function groupLiveCourts(players: RoundPlayer[]): LiveCourt[] {
         teamBPlayers: [],
       } satisfies LiveCourt)
     const label = roundPlayerName(p)
+    const profile = p.session_players?.profiles
     const pid = p.profile_id ?? p.session_players?.profile_id
     const padelPlayerId = p.padel_player_id ?? p.session_players?.padel_player_id ?? null
-    const avatarUrl = p.session_players?.profiles?.avatar_url ?? null
-    const rawSide = p.session_players?.profiles?.preferred_side
+    const rawSide = profile?.preferred_side
     const preferredSide: PlaySide | null =
       rawSide === 'left' || rawSide === 'right' || rawSide === 'both' ? rawSide : null
-    const player = {
-      id: pid ?? null,
+    const player = courtPlayerFromProfile({
+      profileId: pid ?? null,
       rosterId: p.roster_entry_id ?? null,
       padelPlayerId,
       name: label,
-      avatarUrl,
+      profile:
+        pid && profile
+          ? {
+              avatar_url: profile.avatar_url ?? null,
+              pixel_avatar: profile.pixel_avatar ?? null,
+            }
+          : null,
       preferredSide,
-    } satisfies CourtPlayer
+    })
     if (p.team === 'a') {
       row.teamA.push(label)
       row.teamAPlayers.push(player)

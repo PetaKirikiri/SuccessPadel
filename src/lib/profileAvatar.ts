@@ -69,6 +69,18 @@ export async function uploadProfileAvatar(userId: string, file: File): Promise<s
   return `${data.publicUrl}?v=${Date.now()}`
 }
 
+export async function uploadPixelAvatar(userId: string, blob: Blob): Promise<string> {
+  const path = `${userId}/pixel.png`
+  const { error } = await supabase.storage.from('avatars').upload(path, blob, {
+    upsert: true,
+    contentType: 'image/png',
+  })
+  if (error) throw error
+
+  const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+  return `${data.publicUrl}?v=${Date.now()}`
+}
+
 /** Copy a LINE CDN photo into our avatars bucket so the URL stays valid. */
 export async function mirrorLineAvatarToStorage(
   userId: string,

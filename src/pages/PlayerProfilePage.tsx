@@ -24,6 +24,7 @@ import { saveClaimPadelPlayer } from '../lib/authClaimPlayer'
 import { adminDeletePlayer, canAdminDeletePlayer } from '../lib/playerDelete'
 import { playerProfileShareUrl, sharePlayerProfile } from '../lib/playerProfileShare'
 import { uploadProfileAvatar, validateProfileAvatar } from '../lib/profileAvatar'
+import { resolveProfileAvatarUrl } from '../lib/resolveProfileAvatar'
 import { isLineLiffBrowser } from '../lib/line/liff'
 import { runLinePlayerProfileHandshake } from '../lib/line/profileHandshake'
 import { supabase } from '../lib/supabaseClient'
@@ -56,6 +57,9 @@ function toEditableProfile(
     id: source.id,
     display_name: source.display_name,
     avatar_url: source.avatar_url,
+    avatar_mode: source.avatar_mode ?? 'photo',
+    pixel_avatar: source.pixel_avatar ?? null,
+    pixel_avatar_url: source.pixel_avatar_url ?? null,
     playtomic_number: source.playtomic_number,
     racket: source.racket,
     play_style: source.play_style,
@@ -198,18 +202,18 @@ export function PlayerProfilePage() {
   ])
 
   const avatarUrl = useMemo(() => {
-    const viewedAvatar =
-      resolved?.profile?.avatar_url ??
-      resolved?.guestAvatarUrl ??
-      routeEntry?.avatar_url ??
-      null
-    if (!isOwnProfile) return viewedAvatar
-    return authProfile?.avatar_url ?? viewedAvatar
+    if (isOwnProfile && authProfile) {
+      return resolveProfileAvatarUrl(authProfile)
+    }
+    if (resolved?.profile) {
+      return resolveProfileAvatarUrl(resolved.profile)
+    }
+    return resolved?.guestAvatarUrl ?? routeEntry?.avatar_url ?? null
   }, [
-    authProfile?.avatar_url,
+    authProfile,
     isOwnProfile,
     resolved?.guestAvatarUrl,
-    resolved?.profile?.avatar_url,
+    resolved?.profile,
     routeEntry?.avatar_url,
   ])
 
@@ -518,12 +522,12 @@ export function PlayerProfilePage() {
       >
         <AppShellColumn fill={false} className="space-y-3 pb-8">
           {lineHandshakeWorking ? (
-            <div className="pointer-events-none fixed inset-0 z-[300] flex items-center justify-center bg-white/80 px-6">
+            <div className="pointer-events-none fixed inset-0 z-[300] flex items-center justify-center bg-brand-bg/90 px-6 dark:bg-black/70">
               <p className="text-center text-sm text-brand-muted">{t('lineLink.signingInLine')}</p>
             </div>
           ) : null}
           {lineHandshakeError ? (
-            <div className="mx-4 rounded-lg border border-red-200 bg-white px-3 py-2 text-center text-xs text-red-600">
+            <div className="mx-4 rounded-lg border border-red-200 bg-brand-surface px-3 py-2 text-center text-xs text-red-600 dark:border-red-400/40 dark:bg-red-950/40 dark:text-red-300">
               {lineHandshakeError}
             </div>
           ) : null}
@@ -572,7 +576,7 @@ export function PlayerProfilePage() {
               ) : canEditProfile && editableProfile ? (
                 <>
                   {avatarError ? (
-                    <p className="px-4 text-center text-xs text-red-600 md:px-5">{avatarError}</p>
+                    <p className="px-4 text-center text-xs text-red-600 dark:text-red-300 md:px-5">{avatarError}</p>
                   ) : null}
                   <ProfileDetailsForm
                     profile={editableProfile}

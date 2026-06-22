@@ -27,6 +27,8 @@ type Props = {
   disabled?: boolean
   showMembers?: boolean
   showPlayerProfiles?: boolean
+  /** `text` = direct name fields; `picker` = member/padel combobox (setup form). */
+  nameInputMode?: 'text' | 'picker'
   linkAvatarsToProfile?: boolean
   competitionId?: string | null
 }
@@ -279,28 +281,116 @@ const PlayerSlotCombobox = memo(function PlayerSlotCombobox({
   )
 })
 
-function MemberSlotText({
-  value,
+function resolveSlotDisplayName(
+  name: string,
+  profileId: string | null,
+  padelPlayerId: string | null,
+  profile: Profile | null | undefined,
+  player: PadelPlayerOption | null | undefined,
+): string {
+  if (profileId && profile?.display_name?.trim()) {
+    return clubDisplayName(profileId, profile.display_name)
+  }
+  if (padelPlayerId && player?.display_name?.trim()) {
+    return player.display_name
+  }
+  return name
+}
+
+function commitSlotName(
+  trimmed: string,
+  showMembers: boolean,
+  showPlayerProfiles: boolean,
+  availableMembers: Profile[],
+  availablePlayers: PadelPlayerOption[],
+): { name: string; profileId: string | null; padelPlayerId: string | null } {
+  if (!trimmed) {
+    return { name: '', profileId: null, padelPlayerId: null }
+  }
+  const memberExact = showMembers
+    ? availableMembers.find(
+        (p) =>
+          clubDisplayName(p.id, p.display_name).toLowerCase() === trimmed.toLowerCase() ||
+          p.display_name.toLowerCase() === trimmed.toLowerCase(),
+      )
+    : null
+  if (memberExact) {
+    return { name: memberExact.display_name, profileId: memberExact.id, padelPlayerId: null }
+  }
+  const playerExact = showPlayerProfiles
+    ? availablePlayers.find((p) => p.display_name.toLowerCase() === trimmed.toLowerCase())
+    : null
+  if (playerExact) {
+    return { name: playerExact.display_name, profileId: null, padelPlayerId: playerExact.id }
+  }
+  return { name: trimmed, profileId: null, padelPlayerId: null }
+}
+
+function MemberSlotNameInput({
+  name,
+  profileId,
+  padelPlayerId,
+  profile,
+  player,
   disabled,
+  showMembers,
+  showPlayerProfiles,
+  availableMembers,
+  availablePlayers,
   onPick,
 }: {
-  value: string
+  name: string
+  profileId: string | null
+  padelPlayerId: string | null
+  profile: Profile | null | undefined
+  player: PadelPlayerOption | null | undefined
   disabled?: boolean
-  onPick: (name: string) => void
+  showMembers: boolean
+  showPlayerProfiles: boolean
+  availableMembers: Profile[]
+  availablePlayers: PadelPlayerOption[]
+  onPick: (name: string, profileId: string | null, padelPlayerId: string | null) => void
 }) {
-  const [text, setText] = useState(value)
+  const resolved = resolveSlotDisplayName(name, profileId, padelPlayerId, profile, player)
+  const [text, setText] = useState(resolved)
+  const [editing, setEditing] = useState(false)
 
   useEffect(() => {
-    setText(value)
-  }, [value])
+    if (!editing) setText(resolved)
+  }, [resolved, editing])
 
   return (
     <input
       type="text"
       value={text}
       disabled={disabled}
+      onClick={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+      onFocus={() => setEditing(true)}
       onChange={(e) => setText(e.target.value)}
-      onBlur={() => onPick(text.trim())}
+      onBlur={() => {
+        setEditing(false)
+        const next = commitSlotName(
+          text.trim(),
+          showMembers,
+          showPlayerProfiles,
+          availableMembers,
+          availablePlayers,
+        )
+        setText(
+          resolveSlotDisplayName(
+            next.name,
+            next.profileId,
+            next.padelPlayerId,
+            next.profileId ? availableMembers.find((p) => p.id === next.profileId) : null,
+            next.padelPlayerId ? availablePlayers.find((p) => p.id === next.padelPlayerId) : null,
+          ),
+        )
+        onPick(next.name, next.profileId, next.padelPlayerId)
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') e.currentTarget.blur()
+      }}
       className="brand-input h-9 min-w-0 flex-1 py-1 text-sm"
       autoComplete="name"
     />
@@ -321,13 +411,15 @@ export function MemberPlayerSlots({
   disabled,
   showMembers = false,
   showPlayerProfiles = true,
+  nameInputMode = 'picker',
   linkAvatarsToProfile = false,
   competitionId = null,
 }: Props) {
   const paddedNames = pad(names, count, '')
   const paddedIds = pad(profileIds, count, null)
   const paddedPadelIds = pad(padelPlayerIds ?? [], count, null)
-  const usePicker = showMembers || (showPlayerProfiles && padelPlayers.length > 0)
+  const canPick =
+    nameInputMode === 'picker' && (showMembers || (showPlayerProfiles && padelPlayers.length > 0))
 
   const profileById = useMemo(() => new Map(profiles.map((p) => [p.id, p])), [profiles])
   const playerById = useMemo(
@@ -396,7 +488,15 @@ export function MemberPlayerSlots({
           const profileId = paddedIds[index] ?? null
           const padelPlayerId = paddedPadelIds[index] ?? null
           const selectedProfile = profileId ? profileById.get(profileId) : null
+          const selectedPlayer = padelPlayerId ? playerById.get(padelPlayerId) : null
           const slotName = paddedNames[index] ?? ''
+          const displayName = resolveSlotDisplayName(
+            slotName,
+            profileId,
+            padelPlayerId,
+            selectedProfile,
+            selectedPlayer,
+          )
           return (
           <div key={index} className="flex min-w-0 items-center gap-2">
             <span className="w-5 shrink-0 text-center text-[10px] tabular-nums text-brand-muted">
@@ -404,7 +504,7 @@ export function MemberPlayerSlots({
             </span>
             {linkAvatarsToProfile ? (
               <PlayerAvatarLink
-                displayName={slotName}
+                displayName={displayName}
                 avatarUrl={selectedProfile?.avatar_url ?? null}
                 profileId={profileId}
                 padelPlayerId={padelPlayerId}
@@ -412,9 +512,9 @@ export function MemberPlayerSlots({
                 imgClassName="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-brand-border/80"
               />
             ) : (
-              <SlotAvatar url={selectedProfile?.avatar_url ?? null} name={slotName} />
+              <SlotAvatar url={selectedProfile?.avatar_url ?? null} name={displayName} />
             )}
-            {usePicker ? (
+            {canPick ? (
               <PlayerSlotCombobox
                 availableMembers={availableMembersBySlot[index] ?? []}
                 availablePlayers={availablePlayersBySlot[index] ?? []}
@@ -422,15 +522,25 @@ export function MemberPlayerSlots({
                 disabled={disabled}
                 showMembers={showMembers}
                 showPlayerProfiles={showPlayerProfiles}
-                onPick={(name, nextProfileId, padelPlayerId) =>
-                  pick(index, name, nextProfileId, padelPlayerId)
+                onPick={(name, nextProfileId, nextPadelPlayerId) =>
+                  pick(index, name, nextProfileId, nextPadelPlayerId)
                 }
               />
             ) : (
-              <MemberSlotText
-                value={slotName}
+              <MemberSlotNameInput
+                name={slotName}
+                profileId={profileId}
+                padelPlayerId={padelPlayerId}
+                profile={selectedProfile}
+                player={padelPlayerId ? playerById.get(padelPlayerId) : null}
                 disabled={disabled}
-                onPick={(name) => pick(index, name, null, null)}
+                showMembers={showMembers}
+                showPlayerProfiles={showPlayerProfiles}
+                availableMembers={availableMembersBySlot[index] ?? []}
+                availablePlayers={availablePlayersBySlot[index] ?? []}
+                onPick={(name, nextProfileId, nextPadelPlayerId) =>
+                  pick(index, name, nextProfileId, nextPadelPlayerId)
+                }
               />
             )}
             <span className="sr-only">Player {index + 1}</span>

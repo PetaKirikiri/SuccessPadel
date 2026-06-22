@@ -34,14 +34,16 @@ export function CompetitiveHomePage() {
       showPastTab
       currentCount={currentRows.length}
       pastCount={pastRows.length}
-      fab={
+      currentTabAddon={
         isAdmin ? (
           <Link
             to="/competitions/new"
             aria-label={t('competition.addCompetitionFab')}
-            className="fixed right-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-brand-accent text-white shadow-lg bottom-[calc(var(--app-shell-dock-height)+0.75rem)]"
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-accent text-white shadow-sm active:opacity-90"
           >
-            <Plus className="h-6 w-6" strokeWidth={2.5} aria-hidden />
+            <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden />
           </Link>
         ) : null
       }

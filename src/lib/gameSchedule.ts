@@ -1,0 +1,1 @@
+export const GAME_SETUP_MIN_BREAK_MINUTES = 3

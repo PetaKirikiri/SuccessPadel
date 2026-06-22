@@ -12,6 +12,7 @@ import {
   FRIENDLY_MIN_PLAYERS,
   lockedFriendlyOrganizedRules,
 } from './friendlyGames'
+import { GAME_SETUP_MIN_BREAK_MINUTES } from './gameSchedule'
 import type { FriendlyGameRecord } from './friendlyGames'
 
 export type FriendlyFormRulesSetup = {
@@ -87,7 +88,7 @@ function normalizeRulesSetup(raw: unknown): FriendlyFormRulesSetup {
     americanoScoring: r.americanoScoring ?? base.americanoScoring,
     gameCount: num(r.gameCount ?? (r as { games?: unknown }).games, base.gameCount),
     gameMinutes: num(r.gameMinutes, base.gameMinutes),
-    breakMinutes: num(r.breakMinutes, base.breakMinutes),
+    breakMinutes: Math.max(GAME_SETUP_MIN_BREAK_MINUTES, num(r.breakMinutes, base.breakMinutes)),
   }
 }
 

@@ -424,6 +424,10 @@ export const fr: Messages = {
     displayNamePlaceholder: 'Comment vous apparaissez au classement',
     displayNameRequired: 'Entrez un nom affiché.',
     changePhoto: 'Changer la photo',
+    showdownTitle: 'Personnage de match',
+    showdownHint: 'Choisissez un combattant pour les cartes de match. Votre photo de profil reste la même.',
+    showdownNone: 'Aucun',
+    showdownPick: 'Choisir',
     photoUploadFailed: 'Impossible d’envoyer la photo. Réessayez.',
     bookmarkTitle: 'Ajouter aux favoris du navigateur',
     bookmarkHint:

@@ -2,7 +2,16 @@ import { clubDisplayName } from './clubMemberDisplay'
 import { supabase } from './supabaseClient'
 import type { CompetitionPlayer, CompetitionRow } from '../hooks/useCompetitions'
 
-type ProfileRow = { id: string; display_name: string | null; avatar_url: string | null }
+import type { PixelAvatarConfig } from './pixelAvatar/types'
+
+type ProfileRow = {
+  id: string
+  display_name: string | null
+  avatar_url: string | null
+  avatar_mode?: string | null
+  pixel_avatar?: PixelAvatarConfig | null
+  pixel_avatar_url?: string | null
+}
 type PadelRow = { id: string; display_name: string; profile_id: string | null }
 
 function resolveRosterPlayer(
@@ -25,10 +34,10 @@ function resolveRosterPlayer(
 
   if (!displayName) return sp
 
+  const profileRow = directProfile ?? padelProfile
   const avatarUrl =
-    directProfile?.avatar_url ??
-    padelProfile?.avatar_url ??
-    sp.profiles?.avatar_url ??
+    profileRow?.avatar_url?.trim() ||
+    sp.profiles?.avatar_url?.trim() ||
     null
 
   return {
@@ -39,12 +48,14 @@ function resolveRosterPlayer(
           id: profileId,
           display_name: clubDisplayName(profileId, displayName),
           avatar_url: avatarUrl,
+          pixel_avatar: profileRow?.pixel_avatar ?? null,
         }
       : displayName
         ? {
             id: sp.profiles?.id ?? '',
             display_name: displayName,
             avatar_url: avatarUrl,
+            pixel_avatar: profileRow?.pixel_avatar ?? null,
           }
         : sp.profiles,
   }
@@ -80,7 +91,7 @@ export async function enrichCompetitionRowsAvatars(
     profileIds.size > 0
       ? await supabase
           .from('profiles')
-          .select('id, display_name, avatar_url')
+          .select('id, display_name, avatar_url, avatar_mode, pixel_avatar, pixel_avatar_url')
           .in('id', [...profileIds])
       : { data: [] as ProfileRow[] }
 

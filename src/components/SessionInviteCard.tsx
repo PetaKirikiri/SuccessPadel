@@ -98,8 +98,8 @@ function CompetitionInviteCard({
       currentUserId={userId}
       qrUrl={competitionPlayUrl(row.id)}
       qrAriaLabel={t('leaderboard.viewAlongHint')}
-      canEdit={isAdmin && !canEditRoster}
-      editTo={isAdmin && !canEditRoster ? `/competitions/${row.id}/edit` : undefined}
+      canEdit={canEditRoster}
+      editTo={canEditRoster ? `/competitions/${row.id}/edit` : undefined}
       editAriaLabel={t('competition.edit')}
       rosterSection={
         canEditRoster ? (

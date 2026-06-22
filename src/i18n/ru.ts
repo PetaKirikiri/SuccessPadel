@@ -424,6 +424,10 @@ export const ru: Messages = {
     displayNamePlaceholder: 'Как вас видят в таблице лидеров',
     displayNameRequired: 'Введите отображаемое имя.',
     changePhoto: 'Сменить фото',
+    showdownTitle: 'Боец на матче',
+    showdownHint: 'Выберите бойца для карточек матчей. Фото профиля не меняется.',
+    showdownNone: 'Нет',
+    showdownPick: 'Выбрать',
     photoUploadFailed: 'Не удалось загрузить фото. Попробуйте снова.',
     bookmarkTitle: 'Добавить в закладки браузера',
     bookmarkHint:

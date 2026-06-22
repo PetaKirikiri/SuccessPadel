@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { PlayerAvatar } from './PlayerAvatar'
 import { useTranslation } from '../hooks/useTranslation'
 import type { TranslateFn } from '../i18n'
 import {
@@ -110,10 +111,6 @@ function AchievementBadge({
   )
 }
 
-function playerInitial(name: string): string {
-  const t = name.trim()
-  return t ? t[0]!.toUpperCase() : '?'
-}
 
 function entryRecord(
   entry: LeaderboardEntry,
@@ -227,23 +224,14 @@ function LeaderboardRow({
       >
         {rank}
       </span>
-      {entry.avatar_url ? (
-        <img
-          src={entry.avatar_url}
-          alt=""
-          className={`rounded-full object-cover ring-1 ring-brand-border/60 ${
-            compact ? 'h-8 w-8' : 'h-7 w-7 md:h-10 md:w-10'
-          }`}
-        />
-      ) : (
-        <div
-          className={`flex items-center justify-center rounded-full bg-brand-bg-alt font-semibold text-brand-muted ring-1 ring-brand-border/40 ${
-            compact ? 'h-8 w-8 text-xs' : 'h-7 w-7 text-xs md:h-10 md:w-10 md:text-sm'
-          }`}
-        >
-          {playerInitial(entry.display_name)}
-        </div>
-      )}
+      <PlayerAvatar
+        displayName={entry.display_name}
+        avatarUrl={entry.avatar_url}
+        imgClassName={`rounded-full object-cover ring-1 ring-brand-border/60 ${
+          compact ? 'h-8 w-8' : 'h-7 w-7 md:h-10 md:w-10'
+        }`}
+        pixelated={entry.avatar_url?.includes('/pixel.png') ?? false}
+      />
       <span className="min-w-0 truncate text-sm font-medium text-brand-text md:text-base">
         {entry.display_name}
       </span>

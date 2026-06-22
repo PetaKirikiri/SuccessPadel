@@ -421,6 +421,10 @@ export const th: Messages = {
     displayNamePlaceholder: 'ชื่อที่ปรากฏบนตารางคะแนน',
     displayNameRequired: 'กรุณากรอกชื่อที่แสดง',
     changePhoto: 'เปลี่ยนรูปภาพ',
+    showdownTitle: 'ตัวละครในแมตช์',
+    showdownHint: 'เลือกตัวละครสำหรับการ์ดแมตช์ รูปโปรไฟล์ยังเป็นรูปเดิม',
+    showdownNone: 'ไม่ใช้',
+    showdownPick: 'เลือกตัวละคร',
     photoUploadFailed: 'อัปโหลดรูปไม่สำเร็จ ลองอีกครั้ง',
     bookmarkTitle: 'บุ๊กมาร์กในเบราว์เซอร์',
     bookmarkHint:

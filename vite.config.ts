@@ -15,13 +15,15 @@ function lanAddress(): string | undefined {
 }
 
 const lan = lanAddress()
+const phoneDev = process.env.VITE_DEV_PHONE === '1'
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), viteDebugIngestPlugin()],
   server: {
-    host: true,
+    host: phoneDev ? true : undefined,
     port: 5173,
     strictPort: true,
-    hmr: lan ? { host: lan, port: 5173 } : undefined,
+    // LAN HMR only for npm run dev:phone — avoids ws://172.x on localhost Mac dev.
+    hmr: phoneDev && lan ? { host: lan, port: 5173 } : undefined,
   },
 })

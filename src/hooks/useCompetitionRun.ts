@@ -19,6 +19,8 @@ export type RoundPlayer = {
       id: string
       display_name: string
       avatar_url?: string | null
+      avatar_mode?: string | null
+      pixel_avatar?: { v: 1; reference: string } | null
       preferred_side?: string | null
     } | null
   } | null
@@ -82,7 +84,7 @@ export function useCompetitionRun(sessionId: string | undefined) {
         .select(
           `*,
            competition_round_players(court_id, team, roster_entry_id, profile_id,
-             session_players(guest_name, profile_id, profiles(id, display_name, avatar_url, preferred_side)),
+             session_players(guest_name, profile_id, profiles(id, display_name, avatar_url, avatar_mode, pixel_avatar, preferred_side)),
              courts(id, name))`,
         )
         .eq('session_id', sessionId)
@@ -94,7 +96,7 @@ export function useCompetitionRun(sessionId: string | undefined) {
         .not('competition_round_id', 'is', null),
       supabase
         .from('session_players')
-        .select('id, profile_id, guest_name, guest_email, rank_order, profiles(id, display_name, avatar_url)')
+        .select('id, profile_id, guest_name, guest_email, rank_order, profiles(id, display_name, avatar_url, avatar_mode, pixel_avatar)')
         .eq('session_id', sessionId)
         .order('rank_order')
         .order('id'),

@@ -14,7 +14,7 @@ import {
 } from './competitionLayout'
 import {
   COMPETITION_SCHEDULE,
-  competitionCanonicalEventMinutes,
+  type CompetitionScheduleValues,
   mergeScheduleIntoScoringConfig,
 } from './competitionScheduleLayout'
 import { OPEN_SLOT_NAME } from './rankedSchedule'
@@ -88,10 +88,11 @@ export function competitionFormatPreset(mode: CompetitionPlayerMode) {
 export function presetRuleChips(
   mode: CompetitionPlayerMode,
   t: TranslateFn,
-  opts?: { courtCount?: number },
+  opts?: { courtCount?: number; schedule?: CompetitionScheduleValues },
 ): RuleChip[] {
   const preset = competitionFormatPreset(mode)
-  const { games: gameCount, gameMinutes, breakMinutes } = COMPETITION_SCHEDULE
+  const schedule = opts?.schedule ?? COMPETITION_SCHEDULE
+  const { games: gameCount, gameMinutes, breakMinutes } = schedule
   const courts = opts?.courtCount
   const formatLabel =
     mode === 'duos' ? t('competition.formatDuos') : ruleFormatLabel('americano')
@@ -161,8 +162,14 @@ export function fittedAmericanoSchedule(
   }
 }
 
-export function competitionEventMinutes(): number {
-  return competitionCanonicalEventMinutes()
+export function competitionEventMinutes(
+  schedule: CompetitionScheduleValues = COMPETITION_SCHEDULE,
+): number {
+  return (
+    COMPETITION_SCHEDULE.leadInMinutes +
+    schedule.games * schedule.gameMinutes +
+    Math.max(0, schedule.games - 1) * schedule.breakMinutes
+  )
 }
 
 export function competitionScoringConfig(
@@ -171,31 +178,39 @@ export function competitionScoringConfig(
     teams?: CompetitionTeamConfig[]
     leagueId?: string
     leagueWeek?: number
+    schedule?: CompetitionScheduleValues
   },
 ): ScoringConfig {
   const preset = competitionFormatPreset(mode)
+  const schedule = extra?.schedule ?? COMPETITION_SCHEDULE
   return mergeScheduleIntoScoringConfig({
     ...buildAmericanoScoringConfig(preset.americanoTarget, {
-      games: COMPETITION_SCHEDULE.games,
-      breakMinutes: COMPETITION_SCHEDULE.breakMinutes,
-      gameMinutes: COMPETITION_SCHEDULE.gameMinutes,
+      games: schedule.games,
+      breakMinutes: schedule.breakMinutes,
+      gameMinutes: schedule.gameMinutes,
     }),
     competition_player_mode: mode,
     ...(extra?.teams ? { teams: extra.teams } : {}),
     ...(extra?.leagueId ? { league_id: extra.leagueId } : {}),
     ...(extra?.leagueWeek ? { league_week: extra.leagueWeek } : {}),
-  })
+  }, schedule)
 }
 
 export function competitionSessionFields(
   mode: CompetitionPlayerMode,
-  opts: { skillLevel: SkillLevel; gender: Gender; targetPlayers: number },
+  opts: {
+    skillLevel: SkillLevel
+    gender: Gender
+    targetPlayers: number
+    schedule?: CompetitionScheduleValues
+  },
 ) {
   const preset = competitionFormatPreset(mode)
-  const scoring_config = competitionScoringConfig(mode)
+  const schedule = opts.schedule ?? COMPETITION_SCHEDULE
+  const scoring_config = competitionScoringConfig(mode, { schedule })
   const rules =
     mode === 'duos'
-      ? `Duos · ${preset.americanoTarget} games · fixed pairs · ${COMPETITION_SCHEDULE.games} rounds`
+      ? `Duos · ${preset.americanoTarget} games · fixed pairs · ${schedule.games} rounds`
       : buildRulesText('americano', null, {
           target: preset.americanoTarget,
           unit: 'games',

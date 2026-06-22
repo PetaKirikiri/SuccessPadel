@@ -10,6 +10,7 @@ import {
 import { shellTabClass } from '../components/ShellTabIcons'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { GameBoardPreview } from '../components/GameBoardPreview'
+import { GameScheduleSetup } from '../components/GameScheduleSetup'
 import { SetupCard } from '../components/cards/SetupCard'
 import { MemberPlayerSlots, type PadelPlayerOption } from '../components/MemberPlayerSlots'
 import { useAuth } from '../hooks/useAuth'
@@ -42,12 +43,12 @@ import {
   friendlyOrganizedGames,
   friendlyOrganizedSession,
   friendlyStartsAtIso,
-  lockedFriendlyOrganizedRules,
   mergeFriendlyOrganizedConfig,
   type FriendlyOrganizedConfig,
   type FriendlyPlayMode,
   type FriendlyVisibility,
 } from '../lib/friendlyGames'
+import { GAME_SETUP_MIN_BREAK_MINUTES } from '../lib/gameSchedule'
 import { publishFriendlySession, updateFriendlySession } from '../lib/friendlyServer'
 import { supabase } from '../lib/supabaseClient'
 import type { Profile } from '../lib/types'
@@ -109,7 +110,10 @@ export function FriendlyGameForm() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hydrated, setHydrated] = useState(!isEdit)
-  const lockedRules = useMemo(() => lockedFriendlyOrganizedRules(), [])
+  const [rulesSetup, setRulesSetup] = useState(() => ({
+    ...initial.rulesSetup,
+    breakMinutes: Math.max(GAME_SETUP_MIN_BREAK_MINUTES, initial.rulesSetup.breakMinutes),
+  }))
 
   const draftValues = useMemo(
     () => ({
@@ -124,7 +128,7 @@ export function FriendlyGameForm() {
       previewSeed,
       skillLevel,
       gender,
-      rulesSetup: lockedRules,
+      rulesSetup,
     }),
     [
       title,
@@ -138,7 +142,7 @@ export function FriendlyGameForm() {
       previewSeed,
       skillLevel,
       gender,
-      lockedRules,
+      rulesSetup,
     ],
   )
 
@@ -161,6 +165,10 @@ export function FriendlyGameForm() {
     setPlayMode(values.playMode)
     setSkillLevel(values.skillLevel)
     setGender(values.gender)
+    setRulesSetup({
+      ...values.rulesSetup,
+      breakMinutes: Math.max(GAME_SETUP_MIN_BREAK_MINUTES, values.rulesSetup.breakMinutes),
+    })
     setPreviewSeed(values.previewSeed)
     setTitleEdited(true)
     setHydrated(true)
@@ -221,12 +229,13 @@ export function FriendlyGameForm() {
       day,
       startHour,
       startMinute,
-      ...lockedRules,
+      ...rulesSetup,
+      breakMinutes: Math.max(GAME_SETUP_MIN_BREAK_MINUTES, rulesSetup.breakMinutes),
       previewSeed,
       skillLevel,
       gender,
     }),
-    [day, startHour, startMinute, lockedRules, previewSeed, skillLevel, gender],
+    [day, startHour, startMinute, rulesSetup, previewSeed, skillLevel, gender],
   )
 
   const startsAtIso = useMemo(
@@ -446,6 +455,23 @@ export function FriendlyGameForm() {
                 </select>
               </label>
             </div>
+            <GameScheduleSetup
+              value={{
+                gameCount: rulesSetup.gameCount,
+                gameMinutes: rulesSetup.gameMinutes,
+                breakMinutes: Math.max(GAME_SETUP_MIN_BREAK_MINUTES, rulesSetup.breakMinutes),
+              }}
+              onChange={(patch) => {
+                setRulesSetup((prev) => ({
+                  ...prev,
+                  ...patch,
+                  breakMinutes: Math.max(
+                    GAME_SETUP_MIN_BREAK_MINUTES,
+                    patch.breakMinutes ?? prev.breakMinutes,
+                  ),
+                }))
+              }}
+            />
             <div className="space-y-1.5">
               <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
                 Level
@@ -518,7 +544,7 @@ export function FriendlyGameForm() {
                   session={previewSession}
                   games={previewGames}
                   eventStartsAt={startsAtIso}
-                  gameMinutes={lockedRules.gameMinutes}
+                  gameMinutes={organizedConfig.gameMinutes}
                 />
               </div>
             ) : courtNames.length === 0 ? (

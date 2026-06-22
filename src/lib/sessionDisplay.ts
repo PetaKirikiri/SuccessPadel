@@ -10,6 +10,7 @@ import {
 } from './competitionGameDisplay'
 import type { CompetitionPlayerMode } from './competitionFormatPresets'
 import { presetRuleChips } from './competitionFormatPresets'
+import type { CompetitionScheduleValues } from './competitionScheduleLayout'
 import type { FriendlyGameRecord } from './friendlyGames'
 import {
   friendlyDivisionLabels,
@@ -93,7 +94,13 @@ export function rosterSlots(source: SessionSource): RosterSlot[] {
 export function ruleChips(
   source: SessionSource,
   t: TranslateFn,
-  division?: { skillLevel?: string | null; gender?: string | null; gameCount?: number; courtCount?: number },
+  division?: {
+    skillLevel?: string | null
+    gender?: string | null
+    gameCount?: number
+    courtCount?: number
+    schedule?: CompetitionScheduleValues
+  },
 ): RuleChip[] {
   if (source.kind === 'competition') {
     return withDivisionChips(
@@ -109,6 +116,7 @@ export function ruleChips(
   return withDivisionChips(
     presetRuleChips(source.mode, t, {
       courtCount: division?.courtCount,
+      schedule: division?.schedule,
     }),
     division?.skillLevel,
     division?.gender,

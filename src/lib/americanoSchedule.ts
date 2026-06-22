@@ -30,6 +30,8 @@ export type CourtPlayer = {
   padelPlayerId?: string | null
   name: string
   avatarUrl: string | null
+  /** Animated showdown sprite for match cards only */
+  gameSpriteUrl?: string | null
   preferredSide?: PlaySide | null
 }
 

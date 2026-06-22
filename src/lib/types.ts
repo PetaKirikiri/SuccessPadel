@@ -10,10 +10,20 @@ export type MatchTeam = 'a' | 'b'
 export type PlaySide = 'left' | 'right' | 'both'
 export type DominantHand = 'left' | 'right'
 
+export type AvatarMode = 'photo' | 'pixel'
+
+export type PixelAvatarConfig = {
+  v: 1
+  reference: string
+}
+
 export type Profile = {
   id: string
   display_name: string
   avatar_url: string | null
+  avatar_mode?: AvatarMode
+  pixel_avatar?: PixelAvatarConfig | null
+  pixel_avatar_url?: string | null
   line_user_id: string | null
   is_admin: boolean
   created_at: string

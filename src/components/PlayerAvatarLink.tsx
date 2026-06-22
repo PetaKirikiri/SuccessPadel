@@ -1,6 +1,6 @@
-import { useState } from 'react'
 import { useOpenPlayerProfile } from '../hooks/useOpenPlayerProfile'
 import { firstDisplayName } from '../lib/leaderboardEntries'
+import { PlayerAvatar } from './PlayerAvatar'
 
 type Props = {
   displayName: string
@@ -24,24 +24,16 @@ export function PlayerAvatarLink({
   disabled = false,
 }: Props) {
   const { openProfile, opening } = useOpenPlayerProfile()
-  const [broken, setBroken] = useState(false)
   const name = firstDisplayName(displayName || 'Player')
-  const initial = name[0]?.toUpperCase() ?? '?'
   const canOpen = Boolean(profileId || padelPlayerId || displayName.trim())
 
-  const avatar = avatarUrl && !broken ? (
-    <img
-      src={avatarUrl}
-      alt=""
-      onError={() => setBroken(true)}
-      className={imgClassName}
+  const avatar = (
+    <PlayerAvatar
+      displayName={displayName}
+      avatarUrl={avatarUrl}
+      imgClassName={imgClassName}
+      pixelated={avatarUrl?.includes('/pixel.png') ?? false}
     />
-  ) : (
-    <span
-      className={`flex items-center justify-center rounded-full bg-brand-primary/10 text-[11px] font-semibold text-brand-primary ${imgClassName}`}
-    >
-      {initial}
-    </span>
   )
 
   if (!canOpen || disabled) {

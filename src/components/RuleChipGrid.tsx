@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { RuleChip } from '../lib/friendlyGameDisplay'
 import { RuleChipIcon } from './RuleChipIcon'
 import { RuleHintModal } from './RuleHintModal'
@@ -7,6 +7,8 @@ type Props = {
   chips: RuleChip[]
   /** Inline chips in the schedule panel (right column). */
   inline?: boolean
+  /** Extra grid cells after chips (e.g. admin badge buttons). */
+  trailing?: ReactNode
 }
 
 function RuleChipButton({
@@ -59,10 +61,10 @@ function RuleChipButton({
   )
 }
 
-export function RuleChipGrid({ chips, inline = false }: Props) {
+export function RuleChipGrid({ chips, inline = false, trailing }: Props) {
   const [active, setActive] = useState<RuleChip | null>(null)
 
-  if (chips.length === 0) return null
+  if (chips.length === 0 && !trailing) return null
 
   return (
     <>
@@ -76,6 +78,7 @@ export function RuleChipGrid({ chips, inline = false }: Props) {
         {chips.map((chip) => (
           <RuleChipButton key={chip.key} chip={chip} inline={inline} onSelect={setActive} />
         ))}
+        {trailing}
       </ul>
       {active ? <RuleHintModal chip={active} onClose={() => setActive(null)} /> : null}
     </>

@@ -576,4 +576,3 @@ export function friendlyQuadrantPlayers(game: FriendlyGameRecord): QuadrantPlaye
     match.teamBPlayers,
   )
 }
-

@@ -38,8 +38,8 @@ export type InviteCardProps = {
   gender?: string | null
 }
 
-const adminCornerBtnClass =
-  'flex h-9 w-9 items-center justify-center rounded-xl border border-brand-border bg-brand-bg-alt shadow-sm active:scale-[0.98]'
+const adminIconBtnClass =
+  'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-border bg-brand-bg-alt shadow-sm active:scale-[0.98]'
 
 export function InviteCard({
   title,
@@ -68,29 +68,68 @@ export function InviteCard({
   className = '',
   gender = null,
 }: InviteCardProps) {
+  const showAdminActions = (canEdit && editTo) || (canDelete && onDelete)
+
+  const adminTrailing = showAdminActions ? (
+    <li className="flex min-h-[3rem] min-w-0 items-center justify-center gap-1.5 sm:min-h-[2.75rem]">
+      {canEdit && editTo ? (
+        <Link
+          to={editTo}
+          aria-label={editAriaLabel}
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          className={`${adminIconBtnClass} text-brand-primary`}
+        >
+          <IconEdit />
+        </Link>
+      ) : null}
+      {canDelete && onDelete ? (
+        <button
+          type="button"
+          disabled={deleteBusy}
+          aria-label={deleteAriaLabel}
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onDelete()
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className={`${adminIconBtnClass} text-brand-muted disabled:opacity-50`}
+        >
+          <IconDelete />
+        </button>
+      ) : null}
+    </li>
+  ) : null
+
   const headerRow = (
     <div className="flex w-full min-w-0 items-start gap-2 sm:gap-3">
-      <div className="min-w-0 shrink space-y-1">
-        <p className="font-display text-base font-bold leading-tight text-brand-primary sm:text-xl md:text-2xl">
-          {dateLine}
-        </p>
-        <p className="break-words font-display text-sm font-semibold leading-snug text-brand-primary sm:text-base md:text-lg">
-          {title}
-        </p>
-        {timeLine ? (
-          <p className="break-all font-display text-lg font-bold leading-tight tabular-nums text-brand-text sm:break-words sm:text-2xl md:text-3xl">
-            {timeLine}
+      <Link
+        to={detailTo}
+        className="min-w-0 shrink touch-manipulation transition active:opacity-80"
+      >
+        <div className="space-y-1">
+          <p className="font-display text-base font-bold leading-tight text-brand-primary sm:text-xl md:text-2xl">
+            {dateLine}
           </p>
-        ) : null}
-      </div>
+          <p className="break-words font-display text-sm font-semibold leading-snug text-brand-primary sm:text-base md:text-lg">
+            {title}
+          </p>
+          {timeLine ? (
+            <p className="break-all font-display text-lg font-bold leading-tight tabular-nums text-brand-text sm:break-words sm:text-2xl md:text-3xl">
+              {timeLine}
+            </p>
+          ) : null}
+        </div>
+      </Link>
       {qrUrl ? (
         <div className="w-[4.75rem] shrink-0 sm:w-24 md:w-28">
           <InviteCardQr url={qrUrl} title={qrAriaLabel} />
         </div>
       ) : null}
-      {ruleChips.length > 0 ? (
-        <div className="min-w-0 flex-1">
-          <RuleChipGrid chips={ruleChips} inline />
+      {ruleChips.length > 0 || adminTrailing ? (
+        <div className="min-w-0 flex-1 self-start">
+          <RuleChipGrid chips={ruleChips} inline trailing={adminTrailing} />
         </div>
       ) : null}
     </div>
@@ -111,8 +150,6 @@ export function InviteCard({
         competitionId={competitionId}
       />
     ))
-
-  const showAdminActions = (canEdit && editTo) || (canDelete && onDelete)
 
   const bannerSrc = inviteBannerForSession({
     gender: gender ?? genderFromRuleChips(ruleChips),
@@ -146,47 +183,10 @@ export function InviteCard({
     >
       {banner}
       <div className="relative min-w-0">
-        <div
-          className={`min-w-0 overflow-hidden px-3 py-3 sm:px-4 sm:py-4 ${
-            showAdminActions ? 'pb-12' : ''
-          }`}
-        >
-          <Link
-            to={detailTo}
-            className="block min-w-0 touch-manipulation transition active:opacity-80"
-          >
-            {headerRow}
-          </Link>
+        <div className="min-w-0 overflow-hidden px-3 py-3 sm:px-4 sm:py-4">
+          {headerRow}
           <div className="mt-4 border-t-2 border-brand-border pt-3">{rosterContent}</div>
         </div>
-        {showAdminActions ? (
-          <div className="absolute bottom-3 right-3 z-10 flex items-center gap-2">
-            {canEdit && editTo ? (
-              <Link
-                to={editTo}
-                aria-label={editAriaLabel}
-                className={`${adminCornerBtnClass} text-brand-primary`}
-              >
-                <IconEdit />
-              </Link>
-            ) : null}
-            {canDelete && onDelete ? (
-              <button
-                type="button"
-                disabled={deleteBusy}
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  onDelete()
-                }}
-                aria-label={deleteAriaLabel}
-                className={`${adminCornerBtnClass} text-brand-muted disabled:opacity-50`}
-              >
-                <IconDelete />
-              </button>
-            ) : null}
-          </div>
-        ) : null}
       </div>
 
       {belowLink}
