@@ -1,0 +1,9 @@
+{
+  "street-fighter": {
+    "ryu": { "stance": "ryu.gif", "victory": "ryu.gif", "loss": "ryu-snk.gif" },
+    "ken": { "stance": "ken.gif", "victory": "ken.gif", "loss": "ryu-snk.gif" },
+    "chun-li": { "stance": "chun-li.gif", "victory": "chun-li.gif", "loss": "ryu-snk.gif" },
+    "guile": { "stance": "guile.gif", "victory": "guile.gif", "loss": "ryu-snk.gif" },
+    "cammy": { "stance": "cammy.gif", "victory": "cammy.gif", "loss": "ryu-snk.gif" }
+  }
+}

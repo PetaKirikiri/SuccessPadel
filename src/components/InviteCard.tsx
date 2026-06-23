@@ -103,10 +103,10 @@ export function InviteCard({
   ) : null
 
   const headerRow = (
-    <div className="flex w-full min-w-0 items-start gap-2 sm:gap-3">
+    <div className="flex w-full min-w-0 flex-wrap items-start gap-2 sm:flex-nowrap sm:gap-3">
       <Link
         to={detailTo}
-        className="min-w-0 shrink touch-manipulation transition active:opacity-80"
+        className="min-w-0 flex-1 touch-manipulation transition active:opacity-80"
       >
         <div className="space-y-1">
           <p className="font-display text-base font-bold leading-tight text-brand-primary sm:text-xl md:text-2xl">
@@ -128,7 +128,7 @@ export function InviteCard({
         </div>
       ) : null}
       {ruleChips.length > 0 || adminTrailing ? (
-        <div className="min-w-0 flex-1 self-start">
+        <div className="min-w-0 basis-full self-start sm:basis-auto">
           <RuleChipGrid chips={ruleChips} inline trailing={adminTrailing} />
         </div>
       ) : null}

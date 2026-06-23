@@ -25,6 +25,7 @@ import { adminDeletePlayer, canAdminDeletePlayer } from '../lib/playerDelete'
 import { playerProfileShareUrl, sharePlayerProfile } from '../lib/playerProfileShare'
 import { uploadProfileAvatar, validateProfileAvatar } from '../lib/profileAvatar'
 import { resolveProfileAvatarUrl } from '../lib/resolveProfileAvatar'
+import { resolveGameSpriteUrl } from '../lib/pixelAvatar/resolveGameSprite'
 import { isLineLiffBrowser } from '../lib/line/liff'
 import { runLinePlayerProfileHandshake } from '../lib/line/profileHandshake'
 import { supabase } from '../lib/supabaseClient'
@@ -61,6 +62,7 @@ function toEditableProfile(
     pixel_avatar: source.pixel_avatar ?? null,
     pixel_avatar_url: source.pixel_avatar_url ?? null,
     playtomic_number: source.playtomic_number,
+    country: source.country,
     racket: source.racket,
     play_style: source.play_style,
     preferred_side: source.preferred_side,
@@ -216,6 +218,16 @@ export function PlayerProfilePage() {
     resolved?.profile,
     routeEntry?.avatar_url,
   ])
+
+  const showdownSpriteUrl = useMemo(() => {
+    if (isOwnProfile && authProfile) {
+      return resolveGameSpriteUrl(authProfile)
+    }
+    if (resolved?.profile) {
+      return resolveGameSpriteUrl(resolved.profile)
+    }
+    return null
+  }, [authProfile, isOwnProfile, resolved?.profile])
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -545,6 +557,9 @@ export function PlayerProfilePage() {
                   embedded
                   name={displayName}
                   avatarUrl={avatarUrl}
+                  showdownSpriteUrl={showdownSpriteUrl}
+                  fighterEditTo={canEditProfile && playerId ? `/players/${playerId}/fighter` : undefined}
+                  fighterEditLabel={t('profile.showdownPick')}
                   memberSince={isOwnProfile ? null : memberSince}
                   canAddLine={canConnectLine && !showInlineLineSetup}
                   onAddLine={

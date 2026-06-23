@@ -1,15 +1,22 @@
 import type { PixelAvatarConfig } from './types'
-import { DEFAULT_PIXEL_AVATAR_REFERENCE } from './defaults'
+import { resolveCharacterPoseSrc } from './catalog'
+import { DEFAULT_PIXEL_AVATAR_REFERENCE, DEFAULT_SHOWDOWN_CHARACTER_ID } from './defaults'
 
 export async function renderPixelAvatarPng(config: PixelAvatarConfig): Promise<Blob> {
-  const canvas = await renderReferenceToCanvas(config.reference || DEFAULT_PIXEL_AVATAR_REFERENCE)
+  const characterId = config.characterId?.trim() || DEFAULT_SHOWDOWN_CHARACTER_ID
+  const src =
+    resolveCharacterPoseSrc(characterId, 'stance') ?? DEFAULT_PIXEL_AVATAR_REFERENCE
+  const canvas = await renderReferenceToCanvas(src)
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'))
   if (!blob) throw new Error('Could not export pixel avatar')
   return blob
 }
 
 export async function renderPixelAvatarDataUrl(config: PixelAvatarConfig): Promise<string> {
-  const canvas = await renderReferenceToCanvas(config.reference || DEFAULT_PIXEL_AVATAR_REFERENCE)
+  const characterId = config.characterId?.trim() || DEFAULT_SHOWDOWN_CHARACTER_ID
+  const src =
+    resolveCharacterPoseSrc(characterId, 'stance') ?? DEFAULT_PIXEL_AVATAR_REFERENCE
+  const canvas = await renderReferenceToCanvas(src)
   return canvas.toDataURL('image/png')
 }
 

@@ -31,6 +31,7 @@ type Props = {
   nameInputMode?: 'text' | 'picker'
   linkAvatarsToProfile?: boolean
   competitionId?: string | null
+  showSlotNumbers?: boolean
 }
 
 type Suggestion =
@@ -414,6 +415,7 @@ export function MemberPlayerSlots({
   nameInputMode = 'picker',
   linkAvatarsToProfile = false,
   competitionId = null,
+  showSlotNumbers = true,
 }: Props) {
   const paddedNames = pad(names, count, '')
   const paddedIds = pad(profileIds, count, null)
@@ -499,9 +501,11 @@ export function MemberPlayerSlots({
           )
           return (
           <div key={index} className="flex min-w-0 items-center gap-2">
-            <span className="w-5 shrink-0 text-center text-[10px] tabular-nums text-brand-muted">
-              {index + 1}
-            </span>
+            {showSlotNumbers ? (
+              <span className="w-5 shrink-0 text-center text-[10px] tabular-nums text-brand-muted">
+                {index + 1}
+              </span>
+            ) : null}
             {linkAvatarsToProfile ? (
               <PlayerAvatarLink
                 displayName={displayName}

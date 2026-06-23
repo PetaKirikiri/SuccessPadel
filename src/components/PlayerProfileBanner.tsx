@@ -1,10 +1,15 @@
 import { Share2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { LineLogoIcon } from './LineLogoIcon'
+import { GameLineupSprite } from './GameLineupSprite'
 import type { TranslateFn } from '../i18n'
 
 type Props = {
   name: string
   avatarUrl?: string | null
+  showdownSpriteUrl?: string | null
+  fighterEditTo?: string
+  fighterEditLabel?: string
   memberSince?: string | null
   canAddLine: boolean
   onAddLine?: () => void
@@ -28,6 +33,9 @@ function initial(name: string): string {
 export function PlayerProfileBanner({
   name,
   avatarUrl,
+  showdownSpriteUrl,
+  fighterEditTo,
+  fighterEditLabel,
   memberSince,
   canAddLine,
   onAddLine,
@@ -108,33 +116,72 @@ export function PlayerProfileBanner({
           )}
         </div>
       </div>
-      {(canShareProfile || canAddLine) && (
-        <div className="ml-auto flex shrink-0 flex-col items-end gap-2">
-          {canShareProfile && onShareProfile && (
-            <div className="flex flex-col items-end gap-1">
-              <button
-                type="button"
-                onClick={onShareProfile}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border bg-brand-bg-alt px-3 py-2 text-xs font-semibold text-brand-primary shadow-sm active:scale-[0.98]"
-              >
-                <Share2 className="h-3.5 w-3.5" aria-hidden />
-                {shareProfileLabel}
-              </button>
-              {shareFeedback && (
-                <p className="text-[10px] font-medium text-brand-muted">{shareFeedback}</p>
+      {(canShareProfile || canAddLine || showdownSpriteUrl || fighterEditTo) && (
+        <div className="flex shrink-0 items-end gap-2">
+          {(canShareProfile || canAddLine) && (
+            <div className="flex flex-col items-end gap-2">
+              {canShareProfile && onShareProfile && (
+                <div className="flex flex-col items-end gap-1">
+                  <button
+                    type="button"
+                    onClick={onShareProfile}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border bg-brand-bg-alt px-3 py-2 text-xs font-semibold text-brand-primary shadow-sm active:scale-[0.98]"
+                  >
+                    <Share2 className="h-3.5 w-3.5" aria-hidden />
+                    {shareProfileLabel}
+                  </button>
+                  {shareFeedback && (
+                    <p className="text-[10px] font-medium text-brand-muted">{shareFeedback}</p>
+                  )}
+                </div>
+              )}
+              {canAddLine && onAddLine && (
+                <button
+                  type="button"
+                  onClick={onAddLine}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border bg-brand-bg-alt px-3 py-2 text-xs font-semibold text-brand-primary shadow-sm active:scale-[0.98]"
+                >
+                  <LineLogoIcon className="h-4 w-4" />
+                  {t('playerProfile.connectLine')}
+                </button>
               )}
             </div>
           )}
-          {canAddLine && onAddLine && (
-            <button
-              type="button"
-              onClick={onAddLine}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border bg-brand-bg-alt px-3 py-2 text-xs font-semibold text-brand-primary shadow-sm active:scale-[0.98]"
-            >
-              <LineLogoIcon className="h-4 w-4" />
-              {t('playerProfile.connectLine')}
-            </button>
-          )}
+          {(showdownSpriteUrl || fighterEditTo) ? (
+            <div className="flex flex-col items-end gap-1">
+              {showdownSpriteUrl ? (
+                fighterEditTo ? (
+                  <Link
+                    to={fighterEditTo}
+                    aria-label={fighterEditLabel}
+                    className="rounded-lg px-1 py-0.5 opacity-80 transition active:scale-[0.98] active:opacity-100"
+                  >
+                    <GameLineupSprite
+                      src={showdownSpriteUrl}
+                      facing="right"
+                      size={52}
+                      className="h-12 w-12 md:h-16 md:w-16"
+                    />
+                  </Link>
+                ) : (
+                  <GameLineupSprite
+                    src={showdownSpriteUrl}
+                    facing="right"
+                    size={52}
+                    className="h-12 w-12 opacity-75 md:h-16 md:w-16"
+                  />
+                )
+              ) : null}
+              {fighterEditTo ? (
+                <Link
+                  to={fighterEditTo}
+                  className="text-[10px] font-semibold leading-none text-brand-muted underline-offset-2 active:text-brand-accent"
+                >
+                  {fighterEditLabel}
+                </Link>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       )}
     </div>

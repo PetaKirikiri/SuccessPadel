@@ -1,0 +1,25 @@
+{
+  "ready": [
+    {
+      "franchise": "street-fighter",
+      "id": "cammy"
+    },
+    {
+      "franchise": "street-fighter",
+      "id": "chun-li"
+    },
+    {
+      "franchise": "street-fighter",
+      "id": "guile"
+    },
+    {
+      "franchise": "street-fighter",
+      "id": "ken"
+    },
+    {
+      "franchise": "street-fighter",
+      "id": "ryu"
+    }
+  ],
+  "updatedAt": "2026-06-22T09:01:50.655Z"
+}

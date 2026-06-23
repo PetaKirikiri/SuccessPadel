@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useId } from 'react'
-import { Activity, Columns2, Hash, Hand, Layers, LayoutGrid, Smile, Swords, ThumbsDown, User, Venus, Zap } from 'lucide-react'
-import { PixelAvatarEditor } from './PixelAvatarEditor'
+import { Activity, Columns2, Globe2, Hash, Hand, Layers, LayoutGrid, Smile, ThumbsDown, User, Venus, Zap } from 'lucide-react'
 import { useTranslation } from '../hooks/useTranslation'
 import { defaultPixelAvatarConfig, normalizePixelAvatarConfig } from '../lib/pixelAvatar/defaults'
 import type { PixelAvatarConfig } from '../lib/pixelAvatar/types'
@@ -52,6 +51,7 @@ export type EditableProfile = Pick<
   | 'pixel_avatar'
   | 'pixel_avatar_url'
   | 'playtomic_number'
+  | 'country'
   | 'racket'
   | 'play_style'
   | 'preferred_side'
@@ -68,6 +68,10 @@ type Props = {
   hideBanner?: boolean
   fileInputRef?: React.RefObject<HTMLInputElement | null>
   isAdmin?: boolean
+  showdownEnabled?: boolean
+  pixelConfig?: PixelAvatarConfig
+  onShowdownEnabledChange?: (enabled: boolean) => void
+  onPixelConfigChange?: (config: PixelAvatarConfig) => void
 }
 
 export function ProfileDetailsForm({
@@ -76,6 +80,10 @@ export function ProfileDetailsForm({
   hideBanner = false,
   fileInputRef: fileInputRefProp,
   isAdmin = false,
+  showdownEnabled,
+  pixelConfig,
+  onShowdownEnabledChange,
+  onPixelConfigChange,
 }: Props) {
   const { t } = useTranslation()
   const localFileInputRef = useRef<HTMLInputElement>(null)
@@ -85,6 +93,7 @@ export function ProfileDetailsForm({
   const [displayName, setDisplayName] = useState(profile.display_name)
   const [pendingAvatar, setPendingAvatar] = useState<File | null>(null)
   const [playtomicNumber, setPlaytomicNumber] = useState(profile.playtomic_number ?? '')
+  const [country, setCountry] = useState(profile.country ?? '')
   const [racket, setRacket] = useState(profile.racket ?? '')
   const [playStyles, setPlayStyles] = useState<PlayStyle[]>(() => parsePlayStyles(profile.play_style))
   const [preferredSide, setPreferredSide] = useState<PlaySide | null>(profile.preferred_side)
@@ -99,10 +108,10 @@ export function ProfileDetailsForm({
       : null,
   )
   const [dominantHand, setDominantHand] = useState<DominantHand | null>(profile.dominant_hand)
-  const [showdownEnabled, setShowdownEnabled] = useState(
+  const [localShowdownEnabled, setLocalShowdownEnabled] = useState(
     () => Boolean(normalizePixelAvatarConfig(profile.pixel_avatar)),
   )
-  const [pixelConfig, setPixelConfig] = useState<PixelAvatarConfig>(
+  const [localPixelConfig, setLocalPixelConfig] = useState<PixelAvatarConfig>(
     () => normalizePixelAvatarConfig(profile.pixel_avatar) ?? defaultPixelAvatarConfig(),
   )
   const [busy, setBusy] = useState(false)
@@ -122,6 +131,8 @@ export function ProfileDetailsForm({
 
   const avatarPreview = pendingAvatarUrl ?? profile.avatar_url
   const avatarInitial = firstDisplayName(displayName).trim()[0]?.toUpperCase() ?? '?'
+  const activeShowdownEnabled = showdownEnabled ?? localShowdownEnabled
+  const activePixelConfig = pixelConfig ?? localPixelConfig
 
   useEffect(() => {
     // Background auth/profile refreshes replace the profile object even while the
@@ -132,6 +143,7 @@ export function ProfileDetailsForm({
     setDisplayName(profile.display_name)
     setPendingAvatar(null)
     setPlaytomicNumber(profile.playtomic_number ?? '')
+    setCountry(profile.country ?? '')
     setRacket(profile.racket ?? '')
     setPlayStyles(parsePlayStyles(profile.play_style))
     setPreferredSide(profile.preferred_side)
@@ -148,9 +160,14 @@ export function ProfileDetailsForm({
         : null,
     )
     setDominantHand(profile.dominant_hand)
-    setShowdownEnabled(Boolean(normalizePixelAvatarConfig(profile.pixel_avatar)))
-    setPixelConfig(normalizePixelAvatarConfig(profile.pixel_avatar) ?? defaultPixelAvatarConfig())
-  }, [profile])
+    const nextPixelConfig = normalizePixelAvatarConfig(profile.pixel_avatar) ?? defaultPixelAvatarConfig()
+    if (!onShowdownEnabledChange) {
+      setLocalShowdownEnabled(Boolean(normalizePixelAvatarConfig(profile.pixel_avatar)))
+    }
+    if (!onPixelConfigChange) {
+      setLocalPixelConfig(nextPixelConfig)
+    }
+  }, [onPixelConfigChange, onShowdownEnabledChange, profile])
 
   const onAvatarPick = (file: File | undefined) => {
     if (hideBanner || !file) return
@@ -190,8 +207,9 @@ export function ProfileDetailsForm({
       display_name: trimmedName,
       avatar_url: avatarUrl,
       avatar_mode: 'photo',
-      pixel_avatar: showdownEnabled ? pixelConfig : null,
+      pixel_avatar: activeShowdownEnabled ? activePixelConfig : null,
       playtomic_number: playtomicNumber.trim() || null,
+      country: country.trim() || null,
       racket: racket.trim() || null,
       play_style: serializePlayStyles(playStyles),
       preferred_side: preferredSide,
@@ -253,40 +271,6 @@ export function ProfileDetailsForm({
           </div>
         ) : null}
 
-        <ProfileFormSection
-          icon={Swords}
-          title={t('profile.showdownTitle')}
-          iconClassName="text-orange-600"
-        >
-          <p className="mb-2 text-xs text-brand-muted">{t('profile.showdownHint')}</p>
-          <div className="mb-2 flex gap-2">
-            <button
-              type="button"
-              onClick={() => setShowdownEnabled(false)}
-              className={`rounded-lg border px-3 py-1.5 text-xs font-semibold ${
-                !showdownEnabled
-                  ? 'border-brand-accent bg-brand-accent/20 text-brand-accent'
-                  : 'border-brand-border text-brand-muted'
-              }`}
-            >
-              {t('profile.showdownNone')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowdownEnabled(true)}
-              className={`rounded-lg border px-3 py-1.5 text-xs font-semibold ${
-                showdownEnabled
-                  ? 'border-brand-accent bg-brand-accent/20 text-brand-accent'
-                  : 'border-brand-border text-brand-muted'
-              }`}
-            >
-              {t('profile.showdownPick')}
-            </button>
-          </div>
-          {showdownEnabled ? (
-            <PixelAvatarEditor config={pixelConfig} onChange={setPixelConfig} />
-          ) : null}
-        </ProfileFormSection>
       </div>
       {!hideBanner ? (
         <input
@@ -327,6 +311,18 @@ export function ProfileDetailsForm({
               placeholder={t('playerProfile.playtomicPlaceholder')}
               className="brand-input bg-brand-surface/80 py-2 text-sm dark:bg-black/20"
               inputMode="numeric"
+            />
+          </label>
+          <label className="col-span-2 block space-y-1 sm:col-span-1">
+            <ProfileFieldLabel icon={Globe2} iconClassName="text-sky-600">
+              {t('playerProfile.country')}
+            </ProfileFieldLabel>
+            <input
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              placeholder={t('playerProfile.countryPlaceholder')}
+              className="brand-input bg-brand-surface/80 py-2 text-sm dark:bg-black/20"
+              autoComplete="country-name"
             />
           </label>
           <label className="col-span-2 block space-y-1">

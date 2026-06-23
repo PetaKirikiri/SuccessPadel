@@ -129,6 +129,7 @@ export function DuoTeamSlots({
             nameInputMode={nameInputMode}
             linkAvatarsToProfile={linkAvatarsToProfile}
             competitionId={competitionId}
+            showSlotNumbers={layout !== 'grid'}
           />
         </div>
       ))}

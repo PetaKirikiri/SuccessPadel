@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { enrichCompetitionPlayersAvatars } from '../lib/competitionRosterAvatars'
+import { mergeShowdownIntoRounds } from '../lib/competitionRoundShowdown'
 import type { LeaderboardEntry } from '../components/CompetitionLeaderboard'
 import { normalizeLeaderboardEntries } from '../lib/leaderboardEntries'
 import type { CompetitionPlayer, CompetitionSessionPair } from './useCompetitions'
@@ -69,10 +71,11 @@ export function usePublicCompetition(sessionId: string | undefined, options?: Op
         const d = data as PublicCompetition
         setError(null)
         setSession(d.session)
-        setRoster(d.roster ?? [])
+        const enrichedRoster = await enrichCompetitionPlayersAvatars(d.roster ?? [])
+        setRoster(enrichedRoster)
+        setRounds(mergeShowdownIntoRounds(d.rounds ?? [], enrichedRoster))
         setSessionPairs((pairsData as CompetitionSessionPair[]) ?? d.session_pairs ?? [])
         setClubCourts(d.courts ?? [])
-        setRounds(d.rounds ?? [])
         setCourtMatches(d.matches ?? [])
         setLeaderboard(normalizeLeaderboardEntries(d.leaderboard ?? []))
       }

@@ -14,7 +14,9 @@ export type AvatarMode = 'photo' | 'pixel'
 
 export type PixelAvatarConfig = {
   v: 1
-  reference: string
+  characterId: string
+  /** @deprecated Legacy stance URL — use characterId + pose catalog */
+  reference?: string
 }
 
 export type Profile = {
@@ -28,6 +30,7 @@ export type Profile = {
   is_admin: boolean
   created_at: string
   playtomic_number: string | null
+  country: string | null
   racket: string | null
   play_style: string | null
   preferred_side: PlaySide | null

@@ -47,7 +47,7 @@ function RuleChipButton({
       <span
         className={
           inline
-            ? 'min-w-0 flex-1 break-words text-[11px] font-bold leading-snug text-brand-primary sm:text-sm'
+            ? 'min-w-0 flex-1 whitespace-normal break-normal text-[11px] font-bold leading-snug text-brand-primary [overflow-wrap:normal] sm:text-sm'
             : 'text-sm font-bold leading-snug text-brand-primary'
         }
       >

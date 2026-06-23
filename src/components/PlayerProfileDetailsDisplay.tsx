@@ -1,6 +1,7 @@
 import {
   Activity,
   Columns2,
+  Globe2,
   Hand,
   Hash,
   Layers,
@@ -128,6 +129,12 @@ export function PlayerProfileDetailsDisplay({
             <ProfileReadonlyValue>
               {profile?.playtomic_number?.trim() || notSet}
             </ProfileReadonlyValue>
+          </div>
+          <div className="col-span-2 space-y-1 sm:col-span-1">
+            <ProfileFieldLabel icon={Globe2} iconClassName="text-sky-600">
+              {t('playerProfile.country')}
+            </ProfileFieldLabel>
+            <ProfileReadonlyValue>{profile?.country?.trim() || notSet}</ProfileReadonlyValue>
           </div>
           <div className="col-span-2 space-y-1">
             <ProfileFieldLabel icon={Zap} iconClassName="text-orange-600">

@@ -374,6 +374,7 @@ export type Messages = {
     vs: string
     round: string
     playtomic: string
+    country: string
     racket: string
     playStyle: string
     preferredSide: string
@@ -414,6 +415,7 @@ export type Messages = {
     stylePower: string
     styleControl: string
     racketPlaceholder: string
+    countryPlaceholder: string
     usuallyFreePlaceholder: string
     playtomicPlaceholder: string
     yes: string

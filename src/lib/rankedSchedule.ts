@@ -98,7 +98,7 @@ export function nextScheduleSeed(current: number, playerCount: number): number {
 
 export function courtPlayerFromRoster(sp: CompetitionPlayer): CourtPlayer {
   if (isOpenSlotId(sp.id)) {
-    return { id: null, rosterId: null, name: OPEN_SLOT_NAME, avatarUrl: null, gameSpriteUrl: null }
+    return { id: null, rosterId: null, name: OPEN_SLOT_NAME, avatarUrl: null, gameCharacterId: null }
   }
   const profileId = sp.profile_id ?? sp.profiles?.id ?? null
   const name = clubDisplayName(profileId, rosterDisplayName(sp))

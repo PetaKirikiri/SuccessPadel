@@ -32,6 +32,7 @@ import { AuthCallback } from './pages/AuthCallback'
 import { LineAuthCallback } from './pages/LineAuthCallback'
 import { LineAuthComplete } from './pages/LineAuthComplete'
 import { Login } from './pages/Login'
+import { PlayerFighterPage } from './pages/PlayerFighterPage'
 import { PlayerProfilePage } from './pages/PlayerProfilePage'
 import { Profile } from './pages/Profile'
 import { ResetPassword } from './pages/ResetPassword'
@@ -147,6 +148,14 @@ function MainAppRoutes() {
         />
         <Route path="competitive" element={<CompetitiveHomePage />} />
         <Route path="competitions" element={<Navigate to="/competitive" replace />} />
+        <Route
+          path="players/:playerId/fighter"
+          element={
+            <ProtectedRoute>
+              <PlayerFighterPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="players/:playerId" element={<PlayerProfilePage />} />
         <Route
           path="members"

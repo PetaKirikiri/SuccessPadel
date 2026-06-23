@@ -20,7 +20,7 @@ export type RoundPlayer = {
       display_name: string
       avatar_url?: string | null
       avatar_mode?: string | null
-      pixel_avatar?: { v: 1; reference: string } | null
+      pixel_avatar?: { v: 1; characterId: string; reference?: string } | null
       preferred_side?: string | null
     } | null
   } | null

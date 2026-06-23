@@ -1,11 +1,16 @@
 import { supabase } from './supabaseClient'
-import type { PlaySide } from './types'
+import { normalizePixelAvatarConfig } from './pixelAvatar/defaults'
+import type { AvatarMode, PixelAvatarConfig, PlaySide } from './types'
 
 export type PublicPlayerProfile = {
   id: string
   display_name: string
   avatar_url: string | null
+  avatar_mode?: AvatarMode
+  pixel_avatar?: PixelAvatarConfig | null
+  pixel_avatar_url?: string | null
   playtomic_number: string | null
+  country: string | null
   racket: string | null
   play_style: string | null
   preferred_side: PlaySide | null
@@ -37,7 +42,11 @@ function parsePublicProfile(data: unknown): PublicPlayerProfile | null {
     id: row.id,
     display_name: row.display_name,
     avatar_url: typeof row.avatar_url === 'string' ? row.avatar_url : null,
+    avatar_mode: row.avatar_mode === 'pixel' ? 'pixel' : 'photo',
+    pixel_avatar: normalizePixelAvatarConfig(row.pixel_avatar),
+    pixel_avatar_url: typeof row.pixel_avatar_url === 'string' ? row.pixel_avatar_url : null,
     playtomic_number: typeof row.playtomic_number === 'string' ? row.playtomic_number : null,
+    country: typeof row.country === 'string' ? row.country : null,
     racket: typeof row.racket === 'string' ? row.racket : null,
     play_style: typeof row.play_style === 'string' ? row.play_style : null,
     preferred_side:
