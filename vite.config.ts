@@ -1,5 +1,6 @@
 import os from 'node:os'
-import { defineConfig } from 'vite'
+import postcss from 'postcss'
+import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { viteDebugIngestPlugin } from './scripts/viteDebugIngestPlugin'
@@ -17,8 +18,35 @@ function lanAddress(): string | undefined {
 const lan = lanAddress()
 const phoneDev = process.env.VITE_DEV_PHONE === '1'
 
+function flattenCssLayers(css: string): string {
+  const root = postcss.parse(css)
+
+  root.walkAtRules('layer', (rule) => {
+    if (rule.nodes?.length) {
+      rule.replaceWith(...rule.nodes)
+    } else {
+      rule.remove()
+    }
+  })
+
+  return root.toString()
+}
+
+function legacyTvCssPlugin(): Plugin {
+  return {
+    name: 'success-padel-legacy-tv-css',
+    enforce: 'post',
+    generateBundle(_, bundle) {
+      for (const asset of Object.values(bundle)) {
+        if (asset.type !== 'asset' || !asset.fileName.endsWith('.css')) continue
+        asset.source = flattenCssLayers(String(asset.source))
+      }
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [react(), tailwindcss(), viteDebugIngestPlugin()],
+  plugins: [react(), tailwindcss(), viteDebugIngestPlugin(), legacyTvCssPlugin()],
   build: {
     cssTarget: 'chrome61',
   },
