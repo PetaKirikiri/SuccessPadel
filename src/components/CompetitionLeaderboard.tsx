@@ -29,6 +29,10 @@ export type LeaderboardEntry = {
   member_profile_id?: string | null
   player_a_id?: string | null
   player_b_id?: string | null
+  player_a_name?: string | null
+  player_b_name?: string | null
+  player_a_avatar_url?: string | null
+  player_b_avatar_url?: string | null
   is_guest?: boolean
   display_name: string
   avatar_url?: string | null
@@ -180,6 +184,35 @@ const COMPACT_ROW_GRID_BADGES =
 const COMPACT_TEAM_ROW_GRID =
   'grid h-full w-full items-center gap-x-2 px-2 grid-cols-[1.25rem_minmax(0,1fr)_2.75rem]'
 
+function TeamPlayersInline({ entry }: { entry: LeaderboardEntry }) {
+  const players = [
+    { name: entry.player_a_name, avatarUrl: entry.player_a_avatar_url },
+    { name: entry.player_b_name, avatarUrl: entry.player_b_avatar_url },
+  ].filter((player): player is { name: string; avatarUrl: string | null | undefined } =>
+    Boolean(player.name?.trim()),
+  )
+
+  if (players.length === 0) return null
+
+  return (
+    <span className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+      {players.map((player) => (
+        <span key={player.name} className="flex min-w-0 items-center gap-1">
+          <PlayerAvatar
+            displayName={player.name}
+            avatarUrl={player.avatarUrl}
+            imgClassName="h-5 w-5 shrink-0 rounded-full object-cover ring-1 ring-brand-border/60"
+            pixelated={player.avatarUrl?.includes('/pixel.png') ?? false}
+          />
+          <span className="max-w-[7rem] truncate text-[10px] font-medium leading-none text-brand-muted">
+            {player.name}
+          </span>
+        </span>
+      ))}
+    </span>
+  )
+}
+
 function LeaderboardRow({
   rank,
   entry,
@@ -241,9 +274,18 @@ function LeaderboardRow({
           pixelated={entry.avatar_url?.includes('/pixel.png') ?? false}
         />
       ) : null}
-      <span className="min-w-0 truncate text-sm font-medium text-brand-text md:text-base">
-        {entry.display_name}
-      </span>
+      {simpleTeamRow ? (
+        <span className="min-w-0">
+          <span className="block whitespace-normal break-words text-sm font-semibold leading-tight text-brand-text md:text-base">
+            {entry.display_name}
+          </span>
+          <TeamPlayersInline entry={entry} />
+        </span>
+      ) : (
+        <span className="min-w-0 truncate text-sm font-medium text-brand-text md:text-base">
+          {entry.display_name}
+        </span>
+      )}
       {showBadges ? (
         <span className="flex max-w-full items-center justify-center justify-self-center gap-0.5 overflow-hidden md:gap-1">
           {badges.slice(0, 3).map((b) => (

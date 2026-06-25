@@ -1,7 +1,7 @@
 import type { LeaderboardEntry } from '../components/CompetitionLeaderboard'
 import type { CompetitionTeamConfig } from './competitionFormatPresets'
 import { normalizeLeaderboardEntries } from './leaderboardEntries'
-import type { CompetitionPlayer } from '../hooks/useCompetitions'
+import { rosterDisplayName, type CompetitionPlayer } from '../hooks/useCompetitions'
 import type { CompetitionRound, CourtMatch } from '../hooks/useCompetitionRun'
 
 function rosterKey(ids: string[]): string {
@@ -27,13 +27,19 @@ export function computeDuoStandings(
     const [idA, idB] = team.roster_ids
     const playerA = rosterById.get(idA)
     const playerB = rosterById.get(idB)
-    const label = team.label.trim() || `Team ${index + 1}`
+    const nameA = playerA ? rosterDisplayName(playerA) : 'Player'
+    const nameB = playerB ? rosterDisplayName(playerB) : 'Player'
+    const label = team.label.trim() || `${nameA} & ${nameB}`
     teamByRosterKey.set(rosterKey(team.roster_ids), index)
 
     return {
       profile_id: `duo:${idA}:${idB}`,
       player_a_id: playerA?.profile_id ?? idA,
       player_b_id: playerB?.profile_id ?? idB,
+      player_a_name: nameA,
+      player_b_name: nameB,
+      player_a_avatar_url: playerA?.profiles?.avatar_url ?? null,
+      player_b_avatar_url: playerB?.profiles?.avatar_url ?? null,
       display_name: label,
       avatar_url: null,
       total_points: 0,
