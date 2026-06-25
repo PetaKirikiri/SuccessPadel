@@ -6,15 +6,8 @@ import type { AmericanoScoringUnit } from '../../lib/competitionPresets'
 import { bumpScoreField, scoreDigitsOnly } from '../../lib/competitionScoreInput'
 import { compactDisplayNames } from '../../lib/leaderboardEntries'
 import type { CourtPlayer } from '../../lib/americanoSchedule'
-import { courtMatchWinnerTeam } from '../../lib/courtMatchResult'
-import {
-  GAME_CHARACTER_CATALOG,
-  resolveCharacterPoseSrc,
-  type ShowdownPose,
-} from '../../lib/pixelAvatar/catalog'
 import { PlayerNameLink } from '../PlayerNameLink'
 import { PlayerAvatarLink } from '../PlayerAvatarLink'
-import { GameLineupSprite } from '../GameLineupSprite'
 import type { LiveCourt, ScoringGameCourt } from './gameBoardTypes'
 
 export function stopCardNav(e: { stopPropagation: () => void }) {
@@ -74,16 +67,6 @@ const COURT_LABEL_CLASS =
   'text-center font-display text-2xl font-bold text-brand-accent dark:text-brand-tan md:text-3xl'
 const CURRENT_PLAYER_HIGHLIGHT_CLASS =
   'animate-pulse rounded bg-brand-bg-alt px-1 text-brand-accent dark:bg-white/10 dark:text-brand-accent-light'
-
-function fallbackGameCharacterId(player: CourtPlayer): string | null {
-  if (GAME_CHARACTER_CATALOG.length === 0) return null
-  const seed = `${player.id ?? ''}:${player.rosterId ?? ''}:${player.name}`
-  let hash = 0
-  for (let i = 0; i < seed.length; i += 1) {
-    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0
-  }
-  return GAME_CHARACTER_CATALOG[hash % GAME_CHARACTER_CATALOG.length]?.id ?? null
-}
 
 function courtLabelClass(
   currentUserId: string | null | undefined,
@@ -389,24 +372,11 @@ export function CourtMatchCell({
     ? 'h-6 w-6 shrink-0 rounded-full object-cover ring-1 ring-brand-border/60'
     : 'h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-brand-border/60 md:h-9 md:w-9'
 
-  const spriteClass = compact ? 'h-10 w-10' : 'h-12 w-12 md:h-14 md:w-14'
-  const spriteSize = compact ? 40 : 56
-  const winnerTeam = finished ? courtMatchWinnerTeam(scoreA, scoreB) : null
-
-  const poseForAlign = (align: 'left' | 'right'): ShowdownPose => {
-    if (!finished || !winnerTeam) return 'stance'
-    const playerTeam = align === 'left' ? 'a' : 'b'
-    return winnerTeam === playerTeam ? 'victory' : 'loss'
-  }
-
   const playerEl = (player: CourtPlayer, align: 'left' | 'right') => {
     const isCurrent = Boolean(currentUserId && player.id === currentUserId)
     const isRegistered = Boolean(player.id)
     const displayAvatarUrl = isRegistered
       ? player.avatarUrl ?? (isCurrent ? currentUserAvatarUrl ?? null : null)
-      : null
-    const gameCharacterId = isRegistered
-      ? player.gameCharacterId ?? fallbackGameCharacterId(player)
       : null
     const [displayName] = compactDisplayNames([player.name])
     const nameEl = (
@@ -417,18 +387,6 @@ export function CourtMatchCell({
         className={nameClass}
       />
     )
-    const spriteSrc = gameCharacterId
-      ? resolveCharacterPoseSrc(gameCharacterId, poseForAlign(align))
-      : null
-    const spriteEl =
-      spriteSrc && isRegistered ? (
-        <GameLineupSprite
-          src={spriteSrc}
-          facing={align === 'left' ? 'right' : 'left'}
-          size={spriteSize}
-          className={`${spriteClass} -my-2`}
-        />
-      ) : null
     const avatarEl =
       isRegistered ? (
         <PlayerAvatarLink
@@ -439,30 +397,6 @@ export function CourtMatchCell({
           imgClassName={avatarClass}
         />
       ) : null
-
-    if (spriteEl) {
-      return (
-        <p
-          className={`${playerClass(isCurrent)} ${
-            align === 'right' ? 'justify-end text-right' : ''
-          }`}
-        >
-          {align === 'right' ? (
-            <>
-              {spriteEl}
-              {nameEl}
-              {avatarEl}
-            </>
-          ) : (
-            <>
-              {avatarEl}
-              {nameEl}
-              {spriteEl}
-            </>
-          )}
-        </p>
-      )
-    }
 
     return (
       <p

@@ -415,6 +415,7 @@ export function GameBoard({
     const canEditGame =
       Boolean(canLog) &&
       (scoringTimeUnlocked ||
+        tvCarousel ||
         submitted ||
         roundStatus === 'complete' ||
         isLiveNow ||
@@ -422,7 +423,7 @@ export function GameBoard({
     const displayTimeLabel =
       times != null ? formatGameTimeLabel(times.startsAt, times.endsAt) : game.timeLabel
 
-    if (mode === 'scoring' && matchForCourt) {
+    if ((mode === 'scoring' || tvCarousel) && gameRoundId && matchForCourt && onSubmitScores) {
       return (
         <ScoringGameCard
           key={game.gameNumber}
