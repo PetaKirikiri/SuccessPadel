@@ -144,7 +144,7 @@ function ScoreWithRecord({
     <div
       className={`relative z-[1] flex shrink-0 flex-col items-center justify-self-end text-right ${
         compact
-          ? 'mr-1 min-w-[3.75rem] rounded-lg bg-brand-primary px-2 py-1 text-white shadow-sm dark:bg-brand-accent dark:text-brand-primary'
+          ? 'mr-1 min-w-[3.75rem] rounded-lg border-2 border-brand-primary/45 bg-brand-bg-alt px-2 py-1 text-brand-primary shadow-sm dark:border-brand-accent/60 dark:bg-white/10 dark:text-brand-accent-light'
           : 'items-end'
       }`}
     >

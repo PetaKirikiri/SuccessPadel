@@ -209,7 +209,7 @@ export function ScoreStepper({
   const inputClass = tv
     ? finished
       ? 'h-11 w-12 rounded-xl border-2 border-brand-border/70 bg-brand-bg-alt px-1 py-0.5 text-center text-xl font-extrabold tabular-nums text-brand-primary shadow-sm disabled:text-brand-primary dark:border-white/20 dark:bg-white/[0.12] dark:text-brand-text'
-      : 'h-11 w-12 rounded-xl border-2 border-brand-accent/70 bg-brand-primary px-1 py-0.5 text-center text-xl font-extrabold tabular-nums text-white shadow-md placeholder:text-white/60 disabled:text-white dark:border-brand-accent dark:bg-brand-accent dark:text-brand-primary'
+      : 'h-11 w-12 rounded-xl border-2 border-brand-primary/55 bg-brand-bg-alt px-1 py-0.5 text-center text-xl font-extrabold tabular-nums text-brand-primary shadow-md placeholder:text-brand-muted/60 disabled:text-brand-primary dark:border-brand-accent/60 dark:bg-white/10 dark:text-brand-accent-light'
     : finished
       ? 'h-8 w-8 rounded-lg border border-brand-border/50 bg-[#faf9f7] px-0.5 py-0.5 text-center text-sm font-semibold tabular-nums text-brand-sage disabled:text-brand-muted/60 dark:border-white/15 dark:bg-white/[0.08] dark:text-brand-text md:h-10 md:w-10 md:text-base'
       : 'h-8 w-8 rounded-lg border border-brand-border/80 bg-brand-surface px-0.5 py-0.5 text-center text-sm font-semibold tabular-nums text-brand-primary disabled:text-brand-muted/60 dark:border-white/20 dark:bg-white/[0.08] dark:text-brand-text md:h-10 md:w-10 md:text-base'
@@ -340,7 +340,7 @@ export function CourtMatchCell({
     <span
       className={`font-display font-extrabold tabular-nums ${
         compact
-          ? 'tv-score-readout rounded-xl bg-brand-primary px-3 py-1.5 text-2xl leading-none text-white shadow-md dark:bg-brand-accent dark:text-brand-primary'
+          ? 'tv-score-readout rounded-xl border-2 border-brand-primary/55 bg-brand-bg-alt px-3 py-1.5 text-2xl leading-none text-brand-primary shadow-md dark:border-brand-accent/60 dark:bg-white/10 dark:text-brand-accent-light'
           : 'text-base text-brand-accent md:text-lg'
       }`}
     >
@@ -364,7 +364,7 @@ export function CourtMatchCell({
     <span
       className={`font-display font-extrabold tabular-nums ${
         compact
-          ? 'tv-score-readout rounded-xl bg-brand-primary px-3 py-1.5 text-2xl leading-none text-white shadow-md dark:bg-brand-accent dark:text-brand-primary'
+          ? 'tv-score-readout rounded-xl border-2 border-brand-primary/55 bg-brand-bg-alt px-3 py-1.5 text-2xl leading-none text-brand-primary shadow-md dark:border-brand-accent/60 dark:bg-white/10 dark:text-brand-accent-light'
           : 'text-base text-brand-accent md:text-lg'
       }`}
     >
