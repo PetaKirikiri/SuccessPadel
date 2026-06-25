@@ -186,7 +186,6 @@ export function CompetitionPlay() {
     standings.length > 0 ? (
       <CompetitionLeaderboard
         entries={standings}
-        duoPlayerEntries={isDuo ? playerStandings : undefined}
         scoreUnit={scoreUnit}
         currentUserId={user?.id ?? null}
         competitionId={id ?? null}
@@ -205,7 +204,6 @@ export function CompetitionPlay() {
     standings.length > 0 ? (
       <CompetitionLeaderboard
         entries={standings}
-        duoPlayerEntries={isDuo ? playerStandings : undefined}
         scoreUnit={scoreUnit}
         currentUserId={user?.id ?? null}
         competitionId={id ?? null}

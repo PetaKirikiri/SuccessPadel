@@ -1,4 +1,5 @@
 import type { LeaderboardEntry } from '../components/CompetitionLeaderboard'
+import { isDuoLeaderboardEntry } from './leaderboardFilters'
 
 /** Ensure guest rows have claim ids even when RPC fields are partial. */
 export function normalizeLeaderboardEntries(rows: LeaderboardEntry[]): LeaderboardEntry[] {
@@ -66,7 +67,9 @@ export function compactDisplayNames(names: string[]): string[] {
 export function compactLeaderboardDisplayNames(entries: LeaderboardEntry[]): LeaderboardEntry[] {
   const displayNames = compactDisplayNames(entries.map((entry) => entry.display_name))
   return entries.map((entry, index) => {
-    const display_name = displayNames[index] ?? entry.display_name
+    const display_name = isDuoLeaderboardEntry(entry.profile_id)
+      ? entry.display_name
+      : (displayNames[index] ?? entry.display_name)
     return { ...entry, display_name }
   })
 }

@@ -41,7 +41,6 @@ export type LeaderboardEntry = {
 
 type Props = {
   entries: LeaderboardEntry[]
-  duoPlayerEntries?: LeaderboardEntry[]
   compact?: boolean
   scoreUnit?: AmericanoScoringUnit
   scoreColumnLabel?: string
@@ -258,7 +257,6 @@ function LeaderboardRow({
 
 export function CompetitionLeaderboard({
   entries,
-  duoPlayerEntries,
   compact = false,
   scoreUnit = 'points',
   scoreColumnLabel,
@@ -277,10 +275,10 @@ export function CompetitionLeaderboard({
   const navigate = useNavigate()
   const location = useLocation()
   const [info, setInfo] = useState<AchievementInfo | null>(null)
-  const [duoView, setDuoView] = useState<'teams' | 'players'>('teams')
-  const showDuoToggle = Boolean(duoPlayerEntries?.length)
-  const activeEntries =
-    showDuoToggle && duoView === 'players' ? duoPlayerEntries! : entries
+  const activeEntries = entries
+  const showingTeamEntries = activeEntries.some((entry) =>
+    isDuoLeaderboardEntry(entry.profile_id),
+  )
   const unit =
     scoreColumnLabel ??
     (scoreUnit === 'sets'
@@ -305,10 +303,9 @@ export function CompetitionLeaderboard({
   }
 
   const displayEntries = compactLeaderboardDisplayNames(activeEntries)
-  const showHeader = Boolean(headerTitle || headerSubtitle || headerExtra || showDuoToggle)
+  const showHeader = Boolean(headerTitle || headerSubtitle || headerExtra)
   const rowGrid = showAchievements ? ROW_GRID : ROW_GRID_NO_BADGES
-  const nameColumnLabel =
-    showDuoToggle && duoView === 'teams' ? t('leaderboard.teams') : t('leaderboard.player')
+  const nameColumnLabel = showingTeamEntries ? t('leaderboard.teams') : t('leaderboard.player')
 
   const shareRows = useMemo((): LeaderboardShareRow[] => {
     if (!shareTitle) return []
@@ -353,32 +350,6 @@ export function CompetitionLeaderboard({
         </div>
       ) : null}
       {headerExtra}
-      {showDuoToggle ? (
-        <div className="flex gap-2 border-b border-brand-border/60 px-3 py-2 md:px-4">
-          <button
-            type="button"
-            onClick={() => setDuoView('teams')}
-            className={`rounded-full px-3 py-1 text-xs font-semibold ${
-              duoView === 'teams'
-                ? 'bg-brand-accent text-white'
-                : 'bg-brand-bg-alt text-brand-muted'
-            }`}
-          >
-            {t('leaderboard.teams')}
-          </button>
-          <button
-            type="button"
-            onClick={() => setDuoView('players')}
-            className={`rounded-full px-3 py-1 text-xs font-semibold ${
-              duoView === 'players'
-                ? 'bg-brand-accent text-white'
-                : 'bg-brand-bg-alt text-brand-muted'
-            }`}
-          >
-            {t('leaderboard.player')}
-          </button>
-        </div>
-      ) : null}
       {showHeader && (
         <div
           className={`border-b border-brand-border px-3 py-2 md:px-4 md:py-3 ${embedded ? 'bg-brand-surface' : 'bg-brand-bg-alt'}`}
