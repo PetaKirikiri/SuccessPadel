@@ -201,10 +201,10 @@ function TeamPlayersInline({ entry }: { entry: LeaderboardEntry }) {
           <PlayerAvatar
             displayName={player.name}
             avatarUrl={player.avatarUrl}
-            imgClassName="h-5 w-5 shrink-0 rounded-full object-cover ring-1 ring-brand-border/60"
+            imgClassName="h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-brand-border/60"
             pixelated={player.avatarUrl?.includes('/pixel.png') ?? false}
           />
-          <span className="max-w-[7rem] truncate text-[10px] font-medium leading-none text-brand-muted">
+          <span className="max-w-[8rem] truncate text-xs font-semibold leading-tight text-brand-muted">
             {player.name}
           </span>
         </span>
