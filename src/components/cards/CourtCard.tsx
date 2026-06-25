@@ -488,8 +488,8 @@ export function CourtMatchCell({
   const teamTitle = (label: string | undefined, align: 'left' | 'right') =>
     label ? (
       <p
-        className={`truncate font-bold uppercase tracking-wide text-brand-primary ${
-          compact ? 'tv-team-label text-xs md:text-sm' : 'text-xs md:text-sm'
+        className={`font-display font-bold leading-tight text-brand-primary ${
+          compact ? 'tv-team-label whitespace-normal break-words text-base md:text-lg' : 'truncate text-sm md:text-base'
         } ${align === 'right' ? 'text-right' : ''}`}
       >
         {label}
