@@ -14,6 +14,10 @@ function parsedScore(scoreSummary: string | null | undefined): [number, number] 
   return [parts[0]!, parts[1]!]
 }
 
+function isDefaultTeamLabel(label: string): boolean {
+  return /^Team\s+\d+$/i.test(label.trim())
+}
+
 export function computeDuoStandings(
   roster: CompetitionPlayer[],
   rounds: CompetitionRound[],
@@ -23,16 +27,21 @@ export function computeDuoStandings(
   const rosterById = new Map(roster.map((r) => [r.id, r]))
   const teamByRosterKey = new Map<string, number>()
 
-  const entries: LeaderboardEntry[] = teams.map((team, index) => {
+  const entries: LeaderboardEntry[] = []
+  for (const team of teams) {
     const [idA, idB] = team.roster_ids
     const playerA = rosterById.get(idA)
     const playerB = rosterById.get(idB)
-    const nameA = playerA ? rosterDisplayName(playerA) : 'Player'
-    const nameB = playerB ? rosterDisplayName(playerB) : 'Player'
-    const label = team.label.trim() || `${nameA} & ${nameB}`
-    teamByRosterKey.set(rosterKey(team.roster_ids), index)
+    if (!playerA || !playerB) continue
 
-    return {
+    const nameA = rosterDisplayName(playerA)
+    const nameB = rosterDisplayName(playerB)
+    const customLabel = team.label.trim()
+    const label = customLabel && !isDefaultTeamLabel(customLabel) ? customLabel : `${nameA} & ${nameB}`
+    const entryIndex = entries.length
+    teamByRosterKey.set(rosterKey(team.roster_ids), entryIndex)
+
+    entries.push({
       profile_id: `duo:${idA}:${idB}`,
       player_a_id: playerA?.profile_id ?? idA,
       player_b_id: playerB?.profile_id ?? idB,
@@ -47,8 +56,8 @@ export function computeDuoStandings(
       wins: 0,
       losses: 0,
       draws: 0,
-    }
-  })
+    })
+  }
 
   const roundsById = new Map(rounds.map((round) => [round.id, round]))
 
