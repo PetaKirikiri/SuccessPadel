@@ -54,6 +54,7 @@ type Props = {
   flushBottom?: boolean
   embedded?: boolean
   shareTitle?: string | null
+  simpleTeamRows?: boolean
 }
 
 type AchievementInfo = { iconKey: string; emoji: string; labelKey: string }
@@ -176,6 +177,9 @@ const COMPACT_ROW_GRID =
 const COMPACT_ROW_GRID_BADGES =
   'grid h-full w-full items-center gap-x-2 px-2 grid-cols-[1.25rem_2rem_minmax(0,1fr)_minmax(0,4rem)_2.75rem]'
 
+const COMPACT_TEAM_ROW_GRID =
+  'grid h-full w-full items-center gap-x-2 px-2 grid-cols-[1.25rem_minmax(0,1fr)_2.75rem]'
+
 function LeaderboardRow({
   rank,
   entry,
@@ -183,6 +187,7 @@ function LeaderboardRow({
   badges,
   showBadges,
   compact = false,
+  simpleTeamRow = false,
   onOpenProfile,
   onSelectAchievement,
   t,
@@ -193,6 +198,7 @@ function LeaderboardRow({
   badges: Achievement[]
   showBadges: boolean
   compact?: boolean
+  simpleTeamRow?: boolean
   onOpenProfile?: () => void | Promise<void>
   onSelectAchievement: (info: AchievementInfo) => void
   t: TranslateFn
@@ -205,7 +211,9 @@ function LeaderboardRow({
         if (onOpenProfile) void onOpenProfile()
       }}
       className={`${
-        compact
+        compact && simpleTeamRow
+          ? COMPACT_TEAM_ROW_GRID
+          : compact
           ? showBadges
             ? COMPACT_ROW_GRID_BADGES
             : COMPACT_ROW_GRID
@@ -223,14 +231,16 @@ function LeaderboardRow({
       >
         {rank}
       </span>
-      <PlayerAvatar
-        displayName={entry.display_name}
-        avatarUrl={entry.avatar_url}
-        imgClassName={`rounded-full object-cover ring-1 ring-brand-border/60 ${
-          compact ? 'h-8 w-8' : 'h-7 w-7 md:h-10 md:w-10'
-        }`}
-        pixelated={entry.avatar_url?.includes('/pixel.png') ?? false}
-      />
+      {!simpleTeamRow ? (
+        <PlayerAvatar
+          displayName={entry.display_name}
+          avatarUrl={entry.avatar_url}
+          imgClassName={`rounded-full object-cover ring-1 ring-brand-border/60 ${
+            compact ? 'h-8 w-8' : 'h-7 w-7 md:h-10 md:w-10'
+          }`}
+          pixelated={entry.avatar_url?.includes('/pixel.png') ?? false}
+        />
+      ) : null}
       <span className="min-w-0 truncate text-sm font-medium text-brand-text md:text-base">
         {entry.display_name}
       </span>
@@ -270,6 +280,7 @@ export function CompetitionLeaderboard({
   flushBottom = false,
   embedded = false,
   shareTitle = null,
+  simpleTeamRows = false,
 }: Props) {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -291,8 +302,10 @@ export function CompetitionLeaderboard({
   const hasAnyScores = activeEntries.some((entry) => entry.games > 0)
   const podiumTiers = useMemo(() => podiumPointTiers(activeEntries), [activeEntries])
 
+  const effectiveShowAchievements = showAchievements && !simpleTeamRows
+
   const badgesFor = (entry: LeaderboardEntry): Achievement[] => {
-    if (!showAchievements || !achievements) return []
+    if (!effectiveShowAchievements || !achievements) return []
     const map = achievements.individualAchievementsByPlayerId
     for (const id of leaderboardEntryLookupIds(entry)) {
       if (map[id]) return sortAchievementsForDisplay(map[id]!)
@@ -304,7 +317,7 @@ export function CompetitionLeaderboard({
 
   const displayEntries = compactLeaderboardDisplayNames(activeEntries)
   const showHeader = Boolean(headerTitle || headerSubtitle || headerExtra)
-  const rowGrid = showAchievements ? ROW_GRID : ROW_GRID_NO_BADGES
+  const rowGrid = effectiveShowAchievements ? ROW_GRID : ROW_GRID_NO_BADGES
   const nameColumnLabel = showingTeamEntries ? t('leaderboard.teams') : t('leaderboard.player')
 
   const shareRows = useMemo((): LeaderboardShareRow[] => {
@@ -369,7 +382,7 @@ export function CompetitionLeaderboard({
           <span className="text-center">#</span>
           <span aria-hidden />
           <span>{nameColumnLabel}</span>
-          {showAchievements ? <span aria-hidden /> : null}
+          {effectiveShowAchievements ? <span aria-hidden /> : null}
           <span className="justify-self-end text-right font-display text-xs uppercase text-brand-muted md:text-sm">
             {unit}
           </span>
@@ -394,8 +407,9 @@ export function CompetitionLeaderboard({
               entry={e}
               isMe={isMe}
               badges={badgesFor(source)}
-              showBadges={showAchievements}
+              showBadges={effectiveShowAchievements}
               compact={compact}
+              simpleTeamRow={simpleTeamRows && isDuoLeaderboardEntry(source.profile_id)}
               onSelectAchievement={setInfo}
               onOpenProfile={
                 isDuoLeaderboardEntry(source.profile_id)

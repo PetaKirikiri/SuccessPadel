@@ -208,10 +208,10 @@ export function CompetitionPlay() {
         currentUserId={user?.id ?? null}
         competitionId={id ?? null}
         achievements={achievements}
-        showAchievements={Boolean(achievements)}
+        showAchievements={false}
         compact
         embedded
-        shareTitle={session?.title ?? null}
+        simpleTeamRows={isDuo}
       />
     ) : (
       <p className="px-3 py-6 text-center text-sm text-brand-muted">{t('leaderboard.standings')}</p>
