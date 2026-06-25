@@ -182,7 +182,7 @@ const COMPACT_ROW_GRID_BADGES =
   'grid h-full w-full items-center gap-x-2 px-2 grid-cols-[1.25rem_2rem_minmax(0,1fr)_minmax(0,4rem)_2.75rem]'
 
 const COMPACT_TEAM_ROW_GRID =
-  'grid h-full w-full items-center gap-x-2 px-2 grid-cols-[1.25rem_minmax(0,1fr)_2.75rem]'
+  'grid h-full w-full items-center gap-x-2 px-1 grid-cols-[1.35rem_minmax(0,1fr)_3rem]'
 
 function TeamPlayersInline({ entry }: { entry: LeaderboardEntry }) {
   const players = [
@@ -195,7 +195,7 @@ function TeamPlayersInline({ entry }: { entry: LeaderboardEntry }) {
   if (players.length === 0) return null
 
   return (
-    <span className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+    <span className="mt-1 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
       {players.map((player) => (
         <span key={player.name} className="flex min-w-0 items-center gap-1">
           <PlayerAvatar
@@ -204,7 +204,7 @@ function TeamPlayersInline({ entry }: { entry: LeaderboardEntry }) {
             imgClassName="h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-brand-border/60"
             pixelated={player.avatarUrl?.includes('/pixel.png') ?? false}
           />
-          <span className="max-w-[8rem] truncate text-xs font-semibold leading-tight text-brand-muted">
+          <span className="max-w-[9rem] truncate text-sm font-semibold leading-tight text-brand-text/80">
             {player.name}
           </span>
         </span>
@@ -276,7 +276,7 @@ function LeaderboardRow({
       ) : null}
       {simpleTeamRow ? (
         <span className="min-w-0">
-          <span className="block whitespace-normal break-words text-sm font-semibold leading-tight text-brand-text md:text-base">
+          <span className="block whitespace-normal break-words font-display text-lg font-bold leading-tight text-brand-primary">
             {entry.display_name}
           </span>
           <TeamPlayersInline entry={entry} />
