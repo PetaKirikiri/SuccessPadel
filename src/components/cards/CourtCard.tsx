@@ -206,11 +206,16 @@ export function ScoreStepper({
   scoreMax?: number
   tv?: boolean
 }) {
-  const inputClass = finished
-    ? 'h-8 w-8 rounded-lg border border-brand-border/50 bg-[#faf9f7] px-0.5 py-0.5 text-center text-sm font-semibold tabular-nums text-brand-sage disabled:text-brand-muted/60 dark:border-white/15 dark:bg-white/[0.08] dark:text-brand-text md:h-10 md:w-10 md:text-base'
-    : 'h-8 w-8 rounded-lg border border-brand-border/80 bg-brand-surface px-0.5 py-0.5 text-center text-sm font-semibold tabular-nums text-brand-primary disabled:text-brand-muted/60 dark:border-white/20 dark:bg-white/[0.08] dark:text-brand-text md:h-10 md:w-10 md:text-base'
-  const stepClass =
-    'tv-score-step-btn flex h-5 w-8 items-center justify-center rounded text-[10px] font-bold leading-none text-brand-muted active:bg-brand-bg-alt disabled:opacity-30 dark:active:bg-white/10 md:h-6 md:w-10 md:text-xs'
+  const inputClass = tv
+    ? finished
+      ? 'h-11 w-12 rounded-xl border-2 border-brand-border/70 bg-brand-bg-alt px-1 py-0.5 text-center text-xl font-extrabold tabular-nums text-brand-primary shadow-sm disabled:text-brand-primary dark:border-white/20 dark:bg-white/[0.12] dark:text-brand-text'
+      : 'h-11 w-12 rounded-xl border-2 border-brand-accent/70 bg-brand-primary px-1 py-0.5 text-center text-xl font-extrabold tabular-nums text-white shadow-md placeholder:text-white/60 disabled:text-white dark:border-brand-accent dark:bg-brand-accent dark:text-brand-primary'
+    : finished
+      ? 'h-8 w-8 rounded-lg border border-brand-border/50 bg-[#faf9f7] px-0.5 py-0.5 text-center text-sm font-semibold tabular-nums text-brand-sage disabled:text-brand-muted/60 dark:border-white/15 dark:bg-white/[0.08] dark:text-brand-text md:h-10 md:w-10 md:text-base'
+      : 'h-8 w-8 rounded-lg border border-brand-border/80 bg-brand-surface px-0.5 py-0.5 text-center text-sm font-semibold tabular-nums text-brand-primary disabled:text-brand-muted/60 dark:border-white/20 dark:bg-white/[0.08] dark:text-brand-text md:h-10 md:w-10 md:text-base'
+  const stepClass = tv
+    ? 'tv-score-step-btn flex h-6 w-12 items-center justify-center rounded-lg text-sm font-extrabold leading-none text-brand-primary active:bg-brand-bg-alt disabled:opacity-30 dark:text-brand-text dark:active:bg-white/10'
+    : 'tv-score-step-btn flex h-5 w-8 items-center justify-center rounded text-[10px] font-bold leading-none text-brand-muted active:bg-brand-bg-alt disabled:opacity-30 dark:active:bg-white/10 md:h-6 md:w-10 md:text-xs'
 
   return (
     <div
@@ -333,8 +338,10 @@ export function CourtMatchCell({
     />
   ) : scoreA ? (
     <span
-      className={`font-bold tabular-nums text-brand-accent ${
-        compact ? 'tv-score-readout text-base md:text-lg' : 'text-base md:text-lg'
+      className={`font-display font-extrabold tabular-nums ${
+        compact
+          ? 'tv-score-readout rounded-xl bg-brand-primary px-3 py-1.5 text-2xl leading-none text-white shadow-md dark:bg-brand-accent dark:text-brand-primary'
+          : 'text-base text-brand-accent md:text-lg'
       }`}
     >
       {scoreA}
@@ -355,8 +362,10 @@ export function CourtMatchCell({
     />
   ) : scoreB ? (
     <span
-      className={`font-bold tabular-nums text-brand-accent ${
-        compact ? 'tv-score-readout text-base md:text-lg' : 'text-base md:text-lg'
+      className={`font-display font-extrabold tabular-nums ${
+        compact
+          ? 'tv-score-readout rounded-xl bg-brand-primary px-3 py-1.5 text-2xl leading-none text-white shadow-md dark:bg-brand-accent dark:text-brand-primary'
+          : 'text-base text-brand-accent md:text-lg'
       }`}
     >
       {scoreB}
@@ -431,13 +440,13 @@ export function CourtMatchCell({
     ) : null
 
   const grid = compact ? (
-    <div className="tv-court-match-grid grid min-h-0 w-full flex-1 grid-cols-[1fr_auto_1fr] items-center gap-x-2 px-2">
+    <div className="tv-court-match-grid grid min-h-0 w-full flex-1 grid-cols-[1fr_auto_1fr] items-center gap-x-3 px-3">
       <div className="flex min-w-0 flex-col justify-center gap-1 justify-self-start">
         {teamTitle(teamALabel, 'left')}
         {playerEl(teamAPlayerList[0]!, 'left')}
         {playerEl(teamAPlayerList[1]!, 'left')}
       </div>
-      <div className="tv-court-match-scores flex shrink-0 items-stretch gap-2 justify-self-center">
+      <div className="tv-court-match-scores flex shrink-0 items-stretch gap-3 justify-self-center">
         <div className="flex items-center justify-center tabular-nums">{scoreAEl}</div>
         <span className="w-px self-stretch bg-brand-border/60" aria-hidden="true" />
         <div className="flex items-center justify-center tabular-nums">{scoreBEl}</div>

@@ -141,10 +141,16 @@ function ScoreWithRecord({
   t: TranslateFn
 }) {
   return (
-    <div className="relative z-[1] flex shrink-0 flex-col items-end justify-self-end text-right">
+    <div
+      className={`relative z-[1] flex shrink-0 flex-col items-center justify-self-end text-right ${
+        compact
+          ? 'mr-1 min-w-[3.75rem] rounded-lg bg-brand-primary px-2 py-1 text-white shadow-sm dark:bg-brand-accent dark:text-brand-primary'
+          : 'items-end'
+      }`}
+    >
       <span
-        className={`font-display font-bold tabular-nums text-brand-accent ${
-          compact ? 'text-base' : 'text-lg md:text-xl'
+        className={`font-display font-bold tabular-nums ${
+          compact ? 'text-xl leading-none text-current' : 'text-lg text-brand-accent md:text-xl'
         }`}
       >
         {score}
@@ -182,7 +188,7 @@ const COMPACT_ROW_GRID_BADGES =
   'grid h-full w-full items-center gap-x-2 px-2 grid-cols-[1.25rem_2rem_minmax(0,1fr)_minmax(0,4rem)_2.75rem]'
 
 const COMPACT_TEAM_ROW_GRID =
-  'grid h-full w-full items-center gap-x-2 px-1 grid-cols-[1.35rem_minmax(0,1fr)_3rem]'
+  'grid h-full w-full items-center gap-x-2 px-1 grid-cols-[1.35rem_minmax(0,1fr)_4.25rem]'
 
 function TeamPlayersInline({ entry }: { entry: LeaderboardEntry }) {
   const players = [
