@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { listenToMediaQuery } from '../lib/dom/mediaQuery'
 
 export type DeviceClass = 'phone' | 'tablet' | 'web'
 
@@ -28,11 +29,11 @@ export function useDeviceClass(): DeviceClass {
   useEffect(() => {
     const touch = window.matchMedia(TOUCH_QUERY)
     const update = () => setDeviceClass(detectDeviceClass())
-    touch.addEventListener('change', update)
+    const cleanupTouch = listenToMediaQuery(touch, update)
     window.addEventListener('resize', update)
     window.addEventListener('orientationchange', update)
     return () => {
-      touch.removeEventListener('change', update)
+      cleanupTouch()
       window.removeEventListener('resize', update)
       window.removeEventListener('orientationchange', update)
     }

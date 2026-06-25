@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { listenToMediaQuery } from '../lib/dom/mediaQuery'
 import { TV_MIN_WIDTH_PX } from '../lib/viewBreakpoints'
 
 const TV_QUERY = `(min-width: ${TV_MIN_WIDTH_PX}px)`
@@ -15,9 +16,9 @@ export function useIsTvLayout(): boolean {
   useEffect(() => {
     const mq = window.matchMedia(TV_QUERY)
     const update = () => setIsTvLayout(mq.matches)
-    mq.addEventListener('change', update)
+    const cleanup = listenToMediaQuery(mq, update)
     update()
-    return () => mq.removeEventListener('change', update)
+    return cleanup
   }, [])
 
   return isTvLayout

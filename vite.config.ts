@@ -19,6 +19,9 @@ const phoneDev = process.env.VITE_DEV_PHONE === '1'
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), viteDebugIngestPlugin()],
+  build: {
+    cssTarget: 'chrome61',
+  },
   server: {
     host: phoneDev ? true : undefined,
     port: 5173,

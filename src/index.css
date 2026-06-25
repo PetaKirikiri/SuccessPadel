@@ -119,6 +119,8 @@ html {
   inset: 0;
   width: var(--app-width, 100%);
   max-width: var(--app-width, 100%);
+  height: var(--app-height, 100vh);
+  max-height: var(--app-height, 100vh);
   height: var(--app-height, 100dvh);
   max-height: var(--app-height, 100dvh);
   overflow: hidden;
@@ -130,6 +132,8 @@ body {
   inset: 0;
   width: var(--app-width, 100%);
   max-width: var(--app-width, 100%);
+  height: var(--app-height, 100vh);
+  max-height: var(--app-height, 100vh);
   height: var(--app-height, 100dvh);
   max-height: var(--app-height, 100dvh);
   overflow: hidden;
@@ -140,6 +144,8 @@ body {
   @apply m-0 flex min-w-0 flex-col;
   width: var(--app-width, 100%);
   max-width: var(--app-width, 100%);
+  height: var(--app-height, 100vh);
+  max-height: var(--app-height, 100vh);
   height: var(--app-height, 100dvh);
   max-height: var(--app-height, 100dvh);
   overflow: hidden;
@@ -153,6 +159,8 @@ body {
   display: flex;
   width: var(--app-width, 100%);
   max-width: var(--app-width, 100%);
+  height: var(--app-height, 100vh);
+  max-height: var(--app-height, 100vh);
   height: var(--app-height, 100dvh);
   max-height: var(--app-height, 100dvh);
   flex-direction: column;
@@ -362,6 +370,8 @@ body {
   display: flex;
   flex-direction: column;
   width: var(--app-width, 100%);
+  height: var(--app-height, 100vh);
+  max-height: var(--app-height, 100vh);
   height: var(--app-height, 100dvh);
   max-height: var(--app-height, 100dvh);
   min-height: 0;
