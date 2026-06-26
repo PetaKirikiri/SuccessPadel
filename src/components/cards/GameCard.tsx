@@ -576,6 +576,7 @@ export function GameCardHeader({
   hideCollapse = false,
   tvCompact = false,
   tvNav,
+  onBack,
   viewAlongUrl,
   t,
 }: {
@@ -591,6 +592,7 @@ export function GameCardHeader({
   hideCollapse?: boolean
   tvCompact?: boolean
   tvNav?: TvGameNav
+  onBack?: () => void
   viewAlongUrl?: string | null
   t: TranslateFn
 }) {
@@ -605,8 +607,8 @@ export function GameCardHeader({
       : 'border-brand-accent/50 bg-brand-primary dark:border-brand-accent/40 dark:bg-white/[0.08]'
   }`
   const navBtnClass = finished
-    ? 'border-brand-border/50 text-brand-sage/80 dark:text-brand-muted'
-    : 'border-white/25 text-brand-bg-alt dark:border-white/15 dark:text-brand-muted'
+    ? 'border-brand-border/60 bg-brand-surface/80 text-brand-sage shadow-sm dark:text-brand-muted'
+    : 'border-white/35 bg-white/12 text-brand-accent-light shadow-sm dark:border-white/20 dark:text-brand-fun'
 
   const collapseBtnClass = `flex min-w-12 shrink-0 items-center justify-center self-stretch border-l px-4 text-2xl leading-none transition active:opacity-70 md:min-w-14 md:px-5 md:text-3xl ${
     finished
@@ -614,53 +616,29 @@ export function GameCardHeader({
       : 'border-white/25 text-brand-bg-alt dark:border-white/15 dark:text-brand-muted'
   }`
 
-  const gameInfoInline = (
-    <>
-      <p
-        className={`shrink-0 ${gameTitleClass} ${
-          finished ? 'text-brand-sage dark:text-brand-muted' : 'text-brand-accent-light dark:text-brand-fun'
-        }`}
-      >
-        {t('competition.game', { number: gameNumber })}
-      </p>
-      {showLiveBadge ? (
-        <span
-          className={`shrink-0 text-xs font-semibold md:text-sm ${
-            finished ? 'text-brand-accent' : 'text-brand-bg-alt dark:text-brand-fun'
-          }`}
-        >
-          {t('competition.live')}
-        </span>
-      ) : finished ? (
-        <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-brand-muted md:text-sm">
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand-sage/60 dark:bg-brand-muted/60" aria-hidden />
-          {t('competition.done')}
-        </span>
-      ) : null}
-      {timeLabel ? (
-        <span
-          className={`shrink-0 text-[11px] tabular-nums md:text-sm ${
-            finished ? 'text-brand-muted' : 'text-white/75 dark:text-brand-muted'
-          }`}
-        >
-          {timeLabel}
-        </span>
-      ) : null}
-    </>
-  )
-
   const countdownBlock = countdown ? (
-    <div className="ml-auto shrink-0 text-right" aria-live="polite">
+    <div
+      className={`ml-auto shrink-0 rounded-xl border text-right shadow-sm ${
+        tvCompact
+          ? finished
+            ? 'border-brand-border/50 bg-brand-surface px-4 py-2'
+            : 'border-brand-accent/50 bg-white/12 px-4 py-2 dark:bg-white/[0.10]'
+          : 'border-transparent'
+      }`}
+      aria-live="polite"
+    >
       <p
-        className={`text-[10px] font-semibold uppercase tracking-wide md:text-xs ${
-          finished ? 'text-brand-muted' : 'text-white/65 dark:text-brand-muted'
+        className={`font-semibold uppercase tracking-wide ${
+          tvCompact ? 'text-sm' : 'text-[10px] md:text-xs'
+        } ${
+          finished ? 'text-brand-muted' : 'text-white/80 dark:text-brand-muted'
         }`}
       >
         {countdownLabelText}
       </p>
       <p
         className={`font-display font-bold leading-none tabular-nums ${
-          tvCompact ? 'text-xl md:text-2xl' : 'text-2xl md:text-3xl'
+          tvCompact ? 'text-4xl md:text-5xl' : 'text-2xl md:text-3xl'
         } ${finished ? 'text-brand-primary dark:text-brand-text' : 'text-brand-bg-alt dark:text-brand-text'}`}
       >
         {countdown}
@@ -671,23 +649,70 @@ export function GameCardHeader({
   if (tvNav) {
     return (
       <div className={headerShellClass}>
-        <div className={`grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 md:gap-3 ${headerPad}`}>
-          <button
-            type="button"
-            className={`tv-game-header-nav shrink-0 ${navBtnClass}`}
-            disabled={tvNav.atStart}
-            onClick={tvNav.onPrev}
-            aria-label={t('competition.prevGame')}
-          >
-            ‹
-          </button>
-          <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-            <div className="flex min-w-0 items-center justify-center gap-3">
-              {gameInfoInline}
-            </div>
-            {countdownBlock}
+        <div className={`relative flex min-h-[5.75rem] min-w-0 flex-1 items-center justify-center ${headerPad}`}>
+          <div className="absolute left-3 top-1/2 flex -translate-y-1/2 items-center gap-2">
+            {onBack ? (
+              <button
+                type="button"
+                className="shrink-0 rounded-lg border border-white/20 bg-white/5 px-2.5 py-1.5 text-sm font-bold text-white/70 transition hover:bg-white/10 hover:text-white"
+                onClick={onBack}
+                aria-label={t('aria.back')}
+              >
+                ←
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className={`tv-game-header-nav shrink-0 ${navBtnClass}`}
+              disabled={tvNav.atStart}
+              onClick={tvNav.onPrev}
+              aria-label={t('competition.prevGame')}
+            >
+              ‹
+            </button>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="pointer-events-none relative flex min-w-0 items-center justify-center">
+            <img
+              src="/brand/logo-padel.webp"
+              alt=""
+              aria-hidden="true"
+              className="absolute right-full mr-4 h-12 w-auto max-w-[8rem] shrink-0 object-contain"
+            />
+            <p
+              className={`shrink-0 ${gameTitleClass} ${
+                finished ? 'text-brand-sage dark:text-brand-muted' : 'text-brand-accent-light dark:text-brand-fun'
+              }`}
+            >
+              {t('competition.game', { number: gameNumber })}
+            </p>
+            <div className="absolute left-full ml-4 flex items-center gap-3">
+              {showLiveBadge ? (
+                <span
+                  className={`shrink-0 text-xs font-semibold md:text-sm ${
+                    finished ? 'text-brand-accent' : 'text-brand-bg-alt dark:text-brand-fun'
+                  }`}
+                >
+                  {t('competition.live')}
+                </span>
+              ) : finished ? (
+                <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-brand-muted md:text-sm">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand-sage/60 dark:bg-brand-muted/60" aria-hidden />
+                  {t('competition.done')}
+                </span>
+              ) : null}
+              {timeLabel ? (
+                <span
+                  className={`shrink-0 text-[11px] tabular-nums md:text-sm ${
+                    finished ? 'text-brand-muted' : 'text-white/75 dark:text-brand-muted'
+                  }`}
+                >
+                  {timeLabel}
+                </span>
+              ) : null}
+            </div>
+          </div>
+          <div className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-2">
+            {countdownBlock}
             {viewAlongUrl ? <TvPlayQrPanel url={viewAlongUrl} header /> : null}
             <button
               type="button"
@@ -801,6 +826,7 @@ export function ScoringGameCard({
   duoTeamLabels,
   tvCompact = false,
   tvNav,
+  onBack,
   viewAlongUrl,
   t,
 }: {
@@ -832,6 +858,7 @@ export function ScoringGameCard({
   duoTeamLabels?: DuoTeamLabels
   tvCompact?: boolean
   tvNav?: TvGameNav
+  onBack?: () => void
   viewAlongUrl?: string | null
   t: TranslateFn
 }) {
@@ -880,6 +907,7 @@ export function ScoringGameCard({
         hideCollapse={tvCompact}
         tvCompact={tvCompact}
         tvNav={tvNav}
+        onBack={onBack}
         viewAlongUrl={viewAlongUrl}
         t={t}
       />
@@ -929,6 +957,7 @@ export function FriendlyManualGameCard({
   finished,
   collapsed,
   onToggleCollapsed,
+  onBack,
   currentUserId,
   currentUserAvatarUrl,
   t,
@@ -947,6 +976,7 @@ export function FriendlyManualGameCard({
   finished: boolean
   collapsed: boolean
   onToggleCollapsed: () => void
+  onBack?: () => void
   currentUserId?: string | null
   currentUserAvatarUrl?: string | null
   t: TranslateFn
@@ -977,6 +1007,7 @@ export function FriendlyManualGameCard({
         finished={finished}
         collapsed={collapsed}
         onToggleCollapsed={onToggleCollapsed}
+        onBack={onBack}
         t={t}
       />
       {!collapsed && (

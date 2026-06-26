@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react'
-import { AppShellPanel } from '../AppShellPanel'
 import type { TranslateFn } from '../../i18n'
 
 type Props = {
@@ -22,10 +21,10 @@ export function CompetitionPlayTvView({
 }: Props) {
   return (
     <div className="flex min-h-0 min-w-0 w-full flex-1 flex-col overflow-hidden">
-      <AppShellPanel scrollBody={false} className="tv-play-panel" footer={null}>
-        <div className="tv-play-layout">
-          <div className="tv-play-games">
-            <div className="tv-play-scroll app-shell-panel-inset">
+      <div className="tv-play-panel flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="tv-play-layout min-h-0 flex-1">
+          <div className="tv-play-games min-h-0">
+            <div className="tv-play-scroll min-h-0">
               {loadOrError}
               {session ? gamesBody : null}
             </div>
@@ -36,7 +35,7 @@ export function CompetitionPlayTvView({
             </aside>
           ) : null}
         </div>
-      </AppShellPanel>
+      </div>
     </div>
   )
 }

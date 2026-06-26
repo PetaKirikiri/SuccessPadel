@@ -77,6 +77,7 @@ type Props = {
   tvCarousel?: boolean
   viewAlongUrl?: string | null
   onTvGameChange?: (gameNumber: number) => void
+  onTvBack?: () => void
 }
 
 type RoundStatus = 'pending' | 'active' | 'complete'
@@ -212,9 +213,9 @@ function countdownState(
 }
 
 function countdownLabel(state: CountdownState, t: TranslateFn): string {
-  if (state === 'starts') return t('competition.startsIn')
-  if (state === 'playing') return t('competition.timeLeft')
-  if (state === 'break') return t('competition.break')
+  if (state === 'starts') return 'Game starts in'
+  if (state === 'playing') return 'Game finishes in'
+  if (state === 'break') return 'Break time'
   if (state === 'finished') return t('competition.finished')
   return t('competition.gameTime')
 }
@@ -249,6 +250,7 @@ export function GameBoard({
   tvCarousel = false,
   viewAlongUrl = null,
   onTvGameChange,
+  onTvBack,
 }: Props) {
   const { t } = useTranslation()
   const games = useMemo(() => {
@@ -462,6 +464,7 @@ export function GameBoard({
           duoTeamLabels={duoTeamLabels}
           tvCompact={tvCompact}
           tvNav={tvNav}
+          onBack={tvCompact ? onTvBack : undefined}
           viewAlongUrl={viewAlongUrl}
           t={t}
         />
@@ -514,6 +517,7 @@ export function GameBoard({
           hideCollapse={tvCompact}
           tvCompact={tvCompact}
           tvNav={tvNav}
+          onBack={tvCompact ? onTvBack : undefined}
           viewAlongUrl={viewAlongUrl}
           t={t}
         />

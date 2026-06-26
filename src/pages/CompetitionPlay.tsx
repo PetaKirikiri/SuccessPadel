@@ -318,6 +318,7 @@ export function CompetitionPlay() {
         tvCarousel={columns.length > 0}
         viewAlongUrl={isTvLayout ? viewAlongUrl : null}
         onTvGameChange={setTvGameNumber}
+        onTvBack={() => navigate('/competitions')}
       />
     ) : started ? (
       <p className="game-card px-3 py-4 text-sm text-brand-muted">
@@ -347,23 +348,25 @@ export function CompetitionPlay() {
 
   return (
     <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden bg-brand-bg">
-      <AppTopBar className="shrink-0 border-b border-brand-border/40 bg-brand-bg">
-        <div className="flex min-w-0 items-center gap-2">
-          <button
-            type="button"
-            onClick={() => navigate('/competitions')}
-            aria-label={t('aria.back')}
-            className="shrink-0 text-xl font-medium leading-none text-brand-accent"
-          >
-            ←
-          </button>
-          <img
-            src="/brand/logo-padel.webp"
-            alt={t('common.brandAlt')}
-            className="h-8 w-auto max-w-[7rem] shrink-0 md:h-10 md:max-w-[9rem]"
-          />
-        </div>
-      </AppTopBar>
+      {!isTvLayout ? (
+        <AppTopBar className="shrink-0 border-b border-brand-border/40 bg-brand-bg">
+          <div className="flex min-w-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => navigate('/competitions')}
+              aria-label={t('aria.back')}
+              className="shrink-0 text-xl font-medium leading-none text-brand-accent"
+            >
+              ←
+            </button>
+            <img
+              src="/brand/logo-padel.webp"
+              alt={t('common.brandAlt')}
+              className="h-8 w-auto max-w-[7rem] shrink-0 md:h-10 md:max-w-[9rem]"
+            />
+          </div>
+        </AppTopBar>
+      ) : null}
 
       {isTvLayout ? (
         <div className="tv-play-view flex min-h-0 flex-1 flex-col overflow-hidden">
