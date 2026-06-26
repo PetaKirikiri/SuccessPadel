@@ -14,7 +14,7 @@ import type { FriendlyCourtScoreSubmit } from '../../lib/friendlyManualScore'
 import type { MatchTeam } from '../../lib/types'
 import { TvPlayQrPanel } from '../competitionPlay/TvPlayQrPanel'
 import type { TvGameNav } from '../competitionPlay/CompetitionTvGameCarousel'
-import { CourtCard, CourtMatchCell, courtLiveHref } from './CourtCard'
+import { CourtCard, CourtMatchCell, ScoreStepper, courtLiveHref } from './CourtCard'
 import type { LiveCourt } from './gameBoardTypes'
 import type { CourtPlayer } from '../../lib/americanoSchedule'
 
@@ -496,6 +496,7 @@ export function GameScoringCourts({
           teamBPlayers,
         )
         const courtReady = row.canSubmit
+        const showTvFallbackScoring = Boolean(tvCompact && canEdit && submitCourt && gameRoundId)
 
         const href = courtLiveHref({
           liveCourtEnabled,
@@ -519,32 +520,95 @@ export function GameScoringCourts({
             tvCompact={tvCompact}
             t={t}
           >
-            <CourtMatchCell
-              teamA={teamA}
-              teamB={teamB}
-              teamAPlayers={teamAPlayers}
-              teamBPlayers={teamBPlayers}
-              teamALabel={sideLabels?.teamALabel}
-              teamBLabel={sideLabels?.teamBLabel}
-              scoreUnit={scoreUnit}
-              scoreA={row.teamAStr}
-              scoreB={row.teamBStr}
-              onScoreA={
-                canEdit && courtId && gameRoundId ? (v) => setDraft(courtId, 'teamA', v) : undefined
-              }
-              onScoreB={
-                canEdit && courtId && gameRoundId ? (v) => setDraft(courtId, 'teamB', v) : undefined
-              }
-              disabled={!canEdit}
-              finished={finished}
-              scoreMax={courtScoreMax}
-              currentUserId={currentUserId}
-              currentUserAvatarUrl={currentUserAvatarUrl}
-              embedded
-              compact={tvCompact}
-              t={t}
-            />
-            {canEdit && submitCourt && gameRoundId ? (
+            {showTvFallbackScoring ? (
+              <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)_auto] items-stretch gap-2">
+                <CourtMatchCell
+                  teamA={teamA}
+                  teamB={teamB}
+                  teamAPlayers={teamAPlayers}
+                  teamBPlayers={teamBPlayers}
+                  teamALabel={sideLabels?.teamALabel}
+                  teamBLabel={sideLabels?.teamBLabel}
+                  scoreUnit={scoreUnit}
+                  disabled
+                  finished={finished}
+                  currentUserId={currentUserId}
+                  currentUserAvatarUrl={currentUserAvatarUrl}
+                  embedded
+                  compact={tvCompact}
+                  t={t}
+                />
+                <div
+                  className="flex w-36 shrink-0 flex-col items-center justify-center gap-2 rounded-xl border border-brand-accent/25 bg-brand-primary/95 px-2 py-2 shadow-inner dark:border-brand-accent/35 dark:bg-white/[0.08]"
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <ScoreStepper
+                      value={row.teamAStr}
+                      onChange={(v) => setDraft(courtId, 'teamA', v)}
+                      disabled={!canEdit}
+                      finished={finished}
+                      ariaLabel="Team A score"
+                      scoreMax={courtScoreMax}
+                      tv
+                    />
+                    <ScoreStepper
+                      value={row.teamBStr}
+                      onChange={(v) => setDraft(courtId, 'teamB', v)}
+                      disabled={!canEdit}
+                      finished={finished}
+                      ariaLabel="Team B score"
+                      scoreMax={courtScoreMax}
+                      tv
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    disabled={busyCourtKey === courtId || !courtReady}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      void submitCourt?.(courtId)
+                    }}
+                    className="h-9 w-full rounded-lg border border-[#7dd3fc]/50 bg-[#7dd3fc]/15 px-2 font-display text-xs font-black uppercase tracking-wide text-[#7dd3fc] shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-35"
+                  >
+                    {busyCourtKey === courtId ? 'Saving' : 'Save'}
+                  </button>
+                  {courtError?.courtId === courtId ? (
+                    <p className="max-w-full text-center text-[10px] font-semibold leading-tight text-red-300">
+                      {courtError.message}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            ) : (
+              <CourtMatchCell
+                teamA={teamA}
+                teamB={teamB}
+                teamAPlayers={teamAPlayers}
+                teamBPlayers={teamBPlayers}
+                teamALabel={sideLabels?.teamALabel}
+                teamBLabel={sideLabels?.teamBLabel}
+                scoreUnit={scoreUnit}
+                scoreA={row.teamAStr}
+                scoreB={row.teamBStr}
+                onScoreA={
+                  canEdit && courtId && gameRoundId ? (v) => setDraft(courtId, 'teamA', v) : undefined
+                }
+                onScoreB={
+                  canEdit && courtId && gameRoundId ? (v) => setDraft(courtId, 'teamB', v) : undefined
+                }
+                disabled={!canEdit}
+                finished={finished}
+                scoreMax={courtScoreMax}
+                currentUserId={currentUserId}
+                currentUserAvatarUrl={currentUserAvatarUrl}
+                embedded
+                compact={tvCompact}
+                t={t}
+              />
+            )}
+            {!tvCompact && canEdit && submitCourt && gameRoundId ? (
               <>
                 <button
                   type="button"
