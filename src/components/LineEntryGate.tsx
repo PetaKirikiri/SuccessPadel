@@ -15,13 +15,24 @@ import {
   shouldTryLineInAppSignIn,
 } from '../lib/line/lineInAppConnect'
 import { lineOAuthCallbackCode } from '../lib/line/oauth'
-import { hasLiffId, isLineLiffBrowser } from '../lib/line/liff'
+import { hasLiffId, isLineLiffBrowser, lineAppEntryUrl } from '../lib/line/liff'
 
 function shouldSkipLineEntryGate(pathname: string, search: string): boolean {
   if (pathname.startsWith('/auth/')) return true
   if (pathname === '/login' && lineOAuthCallbackCode(search)) return true
   if (/^\/players\/[0-9a-f-]{36}$/i.test(pathname)) return true
   return false
+}
+
+function hasExplicitLiffContext(search: string): boolean {
+  const qs = `${search}${window.location.hash}`
+  return (
+    qs.includes('liff.state') ||
+    qs.includes('liff.auth') ||
+    qs.includes('liffClientId') ||
+    qs.includes('liff.referrer') ||
+    document.referrer.includes('liff.line.me')
+  )
 }
 
 /** Prompt LINE Allow + sign-in when opened inside the LINE app. */
@@ -55,6 +66,17 @@ export function LineEntryGate({ children }: { children: ReactNode }) {
     }
     if (shouldSkipLineEntryGate(pathname, search)) return
     if (!shouldTryLineInAppSignIn(false)) return
+
+    if (isLineLiffBrowser() && !hasExplicitLiffContext(search)) {
+      const entry = lineAppEntryUrl(`${pathname}${search}`)
+      if (entry) {
+        lineHandshakeDebug('S1-gate', 'LineEntryGate.tsx:liff-entry', 'plain LINE browser link → LIFF entry', 'H1', {
+          pathname,
+        })
+        window.location.replace(entry)
+        return
+      }
+    }
 
     let cancelled = false
     setWorking(true)

@@ -1,4 +1,4 @@
-const PRODUCTION_ORIGIN = 'https://success-padel-ffzt.vercel.app'
+const PRODUCTION_ORIGIN = 'https://www.successpadel.app'
 
 /** True when viewing the app on a dev machine / tunnel (not production Vercel). */
 export function isDevHost(): boolean {
@@ -70,4 +70,3 @@ export function friendlyViewAlongUrl(sessionId: string): string {
 export function competitionViewAlongUrl(sessionId: string): string {
   return playViewAlongUrl(competitionPlayUrl(sessionId))
 }
-
