@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import type { TranslateFn } from '../../i18n'
 import type { AmericanoScoringUnit } from '../../lib/competitionPresets'
 import type { CourtScoreSubmit } from '../../lib/competitionScoreInput'
@@ -171,22 +170,6 @@ function CourtScoreInputSection({
   competitionId?: string | null
 }) {
   const court = courtRow.court
-  useEffect(() => {
-    if (!canEdit || busy || !courtRow.dirty || !courtRow.canSubmit) return
-    const timeout = window.setTimeout(() => {
-      void submitCourt(courtRow.courtId)
-    }, 700)
-    return () => window.clearTimeout(timeout)
-  }, [
-    busy,
-    canEdit,
-    courtRow.canSubmit,
-    courtRow.courtId,
-    courtRow.dirty,
-    courtRow.teamAStr,
-    courtRow.teamBStr,
-    submitCourt,
-  ])
 
   if (!court) return null
 
