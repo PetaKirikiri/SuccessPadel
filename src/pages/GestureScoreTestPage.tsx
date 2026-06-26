@@ -329,28 +329,31 @@ export function GestureScoreTestPage() {
           status === 'running' || status === 'loading' ? 'opacity-100' : 'opacity-0'
         }`}
       />
-      <header className="flex shrink-0 items-center justify-center px-3 pb-1 pt-[max(0.5rem,env(safe-area-inset-top))] md:px-6 md:pb-3 md:pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <div className="rounded-full border border-white/15 bg-[#11355c] px-4 py-1.5 text-center shadow-lg shadow-black/25 md:px-6 md:py-2">
-          <p className="text-[9px] font-black uppercase tracking-wide text-white/55 md:text-xs">
-            Time
-          </p>
-          <p className="font-display text-3xl font-black leading-none text-[#f8fafc] md:text-6xl">
-            {formatTimer(elapsedSeconds)}
-          </p>
-        </div>
-        {showStartCameraButton ? (
+      {showStartCameraButton ? (
+        <button
+          type="button"
+          onClick={() => void startCameraTest()}
+          className="fixed right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-[440] rounded-full border border-[#34d399]/45 bg-[#34d399]/15 px-4 py-2 text-sm font-black uppercase tracking-wide text-[#34d399] shadow-lg shadow-black/25 active:scale-[0.98] md:right-6 md:px-5 md:py-3 md:text-base"
+        >
+          Start Camera
+        </button>
+      ) : null}
+
+      <section className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto_minmax(0,1.25rem)] gap-2 px-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-3 md:grid-rows-[minmax(18rem,1fr)_auto_minmax(2rem,0.12fr)] md:gap-6 md:px-8 md:pt-[max(0.75rem,env(safe-area-inset-top))] md:pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div className="relative mx-auto grid h-full min-h-0 w-full max-w-7xl grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-stretch gap-1 overflow-hidden rounded-xl border border-white/15 bg-[#11355c] px-3 pb-3 pt-10 shadow-[0_24px_60px_-36px_rgba(0,0,0,0.7)] md:gap-3 md:rounded-2xl md:px-8 md:pb-6 md:pt-16">
           <button
             type="button"
-            onClick={() => void startCameraTest()}
-            className="fixed right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-[430] rounded-full border border-[#34d399]/45 bg-[#34d399]/15 px-4 py-2 text-sm font-black uppercase tracking-wide text-[#34d399] shadow-lg shadow-black/25 active:scale-[0.98] md:right-6 md:px-5 md:py-3 md:text-base"
+            onClick={goBack}
+            className="absolute left-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-[#0b2a4a]/85 text-[#f8fafc] active:scale-[0.98] md:left-4 md:top-4 md:h-10 md:w-10"
+            aria-label="Back"
           >
-            Start Camera
+            <ArrowLeft className="h-5 w-5 stroke-[3]" aria-hidden />
           </button>
-        ) : null}
-      </header>
-
-      <section className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto_minmax(0,1.25rem)] gap-2 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-3 md:grid-rows-[minmax(18rem,1fr)_auto_minmax(2rem,0.12fr)] md:gap-6 md:px-8 md:pb-[max(1rem,env(safe-area-inset-bottom))]">
-        <div className="mx-auto grid h-full min-h-0 w-full max-w-7xl grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-stretch gap-1 overflow-hidden rounded-xl border border-white/15 bg-[#11355c] px-3 py-3 shadow-[0_24px_60px_-36px_rgba(0,0,0,0.7)] md:gap-3 md:rounded-2xl md:px-8 md:py-6">
+          <div className="absolute left-1/2 top-2 z-10 -translate-x-1/2 rounded-full border border-white/15 bg-[#0b2a4a]/70 px-4 py-1 text-center shadow-lg shadow-black/20 md:top-4 md:px-6 md:py-1.5">
+            <p className="font-display text-2xl font-black leading-none text-[#f8fafc] md:text-5xl">
+              {formatTimer(elapsedSeconds)}
+            </p>
+          </div>
           <div className="flex min-h-0 min-w-0 flex-col justify-center text-left">
             <p className="truncate text-[11px] font-black uppercase tracking-wide text-white/55 sm:text-xs md:text-lg">
               Our Team
@@ -441,14 +444,6 @@ export function GestureScoreTestPage() {
           ) : null}
         </div>
       </section>
-      <button
-        type="button"
-        onClick={goBack}
-        className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 z-[430] flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-[#11355c] text-[#f8fafc] active:scale-[0.98] md:h-10 md:w-10"
-        aria-label="Back"
-      >
-        <ArrowLeft className="h-5 w-5 stroke-[3]" aria-hidden />
-      </button>
     </main>
   )
 }
