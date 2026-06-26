@@ -429,6 +429,7 @@ export function GameBoard({
         roundStatus === 'complete' ||
         isLiveNow ||
         timeUp)
+    const canEditCourtCardScores = tvCarousel ? Boolean(canLog && gameRoundId) : canEditGame
     const displayTimeLabel =
       times != null ? formatGameTimeLabel(times.startsAt, times.endsAt) : game.timeLabel
 
@@ -447,7 +448,7 @@ export function GameBoard({
           courtIdByLabel={courtIdByLabel}
           matchForCourt={matchForCourt}
           scoreUnit={scoreUnit}
-          canEdit={canEditGame}
+          canEdit={canEditCourtCardScores}
           onSubmitScores={onSubmitScores}
           onSaved={onSaved}
           playTo={courtPlayTo}

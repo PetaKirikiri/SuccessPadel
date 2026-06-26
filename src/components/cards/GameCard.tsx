@@ -496,7 +496,7 @@ export function GameScoringCourts({
           teamBPlayers,
         )
         const courtReady = row.canSubmit
-        const showTvFallbackScoring = Boolean(tvCompact && canEdit && submitCourt && gameRoundId)
+        const showTvFallbackScoring = Boolean(tvCompact && submitCourt && gameRoundId)
 
         const href = courtLiveHref({
           liveCourtEnabled,
