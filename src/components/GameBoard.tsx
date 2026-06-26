@@ -445,7 +445,7 @@ export function GameBoard({
           courtIdByLabel={courtIdByLabel}
           matchForCourt={matchForCourt}
           scoreUnit={scoreUnit}
-          canEdit={canEditGame}
+          canEdit={tvCarousel ? false : canEditGame}
           onSubmitScores={onSubmitScores}
           onSaved={onSaved}
           playTo={courtPlayTo}

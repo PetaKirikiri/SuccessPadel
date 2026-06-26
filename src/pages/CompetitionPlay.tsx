@@ -202,7 +202,11 @@ export function CompetitionPlay() {
 
   const canScore = started
   const standings = liveStandings
-  const tvScoreGameNumber = tvGameNumber ?? activeRound?.round_number
+  const firstGameNumber = useMemo(
+    () => pivotScheduleByGame(columns)[0]?.gameNumber,
+    [columns],
+  )
+  const tvScoreGameNumber = tvGameNumber ?? activeRound?.round_number ?? firstGameNumber
   const tvScoreGameComplete = useMemo(
     () =>
       gameHasAllCourtScores({
