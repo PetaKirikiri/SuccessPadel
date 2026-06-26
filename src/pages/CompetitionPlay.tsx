@@ -6,8 +6,6 @@ import { CompetitionLeaderboard } from '../components/CompetitionLeaderboard'
 import { CompetitionPlayStandardView } from '../components/competitionPlay/CompetitionPlayStandardView'
 import { CompetitionPlayTvView } from '../components/competitionPlay/CompetitionPlayTvView'
 import { CompetitionTvScoreInputPanel } from '../components/competitionPlay/CompetitionTvScoreInputPanel'
-import { courtIdForLabel } from '../components/cards/GameCard'
-import type { LiveCourt } from '../components/cards/gameBoardTypes'
 import type { PlayViewTab } from '../components/PlayViewTabs'
 import { useAuth } from '../hooks/useAuth'
 import { useIsTvLayout } from '../hooks/useIsTvLayout'
@@ -34,36 +32,6 @@ import { supabase } from '../lib/supabaseClient'
 import { pivotScheduleByGame } from '../lib/competitionCourtBoard'
 
 type PlayTab = PlayViewTab
-
-function gameHasAllCourtScores({
-  columns,
-  gameNumber,
-  roundId,
-  liveCourtsByGame,
-  courtIdByLabel,
-  matchForCourt,
-}: {
-  columns: Parameters<typeof pivotScheduleByGame>[0]
-  gameNumber?: number
-  roundId?: string
-  liveCourtsByGame: Map<number, LiveCourt[]>
-  courtIdByLabel?: Map<string, string>
-  matchForCourt: ReturnType<typeof useCompetitionBoard>['matchForCourt']
-}): boolean {
-  if (!gameNumber || !roundId) return false
-  const game = pivotScheduleByGame(columns).find((row) => row.gameNumber === gameNumber)
-  if (!game) return false
-  const courtsForGame = liveCourtsByGame.get(gameNumber) ?? []
-  const courtIds = game.courts.flatMap((court, courtIndex) => {
-    const courtId = courtIdForLabel(court.courtLabel, courtIndex, courtsForGame, courtIdByLabel)
-    return courtId ? [courtId] : []
-  })
-  if (courtIds.length === 0) return false
-  return courtIds.every((courtId) => {
-    const saved = matchForCourt(roundId, courtId)
-    return saved?.teamAPoints != null && saved?.teamBPoints != null
-  })
-}
 
 export function CompetitionPlay() {
   const { id } = useParams()
@@ -207,18 +175,6 @@ export function CompetitionPlay() {
     [columns],
   )
   const tvScoreGameNumber = tvGameNumber ?? activeRound?.round_number ?? firstGameNumber
-  const tvScoreGameComplete = useMemo(
-    () =>
-      gameHasAllCourtScores({
-        columns,
-        gameNumber: tvScoreGameNumber,
-        roundId: tvScoreGameNumber ? roundIdForGame(tvScoreGameNumber) : undefined,
-        liveCourtsByGame,
-        courtIdByLabel,
-        matchForCourt,
-      }),
-    [columns, courtIdByLabel, liveCourtsByGame, matchForCourt, roundIdForGame, tvScoreGameNumber],
-  )
 
   const complete = isCompetitionComplete(session, rounds, courtMatches)
   const standingsOrder = useMemo(
@@ -269,7 +225,7 @@ export function CompetitionPlay() {
     )
 
   const tvScoreInput =
-    session && !tvScoreGameComplete ? (
+    session ? (
       <CompetitionTvScoreInputPanel
         columns={columns}
         gameNumber={tvScoreGameNumber}

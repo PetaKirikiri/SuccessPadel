@@ -203,8 +203,16 @@ function CourtScoreInputSection({
   const disabled = !canEdit
 
   return (
-    <section className="flex min-h-0 flex-col gap-1 rounded-xl border border-brand-primary/30 bg-brand-bg-alt p-1.5 shadow-sm dark:border-white/12 dark:bg-white/[0.05]">
-      <div className="flex shrink-0 items-center justify-between gap-2 rounded-lg bg-brand-primary px-2.5 py-1.5 dark:bg-white/[0.08]">
+    <section className="relative flex min-h-0 flex-col gap-1 rounded-xl border border-brand-primary/30 bg-brand-bg-alt p-1.5 shadow-sm dark:border-white/12 dark:bg-white/[0.05]">
+      <button
+        type="button"
+        disabled={!canEdit || busy || !courtRow.canSubmit}
+        onClick={() => void submitCourt(courtRow.courtId)}
+        className="absolute right-2 top-2 z-10 h-7 rounded-md border border-brand-accent/40 bg-brand-accent/15 px-2 text-[10px] font-black uppercase tracking-wide text-brand-accent shadow-sm transition active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35"
+      >
+        {busy ? '…' : 'Submit'}
+      </button>
+      <div className="flex shrink-0 items-center justify-between gap-2 rounded-lg bg-brand-primary px-2.5 py-1.5 pr-16 dark:bg-white/[0.08]">
         <h3 className="font-display text-lg font-extrabold leading-none text-brand-accent-light dark:text-brand-tan">
           {displayCourtName(courtRow.courtLabel)}
         </h3>

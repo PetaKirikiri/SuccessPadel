@@ -206,6 +206,11 @@ export function useGameScoring({
   const [busyCourtKey, setBusyCourtKey] = useState<string | null>(null)
   const [error, setError] = useState<{ courtId: string; message: string } | null>(null)
 
+  useEffect(() => {
+    setDirtyCourts(new Set())
+    setError(null)
+  }, [game.gameNumber, gameRoundId])
+
   const scoringCourts = useMemo(() => {
     const liveByName = new Map(courtsForGame.map((court) => [court.courtName, court]))
     return game.courts.flatMap((court, courtIndex) => {
