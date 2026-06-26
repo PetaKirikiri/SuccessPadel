@@ -607,7 +607,7 @@ export function GameCardHeader({
       : 'border-brand-accent/50 bg-brand-primary dark:border-brand-accent/40 dark:bg-white/[0.08]'
   }`
   const navBtnClass = finished
-    ? 'border border-brand-border/50 text-brand-primary/75 dark:text-brand-muted'
+    ? 'border border-brand-border/50 text-brand-primary/75 hover:bg-brand-primary/5 dark:text-brand-muted'
     : 'border border-brand-accent-light/45 text-brand-accent-light hover:bg-brand-accent-light/10 dark:border-brand-accent/35 dark:text-brand-accent-light'
 
   const collapseBtnClass = `flex min-w-12 shrink-0 items-center justify-center self-stretch border-l px-4 text-2xl leading-none transition active:opacity-70 md:min-w-14 md:px-5 md:text-3xl ${
@@ -618,7 +618,7 @@ export function GameCardHeader({
 
   const countdownBlock = countdown ? (
     <div
-      className={`ml-auto shrink-0 text-right ${
+      className={`shrink-0 text-right ${
         tvCompact ? 'px-3 py-1' : ''
       }`}
       aria-live="polite"
@@ -645,16 +645,17 @@ export function GameCardHeader({
   if (tvNav) {
     return (
       <div className={headerShellClass}>
-        <div className={`relative flex min-h-[5.75rem] min-w-0 flex-1 items-center justify-between gap-3 ${headerPad}`}>
-          <div className="flex min-w-0 flex-1 items-center gap-2">
+        <div className={`grid min-h-[5.75rem] min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 ${headerPad}`}>
+          <div className="flex min-w-0 items-center gap-2 justify-self-start">
             {onBack ? (
               <button
                 type="button"
-                className="shrink-0 rounded-lg border border-brand-accent-light/25 px-3 py-2 text-sm font-bold text-brand-accent-light/80 transition hover:bg-brand-accent-light/10 hover:text-brand-accent-light"
+                className={`tv-game-header-nav shrink-0 ${navBtnClass}`}
                 onClick={onBack}
                 aria-label={t('aria.back')}
               >
-                ← Back
+                <span aria-hidden="true">←</span>
+                <span className="text-base font-extrabold uppercase tracking-wide">Back</span>
               </button>
             ) : null}
             <button
@@ -668,7 +669,7 @@ export function GameCardHeader({
               <span className="text-base font-extrabold uppercase tracking-wide">Prev</span>
             </button>
           </div>
-          <div className="pointer-events-none absolute left-1/2 top-1/2 flex min-w-0 -translate-x-1/2 -translate-y-1/2 items-center justify-center">
+          <div className="pointer-events-none relative flex min-w-0 items-center justify-center justify-self-center">
             <img
               src="/brand/logo-padel.webp"
               alt=""
@@ -682,7 +683,7 @@ export function GameCardHeader({
             >
               {t('competition.game', { number: gameNumber })}
             </p>
-            <div className="absolute left-full ml-4 flex items-center gap-3">
+            <div className="absolute left-full ml-4 flex items-center gap-2">
               {showLiveBadge ? (
                 <span
                   className={`shrink-0 text-xs font-semibold md:text-sm ${
@@ -708,7 +709,7 @@ export function GameCardHeader({
               ) : null}
             </div>
           </div>
-          <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+          <div className="flex min-w-0 items-center justify-end gap-2 justify-self-end">
             {countdownBlock}
             {viewAlongUrl ? <TvPlayQrPanel url={viewAlongUrl} header /> : null}
             <button
