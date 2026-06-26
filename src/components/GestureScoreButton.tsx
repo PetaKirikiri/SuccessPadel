@@ -1,5 +1,6 @@
 import { Camera } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { requestGestureScoreCamera, supportsGestureScoreCamera } from '../lib/gestureScoreCamera'
 
 type Props = {
   dark: boolean
@@ -8,10 +9,17 @@ type Props = {
 
 export function GestureScoreButton({ dark, className = '' }: Props) {
   const navigate = useNavigate()
+  const openGestureScore = () => {
+    if (supportsGestureScoreCamera()) {
+      void requestGestureScoreCamera()
+    }
+    navigate('/gesture-score-test')
+  }
+
   return (
     <button
       type="button"
-      onClick={() => navigate('/gesture-score-test')}
+      onClick={openGestureScore}
       aria-label="Gesture Score Test"
       title="Gesture Score Test"
       className={`flex h-9 w-9 items-center justify-center rounded-full border transition md:h-11 md:w-11 ${

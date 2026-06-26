@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { FilesetResolver, GestureRecognizer } from '@mediapipe/tasks-vision'
 import { ArrowLeft, Hand, Sparkles, ThumbsDown, ThumbsUp } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import {
+  requestGestureScoreCamera,
+  supportsGestureScoreCamera,
+  takeGestureScoreCameraRequest,
+} from '../lib/gestureScoreCamera'
 import { useGesturePadChrome } from '../lib/gesturePadChrome'
 
 type GestureName = 'Thumb_Up' | 'Thumb_Down'
@@ -174,7 +179,7 @@ export function GestureScoreTestPage() {
     cameraRunRef.current = runId
     setError(null)
     setConfirmation(null)
-    if (!navigator.mediaDevices?.getUserMedia) {
+    if (!supportsGestureScoreCamera()) {
       setStatus('unsupported')
       return
     }
@@ -196,14 +201,7 @@ export function GestureScoreTestPage() {
       }
       recognizerRef.current = recognizer
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'user',
-          width: { ideal: 960 },
-          height: { ideal: 540 },
-        },
-        audio: false,
-      })
+      const stream = await (takeGestureScoreCameraRequest() ?? requestGestureScoreCamera())
       if (cameraRunRef.current !== runId) {
         stream.getTracks().forEach((track) => track.stop())
         return
