@@ -203,20 +203,19 @@ function CourtScoreInputSection({
   const disabled = !canEdit
 
   return (
-    <section className="relative flex min-h-0 flex-col gap-1 rounded-xl border border-brand-primary/30 bg-brand-bg-alt p-1.5 shadow-sm dark:border-white/12 dark:bg-white/[0.05]">
-      <button
-        type="button"
-        disabled={!canEdit || busy || !courtRow.canSubmit}
-        onClick={() => void submitCourt(courtRow.courtId)}
-        className="absolute right-2 top-2 z-10 h-7 rounded-md border border-[#7dd3fc]/40 bg-[#7dd3fc]/15 px-2 text-[10px] font-black uppercase tracking-wide text-[#7dd3fc] shadow-sm transition active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35"
-      >
-        {busy ? '…' : 'Submit'}
-      </button>
-      <div className="flex shrink-0 items-center justify-between gap-2 rounded-lg bg-brand-primary px-2.5 py-1.5 pr-16 dark:bg-white/[0.08]">
+    <section className="flex min-h-0 flex-col gap-1 rounded-xl border border-brand-primary/30 bg-brand-bg-alt p-1.5 shadow-sm dark:border-white/12 dark:bg-white/[0.05]">
+      <div className="flex h-8 shrink-0 items-center justify-between gap-2 rounded-lg bg-brand-primary px-2.5 dark:bg-white/[0.08]">
         <h3 className="font-display text-lg font-extrabold leading-none text-[#7dd3fc]">
           {displayCourtName(courtRow.courtLabel)}
         </h3>
-        {busy ? <span className="text-[11px] font-bold text-[#7dd3fc]">Saving</span> : null}
+        <button
+          type="button"
+          disabled={!canEdit || busy || !courtRow.canSubmit}
+          onClick={() => void submitCourt(courtRow.courtId)}
+          className="h-6 shrink-0 rounded-md border border-[#7dd3fc]/45 bg-[#7dd3fc]/15 px-2.5 text-[10px] font-black uppercase tracking-wide text-[#7dd3fc] shadow-sm transition active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35"
+        >
+          {busy ? 'Saving' : 'Save'}
+        </button>
       </div>
       <div className="grid min-h-0 flex-1 grid-rows-2 gap-1">
         <TeamScoreRow
