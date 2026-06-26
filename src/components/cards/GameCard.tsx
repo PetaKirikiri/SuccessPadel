@@ -681,7 +681,7 @@ export function GameCardHeader({
               src="/brand/logo-padel.webp"
               alt=""
               aria-hidden="true"
-              className="absolute right-full mr-5 h-16 w-auto max-w-[11rem] shrink-0 object-contain"
+              className="absolute right-full mr-6 h-20 w-auto max-w-[15rem] shrink-0 object-contain"
             />
             <p
               className={`shrink-0 ${gameTitleClass} ${

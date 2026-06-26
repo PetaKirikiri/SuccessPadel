@@ -133,10 +133,10 @@ function TeamScoreRow({
               onClick={() => onScore(scoreValue)}
               className={[
                 'h-8 rounded-md border font-display text-base font-extrabold leading-none tabular-nums transition',
-                'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent',
+                'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7dd3fc]',
                 active
-                  ? 'border-brand-accent bg-brand-primary text-brand-accent-light shadow-sm dark:border-brand-accent dark:bg-brand-accent dark:text-white'
-                  : 'border-brand-primary/25 bg-brand-bg-alt text-brand-primary shadow-sm hover:border-brand-accent/70 hover:bg-brand-accent/10 dark:border-white/15 dark:bg-white/[0.07] dark:text-brand-text dark:hover:bg-white/[0.12]',
+                  ? 'border-[#7dd3fc] bg-brand-primary text-[#7dd3fc] shadow-sm dark:border-[#7dd3fc] dark:bg-[#7dd3fc] dark:text-[#0b2a4a]'
+                  : 'border-brand-primary/25 bg-brand-bg-alt text-brand-primary shadow-sm hover:border-[#7dd3fc]/70 hover:bg-[#7dd3fc]/10 dark:border-white/15 dark:bg-white/[0.07] dark:text-brand-text dark:hover:bg-white/[0.12]',
                 disabled ? 'cursor-not-allowed opacity-45' : 'cursor-pointer',
               ].join(' ')}
             >
@@ -208,15 +208,15 @@ function CourtScoreInputSection({
         type="button"
         disabled={!canEdit || busy || !courtRow.canSubmit}
         onClick={() => void submitCourt(courtRow.courtId)}
-        className="absolute right-2 top-2 z-10 h-7 rounded-md border border-brand-accent/40 bg-brand-accent/15 px-2 text-[10px] font-black uppercase tracking-wide text-brand-accent shadow-sm transition active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35"
+        className="absolute right-2 top-2 z-10 h-7 rounded-md border border-[#7dd3fc]/40 bg-[#7dd3fc]/15 px-2 text-[10px] font-black uppercase tracking-wide text-[#7dd3fc] shadow-sm transition active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35"
       >
         {busy ? '…' : 'Submit'}
       </button>
       <div className="flex shrink-0 items-center justify-between gap-2 rounded-lg bg-brand-primary px-2.5 py-1.5 pr-16 dark:bg-white/[0.08]">
-        <h3 className="font-display text-lg font-extrabold leading-none text-brand-accent-light dark:text-brand-tan">
+        <h3 className="font-display text-lg font-extrabold leading-none text-[#7dd3fc]">
           {displayCourtName(courtRow.courtLabel)}
         </h3>
-        {busy ? <span className="text-[11px] font-bold text-brand-accent-light">Saving</span> : null}
+        {busy ? <span className="text-[11px] font-bold text-[#7dd3fc]">Saving</span> : null}
       </div>
       <div className="grid min-h-0 flex-1 grid-rows-2 gap-1">
         <TeamScoreRow
