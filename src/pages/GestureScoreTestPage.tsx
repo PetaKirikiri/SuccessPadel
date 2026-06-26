@@ -27,6 +27,12 @@ function pointDisplay(points: number): string {
   return ['0', '15', '30', '40'][Math.min(points, 3)] ?? '40'
 }
 
+function formatTimer(totalSeconds: number): string {
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`
+}
+
 function beep(): void {
   try {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext
@@ -75,6 +81,7 @@ export function GestureScoreTestPage() {
   const [ourGames, setOurGames] = useState(0)
   const [theirGames, setTheirGames] = useState(0)
   const [confirmation, setConfirmation] = useState<string | null>(null)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
 
   const stopCamera = () => {
     cameraRunRef.current += 1
@@ -101,6 +108,14 @@ export function GestureScoreTestPage() {
     void startCameraTest()
     return stopCamera
   }, [routeState?.cameraError])
+
+  useEffect(() => {
+    const startedAt = Date.now()
+    const tick = window.setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - startedAt) / 1000))
+    }, 1000)
+    return () => window.clearInterval(tick)
+  }, [])
 
   const applyPadelPoint = (winner: Team): string => {
     const ourWon = winner === 'us'
@@ -250,6 +265,7 @@ export function GestureScoreTestPage() {
   }
 
   const goldenPoint = ourPoints >= 3 && theirPoints >= 3
+  const showStartCameraButton = status === 'error' || status === 'unsupported'
   const goBack = () => {
     stopCamera()
     if (window.history.length > 1) navigate(-1)
@@ -257,114 +273,129 @@ export function GestureScoreTestPage() {
   }
 
   return (
-    <main className="fixed inset-0 z-[420] flex min-h-0 flex-col overflow-hidden bg-brand-primary text-white">
+    <main className="fixed inset-0 z-[420] flex min-h-0 flex-col overflow-hidden bg-[#0b2a4a] text-white">
       <video ref={videoRef} muted playsInline className="pointer-events-none absolute h-1 w-1 opacity-0" />
-      <header className="flex shrink-0 items-center justify-between gap-3 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:px-6">
-        <button
-          type="button"
-          onClick={goBack}
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white active:scale-[0.98]"
-          aria-label="Back"
-        >
-          <ArrowLeft className="h-7 w-7 stroke-[3]" aria-hidden />
-        </button>
-        <div className="min-w-0" aria-hidden />
-        <div className="h-11 w-11" aria-hidden />
+      <header className="flex shrink-0 items-center justify-center px-4 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] md:px-6 md:pb-3">
+        <div className="rounded-full border border-white/15 bg-[#11355c] px-6 py-2 text-center shadow-lg shadow-black/25">
+          <p className="text-[10px] font-black uppercase tracking-wide text-white/55 md:text-xs">
+            Time
+          </p>
+          <p className="font-display text-4xl font-black leading-none text-[#f8fafc] md:text-6xl">
+            {formatTimer(elapsedSeconds)}
+          </p>
+        </div>
+        {showStartCameraButton ? (
+          <button
+            type="button"
+            onClick={() => void startCameraTest()}
+            className="fixed right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-[430] rounded-full border border-[#34d399]/45 bg-[#34d399]/15 px-4 py-2 text-sm font-black uppercase tracking-wide text-[#34d399] shadow-lg shadow-black/25 active:scale-[0.98] md:right-6 md:px-5 md:py-3 md:text-base"
+          >
+            Start Camera
+          </button>
+        ) : null}
       </header>
 
-      <section className="grid min-h-0 flex-1 grid-rows-[auto_auto_minmax(0,1fr)] px-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:px-8">
-        <div className="mx-auto grid w-full max-w-6xl grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 rounded-2xl border border-white/15 bg-white/[0.08] px-4 py-4 shadow-[0_24px_60px_-36px_rgba(0,0,0,0.7)] md:px-6 md:py-5">
+      <section className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto_minmax(0,0.25fr)] px-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:px-8">
+        <div className="mx-auto grid h-full w-full max-w-7xl grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 rounded-2xl border border-white/15 bg-[#11355c] px-4 py-4 shadow-[0_24px_60px_-36px_rgba(0,0,0,0.7)] md:px-8 md:py-6">
           <div className="min-w-0 text-left">
-            <p className="truncate text-sm font-black uppercase tracking-wide text-brand-accent-light/75 md:text-lg">
+            <p className="truncate text-sm font-black uppercase tracking-wide text-white/55 md:text-lg">
               Our Team
             </p>
-            <p className="mt-1 text-sm font-bold text-brand-accent-light/70 md:text-base">
+            <p className="mt-1 text-sm font-bold text-[#7dd3fc] md:text-base">
               Games {ourGames}
             </p>
-            <p className="font-display text-[clamp(5rem,16vw,13rem)] font-black leading-[0.82] text-white">
+            <p className="font-display text-[clamp(7rem,22vw,20rem)] font-black leading-[0.78] text-[#f8fafc]">
               {pointDisplay(ourPoints)}
             </p>
           </div>
 
           <div className="flex min-w-[5rem] flex-col items-center gap-2 md:min-w-[8rem]">
             {goldenPoint ? (
-              <p className="rounded-full border border-white/20 px-3 py-1 text-center text-[10px] font-black uppercase tracking-wide text-brand-accent-light/80 md:text-xs">
+              <p className="rounded-full border border-white/15 bg-[#34d399]/15 px-3 py-1 text-center text-[10px] font-black uppercase tracking-wide text-[#34d399] md:text-xs">
                 Golden point
               </p>
             ) : null}
-            <p className="font-display text-3xl font-black text-white/60 md:text-5xl">:</p>
+            <p className="font-display text-5xl font-black text-[#7dd3fc] md:text-8xl">:</p>
           </div>
 
           <div className="min-w-0 text-right">
-            <p className="truncate text-sm font-black uppercase tracking-wide text-brand-accent-light/75 md:text-lg">
+            <p className="truncate text-sm font-black uppercase tracking-wide text-white/55 md:text-lg">
               Other Team
             </p>
-            <p className="mt-1 text-sm font-bold text-brand-accent-light/70 md:text-base">
+            <p className="mt-1 text-sm font-bold text-[#7dd3fc] md:text-base">
               Games {theirGames}
             </p>
-            <p className="font-display text-[clamp(5rem,16vw,13rem)] font-black leading-[0.82] text-white">
+            <p className="font-display text-[clamp(7rem,22vw,20rem)] font-black leading-[0.78] text-[#f8fafc]">
               {pointDisplay(theirPoints)}
             </p>
           </div>
         </div>
 
-        <div className="mx-auto flex w-full max-w-5xl justify-center gap-3 py-5 md:gap-6 md:py-7">
+        <div className="mx-auto flex w-full max-w-7xl justify-center gap-3 py-4 md:gap-7 md:py-6">
           <button
             type="button"
             onClick={() => addScore('Thumb_Up')}
-            className="flex items-center gap-3 rounded-full border border-emerald-300/35 bg-emerald-400/12 px-4 py-3 text-emerald-200 shadow-lg shadow-emerald-950/20 active:scale-[0.96] md:px-6 md:py-4"
+            className="flex min-w-[7.5rem] items-center justify-center gap-3 rounded-full border border-[#34d399]/45 bg-[#34d399]/15 px-5 py-5 text-[#34d399] shadow-xl shadow-black/25 active:scale-[0.96] md:min-w-[13rem] md:gap-5 md:px-9 md:py-7"
             aria-label="Point for us"
             title="Point for us"
           >
-            <ThumbsUp className="h-8 w-8 stroke-[2.8] text-emerald-300 md:h-11 md:w-11" aria-hidden />
-            <span className="text-lg font-black uppercase tracking-wide md:text-2xl">Win</span>
+            <ThumbsUp className="h-11 w-11 stroke-[3] text-[#34d399] md:h-20 md:w-20" aria-hidden />
+            <span className="text-2xl font-black uppercase tracking-wide md:text-5xl">Win</span>
           </button>
           <button
             type="button"
             onClick={() => addScore('Thumb_Down')}
-            className="flex items-center gap-3 rounded-full border border-rose-300/35 bg-rose-400/12 px-4 py-3 text-rose-200 shadow-lg shadow-rose-950/20 active:scale-[0.96] md:px-6 md:py-4"
+            className="flex min-w-[7.5rem] items-center justify-center gap-3 rounded-full border border-[#60a5fa]/45 bg-[#60a5fa]/15 px-5 py-5 text-[#60a5fa] shadow-xl shadow-black/25 active:scale-[0.96] md:min-w-[13rem] md:gap-5 md:px-9 md:py-7"
             aria-label="Point for them"
             title="Point for them"
           >
-            <ThumbsDown className="h-8 w-8 stroke-[2.8] text-rose-300 md:h-11 md:w-11" aria-hidden />
-            <span className="text-lg font-black uppercase tracking-wide md:text-2xl">Lose</span>
+            <ThumbsDown className="h-11 w-11 stroke-[3] text-[#60a5fa] md:h-20 md:w-20" aria-hidden />
+            <span className="text-2xl font-black uppercase tracking-wide md:text-5xl">Lose</span>
           </button>
           <button
             type="button"
             onClick={reset}
-            className="relative flex items-center gap-3 rounded-full border border-white/20 bg-white/12 px-4 py-3 text-brand-accent-light shadow-lg active:scale-[0.96] md:px-6 md:py-4"
+            className="relative flex min-w-[7.5rem] items-center justify-center gap-3 rounded-full border border-white/15 bg-[#11355c] px-5 py-5 text-[#7dd3fc] shadow-xl shadow-black/25 active:scale-[0.96] md:min-w-[13rem] md:gap-5 md:px-9 md:py-7"
             aria-label="Reset score"
             title="Reset score"
           >
-            <span className="relative flex h-8 w-8 items-center justify-center md:h-11 md:w-11">
-              <Hand className="h-8 w-8 stroke-[2.8] md:h-11 md:w-11" aria-hidden />
-              <Sparkles className="absolute -right-1 -top-1 h-3.5 w-3.5 text-brand-accent md:h-4 md:w-4" aria-hidden />
-              <Sparkles className="absolute -bottom-1 -left-1 h-3 w-3 text-brand-accent-light md:h-3.5 md:w-3.5" aria-hidden />
+            <span className="relative flex h-11 w-11 items-center justify-center md:h-20 md:w-20">
+              <Hand className="h-11 w-11 stroke-[3] md:h-20 md:w-20" aria-hidden />
+              <Sparkles className="absolute -right-1 -top-1 h-4 w-4 text-[#60a5fa] md:h-7 md:w-7" aria-hidden />
+              <Sparkles className="absolute -bottom-1 -left-1 h-3.5 w-3.5 text-[#34d399] md:h-5 md:w-5" aria-hidden />
             </span>
-            <span className="text-lg font-black uppercase tracking-wide md:text-2xl">Reset</span>
+            <span className="text-2xl font-black uppercase tracking-wide md:text-5xl">Reset</span>
           </button>
         </div>
 
         <div className="relative flex min-h-0 items-center justify-center">
           {confirmation ? (
-            <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-brand-accent/20">
-              <div className="rounded-xl bg-white px-6 py-4 text-center font-display text-3xl font-black text-brand-primary shadow-lg md:text-5xl">
+            <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-[#60a5fa]/20">
+              <div className="rounded-xl border border-white/15 bg-[#11355c] px-6 py-4 text-center font-display text-3xl font-black text-[#f8fafc] shadow-lg md:text-5xl">
                 {confirmation}
               </div>
             </div>
           ) : null}
           {error ? (
-            <p className="mx-auto max-w-xl rounded-lg border border-red-200/40 bg-red-500/20 px-3 py-2 text-center text-sm font-bold text-red-50">
+            <p className="mx-auto max-w-xl rounded-lg border border-[#60a5fa]/45 bg-[#60a5fa]/15 px-3 py-2 text-center text-sm font-bold text-[#60a5fa]">
               {error}
             </p>
           ) : null}
           {status === 'unsupported' ? (
-            <p className="mx-auto max-w-xl rounded-lg border border-amber-200/40 bg-amber-400/20 px-3 py-2 text-center text-sm font-bold text-amber-50">
+            <p className="mx-auto max-w-xl rounded-lg border border-[#fbbf24]/45 bg-[#fbbf24]/15 px-3 py-2 text-center text-sm font-bold text-[#fde68a]">
               This browser does not support camera access.
             </p>
           ) : null}
         </div>
       </section>
+      <button
+        type="button"
+        onClick={goBack}
+        className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 z-[430] flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-[#11355c] text-[#f8fafc] active:scale-[0.98] md:h-10 md:w-10"
+        aria-label="Back"
+      >
+        <ArrowLeft className="h-5 w-5 stroke-[3]" aria-hidden />
+      </button>
     </main>
   )
 }

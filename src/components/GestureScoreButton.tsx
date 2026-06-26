@@ -12,7 +12,7 @@ export function GestureScoreButton({ dark, className = '' }: Props) {
   const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
 
-  const openGestureScore = async () => {
+  const startCamera = async () => {
     if (busy) return
     if (!supportsGestureScoreCamera()) {
       navigate('/gesture-score-test', {
@@ -42,7 +42,7 @@ export function GestureScoreButton({ dark, className = '' }: Props) {
   return (
     <button
       type="button"
-      onClick={() => void openGestureScore()}
+      onClick={() => void startCamera()}
       disabled={busy}
       aria-label="Gesture Score Test"
       title="Gesture Score Test"
