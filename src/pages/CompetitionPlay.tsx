@@ -32,6 +32,42 @@ import { supabase } from '../lib/supabaseClient'
 import { pivotScheduleByGame } from '../lib/competitionCourtBoard'
 
 type PlayTab = PlayViewTab
+const TV_SCORE_INPUT_LEAD_MS = 60_000
+
+function gameCourtIds(
+  game: ReturnType<typeof pivotScheduleByGame>[number] | undefined,
+  courtsForGame: { courtId: string; courtName: string }[],
+  courtIdByLabel: Map<string, string>,
+): string[] {
+  if (courtsForGame.length > 0) return courtsForGame.map((court) => court.courtId)
+  return (
+    game?.courts
+      .map((court) => courtIdByLabel.get(court.courtLabel))
+      .filter((courtId): courtId is string => Boolean(courtId)) ?? []
+  )
+}
+
+function gameHasSubmittedScores({
+  game,
+  roundId,
+  courtsForGame,
+  courtIdByLabel,
+  matchForCourt,
+}: {
+  game: ReturnType<typeof pivotScheduleByGame>[number] | undefined
+  roundId?: string
+  courtsForGame: { courtId: string; courtName: string }[]
+  courtIdByLabel: Map<string, string>
+  matchForCourt: ReturnType<typeof useCompetitionBoard>['matchForCourt']
+}): boolean {
+  if (!game || !roundId) return false
+  const courtIds = gameCourtIds(game, courtsForGame, courtIdByLabel)
+  if (courtIds.length === 0) return false
+  return courtIds.every((courtId) => {
+    const score = matchForCourt(roundId, courtId)
+    return score?.teamAPoints != null && score?.teamBPoints != null
+  })
+}
 
 export function CompetitionPlay() {
   const { id } = useParams()
@@ -175,6 +211,36 @@ export function CompetitionPlay() {
     [columns],
   )
   const tvScoreGameNumber = tvGameNumber ?? activeRound?.round_number ?? firstGameNumber
+  const tvScoreGame = useMemo(
+    () => pivotScheduleByGame(columns).find((row) => row.gameNumber === tvScoreGameNumber),
+    [columns, tvScoreGameNumber],
+  )
+  const tvScoreRoundId = tvScoreGameNumber ? roundIdForGame(tvScoreGameNumber) : undefined
+  const tvScoreGameTimes = tvScoreGameNumber ? roundTimesByGame.get(tvScoreGameNumber) : undefined
+  const tvScoreGameSubmitted = useMemo(
+    () =>
+      gameHasSubmittedScores({
+        game: tvScoreGame,
+        roundId: tvScoreRoundId,
+        courtsForGame: tvScoreGameNumber ? (liveCourtsByGame.get(tvScoreGameNumber) ?? []) : [],
+        courtIdByLabel,
+        matchForCourt,
+      }),
+    [
+      courtIdByLabel,
+      liveCourtsByGame,
+      matchForCourt,
+      tvScoreGame,
+      tvScoreGameNumber,
+      tvScoreRoundId,
+    ],
+  )
+  const tvScoreInputWindowOpen = tvScoreGameTimes
+    ? now >= tvScoreGameTimes.endsAt - TV_SCORE_INPUT_LEAD_MS
+    : false
+  const showTvScoreInput =
+    Boolean(session && started && tvScoreRoundId && tvScoreInputWindowOpen) &&
+    !tvScoreGameSubmitted
 
   const complete = isCompetitionComplete(session, rounds, courtMatches)
   const standingsOrder = useMemo(
@@ -229,7 +295,7 @@ export function CompetitionPlay() {
       <CompetitionTvScoreInputPanel
         columns={columns}
         gameNumber={tvScoreGameNumber}
-        roundId={tvScoreGameNumber ? roundIdForGame(tvScoreGameNumber) : undefined}
+        roundId={tvScoreRoundId}
         liveCourtsByGame={liveCourtsByGame}
         courtIdByLabel={courtIdByLabel}
         matchForCourt={matchForCourt}
@@ -328,8 +394,8 @@ export function CompetitionPlay() {
         <div className="tv-play-view flex min-h-0 flex-1 flex-col overflow-hidden">
           <CompetitionPlayTvView
             {...sharedViewProps}
-            leaderboardBody={tvScoreInput}
-            leaderboardLabel="Score input"
+            leaderboardBody={showTvScoreInput ? tvScoreInput : leaderboardTv}
+            leaderboardLabel={showTvScoreInput ? 'Score input' : t('leaderboard.standings')}
           />
         </div>
       ) : (
