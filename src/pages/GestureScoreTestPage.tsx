@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { FilesetResolver, GestureRecognizer } from '@mediapipe/tasks-vision'
-import { ArrowLeft, Hand, Sparkles, ThumbsDown, ThumbsUp } from 'lucide-react'
+import { FilesetResolver, GestureRecognizer, type NormalizedLandmark } from '@mediapipe/tasks-vision'
+import { ArrowLeft } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
   requestGestureScoreCamera,
@@ -9,15 +9,21 @@ import {
 } from '../lib/gestureScoreCamera'
 import { useGesturePadChrome } from '../lib/gesturePadChrome'
 
-type GestureName = 'Thumb_Up' | 'Thumb_Down'
+type FingerAction = 'win' | 'lose' | 'undo' | 'reset'
 type Status = 'idle' | 'loading' | 'running' | 'unsupported' | 'error'
 type Team = 'us' | 'them'
+type ScoreSnapshot = {
+  ourPoints: number
+  theirPoints: number
+  ourGames: number
+  theirGames: number
+}
 type GestureScoreLocationState = {
   cameraError?: string
 }
 
-const HOLD_MS = 700
-const COOLDOWN_MS = 2000
+const HOLD_MS = 400
+const COOLDOWN_MS = 1200
 const WASM_BASE =
   'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm'
 const MODEL_URL =
@@ -31,6 +37,26 @@ function formatTimer(totalSeconds: number): string {
   const minutes = Math.floor(totalSeconds / 60)
   const seconds = totalSeconds % 60
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
+}
+
+function isFingerExtended(landmarks: NormalizedLandmark[], tip: number, pip: number): boolean {
+  return landmarks[tip]?.y < landmarks[pip]?.y - 0.035
+}
+
+function fingerActionFromLandmarks(landmarks: NormalizedLandmark[] | undefined): FingerAction | null {
+  if (!landmarks?.length) return null
+  const extended = [
+    isFingerExtended(landmarks, 8, 6),
+    isFingerExtended(landmarks, 12, 10),
+    isFingerExtended(landmarks, 16, 14),
+    isFingerExtended(landmarks, 20, 18),
+  ].filter(Boolean).length
+
+  if (extended === 1) return 'win'
+  if (extended === 2) return 'lose'
+  if (extended === 3) return 'undo'
+  if (extended === 4) return 'reset'
+  return null
 }
 
 function beep(): void {
@@ -49,8 +75,20 @@ function beep(): void {
     oscillator.stop(ctx.currentTime + 0.09)
     window.setTimeout(() => void ctx.close(), 160)
   } catch {
-    // Visual confirmation still works if audio is unavailable.
+    // Scoring still works if audio is unavailable.
   }
+}
+
+function FingerCountIcon({ count }: { count: 1 | 2 | 3 | 4 }) {
+  return (
+    <img
+      src={`/gesture-score/${count === 1 ? 'one-finger' : count === 2 ? 'two-fingers' : count === 3 ? 'three-fingers' : 'four-fingers'}.png`}
+      alt=""
+      className="h-9 w-9 shrink-0 object-contain md:h-20 md:w-20"
+      aria-hidden="true"
+      draggable={false}
+    />
+  )
 }
 
 declare global {
@@ -68,11 +106,12 @@ export function GestureScoreTestPage() {
   const streamRef = useRef<MediaStream | null>(null)
   const recognizerRef = useRef<GestureRecognizer | null>(null)
   const frameRef = useRef<number | null>(null)
-  const heldGestureRef = useRef<GestureName | null>(null)
+  const heldGestureRef = useRef<FingerAction | null>(null)
   const heldSinceRef = useRef<number | null>(null)
   const cooldownUntilRef = useRef(0)
   const cameraRunRef = useRef(0)
-  const scoreRef = useRef({ ourPoints: 0, theirPoints: 0, ourGames: 0, theirGames: 0 })
+  const scoreRef = useRef<ScoreSnapshot>({ ourPoints: 0, theirPoints: 0, ourGames: 0, theirGames: 0 })
+  const historyRef = useRef<ScoreSnapshot[]>([])
 
   const [status, setStatus] = useState<Status>('idle')
   const [error, setError] = useState<string | null>(null)
@@ -80,7 +119,6 @@ export function GestureScoreTestPage() {
   const [theirPoints, setTheirPoints] = useState(0)
   const [ourGames, setOurGames] = useState(0)
   const [theirGames, setTheirGames] = useState(0)
-  const [confirmation, setConfirmation] = useState<string | null>(null)
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
 
   const stopCamera = () => {
@@ -117,49 +155,63 @@ export function GestureScoreTestPage() {
     return () => window.clearInterval(tick)
   }, [])
 
-  const applyPadelPoint = (winner: Team): string => {
+  const applyScoreSnapshot = (snapshot: ScoreSnapshot) => {
+    scoreRef.current = snapshot
+    setOurPoints(snapshot.ourPoints)
+    setTheirPoints(snapshot.theirPoints)
+    setOurGames(snapshot.ourGames)
+    setTheirGames(snapshot.theirGames)
+  }
+
+  const pushScoreSnapshot = () => {
+    historyRef.current = [...historyRef.current.slice(-19), { ...scoreRef.current }]
+  }
+
+  const undoLastAction = () => {
+    const previous = historyRef.current[historyRef.current.length - 1]
+    if (!previous) return
+    historyRef.current = historyRef.current.slice(0, -1)
+    applyScoreSnapshot(previous)
+  }
+
+  const applyPadelPoint = (winner: Team): void => {
     const ourWon = winner === 'us'
     const current = scoreRef.current
     const winnerPoints = ourWon ? current.ourPoints : current.theirPoints
-    const loserPoints = ourWon ? current.theirPoints : current.ourPoints
     const gameWon = winnerPoints >= 3
+    pushScoreSnapshot()
 
     if (gameWon) {
-      scoreRef.current = {
+      applyScoreSnapshot({
         ourPoints: 0,
         theirPoints: 0,
         ourGames: current.ourGames + (ourWon ? 1 : 0),
         theirGames: current.theirGames + (ourWon ? 0 : 1),
-      }
-      setOurGames(scoreRef.current.ourGames)
-      setTheirGames(scoreRef.current.theirGames)
-      setOurPoints(0)
-      setTheirPoints(0)
-      return `${ourWon ? 'Our Team' : 'Other Team'} wins game`
+      })
+      return
     }
 
     const nextWinnerPoints = winnerPoints + 1
-    scoreRef.current = {
+    applyScoreSnapshot({
       ...current,
       ourPoints: ourWon ? nextWinnerPoints : current.ourPoints,
       theirPoints: ourWon ? current.theirPoints : nextWinnerPoints,
-    }
-    setOurPoints(scoreRef.current.ourPoints)
-    setTheirPoints(scoreRef.current.theirPoints)
-
-    return nextWinnerPoints === 3 && loserPoints === 3
-      ? 'Golden point'
-      : `${ourWon ? 'Our Team' : 'Other Team'} ${pointDisplay(nextWinnerPoints)}`
+    })
   }
 
-  const addScore = (gesture: GestureName) => {
-    cooldownUntilRef.current = performance.now() + COOLDOWN_MS
+  const applyFingerAction = (action: FingerAction) => {
     heldGestureRef.current = null
     heldSinceRef.current = null
-    const scoreMessage = applyPadelPoint(gesture === 'Thumb_Up' ? 'us' : 'them')
-    setConfirmation(scoreMessage)
+    if (action === 'reset') {
+      pushScoreSnapshot()
+      reset()
+    } else if (action === 'undo') {
+      undoLastAction()
+    } else {
+      applyPadelPoint(action === 'win' ? 'us' : 'them')
+    }
+    cooldownUntilRef.current = performance.now() + COOLDOWN_MS
     beep()
-    window.setTimeout(() => setConfirmation(null), 850)
   }
 
   const detectFrame = () => {
@@ -172,11 +224,9 @@ export function GestureScoreTestPage() {
 
     const now = performance.now()
     const result = recognizer.recognizeForVideo(video, now)
-    const category = result.gestures[0]?.[0]
-    const gesture = category?.categoryName as GestureName | undefined
-    const accepted = gesture === 'Thumb_Up' || gesture === 'Thumb_Down'
+    const action = fingerActionFromLandmarks(result.landmarks[0])
 
-    if (!accepted) {
+    if (!action) {
       heldGestureRef.current = null
       heldSinceRef.current = null
       frameRef.current = requestAnimationFrame(detectFrame)
@@ -188,12 +238,12 @@ export function GestureScoreTestPage() {
       return
     }
 
-    if (heldGestureRef.current !== gesture) {
-      heldGestureRef.current = gesture
+    if (heldGestureRef.current !== action) {
+      heldGestureRef.current = action
       heldSinceRef.current = now
     } else {
       const heldFor = now - (heldSinceRef.current ?? now)
-      if (heldFor >= HOLD_MS) addScore(gesture)
+      if (heldFor >= HOLD_MS) applyFingerAction(action)
     }
 
     frameRef.current = requestAnimationFrame(detectFrame)
@@ -203,7 +253,6 @@ export function GestureScoreTestPage() {
     const runId = cameraRunRef.current + 1
     cameraRunRef.current = runId
     setError(null)
-    setConfirmation(null)
     if (!supportsGestureScoreCamera()) {
       setStatus('unsupported')
       return
@@ -253,12 +302,7 @@ export function GestureScoreTestPage() {
   }
 
   const reset = () => {
-    setOurPoints(0)
-    setTheirPoints(0)
-    setOurGames(0)
-    setTheirGames(0)
-    scoreRef.current = { ourPoints: 0, theirPoints: 0, ourGames: 0, theirGames: 0 }
-    setConfirmation(null)
+    applyScoreSnapshot({ ourPoints: 0, theirPoints: 0, ourGames: 0, theirGames: 0 })
     heldGestureRef.current = null
     heldSinceRef.current = null
     cooldownUntilRef.current = 0
@@ -274,7 +318,14 @@ export function GestureScoreTestPage() {
 
   return (
     <main className="fixed inset-0 z-[420] flex min-h-0 flex-col overflow-hidden bg-[#0b2a4a] text-white">
-      <video ref={videoRef} muted playsInline className="pointer-events-none absolute h-1 w-1 opacity-0" />
+      <video
+        ref={videoRef}
+        muted
+        playsInline
+        className={`pointer-events-none fixed right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-[430] h-16 w-24 scale-x-[-1] rounded-xl border border-white/20 bg-[#06192d] object-cover shadow-2xl shadow-black/35 transition-opacity md:right-6 md:h-36 md:w-48 ${
+          status === 'running' || status === 'loading' ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
       <header className="flex shrink-0 items-center justify-center px-4 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] md:px-6 md:pb-3">
         <div className="rounded-full border border-white/15 bg-[#11355c] px-6 py-2 text-center shadow-lg shadow-black/25">
           <p className="text-[10px] font-black uppercase tracking-wide text-white/55 md:text-xs">
@@ -295,21 +346,21 @@ export function GestureScoreTestPage() {
         ) : null}
       </header>
 
-      <section className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto_minmax(0,0.25fr)] px-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:px-8">
-        <div className="mx-auto grid h-full w-full max-w-7xl grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 rounded-2xl border border-white/15 bg-[#11355c] px-4 py-4 shadow-[0_24px_60px_-36px_rgba(0,0,0,0.7)] md:px-8 md:py-6">
-          <div className="min-w-0 text-left">
+      <section className="grid min-h-0 flex-1 grid-rows-[minmax(18rem,1fr)_auto_minmax(2rem,0.12fr)] gap-4 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:gap-6 md:px-8">
+        <div className="mx-auto grid h-full min-h-0 w-full max-w-7xl grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-stretch gap-3 overflow-hidden rounded-2xl border border-white/15 bg-[#11355c] px-4 py-4 shadow-[0_24px_60px_-36px_rgba(0,0,0,0.7)] md:px-8 md:py-6">
+          <div className="flex min-h-0 min-w-0 flex-col justify-center text-left">
             <p className="truncate text-sm font-black uppercase tracking-wide text-white/55 md:text-lg">
               Our Team
             </p>
             <p className="mt-1 text-sm font-bold text-[#7dd3fc] md:text-base">
               Games {ourGames}
             </p>
-            <p className="font-display text-[clamp(7rem,22vw,20rem)] font-black leading-[0.78] text-[#f8fafc]">
+            <p className="mt-4 font-display text-[clamp(7rem,22vw,20rem)] font-black leading-none text-[#f8fafc]">
               {pointDisplay(ourPoints)}
             </p>
           </div>
 
-          <div className="flex min-w-[5rem] flex-col items-center gap-2 md:min-w-[8rem]">
+          <div className="flex min-h-0 min-w-[5rem] flex-col items-center justify-center gap-2 md:min-w-[8rem]">
             {goldenPoint ? (
               <p className="rounded-full border border-white/15 bg-[#34d399]/15 px-3 py-1 text-center text-[10px] font-black uppercase tracking-wide text-[#34d399] md:text-xs">
                 Golden point
@@ -318,64 +369,63 @@ export function GestureScoreTestPage() {
             <p className="font-display text-5xl font-black text-[#7dd3fc] md:text-8xl">:</p>
           </div>
 
-          <div className="min-w-0 text-right">
+          <div className="flex min-h-0 min-w-0 flex-col justify-center text-right">
             <p className="truncate text-sm font-black uppercase tracking-wide text-white/55 md:text-lg">
               Other Team
             </p>
             <p className="mt-1 text-sm font-bold text-[#7dd3fc] md:text-base">
               Games {theirGames}
             </p>
-            <p className="font-display text-[clamp(7rem,22vw,20rem)] font-black leading-[0.78] text-[#f8fafc]">
+            <p className="mt-4 font-display text-[clamp(7rem,22vw,20rem)] font-black leading-none text-[#f8fafc]">
               {pointDisplay(theirPoints)}
             </p>
           </div>
         </div>
 
-        <div className="mx-auto flex w-full max-w-7xl justify-center gap-3 py-4 md:gap-7 md:py-6">
+        <div className="mx-auto grid w-full max-w-7xl grid-cols-4 gap-2 py-3 md:gap-4 md:py-5">
           <button
             type="button"
-            onClick={() => addScore('Thumb_Up')}
-            className="flex min-w-[7.5rem] items-center justify-center gap-3 rounded-full border border-[#34d399]/45 bg-[#34d399]/15 px-5 py-5 text-[#34d399] shadow-xl shadow-black/25 active:scale-[0.96] md:min-w-[13rem] md:gap-5 md:px-9 md:py-7"
+            onClick={() => applyFingerAction('win')}
+            className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-full border border-[#34d399]/45 bg-[#34d399]/15 px-1 py-3 text-[#34d399] shadow-xl shadow-black/25 active:scale-[0.96] md:flex-row md:gap-5 md:px-7 md:py-7"
             aria-label="Point for us"
             title="Point for us"
           >
-            <ThumbsUp className="h-11 w-11 stroke-[3] text-[#34d399] md:h-20 md:w-20" aria-hidden />
-            <span className="text-2xl font-black uppercase tracking-wide md:text-5xl">Win</span>
+            <FingerCountIcon count={1} />
+            <span className="text-[11px] font-black uppercase tracking-wide md:text-4xl">Win</span>
           </button>
           <button
             type="button"
-            onClick={() => addScore('Thumb_Down')}
-            className="flex min-w-[7.5rem] items-center justify-center gap-3 rounded-full border border-[#60a5fa]/45 bg-[#60a5fa]/15 px-5 py-5 text-[#60a5fa] shadow-xl shadow-black/25 active:scale-[0.96] md:min-w-[13rem] md:gap-5 md:px-9 md:py-7"
+            onClick={() => applyFingerAction('lose')}
+            className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-full border border-[#60a5fa]/45 bg-[#60a5fa]/15 px-1 py-3 text-[#60a5fa] shadow-xl shadow-black/25 active:scale-[0.96] md:flex-row md:gap-5 md:px-7 md:py-7"
             aria-label="Point for them"
             title="Point for them"
           >
-            <ThumbsDown className="h-11 w-11 stroke-[3] text-[#60a5fa] md:h-20 md:w-20" aria-hidden />
-            <span className="text-2xl font-black uppercase tracking-wide md:text-5xl">Lose</span>
+            <FingerCountIcon count={2} />
+            <span className="text-[11px] font-black uppercase tracking-wide md:text-4xl">Lose</span>
           </button>
           <button
             type="button"
-            onClick={reset}
-            className="relative flex min-w-[7.5rem] items-center justify-center gap-3 rounded-full border border-white/15 bg-[#11355c] px-5 py-5 text-[#7dd3fc] shadow-xl shadow-black/25 active:scale-[0.96] md:min-w-[13rem] md:gap-5 md:px-9 md:py-7"
+            onClick={() => applyFingerAction('undo')}
+            className="relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-full border border-white/15 bg-[#11355c] px-1 py-3 text-[#7dd3fc] shadow-xl shadow-black/25 active:scale-[0.96] md:flex-row md:gap-5 md:px-7 md:py-7"
+            aria-label="Undo last score action"
+            title="Undo last score action"
+          >
+            <FingerCountIcon count={3} />
+            <span className="text-[11px] font-black uppercase tracking-wide md:text-4xl">Undo</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => applyFingerAction('reset')}
+            className="relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-full border border-white/15 bg-[#11355c] px-1 py-3 text-[#7dd3fc] shadow-xl shadow-black/25 active:scale-[0.96] md:flex-row md:gap-5 md:px-7 md:py-7"
             aria-label="Reset score"
             title="Reset score"
           >
-            <span className="relative flex h-11 w-11 items-center justify-center md:h-20 md:w-20">
-              <Hand className="h-11 w-11 stroke-[3] md:h-20 md:w-20" aria-hidden />
-              <Sparkles className="absolute -right-1 -top-1 h-4 w-4 text-[#60a5fa] md:h-7 md:w-7" aria-hidden />
-              <Sparkles className="absolute -bottom-1 -left-1 h-3.5 w-3.5 text-[#34d399] md:h-5 md:w-5" aria-hidden />
-            </span>
-            <span className="text-2xl font-black uppercase tracking-wide md:text-5xl">Reset</span>
+            <FingerCountIcon count={4} />
+            <span className="text-[11px] font-black uppercase tracking-wide md:text-4xl">Reset</span>
           </button>
         </div>
 
         <div className="relative flex min-h-0 items-center justify-center">
-          {confirmation ? (
-            <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-[#60a5fa]/20">
-              <div className="rounded-xl border border-white/15 bg-[#11355c] px-6 py-4 text-center font-display text-3xl font-black text-[#f8fafc] shadow-lg md:text-5xl">
-                {confirmation}
-              </div>
-            </div>
-          ) : null}
           {error ? (
             <p className="mx-auto max-w-xl rounded-lg border border-[#60a5fa]/45 bg-[#60a5fa]/15 px-3 py-2 text-center text-sm font-bold text-[#60a5fa]">
               {error}
