@@ -124,6 +124,17 @@ function MainAppRoutes() {
         }
       />
       <Route
+        path="/gesture-score-test"
+        element={
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+            <Suspense fallback={<p className="game-subtle p-4 text-center">Loading…</p>}>
+              <GestureScoreTestRoute />
+            </Suspense>
+          </div>
+        }
+      />
+      <Route path="/dev/gesture-score-test" element={<Navigate to="/gesture-score-test" replace />} />
+      <Route
         element={
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
             <Layout />
@@ -131,15 +142,6 @@ function MainAppRoutes() {
         }
       >
         <Route index element={<Navigate to="/friendly" replace />} />
-        <Route
-          path="gesture-score-test"
-          element={
-            <Suspense fallback={<p className="game-subtle p-4 text-center">Loading…</p>}>
-              <GestureScoreTestRoute />
-            </Suspense>
-          }
-        />
-        <Route path="dev/gesture-score-test" element={<Navigate to="/gesture-score-test" replace />} />
         <Route path="friendly" element={<FriendlyHomePage />} />
         <Route path="friendly/new" element={<FriendlyGameForm />} />
         <Route

@@ -320,7 +320,7 @@ export function GestureScoreTestPage() {
   }
 
   return (
-    <main className="fixed inset-0 z-[420] flex min-h-0 flex-col overflow-hidden bg-[#0b2a4a] text-white">
+    <main className="fixed inset-y-0 left-0 right-0 z-[420] flex min-h-0 w-screen max-w-none flex-col overflow-hidden bg-[#0b2a4a] text-white [margin-left:calc(-1*env(safe-area-inset-left,0px))] [margin-right:calc(-1*env(safe-area-inset-right,0px))] [width:100dvw]">
       <video
         ref={videoRef}
         muted
