@@ -35,6 +35,8 @@ export function AppShell({ children }: Props) {
 
   const hideGlobalChrome =
     gesturePadActive || isGesturePadRoute(pathname) || isTvKiosk
+  const showFloatingGestureButton =
+    hideGlobalChrome && !gesturePadActive && !isGesturePadRoute(pathname) && pathname !== '/gesture-score-test'
 
   if (isPlayerLinkHandoffSearch(search)) {
     return (
@@ -49,8 +51,8 @@ export function AppShell({ children }: Props) {
     <GesturePadChromeContext.Provider value={setGesturePadActive}>
       <div className="viewport-lock flex flex-col">
         {!hideGlobalChrome ? <GlobalProfileChip /> : null}
-        {isTvKiosk && !gesturePadActive ? (
-          <div className="pointer-events-none fixed right-4 top-[max(0.75rem,env(safe-area-inset-top))] z-[250]">
+        {showFloatingGestureButton ? (
+          <div className="pointer-events-none fixed right-6 top-[max(1rem,env(safe-area-inset-top))] z-[1000]">
             <GestureScoreButton dark={theme === 'dark'} className="pointer-events-auto" />
           </div>
         ) : null}
