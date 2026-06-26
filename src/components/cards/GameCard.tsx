@@ -608,7 +608,7 @@ export function GameCardHeader({
   }`
   const navBtnClass = finished
     ? 'text-[#602d24]/80 hover:bg-[#602d24]/5'
-    : 'text-[#fff3da] hover:bg-[#fff3da]/10'
+    : 'text-[#7dd3fc] hover:bg-[#7dd3fc]/10'
 
   const collapseBtnClass = `flex min-w-12 shrink-0 items-center justify-center self-stretch border-l px-4 text-2xl leading-none transition active:opacity-70 md:min-w-14 md:px-5 md:text-3xl ${
     finished
@@ -635,7 +635,7 @@ export function GameCardHeader({
       <p
         className={`font-display font-bold leading-none tabular-nums ${
           tvCompact ? 'text-4xl md:text-5xl' : 'text-2xl md:text-3xl'
-        } ${finished ? 'text-[#602d24]' : 'text-[#fff3da]'}`}
+        } ${finished ? 'text-[#602d24]' : 'text-[#7dd3fc]'}`}
       >
         {countdown}
       </p>
@@ -649,7 +649,7 @@ export function GameCardHeader({
           {onBack ? (
             <button
               type="button"
-              className="absolute left-3 top-2 z-20 shrink-0 px-1 py-0.5 text-sm font-black uppercase tracking-wide text-[#fff3da]/75 transition hover:text-[#fff3da]"
+              className="absolute left-3 top-2 z-20 shrink-0 px-1 py-0.5 text-sm font-black uppercase tracking-wide text-[#7dd3fc]/75 transition hover:text-[#7dd3fc]"
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
@@ -676,11 +676,11 @@ export function GameCardHeader({
               src="/brand/logo-padel.webp"
               alt=""
               aria-hidden="true"
-              className="absolute right-full mr-4 h-14 w-auto max-w-[9rem] shrink-0 object-contain"
+              className="absolute right-full mr-5 h-16 w-auto max-w-[11rem] shrink-0 object-contain"
             />
             <p
               className={`shrink-0 ${gameTitleClass} ${
-                finished ? 'text-[#602d24]/80' : 'text-[#fff3da]'
+                finished ? 'text-[#602d24]/80' : 'text-[#7dd3fc]'
               }`}
             >
               {t('competition.game', { number: gameNumber })}
@@ -689,7 +689,7 @@ export function GameCardHeader({
               {showLiveBadge ? (
                 <span
                   className={`shrink-0 text-xs font-semibold md:text-sm ${
-                    finished ? 'text-[#602d24]/70' : 'text-[#fff3da]/80'
+                    finished ? 'text-[#602d24]/70' : 'text-[#7dd3fc]/80'
                   }`}
                 >
                   {t('competition.live')}
@@ -703,7 +703,7 @@ export function GameCardHeader({
               {timeLabel ? (
                 <span
                   className={`shrink-0 text-[11px] tabular-nums md:text-sm ${
-                    finished ? 'text-[#602d24]/65' : 'text-[#fff3da]/70'
+                    finished ? 'text-[#602d24]/65' : 'text-[#7dd3fc]/70'
                   }`}
                 >
                   {timeLabel}
