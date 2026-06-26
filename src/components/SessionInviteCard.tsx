@@ -69,6 +69,7 @@ function CompetitionInviteCard({
 }: CompetitionProps & { t: TranslateFn; locale: AppLocale }) {
   const [busy, setBusy] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const canEditSetup = isAdmin && row.status !== 'complete'
   const canEditRoster = isAdmin && row.status !== 'complete' && !row.competition_started_at
 
   const source: SessionSource = { kind: 'competition', row }
@@ -99,8 +100,8 @@ function CompetitionInviteCard({
       currentUserId={userId}
       qrUrl={competitionPlayUrl(row.id)}
       qrAriaLabel={t('leaderboard.viewAlongHint')}
-      canEdit={canEditRoster}
-      editTo={canEditRoster ? `/competitions/${row.id}/edit` : undefined}
+      canEdit={canEditSetup}
+      editTo={canEditSetup ? `/competitions/${row.id}/edit` : undefined}
       editAriaLabel={t('competition.edit')}
       rosterSection={
         canEditRoster ? (
