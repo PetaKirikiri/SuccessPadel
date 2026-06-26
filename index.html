@@ -150,7 +150,7 @@
           return el.hasAttribute && el.hasAttribute('data-vercel-toolbar')
         }
         function run() {
-          if (document.body && isTvKiosk) {
+          if (document.body && isTvKiosk && !document.documentElement.hasAttribute('data-legacy-browser')) {
             Array.prototype.slice.call(document.body.children).forEach(function (child) {
               if (child.id !== 'root') hide(child)
             })

@@ -758,7 +758,7 @@ vercel-live-feedback,
 }
 
 /* TV competition scoreboard — hide anything Vercel injects beside #root */
-html[data-tv-kiosk] body > :not(#root) {
+html[data-tv-kiosk]:not([data-legacy-browser]) body > :not(#root) {
   display: none !important;
   visibility: hidden !important;
   pointer-events: none !important;
