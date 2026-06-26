@@ -56,7 +56,6 @@ import {
   competitionPlayStartFromAnchorIso,
   DEFAULT_SINGLES_COURT_COUNT,
   playersFromCourtCount,
-  resolveCompetitionSchedule,
   teamsFromCourtCount,
   type CompetitionPlayStartMinute,
   type CourtCount,
@@ -445,16 +444,8 @@ export function CompetitionForm() {
         breakMinutes: Math.max(GAME_SETUP_MIN_BREAK_MINUTES, breakMinutesFromConfig(config)),
       })
       if (data.starts_at) {
-        const resolvedSchedule = resolveCompetitionSchedule({
-          starts_at: data.starts_at,
-          ends_at: data.ends_at,
-          scoring_config: config ?? {},
-          target_players: data.target_players,
-          max_players: data.max_players,
-        })
-        const playStart = resolvedSchedule.playStartsAt ?? new Date(data.starts_at)
-        setDay(bangkokDateFromIso(playStart.toISOString()))
-        const parts = clubTimePartsFromDate(playStart)
+        setDay(bangkokDateFromIso(data.starts_at))
+        const parts = clubTimePartsFromDate(new Date(data.starts_at))
         setStartHour(parts.hour)
         setStartMinute(parts.minute)
         if (data.ends_at) {
