@@ -8,6 +8,7 @@ import {
   effectiveScoreField,
   parseScoreField,
   scoreDigitsOnly,
+  scoreFieldSubmitValue,
 } from '../../lib/competitionScoreInput'
 import { liveCourtScoreKey, type LiveCourtGamesScore } from '../../lib/liveCourtScore'
 import type { FriendlyCourtScoreSubmit } from '../../lib/friendlyManualScore'
@@ -83,8 +84,6 @@ function nextCourtDraft(
     teamB: current?.teamB ?? '',
     [side]: scoreDigitsOnly(value),
   }
-  const otherSide = side === 'teamA' ? 'teamB' : 'teamA'
-  if (next[otherSide] === '') next[otherSide] = '0'
   return next
 }
 
@@ -273,9 +272,11 @@ export function useGameScoring({
 
   const submitCourt = async (courtId: string) => {
     const row = courtScoreRows.find((r) => r.courtId === courtId)
-    if (!onSubmitScores || !gameRoundId || !row || !row.canSubmit || row.teamA === null || row.teamB === null) {
+    if (!onSubmitScores || !gameRoundId || !row || !row.canSubmit) {
       return
     }
+    const teamA = scoreFieldSubmitValue(row.teamAStr)
+    const teamB = scoreFieldSubmitValue(row.teamBStr)
     setBusyCourtKey(courtId)
     setError(null)
     try {
@@ -283,13 +284,13 @@ export function useGameScoring({
         {
           roundId: gameRoundId,
           courtId,
-          teamA: row.teamA,
-          teamB: row.teamB,
+          teamA,
+          teamB,
         },
       ])
       setDrafts((prev) => ({
         ...prev,
-        [courtId]: { teamA: String(row.teamA), teamB: String(row.teamB) },
+        [courtId]: { teamA: String(teamA), teamB: String(teamB) },
       }))
       await Promise.resolve(onSaved?.())
       setDirtyCourts((prev) => {
@@ -397,7 +398,9 @@ function useFriendlyManualScoring({
 
   const submitCourt = async (courtKey: string) => {
     const row = courtScoreRows.find((r) => r.courtKey === courtKey)
-    if (!onSubmit || !row || !row.canSubmit || row.teamA === null || row.teamB === null) return
+    if (!onSubmit || !row || !row.canSubmit) return
+    const teamA = scoreFieldSubmitValue(row.teamAStr)
+    const teamB = scoreFieldSubmitValue(row.teamBStr)
     setBusyCourtKey(courtKey)
     setError(null)
     try {
@@ -405,15 +408,15 @@ function useFriendlyManualScoring({
         {
           gameNumber: game.gameNumber,
           courtLabel: row.courtLabel,
-          teamA: row.teamA,
-          teamB: row.teamB,
+          teamA,
+          teamB,
           teamAPlayers: row.court.teamAPlayers,
           teamBPlayers: row.court.teamBPlayers,
         },
       ])
       setDrafts((prev) => ({
         ...prev,
-        [courtKey]: { teamA: String(row.teamA), teamB: String(row.teamB) },
+        [courtKey]: { teamA: String(teamA), teamB: String(teamB) },
       }))
       await Promise.resolve(onSaved?.())
       setDirtyCourts((prev) => {

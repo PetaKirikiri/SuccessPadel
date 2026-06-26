@@ -21,7 +21,13 @@ export function courtGameScoreMax(playTo?: number): number {
 }
 
 export function courtSubmitReady(teamAStr: string, teamBStr: string, _playTo?: number): boolean {
-  return courtScoresReady(teamAStr, teamBStr)
+  if (teamAStr === '' && teamBStr === '') return false
+  return (teamAStr === '' || parseScoreField(teamAStr) !== null) &&
+    (teamBStr === '' || parseScoreField(teamBStr) !== null)
+}
+
+export function scoreFieldSubmitValue(value: string): number {
+  return parseScoreField(value) ?? 0
 }
 
 export function bumpScoreField(value: string, delta: number, max?: number): string {
