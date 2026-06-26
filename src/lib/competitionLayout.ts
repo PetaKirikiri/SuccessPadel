@@ -48,7 +48,7 @@ export const AMERICANO_GAME_COUNTS = [5, 6, 7, 8, 9, 10, 11] as const
 export const BREAK_MINUTE_OPTIONS = [2, 3, 4, 5] as const
 export const DEFAULT_BREAK_MINUTES = 3
 export const DEFAULT_GAME_MINUTES = 14
-/** Historical default. New competition setup treats starts_at as the actual game 1 start. */
+/** Historical default used when an event has no explicit end window yet. */
 export const AMERICANO_SCHEDULE_LEAD_IN_MINUTES = 4
 export const COMPETITION_BREAK_MINUTES = DEFAULT_BREAK_MINUTES
 
@@ -165,7 +165,7 @@ export function resolveCompetitionSchedule(
       ? scheduleLeadInMinutes(eventMinutes, totalGames, gameMinutes, breakMinutes)
       : COMPETITION_SCHEDULE.leadInMinutes
   const usedMinutes = leadInMinutes + playBlockMinutes
-  const fits = eventMinutes <= 0 || playBlockMinutes <= eventMinutes
+  const fits = eventMinutes <= 0 || usedMinutes <= eventMinutes
 
   const playStartsAt =
     anchorStartsAt != null
@@ -363,12 +363,14 @@ export function gameDurationForEvent(
 }
 
 export function scheduleLeadInMinutes(
-  _eventMinutes: number,
-  _totalGames: number,
-  _gameMinutes: number,
-  _breakMinutes: number,
+  eventMinutes: number,
+  totalGames: number,
+  gameMinutes: number,
+  breakMinutes: number,
 ): number {
-  return 0
+  if (eventMinutes <= 0 || totalGames <= 0 || gameMinutes <= 0) return 0
+  const playBlock = totalScheduleMinutes(totalGames, gameMinutes, breakMinutes)
+  return Math.max(0, Math.floor(eventMinutes - playBlock))
 }
 
 export function resolvedGameMinutes(
