@@ -203,29 +203,31 @@ function CourtScoreInputSection({
   const disabled = !canEdit
 
   return (
-    <section className="space-y-1 rounded-xl border border-brand-primary/30 bg-brand-bg-alt p-1.5 shadow-sm dark:border-white/12 dark:bg-white/[0.05]">
-      <div className="flex items-center justify-between gap-2 rounded-lg bg-brand-primary px-2.5 py-1.5 dark:bg-white/[0.08]">
+    <section className="flex min-h-0 flex-col gap-1 rounded-xl border border-brand-primary/30 bg-brand-bg-alt p-1.5 shadow-sm dark:border-white/12 dark:bg-white/[0.05]">
+      <div className="flex shrink-0 items-center justify-between gap-2 rounded-lg bg-brand-primary px-2.5 py-1.5 dark:bg-white/[0.08]">
         <h3 className="font-display text-lg font-extrabold leading-none text-brand-accent-light dark:text-brand-fun">
           {displayCourtName(courtRow.courtLabel)}
         </h3>
         {busy ? <span className="text-[11px] font-bold text-brand-accent-light">Saving</span> : null}
       </div>
-      <TeamScoreRow
-        label={sideLabels?.teamALabel}
-        players={teamAPlayers}
-        score={courtRow.teamAStr}
-        onScore={(value) => setDraft(courtRow.courtId, 'teamA', value)}
-        disabled={disabled}
-        competitionId={competitionId}
-      />
-      <TeamScoreRow
-        label={sideLabels?.teamBLabel}
-        players={teamBPlayers}
-        score={courtRow.teamBStr}
-        onScore={(value) => setDraft(courtRow.courtId, 'teamB', value)}
-        disabled={disabled}
-        competitionId={competitionId}
-      />
+      <div className="grid min-h-0 flex-1 grid-rows-2 gap-1">
+        <TeamScoreRow
+          label={sideLabels?.teamALabel}
+          players={teamAPlayers}
+          score={courtRow.teamAStr}
+          onScore={(value) => setDraft(courtRow.courtId, 'teamA', value)}
+          disabled={disabled}
+          competitionId={competitionId}
+        />
+        <TeamScoreRow
+          label={sideLabels?.teamBLabel}
+          players={teamBPlayers}
+          score={courtRow.teamBStr}
+          onScore={(value) => setDraft(courtRow.courtId, 'teamB', value)}
+          disabled={disabled}
+          competitionId={competitionId}
+        />
+      </div>
       {error ? <p className="text-center text-xs font-semibold text-red-600">{error}</p> : null}
     </section>
   )
@@ -269,7 +271,10 @@ export function CompetitionTvScoreInputPanel({
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto px-2 py-1.5">
+      <div
+        className="grid min-h-0 flex-1 gap-1.5 overflow-hidden px-2 py-1.5"
+        style={{ gridTemplateRows: `repeat(${Math.max(1, scoring.courtScoreRows.length)}, minmax(0, 1fr))` }}
+      >
         {scoring.courtScoreRows.map((row, index) => {
           const liveCourt = courtsForGame.find((court) => court.courtName === row.courtLabel)
           const courtId =

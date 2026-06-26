@@ -658,7 +658,7 @@ export function GameCardHeader({
                 onClick={onBack}
                 aria-label={t('aria.back')}
               >
-                ←
+                ← Back
               </button>
             ) : null}
             <button
@@ -668,7 +668,8 @@ export function GameCardHeader({
               onClick={tvNav.onPrev}
               aria-label={t('competition.prevGame')}
             >
-              ‹
+              <span aria-hidden="true">‹</span>
+              <span className="text-base font-extrabold uppercase tracking-wide">Prev</span>
             </button>
           </div>
           <div className="pointer-events-none relative flex min-w-0 items-center justify-center">
@@ -721,7 +722,8 @@ export function GameCardHeader({
               onClick={tvNav.onNext}
               aria-label={t('competition.nextGame')}
             >
-              ›
+              <span className="text-base font-extrabold uppercase tracking-wide">Next</span>
+              <span aria-hidden="true">›</span>
             </button>
           </div>
         </div>
