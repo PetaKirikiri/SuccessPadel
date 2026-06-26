@@ -29,7 +29,7 @@ const WASM_BASE =
 const MODEL_URL =
   'https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task'
 const scoreNumberStyle = {
-  fontSize: 'clamp(3.5rem, min(23vw, 23vh), 16rem)',
+  fontSize: 'clamp(4.75rem, min(25vw, 30vh), 16rem)',
 } satisfies CSSProperties
 
 function pointDisplay(points: number): string {
@@ -87,7 +87,7 @@ function FingerCountIcon({ count }: { count: 1 | 2 | 3 | 4 }) {
     <img
       src={`/gesture-score/${count === 1 ? 'one-finger' : count === 2 ? 'two-fingers' : count === 3 ? 'three-fingers' : 'four-fingers'}.png`}
       alt=""
-      className="h-7 w-7 shrink-0 object-contain sm:h-9 sm:w-9 md:h-20 md:w-20"
+      className="h-10 w-10 shrink-0 object-contain sm:h-12 sm:w-12 md:h-20 md:w-20"
       aria-hidden="true"
       draggable={false}
     />
@@ -340,28 +340,28 @@ export function GestureScoreTestPage() {
       ) : null}
 
       <section className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto_minmax(0,1.25rem)] gap-2 px-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-3 md:grid-rows-[minmax(18rem,1fr)_auto_minmax(2rem,0.12fr)] md:gap-6 md:px-8 md:pt-[max(0.75rem,env(safe-area-inset-top))] md:pb-[max(1rem,env(safe-area-inset-bottom))]">
-        <div className="relative mx-auto grid h-full min-h-0 w-full max-w-7xl grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-stretch gap-1 overflow-hidden rounded-xl border border-white/15 bg-[#11355c] px-3 pb-3 pt-10 shadow-[0_24px_60px_-36px_rgba(0,0,0,0.7)] md:gap-3 md:rounded-2xl md:px-8 md:pb-6 md:pt-16">
+        <div className="relative mx-auto grid h-full min-h-0 w-full max-w-7xl grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-stretch gap-1 overflow-hidden rounded-xl border border-white/15 bg-[#11355c] px-3 py-2 shadow-[0_24px_60px_-36px_rgba(0,0,0,0.7)] md:gap-3 md:rounded-2xl md:px-8 md:pb-6 md:pt-16">
           <button
             type="button"
             onClick={goBack}
-            className="absolute left-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-[#0b2a4a]/85 text-[#f8fafc] active:scale-[0.98] md:left-4 md:top-4 md:h-10 md:w-10"
+            className="absolute left-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-white/15 bg-[#0b2a4a]/70 text-[#f8fafc] active:scale-[0.98] md:left-4 md:top-4 md:h-10 md:w-10"
             aria-label="Back"
           >
-            <ArrowLeft className="h-5 w-5 stroke-[3]" aria-hidden />
+            <ArrowLeft className="h-[1.125rem] w-[1.125rem] stroke-[3] md:h-5 md:w-5" aria-hidden />
           </button>
-          <div className="absolute left-1/2 top-2 z-10 -translate-x-1/2 rounded-full border border-white/15 bg-[#0b2a4a]/70 px-4 py-1 text-center shadow-lg shadow-black/20 md:top-4 md:px-6 md:py-1.5">
-            <p className="font-display text-2xl font-black leading-none text-[#f8fafc] md:text-5xl">
+          <div className="absolute left-1/2 top-1.5 z-10 -translate-x-1/2 rounded-full border border-white/15 bg-[#0b2a4a]/60 px-3 py-0.5 text-center shadow-lg shadow-black/20 md:top-4 md:px-6 md:py-1.5">
+            <p className="font-display text-xl font-black leading-none text-[#f8fafc] md:text-5xl">
               {formatTimer(elapsedSeconds)}
             </p>
           </div>
           <div className="flex min-h-0 min-w-0 flex-col justify-center text-left">
-            <p className="truncate text-[11px] font-black uppercase tracking-wide text-white/55 sm:text-xs md:text-lg">
+            <p className="hidden truncate text-[11px] font-black uppercase tracking-wide text-white/55 sm:text-xs md:block md:text-lg">
               Our Team
             </p>
-            <p className="mt-0.5 text-xs font-bold text-[#7dd3fc] md:mt-1 md:text-base">
+            <p className="text-xs font-bold text-[#7dd3fc] md:mt-1 md:text-base">
               Games {ourGames}
             </p>
-            <p className="mt-1 font-display font-black leading-[0.9] text-[#f8fafc] md:mt-4" style={scoreNumberStyle}>
+            <p className="font-display font-black leading-[0.86] text-[#f8fafc] md:mt-4 md:leading-[0.9]" style={scoreNumberStyle}>
               {pointDisplay(ourPoints)}
             </p>
           </div>
@@ -376,23 +376,23 @@ export function GestureScoreTestPage() {
           </div>
 
           <div className="flex min-h-0 min-w-0 flex-col justify-center text-right">
-            <p className="truncate text-[11px] font-black uppercase tracking-wide text-white/55 sm:text-xs md:text-lg">
+            <p className="hidden truncate text-[11px] font-black uppercase tracking-wide text-white/55 sm:text-xs md:block md:text-lg">
               Other Team
             </p>
-            <p className="mt-0.5 text-xs font-bold text-[#7dd3fc] md:mt-1 md:text-base">
+            <p className="text-xs font-bold text-[#7dd3fc] md:mt-1 md:text-base">
               Games {theirGames}
             </p>
-            <p className="mt-1 font-display font-black leading-[0.9] text-[#f8fafc] md:mt-4" style={scoreNumberStyle}>
+            <p className="font-display font-black leading-[0.86] text-[#f8fafc] md:mt-4 md:leading-[0.9]" style={scoreNumberStyle}>
               {pointDisplay(theirPoints)}
             </p>
           </div>
         </div>
 
-        <div className="mx-auto grid w-full max-w-7xl grid-cols-4 gap-1 py-1.5 md:gap-4 md:py-5">
+        <div className="mx-auto grid w-full max-w-7xl grid-cols-4 gap-1 py-0 md:gap-4 md:py-5">
           <button
             type="button"
             onClick={() => applyFingerAction('win')}
-            className="flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-[#34d399]/45 bg-[#34d399]/15 px-1 py-2 text-[#34d399] shadow-xl shadow-black/25 active:scale-[0.96] sm:gap-1 sm:py-3 md:flex-row md:gap-5 md:rounded-full md:px-7 md:py-7"
+            className="flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-[#34d399]/45 bg-[#34d399]/15 px-1 py-3 text-[#34d399] shadow-xl shadow-black/25 active:scale-[0.96] sm:gap-1 sm:py-3.5 md:flex-row md:gap-5 md:rounded-full md:px-7 md:py-7"
             aria-label="Point for us"
             title="Point for us"
           >
@@ -402,7 +402,7 @@ export function GestureScoreTestPage() {
           <button
             type="button"
             onClick={() => applyFingerAction('lose')}
-            className="flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-[#60a5fa]/45 bg-[#60a5fa]/15 px-1 py-2 text-[#60a5fa] shadow-xl shadow-black/25 active:scale-[0.96] sm:gap-1 sm:py-3 md:flex-row md:gap-5 md:rounded-full md:px-7 md:py-7"
+            className="flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-[#60a5fa]/45 bg-[#60a5fa]/15 px-1 py-3 text-[#60a5fa] shadow-xl shadow-black/25 active:scale-[0.96] sm:gap-1 sm:py-3.5 md:flex-row md:gap-5 md:rounded-full md:px-7 md:py-7"
             aria-label="Point for them"
             title="Point for them"
           >
@@ -412,7 +412,7 @@ export function GestureScoreTestPage() {
           <button
             type="button"
             onClick={() => applyFingerAction('undo')}
-            className="relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-white/15 bg-[#11355c] px-1 py-2 text-[#7dd3fc] shadow-xl shadow-black/25 active:scale-[0.96] sm:gap-1 sm:py-3 md:flex-row md:gap-5 md:rounded-full md:px-7 md:py-7"
+            className="relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-white/15 bg-[#11355c] px-1 py-3 text-[#7dd3fc] shadow-xl shadow-black/25 active:scale-[0.96] sm:gap-1 sm:py-3.5 md:flex-row md:gap-5 md:rounded-full md:px-7 md:py-7"
             aria-label="Undo last score action"
             title="Undo last score action"
           >
@@ -422,7 +422,7 @@ export function GestureScoreTestPage() {
           <button
             type="button"
             onClick={() => applyFingerAction('reset')}
-            className="relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-white/15 bg-[#11355c] px-1 py-2 text-[#7dd3fc] shadow-xl shadow-black/25 active:scale-[0.96] sm:gap-1 sm:py-3 md:flex-row md:gap-5 md:rounded-full md:px-7 md:py-7"
+            className="relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-white/15 bg-[#11355c] px-1 py-3 text-[#7dd3fc] shadow-xl shadow-black/25 active:scale-[0.96] sm:gap-1 sm:py-3.5 md:flex-row md:gap-5 md:rounded-full md:px-7 md:py-7"
             aria-label="Reset score"
             title="Reset score"
           >
