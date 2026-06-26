@@ -166,7 +166,6 @@ export function competitionEventMinutes(
   schedule: CompetitionScheduleValues = COMPETITION_SCHEDULE,
 ): number {
   return (
-    COMPETITION_SCHEDULE.leadInMinutes +
     schedule.games * schedule.gameMinutes +
     Math.max(0, schedule.games - 1) * schedule.breakMinutes
   )

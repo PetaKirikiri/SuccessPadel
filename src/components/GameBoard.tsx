@@ -76,6 +76,7 @@ type Props = {
   ) => { teamALabel?: string; teamBLabel?: string }
   tvCarousel?: boolean
   viewAlongUrl?: string | null
+  onTvGameChange?: (gameNumber: number) => void
 }
 
 type RoundStatus = 'pending' | 'active' | 'complete'
@@ -247,6 +248,7 @@ export function GameBoard({
   duoTeamLabels,
   tvCarousel = false,
   viewAlongUrl = null,
+  onTvGameChange,
 }: Props) {
   const { t } = useTranslation()
   const games = useMemo(() => {
@@ -370,11 +372,16 @@ export function GameBoard({
   )
 
   const focusGameNumber = useMemo(
-    () =>
-      roundTimesByGame?.size
+    () => {
+      if (tvCarousel && matchForCourt) {
+        return gameNumbers.find((gameNumber) => !finishedByGame.get(gameNumber)) ?? gameNumbers[gameNumbers.length - 1]
+      }
+      const focused = roundTimesByGame?.size
         ? competitionFocusGameNumber(clock, roundTimesByGame, gameNumbers, activeGameNumber)
-        : activeGameNumber,
-    [activeGameNumber, clock, gameNumbers, roundTimesByGame],
+        : activeGameNumber
+      return focused
+    },
+    [activeGameNumber, clock, finishedByGame, gameNumbers, matchForCourt, roundTimesByGame, tvCarousel],
   )
 
   const toggleCollapsed = (gameNumber: number) => {
@@ -423,7 +430,7 @@ export function GameBoard({
     const displayTimeLabel =
       times != null ? formatGameTimeLabel(times.startsAt, times.endsAt) : game.timeLabel
 
-    if ((mode === 'scoring' || tvCarousel) && gameRoundId && matchForCourt && onSubmitScores) {
+    if ((mode === 'scoring' || tvCarousel) && matchForCourt && onSubmitScores) {
       return (
         <ScoringGameCard
           key={game.gameNumber}
@@ -605,6 +612,7 @@ export function GameBoard({
           const game = gameByNumber.get(gameNumber)
           return game ? renderGameCard(game, nav) : null
         }}
+        onGameChange={onTvGameChange}
         t={t}
       />
     )

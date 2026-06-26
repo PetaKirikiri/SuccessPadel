@@ -1,4 +1,5 @@
 import { playSideLabel } from '../lib/profileFields'
+import { countryLabel } from '../lib/countries'
 import type { Profile } from '../lib/types'
 
 function Row({ label, value }: { label: string; value: string | null | undefined }) {
@@ -13,7 +14,7 @@ function Row({ label, value }: { label: string; value: string | null | undefined
 export function ProfileSummary({ profile }: { profile: Profile }) {
   return (
     <div className="game-card space-y-2">
-      <Row label="Country" value={profile.country} />
+      <Row label="Country" value={countryLabel(profile.country)} />
       <Row label="Racket" value={profile.racket} />
       <Row label="Style" value={profile.play_style} />
       <Row label="Side" value={playSideLabel(profile.preferred_side)} />

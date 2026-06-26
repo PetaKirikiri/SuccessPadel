@@ -112,6 +112,7 @@ export type Messages = {
       rounds: string
       gameMinutes: string
       break: string
+      time: string
     }
   }
   login: {

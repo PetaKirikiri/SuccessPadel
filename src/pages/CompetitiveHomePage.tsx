@@ -7,6 +7,23 @@ import { useAuth } from '../hooks/useAuth'
 import { useCompetitionSetup } from '../hooks/useCompetitionSetup'
 import { useTranslation } from '../hooks/useTranslation'
 import { linkGuestRostersByEmail } from '../lib/authProfile'
+import type { Gender } from '../lib/competitionPresets'
+import { normalizeSessionGender } from '../lib/inviteBanners'
+
+function competitionStartMs(row: { starts_at?: string | null; starts_on?: string | null }): number {
+  const precise = row.starts_at ? Date.parse(row.starts_at) : NaN
+  if (Number.isFinite(precise)) return precise
+  const day = row.starts_on ? Date.parse(`${row.starts_on}T00:00:00+07:00`) : NaN
+  return Number.isFinite(day) ? day : Number.MAX_SAFE_INTEGER
+}
+
+function nextCompetitionGender(rows: { starts_at?: string | null; starts_on?: string | null; gender?: string | null }[]): Gender | null {
+  const withGender = rows
+    .map((row) => ({ row, gender: normalizeSessionGender(row.gender), startsAt: competitionStartMs(row) }))
+    .filter((item): item is { row: typeof item.row; gender: Gender; startsAt: number } => Boolean(item.gender))
+    .sort((a, b) => a.startsAt - b.startsAt)
+  return withGender[0]?.gender ?? null
+}
 
 export function CompetitiveHomePage() {
   const { t } = useTranslation()
@@ -14,6 +31,7 @@ export function CompetitiveHomePage() {
   const { rows, loading, error, refresh } = useCompetitionSetup()
   const isAdmin = Boolean(profile?.is_admin)
   const { currentRows, pastRows } = useMemo(() => splitCompetitionRows(rows), [rows])
+  const initialGenderFilter = useMemo(() => nextCompetitionGender(currentRows), [currentRows])
 
   useEffect(() => {
     if (user) void linkGuestRostersByEmail().then(() => refresh())
@@ -34,6 +52,7 @@ export function CompetitiveHomePage() {
       showPastTab
       currentCount={currentRows.length}
       pastCount={pastRows.length}
+      initialGenderFilter={initialGenderFilter}
       currentTabAddon={
         isAdmin ? (
           <Link

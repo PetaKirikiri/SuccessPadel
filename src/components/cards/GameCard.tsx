@@ -73,6 +73,21 @@ function scoreStringsForCourt(
   }
 }
 
+function nextCourtDraft(
+  current: CourtDraft | undefined,
+  side: 'teamA' | 'teamB',
+  value: string,
+): CourtDraft {
+  const next = {
+    teamA: current?.teamA ?? '',
+    teamB: current?.teamB ?? '',
+    [side]: scoreDigitsOnly(value),
+  }
+  const otherSide = side === 'teamA' ? 'teamB' : 'teamA'
+  if (next[otherSide] === '') next[otherSide] = '0'
+  return next
+}
+
 function courtsGridClass(tvCompact: boolean, courtCount: number): string {
   if (!tvCompact) return 'space-y-3.5'
   if (courtCount <= 1) return 'tv-game-courts-grid tv-game-courts-grid--single'
@@ -163,7 +178,7 @@ export function GameCardShell({
     </div>
   )
 }
-function useGameScoring({
+export function useGameScoring({
   game,
   gameRoundId,
   courtsForGame,
@@ -192,7 +207,6 @@ function useGameScoring({
   const [error, setError] = useState<{ courtId: string; message: string } | null>(null)
 
   const scoringCourts = useMemo(() => {
-    if (!gameRoundId) return []
     const liveByName = new Map(courtsForGame.map((court) => [court.courtName, court]))
     return game.courts.flatMap((court, courtIndex) => {
       const live = liveByName.get(court.courtLabel)
@@ -202,7 +216,7 @@ function useGameScoring({
       if (!courtId) return []
       return [{ courtId, courtLabel: court.courtLabel }]
     })
-  }, [courtIdByLabel, courtsForGame, game.courts, gameRoundId])
+  }, [courtIdByLabel, courtsForGame, game.courts])
 
   const savedSnapshot = useMemo(() => {
     if (!gameRoundId) return ''
@@ -234,19 +248,14 @@ function useGameScoring({
     setDirtyCourts((prev) => new Set(prev).add(courtId))
     setDrafts((prev) => ({
       ...prev,
-      [courtId]: {
-        teamA: prev[courtId]?.teamA ?? '',
-        teamB: prev[courtId]?.teamB ?? '',
-        [side]: scoreDigitsOnly(value),
-      },
+      [courtId]: nextCourtDraft(prev[courtId], side, value),
     }))
   }, [])
 
   const courtScoreRows = useMemo(() => {
-    if (!gameRoundId) return []
     return scoringCourts.map(({ courtId, courtLabel }) => {
       const draft = drafts[courtId]
-      const saved = matchForCourt(gameRoundId, courtId)
+      const saved = gameRoundId ? matchForCourt(gameRoundId, courtId) : undefined
       const isDirty = dirtyCourts.has(courtId)
       const { teamAStr, teamBStr } = scoreStringsForCourt(draft, saved, isDirty)
       const teamA = parseScoreField(teamAStr)
@@ -358,11 +367,7 @@ function useFriendlyManualScoring({
     setDirtyCourts((prev) => new Set(prev).add(courtKey))
     setDrafts((prev) => ({
       ...prev,
-      [courtKey]: {
-        teamA: prev[courtKey]?.teamA ?? '',
-        teamB: prev[courtKey]?.teamB ?? '',
-        [side]: scoreDigitsOnly(value),
-      },
+      [courtKey]: nextCourtDraft(prev[courtKey], side, value),
     }))
   }, [])
 
@@ -442,6 +447,7 @@ export function GameScoringCourts({
   competitionId,
   duoTeamLabels,
   courtScoreMax,
+  gameRoundId,
   tvCompact = false,
   t,
 }: {
@@ -463,6 +469,7 @@ export function GameScoringCourts({
   competitionId?: string
   duoTeamLabels?: DuoTeamLabels
   courtScoreMax?: number
+  gameRoundId?: string
   tvCompact?: boolean
   t: TranslateFn
 }) {
@@ -517,8 +524,12 @@ export function GameScoringCourts({
               scoreUnit={scoreUnit}
               scoreA={row.teamAStr}
               scoreB={row.teamBStr}
-              onScoreA={canEdit && courtId ? (v) => setDraft(courtId, 'teamA', v) : undefined}
-              onScoreB={canEdit && courtId ? (v) => setDraft(courtId, 'teamB', v) : undefined}
+              onScoreA={
+                canEdit && courtId && gameRoundId ? (v) => setDraft(courtId, 'teamA', v) : undefined
+              }
+              onScoreB={
+                canEdit && courtId && gameRoundId ? (v) => setDraft(courtId, 'teamB', v) : undefined
+              }
               disabled={!canEdit}
               finished={finished}
               scoreMax={courtScoreMax}
@@ -528,7 +539,7 @@ export function GameScoringCourts({
               compact={tvCompact}
               t={t}
             />
-            {canEdit && submitCourt ? (
+            {canEdit && submitCourt && gameRoundId ? (
               <>
                 <button
                   type="button"
@@ -889,6 +900,7 @@ export function ScoringGameCard({
             competitionId={competitionId}
             duoTeamLabels={duoTeamLabels}
             courtScoreMax={courtScoreMax}
+            gameRoundId={gameRoundId}
             tvCompact={tvCompact}
             t={t}
           />

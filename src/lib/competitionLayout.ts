@@ -48,11 +48,11 @@ export const AMERICANO_GAME_COUNTS = [5, 6, 7, 8, 9, 10, 11] as const
 export const BREAK_MINUTE_OPTIONS = [2, 3, 4, 5] as const
 export const DEFAULT_BREAK_MINUTES = 3
 export const DEFAULT_GAME_MINUTES = 14
-/** Minutes before game 1; play starts at :04 / :34 past the hour. */
+/** Historical default. New competition setup treats starts_at as the actual game 1 start. */
 export const AMERICANO_SCHEDULE_LEAD_IN_MINUTES = 4
 export const COMPETITION_BREAK_MINUTES = DEFAULT_BREAK_MINUTES
 
-export type CompetitionPlayStartMinute = 4 | 34
+export type CompetitionPlayStartMinute = number
 
 export type CompetitionStartSlot = {
   hour: number
@@ -94,7 +94,7 @@ export function parseCompetitionStartSlotValue(value: string): {
 }
 
 export function competitionAnchorMinute(playMinute: CompetitionPlayStartMinute): number {
-  return playMinute - AMERICANO_SCHEDULE_LEAD_IN_MINUTES
+  return playMinute
 }
 
 export function competitionStartsAtAnchorIso(
@@ -107,9 +107,9 @@ export function competitionStartsAtAnchorIso(
 
 export function competitionPlayStartFromAnchorIso(
   iso: string,
-  leadInMinutes = AMERICANO_SCHEDULE_LEAD_IN_MINUTES,
+  _leadInMinutes = AMERICANO_SCHEDULE_LEAD_IN_MINUTES,
 ): Date {
-  return new Date(new Date(iso).getTime() + leadInMinutes * 60_000)
+  return new Date(iso)
 }
 
 export function competitionPlayStartFromSession(
@@ -357,27 +357,18 @@ export function gameDurationForEvent(
   breakMinutes = COMPETITION_BREAK_MINUTES,
 ): number {
   if (totalGames <= 0 || eventMinutes <= 0) return 0
-  const playMinutes = Math.max(0, eventMinutes - AMERICANO_SCHEDULE_LEAD_IN_MINUTES)
+  const playMinutes = Math.max(0, eventMinutes)
   const breakTotal = Math.max(0, totalGames - 1) * breakMinutes
   return Math.max(1, Math.floor((playMinutes - breakTotal) / totalGames))
 }
 
 export function scheduleLeadInMinutes(
-  eventMinutes: number,
-  totalGames: number,
-  gameMinutes: number,
-  breakMinutes: number,
+  _eventMinutes: number,
+  _totalGames: number,
+  _gameMinutes: number,
+  _breakMinutes: number,
 ): number {
-  const playBlock = totalScheduleMinutes(totalGames, gameMinutes, breakMinutes)
-  if (eventMinutes <= 0) return COMPETITION_SCHEDULE.leadInMinutes
-  const canonical =
-    totalGames === COMPETITION_SCHEDULE.games &&
-    gameMinutes === COMPETITION_SCHEDULE.gameMinutes &&
-    breakMinutes === COMPETITION_SCHEDULE.breakMinutes
-  if (canonical && eventMinutes >= playBlock + COMPETITION_SCHEDULE.leadInMinutes) {
-    return COMPETITION_SCHEDULE.leadInMinutes
-  }
-  return Math.max(0, eventMinutes - playBlock)
+  return 0
 }
 
 export function resolvedGameMinutes(

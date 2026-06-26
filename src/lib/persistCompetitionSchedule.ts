@@ -1,12 +1,17 @@
 import { buildDuoStoredSchedule } from './duoRoundRobinSchedule'
-import { DUO_GAME_COUNT, teamsFromConfig, isDuoCompetition } from './competitionFormatPresets'
+import {
+  DUO_GAME_COUNT,
+  duoTeamsForPlay,
+  isDuoCompetition,
+  teamsFromConfig,
+} from './competitionFormatPresets'
 import { americanoScheduleFromSession } from './competitionLayout'
 import {
   mergeScheduleIntoScoringConfig,
   scoringConfigHasCanonicalSchedule,
 } from './competitionScheduleLayout'
 import { solveBalancedSchedule } from './balancedSchedule'
-import type { CompetitionPlayer } from '../hooks/useCompetitions'
+import type { CompetitionPlayer, CompetitionSessionPair } from '../hooks/useCompetitions'
 import {
   buildStoredSchedule,
   padRosterToTarget,
@@ -88,6 +93,7 @@ export async function ensureCompetitionScheduleSaved(
   sessionId: string,
   session: GameSession,
   roster: CompetitionPlayer[],
+  sessionPairs: CompetitionSessionPair[] = [],
 ): Promise<string | null> {
   const syncErr = await ensureScoringConfigScheduleSynced(sessionId, session)
   if (syncErr) return syncErr
@@ -108,7 +114,7 @@ export async function ensureCompetitionScheduleSaved(
 
   let schedule: ReturnType<typeof buildStoredSchedule> = []
   if (isDuo) {
-    const teams = teamsFromConfig(session.scoring_config)
+    const teams = duoTeamsForPlay(ranked, session.scoring_config, slotCount, sessionPairs)
     if (teams.length < 2) return null
     schedule = buildDuoStoredSchedule(
       teams.map((t) => ({ label: t.label, rosterIds: t.roster_ids })),

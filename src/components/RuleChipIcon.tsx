@@ -21,6 +21,7 @@ type Props = {
 const ICONS: Record<RuleIcon, LucideIcon> = {
   americano: Coffee,
   king: Crown,
+  time: Clock,
   'partners-fixed': Link2,
   'partners-swapped': Shuffle,
   scoring: Target,

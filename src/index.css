@@ -356,6 +356,8 @@ body {
 
 .brand-input {
   @apply box-border w-full max-w-full rounded-xl border border-brand-border bg-brand-surface px-3 py-2.5 text-base text-brand-text placeholder:text-brand-muted;
+  direction: ltr;
+  text-align: left;
 }
 
 .login-panel {

@@ -201,16 +201,16 @@ function TeamPlayersInline({ entry }: { entry: LeaderboardEntry }) {
   if (players.length === 0) return null
 
   return (
-    <span className="mt-1 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+    <span className="mt-1 grid min-w-0 gap-1">
       {players.map((player) => (
-        <span key={player.name} className="flex min-w-0 items-center gap-1">
+        <span key={player.name} className="grid min-w-0 grid-cols-[1.75rem_minmax(0,1fr)] items-center gap-1.5">
           <PlayerAvatar
             displayName={player.name}
             avatarUrl={player.avatarUrl}
             imgClassName="h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-brand-border/60"
             pixelated={player.avatarUrl?.includes('/pixel.png') ?? false}
           />
-          <span className="max-w-[9rem] truncate text-sm font-semibold leading-tight text-brand-text/80">
+          <span className="min-w-0 truncate text-sm font-semibold leading-tight text-brand-text/90">
             {player.name}
           </span>
         </span>

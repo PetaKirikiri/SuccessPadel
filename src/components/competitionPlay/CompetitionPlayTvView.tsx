@@ -8,6 +8,7 @@ type Props = {
   session: unknown
   gamesBody: ReactNode
   leaderboardBody: ReactNode
+  leaderboardLabel?: string
 }
 
 /** TV only (≥1536px) — blended games + standings. */
@@ -17,6 +18,7 @@ export function CompetitionPlayTvView({
   session,
   gamesBody,
   leaderboardBody,
+  leaderboardLabel,
 }: Props) {
   return (
     <div className="flex min-h-0 min-w-0 w-full flex-1 flex-col overflow-hidden">
@@ -29,7 +31,7 @@ export function CompetitionPlayTvView({
             </div>
           </div>
           {session ? (
-            <aside className="tv-play-standings" aria-label={t('leaderboard.standings')}>
+            <aside className="tv-play-standings" aria-label={leaderboardLabel ?? t('leaderboard.standings')}>
               <div className="tv-play-standings-body">{leaderboardBody}</div>
             </aside>
           ) : null}

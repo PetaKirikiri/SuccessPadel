@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react'
 import { GamesGenderFilterProvider } from '../contexts/GamesGenderFilterContext'
 import { useTranslation } from '../hooks/useTranslation'
 import { useSeasonLeaderboard } from '../hooks/useSeasonLeaderboard'
@@ -36,6 +36,7 @@ type Props = {
   listClassName?: string
   /** Gender filter on invite card banners. */
   showGenderFilter?: boolean
+  initialGenderFilter?: Gender | null
 }
 
 function HubTab({
@@ -106,17 +107,42 @@ export function GamesHubView({
   leaderboardVariant = 'competition',
   listClassName = '',
   showGenderFilter = true,
+  initialGenderFilter = null,
 }: Props) {
   const { t } = useTranslation()
   const { season } = useSeasonLeaderboard(leaderboardVariant === 'competition')
   const [tab, setTab] = useState<GamesHubTab>('current')
-  const [genderFilter, setGenderFilter] = useState<Gender>('Men')
+  const [genderFilter, setGenderFilterState] = useState<Gender>(initialGenderFilter ?? 'Mixed')
   const didDefaultTab = useRef(false)
+  const didApplyStoredGender = useRef(false)
+  const didApplyInitialGender = useRef(Boolean(initialGenderFilter))
+  const didUserPickGender = useRef(false)
+
+  const setGenderFilter = useCallback((gender: Gender) => {
+    didUserPickGender.current = true
+    setGenderFilterState(gender)
+  }, [])
 
   useEffect(() => {
     const stored = consumeStoredCompetitiveGenderFilter()
-    if (stored) setGenderFilter(stored)
+    if (stored) {
+      didApplyStoredGender.current = true
+      setGenderFilterState(stored)
+    }
   }, [])
+
+  useEffect(() => {
+    if (
+      !initialGenderFilter ||
+      didApplyStoredGender.current ||
+      didApplyInitialGender.current ||
+      didUserPickGender.current
+    ) {
+      return
+    }
+    didApplyInitialGender.current = true
+    setGenderFilterState(initialGenderFilter)
+  }, [initialGenderFilter])
 
   useEffect(() => {
     if (!showPastTab || didDefaultTab.current) return

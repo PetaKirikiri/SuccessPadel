@@ -136,6 +136,7 @@ export const fr: Messages = {
       rounds: 'Nombre de matchs prévus dans la rotation.',
       gameMinutes: 'Durée cible de chaque jeu dans un match.',
       break: 'Pause entre les matchs.',
+      time: 'Heure de début et de fin de la session.',
     },
   },
   login: {

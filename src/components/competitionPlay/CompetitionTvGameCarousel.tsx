@@ -12,6 +12,7 @@ type Props = {
   gameNumbers: number[]
   activeGameNumber?: number
   renderGame: (gameNumber: number, nav: TvGameNav) => ReactNode
+  onGameChange?: (gameNumber: number) => void
   t: TranslateFn
 }
 
@@ -19,6 +20,7 @@ export function CompetitionTvGameCarousel({
   gameNumbers,
   activeGameNumber,
   renderGame,
+  onGameChange,
 }: Props) {
   const [index, setIndex] = useState(0)
   const userNavigatedRef = useRef(false)
@@ -71,6 +73,10 @@ export function CompetitionTvGameCarousel({
     atStart,
     atEnd,
   }
+
+  useEffect(() => {
+    onGameChange?.(current)
+  }, [current, onGameChange])
 
   return (
     <div className="tv-game-carousel flex h-full min-h-0 flex-1 flex-col overflow-hidden">

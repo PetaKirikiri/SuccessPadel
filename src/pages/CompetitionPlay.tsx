@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ensureCompetitionScheduleSaved } from '../lib/persistCompetitionSchedule'
 import { GameBoard } from '../components/GameBoard'
 import { CompetitionLeaderboard } from '../components/CompetitionLeaderboard'
 import { CompetitionPlayStandardView } from '../components/competitionPlay/CompetitionPlayStandardView'
 import { CompetitionPlayTvView } from '../components/competitionPlay/CompetitionPlayTvView'
+import { CompetitionTvScoreInputPanel } from '../components/competitionPlay/CompetitionTvScoreInputPanel'
+import { courtIdForLabel } from '../components/cards/GameCard'
+import type { LiveCourt } from '../components/cards/gameBoardTypes'
 import type { PlayViewTab } from '../components/PlayViewTabs'
 import { useAuth } from '../hooks/useAuth'
 import { useIsTvLayout } from '../hooks/useIsTvLayout'
@@ -17,7 +20,7 @@ import {
   isCompetitionComplete,
 } from '../lib/competitionAchievements'
 import { americanoScheduleFromSession, competitionRoundTimesByGame } from '../lib/competitionLayout'
-import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
+import { courtGameScoreMax, type CourtScoreSubmit } from '../lib/competitionScoreInput'
 import { computeAmericanoStandings } from '../lib/competitionStandings'
 import { computeDuoStandings } from '../lib/computeDuoStandings'
 import { duoLabelsForMatch } from '../lib/competitionFormatPresets'
@@ -28,8 +31,39 @@ import { useTranslation } from '../hooks/useTranslation'
 import { enrichStandingsWithAvatars } from '../lib/leaderboardEntries'
 import { competitionViewAlongUrl } from '../lib/siteUrl'
 import { supabase } from '../lib/supabaseClient'
+import { pivotScheduleByGame } from '../lib/competitionCourtBoard'
 
 type PlayTab = PlayViewTab
+
+function gameHasAllCourtScores({
+  columns,
+  gameNumber,
+  roundId,
+  liveCourtsByGame,
+  courtIdByLabel,
+  matchForCourt,
+}: {
+  columns: Parameters<typeof pivotScheduleByGame>[0]
+  gameNumber?: number
+  roundId?: string
+  liveCourtsByGame: Map<number, LiveCourt[]>
+  courtIdByLabel?: Map<string, string>
+  matchForCourt: ReturnType<typeof useCompetitionBoard>['matchForCourt']
+}): boolean {
+  if (!gameNumber || !roundId) return false
+  const game = pivotScheduleByGame(columns).find((row) => row.gameNumber === gameNumber)
+  if (!game) return false
+  const courtsForGame = liveCourtsByGame.get(gameNumber) ?? []
+  const courtIds = game.courts.flatMap((court, courtIndex) => {
+    const courtId = courtIdForLabel(court.courtLabel, courtIndex, courtsForGame, courtIdByLabel)
+    return courtId ? [courtId] : []
+  })
+  if (courtIds.length === 0) return false
+  return courtIds.every((courtId) => {
+    const saved = matchForCourt(roundId, courtId)
+    return saved?.teamAPoints != null && saved?.teamBPoints != null
+  })
+}
 
 export function CompetitionPlay() {
   const { id } = useParams()
@@ -44,6 +78,7 @@ export function CompetitionPlay() {
   const [tab, setTab] = useState<PlayTab>(() =>
     searchParams.get('view') === 'leaderboard' ? 'leaderboard' : 'games',
   )
+  const [tvGameNumber, setTvGameNumber] = useState<number | undefined>(undefined)
 
   const {
     session,
@@ -153,21 +188,33 @@ export function CompetitionPlay() {
   )
 
   const started = Boolean(session?.competition_started_at)
-  const autoStartAttemptedRef = useRef(false)
 
   useEffect(() => {
-    if (!isAdmin || !id || !session || started || loading || autoStartAttemptedRef.current) return
+    if (!isAdmin || !id || !session || started || loading) return
     if (session.status !== 'open') return
-    autoStartAttemptedRef.current = true
     void (async () => {
-      await ensureCompetitionScheduleSaved(id, session, roster)
+      const scheduleErr = await ensureCompetitionScheduleSaved(id, session, roster, sessionPairs)
+      if (scheduleErr) return
       const { error: startErr } = await supabase.rpc('start_competition', { p_session_id: id })
       if (!startErr) void refresh(true)
     })()
-  }, [isAdmin, id, session, roster, started, loading, refresh])
+  }, [isAdmin, id, session, roster, sessionPairs, started, loading, refresh])
 
   const canScore = started
   const standings = liveStandings
+  const tvScoreGameNumber = tvGameNumber ?? activeRound?.round_number
+  const tvScoreGameComplete = useMemo(
+    () =>
+      gameHasAllCourtScores({
+        columns,
+        gameNumber: tvScoreGameNumber,
+        roundId: tvScoreGameNumber ? roundIdForGame(tvScoreGameNumber) : undefined,
+        liveCourtsByGame,
+        courtIdByLabel,
+        matchForCourt,
+      }),
+    [columns, courtIdByLabel, liveCourtsByGame, matchForCourt, roundIdForGame, tvScoreGameNumber],
+  )
 
   const complete = isCompetitionComplete(session, rounds, courtMatches)
   const standingsOrder = useMemo(
@@ -217,6 +264,28 @@ export function CompetitionPlay() {
       <p className="px-3 py-6 text-center text-sm text-brand-muted">{t('leaderboard.standings')}</p>
     )
 
+  const tvScoreInput =
+    session && !tvScoreGameComplete ? (
+      <CompetitionTvScoreInputPanel
+        columns={columns}
+        gameNumber={tvScoreGameNumber}
+        roundId={tvScoreGameNumber ? roundIdForGame(tvScoreGameNumber) : undefined}
+        liveCourtsByGame={liveCourtsByGame}
+        courtIdByLabel={courtIdByLabel}
+        matchForCourt={matchForCourt}
+        scoreUnit={scoreUnit}
+        canEdit={canScore}
+        onSubmitScores={handleSubmitScores}
+        courtScoreMax={courtGameScoreMax(scoreUnit === 'games' ? playTo : undefined)}
+        playTo={scoreUnit === 'games' ? playTo : undefined}
+        duoTeamLabels={isDuo ? duoTeamLabels : undefined}
+        competitionId={id ?? null}
+        t={t}
+      />
+    ) : (
+      leaderboardTv
+    )
+
   const viewAlongUrl = id ? competitionViewAlongUrl(id) : null
 
   const gamesBody =
@@ -244,6 +313,7 @@ export function CompetitionPlay() {
         duoTeamLabels={isDuo ? duoTeamLabels : undefined}
         tvCarousel={columns.length > 0}
         viewAlongUrl={isTvLayout ? viewAlongUrl : null}
+        onTvGameChange={setTvGameNumber}
       />
     ) : started ? (
       <p className="game-card px-3 py-4 text-sm text-brand-muted">
@@ -295,7 +365,8 @@ export function CompetitionPlay() {
         <div className="tv-play-view flex min-h-0 flex-1 flex-col overflow-hidden">
           <CompetitionPlayTvView
             {...sharedViewProps}
-            leaderboardBody={leaderboardTv}
+            leaderboardBody={tvScoreInput}
+            leaderboardLabel="Score input"
           />
         </div>
       ) : (

@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react'
+import type { KeyboardEvent, MouseEvent, ReactNode } from 'react'
 import { IconDelete, IconEdit } from './ButtonIcons'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { DuoTeamRosterList } from './DuoTeamRosterList'
 import { FriendlyRosterList } from './FriendlyRosterList'
 import { RuleChipGrid } from './RuleChipGrid'
@@ -41,6 +41,14 @@ export type InviteCardProps = {
 const adminIconBtnClass =
   'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-border bg-brand-bg-alt shadow-sm active:scale-[0.98]'
 
+function isInteractiveCardTarget(target: EventTarget | null, card: HTMLElement): boolean {
+  if (!(target instanceof HTMLElement)) return false
+  const interactive = target.closest(
+    'a, button, input, select, textarea, label, [role="button"], [role="link"], [contenteditable="true"]',
+  )
+  return Boolean(interactive && interactive !== card)
+}
+
 export function InviteCard({
   title,
   dateLine,
@@ -68,7 +76,25 @@ export function InviteCard({
   className = '',
   gender = null,
 }: InviteCardProps) {
+  const navigate = useNavigate()
   const showAdminActions = (canEdit && editTo) || (canDelete && onDelete)
+
+  const openDetail = () => {
+    if (detailTo) navigate(detailTo)
+  }
+
+  const handleCardClick = (event: MouseEvent<HTMLElement>) => {
+    if (!detailTo || isInteractiveCardTarget(event.target, event.currentTarget)) return
+    openDetail()
+  }
+
+  const handleCardKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (!detailTo || isInteractiveCardTarget(event.target, event.currentTarget)) return
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      openDetail()
+    }
+  }
 
   const adminTrailing = showAdminActions ? (
     <li className="flex min-h-[3rem] min-w-0 items-center justify-center gap-1.5 sm:min-h-[2.75rem]">
@@ -179,7 +205,14 @@ export function InviteCard({
 
   return (
     <article
-      className={`relative w-full min-w-0 max-w-full overflow-hidden rounded-2xl border-2 border-brand-primary/25 bg-brand-surface shadow-[0_4px_16px_-4px_rgba(96,45,36,0.22)] ${className}`}
+      className={`relative w-full min-w-0 max-w-full overflow-hidden rounded-2xl border-2 border-brand-primary/25 bg-brand-surface shadow-[0_4px_16px_-4px_rgba(96,45,36,0.22)] touch-manipulation transition active:opacity-95 ${
+        detailTo ? 'cursor-pointer' : ''
+      } ${className}`}
+      role={detailTo ? 'link' : undefined}
+      tabIndex={detailTo ? 0 : undefined}
+      aria-label={detailTo ? `${title}, ${dateLine}` : undefined}
+      onClick={handleCardClick}
+      onKeyDown={handleCardKeyDown}
     >
       {banner}
       <div className="relative min-w-0">

@@ -4,6 +4,7 @@ import { useTranslation } from '../hooks/useTranslation'
 import { defaultPixelAvatarConfig, normalizePixelAvatarConfig } from '../lib/pixelAvatar/defaults'
 import type { PixelAvatarConfig } from '../lib/pixelAvatar/types'
 import { uploadProfileAvatar, validateProfileAvatar } from '../lib/profileAvatar'
+import { countryLabel, countryOptionFromValue, searchCountries, type CountryOption } from '../lib/countries'
 import {
   DOMINANT_HANDS,
   parsePlayStyles,
@@ -41,6 +42,139 @@ import {
   STYLE_CHIP_COLORS,
   STYLE_ICONS,
 } from './profileFormUi'
+
+function CountryCombobox({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string
+  onChange: (value: string) => void
+  placeholder: string
+}) {
+  const [query, setQuery] = useState(() => countryLabel(value) ?? '')
+  const [open, setOpen] = useState(false)
+  const [activeIndex, setActiveIndex] = useState(0)
+  const suggestions = useMemo(() => searchCountries(query), [query])
+
+  useEffect(() => {
+    if (open) return
+    setQuery(countryLabel(value) ?? '')
+  }, [open, value])
+
+  useEffect(() => {
+    setActiveIndex(0)
+  }, [query])
+
+  const pickCountry = (country: CountryOption) => {
+    onChange(country.code)
+    setQuery(country.label)
+    setOpen(false)
+  }
+
+  const commitQuery = (text: string) => {
+    const trimmed = text.trim()
+    if (!trimmed) {
+      onChange('')
+      setQuery('')
+      return
+    }
+
+    const exact = countryOptionFromValue(trimmed)
+    if (exact) {
+      pickCountry(exact)
+      return
+    }
+
+    const matches = searchCountries(trimmed, 2)
+    if (matches.length === 1 || matches[0]?.name.toLowerCase().startsWith(trimmed.toLowerCase())) {
+      pickCountry(matches[0])
+      return
+    }
+
+    setQuery(countryLabel(value) ?? '')
+  }
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        value={query}
+        role="combobox"
+        aria-expanded={open}
+        aria-autocomplete="list"
+        placeholder={placeholder}
+        className="brand-input bg-brand-surface/80 py-2 text-sm dark:bg-black/20"
+        autoComplete="off"
+        onChange={(e) => {
+          setQuery(e.target.value)
+          setOpen(true)
+        }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => {
+          window.setTimeout(() => {
+            setOpen(false)
+            commitQuery(query)
+          }, 150)
+        }}
+        onKeyDown={(e) => {
+          if (!open || suggestions.length === 0) {
+            if (e.key === 'ArrowDown' && suggestions.length > 0) {
+              e.preventDefault()
+              setOpen(true)
+              setActiveIndex(0)
+            }
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              commitQuery(query)
+            }
+            return
+          }
+
+          if (e.key === 'ArrowDown') {
+            e.preventDefault()
+            setActiveIndex((i) => (i + 1) % suggestions.length)
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault()
+            setActiveIndex((i) => (i <= 0 ? suggestions.length - 1 : i - 1))
+          } else if (e.key === 'Enter') {
+            e.preventDefault()
+            pickCountry(suggestions[activeIndex] ?? suggestions[0])
+          } else if (e.key === 'Escape') {
+            setOpen(false)
+            setQuery(countryLabel(value) ?? '')
+          }
+        }}
+      />
+      {open && suggestions.length > 0 ? (
+        <ul
+          role="listbox"
+          className="absolute left-0 right-0 top-full z-30 mt-1 max-h-56 overflow-y-auto overscroll-contain rounded-lg border border-brand-border bg-brand-surface py-1 shadow-lg dark:bg-brand-bg"
+        >
+          {suggestions.map((country, i) => (
+            <li key={country.code}>
+              <button
+                type="button"
+                role="option"
+                aria-selected={i === activeIndex}
+                className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm ${
+                  i === activeIndex ? 'bg-brand-bg-alt' : 'hover:bg-brand-bg-alt'
+                }`}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => pickCountry(country)}
+                onMouseEnter={() => setActiveIndex(i)}
+              >
+                <span aria-hidden>{country.flag}</span>
+                <span className="min-w-0 flex-1 truncate">{country.name}</span>
+                <span className="text-xs font-semibold text-brand-muted">{country.code}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  )
+}
 
 export type EditableProfile = Pick<
   Profile,
@@ -93,7 +227,7 @@ export function ProfileDetailsForm({
   const [displayName, setDisplayName] = useState(profile.display_name)
   const [pendingAvatar, setPendingAvatar] = useState<File | null>(null)
   const [playtomicNumber, setPlaytomicNumber] = useState(profile.playtomic_number ?? '')
-  const [country, setCountry] = useState(profile.country ?? '')
+  const [country, setCountry] = useState(countryOptionFromValue(profile.country)?.code ?? profile.country ?? '')
   const [racket, setRacket] = useState(profile.racket ?? '')
   const [playStyles, setPlayStyles] = useState<PlayStyle[]>(() => parsePlayStyles(profile.play_style))
   const [preferredSide, setPreferredSide] = useState<PlaySide | null>(profile.preferred_side)
@@ -143,7 +277,7 @@ export function ProfileDetailsForm({
     setDisplayName(profile.display_name)
     setPendingAvatar(null)
     setPlaytomicNumber(profile.playtomic_number ?? '')
-    setCountry(profile.country ?? '')
+    setCountry(countryOptionFromValue(profile.country)?.code ?? profile.country ?? '')
     setRacket(profile.racket ?? '')
     setPlayStyles(parsePlayStyles(profile.play_style))
     setPreferredSide(profile.preferred_side)
@@ -317,12 +451,10 @@ export function ProfileDetailsForm({
             <ProfileFieldLabel icon={Globe2} iconClassName="text-sky-600">
               {t('playerProfile.country')}
             </ProfileFieldLabel>
-            <input
+            <CountryCombobox
               value={country}
-              onChange={(e) => setCountry(e.target.value)}
+              onChange={setCountry}
               placeholder={t('playerProfile.countryPlaceholder')}
-              className="brand-input bg-brand-surface/80 py-2 text-sm dark:bg-black/20"
-              autoComplete="country-name"
             />
           </label>
           <label className="col-span-2 block space-y-1">

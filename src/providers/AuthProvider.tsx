@@ -8,7 +8,12 @@ import {
   type ReactNode,
 } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
-import { AUTH_STORAGE_KEY, tryRestoreCachedSession } from '../lib/auth/cachedSession'
+import {
+  AUTH_STORAGE_KEY,
+  clearBrowserSessionBackup,
+  rememberBrowserSession,
+  tryRestoreCachedSession,
+} from '../lib/auth/cachedSession'
 import { lineHandshakeDebug } from '../lib/debug/lineHandshakeDebug'
 import { installLoginWithAppLifecycleDebug } from '../lib/debug/loginWithAppDebug'
 import { syncProfileForUser } from '../lib/authProfile'
@@ -77,6 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(nextSession)
       setUser(nextSession?.user ?? null)
       if (nextSession?.user) {
+        rememberBrowserSession(nextSession)
         const loaded = await loadProfile(nextSession.user)
         if (!loaded) {
           setSession(null)
@@ -169,6 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [applySession])
 
   const signOut = useCallback(async () => {
+    clearBrowserSessionBackup()
     await supabase.auth.signOut()
   }, [])
 

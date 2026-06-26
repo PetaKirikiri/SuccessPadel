@@ -132,6 +132,7 @@ export const en: Messages = {
       rounds: 'How many matches are scheduled in the rotation.',
       gameMinutes: 'Target minutes for each game within a match.',
       break: 'Rest between matches in the rotation.',
+      time: 'Start and end time for the session.',
     },
     leaderboard: 'Leaderboard',
     leaderboardSubtitle: 'Friendly match wins — not season points.',

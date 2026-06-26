@@ -4,6 +4,7 @@ import {
   clubTimePartsFromDate,
   formatDateInput,
   formatHourLabel,
+  toIsoTimestamp,
 } from '../lib/courtSchedule'
 import { useAuth } from '../hooks/useAuth'
 import { useCompetitionFormDraft } from '../hooks/useCompetitionFormDraft'
@@ -36,7 +37,6 @@ import {
 } from '../lib/rankedSchedule'
 import { buildDuoStoredSchedule } from '../lib/duoRoundRobinSchedule'
 import {
-  competitionEventMinutes,
   competitionFormatPreset,
   competitionPlayerMode,
   competitionScoringConfig,
@@ -54,12 +54,8 @@ import {
   courtCountFromPlayers,
   gameMinutesFromConfig,
   competitionPlayStartFromAnchorIso,
-  competitionStartsAtAnchorIso,
   DEFAULT_SINGLES_COURT_COUNT,
-  parseCompetitionStartSlotValue,
   playersFromCourtCount,
-  scheduleCompetitionStartSlots,
-  snapToCompetitionPlayStart,
   teamsFromCourtCount,
   type CompetitionPlayStartMinute,
   type CourtCount,
@@ -118,6 +114,42 @@ function rosterIdsInOrder(rows: CompetitionPlayer[]): string[] {
   return sortRosterByRank(rows).map((row) => row.id)
 }
 
+function parseTimeInput(value: string, fallbackHour: number, fallbackMinute: number) {
+  const [hourRaw, minuteRaw] = value.split(':')
+  const hour = Number(hourRaw)
+  const minute = Number(minuteRaw)
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) {
+    return { hour: fallbackHour, minute: fallbackMinute }
+  }
+  return {
+    hour: Math.max(0, Math.min(23, Math.floor(hour))),
+    minute: Math.max(0, Math.min(59, Math.floor(minute))),
+  }
+}
+
+function minutesOfDay(hour: number, minute: number): number {
+  return hour * 60 + minute
+}
+
+function windowMinutesBetween(
+  startHour: number,
+  startMinute: number,
+  endHour: number,
+  endMinute: number,
+): number {
+  const start = minutesOfDay(startHour, startMinute)
+  let end = minutesOfDay(endHour, endMinute)
+  if (end <= start) end += 24 * 60
+  return end - start
+}
+
+function endIsoForWindow(day: string, startHour: number, startMinute: number, endHour: number, endMinute: number) {
+  const start = new Date(toIsoTimestamp(day, startHour, startMinute))
+  const end = new Date(toIsoTimestamp(day, endHour, endMinute))
+  if (end <= start) end.setDate(end.getDate() + 1)
+  return end.toISOString()
+}
+
 export function CompetitionForm() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -127,7 +159,9 @@ export function CompetitionForm() {
   const [createLeague, setCreateLeague] = useState(false)
   const [day, setDay] = useState(formatDateInput(new Date()))
   const [startHour, setStartHour] = useState(18)
-  const [startMinute, setStartMinute] = useState<CompetitionPlayStartMinute>(4)
+  const [startMinute, setStartMinute] = useState<CompetitionPlayStartMinute>(0)
+  const [endHour, setEndHour] = useState(20)
+  const [endMinute, setEndMinute] = useState(0)
   const [skillLevel, setSkillLevel] = useState<SkillLevel>('Low Inter')
   const [gender, setGender] = useState<Gender>('Mixed')
   const [title, setTitle] = useState('')
@@ -137,6 +171,7 @@ export function CompetitionForm() {
   const [seasonError, setSeasonError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [savedMessage, setSavedMessage] = useState<string | null>(null)
   const [playerSlots, setPlayerSlots] = useState<string[]>(() =>
     Array(playersFromCourtCount(DEFAULT_SINGLES_COURT_COUNT)).fill(''),
   )
@@ -196,7 +231,9 @@ export function CompetitionForm() {
     setCreateLeague(draft.createLeague)
     setDay(draft.day)
     setStartHour(draft.startHour)
-    setStartMinute(draft.startMinute === 34 ? 34 : 4)
+    setStartMinute(draft.startMinute)
+    setEndHour(draft.endHour)
+    setEndMinute(draft.endMinute)
     if (SKILL_LEVELS.includes(draft.skillLevel as SkillLevel)) {
       setSkillLevel(draft.skillLevel as SkillLevel)
     }
@@ -240,6 +277,8 @@ export function CompetitionForm() {
       day,
       startHour,
       startMinute,
+      endHour,
+      endMinute,
       skillLevel,
       gender,
       title,
@@ -256,6 +295,8 @@ export function CompetitionForm() {
       day,
       startHour,
       startMinute,
+      endHour,
+      endMinute,
       skillLevel,
       gender,
       title,
@@ -274,10 +315,17 @@ export function CompetitionForm() {
     onRestore: applyDraft,
   })
 
-  const competitionStartSlots = useMemo(() => scheduleCompetitionStartSlots(), [])
   const startsAtIso = useMemo(
-    () => competitionStartsAtAnchorIso(day, startHour, startMinute),
+    () => toIsoTimestamp(day, startHour, startMinute),
     [day, startHour, startMinute],
+  )
+  const endsAtIso = useMemo(
+    () => endIsoForWindow(day, startHour, startMinute, endHour, endMinute),
+    [day, startHour, startMinute, endHour, endMinute],
+  )
+  const windowMinutes = useMemo(
+    () => windowMinutesBetween(startHour, startMinute, endHour, endMinute),
+    [startHour, startMinute, endHour, endMinute],
   )
   const competitionSchedule = useMemo(
     () => ({
@@ -398,16 +446,12 @@ export function CompetitionForm() {
       if (data.starts_at) {
         setDay(bangkokDateFromIso(data.starts_at))
         const parts = clubTimePartsFromDate(new Date(data.starts_at))
-        const snapped = snapToCompetitionPlayStart(parts.hour, parts.minute)
-        const match =
-          competitionStartSlots.find(
-            (s) => s.hour === snapped.hour && s.minute === snapped.minute,
-          ) ??
-          competitionStartSlots.find((s) => s.hour === snapped.hour) ??
-          competitionStartSlots[0]
-        if (match) {
-          setStartHour(match.hour)
-          setStartMinute(match.minute)
+        setStartHour(parts.hour)
+        setStartMinute(parts.minute)
+        if (data.ends_at) {
+          const endParts = clubTimePartsFromDate(new Date(data.ends_at))
+          setEndHour(endParts.hour)
+          setEndMinute(endParts.minute)
         }
       } else if (data.starts_on) {
         setDay(data.starts_on)
@@ -523,6 +567,7 @@ export function CompetitionForm() {
 
     setBusy(true)
     setError(null)
+    setSavedMessage(null)
 
     const finalTitle = title.trim() || autoTitle
     const targetPlayers = playersFromCourtCount(courtCount)
@@ -611,10 +656,8 @@ export function CompetitionForm() {
       return
     }
 
-    const eventMinutes = competitionEventMinutes(competitionSchedule)
     const startsAt = showDateFields ? new Date(startsAtIso) : null
-    const endsAt =
-      startsAt != null ? new Date(startsAt.getTime() + eventMinutes * 60 * 1000) : null
+    const endsAt = showDateFields ? new Date(endsAtIso) : null
 
     const sessionFields = {
       season_id: seasonId,
@@ -740,6 +783,13 @@ export function CompetitionForm() {
 
     clearDraft()
 
+    if (id) {
+      setBusy(false)
+      storeCompetitiveGenderFilter(gender)
+      setSavedMessage('Saved')
+      return
+    }
+
     if (!competitionStarted && sessionId) {
       void supabase.rpc('start_competition', { p_session_id: sessionId })
     }
@@ -854,6 +904,19 @@ export function CompetitionForm() {
             gameMinutes: scheduleSetup.gameMinutes,
             breakMinutes: Math.max(GAME_SETUP_MIN_BREAK_MINUTES, scheduleSetup.breakMinutes),
           }}
+          startValue={formatHourLabel(startHour, startMinute)}
+          endValue={formatHourLabel(endHour, endMinute)}
+          windowMinutes={showDateFields ? windowMinutes : null}
+          onStartChange={(value) => {
+            const { hour, minute } = parseTimeInput(value, startHour, startMinute)
+            setStartHour(hour)
+            setStartMinute(minute)
+          }}
+          onEndChange={(value) => {
+            const { hour, minute } = parseTimeInput(value, endHour, endMinute)
+            setEndHour(hour)
+            setEndMinute(minute)
+          }}
           onChange={(patch) => {
             setScheduleSetup((prev) => ({
               ...prev,
@@ -883,7 +946,7 @@ export function CompetitionForm() {
         ) : null}
 
         {showDateFields ? (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid gap-2">
             <label className="block min-w-0 space-y-1">
               <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
                 Day
@@ -894,27 +957,6 @@ export function CompetitionForm() {
                 onChange={(e) => setDay(e.target.value)}
                 className="brand-input h-11"
               />
-            </label>
-
-            <label className="block min-w-0 space-y-1">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-                Start
-              </span>
-              <select
-                value={formatHourLabel(startHour, startMinute)}
-                onChange={(e) => {
-                  const { hour, minute } = parseCompetitionStartSlotValue(e.target.value)
-                  setStartHour(hour)
-                  setStartMinute(minute)
-                }}
-                className="brand-input h-11"
-              >
-                {competitionStartSlots.map((slot) => (
-                  <option key={slot.label} value={slot.label}>
-                    {slot.label}
-                  </option>
-                ))}
-              </select>
             </label>
           </div>
         ) : (
@@ -1030,6 +1072,9 @@ export function CompetitionForm() {
         {(seasonError || error) && (
           <p className="text-sm text-red-600">{error ?? seasonError}</p>
         )}
+        {savedMessage ? (
+          <p className="text-sm font-semibold text-brand-accent">{savedMessage}</p>
+        ) : null}
 
         <button
           type="submit"

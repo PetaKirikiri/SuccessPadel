@@ -39,6 +39,7 @@ export type RosterSlot = {
 export type RuleIcon =
   | 'americano'
   | 'king'
+  | 'time'
   | 'partners-fixed'
   | 'partners-swapped'
   | 'scoring'

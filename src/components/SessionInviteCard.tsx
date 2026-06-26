@@ -69,10 +69,11 @@ function CompetitionInviteCard({
 }: CompetitionProps & { t: TranslateFn; locale: AppLocale }) {
   const [busy, setBusy] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
-  const canEditRoster = isAdmin && row.status !== 'complete'
+  const canEditRoster = isAdmin && row.status !== 'complete' && !row.competition_started_at
 
   const source: SessionSource = { kind: 'competition', row }
-  const data = useMemo(() => inviteCardData(source, t, { locale }), [row, t, locale])
+  const detailTo = `/competitions/${row.id}`
+  const data = useMemo(() => inviteCardData(source, t, { detailTo, locale }), [row, detailTo, t, locale])
 
   const remove = async () => {
     const isLive = competitionIsLiveByTime(row, Date.now())

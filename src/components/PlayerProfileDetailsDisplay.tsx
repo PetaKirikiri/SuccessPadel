@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import type { TranslateFn } from '../i18n'
 import { ACHIEVEMENT_IMAGE, type Achievement } from '../lib/competitionAchievements'
+import { countryLabel } from '../lib/countries'
 import {
   parsePlayStyles,
   PLAYER_GENDERS,
@@ -134,7 +135,7 @@ export function PlayerProfileDetailsDisplay({
             <ProfileFieldLabel icon={Globe2} iconClassName="text-sky-600">
               {t('playerProfile.country')}
             </ProfileFieldLabel>
-            <ProfileReadonlyValue>{profile?.country?.trim() || notSet}</ProfileReadonlyValue>
+            <ProfileReadonlyValue>{countryLabel(profile?.country) || notSet}</ProfileReadonlyValue>
           </div>
           <div className="col-span-2 space-y-1">
             <ProfileFieldLabel icon={Zap} iconClassName="text-orange-600">

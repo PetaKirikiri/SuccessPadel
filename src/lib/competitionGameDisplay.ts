@@ -242,6 +242,17 @@ export function competitionRuleChips(row: CompetitionRow, t: TranslateFn): RuleC
     })
   }
 
+  if (schedule.playStartsAt && schedule.eventEndsAt) {
+    const from = formatClubTimeLocalized(schedule.playStartsAt, 'en')
+    const to = formatClubTimeLocalized(schedule.eventEndsAt, 'en')
+    chips.push({
+      key: 'time',
+      label: `${from}-${to}`,
+      hintKey: 'friendly.hint.time',
+      icon: 'time',
+    })
+  }
+
   chips.push(
     {
       key: 'rounds',

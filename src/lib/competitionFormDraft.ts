@@ -15,7 +15,7 @@ export type DuoTeamDraftSlot = {
 }
 
 export type CompetitionFormDraft = {
-  v: 8
+  v: 9
   savedAt: string
   playerMode: CompetitionPlayerMode
   courtCount: CourtCount
@@ -26,6 +26,8 @@ export type CompetitionFormDraft = {
   day: string
   startHour: number
   startMinute: number
+  endHour: number
+  endMinute: number
   skillLevel: string
   gender: string
   title: string
@@ -37,11 +39,12 @@ export type CompetitionFormDraft = {
 
 type LegacyDraftV7 = Omit<
   CompetitionFormDraft,
-  'v' | 'gameCount' | 'gameMinutes' | 'breakMinutes'
+  'v' | 'gameCount' | 'gameMinutes' | 'breakMinutes' | 'endHour' | 'endMinute'
 > & {
   v: 7
 }
 type LegacyDraftV6 = Omit<LegacyDraftV7, 'v' | 'courtCount'> & { v: 6 }
+type LegacyDraftV8 = Omit<CompetitionFormDraft, 'v' | 'endHour' | 'endMinute'> & { v: 8 }
 
 function courtCountFromLegacyDraft(draft: LegacyDraftV6): CourtCount {
   if (draft.playerMode === 'duos' && draft.duoTeams.length >= 2) {
@@ -61,25 +64,37 @@ export function loadCompetitionFormDraft(scope: 'new' | string): CompetitionForm
   try {
     const raw = localStorage.getItem(competitionDraftKey(scope))
     if (!raw) return null
-    const parsed = JSON.parse(raw) as CompetitionFormDraft | LegacyDraftV7 | LegacyDraftV6
-    if (parsed?.v === 8) return parsed
+    const parsed = JSON.parse(raw) as CompetitionFormDraft | LegacyDraftV8 | LegacyDraftV7 | LegacyDraftV6
+    if (parsed?.v === 9) return parsed
+    if (parsed?.v === 8) {
+      return {
+        ...parsed,
+        v: 9,
+        endHour: 20,
+        endMinute: 0,
+      }
+    }
     if (parsed?.v === 7) {
       return {
         ...parsed,
-        v: 8,
+        v: 9,
         gameCount: 7,
         gameMinutes: 14,
         breakMinutes: 3,
+        endHour: 20,
+        endMinute: 0,
       }
     }
     if (parsed?.v === 6) {
       return {
         ...parsed,
-        v: 8,
+        v: 9,
         courtCount: courtCountFromLegacyDraft(parsed),
         gameCount: 7,
         gameMinutes: 14,
         breakMinutes: 3,
+        endHour: 20,
+        endMinute: 0,
       }
     }
     return null
@@ -94,7 +109,7 @@ export function saveCompetitionFormDraft(
 ): void {
   try {
     const payload: CompetitionFormDraft = {
-      v: 8,
+      v: 9,
       savedAt: new Date().toISOString(),
       ...draft,
     }

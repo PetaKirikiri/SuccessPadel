@@ -97,10 +97,32 @@ export function gameScheduleTotals({ gameCount, gameMinutes, breakMinutes }: Gam
 type Props = {
   value: GameScheduleSetupValues
   onChange: (patch: Partial<GameScheduleSetupValues>) => void
+  startValue?: string
+  endValue?: string
+  onStartChange?: (value: string) => void
+  onEndChange?: (value: string) => void
+  windowMinutes?: number | null
 }
 
-export function GameScheduleSetup({ value, onChange }: Props) {
+export function GameScheduleSetup({
+  value,
+  onChange,
+  startValue,
+  endValue,
+  onStartChange,
+  onEndChange,
+  windowMinutes = null,
+}: Props) {
   const totals = useMemo(() => gameScheduleTotals(value), [value])
+  const showWindow = Boolean(startValue && endValue && onStartChange && onEndChange)
+  const leftoverMinutes = windowMinutes == null ? null : windowMinutes - totals.playMinutes
+  const fits = leftoverMinutes != null && leftoverMinutes >= 0
+  const fitLabel =
+    leftoverMinutes == null
+      ? null
+      : leftoverMinutes === 0
+        ? 'Perfect fit'
+        : `${leftoverMinutes > 0 ? '+' : ''}${leftoverMinutes} min`
 
   return (
     <div className="space-y-3 rounded-lg border border-brand-border/60 bg-brand-bg-alt/35 p-3">
@@ -108,12 +130,35 @@ export function GameScheduleSetup({ value, onChange }: Props) {
         <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
           Game setup
         </p>
-        <p className="mt-1 text-xs text-brand-muted">
-          Rest is at least {MIN_BREAK_MINUTES} minutes between games.
-        </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className={`grid gap-2 ${showWindow ? 'grid-cols-2 sm:grid-cols-5' : 'grid-cols-3'}`}>
+        {showWindow ? (
+          <label className="block min-w-0 space-y-1">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
+              Start
+            </span>
+            <input
+              type="time"
+              value={startValue}
+              onChange={(e) => onStartChange?.(e.target.value)}
+              className="brand-input h-11"
+            />
+          </label>
+        ) : null}
+        {showWindow ? (
+          <label className="block min-w-0 space-y-1">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
+              End
+            </span>
+            <input
+              type="time"
+              value={endValue}
+              onChange={(e) => onEndChange?.(e.target.value)}
+              className="brand-input h-11"
+            />
+          </label>
+        ) : null}
         <ScheduleNumberInput
           label="Games"
           value={value.gameCount}
@@ -140,23 +185,17 @@ export function GameScheduleSetup({ value, onChange }: Props) {
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-2 text-center tabular-nums">
-        <div className="rounded-md bg-brand-surface px-2 py-2">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-muted">Game time</p>
-          <p className="text-sm font-semibold text-brand-primary">{totals.gameTime}m</p>
+      {fitLabel ? (
+        <div
+          className={`rounded-md border px-3 py-2 text-center font-display text-lg font-bold tabular-nums ${
+            fits
+              ? 'border-green-500/50 bg-green-50 text-green-700'
+              : 'border-red-500/50 bg-red-50 text-red-700'
+          }`}
+        >
+          {fitLabel}
         </div>
-        <div className="rounded-md bg-brand-surface px-2 py-2">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-muted">Rest time</p>
-          <p className="text-sm font-semibold text-brand-primary">{totals.restTime}m</p>
-        </div>
-        <div className="rounded-md bg-brand-surface px-2 py-2">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-muted">Event</p>
-          <p className="text-sm font-semibold text-brand-primary">{totals.eventMinutes}m</p>
-        </div>
-      </div>
-      <p className="text-center text-[11px] text-brand-muted tabular-nums">
-        {totals.playMinutes}m play · {totals.leadInMinutes}m before game 1
-      </p>
+      ) : null}
     </div>
   )
 }
