@@ -93,29 +93,7 @@
         max-width: 9rem;
         margin: 0 auto 1.25rem;
       }
-      html[data-legacy-browser] #sp-legacy-notice {
-        display: block;
-      }
-      html[data-legacy-browser] #root {
-        visibility: hidden;
-        pointer-events: none;
-      }
     </style>
-    <script>
-      ;(function () {
-        var legacy = false
-        try {
-          legacy =
-            !window.CSS ||
-            !CSS.supports ||
-            !CSS.supports('color', 'oklch(50% 0.05 0)') ||
-            !CSS.supports('background', 'color-mix(in srgb, red, blue)')
-        } catch (e) {
-          legacy = true
-        }
-        if (legacy) document.documentElement.setAttribute('data-legacy-browser', '')
-      })()
-    </script>
     <script>
       ;(function () {
         try {
