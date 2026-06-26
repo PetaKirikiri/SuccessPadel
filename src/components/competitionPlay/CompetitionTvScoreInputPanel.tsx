@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import type { TranslateFn } from '../../i18n'
 import type { AmericanoScoringUnit } from '../../lib/competitionPresets'
 import type { CourtScoreSubmit } from '../../lib/competitionScoreInput'
@@ -6,12 +7,13 @@ import { pivotScheduleByGame } from '../../lib/competitionCourtBoard'
 import type { CourtPlayer } from '../../lib/americanoSchedule'
 import type { MatchTeam } from '../../lib/types'
 import type { LiveCourt } from '../cards/gameBoardTypes'
-import { ScoreStepper } from '../cards/CourtCard'
 import {
   courtIdForLabel,
   useGameScoring,
 } from '../cards/GameCard'
 import { PlayerAvatarLink } from '../PlayerAvatarLink'
+
+const SCORE_BUTTONS = [0, 1, 2, 3, 4, 5, 6] as const
 
 type MatchForCourt = (
   roundId: string,
@@ -74,7 +76,6 @@ function TeamScoreRow({
   score,
   onScore,
   disabled,
-  scoreMax,
   competitionId,
 }: {
   label?: string
@@ -82,22 +83,23 @@ function TeamScoreRow({
   score: string
   onScore: (value: string) => void
   disabled: boolean
-  scoreMax?: number
   competitionId?: string | null
 }) {
+  const scoreLabel = label ?? players.map((player) => player.name).join(' and ')
+
   return (
-    <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-brand-border/50 bg-brand-surface px-2.5 py-2 dark:border-white/10 dark:bg-white/[0.05]">
-      <div className="min-w-0 space-y-1">
+    <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_minmax(12.5rem,auto)] items-center gap-2 rounded-lg border border-brand-border/35 bg-white/80 px-2 py-1.5 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
+      <div className="min-w-0">
         {label ? (
-          <p className="truncate font-display text-base font-bold leading-tight text-brand-primary dark:text-brand-text">
+          <p className="truncate pb-0.5 font-display text-sm font-bold leading-tight text-brand-primary dark:text-brand-text">
             {label}
           </p>
         ) : null}
-        <div className="grid min-w-0 gap-1">
+        <div className="grid min-w-0 gap-0.5">
           {players.map((player, index) => (
             <div
               key={`${player.rosterId ?? player.id ?? player.name}-${index}`}
-              className="grid min-w-0 grid-cols-[2.1rem_minmax(0,1fr)] items-center gap-2"
+              className="grid min-w-0 grid-cols-[1.85rem_minmax(0,1fr)] items-center gap-1.5"
             >
               <PlayerAvatarLink
                 displayName={player.name}
@@ -106,23 +108,43 @@ function TeamScoreRow({
                 padelPlayerId={player.padelPlayerId}
                 competitionId={competitionId}
                 disabled
-                imgClassName="h-8 w-8 rounded-full object-cover"
+                imgClassName="h-7 w-7 rounded-full object-cover"
               />
-              <p className="truncate text-base font-bold leading-tight text-brand-text dark:text-brand-text">
+              <p className="truncate text-sm font-extrabold leading-tight text-brand-text dark:text-brand-text">
                 {player.name}
               </p>
             </div>
           ))}
         </div>
       </div>
-      <ScoreStepper
-        value={score}
-        onChange={onScore}
-        disabled={disabled}
-        ariaLabel={label ?? players.map((player) => player.name).join(' and ')}
-        scoreMax={scoreMax}
-        tv
-      />
+      <div
+        className="grid w-full min-w-0 grid-cols-7 gap-1"
+        role="group"
+        aria-label={scoreLabel}
+      >
+        {SCORE_BUTTONS.map((value) => {
+          const scoreValue = String(value)
+          const active = score === scoreValue
+          return (
+            <button
+              key={value}
+              type="button"
+              disabled={disabled}
+              onClick={() => onScore(scoreValue)}
+              className={[
+                'h-9 rounded-md border text-base font-extrabold leading-none transition',
+                'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent',
+                active
+                  ? 'border-brand-accent bg-brand-accent text-white shadow-sm dark:border-brand-accent dark:bg-brand-accent dark:text-white'
+                  : 'border-brand-border/60 bg-white text-brand-primary shadow-sm hover:border-brand-accent/60 hover:bg-brand-accent/10 dark:border-white/15 dark:bg-transparent dark:text-brand-text dark:hover:bg-white/[0.08]',
+                disabled ? 'cursor-not-allowed opacity-45' : 'cursor-pointer',
+              ].join(' ')}
+            >
+              {value}
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -130,31 +152,42 @@ function TeamScoreRow({
 function CourtScoreInputSection({
   courtRow,
   liveCourt,
-  scoreUnit,
   setDraft,
   submitCourt,
   busy,
   error,
   canEdit,
-  courtScoreMax,
   duoTeamLabels,
   competitionId,
-  t,
 }: {
   courtRow: ReturnType<typeof useGameScoring>['courtScoreRows'][number]
   liveCourt?: LiveCourt
-  scoreUnit: AmericanoScoringUnit
   setDraft: (courtId: string, side: 'teamA' | 'teamB', value: string) => void
   submitCourt: (courtId: string) => Promise<void>
   busy: boolean
   error?: string
   canEdit: boolean
-  courtScoreMax?: number
   duoTeamLabels?: DuoTeamLabels
   competitionId?: string | null
-  t: TranslateFn
 }) {
   const court = courtRow.court
+  useEffect(() => {
+    if (!canEdit || busy || !courtRow.dirty || !courtRow.canSubmit) return
+    const timeout = window.setTimeout(() => {
+      void submitCourt(courtRow.courtId)
+    }, 700)
+    return () => window.clearTimeout(timeout)
+  }, [
+    busy,
+    canEdit,
+    courtRow.canSubmit,
+    courtRow.courtId,
+    courtRow.dirty,
+    courtRow.teamAStr,
+    courtRow.teamBStr,
+    submitCourt,
+  ])
+
   if (!court) return null
 
   const teamA = teamTuple(liveCourt?.teamA ?? court.teamA)
@@ -170,14 +203,12 @@ function CourtScoreInputSection({
   const disabled = !canEdit
 
   return (
-    <section className="space-y-2 rounded-xl border border-brand-border/70 bg-brand-bg-alt/70 p-2 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
+    <section className="space-y-1 rounded-lg border border-brand-border/55 bg-white/65 p-1.5 shadow-sm dark:border-white/10 dark:bg-white/[0.03]">
       <div className="flex items-center justify-between gap-2 px-1">
-        <h3 className="font-display text-xl font-extrabold leading-none text-brand-primary dark:text-brand-text">
+        <h3 className="font-display text-base font-extrabold leading-none text-brand-primary dark:text-brand-text">
           {displayCourtName(courtRow.courtLabel)}
         </h3>
-        <span className="text-xs font-semibold text-brand-muted">
-          {scoreUnit === 'games' ? t('competition.scoreGames') : t('common.submit')}
-        </span>
+        {busy ? <span className="text-[11px] font-bold text-brand-accent">Saving</span> : null}
       </div>
       <TeamScoreRow
         label={sideLabels?.teamALabel}
@@ -185,7 +216,6 @@ function CourtScoreInputSection({
         score={courtRow.teamAStr}
         onScore={(value) => setDraft(courtRow.courtId, 'teamA', value)}
         disabled={disabled}
-        scoreMax={courtScoreMax}
         competitionId={competitionId}
       />
       <TeamScoreRow
@@ -194,17 +224,8 @@ function CourtScoreInputSection({
         score={courtRow.teamBStr}
         onScore={(value) => setDraft(courtRow.courtId, 'teamB', value)}
         disabled={disabled}
-        scoreMax={courtScoreMax}
         competitionId={competitionId}
       />
-      <button
-        type="button"
-        disabled={disabled || busy || !courtRow.canSubmit}
-        onClick={() => void submitCourt(courtRow.courtId)}
-        className="brand-btn w-full py-2 text-sm font-extrabold disabled:opacity-40"
-      >
-        {busy ? '...' : t('common.submit')}
-      </button>
       {error ? <p className="text-center text-xs font-semibold text-red-600">{error}</p> : null}
     </section>
   )
@@ -217,10 +238,8 @@ export function CompetitionTvScoreInputPanel({
   liveCourtsByGame,
   courtIdByLabel,
   matchForCourt,
-  scoreUnit,
   canEdit,
   onSubmitScores,
-  courtScoreMax,
   playTo,
   duoTeamLabels,
   competitionId,
@@ -250,14 +269,6 @@ export function CompetitionTvScoreInputPanel({
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="shrink-0 border-b border-brand-border/60 px-3 py-2 dark:border-white/10">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-          Score input
-        </p>
-        <h2 className="font-display text-2xl font-extrabold leading-tight text-brand-primary dark:text-brand-text">
-          Game {game.gameNumber}
-        </h2>
-      </div>
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-2 py-2">
         {scoring.courtScoreRows.map((row, index) => {
           const liveCourt = courtsForGame.find((court) => court.courtName === row.courtLabel)
@@ -271,16 +282,13 @@ export function CompetitionTvScoreInputPanel({
               key={courtId}
               courtRow={{ ...row, courtId }}
               liveCourt={liveCourt}
-              scoreUnit={scoreUnit}
               setDraft={scoring.setDraft}
               submitCourt={scoring.submitCourt}
               busy={scoring.busyCourtKey === courtId}
               error={courtError}
               canEdit={scoring.canEdit && Boolean(roundId)}
-              courtScoreMax={courtScoreMax}
               duoTeamLabels={duoTeamLabels}
               competitionId={competitionId}
-              t={t}
             />
           )
         })}

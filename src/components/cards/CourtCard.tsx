@@ -318,7 +318,9 @@ export function CourtMatchCell({
     teamBPlayers?.[1] ?? { id: null, name: fallbackNames[3] ?? '', avatarUrl: null },
   ]
   const playerClass = (isCurrent: boolean) =>
-    `flex min-h-11 min-w-0 items-center gap-1.5 rounded py-0.5 ${
+    `flex min-w-0 items-center rounded ${
+      compact ? 'min-h-12 gap-2 py-1' : 'min-h-11 gap-1.5 py-0.5'
+    } ${
       isCurrent
         ? CURRENT_PLAYER_HIGHLIGHT_CLASS
         : finished
@@ -375,10 +377,10 @@ export function CourtMatchCell({
   )
 
   const nameClass = compact
-    ? 'truncate text-sm font-semibold leading-tight text-brand-text'
+    ? 'truncate text-xl font-extrabold leading-tight text-brand-text'
     : 'truncate text-lg font-semibold leading-tight text-brand-text md:text-xl'
   const avatarClass = compact
-    ? 'h-6 w-6 shrink-0 rounded-full object-cover ring-1 ring-brand-border/60'
+    ? 'h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-brand-border/60'
     : 'h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-brand-border/60 md:h-9 md:w-9'
 
   const playerEl = (player: CourtPlayer, align: 'left' | 'right') => {
@@ -432,7 +434,7 @@ export function CourtMatchCell({
     label ? (
       <p
         className={`font-display font-bold leading-tight text-brand-primary ${
-          compact ? 'tv-team-label whitespace-normal break-words text-base md:text-lg' : 'truncate text-sm md:text-base'
+          compact ? 'tv-team-label whitespace-normal break-words text-2xl' : 'truncate text-sm md:text-base'
         } ${align === 'right' ? 'text-right' : ''}`}
       >
         {label}
@@ -440,8 +442,8 @@ export function CourtMatchCell({
     ) : null
 
   const grid = compact ? (
-    <div className="tv-court-match-grid grid min-h-0 w-full flex-1 grid-cols-[1fr_auto_1fr] items-center gap-x-3 px-3">
-      <div className="flex min-w-0 flex-col justify-center gap-1 justify-self-start">
+    <div className="tv-court-match-grid grid min-h-0 w-full flex-1 grid-cols-[1fr_auto_1fr] items-center gap-x-4 px-4">
+      <div className="flex min-w-0 flex-col justify-center gap-1.5 justify-self-start">
         {teamTitle(teamALabel, 'left')}
         {playerEl(teamAPlayerList[0]!, 'left')}
         {playerEl(teamAPlayerList[1]!, 'left')}
@@ -451,7 +453,7 @@ export function CourtMatchCell({
         <span className="w-px self-stretch bg-brand-border/60" aria-hidden="true" />
         <div className="flex items-center justify-center tabular-nums">{scoreBEl}</div>
       </div>
-      <div className="flex min-w-0 flex-col justify-center gap-1 justify-self-end">
+      <div className="flex min-w-0 flex-col justify-center gap-1.5 justify-self-end">
         {teamTitle(teamBLabel, 'right')}
         {playerEl(teamBPlayerList[0]!, 'right')}
         {playerEl(teamBPlayerList[1]!, 'right')}

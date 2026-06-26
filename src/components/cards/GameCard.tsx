@@ -262,7 +262,7 @@ export function useGameScoring({
       const teamB = parseScoreField(teamBStr)
       const court = game.courts.find((c) => c.courtLabel === courtLabel)
       const canSubmit = courtSubmitReady(teamAStr, teamBStr, playTo)
-      return { courtId, courtLabel, court, teamA, teamB, teamAStr, teamBStr, saved, canSubmit }
+      return { courtId, courtLabel, court, teamA, teamB, teamAStr, teamBStr, saved, canSubmit, dirty: isDirty }
     })
   }, [dirtyCourts, drafts, game.courts, gameRoundId, matchForCourt, playTo, scoringCourts])
 
@@ -595,9 +595,9 @@ export function GameCardHeader({
   t: TranslateFn
 }) {
   const showLiveBadge = !finished && isLiveNow
-  const headerPad = tvCompact ? 'px-2 py-2' : 'px-3 py-3.5 md:px-4 md:py-4'
+  const headerPad = tvCompact ? 'px-3 py-2.5' : 'px-3 py-3.5 md:px-4 md:py-4'
   const gameTitleClass = tvCompact
-    ? 'font-display text-lg font-bold leading-none tabular-nums md:text-xl'
+    ? 'font-display text-3xl font-extrabold leading-none tabular-nums md:text-4xl'
     : 'font-display text-2xl font-bold leading-none tabular-nums md:text-3xl'
   const headerShellClass = `flex items-stretch border-b-2 ${
     finished
