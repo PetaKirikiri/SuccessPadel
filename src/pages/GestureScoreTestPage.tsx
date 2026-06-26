@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { type CSSProperties, useEffect, useRef, useState } from 'react'
 import { FilesetResolver, GestureRecognizer, type NormalizedLandmark } from '@mediapipe/tasks-vision'
 import { ArrowLeft } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -28,6 +28,9 @@ const WASM_BASE =
   'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm'
 const MODEL_URL =
   'https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task'
+const scoreNumberStyle = {
+  fontSize: 'clamp(3.5rem, min(23vw, 23vh), 16rem)',
+} satisfies CSSProperties
 
 function pointDisplay(points: number): string {
   return ['0', '15', '30', '40'][Math.min(points, 3)] ?? '40'
@@ -355,7 +358,7 @@ export function GestureScoreTestPage() {
             <p className="mt-0.5 text-xs font-bold text-[#7dd3fc] md:mt-1 md:text-base">
               Games {ourGames}
             </p>
-            <p className="mt-1 font-display text-[clamp(4rem,23vw,8rem)] font-black leading-none text-[#f8fafc] md:mt-4 md:text-[clamp(7rem,22vw,20rem)]">
+            <p className="mt-1 font-display font-black leading-[0.9] text-[#f8fafc] md:mt-4" style={scoreNumberStyle}>
               {pointDisplay(ourPoints)}
             </p>
           </div>
@@ -376,7 +379,7 @@ export function GestureScoreTestPage() {
             <p className="mt-0.5 text-xs font-bold text-[#7dd3fc] md:mt-1 md:text-base">
               Games {theirGames}
             </p>
-            <p className="mt-1 font-display text-[clamp(4rem,23vw,8rem)] font-black leading-none text-[#f8fafc] md:mt-4 md:text-[clamp(7rem,22vw,20rem)]">
+            <p className="mt-1 font-display font-black leading-[0.9] text-[#f8fafc] md:mt-4" style={scoreNumberStyle}>
               {pointDisplay(theirPoints)}
             </p>
           </div>
