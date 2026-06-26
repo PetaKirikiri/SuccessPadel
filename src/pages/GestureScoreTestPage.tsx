@@ -84,7 +84,7 @@ function FingerCountIcon({ count }: { count: 1 | 2 | 3 | 4 }) {
     <img
       src={`/gesture-score/${count === 1 ? 'one-finger' : count === 2 ? 'two-fingers' : count === 3 ? 'three-fingers' : 'four-fingers'}.png`}
       alt=""
-      className="h-9 w-9 shrink-0 object-contain md:h-20 md:w-20"
+      className="h-7 w-7 shrink-0 object-contain sm:h-9 sm:w-9 md:h-20 md:w-20"
       aria-hidden="true"
       draggable={false}
     />
@@ -322,16 +322,16 @@ export function GestureScoreTestPage() {
         ref={videoRef}
         muted
         playsInline
-        className={`pointer-events-none fixed right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-[430] h-16 w-24 scale-x-[-1] rounded-xl border border-white/20 bg-[#06192d] object-cover shadow-2xl shadow-black/35 transition-opacity md:right-6 md:h-36 md:w-48 ${
+        className={`pointer-events-none fixed right-2 top-[max(0.5rem,env(safe-area-inset-top))] z-[430] h-14 w-20 scale-x-[-1] rounded-lg border border-white/20 bg-[#06192d] object-cover shadow-2xl shadow-black/35 transition-opacity sm:right-3 sm:h-16 sm:w-24 md:right-6 md:h-36 md:w-48 ${
           status === 'running' || status === 'loading' ? 'opacity-100' : 'opacity-0'
         }`}
       />
-      <header className="flex shrink-0 items-center justify-center px-4 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] md:px-6 md:pb-3">
-        <div className="rounded-full border border-white/15 bg-[#11355c] px-6 py-2 text-center shadow-lg shadow-black/25">
-          <p className="text-[10px] font-black uppercase tracking-wide text-white/55 md:text-xs">
+      <header className="flex shrink-0 items-center justify-center px-3 pb-1 pt-[max(0.5rem,env(safe-area-inset-top))] md:px-6 md:pb-3 md:pt-[max(0.75rem,env(safe-area-inset-top))]">
+        <div className="rounded-full border border-white/15 bg-[#11355c] px-4 py-1.5 text-center shadow-lg shadow-black/25 md:px-6 md:py-2">
+          <p className="text-[9px] font-black uppercase tracking-wide text-white/55 md:text-xs">
             Time
           </p>
-          <p className="font-display text-4xl font-black leading-none text-[#f8fafc] md:text-6xl">
+          <p className="font-display text-3xl font-black leading-none text-[#f8fafc] md:text-6xl">
             {formatTimer(elapsedSeconds)}
           </p>
         </div>
@@ -346,82 +346,82 @@ export function GestureScoreTestPage() {
         ) : null}
       </header>
 
-      <section className="grid min-h-0 flex-1 grid-rows-[minmax(18rem,1fr)_auto_minmax(2rem,0.12fr)] gap-4 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:gap-6 md:px-8">
-        <div className="mx-auto grid h-full min-h-0 w-full max-w-7xl grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-stretch gap-3 overflow-hidden rounded-2xl border border-white/15 bg-[#11355c] px-4 py-4 shadow-[0_24px_60px_-36px_rgba(0,0,0,0.7)] md:px-8 md:py-6">
+      <section className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto_minmax(0,1.25rem)] gap-2 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-3 md:grid-rows-[minmax(18rem,1fr)_auto_minmax(2rem,0.12fr)] md:gap-6 md:px-8 md:pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div className="mx-auto grid h-full min-h-0 w-full max-w-7xl grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-stretch gap-1 overflow-hidden rounded-xl border border-white/15 bg-[#11355c] px-3 py-3 shadow-[0_24px_60px_-36px_rgba(0,0,0,0.7)] md:gap-3 md:rounded-2xl md:px-8 md:py-6">
           <div className="flex min-h-0 min-w-0 flex-col justify-center text-left">
-            <p className="truncate text-sm font-black uppercase tracking-wide text-white/55 md:text-lg">
+            <p className="truncate text-[11px] font-black uppercase tracking-wide text-white/55 sm:text-xs md:text-lg">
               Our Team
             </p>
-            <p className="mt-1 text-sm font-bold text-[#7dd3fc] md:text-base">
+            <p className="mt-0.5 text-xs font-bold text-[#7dd3fc] md:mt-1 md:text-base">
               Games {ourGames}
             </p>
-            <p className="mt-4 font-display text-[clamp(7rem,22vw,20rem)] font-black leading-none text-[#f8fafc]">
+            <p className="mt-1 font-display text-[clamp(4rem,23vw,8rem)] font-black leading-none text-[#f8fafc] md:mt-4 md:text-[clamp(7rem,22vw,20rem)]">
               {pointDisplay(ourPoints)}
             </p>
           </div>
 
-          <div className="flex min-h-0 min-w-[5rem] flex-col items-center justify-center gap-2 md:min-w-[8rem]">
+          <div className="flex min-h-0 min-w-[2.5rem] flex-col items-center justify-center gap-1 md:min-w-[8rem] md:gap-2">
             {goldenPoint ? (
               <p className="rounded-full border border-white/15 bg-[#34d399]/15 px-3 py-1 text-center text-[10px] font-black uppercase tracking-wide text-[#34d399] md:text-xs">
                 Golden point
               </p>
             ) : null}
-            <p className="font-display text-5xl font-black text-[#7dd3fc] md:text-8xl">:</p>
+            <p className="font-display text-4xl font-black text-[#7dd3fc] md:text-8xl">:</p>
           </div>
 
           <div className="flex min-h-0 min-w-0 flex-col justify-center text-right">
-            <p className="truncate text-sm font-black uppercase tracking-wide text-white/55 md:text-lg">
+            <p className="truncate text-[11px] font-black uppercase tracking-wide text-white/55 sm:text-xs md:text-lg">
               Other Team
             </p>
-            <p className="mt-1 text-sm font-bold text-[#7dd3fc] md:text-base">
+            <p className="mt-0.5 text-xs font-bold text-[#7dd3fc] md:mt-1 md:text-base">
               Games {theirGames}
             </p>
-            <p className="mt-4 font-display text-[clamp(7rem,22vw,20rem)] font-black leading-none text-[#f8fafc]">
+            <p className="mt-1 font-display text-[clamp(4rem,23vw,8rem)] font-black leading-none text-[#f8fafc] md:mt-4 md:text-[clamp(7rem,22vw,20rem)]">
               {pointDisplay(theirPoints)}
             </p>
           </div>
         </div>
 
-        <div className="mx-auto grid w-full max-w-7xl grid-cols-4 gap-2 py-3 md:gap-4 md:py-5">
+        <div className="mx-auto grid w-full max-w-7xl grid-cols-4 gap-1 py-1.5 md:gap-4 md:py-5">
           <button
             type="button"
             onClick={() => applyFingerAction('win')}
-            className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-full border border-[#34d399]/45 bg-[#34d399]/15 px-1 py-3 text-[#34d399] shadow-xl shadow-black/25 active:scale-[0.96] md:flex-row md:gap-5 md:px-7 md:py-7"
+            className="flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-[#34d399]/45 bg-[#34d399]/15 px-1 py-2 text-[#34d399] shadow-xl shadow-black/25 active:scale-[0.96] sm:gap-1 sm:py-3 md:flex-row md:gap-5 md:rounded-full md:px-7 md:py-7"
             aria-label="Point for us"
             title="Point for us"
           >
             <FingerCountIcon count={1} />
-            <span className="text-[11px] font-black uppercase tracking-wide md:text-4xl">Win</span>
+            <span className="text-[10px] font-black uppercase tracking-wide md:text-4xl">Win</span>
           </button>
           <button
             type="button"
             onClick={() => applyFingerAction('lose')}
-            className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-full border border-[#60a5fa]/45 bg-[#60a5fa]/15 px-1 py-3 text-[#60a5fa] shadow-xl shadow-black/25 active:scale-[0.96] md:flex-row md:gap-5 md:px-7 md:py-7"
+            className="flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-[#60a5fa]/45 bg-[#60a5fa]/15 px-1 py-2 text-[#60a5fa] shadow-xl shadow-black/25 active:scale-[0.96] sm:gap-1 sm:py-3 md:flex-row md:gap-5 md:rounded-full md:px-7 md:py-7"
             aria-label="Point for them"
             title="Point for them"
           >
             <FingerCountIcon count={2} />
-            <span className="text-[11px] font-black uppercase tracking-wide md:text-4xl">Lose</span>
+            <span className="text-[10px] font-black uppercase tracking-wide md:text-4xl">Lose</span>
           </button>
           <button
             type="button"
             onClick={() => applyFingerAction('undo')}
-            className="relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-full border border-white/15 bg-[#11355c] px-1 py-3 text-[#7dd3fc] shadow-xl shadow-black/25 active:scale-[0.96] md:flex-row md:gap-5 md:px-7 md:py-7"
+            className="relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-white/15 bg-[#11355c] px-1 py-2 text-[#7dd3fc] shadow-xl shadow-black/25 active:scale-[0.96] sm:gap-1 sm:py-3 md:flex-row md:gap-5 md:rounded-full md:px-7 md:py-7"
             aria-label="Undo last score action"
             title="Undo last score action"
           >
             <FingerCountIcon count={3} />
-            <span className="text-[11px] font-black uppercase tracking-wide md:text-4xl">Undo</span>
+            <span className="text-[10px] font-black uppercase tracking-wide md:text-4xl">Undo</span>
           </button>
           <button
             type="button"
             onClick={() => applyFingerAction('reset')}
-            className="relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-full border border-white/15 bg-[#11355c] px-1 py-3 text-[#7dd3fc] shadow-xl shadow-black/25 active:scale-[0.96] md:flex-row md:gap-5 md:px-7 md:py-7"
+            className="relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-white/15 bg-[#11355c] px-1 py-2 text-[#7dd3fc] shadow-xl shadow-black/25 active:scale-[0.96] sm:gap-1 sm:py-3 md:flex-row md:gap-5 md:rounded-full md:px-7 md:py-7"
             aria-label="Reset score"
             title="Reset score"
           >
             <FingerCountIcon count={4} />
-            <span className="text-[11px] font-black uppercase tracking-wide md:text-4xl">Reset</span>
+            <span className="text-[10px] font-black uppercase tracking-wide md:text-4xl">Reset</span>
           </button>
         </div>
 
