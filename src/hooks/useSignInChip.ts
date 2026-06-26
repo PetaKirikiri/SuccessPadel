@@ -3,17 +3,18 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from './useAuth'
 import { tryRestoreCachedSession } from '../lib/auth/cachedSession'
 import { saveReturnTo } from '../lib/authReturnTo'
+import { playerProfilePath } from '../lib/playerProfileSlug'
 
 export function useSignInChip(returnTo?: string) {
   const navigate = useNavigate()
   const loc = useLocation()
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const [modalOpen, setModalOpen] = useState(false)
   const [busy, setBusy] = useState(false)
 
   const openProfile = async () => {
     if (user) {
-      const path = `/players/${user.id}`
+      const path = playerProfilePath({ id: user.id, displayName: profile?.display_name })
       if (loc.pathname === path) return
       navigate(path)
       return
@@ -26,7 +27,7 @@ export function useSignInChip(returnTo?: string) {
     setBusy(false)
 
     if (session?.user) {
-      navigate(returnTo ?? `/players/${session.user.id}`)
+      navigate(returnTo ?? playerProfilePath({ id: session.user.id }))
       return
     }
 

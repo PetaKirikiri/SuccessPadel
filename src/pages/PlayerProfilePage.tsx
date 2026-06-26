@@ -23,6 +23,7 @@ import { resolvePlayerProfile } from '../lib/playerProfile'
 import { saveClaimPadelPlayer } from '../lib/authClaimPlayer'
 import { adminDeletePlayer, canAdminDeletePlayer } from '../lib/playerDelete'
 import { playerProfileShareUrl, sharePlayerProfile } from '../lib/playerProfileShare'
+import { playerNameSlug, playerProfilePath } from '../lib/playerProfileSlug'
 import { uploadProfileAvatar, validateProfileAvatar } from '../lib/profileAvatar'
 import { resolveProfileAvatarUrl } from '../lib/resolveProfileAvatar'
 import { resolveGameSpriteUrl } from '../lib/pixelAvatar/resolveGameSprite'
@@ -46,7 +47,8 @@ function snapshotEntryMatchesRoute(
   return (
     entry.profile_id === playerId ||
     entry.member_profile_id === playerId ||
-    entry.padel_player_id === playerId
+    entry.padel_player_id === playerId ||
+    playerNameSlug(entry.display_name) === playerNameSlug(playerId)
   )
 }
 
@@ -434,7 +436,7 @@ export function PlayerProfilePage() {
       p_player_id: profileSharePlayerId,
     })
     const shareId = (data as string | null) ?? profileSharePlayerId
-    const url = playerProfileShareUrl(shareId, competitionId)
+    const url = playerProfileShareUrl(shareId, competitionId, displayName)
     const result = await sharePlayerProfile({
       url,
       title: displayName,
@@ -558,7 +560,15 @@ export function PlayerProfilePage() {
                   name={displayName}
                   avatarUrl={avatarUrl}
                   showdownSpriteUrl={showdownSpriteUrl}
-                  fighterEditTo={canEditProfile && playerId ? `/players/${playerId}/fighter` : undefined}
+                  fighterEditTo={
+                    canEditProfile && playerId
+                      ? playerProfilePath({
+                          id: profileId ?? padelPlayerId ?? playerId,
+                          displayName,
+                          suffix: '/fighter',
+                        })
+                      : undefined
+                  }
                   fighterEditLabel={t('profile.showdownPick')}
                   memberSince={isOwnProfile ? null : memberSince}
                   canAddLine={canConnectLine && !showInlineLineSetup}

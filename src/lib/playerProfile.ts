@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient'
 import { normalizePixelAvatarConfig } from './pixelAvatar/defaults'
 import type { AvatarMode, PixelAvatarConfig, PlaySide } from './types'
+import { isPlayerUuid, playerNameSlug } from './playerProfileSlug'
 
 export type PublicPlayerProfile = {
   id: string
@@ -109,6 +110,24 @@ async function fetchLinkablePadelPlayerById(padelPlayerId: string): Promise<stri
   return data.id
 }
 
+async function resolvePlayerIdFromRoute(routePlayerId: string): Promise<string> {
+  if (isPlayerUuid(routePlayerId)) return routePlayerId
+  const routeSlug = playerNameSlug(routePlayerId)
+  if (!routeSlug) return routePlayerId
+
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, display_name')
+  const profile = profiles?.find((row) => playerNameSlug(row.display_name) === routeSlug)
+  if (profile?.id) return profile.id
+
+  const { data: padelPlayers } = await supabase
+    .from('padel_players')
+    .select('id, display_name, profile_id')
+  const padel = padelPlayers?.find((row) => playerNameSlug(row.display_name) === routeSlug)
+  return padel?.profile_id ?? padel?.id ?? routePlayerId
+}
+
 async function ensureLinkablePadelPlayer(playerId: string): Promise<string | null> {
   const { data, error } = await supabase.rpc('ensure_linkable_padel_player', {
     p_player_id: playerId,
@@ -137,6 +156,8 @@ async function resolveLinkablePadelPlayerId(
 }
 
 export async function resolvePlayerProfile(playerId: string): Promise<ResolvedPlayerProfile> {
+  playerId = await resolvePlayerIdFromRoute(playerId)
+
   const empty: ResolvedPlayerProfile = {
     profile: null,
     guestName: null,

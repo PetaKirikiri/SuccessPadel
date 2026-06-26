@@ -108,6 +108,10 @@ async function restoreBrowserSessionBackup(): Promise<Session | null> {
   if (isLineContext()) return null
   const backup = readBrowserSessionBackup()
   if (!backup) return null
+
+  const refreshed = await refreshWithToken(backup.refreshToken)
+  if (refreshed) return refreshed
+
   const { error } = await supabase.auth.setSession({
     access_token: backup.accessToken,
     refresh_token: backup.refreshToken,
@@ -118,6 +122,18 @@ async function restoreBrowserSessionBackup(): Promise<Session | null> {
   if (!session?.user) return null
   rememberBrowserSession(session)
   return session
+}
+
+async function refreshWithToken(refreshToken: string): Promise<Session | null> {
+  try {
+    const { data, error } = await supabase.auth.refreshSession({ refresh_token: refreshToken })
+    const session = data.session
+    if (error || !session?.user) return null
+    rememberBrowserSession(session)
+    return session
+  } catch {
+    return null
+  }
 }
 
 /** Restore Supabase session from browser storage and refresh if needed. */

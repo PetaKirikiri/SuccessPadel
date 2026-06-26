@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { ProtectedRoute } from './components/ProtectedRoute'
@@ -41,6 +42,12 @@ import { MembersPage } from './pages/MembersPage'
 import { MatchNew } from './pages/MatchNew'
 import { Week } from './pages/Week'
 import { NativeDeepLinkHandler } from './components/NativeDeepLinkHandler'
+
+const GestureScoreTestRoute = lazy(() =>
+  import('./pages/GestureScoreTestPage').then((module) => ({
+    default: module.GestureScoreTestPage,
+  })),
+)
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
   return <ProtectedRoute>{children}</ProtectedRoute>
@@ -124,6 +131,15 @@ function MainAppRoutes() {
         }
       >
         <Route index element={<Navigate to="/friendly" replace />} />
+        <Route
+          path="gesture-score-test"
+          element={
+            <Suspense fallback={<p className="game-subtle p-4 text-center">Loading…</p>}>
+              <GestureScoreTestRoute />
+            </Suspense>
+          }
+        />
+        <Route path="dev/gesture-score-test" element={<Navigate to="/gesture-score-test" replace />} />
         <Route path="friendly" element={<FriendlyHomePage />} />
         <Route path="friendly/new" element={<FriendlyGameForm />} />
         <Route

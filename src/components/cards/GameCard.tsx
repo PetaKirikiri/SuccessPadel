@@ -607,8 +607,8 @@ export function GameCardHeader({
       : 'border-brand-accent/50 bg-brand-primary dark:border-brand-accent/40 dark:bg-white/[0.08]'
   }`
   const navBtnClass = finished
-    ? 'border border-brand-border/50 text-brand-primary/75 hover:bg-brand-primary/5 dark:text-brand-muted'
-    : 'border border-brand-accent-light/45 text-brand-accent-light hover:bg-brand-accent-light/10 dark:border-brand-accent/35 dark:text-brand-accent-light'
+    ? 'text-[#602d24]/80 hover:bg-[#602d24]/5'
+    : 'text-[#fff3da] hover:bg-[#fff3da]/10'
 
   const collapseBtnClass = `flex min-w-12 shrink-0 items-center justify-center self-stretch border-l px-4 text-2xl leading-none transition active:opacity-70 md:min-w-14 md:px-5 md:text-3xl ${
     finished
@@ -635,7 +635,7 @@ export function GameCardHeader({
       <p
         className={`font-display font-bold leading-none tabular-nums ${
           tvCompact ? 'text-4xl md:text-5xl' : 'text-2xl md:text-3xl'
-        } ${finished ? 'text-brand-primary dark:text-brand-text' : 'text-brand-bg-alt dark:text-brand-text'}`}
+        } ${finished ? 'text-[#602d24]' : 'text-[#fff3da]'}`}
       >
         {countdown}
       </p>
@@ -645,19 +645,22 @@ export function GameCardHeader({
   if (tvNav) {
     return (
       <div className={headerShellClass}>
-        <div className={`grid min-h-[5.75rem] min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 ${headerPad}`}>
+        <div className={`relative grid min-h-[5.75rem] min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 ${headerPad}`}>
+          {onBack ? (
+            <button
+              type="button"
+              className="absolute left-3 top-2 z-20 shrink-0 px-1 py-0.5 text-sm font-black uppercase tracking-wide text-[#fff3da]/75 transition hover:text-[#fff3da]"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onBack()
+              }}
+              aria-label={t('aria.back')}
+            >
+              Back
+            </button>
+          ) : null}
           <div className="flex min-w-0 items-center gap-2 justify-self-start">
-            {onBack ? (
-              <button
-                type="button"
-                className={`tv-game-header-nav shrink-0 ${navBtnClass}`}
-                onClick={onBack}
-                aria-label={t('aria.back')}
-              >
-                <span aria-hidden="true">←</span>
-                <span className="text-base font-extrabold uppercase tracking-wide">Back</span>
-              </button>
-            ) : null}
             <button
               type="button"
               className={`tv-game-header-nav shrink-0 ${navBtnClass}`}
@@ -666,7 +669,6 @@ export function GameCardHeader({
               aria-label={t('competition.prevGame')}
             >
               <span aria-hidden="true">‹</span>
-              <span className="text-base font-extrabold uppercase tracking-wide">Prev</span>
             </button>
           </div>
           <div className="pointer-events-none relative flex min-w-0 items-center justify-center justify-self-center">
@@ -674,11 +676,11 @@ export function GameCardHeader({
               src="/brand/logo-padel.webp"
               alt=""
               aria-hidden="true"
-              className="absolute right-full mr-4 h-12 w-auto max-w-[8rem] shrink-0 object-contain"
+              className="absolute right-full mr-4 h-14 w-auto max-w-[9rem] shrink-0 object-contain"
             />
             <p
               className={`shrink-0 ${gameTitleClass} ${
-                finished ? 'text-brand-sage dark:text-brand-muted' : 'text-brand-accent-light dark:text-brand-fun'
+                finished ? 'text-[#602d24]/80' : 'text-[#fff3da]'
               }`}
             >
               {t('competition.game', { number: gameNumber })}
@@ -687,21 +689,21 @@ export function GameCardHeader({
               {showLiveBadge ? (
                 <span
                   className={`shrink-0 text-xs font-semibold md:text-sm ${
-                    finished ? 'text-brand-accent' : 'text-brand-bg-alt dark:text-brand-fun'
+                    finished ? 'text-[#602d24]/70' : 'text-[#fff3da]/80'
                   }`}
                 >
                   {t('competition.live')}
                 </span>
               ) : finished ? (
-                <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-brand-muted md:text-sm">
-                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand-sage/60 dark:bg-brand-muted/60" aria-hidden />
+                <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-[#602d24]/65 md:text-sm">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#602d24]/45" aria-hidden />
                   {t('competition.done')}
                 </span>
               ) : null}
               {timeLabel ? (
                 <span
                   className={`shrink-0 text-[11px] tabular-nums md:text-sm ${
-                    finished ? 'text-brand-muted' : 'text-white/75 dark:text-brand-muted'
+                    finished ? 'text-[#602d24]/65' : 'text-[#fff3da]/70'
                   }`}
                 >
                   {timeLabel}
@@ -719,7 +721,6 @@ export function GameCardHeader({
               onClick={tvNav.onNext}
               aria-label={t('competition.nextGame')}
             >
-              <span className="text-base font-extrabold uppercase tracking-wide">Next</span>
               <span aria-hidden="true">›</span>
             </button>
           </div>

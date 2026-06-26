@@ -205,7 +205,7 @@ function CourtScoreInputSection({
   return (
     <section className="flex min-h-0 flex-col gap-1 rounded-xl border border-brand-primary/30 bg-brand-bg-alt p-1.5 shadow-sm dark:border-white/12 dark:bg-white/[0.05]">
       <div className="flex shrink-0 items-center justify-between gap-2 rounded-lg bg-brand-primary px-2.5 py-1.5 dark:bg-white/[0.08]">
-        <h3 className="font-display text-lg font-extrabold leading-none text-brand-accent-light dark:text-brand-fun">
+        <h3 className="font-display text-lg font-extrabold leading-none text-brand-accent-light dark:text-brand-tan">
           {displayCourtName(courtRow.courtLabel)}
         </h3>
         {busy ? <span className="text-[11px] font-bold text-brand-accent-light">Saving</span> : null}

@@ -405,7 +405,7 @@ export function gameSlotTimes(
     opts.totalGames != null &&
     opts.totalGames > 0
       ? scheduleLeadInMinutes(opts.eventMinutes, opts.totalGames, gameMinutes, breakMinutes)
-      : COMPETITION_SCHEDULE.leadInMinutes
+      : 0
   const offsetMin = leadIn + (gameNumber - 1) * (gameMinutes + breakMinutes)
   const startsAt = new Date(new Date(eventStartsAt).getTime() + offsetMin * 60000)
   const endsAt = new Date(startsAt.getTime() + gameMinutes * 60000)

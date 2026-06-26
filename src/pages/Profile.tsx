@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { playerProfilePath } from '../lib/playerProfileSlug'
 
 export function Profile() {
   const { profile, loading, refreshProfile } = useAuth()
@@ -13,5 +14,5 @@ export function Profile() {
     return <p className="py-6 text-center text-xs text-brand-muted">…</p>
   }
 
-  return <Navigate to={`/players/${profile.id}`} replace />
+  return <Navigate to={playerProfilePath({ id: profile.id, displayName: profile.display_name })} replace />
 }

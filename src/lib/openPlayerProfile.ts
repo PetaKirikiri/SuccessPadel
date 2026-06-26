@@ -1,6 +1,7 @@
 import type { NavigateFunction } from 'react-router-dom'
 import type { LeaderboardEntry } from '../components/CompetitionLeaderboard'
 import type { Achievement } from './competitionAchievements'
+import { isPlayerUuid, playerProfilePath } from './playerProfileSlug'
 import { supabase } from './supabaseClient'
 
 export type PlayerProfileSnapshot = {
@@ -19,15 +20,11 @@ export type OpenPlayerProfileInput = {
   snapshot?: PlayerProfileSnapshot
 }
 
-function isUuid(value: string | null | undefined): value is string {
-  return Boolean(value && /^[0-9a-f-]{36}$/i.test(value))
-}
-
 export async function resolvePlayerRouteId(
   input: Pick<OpenPlayerProfileInput, 'profileId' | 'padelPlayerId' | 'displayName'>,
 ): Promise<string | null> {
-  if (isUuid(input.profileId)) return input.profileId
-  if (isUuid(input.padelPlayerId)) return input.padelPlayerId
+  if (isPlayerUuid(input.profileId)) return input.profileId
+  if (isPlayerUuid(input.padelPlayerId)) return input.padelPlayerId
   const name = input.displayName?.trim()
   if (!name) return null
 
@@ -47,12 +44,18 @@ export async function openPlayerProfile(
   const playerId = await resolvePlayerRouteId(input)
   if (!playerId) return false
 
-  const params = input.competitionId ? `?competition=${input.competitionId}` : ''
-  navigate(`/players/${playerId}${params}`, {
-    state: {
-      from: input.from,
-      snapshot: input.snapshot,
+  navigate(
+    playerProfilePath({
+      id: playerId,
+      displayName: input.displayName,
+      competitionId: input.competitionId,
+    }),
+    {
+      state: {
+        from: input.from,
+        snapshot: input.snapshot,
+      },
     },
-  })
+  )
   return true
 }

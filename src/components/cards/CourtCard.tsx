@@ -319,7 +319,7 @@ export function CourtMatchCell({
   ]
   const playerClass = (isCurrent: boolean) =>
     `flex min-w-0 items-center rounded ${
-      compact ? 'min-h-14 gap-3 py-1.5' : 'min-h-11 gap-1.5 py-0.5'
+      compact ? 'min-h-16 gap-3 py-1.5' : 'min-h-11 gap-1.5 py-0.5'
     } ${
       isCurrent
         ? CURRENT_PLAYER_HIGHLIGHT_CLASS
@@ -377,10 +377,10 @@ export function CourtMatchCell({
   )
 
   const nameClass = compact
-    ? 'truncate text-2xl font-extrabold leading-tight text-brand-text'
+    ? 'truncate text-4xl font-extrabold leading-tight text-brand-text'
     : 'truncate text-lg font-semibold leading-tight text-brand-text md:text-xl'
   const avatarClass = compact
-    ? 'h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-brand-border/60'
+    ? 'h-14 w-14 shrink-0 rounded-full object-cover text-2xl ring-2 ring-brand-border/60'
     : 'h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-brand-border/60 md:h-9 md:w-9'
 
   const playerEl = (player: CourtPlayer, align: 'left' | 'right') => {
@@ -398,16 +398,16 @@ export function CourtMatchCell({
         className={nameClass}
       />
     )
-    const avatarEl =
-      isRegistered ? (
-        <PlayerAvatarLink
-          displayName={player.name}
-          avatarUrl={displayAvatarUrl}
-          profileId={player.id}
-          padelPlayerId={player.padelPlayerId}
-          imgClassName={avatarClass}
-        />
-      ) : null
+    const avatarEl = (
+      <PlayerAvatarLink
+        displayName={player.name}
+        avatarUrl={displayAvatarUrl}
+        profileId={player.id}
+        padelPlayerId={player.padelPlayerId}
+        imgClassName={avatarClass}
+        disabled={!isRegistered}
+      />
+    )
 
     return (
       <p
@@ -434,7 +434,7 @@ export function CourtMatchCell({
     label ? (
       <p
         className={`font-display font-bold leading-tight text-brand-primary ${
-          compact ? 'tv-team-label whitespace-normal break-words text-3xl' : 'truncate text-sm md:text-base'
+          compact ? 'tv-team-label whitespace-normal break-words text-4xl' : 'truncate text-sm md:text-base'
         } ${align === 'right' ? 'text-right' : ''}`}
       >
         {label}
@@ -442,8 +442,8 @@ export function CourtMatchCell({
     ) : null
 
   const grid = compact ? (
-    <div className="tv-court-match-grid grid min-h-0 w-full flex-1 grid-cols-[1fr_auto_1fr] items-center gap-x-5 px-5">
-      <div className="flex min-w-0 flex-col justify-center gap-2 justify-self-start">
+    <div className="tv-court-match-grid grid min-h-0 w-full flex-1 grid-cols-[1fr_auto_1fr] items-center gap-x-6 px-6">
+      <div className="flex min-w-0 flex-col justify-center gap-2.5 justify-self-start">
         {teamTitle(teamALabel, 'left')}
         {playerEl(teamAPlayerList[0]!, 'left')}
         {playerEl(teamAPlayerList[1]!, 'left')}
@@ -453,7 +453,7 @@ export function CourtMatchCell({
         <span className="w-px self-stretch bg-brand-border/60" aria-hidden="true" />
         <div className="flex items-center justify-center tabular-nums">{scoreBEl}</div>
       </div>
-      <div className="flex min-w-0 flex-col justify-center gap-2 justify-self-end">
+      <div className="flex min-w-0 flex-col justify-center gap-2.5 justify-self-end">
         {teamTitle(teamBLabel, 'right')}
         {playerEl(teamBPlayerList[0]!, 'right')}
         {playerEl(teamBPlayerList[1]!, 'right')}
@@ -521,10 +521,10 @@ function CourtLabelRow({
   return (
     <div
       className={`flex items-center justify-center px-2 ${
-        tvCompact ? 'tv-court-label-row min-h-14 py-2' : 'min-h-12 px-3 py-2'
+        tvCompact ? 'tv-court-label-row min-h-20 py-3' : 'min-h-12 px-3 py-2'
       }`}
     >
-      <p className={`truncate text-center ${titleClass}${tvCompact ? ' tv-court-label !text-4xl' : ''}`}>{label}</p>
+      <p className={`truncate text-center ${titleClass}${tvCompact ? ' tv-court-label !text-6xl' : ''}`}>{label}</p>
     </div>
   )
 }

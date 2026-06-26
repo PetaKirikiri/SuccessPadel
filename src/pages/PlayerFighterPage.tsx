@@ -7,6 +7,7 @@ import { PixelAvatarEditor } from '../components/PixelAvatarEditor'
 import { useAuth } from '../hooks/useAuth'
 import { useTranslation } from '../hooks/useTranslation'
 import { resolvePlayerProfile } from '../lib/playerProfile'
+import { playerProfilePath } from '../lib/playerProfileSlug'
 import { defaultPixelAvatarConfig, normalizePixelAvatarConfig } from '../lib/pixelAvatar/defaults'
 import { resolveGameSpriteForCharacter } from '../lib/pixelAvatar/resolveCharacterSprite'
 import type { PixelAvatarConfig } from '../lib/pixelAvatar/types'
@@ -66,7 +67,14 @@ export function PlayerFighterPage() {
     : null
 
   const backToProfile = () => {
-    if (playerId) navigate(`/players/${playerId}`)
+    if (playerId) {
+      navigate(
+        playerProfilePath({
+          id: resolved?.profile?.id ?? playerId,
+          displayName: resolved?.profile?.display_name ?? resolved?.guestName,
+        }),
+      )
+    }
     else navigate('/profile')
   }
 

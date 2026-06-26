@@ -9,6 +9,7 @@ import { clubDisplayName } from '../lib/clubMemberDisplay'
 import { lineHandshakeDebug } from '../lib/debug/lineHandshakeDebug'
 import { firstDisplayName } from '../lib/leaderboardEntries'
 import { playerProfileShareUrl, sharePlayerProfile } from '../lib/playerProfileShare'
+import { playerProfilePath } from '../lib/playerProfileSlug'
 import { supabase } from '../lib/supabaseClient'
 import type { Profile } from '../lib/types'
 
@@ -54,7 +55,7 @@ function MemberListRow({
   return (
     <li className="flex items-stretch gap-1 border-b border-brand-border/60 pr-2 last:border-b-0">
       <Link
-        to={`/players/${id}`}
+        to={playerProfilePath({ id, displayName: name })}
         className={`flex min-w-0 flex-1 items-center gap-3 px-3 py-3 transition active:bg-brand-bg-alt ${
           isMe ? 'bg-brand-accent/5' : ''
         }`}
@@ -282,7 +283,7 @@ export function MembersPage() {
   const handleShare = async (id: string, name: string) => {
     const { data } = await supabase.rpc('ensure_linkable_padel_player', { p_player_id: id })
     const shareId = (data as string | null) ?? id
-    const url = playerProfileShareUrl(shareId, null)
+    const url = playerProfileShareUrl(shareId, null, name)
     const result = await sharePlayerProfile({
       url,
       title: name,

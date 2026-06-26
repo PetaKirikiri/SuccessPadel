@@ -5,6 +5,7 @@ import { useSignInChip } from '../hooks/useSignInChip'
 import { useTranslation } from '../hooks/useTranslation'
 import { useLineClientProfile } from '../hooks/useLineClientProfile'
 import { firstDisplayName } from '../lib/leaderboardEntries'
+import { playerProfilePath } from '../lib/playerProfileSlug'
 import { resolveProfileAvatarUrl } from '../lib/resolveProfileAvatar'
 import { useTheme } from '../providers/ThemeProvider'
 import { LineSignInModal } from './LineSignInModal'
@@ -57,7 +58,7 @@ export function ProfileChip({ returnTo, className = '' }: Props) {
   const goProfile = () => {
     if (!user) return
     setMenuOpen(false)
-    navigate(`/players/${user.id}`)
+    navigate(playerProfilePath({ id: user.id, displayName: profile?.display_name }))
   }
 
   const goMembers = () => {
