@@ -597,7 +597,7 @@ export function GameCardHeader({
   const showLiveBadge = !finished && isLiveNow
   const headerPad = tvCompact ? 'px-3 py-2.5' : 'px-3 py-3.5 md:px-4 md:py-4'
   const gameTitleClass = tvCompact
-    ? 'font-display text-3xl font-extrabold leading-none tabular-nums md:text-4xl'
+    ? 'font-display text-4xl font-extrabold leading-none tabular-nums md:text-5xl'
     : 'font-display text-2xl font-bold leading-none tabular-nums md:text-3xl'
   const headerShellClass = `flex items-stretch border-b-2 ${
     finished
@@ -671,7 +671,7 @@ export function GameCardHeader({
   if (tvNav) {
     return (
       <div className={headerShellClass}>
-        <div className={`flex min-w-0 flex-1 items-center gap-2 md:gap-3 ${headerPad}`}>
+        <div className={`grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 md:gap-3 ${headerPad}`}>
           <button
             type="button"
             className={`tv-game-header-nav shrink-0 ${navBtnClass}`}
@@ -681,20 +681,24 @@ export function GameCardHeader({
           >
             ‹
           </button>
-          <div className="flex min-w-0 flex-1 items-center gap-2 md:gap-3">
-            {gameInfoInline}
+          <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+            <div className="flex min-w-0 items-center justify-center gap-3">
+              {gameInfoInline}
+            </div>
             {countdownBlock}
           </div>
-          {viewAlongUrl ? <TvPlayQrPanel url={viewAlongUrl} header /> : null}
-          <button
-            type="button"
-            className={`tv-game-header-nav shrink-0 ${navBtnClass}`}
-            disabled={tvNav.atEnd}
-            onClick={tvNav.onNext}
-            aria-label={t('competition.nextGame')}
-          >
-            ›
-          </button>
+          <div className="flex items-center gap-2">
+            {viewAlongUrl ? <TvPlayQrPanel url={viewAlongUrl} header /> : null}
+            <button
+              type="button"
+              className={`tv-game-header-nav shrink-0 ${navBtnClass}`}
+              disabled={tvNav.atEnd}
+              onClick={tvNav.onNext}
+              aria-label={t('competition.nextGame')}
+            >
+              ›
+            </button>
+          </div>
         </div>
       </div>
     )

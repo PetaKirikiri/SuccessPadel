@@ -88,18 +88,18 @@ function TeamScoreRow({
   const scoreLabel = label ?? players.map((player) => player.name).join(' and ')
 
   return (
-    <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_minmax(12.5rem,auto)] items-center gap-2 rounded-lg border border-brand-border/35 bg-white/80 px-2 py-1.5 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
+    <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_minmax(15rem,auto)] items-center gap-2 rounded-xl border border-brand-primary/25 bg-brand-surface px-2.5 py-2 shadow-sm dark:border-white/10 dark:bg-white/[0.06]">
       <div className="min-w-0">
         {label ? (
-          <p className="truncate pb-0.5 font-display text-sm font-bold leading-tight text-brand-primary dark:text-brand-text">
+          <p className="truncate pb-0.5 font-display text-base font-extrabold leading-tight text-brand-primary dark:text-brand-text">
             {label}
           </p>
         ) : null}
-        <div className="grid min-w-0 gap-0.5">
+        <div className="grid min-w-0 gap-1">
           {players.map((player, index) => (
             <div
               key={`${player.rosterId ?? player.id ?? player.name}-${index}`}
-              className="grid min-w-0 grid-cols-[1.85rem_minmax(0,1fr)] items-center gap-1.5"
+              className="grid min-w-0 grid-cols-[2.3rem_minmax(0,1fr)] items-center gap-2"
             >
               <PlayerAvatarLink
                 displayName={player.name}
@@ -108,9 +108,9 @@ function TeamScoreRow({
                 padelPlayerId={player.padelPlayerId}
                 competitionId={competitionId}
                 disabled
-                imgClassName="h-7 w-7 rounded-full object-cover"
+                imgClassName="h-9 w-9 rounded-full object-cover ring-2 ring-brand-border/60"
               />
-              <p className="truncate text-sm font-extrabold leading-tight text-brand-text dark:text-brand-text">
+              <p className="truncate text-lg font-extrabold leading-tight text-brand-text dark:text-brand-text">
                 {player.name}
               </p>
             </div>
@@ -132,11 +132,11 @@ function TeamScoreRow({
               disabled={disabled}
               onClick={() => onScore(scoreValue)}
               className={[
-                'h-9 rounded-md border text-base font-extrabold leading-none transition',
+                'h-12 rounded-lg border-2 font-display text-2xl font-extrabold leading-none tabular-nums transition',
                 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent',
                 active
-                  ? 'border-brand-accent bg-brand-accent text-white shadow-sm dark:border-brand-accent dark:bg-brand-accent dark:text-white'
-                  : 'border-brand-border/60 bg-white text-brand-primary shadow-sm hover:border-brand-accent/60 hover:bg-brand-accent/10 dark:border-white/15 dark:bg-transparent dark:text-brand-text dark:hover:bg-white/[0.08]',
+                  ? 'border-brand-accent bg-brand-primary text-brand-accent-light shadow-md dark:border-brand-accent dark:bg-brand-accent dark:text-white'
+                  : 'border-brand-primary/25 bg-brand-bg-alt text-brand-primary shadow-sm hover:border-brand-accent/70 hover:bg-brand-accent/10 dark:border-white/15 dark:bg-white/[0.07] dark:text-brand-text dark:hover:bg-white/[0.12]',
                 disabled ? 'cursor-not-allowed opacity-45' : 'cursor-pointer',
               ].join(' ')}
             >
@@ -203,12 +203,12 @@ function CourtScoreInputSection({
   const disabled = !canEdit
 
   return (
-    <section className="space-y-1 rounded-lg border border-brand-border/55 bg-white/65 p-1.5 shadow-sm dark:border-white/10 dark:bg-white/[0.03]">
-      <div className="flex items-center justify-between gap-2 px-1">
-        <h3 className="font-display text-base font-extrabold leading-none text-brand-primary dark:text-brand-text">
+    <section className="space-y-2 rounded-2xl border-2 border-brand-primary/35 bg-brand-bg-alt p-2 shadow-[0_8px_24px_-14px_rgba(96,45,36,0.35)] dark:border-white/12 dark:bg-white/[0.05]">
+      <div className="flex items-center justify-between gap-2 rounded-xl bg-brand-primary px-3 py-2 dark:bg-white/[0.08]">
+        <h3 className="font-display text-2xl font-extrabold leading-none text-brand-accent-light dark:text-brand-fun">
           {displayCourtName(courtRow.courtLabel)}
         </h3>
-        {busy ? <span className="text-[11px] font-bold text-brand-accent">Saving</span> : null}
+        {busy ? <span className="text-xs font-bold text-brand-accent-light">Saving</span> : null}
       </div>
       <TeamScoreRow
         label={sideLabels?.teamALabel}
@@ -269,7 +269,7 @@ export function CompetitionTvScoreInputPanel({
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-2 py-2">
+      <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto px-2 py-2">
         {scoring.courtScoreRows.map((row, index) => {
           const liveCourt = courtsForGame.find((court) => court.courtName === row.courtLabel)
           const courtId =
