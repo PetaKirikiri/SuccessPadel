@@ -5,7 +5,7 @@ export const COMPETITION_SCHEDULE = {
   games: 7,
   gameMinutes: 14,
   breakMinutes: 3,
-  leadInMinutes: 4,
+  leadInMinutes: 0,
 } as const
 
 export type CompetitionScheduleValues = {

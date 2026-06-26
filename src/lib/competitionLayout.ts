@@ -397,16 +397,9 @@ export function gameSlotTimes(
   gameNumber: number,
   gameMinutes: number,
   breakMinutes = COMPETITION_BREAK_MINUTES,
-  opts?: GameSlotOpts,
+  _opts?: GameSlotOpts,
 ): { startsAt: Date; endsAt: Date } {
-  const leadIn =
-    opts?.eventMinutes != null &&
-    opts.eventMinutes > 0 &&
-    opts.totalGames != null &&
-    opts.totalGames > 0
-      ? scheduleLeadInMinutes(opts.eventMinutes, opts.totalGames, gameMinutes, breakMinutes)
-      : 0
-  const offsetMin = leadIn + (gameNumber - 1) * (gameMinutes + breakMinutes)
+  const offsetMin = (gameNumber - 1) * (gameMinutes + breakMinutes)
   const startsAt = new Date(new Date(eventStartsAt).getTime() + offsetMin * 60000)
   const endsAt = new Date(startsAt.getTime() + gameMinutes * 60000)
   return { startsAt, endsAt }
