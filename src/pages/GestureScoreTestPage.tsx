@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { FilesetResolver, GestureRecognizer } from '@mediapipe/tasks-vision'
 import { ArrowLeft, Hand, Sparkles, ThumbsDown, ThumbsUp } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
   requestGestureScoreCamera,
   supportsGestureScoreCamera,
@@ -12,6 +12,9 @@ import { useGesturePadChrome } from '../lib/gesturePadChrome'
 type GestureName = 'Thumb_Up' | 'Thumb_Down'
 type Status = 'idle' | 'loading' | 'running' | 'unsupported' | 'error'
 type Team = 'us' | 'them'
+type GestureScoreLocationState = {
+  cameraError?: string
+}
 
 const HOLD_MS = 700
 const COOLDOWN_MS = 2000
@@ -53,6 +56,8 @@ declare global {
 export function GestureScoreTestPage() {
   useGesturePadChrome()
   const navigate = useNavigate()
+  const location = useLocation()
+  const routeState = location.state as GestureScoreLocationState | null
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const recognizerRef = useRef<GestureRecognizer | null>(null)
@@ -88,9 +93,14 @@ export function GestureScoreTestPage() {
   }
 
   useEffect(() => {
+    if (routeState?.cameraError) {
+      setStatus('error')
+      setError(routeState.cameraError)
+      return stopCamera
+    }
     void startCameraTest()
     return stopCamera
-  }, [])
+  }, [routeState?.cameraError])
 
   const applyPadelPoint = (winner: Team): string => {
     const ourWon = winner === 'us'
