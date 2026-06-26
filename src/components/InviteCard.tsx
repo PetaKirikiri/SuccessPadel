@@ -40,6 +40,8 @@ export type InviteCardProps = {
 
 const adminIconBtnClass =
   'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-border bg-brand-bg-alt shadow-sm active:scale-[0.98]'
+const adminTextBtnClass =
+  'inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-brand-primary/35 bg-brand-bg-alt px-3 text-xs font-black uppercase tracking-wide text-brand-primary shadow-sm active:scale-[0.98]'
 
 function isInteractiveCardTarget(target: EventTarget | null, card: HTMLElement): boolean {
   if (!(target instanceof HTMLElement)) return false
@@ -96,17 +98,18 @@ export function InviteCard({
     }
   }
 
-  const adminTrailing = showAdminActions ? (
-    <li className="flex min-h-[3rem] min-w-0 items-center justify-center gap-1.5 sm:min-h-[2.75rem]">
+  const adminActions = showAdminActions ? (
+    <div className="flex shrink-0 flex-row flex-wrap justify-end gap-1.5 sm:flex-col">
       {canEdit && editTo ? (
         <Link
           to={editTo}
           aria-label={editAriaLabel}
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
-          className={`${adminIconBtnClass} text-brand-primary`}
+          className={adminTextBtnClass}
         >
           <IconEdit />
+          <span>Edit</span>
         </Link>
       ) : null}
       {canDelete && onDelete ? (
@@ -125,7 +128,7 @@ export function InviteCard({
           <IconDelete />
         </button>
       ) : null}
-    </li>
+    </div>
   ) : null
 
   const headerRow = (
@@ -149,13 +152,17 @@ export function InviteCard({
         </div>
       </Link>
       {qrUrl ? (
-        <div className="w-[4.75rem] shrink-0 sm:w-24 md:w-28">
+        <div className="w-[4.75rem] shrink-0 text-center sm:w-24 md:w-28">
+          <p className="mb-1 text-[10px] font-black uppercase tracking-wide text-brand-primary">
+            Invite
+          </p>
           <InviteCardQr url={qrUrl} title={qrAriaLabel} />
         </div>
       ) : null}
-      {ruleChips.length > 0 || adminTrailing ? (
+      {adminActions}
+      {ruleChips.length > 0 ? (
         <div className="min-w-0 basis-full self-start sm:basis-auto">
-          <RuleChipGrid chips={ruleChips} inline trailing={adminTrailing} />
+          <RuleChipGrid chips={ruleChips} inline />
         </div>
       ) : null}
     </div>
