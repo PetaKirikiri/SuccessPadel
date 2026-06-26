@@ -145,6 +145,18 @@ export function CompetitionInviteRosterEditor({ row, onSaved }: Props) {
     }
   }, [sessionId, isDuos])
 
+  useEffect(() => {
+    if (dirtyRef.current) return
+    const next = draftFromRow(row, isDuos)
+    if (next.isDuos) {
+      setDuoTeams(next.duoTeams)
+    } else {
+      setPlayerSlots(padArray(next.playerSlots, next.slotCount, ''))
+      setProfileIds(padArray(next.profileIds, next.slotCount, null))
+      setPadelPlayerIds(padArray(next.padelPlayerIds, next.slotCount, null))
+    }
+  }, [row, isDuos])
+
   const persistCache = useCallback(() => {
     if (cacheTimer.current) clearTimeout(cacheTimer.current)
     cacheTimer.current = setTimeout(() => {
@@ -185,7 +197,7 @@ export function CompetitionInviteRosterEditor({ row, onSaved }: Props) {
     dirtyRef.current = false
     setDirty(false)
     clearInviteRosterDraft(sessionId)
-    onSaved?.()
+    await Promise.resolve(onSaved?.())
     return true
   }, [sessionId, onSaved])
 
