@@ -32,7 +32,7 @@ import { supabase } from '../lib/supabaseClient'
 import { pivotScheduleByGame } from '../lib/competitionCourtBoard'
 
 type PlayTab = PlayViewTab
-const TV_SCORE_INPUT_LEAD_MS = 60_000
+const TV_SCORE_INPUT_LEAD_MS = 4 * 60_000
 
 function gameCourtIds(
   game: ReturnType<typeof pivotScheduleByGame>[number] | undefined,
