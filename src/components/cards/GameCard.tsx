@@ -16,7 +16,7 @@ import type { FriendlyCourtScoreSubmit } from '../../lib/friendlyManualScore'
 import type { MatchTeam } from '../../lib/types'
 import { TvPlayQrPanel } from '../competitionPlay/TvPlayQrPanel'
 import type { TvGameNav } from '../competitionPlay/CompetitionTvGameCarousel'
-import { CourtCard, CourtMatchCell, ScoreStepper, courtGestureScoreHref, courtLiveHref, courtManualScoreHref } from './CourtCard'
+import { CourtCard, CourtMatchCell, courtGestureScoreHref, courtLiveHref, courtManualScoreHref, CourtTvScorePanel } from './CourtCard'
 import type { LiveCourt } from './gameBoardTypes'
 import type { CourtPlayer } from '../../lib/americanoSchedule'
 
@@ -510,7 +510,7 @@ export function GameScoringCourts({
           teamBPlayers,
         )
         const courtReady = row.canSubmit
-        const showTvFallbackScoring = Boolean(tvCompact && submitCourt && gameRoundId)
+        const showTvFallbackScoring = Boolean(tvCompact && submitCourt && canEdit)
 
         const courtScoreKey = liveCourtScoreKey(game.gameNumber, row.courtLabel)
         const liveScore = liveCourtScores?.get(courtScoreKey)
@@ -583,48 +583,20 @@ export function GameScoringCourts({
                   compact={tvCompact}
                   t={t}
                 />
-                <div
-                  className="flex w-36 shrink-0 flex-col items-center justify-center gap-2 rounded-xl border border-brand-accent/25 bg-brand-primary/95 px-2 py-2 shadow-inner dark:border-brand-accent/35 dark:bg-white/[0.08]"
-                  onClick={(e) => e.stopPropagation()}
-                  onKeyDown={(e) => e.stopPropagation()}
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    <ScoreStepper
-                      value={row.teamAStr}
-                      onChange={(v) => setDraft(courtId, 'teamA', v)}
-                      disabled={!canEdit}
-                      finished={finished}
-                      ariaLabel="Team A score"
-                      scoreMax={courtScoreMax}
-                      tv
-                    />
-                    <ScoreStepper
-                      value={row.teamBStr}
-                      onChange={(v) => setDraft(courtId, 'teamB', v)}
-                      disabled={!canEdit}
-                      finished={finished}
-                      ariaLabel="Team B score"
-                      scoreMax={courtScoreMax}
-                      tv
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    disabled={busyCourtKey === courtId || !courtReady}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      void submitCourt?.(courtId)
-                    }}
-                    className="h-9 w-full rounded-lg border border-[#7dd3fc]/50 bg-[#7dd3fc]/15 px-2 font-display text-xs font-black uppercase tracking-wide text-[#7dd3fc] shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-35"
-                  >
-                    {busyCourtKey === courtId ? 'Saving' : 'Save'}
-                  </button>
-                  {courtError?.courtId === courtId ? (
-                    <p className="max-w-full text-center text-[10px] font-semibold leading-tight text-red-300">
-                      {courtError.message}
-                    </p>
-                  ) : null}
-                </div>
+                <CourtTvScorePanel
+                  teamAStr={row.teamAStr}
+                  teamBStr={row.teamBStr}
+                  onScoreA={(v) => setDraft(courtId, 'teamA', v)}
+                  onScoreB={(v) => setDraft(courtId, 'teamB', v)}
+                  onSubmit={() => void submitCourt?.(courtId)}
+                  canEdit={canEdit}
+                  canSubmit={canEdit && courtReady}
+                  busy={busyCourtKey === courtId}
+                  finished={finished}
+                  scoreMax={courtScoreMax}
+                  errorMessage={courtError?.courtId === courtId ? courtError.message : null}
+                  t={t}
+                />
               </div>
             ) : (
               <CourtMatchCell
@@ -637,16 +609,8 @@ export function GameScoringCourts({
                 scoreUnit={scoreUnit}
                 scoreA={liveScore?.scoreA ?? row.teamAStr}
                 scoreB={liveScore?.scoreB ?? row.teamBStr}
-                onScoreA={
-                  canEdit && courtId && gameRoundId && !liveScore
-                    ? (v) => setDraft(courtId, 'teamA', v)
-                    : undefined
-                }
-                onScoreB={
-                  canEdit && courtId && gameRoundId && !liveScore
-                    ? (v) => setDraft(courtId, 'teamB', v)
-                    : undefined
-                }
+                onScoreA={canEdit ? (v) => setDraft(courtId, 'teamA', v) : undefined}
+                onScoreB={canEdit ? (v) => setDraft(courtId, 'teamB', v) : undefined}
                 disabled={!canEdit}
                 finished={finished}
                 scoreMax={courtScoreMax}
@@ -659,7 +623,7 @@ export function GameScoringCourts({
               />
             )}
             <LiveScoreFeed points={feed?.points} compact={tvCompact} />
-            {!tvCompact && canEdit && submitCourt && gameRoundId && !liveScore ? (
+            {!tvCompact && canEdit && submitCourt && gameRoundId ? (
               <>
                 <button
                   type="button"
@@ -1090,6 +1054,7 @@ export function FriendlyManualGameCard({
   friendlySessionId,
   onSubmitFriendlyScores,
   onSaved,
+  scoreSubmitEnabled = true,
   courtScoreMax,
   courtPlayTo,
   isLiveNow,
@@ -1105,6 +1070,7 @@ export function FriendlyManualGameCard({
   currentUserAvatarUrl,
   tvCompact = false,
   tvNav,
+  viewAlongUrl,
   t,
 }: {
   game: ScoringGame
@@ -1116,6 +1082,7 @@ export function FriendlyManualGameCard({
   friendlySessionId?: string
   onSubmitFriendlyScores?: (entries: FriendlyCourtScoreSubmit[]) => Promise<void>
   onSaved?: () => void | Promise<void>
+  scoreSubmitEnabled?: boolean
   courtScoreMax?: number
   courtPlayTo?: number
   isLiveNow: boolean
@@ -1131,6 +1098,7 @@ export function FriendlyManualGameCard({
   currentUserAvatarUrl?: string | null
   tvCompact?: boolean
   tvNav?: TvGameNav
+  viewAlongUrl?: string | null
   t: TranslateFn
 }) {
   const { courtScoreRows, setDraft, submitCourt, busyCourtKey, error, canEdit } = useFriendlyManualScoring({
@@ -1165,6 +1133,7 @@ export function FriendlyManualGameCard({
         tvCompact={tvCompact}
         tvNav={tvNav}
         carouselHideLogo={Boolean(tvNav)}
+        viewAlongUrl={viewAlongUrl}
         t={t}
       />
       {!collapsed && (
@@ -1197,6 +1166,7 @@ export function FriendlyManualGameCard({
                   finished,
                   currentUserId,
                 })
+                const showTvFallbackScoring = Boolean(tvCompact && canEdit)
                 return (
                   <CourtCard
                     key={row.courtLabel}
@@ -1211,36 +1181,70 @@ export function FriendlyManualGameCard({
                     tvCompact={tvCompact}
                     t={t}
                   >
-                    <CourtMatchCell
-                      teamA={teamA}
-                      teamB={teamB}
-                      teamAPlayers={row.court.teamAPlayers}
-                      teamBPlayers={row.court.teamBPlayers}
-                      scoreUnit={scoreUnit}
-                      scoreA={liveScore?.scoreA ?? row.teamAStr}
-                      scoreB={liveScore?.scoreB ?? row.teamBStr}
-                      onScoreA={
-                        canEdit && !liveScore ? (v) => setDraft(row.courtKey, 'teamA', v) : undefined
-                      }
-                      onScoreB={
-                        canEdit && !liveScore ? (v) => setDraft(row.courtKey, 'teamB', v) : undefined
-                      }
-                      disabled={!canEdit}
-                      finished={finished}
-                      scoreMax={courtScoreMax}
-                      currentUserId={currentUserId}
-                      currentUserDisplayName={currentUserDisplayName}
-                      currentUserAvatarUrl={currentUserAvatarUrl}
-                      embedded
-                      compact={tvCompact}
-                      t={t}
-                    />
-                    <LiveScoreFeed points={feed?.points} />
-                    {canEdit && !liveScore ? (
+                    {showTvFallbackScoring ? (
+                      <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)_auto] items-stretch gap-2">
+                        <CourtMatchCell
+                          teamA={teamA}
+                          teamB={teamB}
+                          teamAPlayers={row.court.teamAPlayers}
+                          teamBPlayers={row.court.teamBPlayers}
+                          scoreUnit={scoreUnit}
+                          disabled
+                          finished={finished}
+                          currentUserId={currentUserId}
+                          currentUserDisplayName={currentUserDisplayName}
+                          currentUserAvatarUrl={currentUserAvatarUrl}
+                          embedded
+                          compact={tvCompact}
+                          t={t}
+                        />
+                        <CourtTvScorePanel
+                          teamAStr={row.teamAStr}
+                          teamBStr={row.teamBStr}
+                          onScoreA={(v) => setDraft(row.courtKey, 'teamA', v)}
+                          onScoreB={(v) => setDraft(row.courtKey, 'teamB', v)}
+                          onSubmit={() => void submitCourt(row.courtKey)}
+                          canEdit={canEdit}
+                          canSubmit={canEdit && scoreSubmitEnabled && courtReady}
+                          busy={busyCourtKey === row.courtKey}
+                          finished={finished}
+                          scoreMax={courtScoreMax}
+                          errorMessage={
+                            error?.courtKey === row.courtKey ? error.message : null
+                          }
+                          t={t}
+                        />
+                      </div>
+                    ) : (
+                      <CourtMatchCell
+                        teamA={teamA}
+                        teamB={teamB}
+                        teamAPlayers={row.court.teamAPlayers}
+                        teamBPlayers={row.court.teamBPlayers}
+                        scoreUnit={scoreUnit}
+                        scoreA={liveScore?.scoreA ?? row.teamAStr}
+                        scoreB={liveScore?.scoreB ?? row.teamBStr}
+                        onScoreA={canEdit ? (v) => setDraft(row.courtKey, 'teamA', v) : undefined}
+                        onScoreB={canEdit ? (v) => setDraft(row.courtKey, 'teamB', v) : undefined}
+                        disabled={!canEdit}
+                        finished={finished}
+                        scoreMax={courtScoreMax}
+                        currentUserId={currentUserId}
+                        currentUserDisplayName={currentUserDisplayName}
+                        currentUserAvatarUrl={currentUserAvatarUrl}
+                        embedded
+                        compact={tvCompact}
+                        t={t}
+                      />
+                    )}
+                    <LiveScoreFeed points={feed?.points} compact={tvCompact} />
+                    {canEdit && !tvCompact ? (
                       <>
                         <button
                           type="button"
-                          disabled={busyCourtKey === row.courtKey || !courtReady}
+                          disabled={
+                            busyCourtKey === row.courtKey || !courtReady || !scoreSubmitEnabled
+                          }
                           onClick={(e) => {
                             e.stopPropagation()
                             void submitCourt(row.courtKey)

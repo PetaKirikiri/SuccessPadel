@@ -79,6 +79,7 @@ type Props = {
   ) => { teamALabel?: string; teamBLabel?: string }
   tvCarousel?: boolean
   viewAlongUrl?: string | null
+  scoreSubmitEnabled?: boolean
   onTvGameChange?: (gameNumber: number) => void
   onTvBack?: () => void
 }
@@ -254,6 +255,7 @@ export function GameBoard({
   duoTeamLabels,
   tvCarousel = false,
   viewAlongUrl = null,
+  scoreSubmitEnabled = true,
   onTvGameChange,
   onTvBack,
 }: Props) {
@@ -498,6 +500,7 @@ export function GameBoard({
           currentUserDisplayName={currentUserDisplayName}
           onSubmitFriendlyScores={onSubmitFriendlyScores}
           onSaved={onSaved}
+          scoreSubmitEnabled={scoreSubmitEnabled}
           courtScoreMax={courtScoreMax}
           courtPlayTo={courtPlayTo}
           isLiveNow={isLiveNow}
@@ -511,6 +514,7 @@ export function GameBoard({
           tvCompact={tvCompact}
           tvNav={tvNav}
           onBack={tvCompact ? onTvBack : undefined}
+          viewAlongUrl={viewAlongUrl}
           t={t}
         />
       )

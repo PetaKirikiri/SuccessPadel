@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { IconJoin, IconOpenPad } from '../components/ButtonIcons'
-import { AppShellColumn } from '../components/AppShellColumn'
-import { AppShellPanel } from '../components/AppShellPanel'
-import { PlayViewTabs, type PlayViewTab } from '../components/PlayViewTabs'
+import { CompetitionPlayStandardView } from '../components/competitionPlay/CompetitionPlayStandardView'
+import { CompetitionPlayTvView } from '../components/competitionPlay/CompetitionPlayTvView'
+import type { PlayViewTab } from '../components/PlayViewTabs'
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { GameBoardPreview } from '../components/GameBoardPreview'
 import { CompetitionLeaderboard } from '../components/CompetitionLeaderboard'
@@ -14,6 +14,7 @@ import { useFriendlyLiveCourtScores } from '../hooks/useFriendlyLiveCourtScores'
 import { useFriendlyMatchLogs } from '../hooks/useFriendlyMatchLogs'
 import { useMatchGestureLog } from '../hooks/useMatchGestureLog'
 import { useTranslation } from '../hooks/useTranslation'
+import { useIsTvLayout } from '../hooks/useIsTvLayout'
 import { isReviewableLog } from '../lib/matchReviewHydrate'
 import {
   canJoinFriendlyGame,
@@ -55,6 +56,7 @@ export function FriendlyGamePage() {
   const headerAvatar = profile?.avatar_url ?? lineClient.pictureUrl ?? null
   const playerDisplayName = profile?.display_name ?? lineClient.displayName ?? null
   const isAdmin = Boolean(profile?.is_admin)
+  const isTvLayout = useIsTvLayout()
   const { game, loading, refresh } = useFriendlyGame(id)
   const { log } = useMatchGestureLog(id)
   const finished = isReviewableLog(log)
@@ -252,7 +254,7 @@ export function FriendlyGamePage() {
   const showJoin = canJoinFriendlyGame(game, user?.id, profile?.display_name)
   const joined = isOnFriendlyRoster(game, user?.id)
   const isFree = isFreeFriendly(game)
-  const canScore = Boolean(user && scheduleLive)
+  const scoreSubmitEnabled = scheduleLive
   const showPlayTabs = !isFree && previewGames.length > 0
   const hasActionCard = Boolean(
     showJoin ||
@@ -303,7 +305,9 @@ export function FriendlyGamePage() {
     </div>
   ) : null
 
-  const gamesContent = showPlayTabs ? (
+  const viewAlongUrl = game?.id ? friendlyViewAlongUrl(game.id) : null
+
+  const gamesBody = (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="min-h-0 flex-1 overflow-hidden">
         <GameBoardPreview
@@ -316,39 +320,59 @@ export function FriendlyGamePage() {
           isAdmin={isAdmin}
           currentUserId={user?.id}
           currentUserAvatarUrl={headerAvatar}
-          liveCourtScores={scheduleLive ? liveCourtScores : new Map()}
-          liveCourtFeeds={scheduleLive ? liveCourtFeeds : new Map()}
-          onSubmitFriendlyScores={canScore ? handleSubmitFriendlyScores : undefined}
+          liveCourtScores={liveCourtScores}
+          liveCourtFeeds={liveCourtFeeds}
+          onSubmitFriendlyScores={user ? handleSubmitFriendlyScores : undefined}
+          scoreSubmitEnabled={scoreSubmitEnabled}
           onFriendlyScoresSaved={handleScoresSaved}
           gameCarousel
+          viewAlongUrl={isTvLayout ? viewAlongUrl : null}
           currentUserDisplayName={playerDisplayName}
           onBack={() => navigate('/friendly')}
         />
       </div>
-      {actionCard ? <div className="shrink-0 px-2 pb-2">{actionCard}</div> : null}
-    </div>
-  ) : (
-    actionCard
-  )
-
-  const viewAlongUrl = game?.id ? friendlyViewAlongUrl(game.id) : null
-
-  const leaderboardContent = enrichedStandings.length > 0 ? (
-    <CompetitionLeaderboard
-      entries={enrichedStandings}
-      scoreUnit={scoreUnit}
-      currentUserId={user?.id ?? null}
-      competitionId={null}
-      achievements={achievements}
-      showAchievements={Boolean(achievements)}
-      flushBottom
-    />
-  ) : (
-    <div className="game-card space-y-1 px-3 py-4 text-center">
-      <p className="text-sm text-brand-muted">{t('friendly.noLeaderboardScores')}</p>
-      <p className="text-xs text-brand-muted">{t('friendly.noLeaderboardHint')}</p>
+      {!isTvLayout && actionCard ? <div className="shrink-0 px-2 pb-2">{actionCard}</div> : null}
     </div>
   )
+
+  const leaderboardStandard =
+    enrichedStandings.length > 0 ? (
+      <CompetitionLeaderboard
+        entries={enrichedStandings}
+        scoreUnit={scoreUnit}
+        currentUserId={user?.id ?? null}
+        competitionId={null}
+        achievements={achievements}
+        showAchievements={Boolean(achievements)}
+        flushBottom
+      />
+    ) : (
+      <div className="game-card space-y-1 px-3 py-4 text-center">
+        <p className="text-sm text-brand-muted">{t('friendly.noLeaderboardScores')}</p>
+        <p className="text-xs text-brand-muted">{t('friendly.noLeaderboardHint')}</p>
+      </div>
+    )
+
+  const leaderboardTv =
+    enrichedStandings.length > 0 ? (
+      <CompetitionLeaderboard
+        entries={enrichedStandings}
+        scoreUnit={scoreUnit}
+        currentUserId={user?.id ?? null}
+        competitionId={null}
+        achievements={achievements}
+        showAchievements={false}
+        compact
+        embedded
+      />
+    ) : (
+      <div className="space-y-1 px-3 py-4 text-center">
+        <p className="text-sm text-brand-muted">{t('friendly.noLeaderboardScores')}</p>
+        <p className="text-xs text-brand-muted">{t('friendly.noLeaderboardHint')}</p>
+      </div>
+    )
+
+  const gamesContent = showPlayTabs ? gamesBody : actionCard
 
   if (!showPlayTabs) {
     return (
@@ -363,28 +387,32 @@ export function FriendlyGamePage() {
 
   return (
     <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden bg-brand-bg">
-      <AppShellColumn className="min-h-0 flex-1 overflow-hidden" edgeToEdge>
-        <AppShellPanel
-          scrollBody={false}
-          className="friendly-play-panel min-h-0 flex-1 rounded-none border-x-0"
-          footer={
-            <nav className="app-shell-panel-footer gap-0" aria-label={t('aria.competitionViews')}>
-              <PlayViewTabs tab={viewTab} onTab={setViewTab} t={t} />
-            </nav>
-          }
-        >
-          {viewTab === 'games' ? (
-            gamesContent
-          ) : (
-            <div className="app-shell-panel-inset min-h-0 flex-1 overflow-y-auto">
-              {leaderboardContent}
-            </div>
-          )}
-        </AppShellPanel>
-      </AppShellColumn>
-      {viewTab === 'leaderboard' && viewAlongUrl && enrichedStandings.length > 0 ? (
-        <LeaderboardViewAlongQrPanel url={viewAlongUrl} />
-      ) : null}
+      {isTvLayout ? (
+        <div className="tv-play-view flex min-h-0 flex-1 flex-col overflow-hidden">
+          <CompetitionPlayTvView
+            t={t}
+            loadOrError={null}
+            session={displayGame}
+            gamesBody={gamesBody}
+            leaderboardBody={leaderboardTv}
+          />
+        </div>
+      ) : (
+        <>
+          <CompetitionPlayStandardView
+            t={t}
+            tab={viewTab}
+            onTab={setViewTab}
+            loadOrError={null}
+            session={displayGame}
+            gamesBody={gamesBody}
+            leaderboardBody={leaderboardStandard}
+          />
+          {viewTab === 'leaderboard' && viewAlongUrl && enrichedStandings.length > 0 ? (
+            <LeaderboardViewAlongQrPanel url={viewAlongUrl} />
+          ) : null}
+        </>
+      )}
     </div>
   )
 }

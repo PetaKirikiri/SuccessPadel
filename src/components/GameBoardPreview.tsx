@@ -26,6 +26,8 @@ type Props = {
   gameCarousel?: boolean
   currentUserDisplayName?: string | null
   onBack?: () => void
+  viewAlongUrl?: string | null
+  scoreSubmitEnabled?: boolean
 }
 
 export function GameBoardPreview({
@@ -45,6 +47,8 @@ export function GameBoardPreview({
   gameCarousel = false,
   currentUserDisplayName,
   onBack,
+  viewAlongUrl = null,
+  scoreSubmitEnabled = true,
 }: Props) {
   const scoreUnit = americanoScoringUnit(session)
   const breakMinutes = breakMinutesFromConfig(session.scoring_config)
@@ -105,6 +109,8 @@ export function GameBoardPreview({
       onSubmitFriendlyScores={onSubmitFriendlyScores}
       onSaved={onFriendlyScoresSaved}
       tvCarousel={gameCarousel}
+      viewAlongUrl={viewAlongUrl}
+      scoreSubmitEnabled={scoreSubmitEnabled}
       onTvBack={onBack}
     />
     </div>

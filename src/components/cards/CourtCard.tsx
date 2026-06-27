@@ -354,6 +354,79 @@ export function ScoreStepper({
   )
 }
 
+export function CourtTvScorePanel({
+  teamAStr,
+  teamBStr,
+  onScoreA,
+  onScoreB,
+  onSubmit,
+  canEdit,
+  canSubmit,
+  busy,
+  finished,
+  scoreMax,
+  errorMessage,
+  t,
+}: {
+  teamAStr: string
+  teamBStr: string
+  onScoreA: (v: string) => void
+  onScoreB: (v: string) => void
+  onSubmit: () => void
+  canEdit: boolean
+  canSubmit: boolean
+  busy: boolean
+  finished?: boolean
+  scoreMax?: number
+  errorMessage?: string | null
+  t: TranslateFn
+}) {
+  return (
+    <div
+      className="flex w-36 shrink-0 flex-col items-center justify-center gap-2 rounded-xl border border-brand-accent/25 bg-brand-primary/95 px-2 py-2 shadow-inner dark:border-brand-accent/35 dark:bg-white/[0.08]"
+      onClick={stopCardNav}
+      onKeyDown={stopCardNav}
+    >
+      <div className="flex items-center justify-center gap-2">
+        <ScoreStepper
+          value={teamAStr}
+          onChange={onScoreA}
+          disabled={!canEdit}
+          finished={finished}
+          ariaLabel={t('aria.teamAScore', { unit: 'pts' })}
+          scoreMax={scoreMax}
+          tv
+        />
+        <ScoreStepper
+          value={teamBStr}
+          onChange={onScoreB}
+          disabled={!canEdit}
+          finished={finished}
+          ariaLabel={t('aria.teamBScore', { unit: 'pts' })}
+          scoreMax={scoreMax}
+          tv
+        />
+      </div>
+      <button
+        type="button"
+        disabled={!canSubmit || busy}
+        onClick={(e) => {
+          e.stopPropagation()
+          onSubmit()
+        }}
+        className="h-9 w-full rounded-lg border border-[#7dd3fc]/50 bg-[#7dd3fc]/15 px-2 font-display text-xs font-black uppercase tracking-wide text-[#7dd3fc] shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-35"
+      >
+        {busy ? t('common.loading') : t('common.submit')}
+      </button>
+      {errorMessage ? (
+        <p className="max-w-full text-center text-[10px] font-semibold leading-tight text-red-300">
+          {errorMessage}
+        </p>
+      ) : null}
+    </div>
+  )
+}
+
 export function CourtMatchCell({
   teamA,
   teamB,
