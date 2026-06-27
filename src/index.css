@@ -1186,9 +1186,7 @@ html[data-tv-kiosk] body > :not(#root) {
     flex-shrink: 0;
   }
 
-  .tv-play-games .play-game-carousel .tv-game-courts-grid {
-    display: flex;
-    flex-direction: column;
+  .play-game-carousel .tv-game-courts-grid {
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -1525,10 +1523,12 @@ html[data-tv-kiosk] body > :not(#root) {
 }
 
 .play-game-carousel .tv-game-courts-grid {
-  display: flex;
+  display: grid;
   min-height: 0;
   flex: 1 1 0%;
-  flex-direction: column;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: stretch;
+  align-items: stretch;
   gap: 0.5rem;
   overflow-x: hidden;
   overflow-y: auto;
@@ -1537,8 +1537,21 @@ html[data-tv-kiosk] body > :not(#root) {
   touch-action: pan-y;
 }
 
+.play-game-carousel .tv-game-courts-grid--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.play-game-carousel .tv-game-courts-grid > * {
+  min-height: 0;
+  height: 100%;
+  align-self: stretch;
+}
+
 .play-game-carousel .tv-court-card {
-  flex-shrink: 0;
+  display: flex;
+  min-height: 0;
+  height: 100%;
+  flex-direction: column;
   border-width: 1px !important;
   box-shadow: none !important;
 }
