@@ -13,6 +13,7 @@ import { useTranslation } from '../hooks/useTranslation'
 import {
   clubTimePartsFromDate,
   formatHourLabel,
+  normalizeClubDateInput,
 } from '../lib/courtSchedule'
 import {
   buildCompetitionAutoTitle,
@@ -311,20 +312,30 @@ export function FriendlyGameForm() {
       return
     }
 
+    const publishDay = normalizeClubDateInput(day)
+    const publishOrganizedConfig =
+      playMode === 'organized'
+        ? mergeFriendlyOrganizedConfig(
+            game?.organizedConfig,
+            friendlyConfigWithSessionEnd({ ...organizedConfig, day: publishDay }),
+          )
+        : undefined
+    const publishStartsAt = publishOrganizedConfig
+      ? friendlyStartsAtIso(publishOrganizedConfig)
+      : undefined
+    const publishTitle =
+      playMode === 'organized' && !titleEdited && publishStartsAt
+        ? buildCompetitionAutoTitle(skillLevel, gender, new Date(publishStartsAt))
+        : title.trim() || 'Friendly match'
+
     const payload = {
-      title: title.trim() || 'Friendly match',
+      title: publishTitle,
       players: trimmedSlots,
       profileIds,
       profileAvatars,
       playMode,
       visibility,
-      organizedConfig:
-        playMode === 'organized'
-          ? mergeFriendlyOrganizedConfig(
-              game?.organizedConfig,
-              friendlyConfigWithSessionEnd(organizedConfig),
-            )
-          : undefined,
+      organizedConfig: publishOrganizedConfig,
       status: game?.status ?? ('ready' as const),
     }
 

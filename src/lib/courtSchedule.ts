@@ -18,6 +18,24 @@ export function formatDateInput(d: Date): string {
   return `${y}-${m}-${day}`
 }
 
+/** YYYY-MM-DD for "today" in club timezone (Asia/Bangkok). */
+export function clubTodayDateInput(now = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: CLUB_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(now)
+}
+
+/** Drafts with a past day roll forward to today so new games list as current. */
+export function normalizeClubDateInput(day: string, now = new Date()): string {
+  const trimmed = day.trim()
+  const today = clubTodayDateInput(now)
+  if (!trimmed || trimmed < today) return today
+  return trimmed
+}
+
 export function parseClubDate(dateStr: string): Date {
   return new Date(`${dateStr}T00:00:00`)
 }

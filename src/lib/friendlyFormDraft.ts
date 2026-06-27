@@ -5,7 +5,7 @@ import type {
   RuleFormat,
   SkillLevel,
 } from './competitionPresets'
-import { formatDateInput } from './courtSchedule'
+import { clubTodayDateInput, normalizeClubDateInput } from './courtSchedule'
 import type { FriendlyPlayMode, FriendlyVisibility } from './friendlyGames'
 import {
   DEFAULT_FRIENDLY_ORGANIZED_CONFIG,
@@ -56,7 +56,7 @@ export function friendlyFormDefaults(): FriendlyFormValues {
   return {
     title: '',
     visibility: 'public',
-    day: formatDateInput(new Date()),
+    day: clubTodayDateInput(),
     startHour: 18,
     startMinute: 10,
     playerSlots: Array.from({ length: FRIENDLY_MIN_PLAYERS }, () => ''),
@@ -115,7 +115,10 @@ function migrateDraft(raw: Record<string, unknown>): FriendlyFormValues {
   return {
     title: typeof raw.title === 'string' ? raw.title : defaults.title,
     visibility: raw.visibility === 'private' ? 'private' : 'public',
-    day: typeof raw.day === 'string' && raw.day ? raw.day : defaults.day,
+    day:
+      typeof raw.day === 'string' && raw.day
+        ? normalizeClubDateInput(raw.day)
+        : defaults.day,
     startHour: typeof raw.startHour === 'number' ? raw.startHour : defaults.startHour,
     startMinute:
       typeof raw.startMinute === 'number'
