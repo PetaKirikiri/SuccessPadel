@@ -2,7 +2,6 @@ import { useMemo, useState, type FormEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from '../hooks/useTranslation'
 import { signInWithBrowserPlayerUsername } from '../lib/auth/browserPlayerLogin'
-import { hadPreviousLogin } from '../lib/auth/cachedSession'
 import { isLineLoginConfigured } from '../lib/line/auth'
 import { isLineLiffBrowser, lineAppEntryUrl } from '../lib/line/liff'
 import { LineSignUpQr } from './LineSignUpQr'
@@ -42,8 +41,7 @@ export function LineSignInModal({ onClose }: Props) {
   const [playerError, setPlayerError] = useState<string | null>(null)
   const qrUrl = useMemo(() => lineAppEntryUrl('/friendly'), [])
   const lineEnabled = isLineLoginConfigured()
-  const returning = hadPreviousLogin()
-  const showBrowserPlayerSignIn = !isLineLiffBrowser()
+  const inLineApp = isLineLiffBrowser()
 
   const handlePlayerSignIn = async (e: FormEvent) => {
     e.preventDefault()
@@ -75,7 +73,7 @@ export function LineSignInModal({ onClose }: Props) {
       >
         <div className="flex items-start justify-between gap-2">
           <p className="font-display text-base font-semibold text-brand-primary">
-            {returning ? t('signInModal.welcomeBack') : t('signInModal.title')}
+            {t('signInModal.title')}
           </p>
           <button
             type="button"
@@ -87,7 +85,7 @@ export function LineSignInModal({ onClose }: Props) {
           </button>
         </div>
 
-        {showBrowserPlayerSignIn ? (
+        {!inLineApp ? (
           <form className="space-y-3 text-left" onSubmit={(e) => void handlePlayerSignIn(e)}>
             <p className="text-sm text-brand-muted">{t('signInModal.playerHint')}</p>
             <label className="block space-y-1">
@@ -108,22 +106,10 @@ export function LineSignInModal({ onClose }: Props) {
             </button>
             {playerError ? <p className="text-sm text-red-600">{playerError}</p> : null}
           </form>
-        ) : null}
-
-        {!lineEnabled ? (
-          <p className="text-sm text-red-600">{t('signInModal.notConfigured')}</p>
-        ) : !qrUrl ? (
+        ) : !lineEnabled || !qrUrl ? (
           <p className="text-sm text-red-600">{t('signInModal.notConfigured')}</p>
         ) : (
-          <div className={showBrowserPlayerSignIn ? 'border-t border-brand-border/60 pt-4' : ''}>
-            {returning ? (
-              <p className="mb-3 text-left text-sm text-brand-muted">{t('signInModal.returningHint')}</p>
-            ) : null}
-            {showBrowserPlayerSignIn ? (
-              <p className="mb-3 text-left text-xs font-semibold uppercase tracking-wide text-brand-muted">
-                {t('signInModal.orScanInLine')}
-              </p>
-            ) : null}
+          <div>
             <p className="mb-3 text-left font-display text-sm font-semibold text-brand-primary">
               {t('signInModal.scanQrHeadline')}
             </p>
