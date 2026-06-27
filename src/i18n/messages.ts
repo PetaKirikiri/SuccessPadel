@@ -302,9 +302,12 @@ export type Messages = {
     checkingSession: string
     playerSectionTitle: string
     playerHint: string
+    playerNameLabel: string
+    playerNamePlaceholder: string
     usernameLabel: string
     playerSignIn: string
     playerSigningIn: string
+    orScanInLine: string
     emailSectionTitle: string
     emailLabel: string
     passwordLabel: string

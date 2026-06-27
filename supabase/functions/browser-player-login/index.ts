@@ -11,10 +11,6 @@ function normalizeUsername(username: string): string {
   return username.trim().replace(/\s+/g, ' ')
 }
 
-function loginComparable(value: string): string {
-  return normalizeUsername(value).toLocaleLowerCase()
-}
-
 function usernameEmailLocalPart(username: string): string {
   const ascii = username
     .trim()
@@ -29,6 +25,10 @@ function usernameEmailLocalPart(username: string): string {
 
 function browserPlayerEmail(username: string): string {
   return `${usernameEmailLocalPart(username)}@${PLAYER_EMAIL_DOMAIN}`
+}
+
+function browserPlayerAuthPassword(username: string): string {
+  return `SuccessPadel:${usernameEmailLocalPart(username)}:${PLAYER_EMAIL_DOMAIN}:2026`
 }
 
 async function findAuthUserIdByEmail(
@@ -103,22 +103,12 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
 
   try {
-    const { username: rawUsername, password: rawPassword } = (await req.json()) as {
-      username?: string
-      password?: string
-    }
+    const { username: rawUsername } = (await req.json()) as { username?: string }
     const username = normalizeUsername(rawUsername ?? '')
-    const password = rawPassword ?? username
 
     if (!username) {
-      return new Response(JSON.stringify({ error: 'Enter your username.' }), {
+      return new Response(JSON.stringify({ error: 'Enter your player name.' }), {
         status: 400,
-        headers: { ...cors, 'Content-Type': 'application/json' },
-      })
-    }
-    if (loginComparable(password) !== loginComparable(username)) {
-      return new Response(JSON.stringify({ error: 'Temporary password must match the username.' }), {
-        status: 401,
         headers: { ...cors, 'Content-Type': 'application/json' },
       })
     }
@@ -129,6 +119,7 @@ Deno.serve(async (req) => {
     )
 
     const fallbackEmail = browserPlayerEmail(username)
+    const authPassword = browserPlayerAuthPassword(username)
     const existingProfile = await findProfileByDisplayName(admin, username)
     let userId = existingProfile?.id as string | undefined
     let createdNewUser = false
@@ -140,7 +131,7 @@ Deno.serve(async (req) => {
     if (!userId) {
       const { data: created, error } = await admin.auth.admin.createUser({
         email: fallbackEmail,
-        password,
+        password: authPassword,
         email_confirm: true,
         user_metadata: {
           display_name: username,
@@ -155,7 +146,7 @@ Deno.serve(async (req) => {
       const { data: authUser, error: authErr } = await admin.auth.admin.getUserById(userId)
       if (authErr) throw authErr
       const { error: updateErr } = await admin.auth.admin.updateUserById(userId, {
-        password,
+        password: authPassword,
         user_metadata: {
           ...(authUser.user.user_metadata ?? {}),
           display_name: username,

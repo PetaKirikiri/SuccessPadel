@@ -5,7 +5,6 @@ import { signInWithBrowserPlayerUsername } from '../lib/auth/browserPlayerLogin'
 import { hadPreviousLogin } from '../lib/auth/cachedSession'
 import { isLineLoginConfigured } from '../lib/line/auth'
 import { isLineLiffBrowser, lineAppEntryUrl } from '../lib/line/liff'
-import { supabase } from '../lib/supabaseClient'
 import { LineSignUpQr } from './LineSignUpQr'
 
 const LINE_ADD_FRIEND_GUIDE_SRC = '/assets/line-add-friend-guide.png'
@@ -38,48 +37,20 @@ function LinkStep({
 export function LineSignInModal({ onClose }: Props) {
   const { t } = useTranslation()
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [emailBusy, setEmailBusy] = useState(false)
-  const [emailError, setEmailError] = useState<string | null>(null)
-  const [playerUsername, setPlayerUsername] = useState('')
+  const [playerName, setPlayerName] = useState('')
   const [playerBusy, setPlayerBusy] = useState(false)
   const [playerError, setPlayerError] = useState<string | null>(null)
   const qrUrl = useMemo(() => lineAppEntryUrl('/friendly'), [])
   const lineEnabled = isLineLoginConfigured()
   const returning = hadPreviousLogin()
-  const showBrowserPlayerFallback = !isLineLiffBrowser()
-
-  const handleEmailSignIn = async (e: FormEvent) => {
-    e.preventDefault()
-    setEmailError(null)
-    setEmailBusy(true)
-    try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      })
-      if (signInError) {
-        setEmailError(signInError.message)
-        return
-      }
-      const { data: confirmed } = await supabase.auth.getSession()
-      if (!confirmed.session?.user) {
-        setEmailError('Sign-in did not stick — try again.')
-        return
-      }
-      onClose()
-    } finally {
-      setEmailBusy(false)
-    }
-  }
+  const showBrowserPlayerSignIn = !isLineLiffBrowser()
 
   const handlePlayerSignIn = async (e: FormEvent) => {
     e.preventDefault()
     setPlayerError(null)
     setPlayerBusy(true)
     try {
-      const err = await signInWithBrowserPlayerUsername(playerUsername)
+      const err = await signInWithBrowserPlayerUsername(playerName)
       if (err) {
         setPlayerError(err)
         return
@@ -116,140 +87,102 @@ export function LineSignInModal({ onClose }: Props) {
           </button>
         </div>
 
+        {showBrowserPlayerSignIn ? (
+          <form className="space-y-3 text-left" onSubmit={(e) => void handlePlayerSignIn(e)}>
+            <p className="text-sm text-brand-muted">{t('signInModal.playerHint')}</p>
+            <label className="block space-y-1">
+              <span className="text-xs text-brand-muted">{t('signInModal.playerNameLabel')}</span>
+              <input
+                type="text"
+                autoComplete="username"
+                autoFocus
+                placeholder={t('signInModal.playerNamePlaceholder')}
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                className="brand-input"
+                required
+              />
+            </label>
+            <button type="submit" disabled={playerBusy} className="brand-btn w-full disabled:opacity-60">
+              {playerBusy ? t('signInModal.playerSigningIn') : t('signInModal.playerSignIn')}
+            </button>
+            {playerError ? <p className="text-sm text-red-600">{playerError}</p> : null}
+          </form>
+        ) : null}
+
         {!lineEnabled ? (
           <p className="text-sm text-red-600">{t('signInModal.notConfigured')}</p>
         ) : !qrUrl ? (
           <p className="text-sm text-red-600">{t('signInModal.notConfigured')}</p>
         ) : (
-          <div>
+          <div className={showBrowserPlayerSignIn ? 'border-t border-brand-border/60 pt-4' : ''}>
             {returning ? (
               <p className="mb-3 text-left text-sm text-brand-muted">{t('signInModal.returningHint')}</p>
+            ) : null}
+            {showBrowserPlayerSignIn ? (
+              <p className="mb-3 text-left text-xs font-semibold uppercase tracking-wide text-brand-muted">
+                {t('signInModal.orScanInLine')}
+              </p>
             ) : null}
             <p className="mb-3 text-left font-display text-sm font-semibold text-brand-primary">
               {t('signInModal.scanQrHeadline')}
             </p>
             <div className="rounded-xl border border-brand-border bg-brand-bg-alt/40 px-4 py-3 text-left">
-                    <p className="text-sm font-medium leading-snug text-brand-text">
-                      {t('signInModal.scanQrSubhead')}
-                    </p>
-                  </div>
-                  <div className="mt-3 grid grid-cols-2 items-center gap-3">
-                    <div className="space-y-2">
-                      <p className="font-display text-sm font-bold uppercase tracking-wide text-[#06C755]">
-                        {t('lineLink.scanQrLabel')}
-                      </p>
-                      <LineSignUpQr url={qrUrl} onDataUrl={setQrDataUrl} />
-                      {qrDataUrl ? (
-                        <a
-                          href={qrDataUrl}
-                          download="success-padel-sign-in-line-qr.png"
-                          className="brand-btn-outline block w-full py-2 text-sm font-semibold"
-                        >
-                          {t('lineLink.saveQr')}
-                        </a>
-                      ) : null}
-                    </div>
-                    <img
-                      src={LINE_ADD_FRIEND_GUIDE_SRC}
-                      alt=""
-                      aria-hidden
-                      className="h-auto max-h-[24vh] w-full rounded-2xl border border-brand-border object-contain sm:max-h-[32vh]"
-                    />
-                  </div>
-                  <ol className="mt-3 space-y-1.5 text-left text-xs text-brand-muted">
-                    <LinkStep
-                      n={1}
-                      prefix={t('lineLink.step1Prefix')}
-                      bold={t('lineLink.step1Bold')}
-                      suffix={t('lineLink.step1Suffix')}
-                    />
-                    <LinkStep
-                      n={2}
-                      prefix={t('lineLink.step2Prefix')}
-                      bold={t('lineLink.step2Bold')}
-                      suffix={t('lineLink.step2Suffix')}
-                    />
-                    <LinkStep
-                      n={3}
-                      prefix={t('lineLink.step3Prefix')}
-                      bold={t('lineLink.step3Bold')}
-                      suffix={t('lineLink.step3Suffix')}
-                    />
-                    <LinkStep
-                      n={4}
-                      prefix={t('lineLink.step4Prefix')}
-                      bold={t('lineLink.step4Bold')}
-                      suffix={t('lineLink.step4Suffix')}
-                    />
+              <p className="text-sm font-medium leading-snug text-brand-text">
+                {t('signInModal.scanQrSubhead')}
+              </p>
+            </div>
+            <div className="mt-3 grid grid-cols-2 items-center gap-3">
+              <div className="space-y-2">
+                <p className="font-display text-sm font-bold uppercase tracking-wide text-[#06C755]">
+                  {t('lineLink.scanQrLabel')}
+                </p>
+                <LineSignUpQr url={qrUrl} onDataUrl={setQrDataUrl} />
+                {qrDataUrl ? (
+                  <a
+                    href={qrDataUrl}
+                    download="success-padel-sign-in-line-qr.png"
+                    className="brand-btn-outline block w-full py-2 text-sm font-semibold"
+                  >
+                    {t('lineLink.saveQr')}
+                  </a>
+                ) : null}
+              </div>
+              <img
+                src={LINE_ADD_FRIEND_GUIDE_SRC}
+                alt=""
+                aria-hidden
+                className="h-auto max-h-[24vh] w-full rounded-2xl border border-brand-border object-contain sm:max-h-[32vh]"
+              />
+            </div>
+            <ol className="mt-3 space-y-1.5 text-left text-xs text-brand-muted">
+              <LinkStep
+                n={1}
+                prefix={t('lineLink.step1Prefix')}
+                bold={t('lineLink.step1Bold')}
+                suffix={t('lineLink.step1Suffix')}
+              />
+              <LinkStep
+                n={2}
+                prefix={t('lineLink.step2Prefix')}
+                bold={t('lineLink.step2Bold')}
+                suffix={t('lineLink.step2Suffix')}
+              />
+              <LinkStep
+                n={3}
+                prefix={t('lineLink.step3Prefix')}
+                bold={t('lineLink.step3Bold')}
+                suffix={t('lineLink.step3Suffix')}
+              />
+              <LinkStep
+                n={4}
+                prefix={t('lineLink.step4Prefix')}
+                bold={t('lineLink.step4Bold')}
+                suffix={t('lineLink.step4Suffix')}
+              />
             </ol>
           </div>
         )}
-
-        {showBrowserPlayerFallback ? (
-          <div className="border-t border-brand-border/60 pt-4">
-            <p className="mb-1 text-left text-xs font-semibold uppercase tracking-wide text-brand-muted">
-              {t('signInModal.playerSectionTitle')}
-            </p>
-            <p className="mb-3 text-left text-xs leading-relaxed text-brand-muted">
-              {t('signInModal.playerHint')}
-            </p>
-            <form className="space-y-3 text-left" onSubmit={(e) => void handlePlayerSignIn(e)}>
-              <label className="block space-y-1">
-                <span className="text-xs text-brand-muted">{t('signInModal.usernameLabel')}</span>
-                <input
-                  type="text"
-                  autoComplete="username"
-                  value={playerUsername}
-                  onChange={(e) => setPlayerUsername(e.target.value)}
-                  className="brand-input"
-                  required
-                />
-              </label>
-              <button
-                type="submit"
-                disabled={playerBusy}
-                className="brand-btn w-full disabled:opacity-60"
-              >
-                {playerBusy ? t('signInModal.playerSigningIn') : t('signInModal.playerSignIn')}
-              </button>
-              {playerError ? <p className="text-sm text-red-600">{playerError}</p> : null}
-            </form>
-          </div>
-        ) : null}
-
-        <div className="border-t border-brand-border/60 pt-4">
-          <p className="mb-3 text-left text-xs font-semibold uppercase tracking-wide text-brand-muted">
-            {t('signInModal.emailSectionTitle')}
-          </p>
-          <form className="space-y-3 text-left" onSubmit={(e) => void handleEmailSignIn(e)}>
-            <label className="block space-y-1">
-              <span className="text-xs text-brand-muted">{t('signInModal.emailLabel')}</span>
-              <input
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="brand-input"
-                required
-              />
-            </label>
-            <label className="block space-y-1">
-              <span className="text-xs text-brand-muted">{t('signInModal.passwordLabel')}</span>
-              <input
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="brand-input"
-                required
-              />
-            </label>
-            <button type="submit" disabled={emailBusy} className="brand-btn w-full disabled:opacity-60">
-              {emailBusy ? t('signInModal.emailSigningIn') : t('signInModal.emailSignIn')}
-            </button>
-            {emailError ? <p className="text-sm text-red-600">{emailError}</p> : null}
-          </form>
-        </div>
       </div>
     </div>,
     document.body,

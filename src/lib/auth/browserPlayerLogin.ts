@@ -6,12 +6,10 @@ function normalizeUsername(username: string): string {
 
 export async function signInWithBrowserPlayerUsername(usernameInput: string): Promise<string | null> {
   const username = normalizeUsername(usernameInput)
-  if (!username) return 'Enter your username.'
-
-  const password = username
+  if (!username) return 'Enter your player name.'
 
   const { data, error } = await supabase.functions.invoke('browser-player-login', {
-    body: { username, password },
+    body: { username },
   })
   if (error) return error.message
 
