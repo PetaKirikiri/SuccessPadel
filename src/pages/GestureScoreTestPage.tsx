@@ -1,5 +1,5 @@
 import { type CSSProperties, useEffect, useRef, useState } from 'react'
-import { FilesetResolver, GestureRecognizer } from '@mediapipe/tasks-vision'
+import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision'
 import { ArrowLeft } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
@@ -15,6 +15,7 @@ import {
   GESTURE_CAMERA_MODEL_URL,
   GESTURE_CAMERA_WASM_BASE,
   pickGestureHandLandmarks,
+  pickGestureHandWorldLandmarks,
   type FingerAction,
 } from '../lib/gestureCameraDetect'
 import { useGesturePadChrome } from '../lib/gesturePadChrome'
@@ -74,7 +75,8 @@ export function GestureScoreTestPage() {
   const routeState = location.state as GestureScoreLocationState | null
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
-  const recognizerRef = useRef<GestureRecognizer | null>(null)
+  const recognizerRef = useRef<HandLandmarker | null>(null)
+  const frameTimestampRef = useRef(0)
   const frameRef = useRef<number | null>(null)
   const heldGestureRef = useRef<FingerAction | null>(null)
   const heldSinceRef = useRef<number | null>(null)
@@ -190,8 +192,16 @@ export function GestureScoreTestPage() {
     }
 
     const now = performance.now()
-    const result = recognizer.recognizeForVideo(video, now)
-    const action = fingerActionFromLandmarks(pickGestureHandLandmarks(result.landmarks))
+    if (now <= frameTimestampRef.current) {
+      frameTimestampRef.current += 1
+    } else {
+      frameTimestampRef.current = now
+    }
+    const result = recognizer.detectForVideo(video, frameTimestampRef.current)
+    const action = fingerActionFromLandmarks(
+      pickGestureHandLandmarks(result.landmarks),
+      pickGestureHandWorldLandmarks(result.worldLandmarks),
+    )
 
     if (!action) {
       heldGestureRef.current = null
@@ -228,14 +238,28 @@ export function GestureScoreTestPage() {
     try {
       setStatus('loading')
       const vision = await FilesetResolver.forVisionTasks(WASM_BASE)
-      const recognizer = await GestureRecognizer.createFromOptions(vision, {
-        baseOptions: {
-          modelAssetPath: MODEL_URL,
-          delegate: 'GPU',
-        },
-        runningMode: 'VIDEO',
+      const recognizerOptions = {
+        runningMode: 'VIDEO' as const,
         numHands: 1,
-      })
+      }
+      let recognizer: HandLandmarker
+      try {
+        recognizer = await HandLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: MODEL_URL,
+            delegate: 'GPU',
+          },
+          ...recognizerOptions,
+        })
+      } catch {
+        recognizer = await HandLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: MODEL_URL,
+            delegate: 'CPU',
+          },
+          ...recognizerOptions,
+        })
+      }
       if (cameraRunRef.current !== runId) {
         recognizer.close()
         return

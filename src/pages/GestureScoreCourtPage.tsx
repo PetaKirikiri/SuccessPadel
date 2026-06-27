@@ -1,5 +1,5 @@
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { FilesetResolver, GestureRecognizer } from '@mediapipe/tasks-vision'
+import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision'
 import { ArrowLeft } from 'lucide-react'
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
@@ -18,11 +18,13 @@ import {
   GESTURE_CAMERA_MODEL_URL,
   GESTURE_CAMERA_WASM_BASE,
   pickGestureHandLandmarks,
+  pickGestureHandWorldLandmarks,
   type FingerAction,
 } from '../lib/gestureCameraDetect'
 import {
   competitionCourtSetupKey,
   friendlyGestureCourtSetupKey,
+  gestureCameraMatchEnded,
   loadGestureCameraLog,
   ourTeamFromCourtPlayers,
   ourThemFromScore,
@@ -213,7 +215,8 @@ export function GestureScoreCourtPage() {
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
-  const recognizerRef = useRef<GestureRecognizer | null>(null)
+  const recognizerRef = useRef<HandLandmarker | null>(null)
+  const frameTimestampRef = useRef(0)
   const frameRef = useRef<number | null>(null)
   const heldGestureRef = useRef<FingerAction | null>(null)
   const heldSinceRef = useRef<number | null>(null)
@@ -246,7 +249,7 @@ export function GestureScoreCourtPage() {
         setOurGames(score.gamesA)
         setTheirGames(score.gamesB)
       }
-      setMatchEnded(Boolean(log?.matchEndedAt))
+      setMatchEnded(gestureCameraMatchEnded(log))
     },
     [ourTeam],
   )
@@ -336,8 +339,16 @@ export function GestureScoreCourtPage() {
     }
 
     const now = performance.now()
-    const result = recognizer.recognizeForVideo(video, now)
-    const action = fingerActionFromLandmarks(pickGestureHandLandmarks(result.landmarks))
+    if (now <= frameTimestampRef.current) {
+      frameTimestampRef.current += 1
+    } else {
+      frameTimestampRef.current = now
+    }
+    const result = recognizer.detectForVideo(video, frameTimestampRef.current)
+    const action = fingerActionFromLandmarks(
+      pickGestureHandLandmarks(result.landmarks),
+      pickGestureHandWorldLandmarks(result.worldLandmarks),
+    )
 
     if (!action) {
       heldGestureRef.current = null
@@ -378,9 +389,9 @@ export function GestureScoreCourtPage() {
         runningMode: 'VIDEO' as const,
         numHands: 1,
       }
-      let recognizer: GestureRecognizer
+      let recognizer: HandLandmarker
       try {
-        recognizer = await GestureRecognizer.createFromOptions(vision, {
+        recognizer = await HandLandmarker.createFromOptions(vision, {
           baseOptions: {
             modelAssetPath: GESTURE_CAMERA_MODEL_URL,
             delegate: 'GPU',
@@ -388,7 +399,7 @@ export function GestureScoreCourtPage() {
           ...recognizerOptions,
         })
       } catch {
-        recognizer = await GestureRecognizer.createFromOptions(vision, {
+        recognizer = await HandLandmarker.createFromOptions(vision, {
           baseOptions: {
             modelAssetPath: GESTURE_CAMERA_MODEL_URL,
             delegate: 'CPU',
@@ -410,7 +421,13 @@ export function GestureScoreCourtPage() {
       streamRef.current = stream
       if (!videoRef.current) throw new Error('Camera preview is not ready')
       videoRef.current.srcObject = stream
-      await videoRef.current.play()
+      try {
+        await videoRef.current.play()
+      } catch (playError) {
+        if (cameraRunRef.current !== runId) return
+        if (playError instanceof DOMException && playError.name === 'AbortError') return
+        throw playError
+      }
       if (cameraRunRef.current !== runId) return
       setStatus('running')
       frameRef.current = requestAnimationFrame(detectFrame)
@@ -422,10 +439,15 @@ export function GestureScoreCourtPage() {
     }
   }
 
+  const pageReady = Boolean(
+    !authLoading && !friendlyLoading && user && courtMatch && cameraCtx && courtSetupKey,
+  )
+
   useEffect(() => {
+    if (!pageReady) return
     void startCamera()
     return stopCamera
-  }, [])
+  }, [pageReady])
 
   const goBack = () => {
     stopCamera()

@@ -84,7 +84,24 @@ export function scoreFromLog(log: MatchGestureLog | null): TennisScore {
   const last = log.pointEvents[log.pointEvents.length - 1]
   if (last?.scoreAfter) return { ...last.scoreAfter }
   if (log.setupState?.score) return { ...log.setupState.score }
+  if (log.finalScore) return { ...log.finalScore }
   return { ...INITIAL_TENNIS_SCORE }
+}
+
+function setupScoringMode(log: MatchGestureLog | null): string | undefined {
+  const state = log?.setupState as GestureCameraSetupState | null | undefined
+  return state?.scoringMode
+}
+
+/** Manual one-shot court scores should not block live gesture scoring. */
+export function gestureCameraMatchEnded(log: MatchGestureLog | null): boolean {
+  if (!log?.matchEndedAt) return false
+  if (log.pointEvents.length === 0 && setupScoringMode(log) !== 'camera') return false
+  return true
+}
+
+function isManualOnlyCourtLog(log: MatchGestureLog | null): boolean {
+  return Boolean(log?.matchEndedAt && log.pointEvents.length === 0 && setupScoringMode(log) !== 'camera')
 }
 
 export function ourThemFromScore(score: TennisScore, ourTeam: MatchTeam) {
@@ -191,11 +208,13 @@ export async function syncGestureCameraPointForTeam(
   winner: MatchTeam,
 ): Promise<{ error: string | null; log: MatchGestureLog | null; matchEnded: boolean }> {
   const log = await loadGestureCameraLog(ctx.courtSetupKey)
-  const current = scoreFromLog(log)
+  const manualOnly = isManualOnlyCourtLog(log)
+  const current = manualOnly ? { ...INITIAL_TENNIS_SCORE } : scoreFromLog(log)
   const scoreAfter = applyTennisPoint(current, winner)
-  const pointEvents = [...(log?.pointEvents ?? []), newPointEvent(winner, scoreAfter)]
+  const priorEvents = manualOnly ? [] : (log?.pointEvents ?? [])
+  const pointEvents = [...priorEvents, newPointEvent(winner, scoreAfter)]
   const matchEnded = isGestureMatchComplete(scoreAfter, ctx.playTo)
-  const payload = buildPayload(ctx, log, scoreAfter, pointEvents, matchEnded)
+  const payload = buildPayload(ctx, manualOnly ? null : log, scoreAfter, pointEvents, matchEnded)
   const { error } = await upsertMatchGestureLog(payload)
   if (error) return { error, log: null, matchEnded: false }
 
