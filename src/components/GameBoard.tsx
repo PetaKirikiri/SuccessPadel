@@ -283,7 +283,7 @@ export function GameBoard({
   )
   const gestureScoreEnabled = Boolean(sessionId && currentUserId && (friendly || mode === 'scoring'))
   const manualScoreEnabled = Boolean(friendly && onSubmitFriendlyScores && sessionId && currentUserId)
-  const friendlyManualScoring = Boolean(friendly && onSubmitFriendlyScores)
+  const friendlyManualScoring = Boolean(friendly && sessionId && mode === 'preview')
   const scoringTimeUnlocked = isScoringTimeUnlocked()
   const courtScoreMax = courtGameScoreMax(scoreUnit === 'games' ? playTo : undefined)
   const courtPlayTo = scoreUnit === 'games' ? playTo : undefined

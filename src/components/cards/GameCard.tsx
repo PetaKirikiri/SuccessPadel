@@ -1101,15 +1101,16 @@ export function FriendlyManualGameCard({
   viewAlongUrl?: string | null
   t: TranslateFn
 }) {
-  const { courtScoreRows, setDraft, submitCourt, busyCourtKey, error, canEdit } = useFriendlyManualScoring({
+  const { courtScoreRows, setDraft, submitCourt, busyCourtKey, error } = useFriendlyManualScoring({
     game,
     liveCourtScores,
-    canEdit: Boolean(onSubmitFriendlyScores),
+    canEdit: true,
     onSubmit: onSubmitFriendlyScores,
     onSaved,
     playTo: courtPlayTo,
     t,
   })
+  const canSubmitScores = Boolean(onSubmitFriendlyScores && scoreSubmitEnabled)
 
   return (
     <GameCardShell
@@ -1166,7 +1167,7 @@ export function FriendlyManualGameCard({
                   finished,
                   currentUserId,
                 })
-                const showTvFallbackScoring = Boolean(tvCompact && canEdit)
+                const showTvFallbackScoring = Boolean(tvCompact)
                 return (
                   <CourtCard
                     key={row.courtLabel}
@@ -1204,8 +1205,8 @@ export function FriendlyManualGameCard({
                           onScoreA={(v) => setDraft(row.courtKey, 'teamA', v)}
                           onScoreB={(v) => setDraft(row.courtKey, 'teamB', v)}
                           onSubmit={() => void submitCourt(row.courtKey)}
-                          canEdit={canEdit}
-                          canSubmit={canEdit && scoreSubmitEnabled && courtReady}
+                          canEdit
+                          canSubmit={canSubmitScores && courtReady}
                           busy={busyCourtKey === row.courtKey}
                           finished={finished}
                           scoreMax={courtScoreMax}
@@ -1224,9 +1225,9 @@ export function FriendlyManualGameCard({
                         scoreUnit={scoreUnit}
                         scoreA={liveScore?.scoreA ?? row.teamAStr}
                         scoreB={liveScore?.scoreB ?? row.teamBStr}
-                        onScoreA={canEdit ? (v) => setDraft(row.courtKey, 'teamA', v) : undefined}
-                        onScoreB={canEdit ? (v) => setDraft(row.courtKey, 'teamB', v) : undefined}
-                        disabled={!canEdit}
+                        onScoreA={(v) => setDraft(row.courtKey, 'teamA', v)}
+                        onScoreB={(v) => setDraft(row.courtKey, 'teamB', v)}
+                        disabled={finished}
                         finished={finished}
                         scoreMax={courtScoreMax}
                         currentUserId={currentUserId}
@@ -1238,12 +1239,12 @@ export function FriendlyManualGameCard({
                       />
                     )}
                     <LiveScoreFeed points={feed?.points} compact={tvCompact} />
-                    {canEdit && !tvCompact ? (
+                    {!tvCompact ? (
                       <>
                         <button
                           type="button"
                           disabled={
-                            busyCourtKey === row.courtKey || !courtReady || !scoreSubmitEnabled
+                            busyCourtKey === row.courtKey || !courtReady || !canSubmitScores
                           }
                           onClick={(e) => {
                             e.stopPropagation()

@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { useTranslation } from '../hooks/useTranslation'
+import { useIsTvLayout } from '../hooks/useIsTvLayout'
 import { isGesturePadRoute } from '../lib/gesturePadChrome'
 import { AppBottomNav } from './AppBottomNav'
 import { AppShellColumn } from './AppShellColumn'
@@ -10,6 +11,7 @@ import { LineBookmarkBanner } from './LineBookmarkBanner'
 export function Layout() {
   const { t } = useTranslation()
   const loc = useLocation()
+  const isTvLayout = useIsTvLayout()
   const onPlayerProfile = loc.pathname.startsWith('/players/')
   const isGamesHub = loc.pathname === '/friendly' || loc.pathname === '/competitive'
   const isFriendlySession = /^\/friendly\/(?!new(?:\/|$))[^/]+$/.test(loc.pathname)
@@ -44,11 +46,14 @@ export function Layout() {
           <Outlet />
         ) : (
           <AppShellColumn
+            edgeToEdge={isFriendlySession && isTvLayout}
             className={
               showBottomNav
                 ? 'overflow-hidden pt-1'
                 : isGamesHub || isFriendlySession
-                  ? 'overflow-hidden pb-2 pt-0'
+                  ? isFriendlySession && isTvLayout
+                    ? 'overflow-hidden pt-0'
+                    : 'overflow-hidden pb-2 pt-0'
                   : 'pb-2 pt-1'
             }
           >

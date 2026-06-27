@@ -1095,6 +1095,7 @@ html[data-tv-kiosk] body > :not(#root) {
   .tv-play-layout {
     display: flex;
     width: 100%;
+    max-width: none;
     min-height: 0;
     flex: 1 1 0%;
     flex-direction: row;
@@ -1492,6 +1493,12 @@ html[data-tv-kiosk] body > :not(#root) {
 
 .play-game-carousel {
   padding-inline: 0.65rem;
+}
+
+@media (min-width: 1536px) {
+  .play-game-carousel {
+    padding-inline: clamp(0.25rem, 0.5vw, 0.5rem);
+  }
 }
 
 .play-game-carousel .tv-game-card-racetrack > .tv-game-card,

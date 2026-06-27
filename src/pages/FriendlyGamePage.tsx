@@ -21,7 +21,6 @@ import {
   DEFAULT_FRIENDLY_ORGANIZED_CONFIG,
   friendlyOrganizedSession,
   friendlyPreviewGames,
-  friendlyScheduleLive,
   friendlySessionRoster,
   friendlyStartsAtIso,
   isFreeFriendly,
@@ -31,7 +30,6 @@ import {
 import {
   calculateFriendlySessionAchievements,
   computeFriendlySessionStandings,
-  filterFriendlyMatchLogsForSchedule,
 } from '../lib/friendlySessionStandings'
 import { enrichStandingsWithAvatars } from '../lib/leaderboardEntries'
 import { joinFriendlySession } from '../lib/friendlyServer'
@@ -133,22 +131,11 @@ export function FriendlyGamePage() {
     [displayGame],
   )
 
-  const scheduleLive = useMemo(
-    () => isFreeFriendly(game) || friendlyScheduleLive(organizedConfig, now),
-    [game, organizedConfig, now],
-  )
-
-  const scoringLogs = useMemo(
-    () =>
-      isFreeFriendly(game)
-        ? matchLogs
-        : filterFriendlyMatchLogsForSchedule(matchLogs, organizedConfig, now),
-    [game, matchLogs, organizedConfig, now],
-  )
+  const scoreSubmitEnabled = Boolean(user)
 
   const standings = useMemo(
-    () => computeFriendlySessionStandings(scoringLogs, scoreUnit, sessionRoster),
-    [scoringLogs, scoreUnit, sessionRoster],
+    () => computeFriendlySessionStandings(matchLogs, scoreUnit, sessionRoster),
+    [matchLogs, scoreUnit, sessionRoster],
   )
 
   const avatarSources = useMemo(() => {
@@ -203,24 +190,24 @@ export function FriendlyGamePage() {
     () =>
       sessionStarted
         ? calculateFriendlySessionAchievements(
-            scoringLogs,
+            matchLogs,
             scoreUnit,
             sessionRoster,
             enrichedStandings,
           )
         : null,
-    [sessionStarted, scoringLogs, scoreUnit, sessionRoster, enrichedStandings],
+    [sessionStarted, matchLogs, scoreUnit, sessionRoster, enrichedStandings],
   )
 
   const handleSubmitFriendlyScores = useCallback(
     async (entries: FriendlyCourtScoreSubmit[]) => {
-      if (!game) return
+      if (!game || !user) return
       for (const entry of entries) {
         const { error } = await saveFriendlyManualCourtScore(game.id, entry, scoreUnit)
         if (error) throw new Error(error)
       }
     },
-    [game, scoreUnit],
+    [game, scoreUnit, user],
   )
 
   const handleScoresSaved = useCallback(async () => {
@@ -254,7 +241,6 @@ export function FriendlyGamePage() {
   const showJoin = canJoinFriendlyGame(game, user?.id, profile?.display_name)
   const joined = isOnFriendlyRoster(game, user?.id)
   const isFree = isFreeFriendly(game)
-  const scoreSubmitEnabled = scheduleLive
   const showPlayTabs = !isFree && previewGames.length > 0
   const hasActionCard = Boolean(
     showJoin ||
@@ -322,7 +308,7 @@ export function FriendlyGamePage() {
           currentUserAvatarUrl={headerAvatar}
           liveCourtScores={liveCourtScores}
           liveCourtFeeds={liveCourtFeeds}
-          onSubmitFriendlyScores={user ? handleSubmitFriendlyScores : undefined}
+          onSubmitFriendlyScores={handleSubmitFriendlyScores}
           scoreSubmitEnabled={scoreSubmitEnabled}
           onFriendlyScoresSaved={handleScoresSaved}
           gameCarousel
