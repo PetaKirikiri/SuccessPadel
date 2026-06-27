@@ -21,6 +21,7 @@ import { UI_PROFILE_ID } from './friendlyMatch'
 import {
   clubHourToDate,
   clubTimePartsFromDate,
+  clubTodayDateInput,
   toIsoTimestamp,
 } from './courtSchedule'
 import { rosterFromSlots } from './rosterPreview'
@@ -287,10 +288,13 @@ export type FriendlyGameRecord = {
   status: 'ready' | 'complete'
 }
 
-/** Listed under Past when complete or the scheduled window has ended. */
+/** Listed under Past when complete, on a past club day, or after the scheduled window ended. */
 export function friendlyIsPast(game: FriendlyGameRecord, now = Date.now()): boolean {
   if (game.status === 'complete') return true
   if (!isOrganizedFriendly(game) || !game.organizedConfig?.day) return false
+  const day = game.organizedConfig.day.trim()
+  const today = clubTodayDateInput(new Date(now))
+  if (day < today) return true
   const endsAt = friendlyEndsAtIso(game.organizedConfig)
   if (!endsAt) return false
   const endMs = Date.parse(endsAt)

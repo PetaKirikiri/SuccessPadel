@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { GamesGenderFilterProvider } from '../contexts/GamesGenderFilterContext'
 import { useTranslation } from '../hooks/useTranslation'
 import { useSeasonLeaderboard } from '../hooks/useSeasonLeaderboard'
@@ -15,6 +16,12 @@ import {
 export type GamesHubTab = 'current' | 'past' | 'leaderboard'
 
 type LeaderboardVariant = 'competition' | 'friendly'
+
+const HUB_TABS: GamesHubTab[] = ['current', 'past', 'leaderboard']
+
+function searchTab(value: string | null): GamesHubTab | null {
+  return HUB_TABS.includes(value as GamesHubTab) ? (value as GamesHubTab) : null
+}
 
 type Props = {
   currentCount: number
@@ -111,12 +118,26 @@ export function GamesHubView({
 }: Props) {
   const { t } = useTranslation()
   const { season } = useSeasonLeaderboard(leaderboardVariant === 'competition')
-  const [tab, setTab] = useState<GamesHubTab>('current')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [tab, setTabState] = useState<GamesHubTab>(() => searchTab(searchParams.get('view')) ?? 'current')
   const [genderFilter, setGenderFilterState] = useState<Gender>(initialGenderFilter ?? 'Mixed')
   const didDefaultTab = useRef(false)
   const didApplyStoredGender = useRef(false)
   const didApplyInitialGender = useRef(Boolean(initialGenderFilter))
   const didUserPickGender = useRef(false)
+
+  const setTab = useCallback(
+    (next: GamesHubTab) => {
+      setTabState(next)
+      setSearchParams((prev) => {
+        const params = new URLSearchParams(prev)
+        if (next === 'current') params.delete('view')
+        else params.set('view', next)
+        return params
+      }, { replace: true })
+    },
+    [setSearchParams],
+  )
 
   const setGenderFilter = useCallback((gender: Gender) => {
     didUserPickGender.current = true
@@ -124,12 +145,13 @@ export function GamesHubView({
   }, [])
 
   useEffect(() => {
+    if (leaderboardVariant !== 'competition') return
     const stored = consumeStoredCompetitiveGenderFilter()
     if (stored) {
       didApplyStoredGender.current = true
       setGenderFilterState(stored)
     }
-  }, [])
+  }, [leaderboardVariant])
 
   useEffect(() => {
     if (
@@ -145,10 +167,15 @@ export function GamesHubView({
   }, [initialGenderFilter])
 
   useEffect(() => {
-    if (!showPastTab || didDefaultTab.current) return
+    if (!showPastTab || didDefaultTab.current || hubNav === 'none') return
     didDefaultTab.current = true
     if (currentCount === 0 && pastCount > 0) setTab('past')
-  }, [showPastTab, currentCount, pastCount])
+  }, [showPastTab, currentCount, pastCount, hubNav])
+
+  useEffect(() => {
+    const next = searchTab(searchParams.get('view')) ?? 'current'
+    setTabState(next)
+  }, [searchParams])
 
   const leaderboardLabel = season?.name
     ? t('hub.seasonLeaderboard', { name: season.name })
@@ -158,11 +185,7 @@ export function GamesHubView({
     showGenderFilter && (hubNav !== 'tabs' || tab !== 'leaderboard')
 
   const listContent =
-    hubNav !== 'tabs' ? (
-      <div className={`w-full min-w-0 max-w-full overflow-x-hidden ${listClassName}`}>
-        {currentPanel}
-      </div>
-    ) : tab === 'leaderboard' ? (
+    tab === 'leaderboard' ? (
       <div className="min-h-full bg-brand-surface">
         <Leaderboard embedded />
       </div>

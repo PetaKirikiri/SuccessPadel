@@ -92,7 +92,11 @@ export async function fetchFriendlyHomeGames(): Promise<{
   games: FriendlyGameRecord[]
   error: string | null
 }> {
-  const { data, error } = await supabase.rpc('list_friendly_home_sessions')
+  const { data: sessionData } = await supabase.auth.getSession()
+  const rpcName = sessionData.session
+    ? 'list_friendly_home_sessions'
+    : 'list_public_friendly_sessions'
+  const { data, error } = await supabase.rpc(rpcName)
   if (error) {
     console.error('fetchFriendlyHomeGames', error.message)
     return { games: [], error: error.message }
