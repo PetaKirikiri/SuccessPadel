@@ -14,19 +14,19 @@ export function FriendlyRosterList({ slots, currentUserId, competitionId }: Prop
   const { t } = useTranslation()
 
   return (
-    <ul className="m-0 flex w-full min-w-0 max-w-full list-none flex-wrap gap-1.5 p-0">
+    <ul className="m-0 flex w-full min-w-0 max-w-full list-none flex-wrap gap-2 p-0">
       {slots.map((slot, i) => {
         const isMe = Boolean(currentUserId && slot.profileId === currentUserId)
         if (slot.vacant) {
           return (
             <li
               key={`open-${i}`}
-              className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-dashed border-brand-primary/25 bg-brand-bg-alt py-1 pl-1 pr-2.5 text-brand-muted"
+              className="inline-flex max-w-full items-center gap-2 rounded-full border border-dashed border-brand-primary/25 bg-brand-bg-alt py-1.5 pl-1.5 pr-3 text-brand-muted"
             >
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-base font-semibold">
                 +
               </span>
-              <span className="text-xs font-medium">{t('friendly.openSpots')}</span>
+              <span className="text-sm font-semibold">{t('friendly.openSpots')}</span>
             </li>
           )
         }
@@ -35,7 +35,7 @@ export function FriendlyRosterList({ slots, currentUserId, competitionId }: Prop
         return (
           <li
             key={`${slot.profileId ?? slot.padelPlayerId ?? slot.name}-${i}`}
-            className={`inline-flex max-w-full items-center gap-1.5 rounded-full border py-1 pl-1 pr-2.5 ${
+            className={`inline-flex max-w-full items-center gap-2 rounded-full border py-1.5 pl-1.5 pr-3 ${
               isMe
                 ? 'border-brand-accent/50 bg-brand-accent/10'
                 : 'border-brand-primary/20 bg-brand-bg-alt'
@@ -47,13 +47,14 @@ export function FriendlyRosterList({ slots, currentUserId, competitionId }: Prop
               profileId={slot.profileId}
               padelPlayerId={slot.padelPlayerId}
               competitionId={competitionId}
+              imgClassName="h-9 w-9 shrink-0 rounded-full object-cover"
             />
             <PlayerNameLink
               displayName={name}
               profileId={slot.profileId}
               padelPlayerId={slot.padelPlayerId}
               competitionId={competitionId}
-              className={`truncate text-xs font-semibold ${
+              className={`whitespace-nowrap text-sm font-bold sm:text-base ${
                 isMe ? 'text-brand-accent' : 'text-brand-primary'
               }`}
             />

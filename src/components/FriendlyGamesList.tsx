@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react'
 import { FriendlyDeleteConfirm } from './FriendlyDeleteConfirm'
+import { GamesGenderFilterEmptyBar } from './GamesGenderFilterButtons'
+import { InviteCardCarousel } from './InviteCardCarousel'
 import { SessionInviteCard } from './SessionInviteCard'
-import { GamesGenderFilterBannerOverlay, GamesGenderFilterEmptyBar } from './GamesGenderFilterButtons'
 import { GamesHubEmpty, GamesHubLoading } from './GamesHubView'
 import { useGamesGenderFilter } from '../contexts/GamesGenderFilterContext'
 import { useAuth } from '../hooks/useAuth'
 import { useLineClientProfile } from '../hooks/useLineClientProfile'
 import { useTranslation } from '../hooks/useTranslation'
-import type { FriendlyGameRecord } from '../lib/friendlyGames'
+import { canEditFriendlySession, type FriendlyGameRecord } from '../lib/friendlyGames'
 import { deleteFriendlySession } from '../lib/friendlyServer'
 import { friendlyDivisionLabels } from '../lib/friendlyGameDisplay'
 import { matchesGamesGenderFilter, genderFilterLabel } from '../lib/gamesGenderFilter'
@@ -82,26 +83,27 @@ export function FriendlyGamesList({
   return (
     <>
       {deleteError ? <p className="mb-2 text-xs text-red-600">{deleteError}</p> : null}
-      <div className="relative">
-        <GamesGenderFilterBannerOverlay />
-        <ul className="m-0 w-full min-w-0 max-w-full list-none space-y-4 p-0">
-          {filteredGames.map((game) => (
-            <li key={game.id} className="w-full min-w-0 max-w-full">
-              <SessionInviteCard
-                kind="friendly"
-                game={game}
-                to={`/friendly/${game.id}`}
-                currentUserId={user?.id}
-                currentUserAvatarUrl={headerAvatar}
-                isAdmin={isAdmin}
-                onDelete={() => setPendingDelete(game)}
-                deleteBusy={deleteBusyId === game.id}
-                className={deleteBusyId === game.id ? 'pointer-events-none opacity-60' : ''}
-              />
-            </li>
-          ))}
-        </ul>
-      </div>
+      <InviteCardCarousel>
+        {filteredGames.map((game) => (
+          <li key={game.id} className="invite-card-carousel-item">
+            <SessionInviteCard
+              kind="friendly"
+              game={game}
+              to={`/friendly/${game.id}`}
+              currentUserId={user?.id}
+              currentUserAvatarUrl={headerAvatar}
+              isAdmin={isAdmin}
+              onDelete={
+                canEditFriendlySession(game, user?.id, isAdmin)
+                  ? () => setPendingDelete(game)
+                  : undefined
+              }
+              deleteBusy={deleteBusyId === game.id}
+              className={deleteBusyId === game.id ? 'pointer-events-none opacity-60' : ''}
+            />
+          </li>
+        ))}
+      </InviteCardCarousel>
       {pendingDelete ? (
         <FriendlyDeleteConfirm
           title={pendingDelete.title}

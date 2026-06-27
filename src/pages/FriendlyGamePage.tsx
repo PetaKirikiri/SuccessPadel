@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { IconJoin, IconOpenPad } from '../components/ButtonIcons'
 import { AppShellColumn } from '../components/AppShellColumn'
 import { AppShellPanel } from '../components/AppShellPanel'
-import { AppTopBar } from '../components/AppTopBar'
 import { PlayViewTabs, type PlayViewTab } from '../components/PlayViewTabs'
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { GameBoardPreview } from '../components/GameBoardPreview'
@@ -54,6 +53,7 @@ export function FriendlyGamePage() {
   const { user, profile } = useAuth()
   const lineClient = useLineClientProfile()
   const headerAvatar = profile?.avatar_url ?? lineClient.pictureUrl ?? null
+  const playerDisplayName = profile?.display_name ?? lineClient.displayName ?? null
   const isAdmin = Boolean(profile?.is_admin)
   const { game, loading, refresh } = useFriendlyGame(id)
   const { log } = useMatchGestureLog(id)
@@ -252,9 +252,7 @@ export function FriendlyGamePage() {
   const showJoin = canJoinFriendlyGame(game, user?.id, profile?.display_name)
   const joined = isOnFriendlyRoster(game, user?.id)
   const isFree = isFreeFriendly(game)
-  const canScore = Boolean(
-    user && (isAdmin || joined || game.createdBy === user.id) && scheduleLive,
-  )
+  const canScore = Boolean(user && scheduleLive)
   const showPlayTabs = !isFree && previewGames.length > 0
   const hasActionCard = Boolean(
     showJoin ||
@@ -305,9 +303,9 @@ export function FriendlyGamePage() {
     </div>
   ) : null
 
-  const gamesContent = (
-    <>
-      {showPlayTabs ? (
+  const gamesContent = showPlayTabs ? (
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="min-h-0 flex-1 overflow-hidden">
         <GameBoardPreview
           session={previewSession}
           games={previewGames}
@@ -322,11 +320,15 @@ export function FriendlyGamePage() {
           liveCourtFeeds={scheduleLive ? liveCourtFeeds : new Map()}
           onSubmitFriendlyScores={canScore ? handleSubmitFriendlyScores : undefined}
           onFriendlyScoresSaved={handleScoresSaved}
+          gameCarousel
+          currentUserDisplayName={playerDisplayName}
+          onBack={() => navigate('/friendly')}
         />
-      ) : null}
-
-      {actionCard}
-    </>
+      </div>
+      {actionCard ? <div className="shrink-0 px-2 pb-2">{actionCard}</div> : null}
+    </div>
+  ) : (
+    actionCard
   )
 
   const viewAlongUrl = game?.id ? friendlyViewAlongUrl(game.id) : null
@@ -361,35 +363,23 @@ export function FriendlyGamePage() {
 
   return (
     <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden bg-brand-bg">
-      <AppTopBar className="shrink-0 border-b border-brand-border/40 bg-brand-bg">
-        <div className="flex min-w-0 items-center gap-2">
-          <button
-            type="button"
-            onClick={() => navigate('/friendly')}
-            aria-label={t('aria.back')}
-            className="shrink-0 text-xl font-medium leading-none text-brand-accent"
-          >
-            ←
-          </button>
-          <img
-            src="/brand/logo-padel.webp"
-            alt={t('common.brandAlt')}
-            className="h-8 w-auto max-w-[7rem] shrink-0 md:h-10 md:max-w-[9rem]"
-          />
-        </div>
-      </AppTopBar>
-
-      <AppShellColumn className="overflow-hidden pt-1">
+      <AppShellColumn className="min-h-0 flex-1 overflow-hidden" edgeToEdge>
         <AppShellPanel
+          scrollBody={false}
+          className="friendly-play-panel min-h-0 flex-1 rounded-none border-x-0"
           footer={
             <nav className="app-shell-panel-footer gap-0" aria-label={t('aria.competitionViews')}>
               <PlayViewTabs tab={viewTab} onTab={setViewTab} t={t} />
             </nav>
           }
         >
-          <div className="app-shell-panel-inset space-y-3">
-            {viewTab === 'games' ? gamesContent : leaderboardContent}
-          </div>
+          {viewTab === 'games' ? (
+            gamesContent
+          ) : (
+            <div className="app-shell-panel-inset min-h-0 flex-1 overflow-y-auto">
+              {leaderboardContent}
+            </div>
+          )}
         </AppShellPanel>
       </AppShellColumn>
       {viewTab === 'leaderboard' && viewAlongUrl && enrichedStandings.length > 0 ? (

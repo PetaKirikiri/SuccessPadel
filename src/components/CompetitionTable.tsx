@@ -5,8 +5,9 @@ import { useTranslation } from '../hooks/useTranslation'
 import type { TranslateFn } from '../i18n'
 import { IconAdd } from './ButtonIcons'
 import { IconHubCurrent, IconHubPast, shellTabClass } from './ShellTabIcons'
-import { GamesGenderFilterBannerOverlay, GamesGenderFilterEmptyBar } from './GamesGenderFilterButtons'
+import { GamesGenderFilterEmptyBar } from './GamesGenderFilterButtons'
 import { GamesHubEmpty, GamesHubLoading } from './GamesHubView'
+import { InviteCardCarousel } from './InviteCardCarousel'
 import { SessionInviteCard } from './SessionInviteCard'
 import type { CompetitionRow } from '../hooks/useCompetitions'
 import { competitionIsPast } from '../lib/competitionListCard'
@@ -184,19 +185,19 @@ export function CompetitionTable({
           </GamesHubEmpty>
         )
       ) : (
-        <div className="relative space-y-4">
-          <GamesGenderFilterBannerOverlay />
+        <InviteCardCarousel>
           {filteredRows.map((row) => (
-            <SessionInviteCard
-              key={row.id}
-              kind="competition"
-              row={row}
-              isAdmin={isAdmin}
-              userId={userId}
-              onRefresh={onRefresh}
-            />
+            <li key={row.id} className="invite-card-carousel-item">
+              <SessionInviteCard
+                kind="competition"
+                row={row}
+                isAdmin={isAdmin}
+                userId={userId}
+                onRefresh={onRefresh}
+              />
+            </li>
           ))}
-        </div>
+        </InviteCardCarousel>
       )}
     </div>
   )

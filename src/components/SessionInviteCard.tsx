@@ -133,7 +133,7 @@ function FriendlyInviteCard({
   locale,
 }: FriendlyProps & { t: TranslateFn; locale: AppLocale }) {
   const isFree = isFreeFriendly(game)
-  const canEdit = canEditFriendlySession(game, currentUserId, isAdmin)
+  const canManage = canEditFriendlySession(game, currentUserId, isAdmin)
   const source: SessionSource = { kind: 'friendly', game }
   const data = useMemo(() => inviteCardData(source, t, { detailTo: to, locale }), [game, t, to, locale])
 
@@ -183,10 +183,10 @@ function FriendlyInviteCard({
       currentUserId={currentUserId}
       qrUrl={`${shareSiteOrigin()}/friendly/${game.id}`}
       qrAriaLabel={t('leaderboard.viewAlongHint')}
-      canEdit={canEdit && Boolean(to)}
-      editTo={canEdit && to ? `/friendly/${game.id}/edit` : undefined}
+      canEdit={canManage && Boolean(to)}
+      editTo={canManage && to ? `/friendly/${game.id}/edit` : undefined}
       editAriaLabel={t('friendly.edit')}
-      canDelete={isAdmin && Boolean(onDelete)}
+      canDelete={canManage && Boolean(onDelete)}
       onDelete={onDelete}
       deleteBusy={deleteBusy}
       deleteAriaLabel={t('competition.delete')}

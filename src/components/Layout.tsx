@@ -20,7 +20,7 @@ export function Layout() {
 
   return (
     <div className="game-bg flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">
-      {!onPlayerProfile && !isFriendlySession ? (
+      {!onPlayerProfile && !isFriendlySession && !showBottomNav ? (
         <AppTopBar>
           <img
             src="/brand/logo-padel.webp"
@@ -53,7 +53,7 @@ export function Layout() {
             }
           >
             {showBottomNav ? (
-              <AppShellPanel scrollBody={!isGamesHub} footer={<AppBottomNav embedded />}>
+              <AppShellPanel scrollBody={!isGamesHub}>
                 {!isGamesHub ? <LineBookmarkBanner /> : null}
                 <Outlet />
               </AppShellPanel>
@@ -66,6 +66,7 @@ export function Layout() {
           </AppShellColumn>
         )}
       </main>
+      {showBottomNav ? <AppBottomNav /> : null}
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Camera } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useSignInChip } from '../hooks/useSignInChip'
 import { useTranslation } from '../hooks/useTranslation'
@@ -8,15 +9,18 @@ import { firstDisplayName } from '../lib/leaderboardEntries'
 import { playerProfilePath } from '../lib/playerProfileSlug'
 import { resolveProfileAvatarUrl } from '../lib/resolveProfileAvatar'
 import { useTheme } from '../providers/ThemeProvider'
+import { LanguagePicker } from './LanguagePicker'
 import { LineSignInModal } from './LineSignInModal'
+import { IconProfile } from './ShellTabIcons'
 import { ThemeToggleButton } from './ThemeToggleButton'
 
 type Props = {
   returnTo?: string
   className?: string
+  navItem?: boolean
 }
 
-export function ProfileChip({ returnTo, className = '' }: Props) {
+export function ProfileChip({ returnTo, className = '', navItem = false }: Props) {
   const { t } = useTranslation()
   const { theme } = useTheme()
   const navigate = useNavigate()
@@ -43,6 +47,17 @@ export function ProfileChip({ returnTo, className = '' }: Props) {
     : isDark
       ? 'border-white/35 bg-black/40 text-white'
       : 'border-brand-border bg-brand-surface text-brand-primary'
+  const buttonClass = navItem
+    ? `game-tab w-full ${menuOpen ? 'game-tab-selected' : ''}`
+    : `flex h-9 max-w-[9rem] items-center gap-1.5 truncate rounded-full border pl-1.5 pr-2.5 text-xs font-medium disabled:opacity-60 md:h-11 md:max-w-[12rem] md:gap-2 md:pl-2 md:pr-3 md:text-sm ${chipClass}`
+  const avatarClass = `h-6 w-6 shrink-0 rounded-full object-cover md:h-8 md:w-8 ${isAdmin ? 'ring-2 ring-brand-gold' : ''}`
+  const fallbackAvatarClass =
+    `flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold md:h-8 md:w-8 md:text-xs ${
+        isAdmin ? 'bg-brand-gold/25 text-brand-gold-dark ring-2 ring-brand-gold' : 'bg-brand-bg-alt text-brand-muted'
+      }`
+  const menuClass = navItem
+    ? 'absolute bottom-full right-0 z-[300] mb-2 min-w-[13rem] overflow-hidden rounded-xl border border-brand-border bg-brand-surface py-1 shadow-lg dark:border-white/15 dark:bg-[#11355c]'
+    : 'absolute right-0 top-full z-[300] mt-1 min-w-[13rem] overflow-hidden rounded-xl border border-brand-border bg-brand-surface py-1 shadow-lg dark:border-white/15 dark:bg-[#11355c]'
 
   useEffect(() => {
     if (!menuOpen) return
@@ -66,6 +81,11 @@ export function ProfileChip({ returnTo, className = '' }: Props) {
     navigate('/members')
   }
 
+  const goGestureScore = () => {
+    setMenuOpen(false)
+    navigate('/gesture-score-test')
+  }
+
   return (
     <>
       <div ref={rootRef} className={`relative ${className}`}>
@@ -75,30 +95,36 @@ export function ProfileChip({ returnTo, className = '' }: Props) {
           aria-expanded={menuOpen}
           aria-haspopup="menu"
           onClick={() => setMenuOpen((open) => !open)}
-          className={`flex h-9 max-w-[9rem] items-center gap-1.5 truncate rounded-full border pl-1.5 pr-2.5 text-xs font-medium disabled:opacity-60 md:h-11 md:max-w-[12rem] md:gap-2 md:pl-2 md:pr-3 md:text-sm ${chipClass}`}
+          className={buttonClass}
         >
-          {avatarUrl ? (
+          {navItem ? <IconProfile className="game-tab-icon" /> : avatarUrl ? (
             <img
               src={avatarUrl}
               alt=""
-              className={`h-6 w-6 shrink-0 rounded-full object-cover md:h-8 md:w-8 ${isAdmin ? 'ring-2 ring-brand-gold' : ''}`}
+              className={avatarClass}
             />
           ) : (
-            <span
-              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold md:h-8 md:w-8 md:text-xs ${
-                isAdmin ? 'bg-brand-gold/25 text-brand-gold-dark ring-2 ring-brand-gold' : 'bg-brand-bg-alt text-brand-muted'
-              }`}
-            >
+            <span className={fallbackAvatarClass}>
               {isSignedIn ? name.trim()[0]?.toUpperCase() ?? '?' : signInLabel.trim()[0]?.toUpperCase() ?? '?'}
             </span>
           )}
-          <span className="truncate">{busy ? t('signInModal.checkingSession') : name}</span>
+          <span
+            className={
+              navItem
+                ? `overflow-hidden truncate whitespace-nowrap text-[11px] leading-tight transition-all duration-200 md:text-sm ${
+                    menuOpen ? 'max-w-[7rem] opacity-100' : 'max-w-0 opacity-0'
+                  }`
+                : 'truncate'
+            }
+          >
+            {busy ? t('signInModal.checkingSession') : name}
+          </span>
         </button>
 
         {menuOpen ? (
           <div
             role="menu"
-            className="absolute right-0 top-full z-[300] mt-1 min-w-[10.5rem] overflow-hidden rounded-xl border border-brand-border bg-brand-surface py-1 shadow-lg dark:border-white/15 dark:bg-[#11355c]"
+            className={menuClass}
           >
             {isSignedIn ? (
               <>
@@ -136,6 +162,21 @@ export function ProfileChip({ returnTo, className = '' }: Props) {
                 <div className="my-1 border-t border-brand-border" role="separator" />
               </>
             )}
+            <button
+              type="button"
+              role="menuitem"
+              onClick={goGestureScore}
+              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-medium text-brand-primary transition hover:bg-brand-bg-alt active:bg-brand-bg-alt"
+            >
+              <Camera className="h-4 w-4 shrink-0 text-brand-accent" strokeWidth={2.4} aria-hidden />
+              Gesture score
+            </button>
+            <div className="px-3 py-2.5">
+              <p className="mb-2 text-left text-xs font-semibold uppercase tracking-wide text-brand-muted">
+                {t('aria.language')}
+              </p>
+              <LanguagePicker dark={theme === 'dark'} />
+            </div>
             <ThemeToggleButton
               showLabel
               menuItem

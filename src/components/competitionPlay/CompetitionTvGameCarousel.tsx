@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode, type TouchEvent } from 'react'
 import type { TranslateFn } from '../../i18n'
 
 export type TvGameNav = {
@@ -13,18 +13,23 @@ type Props = {
   activeGameNumber?: number
   renderGame: (gameNumber: number, nav: TvGameNav) => ReactNode
   onGameChange?: (gameNumber: number) => void
+  className?: string
   t: TranslateFn
 }
+
+const SWIPE_THRESHOLD_PX = 48
 
 export function CompetitionTvGameCarousel({
   gameNumbers,
   activeGameNumber,
   renderGame,
   onGameChange,
+  className = '',
 }: Props) {
   const [index, setIndex] = useState(0)
   const userNavigatedRef = useRef(false)
   const initializedRef = useRef(false)
+  const touchStartXRef = useRef<number | null>(null)
 
   useEffect(() => {
     if (activeGameNumber == null || gameNumbers.length === 0) return
@@ -56,9 +61,7 @@ export function CompetitionTvGameCarousel({
     return () => window.removeEventListener('keydown', onKey)
   }, [gameNumbers.length])
 
-  if (gameNumbers.length === 0) return null
-
-  const current = gameNumbers[index] ?? gameNumbers[0]!
+  const current = gameNumbers[index] ?? gameNumbers[0]
   const atStart = index <= 0
   const atEnd = index >= gameNumbers.length - 1
   const nav: TvGameNav = {
@@ -75,12 +78,53 @@ export function CompetitionTvGameCarousel({
   }
 
   useEffect(() => {
-    onGameChange?.(current)
+    if (current != null) onGameChange?.(current)
   }, [current, onGameChange])
 
+  if (gameNumbers.length === 0) return null
+
+  const onTouchStart = (e: TouchEvent<HTMLDivElement>) => {
+    touchStartXRef.current = e.changedTouches[0]?.clientX ?? e.touches[0]?.clientX ?? null
+  }
+
+  const onTouchEnd = (e: TouchEvent<HTMLDivElement>) => {
+    const startX = touchStartXRef.current
+    touchStartXRef.current = null
+    if (startX == null) return
+    const endX = e.changedTouches[0]?.clientX
+    if (endX == null) return
+    const delta = endX - startX
+    if (Math.abs(delta) < SWIPE_THRESHOLD_PX) return
+    userNavigatedRef.current = true
+    if (delta < 0) nav.onNext()
+    else nav.onPrev()
+  }
+
   return (
-    <div className="tv-game-carousel flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-      {renderGame(current, nav)}
+    <div
+      className={`tv-game-carousel play-game-carousel relative flex h-full min-h-0 flex-1 flex-col overflow-hidden${className ? ` ${className}` : ''}`}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+    >
+      <button
+        type="button"
+        disabled={nav.atStart}
+        onClick={nav.onPrev}
+        aria-label="Previous game"
+        className="tv-game-carousel-side-btn tv-game-carousel-side-btn-left"
+      >
+        ‹
+      </button>
+      {renderGame(current!, nav)}
+      <button
+        type="button"
+        disabled={nav.atEnd}
+        onClick={nav.onNext}
+        aria-label="Next game"
+        className="tv-game-carousel-side-btn tv-game-carousel-side-btn-right"
+      >
+        ›
+      </button>
     </div>
   )
 }

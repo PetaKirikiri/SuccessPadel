@@ -7,6 +7,7 @@ import { bumpScoreField, scoreDigitsOnly } from '../../lib/competitionScoreInput
 import { compactDisplayNames } from '../../lib/leaderboardEntries'
 import type { CourtPlayer } from '../../lib/americanoSchedule'
 import { CourtGestureScoreButton } from '../CourtGestureScoreButton'
+import { CourtManualScoreButton } from '../CourtManualScoreButton'
 import { PlayerAvatarLink } from '../PlayerAvatarLink'
 import { PlayerNameLink } from '../PlayerNameLink'
 import type { LiveCourt, ScoringGameCourt } from './gameBoardTypes'
@@ -57,7 +58,8 @@ export function courtGestureScoreHref({
   courtLabel,
   courtId,
   currentUserId,
-  court,
+  currentUserDisplayName: _currentUserDisplayName,
+  court: _court,
   finished,
 }: {
   gestureScoreEnabled: boolean
@@ -68,15 +70,17 @@ export function courtGestureScoreHref({
   courtLabel: string
   courtId?: string
   currentUserId?: string | null
+  currentUserDisplayName?: string | null
   court: {
     playerIds?: string[]
     teamAPlayers?: CourtPlayer[]
     teamBPlayers?: CourtPlayer[]
+    teamA?: string[]
+    teamB?: string[]
   }
   finished: boolean
 }): string | undefined {
   if (!gestureScoreEnabled || finished || !sessionId || !currentUserId) return undefined
-  if (!courtHasCurrentUser(currentUserId, court)) return undefined
   if (friendly) {
     return `/friendly/${sessionId}/games/${gameNumber}/courts/${encodeURIComponent(courtLabel)}/gesture-score`
   }
@@ -86,36 +90,75 @@ export function courtGestureScoreHref({
   return undefined
 }
 
+export function courtManualScoreHref({
+  manualScoreEnabled,
+  friendly,
+  sessionId,
+  gameNumber,
+  courtLabel,
+  finished,
+  currentUserId,
+}: {
+  manualScoreEnabled: boolean
+  friendly: boolean
+  sessionId?: string
+  gameNumber: number
+  courtLabel: string
+  finished: boolean
+  currentUserId?: string | null
+}): string | undefined {
+  if (!manualScoreEnabled || finished || !sessionId || !currentUserId || !friendly) return undefined
+  return `/friendly/${sessionId}/games/${gameNumber}/courts/${encodeURIComponent(courtLabel)}/manual-score`
+}
+
+export function isCurrentCourtPlayer(
+  player: Pick<CourtPlayer, 'id' | 'name'>,
+  currentUserId?: string | null,
+  currentUserDisplayName?: string | null,
+): boolean {
+  if (currentUserId && player.id === currentUserId) return true
+  const mine = currentUserDisplayName?.trim().toLocaleLowerCase()
+  if (!mine) return false
+  return player.name.trim().toLocaleLowerCase() === mine
+}
+
 export function courtHasCurrentUser(
   currentUserId: string | null | undefined,
   court: {
     playerIds?: string[]
     teamAPlayers?: CourtPlayer[]
     teamBPlayers?: CourtPlayer[]
+    teamA?: string[]
+    teamB?: string[]
   },
+  currentUserDisplayName?: string | null,
 ): boolean {
-  if (!currentUserId) return false
-  return Boolean(
-    court.teamAPlayers?.some((player) => player.id === currentUserId) ||
-      court.teamBPlayers?.some((player) => player.id === currentUserId) ||
-      court.playerIds?.includes(currentUserId),
-  )
+  const players = [...(court.teamAPlayers ?? []), ...(court.teamBPlayers ?? [])]
+  if (players.some((player) => isCurrentCourtPlayer(player, currentUserId, currentUserDisplayName))) {
+    return true
+  }
+  if (currentUserId && court.playerIds?.includes(currentUserId)) return true
+  const name = currentUserDisplayName?.trim().toLocaleLowerCase()
+  if (!name) return false
+  const courtNames = [...(court.teamA ?? []), ...(court.teamB ?? [])]
+  return courtNames.some((courtName) => courtName.trim().toLocaleLowerCase() === name)
 }
 
 const COURT_LABEL_CLASS =
   'text-center font-display text-2xl font-bold text-brand-accent dark:text-brand-tan md:text-3xl'
 const CURRENT_PLAYER_HIGHLIGHT_CLASS =
-  'animate-pulse rounded bg-brand-bg-alt px-1 text-brand-accent dark:bg-white/10 dark:text-brand-accent-light'
+  'my-court-player-highlight rounded-lg px-2 text-emerald-950 dark:text-emerald-50'
 
 function courtLabelClass(
   currentUserId: string | null | undefined,
   court: Parameters<typeof courtHasCurrentUser>[1],
   finished = false,
+  currentUserDisplayName?: string | null,
 ) {
   const base = finished
     ? 'text-center font-display text-2xl font-bold text-brand-sage dark:text-brand-muted md:text-3xl'
     : 'text-center font-display text-2xl font-bold md:text-3xl'
-  return courtHasCurrentUser(currentUserId, court)
+  return courtHasCurrentUser(currentUserId, court, currentUserDisplayName)
     ? `${base} ${CURRENT_PLAYER_HIGHLIGHT_CLASS}`
     : finished
       ? base
@@ -140,7 +183,7 @@ function courtCardShellClass({
     parts.push('border-brand-primary/35 dark:border-brand-accent/30')
   }
   if (isMyCourt && !finished) {
-    parts.push('ring-2 ring-brand-accent/35')
+    parts.push('my-court-card-highlight ring-2 ring-emerald-400/80')
   }
   return parts.join(' ')
 }
@@ -148,28 +191,32 @@ function courtCardShellClass({
 export function CourtCard({
   courtLabel,
   currentUserId,
+  currentUserDisplayName,
   court,
   finished,
   href,
   gestureScoreHref,
   gestureScoreLive = false,
+  manualScoreHref,
   tvCompact = false,
   children,
   t,
 }: {
   courtLabel: string
   currentUserId?: string | null
+  currentUserDisplayName?: string | null
   court: LiveCourt | ScoringGameCourt
   finished: boolean
   href?: string
   gestureScoreHref?: string
   gestureScoreLive?: boolean
+  manualScoreHref?: string
   tvCompact?: boolean
   children: ReactNode
   t: TranslateFn
 }) {
   const navigate = useNavigate()
-  const isMyCourt = courtHasCurrentUser(currentUserId, court)
+  const isMyCourt = courtHasCurrentUser(currentUserId, court, currentUserDisplayName)
   const shellClass = `${courtCardShellClass({ finished, isMyCourt })}${
     tvCompact ? ' tv-court-card' : ''
   }${
@@ -189,10 +236,12 @@ export function CourtCard({
         <CourtLabelRow
           courtLabel={courtLabel}
           currentUserId={currentUserId}
+          currentUserDisplayName={currentUserDisplayName}
           court={court}
           finished={finished}
           gestureScoreHref={gestureScoreHref}
           gestureScoreLive={gestureScoreLive}
+          manualScoreHref={manualScoreHref}
           tvCompact={tvCompact}
           t={t}
         />
@@ -321,6 +370,7 @@ export function CourtMatchCell({
   teamALabel,
   teamBLabel,
   currentUserId,
+  currentUserDisplayName,
   currentUserAvatarUrl,
   embedded = false,
   compact = false,
@@ -341,6 +391,7 @@ export function CourtMatchCell({
   teamALabel?: string
   teamBLabel?: string
   currentUserId?: string | null
+  currentUserDisplayName?: string | null
   currentUserAvatarUrl?: string | null
   embedded?: boolean
   compact?: boolean
@@ -429,7 +480,7 @@ export function CourtMatchCell({
     : 'h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-brand-border/60 md:h-9 md:w-9'
 
   const playerEl = (player: CourtPlayer, align: 'left' | 'right') => {
-    const isCurrent = Boolean(currentUserId && player.id === currentUserId)
+    const isCurrent = isCurrentCourtPlayer(player, currentUserId, currentUserDisplayName)
     const isRegistered = Boolean(player.id)
     const displayAvatarUrl = isRegistered
       ? player.avatarUrl ?? (isCurrent ? currentUserAvatarUrl ?? null : null)
@@ -549,24 +600,28 @@ export function CourtMatchCell({
 function CourtLabelRow({
   courtLabel,
   currentUserId,
+  currentUserDisplayName,
   court,
   finished,
   gestureScoreHref,
   gestureScoreLive = false,
+  manualScoreHref,
   tvCompact = false,
   t,
 }: {
   courtLabel: string
   currentUserId?: string | null
+  currentUserDisplayName?: string | null
   court: LiveCourt | ScoringGameCourt
   finished: boolean
   gestureScoreHref?: string
   gestureScoreLive?: boolean
+  manualScoreHref?: string
   tvCompact?: boolean
   t: TranslateFn
 }) {
   const label = displayCourtLabel(courtLabel, t)
-  const titleClass = courtLabelClass(currentUserId, court, finished)
+  const titleClass = courtLabelClass(currentUserId, court, finished, currentUserDisplayName)
   return (
     <div
       className={`flex items-center justify-center gap-2 px-2 ${
@@ -581,7 +636,11 @@ function CourtLabelRow({
       <p className={`min-w-0 flex-1 truncate text-center ${titleClass}${tvCompact ? ' tv-court-label !text-6xl' : ''}`}>
         {label}
       </p>
-      <span className="w-8 shrink-0" aria-hidden />
+      {manualScoreHref ? (
+        <CourtManualScoreButton href={manualScoreHref} />
+      ) : (
+        <span className="w-8 shrink-0" aria-hidden />
+      )}
     </div>
   )
 }

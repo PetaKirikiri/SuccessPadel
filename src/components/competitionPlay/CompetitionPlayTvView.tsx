@@ -21,7 +21,7 @@ export function CompetitionPlayTvView({
 }: Props) {
   return (
     <div className="flex min-h-0 min-w-0 w-full flex-1 flex-col overflow-hidden">
-      <div className="tv-play-panel flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <div className="tv-play-layout min-h-0 flex-1">
           <div className="tv-play-games min-h-0">
             <div className="tv-play-scroll min-h-0">

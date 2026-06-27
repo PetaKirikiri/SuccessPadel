@@ -1,13 +1,10 @@
 import type { KeyboardEvent, MouseEvent, ReactNode } from 'react'
-import { IconDelete, IconEdit } from './ButtonIcons'
 import { Link, useNavigate } from 'react-router-dom'
 import { DuoTeamRosterList } from './DuoTeamRosterList'
 import { FriendlyRosterList } from './FriendlyRosterList'
 import { RuleChipGrid } from './RuleChipGrid'
-import { InviteCardQr } from './InviteCardQr'
 import type { CompetitionTeamSlot } from '../lib/competitionGameDisplay'
 import type { RosterSlot, RuleChip } from '../lib/friendlyGameDisplay'
-import { genderFromRuleChips, inviteBannerForSession } from '../lib/inviteBanners'
 
 export type InviteCardProps = {
   title: string
@@ -38,10 +35,10 @@ export type InviteCardProps = {
   gender?: string | null
 }
 
-const adminIconBtnClass =
-  'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-border bg-brand-bg-alt shadow-sm active:scale-[0.98]'
+const adminDangerBtnClass =
+  'inline-flex h-9 shrink-0 items-center justify-center rounded-xl border border-brand-border bg-brand-bg-alt px-3 text-[11px] font-black uppercase tracking-wide text-brand-muted shadow-sm active:scale-[0.98]'
 const adminTextBtnClass =
-  'inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-brand-primary/35 bg-brand-bg-alt px-3 text-xs font-black uppercase tracking-wide text-brand-primary shadow-sm active:scale-[0.98]'
+  'inline-flex h-9 shrink-0 items-center justify-center rounded-xl border border-brand-primary/35 bg-brand-bg-alt px-3 text-[11px] font-black uppercase tracking-wide text-brand-primary shadow-sm active:scale-[0.98]'
 
 function isInteractiveCardTarget(target: EventTarget | null, card: HTMLElement): boolean {
   if (!(target instanceof HTMLElement)) return false
@@ -61,9 +58,6 @@ export function InviteCard({
   competitionId = null,
   currentUserId,
   ruleChips = [],
-  scoringHeadline = null,
-  qrUrl,
-  qrAriaLabel,
   canEdit = false,
   editTo,
   editAriaLabel,
@@ -76,7 +70,6 @@ export function InviteCard({
   belowLink,
   footer,
   className = '',
-  gender = null,
 }: InviteCardProps) {
   const navigate = useNavigate()
   const showAdminActions = (canEdit && editTo) || (canDelete && onDelete)
@@ -99,7 +92,7 @@ export function InviteCard({
   }
 
   const adminActions = showAdminActions ? (
-    <div className="flex shrink-0 flex-row flex-wrap justify-end gap-1.5 sm:flex-col">
+    <>
       {canEdit && editTo ? (
         <Link
           to={editTo}
@@ -108,8 +101,7 @@ export function InviteCard({
           onPointerDown={(e) => e.stopPropagation()}
           className={adminTextBtnClass}
         >
-          <IconEdit />
-          <span>Edit</span>
+          Edit
         </Link>
       ) : null}
       {canDelete && onDelete ? (
@@ -123,48 +115,49 @@ export function InviteCard({
             onDelete()
           }}
           onPointerDown={(e) => e.stopPropagation()}
-          className={`${adminIconBtnClass} text-brand-muted disabled:opacity-50`}
+          className={`${adminDangerBtnClass} disabled:opacity-50`}
         >
-          <IconDelete />
+          Delete
         </button>
       ) : null}
-    </div>
+    </>
   ) : null
 
+  const dateParts = dateLine.split(/\s+/).filter(Boolean)
+  const dateCompact = dateParts.length >= 3 ? `${dateParts[0]} ${dateParts[1]} ${dateParts[2]}` : dateLine
+
   const headerRow = (
-    <div className="flex w-full min-w-0 flex-wrap items-start gap-2 sm:flex-nowrap sm:gap-3">
-      <Link
-        to={detailTo}
-        className="min-w-0 flex-1 touch-manipulation transition active:opacity-80"
-      >
-        <div className="space-y-1">
-          <p className="font-display text-base font-bold leading-tight text-brand-primary sm:text-xl md:text-2xl">
-            {dateLine}
-          </p>
-          <p className="break-words font-display text-sm font-semibold leading-snug text-brand-primary sm:text-base md:text-lg">
-            {title}
-          </p>
-          {timeLine ? (
-            <p className="break-all font-display text-lg font-bold leading-tight tabular-nums text-brand-text sm:break-words sm:text-2xl md:text-3xl">
-              {timeLine}
-            </p>
-          ) : null}
-        </div>
-      </Link>
-      {qrUrl ? (
-        <div className="w-[4.75rem] shrink-0 text-center sm:w-24 md:w-28">
-          <p className="mb-1 text-[10px] font-black uppercase tracking-wide text-brand-primary">
-            Invite
-          </p>
-          <InviteCardQr url={qrUrl} title={qrAriaLabel} />
-        </div>
+    <div className="w-full min-w-0 space-y-2">
+      {showAdminActions ? (
+        <div className="flex w-full justify-end gap-1.5">{adminActions}</div>
       ) : null}
-      {adminActions}
-      {ruleChips.length > 0 ? (
-        <div className="min-w-0 basis-full self-start sm:basis-auto">
-          <RuleChipGrid chips={ruleChips} inline />
+      <div className="grid w-full min-w-0 grid-cols-1 gap-3 lg:grid-cols-[minmax(13rem,0.9fr)_minmax(22rem,1.6fr)] lg:items-start">
+        <div className="min-w-0">
+          <Link
+            to={detailTo}
+            className="block min-w-0 touch-manipulation transition active:opacity-80"
+          >
+            <div className="grid min-w-0 gap-1.5 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-baseline lg:block">
+              <p className="whitespace-nowrap font-display text-base font-bold leading-tight text-brand-primary sm:text-xl lg:text-2xl">
+                {dateCompact}
+              </p>
+              {timeLine ? (
+                <p className="whitespace-nowrap font-display text-sm font-bold leading-tight tabular-nums text-brand-text sm:text-lg lg:text-xl">
+                  {timeLine}
+                </p>
+              ) : null}
+              <p className="min-w-0 font-display text-lg font-semibold leading-tight text-brand-primary sm:text-xl lg:text-2xl">
+                {title}
+              </p>
+            </div>
+          </Link>
         </div>
-      ) : null}
+        {ruleChips.length > 0 ? (
+          <div className="min-w-0 self-start">
+            <RuleChipGrid chips={ruleChips} inline />
+          </div>
+        ) : null}
+      </div>
     </div>
   )
 
@@ -184,35 +177,9 @@ export function InviteCard({
       />
     ))
 
-  const bannerSrc = inviteBannerForSession({
-    gender: gender ?? genderFromRuleChips(ruleChips),
-    isDuo: Boolean(duoTeams?.length),
-  })
-  const banner = bannerSrc ? (
-    <div className="relative aspect-[1024/172] w-full overflow-hidden bg-brand-bg-alt">
-      <img
-        src={bannerSrc}
-        alt=""
-        className="h-full w-full object-cover object-[center_30%]"
-        decoding="async"
-      />
-      {scoringHeadline ? (
-        <div className="pointer-events-none absolute right-3 top-3 z-40">
-          <div className="game-card-racetrack rounded-xl">
-            <div className="rounded-[10px] bg-brand-surface px-3 py-1.5 shadow-sm">
-              <p className="whitespace-nowrap font-display text-sm font-bold leading-tight text-brand-primary sm:text-base">
-                {scoringHeadline}
-              </p>
-            </div>
-          </div>
-        </div>
-      ) : null}
-    </div>
-  ) : null
-
   return (
     <article
-      className={`relative w-full min-w-0 max-w-full overflow-hidden rounded-2xl border-2 border-brand-primary/25 bg-brand-surface shadow-[0_4px_16px_-4px_rgba(96,45,36,0.22)] touch-manipulation transition active:opacity-95 ${
+      className={`relative w-full min-w-0 max-w-full overflow-hidden bg-transparent touch-manipulation transition active:opacity-95 ${
         detailTo ? 'cursor-pointer' : ''
       } ${className}`}
       role={detailTo ? 'link' : undefined}
@@ -221,9 +188,8 @@ export function InviteCard({
       onClick={handleCardClick}
       onKeyDown={handleCardKeyDown}
     >
-      {banner}
       <div className="relative min-w-0">
-        <div className="min-w-0 overflow-hidden px-3 py-3 sm:px-4 sm:py-4">
+        <div className="min-w-0 overflow-hidden px-1 py-1 sm:px-2 sm:py-2">
           {headerRow}
           <div className="mt-4 border-t-2 border-brand-border pt-3">{rosterContent}</div>
         </div>

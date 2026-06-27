@@ -44,7 +44,6 @@ import {
   friendlyStartsAtIso,
 } from '../lib/friendlyGames'
 import { useGesturePadChrome } from '../lib/gesturePadChrome'
-import { courtHasCurrentUser } from '../components/cards/CourtCard'
 import { breakMinutesFromConfig } from '../lib/competitionLayout'
 import { formatDateInput } from '../lib/courtSchedule'
 
@@ -179,7 +178,7 @@ export function GestureScoreCourtPage() {
   }, [friendlyRoute, session?.scoring_config])
 
   const cameraCtx = useMemo((): GestureCameraContext | null => {
-    if (!courtSetupKey || !user?.id || !ourTeam || !id || !Number.isFinite(gameNum)) return null
+    if (!courtSetupKey || !user?.id || !id || !Number.isFinite(gameNum)) return null
     return {
       courtSetupKey,
       friendly: friendlyRoute,
@@ -192,7 +191,7 @@ export function GestureScoreCourtPage() {
       playTo,
       scoreUnit,
       roster: rosterFromCourt(courtMatch?.teamAPlayers, courtMatch?.teamBPlayers),
-      ourTeam,
+      ourTeam: ourTeam ?? 'a',
       scorerProfileId: user.id,
     }
   }, [
@@ -210,13 +209,7 @@ export function GestureScoreCourtPage() {
     user?.id,
   ])
 
-  const onCourt = courtMatch
-    ? courtHasCurrentUser(user?.id, {
-        teamAPlayers: courtMatch.teamAPlayers,
-        teamBPlayers: courtMatch.teamBPlayers,
-        playerIds: 'playerIds' in courtMatch ? courtMatch.playerIds : undefined,
-      })
-    : false
+  const canOpenGestureScore = Boolean(courtMatch && user)
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -241,12 +234,18 @@ export function GestureScoreCourtPage() {
   const applyScoreFromLog = useCallback(
     (log: Awaited<ReturnType<typeof loadGestureCameraLog>>) => {
       const score = scoreFromLog(log)
-      const mapped = ourTeam ? ourThemFromScore(score, ourTeam) : null
-      if (!mapped) return
-      setOurPoints(mapped.ourPoints)
-      setTheirPoints(mapped.theirPoints)
-      setOurGames(mapped.ourGames)
-      setTheirGames(mapped.theirGames)
+      if (ourTeam) {
+        const mapped = ourThemFromScore(score, ourTeam)
+        setOurPoints(mapped.ourPoints)
+        setTheirPoints(mapped.theirPoints)
+        setOurGames(mapped.ourGames)
+        setTheirGames(mapped.theirGames)
+      } else {
+        setOurPoints(score.pointsA)
+        setTheirPoints(score.pointsB)
+        setOurGames(score.gamesA)
+        setTheirGames(score.gamesB)
+      }
       setMatchEnded(Boolean(log?.matchEndedAt))
     },
     [ourTeam],
@@ -438,7 +437,7 @@ export function GestureScoreCourtPage() {
   if (authLoading || friendlyLoading) {
     return <p className="p-4 text-center text-sm text-white/70">Loading…</p>
   }
-  if (!user || !profile || !courtSetupKey || !courtMatch || !onCourt || !ourTeam || !cameraCtx) {
+  if (!user || !profile || !courtSetupKey || !courtMatch || !canOpenGestureScore || !cameraCtx) {
     return <Navigate to={friendlyRoute && id ? `/friendly/${id}` : id ? `/competitions/${id}` : '/friendly'} replace />
   }
 

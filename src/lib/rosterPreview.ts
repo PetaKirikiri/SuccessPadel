@@ -8,7 +8,7 @@ function previewPlayer(index: number, guest_name: string): CompetitionPlayer {
     padel_player_id: null,
     guest_name,
     guest_email: null,
-    rank_order: index + 1,
+    rank_order: index,
     profiles: null,
   }
 }
@@ -31,7 +31,7 @@ export function rosterFromSlots(
         padel_player_id: null,
         guest_name: clubDisplayName(profileId, name),
         guest_email: null,
-        rank_order: index + 1,
+        rank_order: index,
         profiles: {
           id: profileId,
           display_name: clubDisplayName(profileId, name),

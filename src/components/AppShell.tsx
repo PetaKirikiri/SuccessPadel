@@ -18,12 +18,15 @@ type Props = {
 }
 
 const COMPETITION_PLAY_PATH = /^\/competitions\/[^/]+$/
+const BOTTOM_NAV_PATH =
+  /^\/friendly(?:\/|$)|^\/competitive$|^\/competitions\/new$|^\/competitions(?:\/)?$/
 
 export function AppShell({ children }: Props) {
   const { pathname, search } = useLocation()
   const isTvLayout = useIsTvLayout()
   const [gesturePadActive, setGesturePadActive] = useState(false)
   const isTvKiosk = COMPETITION_PLAY_PATH.test(pathname) && isTvLayout
+  const hasBottomNav = BOTTOM_NAV_PATH.test(pathname)
 
   useEffect(() => {
     setTvKioskMode(isTvKiosk)
@@ -31,7 +34,7 @@ export function AppShell({ children }: Props) {
   }, [isTvKiosk])
 
   const hideGlobalChrome =
-    gesturePadActive || isGesturePadRoute(pathname) || isTvKiosk
+    gesturePadActive || isGesturePadRoute(pathname) || isTvKiosk || hasBottomNav
 
   if (isPlayerLinkHandoffSearch(search)) {
     return (

@@ -23,6 +23,9 @@ type Props = {
   liveCourtFeeds?: Map<string, LiveCourtPointFeed>
   onSubmitFriendlyScores?: (entries: FriendlyCourtScoreSubmit[]) => Promise<void>
   onFriendlyScoresSaved?: () => void
+  gameCarousel?: boolean
+  currentUserDisplayName?: string | null
+  onBack?: () => void
 }
 
 export function GameBoardPreview({
@@ -39,6 +42,9 @@ export function GameBoardPreview({
   liveCourtFeeds,
   onSubmitFriendlyScores,
   onFriendlyScoresSaved,
+  gameCarousel = false,
+  currentUserDisplayName,
+  onBack,
 }: Props) {
   const scoreUnit = americanoScoringUnit(session)
   const breakMinutes = breakMinutesFromConfig(session.scoring_config)
@@ -81,7 +87,8 @@ export function GameBoardPreview({
   }, [breakMinutes, eventStartsAt, gameMinutes, games, session])
 
   return (
-    <GameBoard
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+      <GameBoard
       columns={columns}
       mode="preview"
       scoreUnit={scoreUnit}
@@ -91,11 +98,15 @@ export function GameBoardPreview({
       friendly={friendly}
       isAdmin={isAdmin}
       currentUserId={currentUserId}
+      currentUserDisplayName={currentUserDisplayName}
       currentUserAvatarUrl={currentUserAvatarUrl}
       liveCourtScores={liveCourtScores}
       liveCourtFeeds={liveCourtFeeds}
       onSubmitFriendlyScores={onSubmitFriendlyScores}
       onSaved={onFriendlyScoresSaved}
+      tvCarousel={gameCarousel}
+      onTvBack={onBack}
     />
+    </div>
   )
 }

@@ -40,14 +40,14 @@ function RuleChipButton({
       }}
       className={
         inline
-          ? 'flex min-h-[3rem] min-w-0 max-w-full cursor-pointer items-center gap-1.5 rounded-lg border-2 border-brand-primary/30 bg-brand-bg-alt px-2 py-2 transition active:opacity-80 sm:min-h-[2.75rem] sm:gap-2 sm:px-2.5'
+          ? 'flex min-h-[2.75rem] min-w-0 max-w-full cursor-pointer items-center gap-1.5 rounded-lg border-2 border-brand-primary/30 bg-brand-bg-alt px-2 py-1.5 transition active:opacity-80 sm:gap-2 sm:px-2.5'
           : 'inline-flex max-w-full cursor-pointer items-center gap-1.5 rounded-lg border-2 border-brand-primary/30 bg-brand-bg-alt py-2 pl-2.5 pr-2 transition active:opacity-80'
       }
     >
       <span
         className={
           inline
-            ? 'min-w-0 flex-1 whitespace-normal break-normal text-[11px] font-bold leading-snug text-brand-primary [overflow-wrap:normal] sm:text-sm'
+            ? 'min-w-0 flex-1 whitespace-normal break-normal text-[11px] font-bold leading-snug text-brand-primary [overflow-wrap:normal] sm:text-xs xl:text-sm'
             : 'text-sm font-bold leading-snug text-brand-primary'
         }
       >
@@ -71,7 +71,7 @@ export function RuleChipGrid({ chips, inline = false, trailing }: Props) {
       <ul
         className={
           inline
-            ? 'm-0 grid w-full min-w-0 list-none grid-cols-2 gap-1.5 p-0 sm:gap-2'
+            ? 'm-0 grid w-full min-w-0 list-none grid-cols-1 gap-1.5 p-0 sm:grid-cols-2 sm:gap-2'
             : 'm-0 grid list-none grid-cols-3 gap-1.5 p-0'
         }
       >

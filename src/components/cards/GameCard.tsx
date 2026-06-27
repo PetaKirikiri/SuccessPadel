@@ -16,7 +16,7 @@ import type { FriendlyCourtScoreSubmit } from '../../lib/friendlyManualScore'
 import type { MatchTeam } from '../../lib/types'
 import { TvPlayQrPanel } from '../competitionPlay/TvPlayQrPanel'
 import type { TvGameNav } from '../competitionPlay/CompetitionTvGameCarousel'
-import { CourtCard, CourtMatchCell, ScoreStepper, courtGestureScoreHref, courtLiveHref } from './CourtCard'
+import { CourtCard, CourtMatchCell, ScoreStepper, courtGestureScoreHref, courtLiveHref, courtManualScoreHref } from './CourtCard'
 import type { LiveCourt } from './gameBoardTypes'
 import type { CourtPlayer } from '../../lib/americanoSchedule'
 
@@ -113,7 +113,7 @@ export function tvCourtsBodyClass(tvCompact: boolean, finished: boolean): string
       finished ? 'border-brand-border/40 bg-brand-bg-alt/70' : 'border-brand-border/30 bg-brand-bg-alt'
     }`
   }
-  return `tv-game-courts-body border-t flex min-h-0 flex-1 flex-col overflow-hidden px-2 pb-0 pt-1.5 ${
+  return `tv-game-courts-body border-t flex min-h-0 flex-1 flex-col overflow-hidden px-0.5 pb-0 pt-1 ${
     finished ? 'border-brand-border/40 bg-brand-bg-alt/70' : 'border-brand-border/30 bg-brand-bg-alt'
   }`
 }
@@ -449,9 +449,11 @@ export function GameScoringCourts({
   canEdit,
   finished,
   currentUserId,
+  currentUserDisplayName,
   currentUserAvatarUrl,
   liveCourtEnabled,
   gestureScoreEnabled = false,
+  manualScoreEnabled = false,
   friendly,
   sessionId,
   competitionId,
@@ -474,9 +476,11 @@ export function GameScoringCourts({
   canEdit: boolean
   finished: boolean
   currentUserId?: string | null
+  currentUserDisplayName?: string | null
   currentUserAvatarUrl?: string | null
   liveCourtEnabled: boolean
   gestureScoreEnabled?: boolean
+  manualScoreEnabled?: boolean
   friendly: boolean
   sessionId?: string
   competitionId?: string
@@ -520,8 +524,18 @@ export function GameScoringCourts({
           courtLabel: row.courtLabel,
           courtId,
           currentUserId,
+          currentUserDisplayName,
           court: liveCourt ?? court,
           finished,
+        })
+        const manualHref = courtManualScoreHref({
+          manualScoreEnabled,
+          friendly,
+          sessionId,
+          gameNumber: game.gameNumber,
+          courtLabel: row.courtLabel,
+          finished,
+          currentUserId,
         })
 
         const href = courtLiveHref({
@@ -540,11 +554,13 @@ export function GameScoringCourts({
             key={row.courtLabel}
             courtLabel={row.courtLabel}
             currentUserId={currentUserId}
+            currentUserDisplayName={currentUserDisplayName}
             court={liveCourt ?? court}
             finished={finished}
             href={href}
             gestureScoreHref={gestureHref}
             gestureScoreLive={feed?.live}
+            manualScoreHref={manualHref}
             tvCompact={tvCompact}
             t={t}
           >
@@ -561,6 +577,7 @@ export function GameScoringCourts({
                   disabled
                   finished={finished}
                   currentUserId={currentUserId}
+                  currentUserDisplayName={currentUserDisplayName}
                   currentUserAvatarUrl={currentUserAvatarUrl}
                   embedded
                   compact={tvCompact}
@@ -634,6 +651,7 @@ export function GameScoringCourts({
                 finished={finished}
                 scoreMax={courtScoreMax}
                 currentUserId={currentUserId}
+                currentUserDisplayName={currentUserDisplayName}
                 currentUserAvatarUrl={currentUserAvatarUrl}
                 embedded
                 compact={tvCompact}
@@ -665,6 +683,33 @@ export function GameScoringCourts({
     </div>
   )
 }
+function GameCardBackButton({
+  onClick,
+  ariaLabel,
+  finished = false,
+}: {
+  onClick: () => void
+  ariaLabel: string
+  finished?: boolean
+}) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation()
+        onClick()
+      }}
+      aria-label={ariaLabel}
+      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-lg font-medium leading-none shadow-sm transition active:scale-95 ${
+        finished
+          ? 'border-brand-border/60 bg-brand-bg-alt text-brand-primary'
+          : 'border-white/25 bg-white/10 text-brand-bg-alt dark:border-white/15 dark:text-brand-accent-light'
+      }`}
+    >
+      ←
+    </button>
+  )
+}
 export function GameCardHeader({
   gameNumber,
   isLiveNow,
@@ -678,6 +723,7 @@ export function GameCardHeader({
   hideCollapse = false,
   tvCompact = false,
   tvNav,
+  carouselHideLogo = false,
   onBack,
   viewAlongUrl,
   t,
@@ -694,6 +740,7 @@ export function GameCardHeader({
   hideCollapse?: boolean
   tvCompact?: boolean
   tvNav?: TvGameNav
+  carouselHideLogo?: boolean
   onBack?: () => void
   viewAlongUrl?: string | null
   t: TranslateFn
@@ -708,10 +755,6 @@ export function GameCardHeader({
       ? 'border-brand-border/50 bg-[#e8e7e5] dark:border-white/12 dark:bg-white/[0.06]'
       : 'border-brand-accent/50 bg-brand-primary dark:border-brand-accent/40 dark:bg-white/[0.08]'
   }`
-  const navBtnClass = finished
-    ? 'text-[#602d24]/80 hover:bg-[#602d24]/5'
-    : 'text-[#7dd3fc] hover:bg-[#7dd3fc]/10'
-
   const collapseBtnClass = `flex min-w-12 shrink-0 items-center justify-center self-stretch border-l px-4 text-2xl leading-none transition active:opacity-70 md:min-w-14 md:px-5 md:text-3xl ${
     finished
       ? 'border-brand-border/50 text-brand-sage/80 dark:text-brand-muted'
@@ -747,39 +790,23 @@ export function GameCardHeader({
   if (tvNav) {
     return (
       <div className={headerShellClass}>
-        <div className={`relative grid min-h-[5.75rem] min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 ${headerPad}`}>
-          {onBack ? (
-            <button
-              type="button"
-              className="absolute left-3 top-2 z-20 shrink-0 px-1 py-0.5 text-sm font-black uppercase tracking-wide text-[#7dd3fc]/75 transition hover:text-[#7dd3fc]"
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                onBack()
-              }}
-              aria-label={t('aria.back')}
-            >
-              Back
-            </button>
-          ) : null}
-          <div className="flex min-w-0 items-center gap-2 justify-self-start">
-            <button
-              type="button"
-              className={`tv-game-header-nav shrink-0 ${navBtnClass}`}
-              disabled={tvNav.atStart}
-              onClick={tvNav.onPrev}
-              aria-label={t('competition.prevGame')}
-            >
-              <span aria-hidden="true">‹</span>
-            </button>
+        <div className={`relative grid min-h-[4.5rem] min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 ${headerPad}`}>
+          <div className="flex items-center justify-start">
+            {onBack ? (
+              <GameCardBackButton onClick={onBack} ariaLabel={t('aria.back')} finished={finished} />
+            ) : (
+              <span className="w-8 shrink-0" aria-hidden />
+            )}
           </div>
-          <div className="pointer-events-none relative flex min-w-0 items-center justify-center justify-self-center">
-            <img
-              src="/brand/logo-padel.webp"
-              alt=""
-              aria-hidden="true"
-              className="absolute right-full mr-6 h-20 w-auto max-w-[15rem] shrink-0 object-contain"
-            />
+          <div className="pointer-events-none relative col-start-2 flex min-w-0 items-center justify-center justify-self-center">
+            {!carouselHideLogo ? (
+              <img
+                src="/brand/logo-padel.webp"
+                alt=""
+                aria-hidden="true"
+                className="absolute right-full mr-6 h-20 w-auto max-w-[15rem] shrink-0 object-contain"
+              />
+            ) : null}
             <p
               className={`shrink-0 ${gameTitleClass} ${
                 finished ? 'text-[#602d24]/80' : 'text-[#7dd3fc]'
@@ -813,18 +840,9 @@ export function GameCardHeader({
               ) : null}
             </div>
           </div>
-          <div className="flex min-w-0 items-center justify-end gap-2 justify-self-end">
+          <div className="col-start-3 flex min-w-0 items-center justify-end gap-2 justify-self-end">
             {countdownBlock}
             {viewAlongUrl ? <TvPlayQrPanel url={viewAlongUrl} header /> : null}
-            <button
-              type="button"
-              className={`tv-game-header-nav shrink-0 ${navBtnClass}`}
-              disabled={tvNav.atEnd}
-              onClick={tvNav.onNext}
-              aria-label={t('competition.nextGame')}
-            >
-              <span aria-hidden="true">›</span>
-            </button>
           </div>
         </div>
       </div>
@@ -834,6 +852,9 @@ export function GameCardHeader({
   return (
     <div className={headerShellClass}>
       <div className={`flex min-w-0 flex-1 items-center gap-2 md:gap-3 ${headerPad}`}>
+        {onBack ? (
+          <GameCardBackButton onClick={onBack} ariaLabel={t('aria.back')} finished={finished} />
+        ) : null}
         <p
           className={`shrink-0 ${gameTitleClass} ${
             finished ? 'text-brand-sage dark:text-brand-muted' : 'text-brand-accent-light dark:text-brand-fun'
@@ -904,6 +925,7 @@ export function ScoringGameCard({
   displayTimeLabel,
   liveCourtEnabled,
   gestureScoreEnabled = false,
+  manualScoreEnabled = false,
   friendly,
   sessionId,
   competitionId,
@@ -925,6 +947,7 @@ export function ScoringGameCard({
   collapsed,
   onToggleCollapsed,
   currentUserId,
+  currentUserDisplayName,
   currentUserAvatarUrl,
   duoTeamLabels,
   liveCourtScores,
@@ -939,6 +962,7 @@ export function ScoringGameCard({
   displayTimeLabel: string
   liveCourtEnabled: boolean
   gestureScoreEnabled?: boolean
+  manualScoreEnabled?: boolean
   friendly: boolean
   sessionId?: string
   competitionId?: string
@@ -960,6 +984,7 @@ export function ScoringGameCard({
   collapsed: boolean
   onToggleCollapsed: () => void
   currentUserId?: string | null
+  currentUserDisplayName?: string | null
   currentUserAvatarUrl?: string | null
   duoTeamLabels?: DuoTeamLabels
   liveCourtScores?: Map<string, LiveCourtGamesScore>
@@ -1036,6 +1061,7 @@ export function ScoringGameCard({
             currentUserAvatarUrl={currentUserAvatarUrl}
             liveCourtEnabled={liveCourtEnabled}
             gestureScoreEnabled={gestureScoreEnabled}
+            manualScoreEnabled={manualScoreEnabled}
             friendly={friendly}
             sessionId={sessionId}
             competitionId={competitionId}
@@ -1045,6 +1071,7 @@ export function ScoringGameCard({
             liveCourtScores={liveCourtScores}
             liveCourtFeeds={liveCourtFeeds}
             tvCompact={tvCompact}
+            currentUserDisplayName={currentUserDisplayName}
             t={t}
           />
         </div>
@@ -1059,6 +1086,7 @@ export function FriendlyManualGameCard({
   liveCourtScores,
   liveCourtFeeds,
   gestureScoreEnabled = false,
+  manualScoreEnabled = false,
   friendlySessionId,
   onSubmitFriendlyScores,
   onSaved,
@@ -1073,7 +1101,10 @@ export function FriendlyManualGameCard({
   onToggleCollapsed,
   onBack,
   currentUserId,
+  currentUserDisplayName,
   currentUserAvatarUrl,
+  tvCompact = false,
+  tvNav,
   t,
 }: {
   game: ScoringGame
@@ -1081,6 +1112,7 @@ export function FriendlyManualGameCard({
   liveCourtScores?: Map<string, LiveCourtGamesScore>
   liveCourtFeeds?: Map<string, LiveCourtPointFeed>
   gestureScoreEnabled?: boolean
+  manualScoreEnabled?: boolean
   friendlySessionId?: string
   onSubmitFriendlyScores?: (entries: FriendlyCourtScoreSubmit[]) => Promise<void>
   onSaved?: () => void | Promise<void>
@@ -1095,7 +1127,10 @@ export function FriendlyManualGameCard({
   onToggleCollapsed: () => void
   onBack?: () => void
   currentUserId?: string | null
+  currentUserDisplayName?: string | null
   currentUserAvatarUrl?: string | null
+  tvCompact?: boolean
+  tvNav?: TvGameNav
   t: TranslateFn
 }) {
   const { courtScoreRows, setDraft, submitCourt, busyCourtKey, error, canEdit } = useFriendlyManualScoring({
@@ -1113,6 +1148,7 @@ export function FriendlyManualGameCard({
       gameNumber={game.gameNumber}
       finished={finished}
       isCurrentGame={isCurrentGame}
+      tvCompact={tvCompact}
     >
       <GameCardHeader
         gameNumber={game.gameNumber}
@@ -1125,12 +1161,15 @@ export function FriendlyManualGameCard({
         collapsed={collapsed}
         onToggleCollapsed={onToggleCollapsed}
         onBack={onBack}
+        hideCollapse={tvCompact}
+        tvCompact={tvCompact}
+        tvNav={tvNav}
+        carouselHideLogo={Boolean(tvNav)}
         t={t}
       />
       {!collapsed && (
-        <>
-          <div className="border-t border-brand-border/30 bg-brand-bg-alt px-3 pb-3.5 pt-3 md:px-4">
-            <div className="space-y-3.5">
+        <div className={tvCourtsBodyClass(tvCompact, finished)}>
+          <div {...courtsGridProps(tvCompact, courtScoreRows.length)}>
               {courtScoreRows.map((row) => {
                 const teamA = row.court.teamA
                 const teamB = row.court.teamB
@@ -1145,18 +1184,31 @@ export function FriendlyManualGameCard({
                   gameNumber: game.gameNumber,
                   courtLabel: row.courtLabel,
                   currentUserId,
+                  currentUserDisplayName,
                   court: row.court,
                   finished,
+                })
+                const manualHref = courtManualScoreHref({
+                  manualScoreEnabled,
+                  friendly: true,
+                  sessionId: friendlySessionId,
+                  gameNumber: game.gameNumber,
+                  courtLabel: row.courtLabel,
+                  finished,
+                  currentUserId,
                 })
                 return (
                   <CourtCard
                     key={row.courtLabel}
                     courtLabel={row.courtLabel}
                     currentUserId={currentUserId}
+                    currentUserDisplayName={currentUserDisplayName}
                     court={row.court}
                     finished={finished}
                     gestureScoreHref={gestureHref}
                     gestureScoreLive={feed?.live}
+                    manualScoreHref={manualHref}
+                    tvCompact={tvCompact}
                     t={t}
                   >
                     <CourtMatchCell
@@ -1177,8 +1229,10 @@ export function FriendlyManualGameCard({
                       finished={finished}
                       scoreMax={courtScoreMax}
                       currentUserId={currentUserId}
+                      currentUserDisplayName={currentUserDisplayName}
                       currentUserAvatarUrl={currentUserAvatarUrl}
                       embedded
+                      compact={tvCompact}
                       t={t}
                     />
                     <LiveScoreFeed points={feed?.points} />
@@ -1203,9 +1257,8 @@ export function FriendlyManualGameCard({
                   </CourtCard>
                 )
               })}
-            </div>
           </div>
-        </>
+        </div>
       )}
     </GameCardShell>
   )

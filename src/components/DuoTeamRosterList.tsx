@@ -25,11 +25,11 @@ function PlayerChip({
 
   if (slot.vacant) {
     return (
-      <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-dashed border-brand-primary/25 bg-brand-bg-alt py-1 pl-1 pr-2.5 text-brand-muted">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold">
+      <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-dashed border-brand-primary/25 bg-brand-bg-alt py-1.5 pl-1.5 pr-3 text-brand-muted">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-base font-semibold">
           +
         </span>
-        <span className="text-xs font-medium">{t('friendly.openSpots')}</span>
+        <span className="text-sm font-semibold">{t('friendly.openSpots')}</span>
       </span>
     )
   }
@@ -37,7 +37,7 @@ function PlayerChip({
   const name = firstDisplayName(slot.name || 'Player')
   return (
     <span
-      className={`inline-flex max-w-full items-center gap-1.5 rounded-full border py-1 pl-1 pr-2.5 ${
+      className={`inline-flex max-w-full items-center gap-2 rounded-full border py-1.5 pl-1.5 pr-3 ${
         isMe
           ? 'border-brand-accent/50 bg-brand-accent/10'
           : 'border-brand-primary/20 bg-brand-bg-alt'
@@ -49,13 +49,14 @@ function PlayerChip({
         profileId={slot.profileId}
         padelPlayerId={slot.padelPlayerId}
         competitionId={competitionId}
+        imgClassName="h-9 w-9 shrink-0 rounded-full object-cover"
       />
       <PlayerNameLink
         displayName={name}
         profileId={slot.profileId}
         padelPlayerId={slot.padelPlayerId}
         competitionId={competitionId}
-        className={`truncate text-xs font-semibold ${
+        className={`whitespace-nowrap text-sm font-bold sm:text-base ${
           isMe ? 'text-brand-accent' : 'text-brand-primary'
         }`}
       />
@@ -65,7 +66,7 @@ function PlayerChip({
 
 export function DuoTeamRosterList({ teams, currentUserId, competitionId }: Props) {
   return (
-    <ul className="m-0 grid w-full min-w-0 max-w-full list-none grid-cols-2 gap-2 p-0">
+    <ul className="m-0 grid w-full min-w-0 max-w-full list-none grid-cols-1 gap-2 p-0 sm:grid-cols-2">
       {teams.map((team) => (
         <li
           key={team.pairId ?? `team-${team.teamIndex}`}

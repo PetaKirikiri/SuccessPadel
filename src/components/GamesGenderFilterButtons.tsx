@@ -8,12 +8,24 @@ type Props = {
 }
 
 const btnBase =
-  'rounded-lg border px-2.5 py-1 font-display text-xs font-semibold shadow-sm backdrop-blur-sm transition active:scale-[0.98] sm:px-3 sm:text-sm'
+  'inline-flex h-11 w-11 items-center justify-center rounded-xl border shadow-sm backdrop-blur-sm transition active:scale-[0.98] sm:h-12 sm:w-12'
 
-function btnClass(active: boolean) {
+function genderTone(gender: Gender) {
+  if (gender === 'Men') return 'text-[#6ed7ff]'
+  if (gender === 'Women') return 'text-[#ff8fd8]'
+  return 'text-[#60a5fa]'
+}
+
+function btnClass(active: boolean, gender: Gender) {
   return active
-    ? `${btnBase} border-brand-accent bg-brand-accent text-white shadow-sm`
-    : `${btnBase} border-brand-border/80 bg-brand-surface/90 text-brand-primary dark:border-white/20 dark:text-brand-text`
+    ? `${btnBase} border-brand-accent bg-brand-accent/95 text-white shadow-[0_0_0_2px_rgba(96,165,250,0.18)]`
+    : `${btnBase} border-brand-border/80 bg-brand-surface/90 ${genderTone(gender)} dark:border-white/20`
+}
+
+function GenderIcon({ gender }: { gender: Gender }) {
+  if (gender === 'Men') return <span className="gender-css-icon gender-css-icon-men" aria-hidden="true" />
+  if (gender === 'Women') return <span className="gender-css-icon gender-css-icon-women" aria-hidden="true" />
+  return <span className="gender-css-icon gender-css-icon-mixed" aria-hidden="true" />
 }
 
 export function GamesGenderFilterButtons({ value, onChange }: Props) {
@@ -25,35 +37,36 @@ export function GamesGenderFilterButtons({ value, onChange }: Props) {
   }
 
   return (
-    <div className="flex gap-1.5 sm:gap-2">
+    <div className="flex gap-2 sm:gap-2.5">
       {GENDERS.map((gender) => (
         <button
           key={gender}
           type="button"
+          aria-label={labels[gender]}
           aria-pressed={value === gender}
+          title={labels[gender]}
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
             onChange(gender)
           }}
-          className={btnClass(value === gender)}
+          className={btnClass(value === gender, gender)}
         >
-          {labels[gender]}
+          <GenderIcon gender={gender} />
+          <span className="sr-only">{labels[gender]}</span>
         </button>
       ))}
     </div>
   )
 }
 
-/** Gender filter on the first invite card banner (top-left — scoring stays top-right on all cards). */
+/** Compact gender filter shown above the invite cards. */
 export function GamesGenderFilterBannerOverlay() {
   const controls = useGamesGenderFilterControls()
   if (!controls) return null
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-0 z-30 aspect-[1024/172]">
-      <div className="pointer-events-auto absolute left-3 top-3">
-        <GamesGenderFilterButtons value={controls.gender} onChange={controls.setGender} />
-      </div>
+    <div className="pointer-events-auto absolute right-4 top-4 z-40">
+      <GamesGenderFilterButtons value={controls.gender} onChange={controls.setGender} />
     </div>
   )
 }

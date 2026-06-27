@@ -66,6 +66,7 @@ type Props = {
   roundTimesByGame?: Map<number, { startsAt: number; endsAt: number }>
   roundStatusByGame?: Map<number, 'pending' | 'active' | 'complete'>
   currentUserId?: string | null
+  currentUserDisplayName?: string | null
   currentUserAvatarUrl?: string | null
   isAdmin?: boolean
   liveCourtScores?: Map<string, LiveCourtGamesScore>
@@ -245,6 +246,7 @@ export function GameBoard({
   roundTimesByGame,
   roundStatusByGame,
   currentUserId,
+  currentUserDisplayName,
   currentUserAvatarUrl,
   isAdmin = false,
   liveCourtScores,
@@ -278,6 +280,7 @@ export function GameBoard({
     sessionId && isAdmin && currentUserId && !(friendly && onSubmitFriendlyScores),
   )
   const gestureScoreEnabled = Boolean(sessionId && currentUserId && (friendly || mode === 'scoring'))
+  const manualScoreEnabled = Boolean(friendly && onSubmitFriendlyScores && sessionId && currentUserId)
   const friendlyManualScoring = Boolean(friendly && onSubmitFriendlyScores)
   const scoringTimeUnlocked = isScoringTimeUnlocked()
   const courtScoreMax = courtGameScoreMax(scoreUnit === 'games' ? playTo : undefined)
@@ -466,6 +469,7 @@ export function GameBoard({
           collapsed={collapsed}
           onToggleCollapsed={() => toggleCollapsed(game.gameNumber)}
           currentUserId={currentUserId}
+          currentUserDisplayName={currentUserDisplayName}
           currentUserAvatarUrl={currentUserAvatarUrl}
           duoTeamLabels={duoTeamLabels}
           liveCourtScores={liveCourtScores}
@@ -488,8 +492,10 @@ export function GameBoard({
           liveCourtScores={liveCourtScores}
           liveCourtFeeds={liveCourtFeeds}
           gestureScoreEnabled={gestureScoreEnabled}
+          manualScoreEnabled={manualScoreEnabled}
           friendlySessionId={sessionId}
           currentUserId={currentUserId}
+          currentUserDisplayName={currentUserDisplayName}
           onSubmitFriendlyScores={onSubmitFriendlyScores}
           onSaved={onSaved}
           courtScoreMax={courtScoreMax}
@@ -502,6 +508,9 @@ export function GameBoard({
           collapsed={collapsed}
           onToggleCollapsed={() => toggleCollapsed(game.gameNumber)}
           currentUserAvatarUrl={currentUserAvatarUrl}
+          tvCompact={tvCompact}
+          tvNav={tvNav}
+          onBack={tvCompact ? onTvBack : undefined}
           t={t}
         />
       )
@@ -528,6 +537,7 @@ export function GameBoard({
           hideCollapse={tvCompact}
           tvCompact={tvCompact}
           tvNav={tvNav}
+          carouselHideLogo={Boolean(tvNav && friendly)}
           onBack={tvCompact ? onTvBack : undefined}
           viewAlongUrl={viewAlongUrl}
           t={t}
@@ -571,6 +581,7 @@ export function GameBoard({
                   courtLabel: court.courtLabel,
                   courtId,
                   currentUserId,
+                  currentUserDisplayName,
                   court: liveCourt ?? court,
                   finished,
                 })
@@ -590,6 +601,7 @@ export function GameBoard({
                     key={court.courtLabel}
                     courtLabel={court.courtLabel}
                     currentUserId={currentUserId}
+                    currentUserDisplayName={currentUserDisplayName}
                     court={liveCourt ?? court}
                     finished={finished}
                     href={href}
@@ -618,6 +630,7 @@ export function GameBoard({
                       disabled
                       finished={finished}
                       currentUserId={currentUserId}
+                      currentUserDisplayName={currentUserDisplayName}
                       currentUserAvatarUrl={currentUserAvatarUrl}
                       embedded
                       compact={tvCompact}
