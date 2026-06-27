@@ -188,7 +188,6 @@ function MainAppRoutes() {
           path="friendly/:id/games/:gameNumber/courts/:courtSlug"
           element={<FriendlyCourtPage />}
         />
-        <Route path="friendly/:id" element={<FriendlyGamePage />} />
         <Route
           path="competitions/:id/games/:gameNumber/courts/:courtId/gesture-score"
           element={
@@ -372,6 +371,14 @@ export default function App() {
                 element={
                   <AppFrame>
                     <CompetitionPublicGate />
+                  </AppFrame>
+                }
+              />
+              <Route
+                path="/friendly/:id"
+                element={
+                  <AppFrame>
+                    <FriendlyGamePage />
                   </AppFrame>
                 }
               />

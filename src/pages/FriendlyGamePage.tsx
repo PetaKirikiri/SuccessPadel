@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { IconJoin, IconOpenPad } from '../components/ButtonIcons'
+import { AppShellColumn } from '../components/AppShellColumn'
 import { CompetitionPlayStandardView } from '../components/competitionPlay/CompetitionPlayStandardView'
 import { CompetitionPlayTvView } from '../components/competitionPlay/CompetitionPlayTvView'
 import type { PlayViewTab } from '../components/PlayViewTabs'
@@ -362,17 +363,25 @@ export function FriendlyGamePage() {
 
   if (!showPlayTabs) {
     return (
-      <div className="space-y-3 pb-6">
-        <Link to="/friendly" className="text-sm font-medium text-brand-accent">
-          {t('common.back')}
-        </Link>
-        {gamesContent}
+      <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden bg-brand-bg">
+        <AppShellColumn className="overflow-y-auto pb-6 pt-1">
+          <div className="space-y-3">
+            <Link to="/friendly" className="text-sm font-medium text-brand-accent">
+              {t('common.back')}
+            </Link>
+            {gamesContent}
+          </div>
+        </AppShellColumn>
       </div>
     )
   }
 
   return (
-    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden bg-brand-bg">
+    <div
+      className={`flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden ${
+        isTvLayout ? 'game-bg' : 'bg-brand-bg'
+      }`}
+    >
       {isTvLayout ? (
         <div className="tv-play-view flex min-h-0 flex-1 flex-col overflow-hidden">
           <CompetitionPlayTvView

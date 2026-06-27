@@ -1086,6 +1086,11 @@ html[data-tv-kiosk] body > :not(#root) {
     max-width: 100%;
   }
 
+  .tv-play-view .play-game-carousel,
+  .tv-play-view .tv-game-carousel {
+    padding-inline: 0;
+  }
+
   .tv-play-panel {
     border-radius: 0;
     border-left-width: 0;
@@ -1107,6 +1112,13 @@ html[data-tv-kiosk] body > :not(#root) {
     min-width: 0;
     flex: 1 1 0%;
     flex-direction: column;
+    background: var(--color-brand-bg-alt);
+  }
+
+  .tv-play-games .tv-play-scroll,
+  .tv-play-view .play-game-carousel,
+  .tv-play-view .tv-game-carousel {
+    background: var(--color-brand-bg-alt);
   }
 
   .tv-play-standings {
@@ -1171,7 +1183,7 @@ html[data-tv-kiosk] body > :not(#root) {
     flex: 1 1 0%;
     border-width: 0 !important;
     border-radius: 0 !important;
-    background: transparent !important;
+    background: var(--color-brand-bg-alt) !important;
     overflow: visible !important;
     box-shadow: none !important;
   }
@@ -1181,6 +1193,7 @@ html[data-tv-kiosk] body > :not(#root) {
     min-height: 0;
     flex: 1 1 0%;
     flex-direction: column;
+    background: var(--color-brand-bg-alt);
   }
 
   .tv-game-card > :first-child {
@@ -1507,7 +1520,7 @@ html[data-tv-kiosk] body > :not(#root) {
   flex: 1 1 0%;
   border-width: 0 !important;
   border-radius: 0 !important;
-  background: transparent !important;
+  background: var(--color-brand-bg-alt) !important;
   overflow: visible !important;
   box-shadow: none !important;
 }
@@ -1515,6 +1528,7 @@ html[data-tv-kiosk] body > :not(#root) {
 .play-game-carousel .tv-game-card-racetrack {
   padding: 0;
   overflow: visible;
+  background: var(--color-brand-bg-alt);
 }
 
 .play-game-carousel .tv-game-card-racetrack::before {
@@ -1527,6 +1541,7 @@ html[data-tv-kiosk] body > :not(#root) {
   flex: 1 1 0%;
   flex-direction: column;
   overflow: hidden;
+  background: var(--color-brand-bg-alt);
 }
 
 .play-game-carousel .tv-game-courts-grid {
