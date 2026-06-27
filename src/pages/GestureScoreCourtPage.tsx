@@ -17,6 +17,7 @@ import {
   GESTURE_CAMERA_HOLD_MS,
   GESTURE_CAMERA_MODEL_URL,
   GESTURE_CAMERA_WASM_BASE,
+  pickGestureHandLandmarks,
   type FingerAction,
 } from '../lib/gestureCameraDetect'
 import {
@@ -25,10 +26,9 @@ import {
   loadGestureCameraLog,
   ourTeamFromCourtPlayers,
   ourThemFromScore,
-  resetGestureCameraLog,
   rosterFromCourt,
   scoreFromLog,
-  syncGestureCameraPoint,
+  syncGestureCameraPointForTeam,
   undoGestureCameraPoint,
   type GestureCameraContext,
 } from '../lib/gestureCameraScore'
@@ -64,10 +64,10 @@ function formatTimer(totalSeconds: number): string {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
 
-function FingerCountIcon({ count }: { count: 1 | 2 | 3 | 4 }) {
+function FingerCountIcon({ count }: { count: 1 | 2 | 3 }) {
   return (
     <img
-      src={`/gesture-score/${count === 1 ? 'one-finger' : count === 2 ? 'two-fingers' : count === 3 ? 'three-fingers' : 'four-fingers'}.png`}
+      src={`/gesture-score/${count === 1 ? 'one-finger' : count === 2 ? 'two-fingers' : 'three-fingers'}.png`}
       alt=""
       className="h-10 w-10 shrink-0 object-contain sm:h-12 sm:w-12 md:h-20 md:w-20"
       aria-hidden="true"
@@ -293,7 +293,8 @@ export function GestureScoreCourtPage() {
 
   const applyFingerAction = useCallback(
     async (action: FingerAction) => {
-      if (!cameraCtx || busyRef.current || matchEnded) return
+      if (!cameraCtx || busyRef.current) return
+      if (matchEnded && action !== 'undo') return
       heldGestureRef.current = null
       heldSinceRef.current = null
       cooldownUntilRef.current = performance.now() + GESTURE_CAMERA_COOLDOWN_MS
@@ -301,21 +302,19 @@ export function GestureScoreCourtPage() {
       busyRef.current = true
       setSyncError(null)
       try {
-        if (action === 'reset') {
-          const { error: resetErr } = await resetGestureCameraLog(cameraCtx)
-          if (resetErr) setSyncError(resetErr)
-          else await refreshLog()
-          return
-        }
         if (action === 'undo') {
           const { error: undoErr } = await undoGestureCameraPoint(cameraCtx)
           if (undoErr) setSyncError(undoErr)
-          else await refreshLog()
+          else {
+            await refreshLog()
+            setMatchEnded(false)
+          }
           return
         }
-        const { error: syncErr, matchEnded: ended } = await syncGestureCameraPoint(
+        const team = action === 'team1' ? 'a' : 'b'
+        const { error: syncErr, matchEnded: ended } = await syncGestureCameraPointForTeam(
           cameraCtx,
-          action === 'win' ? 'us' : 'them',
+          team,
         )
         if (syncErr) setSyncError(syncErr)
         else {
@@ -339,7 +338,7 @@ export function GestureScoreCourtPage() {
 
     const now = performance.now()
     const result = recognizer.recognizeForVideo(video, now)
-    const action = fingerActionFromLandmarks(result.landmarks[0])
+    const action = fingerActionFromLandmarks(pickGestureHandLandmarks(result.landmarks))
 
     if (!action) {
       heldGestureRef.current = null
@@ -376,14 +375,28 @@ export function GestureScoreCourtPage() {
     try {
       setStatus('loading')
       const vision = await FilesetResolver.forVisionTasks(GESTURE_CAMERA_WASM_BASE)
-      const recognizer = await GestureRecognizer.createFromOptions(vision, {
-        baseOptions: {
-          modelAssetPath: GESTURE_CAMERA_MODEL_URL,
-          delegate: 'GPU',
-        },
-        runningMode: 'VIDEO',
+      const recognizerOptions = {
+        runningMode: 'VIDEO' as const,
         numHands: 1,
-      })
+      }
+      let recognizer: GestureRecognizer
+      try {
+        recognizer = await GestureRecognizer.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: GESTURE_CAMERA_MODEL_URL,
+            delegate: 'GPU',
+          },
+          ...recognizerOptions,
+        })
+      } catch {
+        recognizer = await GestureRecognizer.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: GESTURE_CAMERA_MODEL_URL,
+            delegate: 'CPU',
+          },
+          ...recognizerOptions,
+        })
+      }
       if (cameraRunRef.current !== runId) {
         recognizer.close()
         return
@@ -503,25 +516,29 @@ export function GestureScoreCourtPage() {
           </div>
         </div>
 
-        <div className="mx-auto grid w-full max-w-7xl grid-cols-4 gap-1 py-0 md:gap-4 md:py-5">
-          {(['win', 'lose', 'undo', 'reset'] as const).map((action, index) => (
+        <div className="mx-auto grid w-full max-w-7xl grid-cols-3 gap-1 py-0 md:gap-4 md:py-5">
+          {(
+            [
+              { action: 'team1' as const, count: 1 as const, label: 'Team 1' },
+              { action: 'team2' as const, count: 2 as const, label: 'Team 2' },
+              { action: 'undo' as const, count: 3 as const, label: 'Undo' },
+            ] as const
+          ).map(({ action, count, label }) => (
             <button
               key={action}
               type="button"
               disabled={matchEnded && action !== 'undo'}
               onClick={() => void applyFingerAction(action)}
               className={`flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl border px-1 py-3 shadow-xl shadow-black/25 active:scale-[0.96] sm:gap-1 sm:py-3.5 md:flex-row md:gap-5 md:rounded-full md:px-7 md:py-7 ${
-                action === 'win'
+                action === 'team1'
                   ? 'border-[#34d399]/45 bg-[#34d399]/15 text-[#34d399]'
-                  : action === 'lose'
+                  : action === 'team2'
                     ? 'border-[#60a5fa]/45 bg-[#60a5fa]/15 text-[#60a5fa]'
                     : 'border-white/15 bg-[#11355c] text-[#7dd3fc]'
               }`}
             >
-              <FingerCountIcon count={(index + 1) as 1 | 2 | 3 | 4} />
-              <span className="text-[10px] font-black uppercase tracking-wide md:text-4xl">
-                {action === 'win' ? 'Win' : action === 'lose' ? 'Lose' : action === 'undo' ? 'Undo' : 'Reset'}
-              </span>
+              <FingerCountIcon count={count} />
+              <span className="text-[10px] font-black uppercase tracking-wide md:text-4xl">{label}</span>
             </button>
           ))}
         </div>

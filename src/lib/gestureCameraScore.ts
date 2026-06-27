@@ -182,9 +182,16 @@ export async function syncGestureCameraPoint(
   ctx: GestureCameraContext,
   side: 'us' | 'them',
 ): Promise<{ error: string | null; log: MatchGestureLog | null; matchEnded: boolean }> {
+  const winner = winnerTeamFromUsThem(ctx.ourTeam, side)
+  return syncGestureCameraPointForTeam(ctx, winner)
+}
+
+export async function syncGestureCameraPointForTeam(
+  ctx: GestureCameraContext,
+  winner: MatchTeam,
+): Promise<{ error: string | null; log: MatchGestureLog | null; matchEnded: boolean }> {
   const log = await loadGestureCameraLog(ctx.courtSetupKey)
   const current = scoreFromLog(log)
-  const winner = winnerTeamFromUsThem(ctx.ourTeam, side)
   const scoreAfter = applyTennisPoint(current, winner)
   const pointEvents = [...(log?.pointEvents ?? []), newPointEvent(winner, scoreAfter)]
   const matchEnded = isGestureMatchComplete(scoreAfter, ctx.playTo)

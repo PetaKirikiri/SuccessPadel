@@ -1,5 +1,5 @@
 import { type CSSProperties, useEffect, useRef, useState } from 'react'
-import { FilesetResolver, GestureRecognizer, type NormalizedLandmark } from '@mediapipe/tasks-vision'
+import { FilesetResolver, GestureRecognizer } from '@mediapipe/tasks-vision'
 import { ArrowLeft } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
@@ -7,9 +7,18 @@ import {
   supportsGestureScoreCamera,
   takeGestureScoreCameraRequest,
 } from '../lib/gestureScoreCamera'
+import {
+  fingerActionFromLandmarks,
+  gestureCameraBeep,
+  GESTURE_CAMERA_COOLDOWN_MS,
+  GESTURE_CAMERA_HOLD_MS,
+  GESTURE_CAMERA_MODEL_URL,
+  GESTURE_CAMERA_WASM_BASE,
+  pickGestureHandLandmarks,
+  type FingerAction,
+} from '../lib/gestureCameraDetect'
 import { useGesturePadChrome } from '../lib/gesturePadChrome'
 
-type FingerAction = 'win' | 'lose' | 'undo' | 'reset'
 type Status = 'idle' | 'loading' | 'running' | 'unsupported' | 'error'
 type Team = 'us' | 'them'
 type ScoreSnapshot = {
@@ -22,12 +31,10 @@ type GestureScoreLocationState = {
   cameraError?: string
 }
 
-const HOLD_MS = 400
-const COOLDOWN_MS = 1200
-const WASM_BASE =
-  'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm'
-const MODEL_URL =
-  'https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task'
+const HOLD_MS = GESTURE_CAMERA_HOLD_MS
+const COOLDOWN_MS = GESTURE_CAMERA_COOLDOWN_MS
+const WASM_BASE = GESTURE_CAMERA_WASM_BASE
+const MODEL_URL = GESTURE_CAMERA_MODEL_URL
 const scoreNumberStyle = {
   fontSize: 'clamp(4.75rem, min(25vw, 30vh), 16rem)',
 } satisfies CSSProperties
@@ -42,50 +49,10 @@ function formatTimer(totalSeconds: number): string {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
 
-function isFingerExtended(landmarks: NormalizedLandmark[], tip: number, pip: number): boolean {
-  return landmarks[tip]?.y < landmarks[pip]?.y - 0.035
-}
-
-function fingerActionFromLandmarks(landmarks: NormalizedLandmark[] | undefined): FingerAction | null {
-  if (!landmarks?.length) return null
-  const extended = [
-    isFingerExtended(landmarks, 8, 6),
-    isFingerExtended(landmarks, 12, 10),
-    isFingerExtended(landmarks, 16, 14),
-    isFingerExtended(landmarks, 20, 18),
-  ].filter(Boolean).length
-
-  if (extended === 1) return 'win'
-  if (extended === 2) return 'lose'
-  if (extended === 3) return 'undo'
-  if (extended === 4) return 'reset'
-  return null
-}
-
-function beep(): void {
-  try {
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext
-    if (!AudioContextClass) return
-    const ctx = new AudioContextClass()
-    const oscillator = ctx.createOscillator()
-    const gain = ctx.createGain()
-    oscillator.type = 'sine'
-    oscillator.frequency.value = 720
-    gain.gain.value = 0.05
-    oscillator.connect(gain)
-    gain.connect(ctx.destination)
-    oscillator.start()
-    oscillator.stop(ctx.currentTime + 0.09)
-    window.setTimeout(() => void ctx.close(), 160)
-  } catch {
-    // Scoring still works if audio is unavailable.
-  }
-}
-
-function FingerCountIcon({ count }: { count: 1 | 2 | 3 | 4 }) {
+function FingerCountIcon({ count }: { count: 1 | 2 | 3 }) {
   return (
     <img
-      src={`/gesture-score/${count === 1 ? 'one-finger' : count === 2 ? 'two-fingers' : count === 3 ? 'three-fingers' : 'four-fingers'}.png`}
+      src={`/gesture-score/${count === 1 ? 'one-finger' : count === 2 ? 'two-fingers' : 'three-fingers'}.png`}
       alt=""
       className="h-10 w-10 shrink-0 object-contain sm:h-12 sm:w-12 md:h-20 md:w-20"
       aria-hidden="true"
@@ -205,16 +172,13 @@ export function GestureScoreTestPage() {
   const applyFingerAction = (action: FingerAction) => {
     heldGestureRef.current = null
     heldSinceRef.current = null
-    if (action === 'reset') {
-      pushScoreSnapshot()
-      reset()
-    } else if (action === 'undo') {
+    if (action === 'undo') {
       undoLastAction()
     } else {
-      applyPadelPoint(action === 'win' ? 'us' : 'them')
+      applyPadelPoint(action === 'team1' ? 'us' : 'them')
     }
     cooldownUntilRef.current = performance.now() + COOLDOWN_MS
-    beep()
+    gestureCameraBeep()
   }
 
   const detectFrame = () => {
@@ -227,7 +191,7 @@ export function GestureScoreTestPage() {
 
     const now = performance.now()
     const result = recognizer.recognizeForVideo(video, now)
-    const action = fingerActionFromLandmarks(result.landmarks[0])
+    const action = fingerActionFromLandmarks(pickGestureHandLandmarks(result.landmarks))
 
     if (!action) {
       heldGestureRef.current = null
@@ -304,12 +268,6 @@ export function GestureScoreTestPage() {
     }
   }
 
-  const reset = () => {
-    applyScoreSnapshot({ ourPoints: 0, theirPoints: 0, ourGames: 0, theirGames: 0 })
-    heldGestureRef.current = null
-    heldSinceRef.current = null
-    cooldownUntilRef.current = 0
-  }
 
   const goldenPoint = ourPoints >= 3 && theirPoints >= 3
   const showStartCameraButton = status === 'error' || status === 'unsupported'
@@ -388,26 +346,26 @@ export function GestureScoreTestPage() {
           </div>
         </div>
 
-        <div className="mx-auto grid w-full max-w-7xl grid-cols-4 gap-1 py-0 md:gap-4 md:py-5">
+        <div className="mx-auto grid w-full max-w-7xl grid-cols-3 gap-1 py-0 md:gap-4 md:py-5">
           <button
             type="button"
-            onClick={() => applyFingerAction('win')}
+            onClick={() => applyFingerAction('team1')}
             className="flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-[#34d399]/45 bg-[#34d399]/15 px-1 py-3 text-[#34d399] shadow-xl shadow-black/25 active:scale-[0.96] sm:gap-1 sm:py-3.5 md:flex-row md:gap-5 md:rounded-full md:px-7 md:py-7"
-            aria-label="Point for us"
-            title="Point for us"
+            aria-label="Point for team 1"
+            title="Point for team 1"
           >
             <FingerCountIcon count={1} />
-            <span className="text-[10px] font-black uppercase tracking-wide md:text-4xl">Win</span>
+            <span className="text-[10px] font-black uppercase tracking-wide md:text-4xl">Team 1</span>
           </button>
           <button
             type="button"
-            onClick={() => applyFingerAction('lose')}
+            onClick={() => applyFingerAction('team2')}
             className="flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-[#60a5fa]/45 bg-[#60a5fa]/15 px-1 py-3 text-[#60a5fa] shadow-xl shadow-black/25 active:scale-[0.96] sm:gap-1 sm:py-3.5 md:flex-row md:gap-5 md:rounded-full md:px-7 md:py-7"
-            aria-label="Point for them"
-            title="Point for them"
+            aria-label="Point for team 2"
+            title="Point for team 2"
           >
             <FingerCountIcon count={2} />
-            <span className="text-[10px] font-black uppercase tracking-wide md:text-4xl">Lose</span>
+            <span className="text-[10px] font-black uppercase tracking-wide md:text-4xl">Team 2</span>
           </button>
           <button
             type="button"
@@ -418,16 +376,6 @@ export function GestureScoreTestPage() {
           >
             <FingerCountIcon count={3} />
             <span className="text-[10px] font-black uppercase tracking-wide md:text-4xl">Undo</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => applyFingerAction('reset')}
-            className="relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-white/15 bg-[#11355c] px-1 py-3 text-[#7dd3fc] shadow-xl shadow-black/25 active:scale-[0.96] sm:gap-1 sm:py-3.5 md:flex-row md:gap-5 md:rounded-full md:px-7 md:py-7"
-            aria-label="Reset score"
-            title="Reset score"
-          >
-            <FingerCountIcon count={4} />
-            <span className="text-[10px] font-black uppercase tracking-wide md:text-4xl">Reset</span>
           </button>
         </div>
 
