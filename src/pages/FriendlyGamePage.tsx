@@ -403,6 +403,7 @@ export function FriendlyGamePage() {
             t={t}
             tab={viewTab}
             onTab={setViewTab}
+            scrollBody={false}
             loadOrError={null}
             session={displayGame}
             gamesBody={gamesBody}

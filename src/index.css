@@ -1186,6 +1186,16 @@ html[data-tv-kiosk] body > :not(#root) {
     flex-shrink: 0;
   }
 
+  .tv-play-games .play-game-carousel .tv-game-courts-grid {
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+  }
+
   .tv-game-courts-grid {
     display: grid;
     min-height: 0;
@@ -1520,9 +1530,11 @@ html[data-tv-kiosk] body > :not(#root) {
   flex: 1 1 0%;
   flex-direction: column;
   gap: 0.5rem;
+  overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 .play-game-carousel .tv-court-card {
