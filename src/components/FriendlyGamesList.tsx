@@ -1,6 +1,4 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { IconAdd } from './ButtonIcons'
 import { FriendlyDeleteConfirm } from './FriendlyDeleteConfirm'
 import { SessionInviteCard } from './SessionInviteCard'
 import { GamesGenderFilterBannerOverlay, GamesGenderFilterEmptyBar } from './GamesGenderFilterButtons'
@@ -74,15 +72,7 @@ export function FriendlyGamesList({
               ? t('competition.noPastGames')
               : t('competition.noCurrentGames')}
         </p>
-        {!past && isAdmin && games.length === 0 ? (
-          <>
-            <Link to="/friendly/new" className="brand-btn px-6 py-2">
-              <IconAdd />
-              {t('friendly.addGame')}
-            </Link>
-            <p className="text-xs text-brand-muted">{t('competition.tapPlusHint')}</p>
-          </>
-        ) : !past && games.length === 0 ? (
+        {!past && !isAdmin && games.length === 0 ? (
           <p className="text-xs text-brand-muted">{t('competition.checkBackHint')}</p>
         ) : null}
       </GamesHubEmpty>

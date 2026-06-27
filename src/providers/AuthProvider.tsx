@@ -39,15 +39,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   const loadProfile = useCallback(async (authUser: User): Promise<Profile | null> => {
-    const { data: profileRow } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', authUser.id)
-      .maybeSingle()
+    const next = await syncProfileForUser(authUser)
 
-    if (!profileRow) {
+    if (!next) {
       // #region agent log
-      lineHandshakeDebug('S7-session', 'AuthProvider.tsx:orphan', 'no profile row — signing out', 'H8', {
+      lineHandshakeDebug('S7-session', 'AuthProvider.tsx:orphan', 'profile sync failed — signing out', 'H8', {
         userIdPrefix: authUser.id.slice(0, 8),
         emailDomain: authUser.email?.split('@')[1] ?? null,
       })
@@ -55,9 +51,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await supabase.auth.signOut()
       return null
     }
-
-    const next = await syncProfileForUser(authUser)
-    if (!next) return null
 
     await claimPendingPadelPlayer()
     // #region agent log

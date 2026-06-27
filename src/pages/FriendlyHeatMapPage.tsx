@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Check, Share } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useFriendlyGame } from '../hooks/useFriendlyGame'
 import { useMatchGestureLog } from '../hooks/useMatchGestureLog'
@@ -171,33 +172,9 @@ export function FriendlyHeatMapPage() {
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/35 bg-black/40 text-white hover:bg-white/10"
           >
             {shareNote ? (
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-5 w-5"
-                aria-hidden
-              >
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
+              <Check className="h-5 w-5" strokeWidth={2.5} aria-hidden />
             ) : (
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-5 w-5"
-                aria-hidden
-              >
-                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-                <polyline points="16 6 12 2 8 6" />
-                <line x1="12" y1="2" x2="12" y2="15" />
-              </svg>
+              <Share className="h-5 w-5" strokeWidth={2.5} aria-hidden />
             )}
           </button>
         </div>

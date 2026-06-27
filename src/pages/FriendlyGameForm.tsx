@@ -1,28 +1,19 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  IconFreePlay,
-  IconOrganized,
-  IconPrivate,
-  IconPublic,
   IconSave,
-  IconShuffle,
 } from '../components/ButtonIcons'
-import { shellTabClass } from '../components/ShellTabIcons'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
-import { GameBoardPreview } from '../components/GameBoardPreview'
-import { GameScheduleSetup } from '../components/GameScheduleSetup'
 import { SetupCard } from '../components/cards/SetupCard'
+import { SessionSetupControls } from '../components/SessionSetupControls'
 import { MemberPlayerSlots, type PadelPlayerOption } from '../components/MemberPlayerSlots'
 import { useAuth } from '../hooks/useAuth'
 import { useFriendlyFormDraft } from '../hooks/useFriendlyFormDraft'
 import { useFriendlyGame } from '../hooks/useFriendlyGame'
 import { useTranslation } from '../hooks/useTranslation'
 import {
-  clubTimeSlotValue,
-  parseClubTimeSlotValue,
-  scheduleHalfHourSlots,
+  clubTimePartsFromDate,
+  formatHourLabel,
 } from '../lib/courtSchedule'
-import { presetRuleChips } from '../lib/competitionFormatPresets'
 import {
   buildCompetitionAutoTitle,
   GENDERS,
@@ -31,18 +22,22 @@ import {
   type SkillLevel,
 } from '../lib/competitionPresets'
 import {
+  COURT_COUNT_OPTIONS,
+  courtCountFromPlayers,
+  playersFromCourtCount,
+  type CourtCount,
+} from '../lib/competitionLayout'
+import {
   friendlyFormDefaults,
   friendlyFormInitialState,
   friendlyFormValuesFromGame,
 } from '../lib/friendlyFormDraft'
 import {
   clearFriendlyGamesCache,
-  FRIENDLY_MAX_PLAYERS,
   canEditFriendlySession,
   friendlyConfigWithSessionEnd,
-  friendlyOrganizedGames,
-  friendlyOrganizedSession,
   friendlyStartsAtIso,
+  friendlySessionEndAt,
   mergeFriendlyOrganizedConfig,
   type FriendlyOrganizedConfig,
   type FriendlyPlayMode,
@@ -50,31 +45,43 @@ import {
 } from '../lib/friendlyGames'
 import { GAME_SETUP_MIN_BREAK_MINUTES } from '../lib/gameSchedule'
 import { publishFriendlySession, updateFriendlySession } from '../lib/friendlyServer'
+import { ruleChips as sessionRuleChips } from '../lib/sessionDisplay'
 import { supabase } from '../lib/supabaseClient'
 import type { Profile } from '../lib/types'
 
-function Chip({
-  active,
-  children,
-  onClick,
-}: {
-  active: boolean
-  children: React.ReactNode
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-lg px-3 py-2 text-xs font-medium transition ${
-        active
-          ? 'bg-brand-accent text-white shadow-sm'
-          : 'border border-brand-border bg-brand-surface text-brand-text'
-      }`}
-    >
-      {children}
-    </button>
-  )
+function parseTimeInput(value: string, fallbackHour: number, fallbackMinute: number) {
+  const [hourRaw, minuteRaw] = value.split(':')
+  const hour = Number(hourRaw)
+  const minute = Number(minuteRaw)
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) {
+    return { hour: fallbackHour, minute: fallbackMinute }
+  }
+  return {
+    hour: Math.max(0, Math.min(23, Math.floor(hour))),
+    minute: Math.max(0, Math.min(59, Math.floor(minute))),
+  }
+}
+
+function minutesOfDay(hour: number, minute: number): number {
+  return hour * 60 + minute
+}
+
+function windowMinutesBetween(
+  startHour: number,
+  startMinute: number,
+  endHour: number,
+  endMinute: number,
+): number {
+  const start = minutesOfDay(startHour, startMinute)
+  let end = minutesOfDay(endHour, endMinute)
+  if (end <= start) end += 24 * 60
+  return end - start
+}
+
+function padArray<T>(values: T[], count: number, fill: T): T[] {
+  const next = values.slice(0, count)
+  while (next.length < count) next.push(fill)
+  return next
 }
 
 export function FriendlyGameForm() {
@@ -103,10 +110,12 @@ export function FriendlyGameForm() {
   const [padelPlayerIds, setPadelPlayerIds] = useState<(string | null)[]>(() =>
     initial.profileIds.map(() => null),
   )
+  const [courtCount, setCourtCount] = useState<CourtCount>(() =>
+    courtCountFromPlayers(initial.playerSlots.length),
+  )
   const [visibility, setVisibility] = useState<FriendlyVisibility>(initial.visibility)
   const [playMode, setPlayMode] = useState<FriendlyPlayMode>(initial.playMode)
   const [previewSeed, setPreviewSeed] = useState(initial.previewSeed)
-  const [courtNames, setCourtNames] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hydrated, setHydrated] = useState(!isEdit)
@@ -161,6 +170,7 @@ export function FriendlyGameForm() {
     setPlayerSlots(values.playerSlots)
     setProfileIds(values.profileIds)
     setPadelPlayerIds(values.profileIds.map(() => null))
+    setCourtCount(courtCountFromPlayers(values.playerSlots.length))
     setVisibility(values.visibility)
     setPlayMode(values.playMode)
     setSkillLevel(values.skillLevel)
@@ -195,24 +205,15 @@ export function FriendlyGameForm() {
       .then(({ data }) => setProfiles((data as Profile[]) ?? []))
   }, [isAdmin])
 
-  useEffect(() => {
-    let active = true
-    void (async () => {
-      const { data } = await supabase.rpc('list_setup_courts')
-      if (active && Array.isArray(data)) {
-        setCourtNames(
-          (data as { name: string; sort_order: number }[])
-            .sort((a, b) => a.sort_order - b.sort_order)
-            .map((c) => c.name),
-        )
-      }
-    })()
-    return () => {
-      active = false
-    }
-  }, [])
-
   const trimmedSlots = useMemo(() => playerSlots.map((s) => s.trim()), [playerSlots])
+
+  const applyCourtCount = useCallback((count: CourtCount) => {
+    const players = playersFromCourtCount(count)
+    setCourtCount(count)
+    setPlayerSlots((prev) => padArray(prev, players, ''))
+    setProfileIds((prev) => padArray(prev, players, null))
+    setPadelPlayerIds((prev) => padArray(prev, players, null))
+  }, [])
 
   const profileAvatars = useMemo(
     () =>
@@ -221,8 +222,6 @@ export function FriendlyGameForm() {
       ),
     [profileIds, profiles],
   )
-
-  const halfHourSlots = useMemo(() => scheduleHalfHourSlots(), [])
 
   const organizedConfig = useMemo(
     (): FriendlyOrganizedConfig => ({
@@ -236,6 +235,23 @@ export function FriendlyGameForm() {
       gender,
     }),
     [day, startHour, startMinute, rulesSetup, previewSeed, skillLevel, gender],
+  )
+
+  const sessionEndParts = useMemo(() => {
+    const endAt = friendlySessionEndAt(organizedConfig)
+    if (!endAt) return { hour: startHour, minute: startMinute }
+    return clubTimePartsFromDate(endAt)
+  }, [organizedConfig, startHour, startMinute])
+
+  const scheduleWindowMinutes = useMemo(
+    () =>
+      windowMinutesBetween(
+        startHour,
+        startMinute,
+        sessionEndParts.hour,
+        sessionEndParts.minute,
+      ),
+    [sessionEndParts.hour, sessionEndParts.minute, startHour, startMinute],
   )
 
   const startsAtIso = useMemo(
@@ -252,16 +268,22 @@ export function FriendlyGameForm() {
     if (playMode === 'organized' && !titleEdited) setTitle(autoTitle)
   }, [autoTitle, playMode, titleEdited])
 
-  const ruleChips = useMemo(() => presetRuleChips('singles', t), [t])
+  const ruleChips = useMemo(() => {
+    return sessionRuleChips({ kind: 'preset', mode: 'singles' }, t, {
+      skillLevel,
+      gender,
+      courtCount,
+      schedule: {
+        games: rulesSetup.gameCount,
+        gameMinutes: rulesSetup.gameMinutes,
+        breakMinutes: Math.max(GAME_SETUP_MIN_BREAK_MINUTES, rulesSetup.breakMinutes),
+      },
+    })
+  }, [courtCount, gender, rulesSetup, skillLevel, t])
 
-  const previewSession = useMemo(
-    () => friendlyOrganizedSession(organizedConfig),
-    [organizedConfig],
-  )
-
-  const previewGames = useMemo(
-    () => friendlyOrganizedGames(trimmedSlots, organizedConfig, courtNames),
-    [trimmedSlots, organizedConfig, courtNames],
+  const courtCaption = useMemo(
+    () => t('competition.courtsPlayers', { courts: courtCount, players: playersFromCourtCount(courtCount) }),
+    [courtCount, t],
   )
 
   const handlePlayersChange = (
@@ -272,13 +294,6 @@ export function FriendlyGameForm() {
     setPlayerSlots(names)
     setProfileIds(ids)
     setPadelPlayerIds(padelIds)
-  }
-
-  const addPlayerSlot = () => {
-    if (playerSlots.length >= FRIENDLY_MAX_PLAYERS) return
-    setPlayerSlots((prev) => [...prev, ''])
-    setProfileIds((prev) => [...prev, null])
-    setPadelPlayerIds((prev) => [...prev, null])
   }
 
   const accept = async () => {
@@ -366,44 +381,6 @@ export function FriendlyGameForm() {
           ) : null
         }
       >
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => setVisibility('public')}
-            className={`${shellTabClass(visibility === 'public', 'competition')} py-2.5`}
-          >
-            <IconPublic />
-            <span>{t('friendly.public')}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setVisibility('private')}
-            className={`${shellTabClass(visibility === 'private', 'competition')} py-2.5`}
-          >
-            <IconPrivate />
-            <span>{t('friendly.private')}</span>
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => setPlayMode('free')}
-            className={`${shellTabClass(playMode === 'free', 'competition')} py-2.5`}
-          >
-            <IconFreePlay />
-            <span>{t('friendly.freePlay')}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setPlayMode('organized')}
-            className={`${shellTabClass(playMode === 'organized', 'competition')} py-2.5`}
-          >
-            <IconOrganized />
-            <span>{t('friendly.organizedPlay')}</span>
-          </button>
-        </div>
-
         {playMode === 'free' ? (
           <label className="block space-y-1">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
@@ -419,49 +396,48 @@ export function FriendlyGameForm() {
             />
           </label>
         ) : (
-          <>
-            <div className="grid grid-cols-2 gap-2">
-              <label className="block min-w-0 space-y-1">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-                  Day
-                </span>
-                <input
-                  type="date"
-                  value={day}
-                  onChange={(e) => setDay(e.target.value)}
-                  onBlur={isEdit ? undefined : persistNow}
-                  className="brand-input h-11"
-                />
-              </label>
-              <label className="block min-w-0 space-y-1">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-                  Start
-                </span>
-                <select
-                  value={clubTimeSlotValue(startHour, startMinute)}
-                  onChange={(e) => {
-                    const { hour, minute } = parseClubTimeSlotValue(e.target.value)
-                    setStartHour(hour)
-                    setStartMinute(minute)
-                  }}
-                  onBlur={isEdit ? undefined : persistNow}
-                  className="brand-input h-11"
-                >
-                  {halfHourSlots.map((slot) => (
-                    <option key={slot.label} value={slot.label}>
-                      {slot.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <GameScheduleSetup
-              value={{
+          <SessionSetupControls
+            formatLabel={t('competition.formatLabel')}
+            playerMode="singles"
+            playerModeOptions={[
+              { value: 'singles', label: t('competition.formatSingles') },
+              { value: 'duos', label: t('competition.formatDuos'), disabled: true },
+            ]}
+            onPlayerModeChange={() => undefined}
+            courtsLabel={t('competition.courts')}
+            courtCount={courtCount}
+            courtOptions={COURT_COUNT_OPTIONS}
+            courtCaption={courtCaption}
+            onCourtCountChange={applyCourtCount}
+            schedule={{
+              value: {
                 gameCount: rulesSetup.gameCount,
                 gameMinutes: rulesSetup.gameMinutes,
                 breakMinutes: Math.max(GAME_SETUP_MIN_BREAK_MINUTES, rulesSetup.breakMinutes),
-              }}
-              onChange={(patch) => {
+              },
+              dateValue: day,
+              onDateChange: setDay,
+              startValue: formatHourLabel(startHour, startMinute),
+              endValue: formatHourLabel(sessionEndParts.hour, sessionEndParts.minute),
+              windowMinutes: scheduleWindowMinutes,
+              onStartChange: (value) => {
+                const { hour, minute } = parseTimeInput(value, startHour, startMinute)
+                setStartHour(hour)
+                setStartMinute(minute)
+              },
+              onEndChange: (value) => {
+                const { hour, minute } = parseTimeInput(
+                  value,
+                  sessionEndParts.hour,
+                  sessionEndParts.minute,
+                )
+                setRulesSetup((prev) => ({
+                  ...prev,
+                  sessionEndHour: hour,
+                  sessionEndMinute: minute,
+                }))
+              },
+              onChange: (patch) => {
                 setRulesSetup((prev) => ({
                   ...prev,
                   ...patch,
@@ -470,49 +446,25 @@ export function FriendlyGameForm() {
                     patch.breakMinutes ?? prev.breakMinutes,
                   ),
                 }))
-              }}
-            />
-            <div className="space-y-1.5">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-                Level
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {SKILL_LEVELS.map((level) => (
-                  <Chip key={level} active={skillLevel === level} onClick={() => setSkillLevel(level)}>
-                    {level}
-                  </Chip>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-                Gender
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {GENDERS.map((g) => (
-                  <Chip key={g} active={gender === g} onClick={() => setGender(g)}>
-                    {g}
-                  </Chip>
-                ))}
-              </div>
-            </div>
-            <label className="block space-y-1">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-                Title
-              </span>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => {
-                  setTitle(e.target.value)
-                  setTitleEdited(true)
-                }}
-                onBlur={isEdit ? undefined : persistNow}
-                placeholder={autoTitle}
-                className="brand-input"
-              />
-            </label>
-          </>
+              },
+            }}
+            levelLabel="Level"
+            skillLevels={SKILL_LEVELS}
+            skillLevel={skillLevel}
+            onSkillLevelChange={setSkillLevel}
+            genderLabel="Gender"
+            genders={GENDERS}
+            gender={gender}
+            onGenderChange={setGender}
+            titleLabel="Title"
+            title={title}
+            titlePlaceholder={autoTitle}
+            onTitleChange={(value) => {
+              setTitle(value)
+              setTitleEdited(true)
+            }}
+            onTitleBlur={isEdit ? undefined : persistNow}
+          />
         )}
 
         <div className="space-y-3 border-t border-brand-border/40 pt-3">
@@ -527,40 +479,11 @@ export function FriendlyGameForm() {
             profileIds={profileIds}
             padelPlayerIds={padelPlayerIds}
             onChange={handlePlayersChange}
-            onAdd={addPlayerSlot}
-            canAdd={playerSlots.length < FRIENDLY_MAX_PLAYERS}
-            addLabel={t('friendly.addPlayerSlot')}
             disabled={busy}
             showMembers={isAdmin}
             showPlayerProfiles
           />
         </div>
-
-        {playMode === 'organized' ? (
-          <>
-            {previewGames && previewGames.length > 0 ? (
-              <div className="overflow-hidden rounded-lg border border-brand-border/60">
-                <GameBoardPreview
-                  session={previewSession}
-                  games={previewGames}
-                  eventStartsAt={startsAtIso}
-                  gameMinutes={organizedConfig.gameMinutes}
-                />
-              </div>
-            ) : courtNames.length === 0 ? (
-              <p className="text-xs text-brand-muted">Loading courts…</p>
-            ) : null}
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => setPreviewSeed((s) => s + 1)}
-              className="brand-btn-outline w-full py-2 text-sm font-semibold"
-            >
-              <IconShuffle />
-              Shuffle match-ups
-            </button>
-          </>
-        ) : null}
 
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button

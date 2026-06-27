@@ -300,6 +300,11 @@ export type Messages = {
     scanQrSubhead: string
     notConfigured: string
     checkingSession: string
+    playerSectionTitle: string
+    playerHint: string
+    usernameLabel: string
+    playerSignIn: string
+    playerSigningIn: string
     emailSectionTitle: string
     emailLabel: string
     passwordLabel: string

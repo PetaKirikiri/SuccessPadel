@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect } from 'react'
 export function isGesturePadRoute(pathname: string): boolean {
   return (
     /\/gesture-pad\/?$/.test(pathname) ||
+    /\/gesture-score\/?$/.test(pathname) ||
     /\/gesture-score-test\/?$/.test(pathname) ||
     /\/dev\/gesture-score-test\/?$/.test(pathname) ||
     /\/live-court\/?$/.test(pathname) ||

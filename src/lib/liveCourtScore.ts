@@ -3,6 +3,12 @@ import type { GameLogPoint } from './gameLogSerialize'
 import { parseFriendlyCourtSetupKey, type MatchGestureLog } from './matchLogServer'
 import type { TennisScore } from './tennisScore'
 
+export type LiveCourtPointFeed = {
+  courtKey: string
+  points: GameLogPoint[]
+  live: boolean
+}
+
 function manualScoreStrings(
   score: TennisScore,
   scoreUnit: AmericanoScoringUnit,
@@ -22,8 +28,8 @@ export function liveCourtGamesScore(
   log: MatchGestureLog,
   scoreUnit: AmericanoScoringUnit = 'games',
 ): LiveCourtGamesScore | null {
-  const score: TennisScore | null | undefined =
-    log.finalScore ?? (log.pointEvents[0] as GameLogPoint | undefined)?.scoreAfter
+  const lastPoint = log.pointEvents[log.pointEvents.length - 1] as GameLogPoint | undefined
+  const score: TennisScore | null | undefined = log.finalScore ?? lastPoint?.scoreAfter
   if (!score || (!log.pointEvents.length && !log.finalScore)) return null
   if (log.finalScore && log.pointEvents.length === 0 && log.gestures.length === 0) {
     return manualScoreStrings(score, scoreUnit)
@@ -50,6 +56,40 @@ export function liveCourtScoresFromLogs(
     const key = liveCourtScoreKeyFromSetupKey(log.courtSetupKey)
     const score = key ? liveCourtGamesScore(log, scoreUnit) : null
     if (key && score) map.set(key, score)
+  }
+  return map
+}
+
+export function liveCourtScoresFromCompetitionLogs(
+  logs: MatchGestureLog[],
+  courtIdToLabel: Map<string, string>,
+  scoreUnit: AmericanoScoringUnit = 'games',
+): Map<string, LiveCourtGamesScore> {
+  const map = new Map<string, LiveCourtGamesScore>()
+  for (const log of logs) {
+    const gameNumber = log.gameNumber ? Number(log.gameNumber) : null
+    const courtLabel = log.courtId ? courtIdToLabel.get(log.courtId) ?? log.courtId : null
+    if (gameNumber == null || !courtLabel) continue
+    const key = liveCourtScoreKey(gameNumber, courtLabel)
+    const score = liveCourtGamesScore(log, scoreUnit)
+    if (score) map.set(key, score)
+  }
+  return map
+}
+
+export function liveCourtFeedsFromLogs(
+  logs: MatchGestureLog[],
+  courtKeyForLog: (log: MatchGestureLog) => string | null,
+): Map<string, LiveCourtPointFeed> {
+  const map = new Map<string, LiveCourtPointFeed>()
+  for (const log of logs) {
+    const courtKey = courtKeyForLog(log)
+    if (!courtKey || !log.pointEvents.length) continue
+    map.set(courtKey, {
+      courtKey,
+      points: log.pointEvents,
+      live: !log.matchEndedAt,
+    })
   }
   return map
 }

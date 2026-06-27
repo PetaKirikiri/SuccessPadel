@@ -9,6 +9,7 @@ import { CompetitionTvScoreInputPanel } from '../components/competitionPlay/Comp
 import type { PlayViewTab } from '../components/PlayViewTabs'
 import { useAuth } from '../hooks/useAuth'
 import { useIsTvLayout } from '../hooks/useIsTvLayout'
+import { useCompetitionLiveCourtScores } from '../hooks/useCompetitionLiveCourtScores'
 import { useCompetitionBoard } from '../hooks/useCompetitionBoard'
 import { useLineClientProfile } from '../hooks/useLineClientProfile'
 import { usePublicCompetition } from '../hooks/usePublicCompetition'
@@ -102,6 +103,20 @@ export function CompetitionPlay() {
   })
   const { columns, liveCourtsByGame, roundIdForGame, courtIdByLabel, scoreUnit, playTo, matchForCourt, isDuo, teams } =
     useCompetitionBoard(session, rounds, roster, clubCourts, courtMatches, sessionPairs)
+  const courtIdToLabel = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const [label, courtId] of courtIdByLabel) map.set(courtId, label)
+    for (const courts of liveCourtsByGame.values()) {
+      for (const court of courts) map.set(court.courtId, court.courtName)
+    }
+    return map
+  }, [courtIdByLabel, liveCourtsByGame])
+  const started = Boolean(session?.competition_started_at)
+  const { scores: liveCourtScores, feeds: liveCourtFeeds } = useCompetitionLiveCourtScores(
+    started ? id : undefined,
+    courtIdToLabel,
+    scoreUnit,
+  )
   const [now, setNow] = useState(Date.now())
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000)
@@ -190,8 +205,6 @@ export function CompetitionPlay() {
     },
     [applyMatchScore, refresh],
   )
-
-  const started = Boolean(session?.competition_started_at)
 
   useEffect(() => {
     if (!isAdmin || !id || !session || started || loading) return
@@ -336,6 +349,8 @@ export function CompetitionPlay() {
         currentUserId={user?.id ?? null}
         currentUserAvatarUrl={headerAvatar}
         isAdmin={isAdmin}
+        liveCourtScores={liveCourtScores}
+        liveCourtFeeds={liveCourtFeeds}
         duoTeamLabels={isDuo ? duoTeamLabels : undefined}
         tvCarousel={columns.length > 0}
         viewAlongUrl={isTvLayout ? viewAlongUrl : null}

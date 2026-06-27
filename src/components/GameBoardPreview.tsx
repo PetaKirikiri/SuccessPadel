@@ -3,7 +3,7 @@ import type { GameRound } from '../lib/americanoSchedule'
 import { breakMinutesFromConfig, competitionRoundTimesByGame, gameSlotOptsFromSchedule, gameSlotTimes, eventDurationMinutes } from '../lib/competitionLayout'
 import { americanoScoringUnit } from '../lib/competitionPresets'
 import { pivotScheduleByCourt } from '../lib/competitionCourtBoard'
-import type { LiveCourtGamesScore } from '../lib/liveCourtScore'
+import type { LiveCourtGamesScore, LiveCourtPointFeed } from '../lib/liveCourtScore'
 import type { FriendlyCourtScoreSubmit } from '../lib/friendlyManualScore'
 import type { GameSession } from '../lib/types'
 import { GameBoard } from './GameBoard'
@@ -20,6 +20,7 @@ type Props = {
   currentUserId?: string | null
   currentUserAvatarUrl?: string | null
   liveCourtScores?: Map<string, LiveCourtGamesScore>
+  liveCourtFeeds?: Map<string, LiveCourtPointFeed>
   onSubmitFriendlyScores?: (entries: FriendlyCourtScoreSubmit[]) => Promise<void>
   onFriendlyScoresSaved?: () => void
 }
@@ -35,6 +36,7 @@ export function GameBoardPreview({
   currentUserId,
   currentUserAvatarUrl,
   liveCourtScores,
+  liveCourtFeeds,
   onSubmitFriendlyScores,
   onFriendlyScoresSaved,
 }: Props) {
@@ -91,6 +93,7 @@ export function GameBoardPreview({
       currentUserId={currentUserId}
       currentUserAvatarUrl={currentUserAvatarUrl}
       liveCourtScores={liveCourtScores}
+      liveCourtFeeds={liveCourtFeeds}
       onSubmitFriendlyScores={onSubmitFriendlyScores}
       onSaved={onFriendlyScoresSaved}
     />

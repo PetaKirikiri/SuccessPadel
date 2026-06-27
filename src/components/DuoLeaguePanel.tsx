@@ -8,6 +8,7 @@ import {
   scheduleCompetitionStartSlots,
   type CompetitionPlayStartMinute,
 } from '../lib/competitionLayout'
+import { competitionCanonicalEventMinutes } from '../lib/competitionScheduleLayout'
 import type { CompetitionRow } from '../hooks/useCompetitions'
 import { useTranslation } from '../hooks/useTranslation'
 import { supabase } from '../lib/supabaseClient'
@@ -64,13 +65,13 @@ export function DuoLeaguePanel({ rows, isAdmin, onRefresh }: Props) {
     const draft = weekDrafts[row.id] ?? {
       day: formatDateInput(new Date()),
       hour: 18,
-      minute: 4 as CompetitionPlayStartMinute,
+      minute: 10 as CompetitionPlayStartMinute,
     }
     setBusyWeekId(row.id)
     const startsAt = new Date(
       competitionStartsAtAnchorIso(draft.day, draft.hour, draft.minute),
     )
-    const eventMinutes = 116
+    const eventMinutes = competitionCanonicalEventMinutes()
     const endsAt = new Date(startsAt.getTime() + eventMinutes * 60 * 1000)
     const { error } = await supabase.rpc('update_league_week_schedule', {
       p_session_id: row.id,
@@ -92,7 +93,7 @@ export function DuoLeaguePanel({ rows, isAdmin, onRefresh }: Props) {
               const draft = weekDrafts[week.id] ?? {
                 day: week.starts_on ?? formatDateInput(new Date()),
                 hour: 18,
-                minute: 4 as CompetitionPlayStartMinute,
+                minute: 10 as CompetitionPlayStartMinute,
               }
               return (
                 <li key={week.id} className="rounded-lg bg-brand-bg-alt/60 p-2 text-sm">

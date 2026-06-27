@@ -97,6 +97,8 @@ export function gameScheduleTotals({ gameCount, gameMinutes, breakMinutes }: Gam
 type Props = {
   value: GameScheduleSetupValues
   onChange: (patch: Partial<GameScheduleSetupValues>) => void
+  dateValue?: string
+  onDateChange?: (value: string) => void
   startValue?: string
   endValue?: string
   onStartChange?: (value: string) => void
@@ -107,6 +109,8 @@ type Props = {
 export function GameScheduleSetup({
   value,
   onChange,
+  dateValue,
+  onDateChange,
   startValue,
   endValue,
   onStartChange,
@@ -114,7 +118,15 @@ export function GameScheduleSetup({
   windowMinutes = null,
 }: Props) {
   const totals = useMemo(() => gameScheduleTotals(value), [value])
+  const showDate = Boolean(dateValue && onDateChange)
   const showWindow = Boolean(startValue && endValue && onStartChange && onEndChange)
+  const gridClass = showDate && showWindow
+    ? 'grid-cols-2 sm:grid-cols-6'
+    : showWindow
+      ? 'grid-cols-2 sm:grid-cols-5'
+      : showDate
+        ? 'grid-cols-2 sm:grid-cols-4'
+        : 'grid-cols-3'
   const leftoverMinutes = windowMinutes == null ? null : windowMinutes - totals.playMinutes
   const fits = leftoverMinutes != null && leftoverMinutes >= 0
   const fitLabel =
@@ -132,7 +144,20 @@ export function GameScheduleSetup({
         </p>
       </div>
 
-      <div className={`grid gap-2 ${showWindow ? 'grid-cols-2 sm:grid-cols-5' : 'grid-cols-3'}`}>
+      <div className={`grid gap-2 ${gridClass}`}>
+        {showDate ? (
+          <label className="block min-w-0 space-y-1">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
+              Day
+            </span>
+            <input
+              type="date"
+              value={dateValue}
+              onChange={(e) => onDateChange?.(e.target.value)}
+              className="brand-input h-11"
+            />
+          </label>
+        ) : null}
         {showWindow ? (
           <label className="block min-w-0 space-y-1">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">

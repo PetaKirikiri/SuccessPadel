@@ -43,6 +43,11 @@ import { MatchNew } from './pages/MatchNew'
 import { Week } from './pages/Week'
 import { NativeDeepLinkHandler } from './components/NativeDeepLinkHandler'
 
+const GestureScoreCourtRoute = lazy(() =>
+  import('./pages/GestureScoreCourtPage').then((module) => ({
+    default: module.GestureScoreCourtPage,
+  })),
+)
 const GestureScoreTestRoute = lazy(() =>
   import('./pages/GestureScoreTestPage').then((module) => ({
     default: module.GestureScoreTestPage,
@@ -156,10 +161,30 @@ function MainAppRoutes() {
         <Route path="friendly/:id/heatmap" element={<FriendlyHeatMapPage />} />
         <Route path="practice" element={<PracticeCourtPage />} />
         <Route
+          path="friendly/:id/games/:gameNumber/courts/:courtSlug/gesture-score"
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={null}>
+                <GestureScoreCourtRoute />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="friendly/:id/games/:gameNumber/courts/:courtSlug"
           element={<FriendlyCourtPage />}
         />
         <Route path="friendly/:id" element={<FriendlyGamePage />} />
+        <Route
+          path="competitions/:id/games/:gameNumber/courts/:courtId/gesture-score"
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={null}>
+                <GestureScoreCourtRoute />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="competitions/:id/games/:gameNumber/courts/:courtId/live-court"
           element={<GesturePadPage />}

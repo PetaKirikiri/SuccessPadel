@@ -1,9 +1,10 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from '../hooks/useTranslation'
+import { signInWithBrowserPlayerUsername } from '../lib/auth/browserPlayerLogin'
 import { hadPreviousLogin } from '../lib/auth/cachedSession'
 import { isLineLoginConfigured } from '../lib/line/auth'
-import { lineAppEntryUrl } from '../lib/line/liff'
+import { isLineLiffBrowser, lineAppEntryUrl } from '../lib/line/liff'
 import { supabase } from '../lib/supabaseClient'
 import { LineSignUpQr } from './LineSignUpQr'
 
@@ -41,9 +42,13 @@ export function LineSignInModal({ onClose }: Props) {
   const [password, setPassword] = useState('')
   const [emailBusy, setEmailBusy] = useState(false)
   const [emailError, setEmailError] = useState<string | null>(null)
+  const [playerUsername, setPlayerUsername] = useState('')
+  const [playerBusy, setPlayerBusy] = useState(false)
+  const [playerError, setPlayerError] = useState<string | null>(null)
   const qrUrl = useMemo(() => lineAppEntryUrl('/friendly'), [])
   const lineEnabled = isLineLoginConfigured()
   const returning = hadPreviousLogin()
+  const showBrowserPlayerFallback = !isLineLiffBrowser()
 
   const handleEmailSignIn = async (e: FormEvent) => {
     e.preventDefault()
@@ -66,6 +71,22 @@ export function LineSignInModal({ onClose }: Props) {
       onClose()
     } finally {
       setEmailBusy(false)
+    }
+  }
+
+  const handlePlayerSignIn = async (e: FormEvent) => {
+    e.preventDefault()
+    setPlayerError(null)
+    setPlayerBusy(true)
+    try {
+      const err = await signInWithBrowserPlayerUsername(playerUsername)
+      if (err) {
+        setPlayerError(err)
+        return
+      }
+      onClose()
+    } finally {
+      setPlayerBusy(false)
     }
   }
 
@@ -163,6 +184,38 @@ export function LineSignInModal({ onClose }: Props) {
             </ol>
           </div>
         )}
+
+        {showBrowserPlayerFallback ? (
+          <div className="border-t border-brand-border/60 pt-4">
+            <p className="mb-1 text-left text-xs font-semibold uppercase tracking-wide text-brand-muted">
+              {t('signInModal.playerSectionTitle')}
+            </p>
+            <p className="mb-3 text-left text-xs leading-relaxed text-brand-muted">
+              {t('signInModal.playerHint')}
+            </p>
+            <form className="space-y-3 text-left" onSubmit={(e) => void handlePlayerSignIn(e)}>
+              <label className="block space-y-1">
+                <span className="text-xs text-brand-muted">{t('signInModal.usernameLabel')}</span>
+                <input
+                  type="text"
+                  autoComplete="username"
+                  value={playerUsername}
+                  onChange={(e) => setPlayerUsername(e.target.value)}
+                  className="brand-input"
+                  required
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={playerBusy}
+                className="brand-btn w-full disabled:opacity-60"
+              >
+                {playerBusy ? t('signInModal.playerSigningIn') : t('signInModal.playerSignIn')}
+              </button>
+              {playerError ? <p className="text-sm text-red-600">{playerError}</p> : null}
+            </form>
+          </div>
+        ) : null}
 
         <div className="border-t border-brand-border/60 pt-4">
           <p className="mb-3 text-left text-xs font-semibold uppercase tracking-wide text-brand-muted">

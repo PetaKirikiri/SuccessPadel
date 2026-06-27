@@ -120,7 +120,7 @@ export function FriendlyGamePage() {
 
   const scoreUnit = useMemo(() => americanoScoringUnit(previewSession), [previewSession])
 
-  const { scores: liveCourtScores, refresh: refreshLiveScores } = useFriendlyLiveCourtScores(
+  const { scores: liveCourtScores, feeds: liveCourtFeeds, refresh: refreshLiveScores } = useFriendlyLiveCourtScores(
     id,
     scoreUnit,
   )
@@ -319,6 +319,7 @@ export function FriendlyGamePage() {
           currentUserId={user?.id}
           currentUserAvatarUrl={headerAvatar}
           liveCourtScores={scheduleLive ? liveCourtScores : new Map()}
+          liveCourtFeeds={scheduleLive ? liveCourtFeeds : new Map()}
           onSubmitFriendlyScores={canScore ? handleSubmitFriendlyScores : undefined}
           onFriendlyScoresSaved={handleScoresSaved}
         />

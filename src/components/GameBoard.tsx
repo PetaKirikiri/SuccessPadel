@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { liveCourtScoreKey, type LiveCourtGamesScore } from '../lib/liveCourtScore'
+import { liveCourtScoreKey, type LiveCourtGamesScore, type LiveCourtPointFeed } from '../lib/liveCourtScore'
 import { useTranslation } from '../hooks/useTranslation'
 import type { TranslateFn } from '../i18n'
 import type { AmericanoScoringUnit } from '../lib/competitionPresets'
@@ -17,7 +17,8 @@ import { courtGameScoreMax } from '../lib/competitionScoreInput'
 import type { FriendlyCourtScoreSubmit } from '../lib/friendlyManualScore'
 import type { MatchTeam } from '../lib/types'
 import { CompetitionTvGameCarousel, type TvGameNav } from './competitionPlay/CompetitionTvGameCarousel'
-import { CourtCard, CourtMatchCell, courtLiveHref } from './cards/CourtCard'
+import { CourtCard, CourtMatchCell, courtGestureScoreHref, courtLiveHref } from './cards/CourtCard'
+import { LiveScoreFeed } from './LiveScoreFeed'
 import type { LiveCourt } from './cards/gameBoardTypes'
 import type { CourtPlayer } from '../lib/americanoSchedule'
 import {
@@ -68,6 +69,7 @@ type Props = {
   currentUserAvatarUrl?: string | null
   isAdmin?: boolean
   liveCourtScores?: Map<string, LiveCourtGamesScore>
+  liveCourtFeeds?: Map<string, LiveCourtPointFeed>
   duoTeamLabels?: (
     teamA: [string, string],
     teamB: [string, string],
@@ -246,6 +248,7 @@ export function GameBoard({
   currentUserAvatarUrl,
   isAdmin = false,
   liveCourtScores,
+  liveCourtFeeds,
   duoTeamLabels,
   tvCarousel = false,
   viewAlongUrl = null,
@@ -274,6 +277,7 @@ export function GameBoard({
   const liveCourtEnabled = Boolean(
     sessionId && isAdmin && currentUserId && !(friendly && onSubmitFriendlyScores),
   )
+  const gestureScoreEnabled = Boolean(sessionId && currentUserId && (friendly || mode === 'scoring'))
   const friendlyManualScoring = Boolean(friendly && onSubmitFriendlyScores)
   const scoringTimeUnlocked = isScoringTimeUnlocked()
   const courtScoreMax = courtGameScoreMax(scoreUnit === 'games' ? playTo : undefined)
@@ -440,6 +444,7 @@ export function GameBoard({
           game={game}
           displayTimeLabel={displayTimeLabel}
           liveCourtEnabled={liveCourtEnabled}
+          gestureScoreEnabled={gestureScoreEnabled}
           friendly={friendly}
           sessionId={sessionId}
           competitionId={competitionId}
@@ -463,6 +468,8 @@ export function GameBoard({
           currentUserId={currentUserId}
           currentUserAvatarUrl={currentUserAvatarUrl}
           duoTeamLabels={duoTeamLabels}
+          liveCourtScores={liveCourtScores}
+          liveCourtFeeds={liveCourtFeeds}
           tvCompact={tvCompact}
           tvNav={tvNav}
           onBack={tvCompact ? onTvBack : undefined}
@@ -479,6 +486,10 @@ export function GameBoard({
           game={game}
           scoreUnit={scoreUnit}
           liveCourtScores={liveCourtScores}
+          liveCourtFeeds={liveCourtFeeds}
+          gestureScoreEnabled={gestureScoreEnabled}
+          friendlySessionId={sessionId}
+          currentUserId={currentUserId}
           onSubmitFriendlyScores={onSubmitFriendlyScores}
           onSaved={onSaved}
           courtScoreMax={courtScoreMax}
@@ -490,7 +501,6 @@ export function GameBoard({
           finished={finished}
           collapsed={collapsed}
           onToggleCollapsed={() => toggleCollapsed(game.gameNumber)}
-          currentUserId={currentUserId}
           currentUserAvatarUrl={currentUserAvatarUrl}
           t={t}
         />
@@ -550,6 +560,20 @@ export function GameBoard({
                   teamAPlayers,
                   teamBPlayers,
                 )
+                const courtScoreKey = liveCourtScoreKey(game.gameNumber, court.courtLabel)
+                const feed = liveCourtFeeds?.get(courtScoreKey)
+                const gestureHref = courtGestureScoreHref({
+                  gestureScoreEnabled,
+                  friendly,
+                  sessionId,
+                  competitionId,
+                  gameNumber: game.gameNumber,
+                  courtLabel: court.courtLabel,
+                  courtId,
+                  currentUserId,
+                  court: liveCourt ?? court,
+                  finished,
+                })
                 const href = courtLiveHref({
                   liveCourtEnabled,
                   friendly,
@@ -569,6 +593,8 @@ export function GameBoard({
                     court={liveCourt ?? court}
                     finished={finished}
                     href={href}
+                    gestureScoreHref={gestureHref}
+                    gestureScoreLive={feed?.live}
                     tvCompact={tvCompact}
                     t={t}
                   >
@@ -597,6 +623,7 @@ export function GameBoard({
                       compact={tvCompact}
                       t={t}
                     />
+                    <LiveScoreFeed points={feed?.points} compact={tvCompact} />
                   </CourtCard>
                 )
               })}

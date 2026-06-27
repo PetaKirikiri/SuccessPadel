@@ -2,8 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import type { AmericanoScoringUnit } from '../lib/competitionPresets'
 import {
   liveCourtFeedsFromLogs,
-  liveCourtScoresFromLogs,
-  liveCourtScoreKeyFromSetupKey,
+  liveCourtScoreKey,
+  liveCourtScoresFromCompetitionLogs,
   type LiveCourtGamesScore,
   type LiveCourtPointFeed,
 } from '../lib/liveCourtScore'
@@ -12,6 +12,7 @@ import type { GameLogGesture, GameLogPoint, GameLogRosterSlot } from '../lib/gam
 import type { MatchTeam } from '../lib/types'
 import type { PlayerStatsSnapshot } from '../lib/matchSessionLog'
 import type { TennisScore } from '../lib/tennisScore'
+import type { GameLogSetupState } from '../lib/gameLogSetupState'
 import { supabase } from '../lib/supabaseClient'
 
 function rowToLog(row: Record<string, unknown>): MatchGestureLog {
@@ -29,20 +30,21 @@ function rowToLog(row: Record<string, unknown>): MatchGestureLog {
     pointEvents: (row.point_events ?? []) as GameLogPoint[],
     gestures: (row.gestures ?? []) as GameLogGesture[],
     roster: (row.roster ?? []) as GameLogRosterSlot[],
-    setupState: (row.setup_state ?? null) as MatchGestureLog['setupState'],
+    setupState: (row.setup_state ?? null) as GameLogSetupState | null,
     updatedAt: (row.updated_at as string | null) ?? null,
   }
 }
 
-export function useFriendlyLiveCourtScores(
-  friendlySessionId: string | undefined,
+export function useCompetitionLiveCourtScores(
+  competitionId: string | undefined,
+  courtIdToLabel: Map<string, string>,
   scoreUnit: AmericanoScoringUnit = 'games',
 ) {
   const [scores, setScores] = useState<Map<string, LiveCourtGamesScore>>(() => new Map())
   const [feeds, setFeeds] = useState<Map<string, LiveCourtPointFeed>>(() => new Map())
 
   const refresh = useCallback(async () => {
-    if (!friendlySessionId) {
+    if (!competitionId) {
       setScores(new Map())
       setFeeds(new Map())
       return
@@ -50,34 +52,39 @@ export function useFriendlyLiveCourtScores(
     const { data, error } = await supabase
       .from('match_gesture_logs')
       .select('*')
-      .eq('friendly_session_id', friendlySessionId)
+      .eq('competition_id', competitionId)
 
     if (error) {
-      console.error('useFriendlyLiveCourtScores', error.message)
+      console.error('useCompetitionLiveCourtScores', error.message)
       return
     }
     const logs = (data ?? []).map((row) => rowToLog(row))
-    setScores(liveCourtScoresFromLogs(logs, scoreUnit))
+    setScores(liveCourtScoresFromCompetitionLogs(logs, courtIdToLabel, scoreUnit))
     setFeeds(
-      liveCourtFeedsFromLogs(logs, (log) => liveCourtScoreKeyFromSetupKey(log.courtSetupKey)),
+      liveCourtFeedsFromLogs(logs, (log) => {
+        const gameNumber = log.gameNumber ? Number(log.gameNumber) : null
+        const courtLabel = log.courtId ? courtIdToLabel.get(log.courtId) ?? null : null
+        if (gameNumber == null || !courtLabel) return null
+        return liveCourtScoreKey(gameNumber, courtLabel)
+      }),
     )
-  }, [friendlySessionId, scoreUnit])
+  }, [competitionId, courtIdToLabel, scoreUnit])
 
   useEffect(() => {
     void refresh()
   }, [refresh])
 
   useEffect(() => {
-    if (!friendlySessionId) return
+    if (!competitionId) return
     const channel = supabase
-      .channel(`friendly-court-scores-${friendlySessionId}`)
+      .channel(`competition-court-scores-${competitionId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'match_gesture_logs',
-          filter: `friendly_session_id=eq.${friendlySessionId}`,
+          filter: `competition_id=eq.${competitionId}`,
         },
         () => void refresh(),
       )
@@ -85,7 +92,7 @@ export function useFriendlyLiveCourtScores(
     return () => {
       void supabase.removeChannel(channel)
     }
-  }, [friendlySessionId, refresh])
+  }, [competitionId, refresh])
 
   return { scores, feeds, refresh }
 }

@@ -10,12 +10,13 @@ import {
   scoreDigitsOnly,
   scoreFieldSubmitValue,
 } from '../../lib/competitionScoreInput'
-import { liveCourtScoreKey, type LiveCourtGamesScore } from '../../lib/liveCourtScore'
+import { liveCourtScoreKey, type LiveCourtGamesScore, type LiveCourtPointFeed } from '../../lib/liveCourtScore'
+import { LiveScoreFeed } from '../LiveScoreFeed'
 import type { FriendlyCourtScoreSubmit } from '../../lib/friendlyManualScore'
 import type { MatchTeam } from '../../lib/types'
 import { TvPlayQrPanel } from '../competitionPlay/TvPlayQrPanel'
 import type { TvGameNav } from '../competitionPlay/CompetitionTvGameCarousel'
-import { CourtCard, CourtMatchCell, ScoreStepper, courtLiveHref } from './CourtCard'
+import { CourtCard, CourtMatchCell, ScoreStepper, courtGestureScoreHref, courtLiveHref } from './CourtCard'
 import type { LiveCourt } from './gameBoardTypes'
 import type { CourtPlayer } from '../../lib/americanoSchedule'
 
@@ -450,12 +451,15 @@ export function GameScoringCourts({
   currentUserId,
   currentUserAvatarUrl,
   liveCourtEnabled,
+  gestureScoreEnabled = false,
   friendly,
   sessionId,
   competitionId,
   duoTeamLabels,
   courtScoreMax,
   gameRoundId,
+  liveCourtScores,
+  liveCourtFeeds,
   tvCompact = false,
   t,
 }: {
@@ -472,12 +476,15 @@ export function GameScoringCourts({
   currentUserId?: string | null
   currentUserAvatarUrl?: string | null
   liveCourtEnabled: boolean
+  gestureScoreEnabled?: boolean
   friendly: boolean
   sessionId?: string
   competitionId?: string
   duoTeamLabels?: DuoTeamLabels
   courtScoreMax?: number
   gameRoundId?: string
+  liveCourtScores?: Map<string, LiveCourtGamesScore>
+  liveCourtFeeds?: Map<string, LiveCourtPointFeed>
   tvCompact?: boolean
   t: TranslateFn
 }) {
@@ -501,6 +508,22 @@ export function GameScoringCourts({
         const courtReady = row.canSubmit
         const showTvFallbackScoring = Boolean(tvCompact && submitCourt && gameRoundId)
 
+        const courtScoreKey = liveCourtScoreKey(game.gameNumber, row.courtLabel)
+        const liveScore = liveCourtScores?.get(courtScoreKey)
+        const feed = liveCourtFeeds?.get(courtScoreKey)
+        const gestureHref = courtGestureScoreHref({
+          gestureScoreEnabled,
+          friendly,
+          sessionId,
+          competitionId,
+          gameNumber: game.gameNumber,
+          courtLabel: row.courtLabel,
+          courtId,
+          currentUserId,
+          court: liveCourt ?? court,
+          finished,
+        })
+
         const href = courtLiveHref({
           liveCourtEnabled,
           friendly,
@@ -520,6 +543,8 @@ export function GameScoringCourts({
             court={liveCourt ?? court}
             finished={finished}
             href={href}
+            gestureScoreHref={gestureHref}
+            gestureScoreLive={feed?.live}
             tvCompact={tvCompact}
             t={t}
           >
@@ -593,13 +618,17 @@ export function GameScoringCourts({
                 teamALabel={sideLabels?.teamALabel}
                 teamBLabel={sideLabels?.teamBLabel}
                 scoreUnit={scoreUnit}
-                scoreA={row.teamAStr}
-                scoreB={row.teamBStr}
+                scoreA={liveScore?.scoreA ?? row.teamAStr}
+                scoreB={liveScore?.scoreB ?? row.teamBStr}
                 onScoreA={
-                  canEdit && courtId && gameRoundId ? (v) => setDraft(courtId, 'teamA', v) : undefined
+                  canEdit && courtId && gameRoundId && !liveScore
+                    ? (v) => setDraft(courtId, 'teamA', v)
+                    : undefined
                 }
                 onScoreB={
-                  canEdit && courtId && gameRoundId ? (v) => setDraft(courtId, 'teamB', v) : undefined
+                  canEdit && courtId && gameRoundId && !liveScore
+                    ? (v) => setDraft(courtId, 'teamB', v)
+                    : undefined
                 }
                 disabled={!canEdit}
                 finished={finished}
@@ -611,7 +640,8 @@ export function GameScoringCourts({
                 t={t}
               />
             )}
-            {!tvCompact && canEdit && submitCourt && gameRoundId ? (
+            <LiveScoreFeed points={feed?.points} compact={tvCompact} />
+            {!tvCompact && canEdit && submitCourt && gameRoundId && !liveScore ? (
               <>
                 <button
                   type="button"
@@ -873,6 +903,7 @@ export function ScoringGameCard({
   game,
   displayTimeLabel,
   liveCourtEnabled,
+  gestureScoreEnabled = false,
   friendly,
   sessionId,
   competitionId,
@@ -896,6 +927,8 @@ export function ScoringGameCard({
   currentUserId,
   currentUserAvatarUrl,
   duoTeamLabels,
+  liveCourtScores,
+  liveCourtFeeds,
   tvCompact = false,
   tvNav,
   onBack,
@@ -905,6 +938,7 @@ export function ScoringGameCard({
   game: ScoringGame
   displayTimeLabel: string
   liveCourtEnabled: boolean
+  gestureScoreEnabled?: boolean
   friendly: boolean
   sessionId?: string
   competitionId?: string
@@ -928,6 +962,8 @@ export function ScoringGameCard({
   currentUserId?: string | null
   currentUserAvatarUrl?: string | null
   duoTeamLabels?: DuoTeamLabels
+  liveCourtScores?: Map<string, LiveCourtGamesScore>
+  liveCourtFeeds?: Map<string, LiveCourtPointFeed>
   tvCompact?: boolean
   tvNav?: TvGameNav
   onBack?: () => void
@@ -999,12 +1035,15 @@ export function ScoringGameCard({
             currentUserId={currentUserId}
             currentUserAvatarUrl={currentUserAvatarUrl}
             liveCourtEnabled={liveCourtEnabled}
+            gestureScoreEnabled={gestureScoreEnabled}
             friendly={friendly}
             sessionId={sessionId}
             competitionId={competitionId}
             duoTeamLabels={duoTeamLabels}
             courtScoreMax={courtScoreMax}
             gameRoundId={gameRoundId}
+            liveCourtScores={liveCourtScores}
+            liveCourtFeeds={liveCourtFeeds}
             tvCompact={tvCompact}
             t={t}
           />
@@ -1018,6 +1057,9 @@ export function FriendlyManualGameCard({
   game,
   scoreUnit,
   liveCourtScores,
+  liveCourtFeeds,
+  gestureScoreEnabled = false,
+  friendlySessionId,
   onSubmitFriendlyScores,
   onSaved,
   courtScoreMax,
@@ -1037,6 +1079,9 @@ export function FriendlyManualGameCard({
   game: ScoringGame
   scoreUnit: AmericanoScoringUnit
   liveCourtScores?: Map<string, LiveCourtGamesScore>
+  liveCourtFeeds?: Map<string, LiveCourtPointFeed>
+  gestureScoreEnabled?: boolean
+  friendlySessionId?: string
   onSubmitFriendlyScores?: (entries: FriendlyCourtScoreSubmit[]) => Promise<void>
   onSaved?: () => void | Promise<void>
   courtScoreMax?: number
@@ -1090,6 +1135,19 @@ export function FriendlyManualGameCard({
                 const teamA = row.court.teamA
                 const teamB = row.court.teamB
                 const courtReady = row.canSubmit
+                const courtScoreKey = liveCourtScoreKey(game.gameNumber, row.courtLabel)
+                const liveScore = liveCourtScores?.get(courtScoreKey)
+                const feed = liveCourtFeeds?.get(courtScoreKey)
+                const gestureHref = courtGestureScoreHref({
+                  gestureScoreEnabled,
+                  friendly: true,
+                  sessionId: friendlySessionId,
+                  gameNumber: game.gameNumber,
+                  courtLabel: row.courtLabel,
+                  currentUserId,
+                  court: row.court,
+                  finished,
+                })
                 return (
                   <CourtCard
                     key={row.courtLabel}
@@ -1097,6 +1155,8 @@ export function FriendlyManualGameCard({
                     currentUserId={currentUserId}
                     court={row.court}
                     finished={finished}
+                    gestureScoreHref={gestureHref}
+                    gestureScoreLive={feed?.live}
                     t={t}
                   >
                     <CourtMatchCell
@@ -1105,10 +1165,14 @@ export function FriendlyManualGameCard({
                       teamAPlayers={row.court.teamAPlayers}
                       teamBPlayers={row.court.teamBPlayers}
                       scoreUnit={scoreUnit}
-                      scoreA={row.teamAStr}
-                      scoreB={row.teamBStr}
-                      onScoreA={canEdit ? (v) => setDraft(row.courtKey, 'teamA', v) : undefined}
-                      onScoreB={canEdit ? (v) => setDraft(row.courtKey, 'teamB', v) : undefined}
+                      scoreA={liveScore?.scoreA ?? row.teamAStr}
+                      scoreB={liveScore?.scoreB ?? row.teamBStr}
+                      onScoreA={
+                        canEdit && !liveScore ? (v) => setDraft(row.courtKey, 'teamA', v) : undefined
+                      }
+                      onScoreB={
+                        canEdit && !liveScore ? (v) => setDraft(row.courtKey, 'teamB', v) : undefined
+                      }
                       disabled={!canEdit}
                       finished={finished}
                       scoreMax={courtScoreMax}
@@ -1117,7 +1181,8 @@ export function FriendlyManualGameCard({
                       embedded
                       t={t}
                     />
-                    {canEdit ? (
+                    <LiveScoreFeed points={feed?.points} />
+                    {canEdit && !liveScore ? (
                       <>
                         <button
                           type="button"

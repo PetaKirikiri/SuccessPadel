@@ -43,13 +43,13 @@ export function courtCountFromPlayers(players: number): CourtCount {
 
 export const DEFAULT_SINGLES_COURT_COUNT: CourtCount = 4
 export const DEFAULT_DUO_COURT_COUNT: CourtCount = 3
-export const DEFAULT_AMERICANO_GAMES = 7
+export const DEFAULT_AMERICANO_GAMES = 6
 export const AMERICANO_GAME_COUNTS = [5, 6, 7, 8, 9, 10, 11] as const
 export const BREAK_MINUTE_OPTIONS = [2, 3, 4, 5] as const
-export const DEFAULT_BREAK_MINUTES = 3
-export const DEFAULT_GAME_MINUTES = 14
+export const DEFAULT_BREAK_MINUTES = 4
+export const DEFAULT_GAME_MINUTES = 15
 /** Historical default for legacy sessions that do not have an explicit end window. */
-export const AMERICANO_SCHEDULE_LEAD_IN_MINUTES = 4
+export const AMERICANO_SCHEDULE_LEAD_IN_MINUTES = 10
 export const COMPETITION_BREAK_MINUTES = DEFAULT_BREAK_MINUTES
 
 export type CompetitionPlayStartMinute = number
@@ -60,13 +60,13 @@ export type CompetitionStartSlot = {
   label: string
 }
 
-/** Start times shown in the form — always :04 or :34 (4 min past the hour or half-hour). */
+/** Start times shown in the form — always :10 or :40 (10 min past the hour or half-hour). */
 export function scheduleCompetitionStartSlots(): CompetitionStartSlot[] {
   const slots: CompetitionStartSlot[] = []
   for (let h = OPEN_HOUR; h <= LAST_SLOT_START_HOUR; h += 1) {
-    slots.push({ hour: h, minute: 4, label: formatHourLabel(h, 4) })
+    slots.push({ hour: h, minute: 10, label: formatHourLabel(h, 10) })
     if (h < LAST_SLOT_START_HOUR) {
-      slots.push({ hour: h, minute: 34, label: formatHourLabel(h, 34) })
+      slots.push({ hour: h, minute: 40, label: formatHourLabel(h, 40) })
     }
   }
   return slots
@@ -76,9 +76,9 @@ export function snapToCompetitionPlayStart(
   hour: number,
   minute: number,
 ): { hour: number; minute: CompetitionPlayStartMinute } {
-  if (minute < 15) return { hour, minute: 4 }
-  if (minute < 45) return { hour, minute: 34 }
-  return { hour: hour + 1, minute: 4 }
+  if (minute < 25) return { hour, minute: 10 }
+  if (minute < 55) return { hour, minute: 40 }
+  return { hour: hour + 1, minute: 10 }
 }
 
 export function parseCompetitionStartSlotValue(value: string): {
@@ -88,9 +88,9 @@ export function parseCompetitionStartSlotValue(value: string): {
   const [hRaw, mRaw] = value.split(':')
   const hour = Number(hRaw)
   const minute = Number(mRaw)
-  if (!Number.isFinite(hour)) return { hour: 18, minute: 4 }
-  if (minute === 34) return { hour, minute: 34 }
-  return { hour, minute: 4 }
+  if (!Number.isFinite(hour)) return { hour: 18, minute: 10 }
+  if (minute === 40) return { hour, minute: 40 }
+  return { hour, minute: 10 }
 }
 
 export function competitionAnchorMinute(playMinute: CompetitionPlayStartMinute): number {

@@ -1,24 +1,11 @@
 import { useRef } from 'react'
+import { ArrowLeft, BarChart3, RotateCcw } from 'lucide-react'
 import { useTranslation } from '../hooks/useTranslation'
 
 const ISLAND_BTN =
   'pointer-events-auto flex h-11 w-11 flex-col items-center justify-center rounded-xl border border-white/10 bg-[#1a5fa8]/85 text-white/55 transition active:scale-95 md:h-12 md:w-12'
 
 const RESET_HOLD_MS = 600
-
-function IconGraph({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M4 18V6M4 18h16M8 16V11M12 16V8M16 16v-5"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
 
 type Props = {
   onBack: () => void
@@ -85,9 +72,7 @@ export function GesturePadDashboard({
         title={backText}
         aria-label={backText}
       >
-        <span className="text-base leading-none" aria-hidden>
-          ←
-        </span>
+        <ArrowLeft className="h-5 w-5 md:h-[1.35rem] md:w-[1.35rem]" strokeWidth={2.75} aria-hidden />
       </button>
       {onUndo || onResetGame ? (
         <button
@@ -101,9 +86,7 @@ export function GesturePadDashboard({
           title={onResetGame ? `${undoText} · ${resetText}` : undoText}
           aria-label={undoText}
         >
-          <span className="text-base leading-none" aria-hidden>
-            ↺
-          </span>
+          <RotateCcw className="h-5 w-5 md:h-[1.35rem] md:w-[1.35rem]" strokeWidth={2.75} aria-hidden />
         </button>
       ) : null}
       {onStats ? (
@@ -114,7 +97,7 @@ export function GesturePadDashboard({
           title={t('pad.dashboard.stats')}
           aria-label={t('pad.dashboard.stats')}
         >
-          <IconGraph className="h-5 w-5 md:h-[1.35rem] md:w-[1.35rem]" />
+          <BarChart3 className="h-5 w-5 md:h-[1.35rem] md:w-[1.35rem]" strokeWidth={2.75} aria-hidden />
         </button>
       ) : null}
     </nav>

@@ -6,8 +6,9 @@ import type { AmericanoScoringUnit } from '../../lib/competitionPresets'
 import { bumpScoreField, scoreDigitsOnly } from '../../lib/competitionScoreInput'
 import { compactDisplayNames } from '../../lib/leaderboardEntries'
 import type { CourtPlayer } from '../../lib/americanoSchedule'
-import { PlayerNameLink } from '../PlayerNameLink'
+import { CourtGestureScoreButton } from '../CourtGestureScoreButton'
 import { PlayerAvatarLink } from '../PlayerAvatarLink'
+import { PlayerNameLink } from '../PlayerNameLink'
 import type { LiveCourt, ScoringGameCourt } from './gameBoardTypes'
 
 export function stopCardNav(e: { stopPropagation: () => void }) {
@@ -47,7 +48,45 @@ function scoreFieldLabel(scoreUnit: AmericanoScoringUnit, t: TranslateFn): strin
   return t('competition.scorePts')
 }
 
-function courtHasCurrentUser(
+export function courtGestureScoreHref({
+  gestureScoreEnabled,
+  friendly,
+  sessionId,
+  competitionId,
+  gameNumber,
+  courtLabel,
+  courtId,
+  currentUserId,
+  court,
+  finished,
+}: {
+  gestureScoreEnabled: boolean
+  friendly: boolean
+  sessionId?: string
+  competitionId?: string
+  gameNumber: number
+  courtLabel: string
+  courtId?: string
+  currentUserId?: string | null
+  court: {
+    playerIds?: string[]
+    teamAPlayers?: CourtPlayer[]
+    teamBPlayers?: CourtPlayer[]
+  }
+  finished: boolean
+}): string | undefined {
+  if (!gestureScoreEnabled || finished || !sessionId || !currentUserId) return undefined
+  if (!courtHasCurrentUser(currentUserId, court)) return undefined
+  if (friendly) {
+    return `/friendly/${sessionId}/games/${gameNumber}/courts/${encodeURIComponent(courtLabel)}/gesture-score`
+  }
+  if (competitionId && courtId) {
+    return `/competitions/${competitionId}/games/${gameNumber}/courts/${courtId}/gesture-score`
+  }
+  return undefined
+}
+
+export function courtHasCurrentUser(
   currentUserId: string | null | undefined,
   court: {
     playerIds?: string[]
@@ -112,6 +151,8 @@ export function CourtCard({
   court,
   finished,
   href,
+  gestureScoreHref,
+  gestureScoreLive = false,
   tvCompact = false,
   children,
   t,
@@ -121,6 +162,8 @@ export function CourtCard({
   court: LiveCourt | ScoringGameCourt
   finished: boolean
   href?: string
+  gestureScoreHref?: string
+  gestureScoreLive?: boolean
   tvCompact?: boolean
   children: ReactNode
   t: TranslateFn
@@ -148,6 +191,8 @@ export function CourtCard({
           currentUserId={currentUserId}
           court={court}
           finished={finished}
+          gestureScoreHref={gestureScoreHref}
+          gestureScoreLive={gestureScoreLive}
           tvCompact={tvCompact}
           t={t}
         />
@@ -506,6 +551,8 @@ function CourtLabelRow({
   currentUserId,
   court,
   finished,
+  gestureScoreHref,
+  gestureScoreLive = false,
   tvCompact = false,
   t,
 }: {
@@ -513,6 +560,8 @@ function CourtLabelRow({
   currentUserId?: string | null
   court: LiveCourt | ScoringGameCourt
   finished: boolean
+  gestureScoreHref?: string
+  gestureScoreLive?: boolean
   tvCompact?: boolean
   t: TranslateFn
 }) {
@@ -520,11 +569,19 @@ function CourtLabelRow({
   const titleClass = courtLabelClass(currentUserId, court, finished)
   return (
     <div
-      className={`flex items-center justify-center px-2 ${
+      className={`flex items-center justify-center gap-2 px-2 ${
         tvCompact ? 'tv-court-label-row min-h-20 py-3' : 'min-h-12 px-3 py-2'
       }`}
     >
-      <p className={`truncate text-center ${titleClass}${tvCompact ? ' tv-court-label !text-6xl' : ''}`}>{label}</p>
+      {gestureScoreHref ? (
+        <CourtGestureScoreButton href={gestureScoreHref} live={gestureScoreLive} />
+      ) : (
+        <span className="w-8 shrink-0" aria-hidden />
+      )}
+      <p className={`min-w-0 flex-1 truncate text-center ${titleClass}${tvCompact ? ' tv-court-label !text-6xl' : ''}`}>
+        {label}
+      </p>
+      <span className="w-8 shrink-0" aria-hidden />
     </div>
   )
 }

@@ -12,7 +12,7 @@ export function Layout() {
   const loc = useLocation()
   const onPlayerProfile = loc.pathname.startsWith('/players/')
   const isGamesHub = loc.pathname === '/friendly' || loc.pathname === '/competitive'
-  const isFriendlySession = /^\/friendly\/[^/]+$/.test(loc.pathname)
+  const isFriendlySession = /^\/friendly\/(?!new(?:\/|$))[^/]+$/.test(loc.pathname)
   const isCompetitionRun = /^\/competitions\/[^/]+\/run$/.test(loc.pathname)
   const showBottomNav =
     !onPlayerProfile && !isGesturePadRoute(loc.pathname) && !isCompetitionRun && !isFriendlySession

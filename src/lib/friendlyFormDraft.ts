@@ -22,6 +22,8 @@ export type FriendlyFormRulesSetup = {
   gameCount: number
   gameMinutes: number
   breakMinutes: number
+  sessionEndHour?: number
+  sessionEndMinute?: number
 }
 
 const STORAGE_KEY = 'successpadel:friendly-form-draft'
@@ -56,10 +58,10 @@ export function friendlyFormDefaults(): FriendlyFormValues {
     visibility: 'public',
     day: formatDateInput(new Date()),
     startHour: 18,
-    startMinute: 0,
+    startMinute: 10,
     playerSlots: Array.from({ length: FRIENDLY_MIN_PLAYERS }, () => ''),
     profileIds: Array.from({ length: FRIENDLY_MIN_PLAYERS }, () => null),
-    playMode: 'free',
+    playMode: 'organized',
     rulesSetup: defaultRulesSetup(),
     previewSeed: 0,
     skillLevel: DEFAULT_FRIENDLY_ORGANIZED_CONFIG.skillLevel ?? 'Low Inter',
@@ -82,6 +84,11 @@ function normalizeRulesSetup(raw: unknown): FriendlyFormRulesSetup {
     const n = typeof v === 'number' ? v : typeof v === 'string' ? parseInt(v, 10) : NaN
     return Number.isFinite(n) ? n : fallback
   }
+  const optionalTimePart = (v: unknown, max: number) => {
+    const n = typeof v === 'number' ? v : typeof v === 'string' ? parseInt(v, 10) : NaN
+    if (!Number.isFinite(n)) return undefined
+    return Math.max(0, Math.min(max, Math.floor(n)))
+  }
   return {
     ruleFormat: r.ruleFormat ?? base.ruleFormat,
     partnerStyle: r.partnerStyle ?? base.partnerStyle,
@@ -89,6 +96,8 @@ function normalizeRulesSetup(raw: unknown): FriendlyFormRulesSetup {
     gameCount: num(r.gameCount ?? (r as { games?: unknown }).games, base.gameCount),
     gameMinutes: num(r.gameMinutes, base.gameMinutes),
     breakMinutes: Math.max(GAME_SETUP_MIN_BREAK_MINUTES, num(r.breakMinutes, base.breakMinutes)),
+    sessionEndHour: optionalTimePart(r.sessionEndHour, 23),
+    sessionEndMinute: optionalTimePart(r.sessionEndMinute, 59),
   }
 }
 
@@ -98,6 +107,11 @@ function migrateDraft(raw: Record<string, unknown>): FriendlyFormValues {
     Array.isArray(raw.playerSlots) ? (raw.playerSlots as string[]) : defaults.playerSlots,
     Array.isArray(raw.profileIds) ? (raw.profileIds as (string | null)[]) : defaults.profileIds,
   )
+  const rulesSetup = normalizeRulesSetup(raw.rulesSetup)
+  const oldDefaultSchedule =
+    rulesSetup.gameCount === 7 &&
+    rulesSetup.gameMinutes === 14 &&
+    rulesSetup.breakMinutes === 3
   return {
     title: typeof raw.title === 'string' ? raw.title : defaults.title,
     visibility: raw.visibility === 'private' ? 'private' : 'public',
@@ -105,11 +119,13 @@ function migrateDraft(raw: Record<string, unknown>): FriendlyFormValues {
     startHour: typeof raw.startHour === 'number' ? raw.startHour : defaults.startHour,
     startMinute:
       typeof raw.startMinute === 'number'
-        ? raw.startMinute
+        ? oldDefaultSchedule && raw.startMinute === 0
+          ? defaults.startMinute
+          : raw.startMinute
         : defaults.startMinute,
     ...slots,
-    playMode: raw.playMode === 'organized' ? 'organized' : 'free',
-    rulesSetup: normalizeRulesSetup(raw.rulesSetup),
+    playMode: defaults.playMode,
+    rulesSetup: oldDefaultSchedule ? defaults.rulesSetup : rulesSetup,
     previewSeed: typeof raw.previewSeed === 'number' ? raw.previewSeed : defaults.previewSeed,
     skillLevel:
       typeof raw.skillLevel === 'string' ? (raw.skillLevel as SkillLevel) : defaults.skillLevel,
@@ -161,6 +177,8 @@ export function friendlyFormValuesFromGame(game: FriendlyGameRecord): FriendlyFo
       gameCount: cfg.gameCount,
       gameMinutes: cfg.gameMinutes,
       breakMinutes: cfg.breakMinutes,
+      sessionEndHour: cfg.sessionEndHour,
+      sessionEndMinute: cfg.sessionEndMinute,
     }),
     previewSeed: cfg.previewSeed ?? 0,
     skillLevel: cfg.skillLevel ?? defaults.skillLevel,

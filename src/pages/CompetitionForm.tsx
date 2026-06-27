@@ -26,7 +26,8 @@ import {
   type DuoTeamDraft,
 } from '../components/DuoTeamSlots'
 import { SetupCard } from '../components/cards/SetupCard'
-import { GameScheduleSetup, type GameScheduleSetupValues } from '../components/GameScheduleSetup'
+import type { GameScheduleSetupValues } from '../components/GameScheduleSetup'
+import { SessionSetupControls } from '../components/SessionSetupControls'
 import { useTranslation } from '../hooks/useTranslation'
 import { measureScheduleQuality, solveBalancedSchedule } from '../lib/balancedSchedule'
 import {
@@ -67,30 +68,6 @@ import {
   saveScheduleForSession,
 } from '../lib/persistCompetitionSchedule'
 import type { Profile, ScoringConfig } from '../lib/types'
-
-function Chip({
-  active,
-  children,
-  onClick,
-}: {
-  active: boolean
-  children: React.ReactNode
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-lg px-3 py-2 text-xs font-medium transition ${
-        active
-          ? 'bg-brand-accent text-white shadow-sm'
-          : 'border border-brand-border bg-brand-surface text-brand-text'
-      }`}
-    >
-      {children}
-    </button>
-  )
-}
 
 function bangkokDateFromIso(iso: string): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date(iso))
@@ -159,7 +136,7 @@ export function CompetitionForm() {
   const [createLeague, setCreateLeague] = useState(false)
   const [day, setDay] = useState(formatDateInput(new Date()))
   const [startHour, setStartHour] = useState(18)
-  const [startMinute, setStartMinute] = useState<CompetitionPlayStartMinute>(0)
+  const [startMinute, setStartMinute] = useState<CompetitionPlayStartMinute>(10)
   const [endHour, setEndHour] = useState(20)
   const [endMinute, setEndMinute] = useState(0)
   const [skillLevel, setSkillLevel] = useState<SkillLevel>('Low Inter')
@@ -850,160 +827,94 @@ export function CompetitionForm() {
       </Link>
 
       <SetupCard ruleChips={ruleChips}>
-        <div className="space-y-1.5">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-            {t('competition.formatLabel')}
-          </span>
-          <div className="flex flex-wrap gap-1.5">
-            <Chip
-              active={playerMode === 'singles'}
-              onClick={() => {
-                setPlayerMode('singles')
-                applyCourtCount(courtCount)
-              }}
-            >
-              {t('competition.formatSingles')}
-            </Chip>
-            <Chip
-              active={playerMode === 'duos'}
-              onClick={() => {
-                setPlayerMode('duos')
-                applyCourtCount(courtCount)
-              }}
-            >
-              {t('competition.formatDuos')}
-            </Chip>
-          </div>
-        </div>
-
-        <div className="space-y-1.5">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-            {t('competition.courts')}
-          </span>
-          <div
-            className={`flex flex-wrap gap-1.5 ${competitionStarted ? 'pointer-events-none opacity-60' : ''}`}
-          >
-            {COURT_COUNT_OPTIONS.map((n) => (
-              <Chip
-                key={n}
-                active={courtCount === n}
-                onClick={() => {
-                  if (!competitionStarted) applyCourtCount(n)
-                }}
-              >
-                {n}
-              </Chip>
-            ))}
-          </div>
-          <p className="text-xs text-brand-muted">{courtCaption}</p>
-        </div>
-
-        <GameScheduleSetup
-          value={{
-            gameCount: scheduleSetup.gameCount,
-            gameMinutes: scheduleSetup.gameMinutes,
-            breakMinutes: Math.max(GAME_SETUP_MIN_BREAK_MINUTES, scheduleSetup.breakMinutes),
+        <SessionSetupControls
+          formatLabel={t('competition.formatLabel')}
+          playerMode={playerMode}
+          playerModeOptions={[
+            { value: 'singles', label: t('competition.formatSingles') },
+            { value: 'duos', label: t('competition.formatDuos') },
+          ]}
+          onPlayerModeChange={(mode) => {
+            setPlayerMode(mode)
+            applyCourtCount(courtCount)
           }}
-          startValue={formatHourLabel(startHour, startMinute)}
-          endValue={formatHourLabel(endHour, endMinute)}
-          windowMinutes={showDateFields ? windowMinutes : null}
-          onStartChange={(value) => {
-            const { hour, minute } = parseTimeInput(value, startHour, startMinute)
-            setStartHour(hour)
-            setStartMinute(minute)
+          courtsLabel={t('competition.courts')}
+          courtCount={courtCount}
+          courtOptions={COURT_COUNT_OPTIONS}
+          courtCaption={courtCaption}
+          courtControlsDisabled={competitionStarted}
+          onCourtCountChange={(count) => {
+            if (!competitionStarted) applyCourtCount(count)
           }}
-          onEndChange={(value) => {
-            const { hour, minute } = parseTimeInput(value, endHour, endMinute)
-            setEndHour(hour)
-            setEndMinute(minute)
+          schedule={{
+            value: {
+              gameCount: scheduleSetup.gameCount,
+              gameMinutes: scheduleSetup.gameMinutes,
+              breakMinutes: Math.max(GAME_SETUP_MIN_BREAK_MINUTES, scheduleSetup.breakMinutes),
+            },
+            dateValue: showDateFields ? day : undefined,
+            onDateChange: showDateFields ? setDay : undefined,
+            startValue: formatHourLabel(startHour, startMinute),
+            endValue: formatHourLabel(endHour, endMinute),
+            windowMinutes: showDateFields ? windowMinutes : null,
+            onStartChange: (value) => {
+              const { hour, minute } = parseTimeInput(value, startHour, startMinute)
+              setStartHour(hour)
+              setStartMinute(minute)
+            },
+            onEndChange: (value) => {
+              const { hour, minute } = parseTimeInput(value, endHour, endMinute)
+              setEndHour(hour)
+              setEndMinute(minute)
+            },
+            onChange: (patch) => {
+              setScheduleSetup((prev) => ({
+                ...prev,
+                ...patch,
+                breakMinutes: Math.max(
+                  GAME_SETUP_MIN_BREAK_MINUTES,
+                  patch.breakMinutes ?? prev.breakMinutes,
+                ),
+              }))
+            },
           }}
-          onChange={(patch) => {
-            setScheduleSetup((prev) => ({
-              ...prev,
-              ...patch,
-              breakMinutes: Math.max(
-                GAME_SETUP_MIN_BREAK_MINUTES,
-                patch.breakMinutes ?? prev.breakMinutes,
-              ),
-            }))
+          scheduleNotice={
+            <>
+              {isLeagueWeek ? (
+                <p className="text-xs text-brand-muted">{t('competition.leagueDatesLater')}</p>
+              ) : null}
+              {isDuos && !id ? (
+                <label className="flex items-center gap-2 text-sm text-brand-text">
+                  <input
+                    type="checkbox"
+                    checked={createLeague}
+                    onChange={(e) => setCreateLeague(e.target.checked)}
+                    className="rounded border-brand-border"
+                  />
+                  {t('competition.createLeague')}
+                </label>
+              ) : null}
+              {!showDateFields ? (
+                <p className="text-xs text-brand-muted">{t('competition.leagueDatesLater')}</p>
+              ) : null}
+            </>
+          }
+          levelLabel="Level"
+          skillLevels={SKILL_LEVELS}
+          skillLevel={skillLevel}
+          onSkillLevelChange={setSkillLevel}
+          genderLabel="Gender"
+          genders={GENDERS}
+          gender={gender}
+          onGenderChange={setGender}
+          titleLabel="Title"
+          title={title}
+          titlePlaceholder={autoTitle}
+          onTitleChange={(value) => {
+            setTitle(value)
+            setTitleEdited(true)
           }}
         />
-
-        {isLeagueWeek ? (
-          <p className="text-xs text-brand-muted">{t('competition.leagueDatesLater')}</p>
-        ) : null}
-
-        {isDuos && !id ? (
-          <label className="flex items-center gap-2 text-sm text-brand-text">
-            <input
-              type="checkbox"
-              checked={createLeague}
-              onChange={(e) => setCreateLeague(e.target.checked)}
-              className="rounded border-brand-border"
-            />
-            {t('competition.createLeague')}
-          </label>
-        ) : null}
-
-        {showDateFields ? (
-          <div className="grid gap-2">
-            <label className="block min-w-0 space-y-1">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-                Day
-              </span>
-              <input
-                type="date"
-                value={day}
-                onChange={(e) => setDay(e.target.value)}
-                className="brand-input h-11"
-              />
-            </label>
-          </div>
-        ) : (
-          <p className="text-xs text-brand-muted">{t('competition.leagueDatesLater')}</p>
-        )}
-
-        <div className="space-y-1.5">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-            Level
-          </span>
-          <div className="flex flex-wrap gap-1.5">
-            {SKILL_LEVELS.map((level) => (
-              <Chip key={level} active={skillLevel === level} onClick={() => setSkillLevel(level)}>
-                {level}
-              </Chip>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-1.5">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-            Gender
-          </span>
-          <div className="flex flex-wrap gap-1.5">
-            {GENDERS.map((g) => (
-              <Chip key={g} active={gender === g} onClick={() => setGender(g)}>
-                {g}
-              </Chip>
-            ))}
-          </div>
-        </div>
-
-        <label className="block space-y-1">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-            Title
-          </span>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => {
-              setTitle(e.target.value)
-              setTitleEdited(true)
-            }}
-            placeholder={autoTitle}
-            className="brand-input"
-          />
-        </label>
 
         <div className="border-t border-brand-border/40 pt-3" />
 

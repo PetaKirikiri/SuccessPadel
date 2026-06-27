@@ -2,9 +2,9 @@ import type { ScoringConfig } from './types'
 
 /** One schedule layout for every competition — duos, singles, all divisions. */
 export const COMPETITION_SCHEDULE = {
-  games: 7,
-  gameMinutes: 14,
-  breakMinutes: 3,
+  games: 6,
+  gameMinutes: 15,
+  breakMinutes: 4,
   leadInMinutes: 0,
 } as const
 
