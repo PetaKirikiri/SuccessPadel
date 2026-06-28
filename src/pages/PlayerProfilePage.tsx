@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useRef, useState, useId } from 'react'
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { AppTopBar } from '../components/AppTopBar'
-import { AppBottomNav } from '../components/AppBottomNav'
-import { AppShellColumn } from '../components/AppShellColumn'
-import type { LeaderboardEntry } from '../components/CompetitionLeaderboard'
+import { AppShellColumn } from '../components/AppShell'
+import type { LeaderboardEntry } from '../lib/leaderboardTypes'
 import { FriendlyDeleteConfirm } from '../components/FriendlyDeleteConfirm'
 import { LineAppBookmark } from '../components/LineAppBookmark'
 import { LinePlayerLinkModal } from '../components/LinePlayerLinkModal'
@@ -23,7 +21,7 @@ import { resolvePlayerProfile } from '../lib/playerProfile'
 import { saveClaimPadelPlayer } from '../lib/authClaimPlayer'
 import { adminDeletePlayer, canAdminDeletePlayer } from '../lib/playerDelete'
 import { playerProfileShareUrl, sharePlayerProfile } from '../lib/playerProfileShare'
-import { playerNameSlug, playerProfilePath } from '../lib/playerProfileSlug'
+import { playerNameSlug } from '../lib/playerProfileSlug'
 import { uploadProfileAvatar, validateProfileAvatar } from '../lib/profileAvatar'
 import { resolveProfileAvatarUrl } from '../lib/resolveProfileAvatar'
 import { resolveGameSpriteUrl } from '../lib/pixelAvatar/resolveGameSprite'
@@ -482,42 +480,32 @@ export function PlayerProfilePage() {
     navigate(exitPath)
   }
 
+  const showBack = Boolean(state?.from) || !isOwnProfile
+
   if (!playerId) {
     return (
       <div className="game-bg flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">
-        <AppTopBar>
+        <main
+          data-scroll-y
+          className="scroll-y flex flex-1 flex-col px-4 pb-[calc(var(--app-shell-dock-height)+0.5rem)] pt-[max(0.75rem,env(safe-area-inset-top))]"
+        >
           <button
             type="button"
             onClick={() => navigate('/friendly')}
-            className="text-sm font-medium text-brand-accent md:text-base"
+            className="self-start text-sm font-medium text-brand-accent"
           >
-            {t('common.back')}
+            ← {t('common.back')}
           </button>
-        </AppTopBar>
-        <main className="flex flex-1 items-center justify-center px-6">
-          <p className="text-center text-sm text-brand-muted">{t('playerProfile.notFound')}</p>
+          <p className="flex flex-1 items-center justify-center text-center text-sm text-brand-muted">
+            {t('playerProfile.notFound')}
+          </p>
         </main>
       </div>
     )
   }
 
   return (
-    <div className="game-bg flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">
-      <AppTopBar>
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          <button
-            type="button"
-            onClick={goBack}
-            className="shrink-0 text-sm font-medium text-brand-accent md:text-base"
-          >
-            {t('common.back')}
-          </button>
-          <p className="min-w-0 truncate text-sm font-medium text-brand-primary md:text-base">
-            {displayName}
-          </p>
-        </div>
-      </AppTopBar>
-
+    <div className="profile-page game-bg flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">
       {canEditProfile && editableProfile ? (
         <input
           id={photoInputId}
@@ -530,11 +518,17 @@ export function PlayerProfilePage() {
         />
       ) : null}
 
-      <main
-        data-scroll-y
-        className="scroll-y min-h-0 min-w-0 flex-1 pt-2 pb-[calc(var(--app-shell-dock-height)+0.5rem)]"
-      >
+      <main data-scroll-y className="profile-scroll scroll-y min-h-0 min-w-0 flex-1">
         <AppShellColumn fill={false} className="space-y-3 pb-8">
+          {showBack ? (
+            <button
+              type="button"
+              onClick={goBack}
+              className="profile-back self-start px-1 text-sm font-medium text-brand-accent"
+            >
+              ← {t('common.back')}
+            </button>
+          ) : null}
           {lineHandshakeWorking ? (
             <div className="pointer-events-none fixed inset-0 z-[300] flex items-center justify-center bg-brand-bg/90 px-6 dark:bg-black/70">
               <p className="text-center text-sm text-brand-muted">{t('lineLink.signingInLine')}</p>
@@ -560,16 +554,6 @@ export function PlayerProfilePage() {
                   name={displayName}
                   avatarUrl={avatarUrl}
                   showdownSpriteUrl={showdownSpriteUrl}
-                  fighterEditTo={
-                    canEditProfile && playerId
-                      ? playerProfilePath({
-                          id: profileId ?? padelPlayerId ?? playerId,
-                          displayName,
-                          suffix: '/fighter',
-                        })
-                      : undefined
-                  }
-                  fighterEditLabel={t('profile.showdownPick')}
                   memberSince={isOwnProfile ? null : memberSince}
                   canAddLine={canConnectLine && !showInlineLineSetup}
                   onAddLine={
@@ -692,8 +676,6 @@ export function PlayerProfilePage() {
           )}
         </AppShellColumn>
       </main>
-
-      <AppBottomNav />
 
       {linkTarget && (
         <LinePlayerLinkModal

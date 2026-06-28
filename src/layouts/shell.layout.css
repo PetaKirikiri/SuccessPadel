@@ -1,0 +1,25 @@
+/* App shell — paper, main slot, bottom dock */
+
+.shell-paper {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.shell-main {
+  min-height: 0;
+  min-width: 0;
+  flex: 1 1 0%;
+}
+
+html[data-viewport='mobile'] .shell-main--profile {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+
+.shell-dock {
+  flex-shrink: 0;
+  width: 100%;
+}

@@ -12,6 +12,7 @@ export function resolveGameSpriteUrl(
   pose: ShowdownPose = 'stance',
 ): string | null {
   const config = normalizePixelAvatarConfig(profile.pixel_avatar)
+  if (config?.reference?.startsWith('/profile-videos/')) return config.reference
   const characterId = resolveGameCharacterId(config)
   return resolveGameSpriteForCharacter(characterId, pose)
 }

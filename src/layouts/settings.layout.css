@@ -1,0 +1,14 @@
+/* Settings / setup forms */
+
+.settings-card {
+  width: 100%;
+  min-width: 0;
+}
+
+html[data-viewport='mobile'] .settings-card {
+  padding: 1rem;
+}
+
+html[data-viewport='web'] .settings-card {
+  padding: 1.25rem;
+}

@@ -7,9 +7,8 @@ export function isGesturePadRoute(pathname: string): boolean {
     /\/gesture-score-test\/?$/.test(pathname) ||
     /\/dev\/gesture-score-test\/?$/.test(pathname) ||
     /\/live-court\/?$/.test(pathname) ||
-    /\/friendly\/[^/]+\/(pad|heatmap)\/?$/.test(pathname) ||
-    /\/friendly\/[^/]+\/games\/[^/]+\/courts\/[^/]+\/?$/.test(pathname) ||
-    /^\/practice\/?$/.test(pathname)
+    /\/friendly\/[^/]+\/pad\/?$/.test(pathname) ||
+    /\/friendly\/[^/]+\/games\/[^/]+\/courts\/[^/]+\/?$/.test(pathname)
   )
 }
 

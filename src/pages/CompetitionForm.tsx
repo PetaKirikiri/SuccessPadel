@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import {
   clubTimePartsFromDate,
   formatDateInput,
@@ -13,7 +13,7 @@ import {
   type CompetitionPlayerMode,
 } from '../lib/competitionFormDraft'
 import type { CompetitionPlayer } from '../hooks/useCompetitions'
-import { MemberPlayerSlots, type PadelPlayerOption } from '../components/MemberPlayerSlots'
+import { MemberPlayerSlots, type PadelPlayerOption } from '../components/setup/MemberPlayerSlots'
 import {
   DuoTeamSlots,
   duoTeamsComplete,
@@ -24,10 +24,10 @@ import {
   emptyDuoTeams,
   filledDuoPlayerCount,
   type DuoTeamDraft,
-} from '../components/DuoTeamSlots'
-import { SetupCard } from '../components/cards/SetupCard'
-import type { GameScheduleSetupValues } from '../components/GameScheduleSetup'
-import { SessionSetupControls } from '../components/SessionSetupControls'
+} from '../components/setup/DuoTeamSlots'
+import { SetupCard } from '../components/setup/SetupCard'
+import type { GameScheduleSetupValues } from '../components/setup/GameScheduleSetup'
+import { SessionSetupControls } from '../components/setup/SessionSetupControls'
 import { useTranslation } from '../hooks/useTranslation'
 import { measureScheduleQuality, solveBalancedSchedule } from '../lib/balancedSchedule'
 import {
@@ -62,7 +62,6 @@ import {
   type CourtCount,
 } from '../lib/competitionLayout'
 import { GAME_SETUP_MIN_BREAK_MINUTES } from '../lib/gameSchedule'
-import { ruleChips as sessionRuleChips } from '../lib/sessionDisplay'
 import { supabase } from '../lib/supabaseClient'
 import {
   saveScheduleForSession,
@@ -792,41 +791,16 @@ export function CompetitionForm() {
     )
     return measureScheduleQuality(rounds, previewSlotCount)
   }, [previewSeed, filledNameCount, slotCount, isDuos, scheduleSetup.gameCount])
-  const ruleChips = useMemo(
-    () =>
-      sessionRuleChips({ kind: 'preset', mode: playerMode }, t, {
-        skillLevel,
-        gender,
-        courtCount,
-        schedule: competitionSchedule,
-      }),
-    [playerMode, t, skillLevel, gender, courtCount, competitionSchedule],
-  )
-  const courtCaption = useMemo(() => {
-    const players = playersFromCourtCount(courtCount)
-    if (isDuos) {
-      return t('competition.courtsTeamsPlayers', {
-        courts: courtCount,
-        teams: teamsFromCourtCount(courtCount),
-        players,
-      })
-    }
-    return t('competition.courtsPlayers', { courts: courtCount, players })
-  }, [courtCount, isDuos, t])
 
   return (
     <form
-      className="w-full min-w-0 space-y-3 pb-4"
+      className="w-full space-y-3 pb-[calc(var(--app-shell-dock-height)+2rem)]"
       onSubmit={(e) => {
         e.preventDefault()
         void save()
       }}
     >
-      <Link to="/competitive" className="text-sm font-medium text-brand-accent">
-        ← Back
-      </Link>
-
-      <SetupCard ruleChips={ruleChips}>
+      <SetupCard>
         <SessionSetupControls
           formatLabel={t('competition.formatLabel')}
           playerMode={playerMode}
@@ -841,7 +815,6 @@ export function CompetitionForm() {
           courtsLabel={t('competition.courts')}
           courtCount={courtCount}
           courtOptions={COURT_COUNT_OPTIONS}
-          courtCaption={courtCaption}
           courtControlsDisabled={competitionStarted}
           onCourtCountChange={(count) => {
             if (!competitionStarted) applyCourtCount(count)
@@ -916,14 +889,6 @@ export function CompetitionForm() {
           }}
         />
 
-        <div className="border-t border-brand-border/40 pt-3" />
-
-        <div className="space-y-1">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">
-            {isDuos ? t('competition.duoTeams') : t('competition.playerNames')}
-          </p>
-          <p className="text-xs text-brand-muted">{t('competition.rosterBlankSlotsOk')}</p>
-        </div>
         {!rosterHydrated && id ? (
           <p className="text-sm text-brand-muted">{t('common.loading')}</p>
         ) : isDuos ? (
@@ -933,6 +898,7 @@ export function CompetitionForm() {
             padelPlayers={padelPlayers}
             onChange={setDuoTeams}
             disabled={busy}
+            layout="grid"
           />
         ) : (
           <MemberPlayerSlots

@@ -1,0 +1,47 @@
+.profile-page {
+  display: flex;
+  min-height: 0;
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.profile-scroll {
+  min-height: 0;
+  min-width: 0;
+  flex: 1 1 0%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(var(--app-shell-dock-height) + 0.5rem);
+  padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
+}
+
+html[data-viewport='mobile'] .profile-banner {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+html[data-viewport='mobile'] .profile-banner__actions {
+  width: 100%;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+html[data-viewport='mobile'] .profile-banner__actions button {
+  width: 100%;
+  justify-content: center;
+}
+
+html[data-viewport='web'] .profile-banner {
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+html[data-viewport='web'] .profile-banner__actions {
+  flex-direction: column;
+  align-items: flex-end;
+}

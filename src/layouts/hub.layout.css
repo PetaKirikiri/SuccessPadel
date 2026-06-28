@@ -1,0 +1,54 @@
+.hub-root {
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  flex: 1 1 0%;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.hub-gender-bar {
+  display: flex;
+  flex-shrink: 0;
+  justify-content: flex-end;
+  padding-bottom: 0.5rem;
+  padding-top: 0.125rem;
+}
+
+html[data-viewport='mobile'] .hub-gender-bar {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+html[data-viewport='mobile'] .hub-list {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+html[data-viewport='web'] .hub-gender-bar {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+html[data-viewport='web'] .hub-list {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+.hub-tab-header {
+  display: flex;
+  width: 100%;
+  flex-shrink: 0;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0;
+  border-bottom: 1px solid rgb(96 45 36 / 0.2);
+  background: var(--color-brand-bg-alt);
+}
+
+html[data-viewport='mobile'] .hub-empty {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}

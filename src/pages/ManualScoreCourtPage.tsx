@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
-import { CourtMatchCell, ScoreStepper } from '../components/cards/CourtCard'
+import { CourtMatchCell, ScoreStepper } from '../components/gameCard/CourtCard'
 import { useAuth } from '../hooks/useAuth'
 import { useFriendlyGame } from '../hooks/useFriendlyGame'
 import { useMatchGestureLog } from '../hooks/useMatchGestureLog'

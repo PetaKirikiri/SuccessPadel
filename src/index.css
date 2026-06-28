@@ -1,6 +1,11 @@
 @import 'tailwindcss';
+@import './layouts/index.css';
 
 @custom-variant dark (&:where(.dark, .dark *));
+@custom-variant viewport-mobile (&:where(html[data-viewport="mobile"] *));
+@custom-variant viewport-tablet (&:where(html[data-viewport="tablet"] *));
+@custom-variant viewport-web (&:where(html[data-viewport="web"] *));
+@custom-variant viewport-tv (&:where(html[data-viewport="tv"] *));
 
 @theme {
   --font-sans: 'Roboto', ui-sans-serif, system-ui, sans-serif;
@@ -26,36 +31,33 @@
 
 html.dark {
   --color-brand-primary: #f8fafc;
-  --color-brand-accent: #60a5fa;
-  --color-brand-accent-light: #34d399;
-  --color-brand-bg: #0b2a4a;
-  --color-brand-bg-alt: #0e2c4d;
+  --color-brand-accent: #4da3ff;
+  --color-brand-accent-light: #7dd3fc;
+  --color-brand-bg: #061d36;
+  --color-brand-bg-alt: #0b2a4a;
   --color-brand-surface: #11355c;
-  --color-brand-border: rgb(255 255 255 / 0.15);
-  --color-brand-muted: rgb(255 255 255 / 0.55);
+  --color-brand-border: rgb(125 211 252 / 0.24);
+  --color-brand-muted: rgb(216 238 255 / 0.62);
   --color-brand-text: rgb(255 255 255 / 0.92);
-  --color-brand-sage: #94a3b8;
+  --color-brand-sage: #bfe5ff;
   --color-brand-tan: #7dd3fc;
-  --color-brand-gold: #fbbf24;
-  --color-brand-gold-light: rgb(251 191 36 / 0.15);
-  --color-brand-gold-dark: #fde68a;
-  --color-brand-fun: #34d399;
-  --color-brand-fun-light: rgb(52 211 153 / 0.15);
+  --color-brand-gold: #efff3d;
+  --color-brand-gold-light: rgb(239 255 61 / 0.16);
+  --color-brand-gold-dark: #f4ff7a;
+  --color-brand-fun: #2dffc4;
+  --color-brand-fun-light: rgb(45 255 196 / 0.16);
 }
 
 html.dark .game-bg {
   background:
-    radial-gradient(ellipse 90% 45% at 50% -5%, rgb(96 165 250 / 0.14), transparent),
-    radial-gradient(ellipse 70% 35% at 100% 100%, rgb(52 211 153 / 0.1), transparent),
+    radial-gradient(ellipse 90% 45% at 50% -5%, rgb(77 163 255 / 0.16), transparent),
+    radial-gradient(ellipse 70% 35% at 100% 100%, rgb(45 255 196 / 0.11), transparent),
     linear-gradient(180deg, var(--color-brand-bg) 0%, var(--color-brand-bg-alt) 100%);
 }
 
 html.dark .app-shell-panel {
-  border-color: rgb(255 255 255 / 0.15);
-  background: rgb(255 255 255 / 0.03);
-  box-shadow:
-    0 4px 16px -4px rgb(0 0 0 / 0.35),
-    inset 0 1px 0 rgb(255 255 255 / 0.06);
+  background: transparent;
+  box-shadow: none;
 }
 
 html.dark .app-shell-panel-body,
@@ -67,8 +69,8 @@ html.dark .app-shell-dock-inner {
 }
 
 html.dark .app-shell-dock-inner {
-  border-color: rgb(255 255 255 / 0.15);
-  box-shadow: 0 8px 22px -10px rgb(0 0 0 / 0.45);
+  border-color: transparent;
+  box-shadow: none;
 }
 
 html.dark .game-card {
@@ -81,9 +83,9 @@ html.dark .game-card-racetrack::before {
   background: conic-gradient(
     from 0deg,
     transparent 0deg 290deg,
-    rgb(96 165 250 / 0.25) 310deg,
-    rgb(96 165 250 / 0.55) 330deg,
-    rgb(96 165 250 / 0.25) 350deg,
+    rgb(77 163 255 / 0.25) 310deg,
+    rgb(77 163 255 / 0.55) 330deg,
+    rgb(77 163 255 / 0.25) 350deg,
     transparent 360deg
   );
 }
@@ -96,14 +98,14 @@ html.dark .game-tab-selected {
 html.dark .game-tab-fun {
   background: linear-gradient(
     180deg,
-    rgb(52 211 153 / 0.22) 0%,
-    rgb(52 211 153 / 0.1) 100%
+    rgb(45 255 196 / 0.22) 0%,
+    rgb(45 255 196 / 0.1) 100%
   );
   color: #6ee7b7;
 }
 
 html.dark .brand-btn {
-  background: #60a5fa;
+  background: #4da3ff;
 }
 
 html.dark .brand-btn-outline {
@@ -166,7 +168,7 @@ body {
   flex-direction: column;
   overflow: hidden;
   overscroll-behavior: none;
-  touch-action: none;
+  touch-action: pan-y;
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
   @apply bg-brand-bg;
@@ -194,16 +196,13 @@ body {
     linear-gradient(180deg, var(--color-brand-bg) 0%, var(--color-brand-bg-alt) 100%);
 }
 
-/** Unified shell: scroll body + tab footer share one subtle frame (aligned with game cards). */
+/** Main content frame — no extra border/inset box; pages own their padding. */
 .app-shell-panel {
-  @apply flex h-0 min-h-0 min-w-0 flex-1 basis-0 flex-col overflow-hidden rounded-2xl border border-brand-primary/25 bg-brand-bg-alt;
-  box-shadow:
-    0 4px 16px -4px rgb(96 45 36 / 0.18),
-    inset 0 1px 0 rgb(255 255 255 / 0.5);
+  @apply flex h-0 min-h-0 min-w-0 flex-1 basis-0 flex-col overflow-hidden bg-transparent;
 }
 
 .app-shell-panel-body {
-  @apply min-h-0 min-w-0 flex-1 basis-0 overflow-x-hidden bg-brand-bg-alt;
+  @apply min-h-0 min-w-0 flex-1 basis-0 overflow-x-hidden bg-transparent;
   overflow-y: auto;
   overscroll-behavior: contain;
   touch-action: pan-y;
@@ -211,12 +210,11 @@ body {
 }
 
 .app-shell-panel-slot {
-  @apply flex min-h-0 min-w-0 flex-1 basis-0 flex-col overflow-hidden bg-brand-bg-alt;
+  @apply flex min-h-0 min-w-0 flex-1 basis-0 flex-col overflow-hidden bg-transparent;
 }
 
-/** Breathing room between the shell frame and inner cards/content. */
 .app-shell-panel-inset {
-  @apply px-2.5 pb-2.5 pt-2;
+  @apply px-1.5 pb-1.5 pt-1;
 }
 
 .app-shell-dock {
@@ -224,8 +222,7 @@ body {
 }
 
 .app-shell-dock-inner {
-  @apply mx-auto flex w-full max-w-full flex-row gap-0 px-2 pt-1 md:max-w-6xl lg:max-w-7xl;
-  box-shadow: 0 -8px 22px -18px rgb(96 45 36 / 0.34);
+  @apply mx-auto flex w-full max-w-full flex-row gap-0 px-0 pt-0;
   padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
 }
 
@@ -289,154 +286,18 @@ body {
   @apply h-5 w-5 shrink-0 md:h-[1.35rem] md:w-[1.35rem];
 }
 
-.css-icon {
-  position: relative;
-  display: inline-block;
-  color: currentColor;
+.nav-raster-icon {
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
 }
 
-.css-icon::before,
-.css-icon::after {
-  content: "";
-  position: absolute;
-  box-sizing: border-box;
-}
-
-.css-icon-current {
-  border: 2.5px solid currentColor;
-  border-radius: 0.28rem;
-}
-
-.css-icon-current::before {
-  left: 17%;
-  right: 17%;
-  top: 31%;
-  border-top: 2.5px solid currentColor;
-}
-
-.css-icon-current::after {
-  left: 24%;
-  top: -18%;
-  width: 52%;
-  height: 24%;
-  border-left: 2.5px solid currentColor;
-  border-right: 2.5px solid currentColor;
-}
-
-.css-icon-clock {
-  border: 2.5px solid currentColor;
-  border-radius: 9999px;
-}
-
-.css-icon-clock::before {
-  left: 48%;
-  top: 20%;
-  height: 34%;
-  border-left: 2.5px solid currentColor;
-  border-radius: 9999px;
-}
-
-.css-icon-clock::after {
-  left: 48%;
-  top: 50%;
-  width: 29%;
-  border-top: 2.5px solid currentColor;
-  border-radius: 9999px;
-  transform: rotate(27deg);
-  transform-origin: left center;
-}
-
-.css-icon-grid::before {
-  inset: 8%;
-  background:
-    linear-gradient(currentColor 0 0) 0 0 / 38% 38% no-repeat,
-    linear-gradient(currentColor 0 0) 100% 0 / 38% 38% no-repeat,
-    linear-gradient(currentColor 0 0) 0 100% / 38% 38% no-repeat,
-    linear-gradient(currentColor 0 0) 100% 100% / 38% 38% no-repeat;
-  border-radius: 0.18rem;
-}
-
-.css-icon-person::before {
-  left: 30%;
-  top: 8%;
-  width: 40%;
-  height: 40%;
-  border: 2.5px solid currentColor;
-  border-radius: 9999px;
-}
-
-.css-icon-person::after {
-  left: 18%;
-  right: 18%;
-  bottom: 8%;
-  height: 42%;
-  border: 2.5px solid currentColor;
-  border-bottom: 0;
-  border-radius: 9999px 9999px 0 0;
-}
-
-.css-icon-trophy::before {
-  left: 25%;
-  top: 8%;
-  width: 50%;
-  height: 48%;
-  border: 2.5px solid currentColor;
-  border-radius: 0.24rem 0.24rem 0.5rem 0.5rem;
-}
-
-.css-icon-trophy::after {
-  left: 30%;
-  bottom: 8%;
-  width: 40%;
-  height: 34%;
-  border-bottom: 2.5px solid currentColor;
-  border-left: 2.5px solid currentColor;
-  border-right: 2.5px solid currentColor;
-  border-radius: 0 0 0.22rem 0.22rem;
-}
-
-.css-icon-trophy {
-  background:
-    radial-gradient(circle at 15% 29%, transparent 28%, currentColor 30% 39%, transparent 41%) 0 0 / 50% 58% no-repeat,
-    radial-gradient(circle at 85% 29%, transparent 28%, currentColor 30% 39%, transparent 41%) 100% 0 / 50% 58% no-repeat;
-}
-
-.friendly-smile-icon {
-  position: relative;
-  display: inline-block;
-  border: 2.5px solid currentColor;
-  border-radius: 9999px;
-  color: rgb(45 255 183);
-  filter: drop-shadow(0 0 7px rgb(45 255 183 / 0.24));
-}
-
-.friendly-smile-eye {
-  position: absolute;
-  top: 31%;
-  width: 13%;
-  height: 13%;
-  border-radius: 9999px;
-  background: currentColor;
-}
-
-.friendly-smile-eye-left {
-  left: 29%;
-}
-
-.friendly-smile-eye-right {
-  right: 29%;
-}
-
-.friendly-smile-mouth {
-  position: absolute;
-  left: 27%;
-  right: 27%;
-  bottom: 25%;
-  height: 28%;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
-  border-left: 2px solid currentColor;
-  border-radius: 0 0 9999px 9999px;
+.nav-raster-icon-yellow {
+  filter:
+    hue-rotate(18deg)
+    saturate(1.9)
+    brightness(1.18)
+    drop-shadow(0 0 8px rgb(239 255 61 / 0.45));
 }
 
 .game-tab-active,
@@ -473,127 +334,176 @@ body {
 }
 
 .game-tab-competition .game-tab-icon {
-  color: rgb(255 214 92);
-  filter: drop-shadow(0 0 7px rgb(255 214 92 / 0.24));
+  filter:
+    hue-rotate(18deg)
+    saturate(1.9)
+    brightness(1.18)
+    drop-shadow(0 0 8px rgb(239 255 61 / 0.45));
 }
 
-.game-tab .css-icon-person {
-  color: rgb(136 205 255);
+.invite-card-gender-controls {
+  margin-top: 0;
 }
 
-.gender-css-icon {
-  position: relative;
-  display: inline-block;
+.invite-card-gender-controls .gender-raster-icon {
   width: 1.55rem;
   height: 1.55rem;
-  color: currentColor;
-  filter: drop-shadow(0 0 7px currentColor);
 }
 
-.gender-css-icon::before,
-.gender-css-icon::after {
-  content: "";
-  position: absolute;
-  box-sizing: border-box;
-}
-
-.gender-css-icon-men::before,
-.gender-css-icon-women::before {
-  left: 22%;
-  top: 12%;
-  width: 56%;
-  height: 56%;
-  border: 3px solid currentColor;
-  border-radius: 9999px;
-}
-
-.gender-css-icon-men::after {
-  right: 2%;
-  top: 3%;
-  width: 38%;
-  height: 38%;
-  border-top: 3px solid currentColor;
-  border-right: 3px solid currentColor;
-  transform: rotate(1deg);
-}
-
-.gender-css-icon-women::after {
-  left: 47%;
-  top: 64%;
-  height: 35%;
-  border-left: 3px solid currentColor;
-  box-shadow: -0.22rem 0.33rem 0 -0.1rem currentColor, 0.22rem 0.33rem 0 -0.1rem currentColor;
-}
-
-.gender-css-icon-mixed::before {
-  left: 8%;
-  top: 13%;
-  width: 46%;
-  height: 46%;
-  border: 3px solid rgb(255 143 216);
-  border-radius: 9999px;
-}
-
-.gender-css-icon-mixed::after {
-  right: 8%;
-  top: 13%;
-  width: 46%;
-  height: 46%;
-  border: 3px solid rgb(110 215 255);
-  border-radius: 9999px;
-  box-shadow:
-    -0.36rem 0.65rem 0 -0.2rem rgb(255 143 216),
-    0.22rem 0.65rem 0 -0.2rem rgb(110 215 255);
+.gender-raster-icon {
+  display: block;
+  width: 1.9rem;
+  height: 1.9rem;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgb(77 163 255 / 0.35));
+  pointer-events: none;
 }
 
 .game-card {
   @apply w-full max-w-full min-w-0 rounded-2xl border border-brand-border bg-brand-surface p-4 shadow-sm;
 }
 
-.invite-card-carousel {
-  padding-inline: 0;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
+/* Shared rule badges — equal width per grid (widest chip sets --rule-chip-width). */
+.rule-chip-grid {
+  display: grid;
+  width: max-content;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  gap: 0.375rem;
 }
 
-.invite-card-carousel::-webkit-scrollbar {
-  display: none;
+.rule-chip-grid--cols-2 {
+  grid-template-columns: repeat(2, var(--rule-chip-width, max-content));
+}
+
+.rule-chip-grid--cols-3 {
+  grid-template-columns: repeat(3, var(--rule-chip-width, max-content));
+}
+
+.rule-chip-grid__item {
+  box-sizing: border-box;
+  display: flex;
+  width: var(--rule-chip-width, auto);
+  min-width: 0;
+  cursor: pointer;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.375rem;
+  border-radius: 0.5rem;
+  border: 2px solid color-mix(in srgb, var(--color-brand-primary) 30%, transparent);
+  background: var(--color-brand-bg-alt);
+  transition: opacity 0.15s ease;
+}
+
+.rule-chip-grid__item:active {
+  opacity: 0.8;
+}
+
+.rule-chip-grid__label {
+  min-width: 0;
+  flex: 1 1 0%;
+  white-space: nowrap;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-brand-primary);
+}
+
+.rule-chip-grid__icon {
+  flex-shrink: 0;
+  color: var(--color-brand-accent);
+}
+
+.rule-chip-grid--default {
+  gap: 0.375rem;
+}
+
+.rule-chip-grid--default .rule-chip-grid__item {
+  min-height: 2.5rem;
+  padding: 0.5rem 0.625rem 0.5rem 0.75rem;
+}
+
+.rule-chip-grid--default .rule-chip-grid__label {
+  font-size: 0.875rem;
+}
+
+.rule-chip-grid--default .rule-chip-grid__icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.rule-chip-grid--inline {
+  gap: 0.375rem;
+}
+
+.rule-chip-grid--inline .rule-chip-grid__item {
+  min-height: 2.35rem;
+  padding: 0.25rem 0.5rem 0.25rem 0.625rem;
+}
+
+.rule-chip-grid--inline .rule-chip-grid__label {
+  font-size: 0.625rem;
+}
+
+.rule-chip-grid--inline .rule-chip-grid__icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.rule-chip-grid--compact .rule-chip-grid__item {
+  min-height: 2rem;
+  padding: 0.125rem 0.5rem 0.125rem 0.5rem;
+}
+
+.rule-chip-grid--compact .rule-chip-grid__label {
+  font-size: 0.625rem;
+  font-weight: 900;
+}
+
+.rule-chip-grid--compact .rule-chip-grid__icon {
+  width: 1rem;
+  height: 1rem;
 }
 
 .invite-card-carousel-item {
   min-width: 100%;
   max-width: 100%;
-  @apply shrink-0 snap-center;
+  @apply flex h-full w-full min-h-0 shrink-0 flex-1 flex-col;
 }
 
-.invite-carousel-btn {
-  position: absolute;
-  top: 50%;
-  z-index: 45;
-  display: inline-flex;
-  width: 2rem;
-  height: 4rem;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid rgb(96 165 250 / 0.65);
-  border-radius: 9999px;
-  background: rgb(12 45 78 / 0.72);
-  color: rgb(136 205 255);
-  font-size: 2rem;
-  font-family: ui-serif, Georgia, serif;
-  font-weight: 900;
-  line-height: 1;
-  text-shadow: 0 0 10px rgb(96 165 250 / 0.45);
-  transform: translateY(-50%);
-  box-shadow: 0 0 18px rgb(37 99 235 / 0.18);
+.invite-roster-grid {
+  grid-template-columns: repeat(var(--roster-cols-mobile, 2), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--roster-rows-mobile, 1), minmax(0, 1fr));
+  align-content: stretch;
+  align-items: stretch;
 }
 
-.invite-carousel-btn-left {
-  left: 0.35rem;
+.invite-roster-chip {
+  box-sizing: border-box;
+  display: flex;
+  width: min(var(--roster-chip-width, 100%), 100%);
+  max-width: 100%;
+  min-width: 0;
 }
 
-.invite-carousel-btn-right {
-  right: 0.35rem;
+.invite-duo-team-players {
+  align-items: stretch;
+}
+
+.invite-roster-grid > li {
+  min-height: 0;
+}
+
+.invite-roster-grid--fill > li {
+  height: 100%;
+}
+
+@media (min-width: 640px) {
+  .invite-roster-grid {
+    grid-template-columns: repeat(var(--roster-cols, 2), minmax(0, 1fr));
+    grid-template-rows: repeat(var(--roster-rows, 1), minmax(0, 1fr));
+  }
 }
 
 .game-card.p-0 {
@@ -1149,263 +1059,6 @@ html[data-tv-kiosk] body > :not(#root) {
     flex: 1 1 0%;
   }
 
-  .tv-game-carousel {
-    display: flex;
-    min-height: 0;
-    flex: 1 1 0%;
-    flex-direction: column;
-    padding-inline: clamp(0.5rem, 1vw, 1rem);
-  }
-
-  .tv-game-carousel > :not(.tv-game-carousel-side-btn) {
-    display: flex;
-    min-height: 0;
-    flex: 1 1 0%;
-    flex-direction: column;
-  }
-
-  .tv-game-card-racetrack > .tv-game-card {
-    min-height: 0;
-    flex: 1 1 0%;
-  }
-
-  .tv-game-card-racetrack {
-    padding: 0;
-    overflow: visible;
-  }
-
-  .tv-game-card-racetrack::before {
-    display: none;
-  }
-
-  .tv-game-card {
-    min-height: 0;
-    flex: 1 1 0%;
-    border-width: 0 !important;
-    border-radius: 0 !important;
-    background: var(--color-brand-bg-alt) !important;
-    overflow: visible !important;
-    box-shadow: none !important;
-  }
-
-  .tv-game-courts-body {
-    display: flex;
-    min-height: 0;
-    flex: 1 1 0%;
-    flex-direction: column;
-    background: var(--color-brand-bg-alt);
-  }
-
-  .tv-game-card > :first-child {
-    flex-shrink: 0;
-  }
-
-  .play-game-carousel .tv-game-courts-grid {
-    overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-y;
-  }
-
-  .tv-game-courts-grid {
-    display: grid;
-    min-height: 0;
-    flex: 1 1 0%;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-content: stretch;
-    align-items: stretch;
-    gap: 0.5rem;
-  }
-
-  .tv-game-courts-grid > * {
-    min-height: 0;
-    height: 100%;
-    align-self: stretch;
-  }
-
-  .tv-game-courts-grid--single {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .tv-court-card {
-    display: flex;
-    min-height: 0;
-    height: 100%;
-    flex-direction: column;
-    border-width: 1px !important;
-    box-shadow: none !important;
-  }
-
-  .tv-court-card > :first-child {
-    flex-shrink: 0;
-  }
-
-  .tv-court-card-body {
-    min-height: 0;
-    flex: 1 1 0%;
-  }
-
-  .tv-court-card-body > * {
-    min-height: 0;
-  }
-
-  .tv-court-match-grid {
-    height: 100%;
-    width: 100%;
-  }
-
-  .tv-court-match-grid > :first-child,
-  .tv-court-match-grid > :last-child {
-    justify-content: center;
-  }
-
-  .tv-court-card > :first-child .tv-court-label {
-    font-size: clamp(3rem, 7vh, 5rem);
-    line-height: 1.1;
-  }
-
-  .tv-court-card-body .truncate {
-    font-size: clamp(1.5rem, 4.2vh, 3rem);
-  }
-
-  .tv-court-card-body .tv-team-label {
-    font-size: clamp(1.25rem, 3.4vh, 2.5rem);
-  }
-
-  .tv-court-card-body img.rounded-full {
-    width: clamp(3rem, 7vh, 4.5rem);
-    height: clamp(3rem, 7vh, 4.5rem);
-  }
-
-  .tv-court-card-body span.rounded-full {
-    width: clamp(3rem, 7vh, 4.5rem);
-    height: clamp(3rem, 7vh, 4.5rem);
-    font-size: clamp(1.25rem, 3vh, 2rem);
-  }
-
-  .tv-court-card-body .tv-score-stepper .tv-score-input {
-    height: clamp(2.75rem, 7vh, 4.5rem);
-    width: clamp(2.75rem, 7vh, 4.5rem);
-    font-size: clamp(1.25rem, 3.5vh, 2.5rem);
-  }
-
-  .tv-court-card-body .tv-score-stepper .tv-score-step-btn {
-    height: clamp(1.5rem, 3.5vh, 2.25rem);
-    width: clamp(2.25rem, 5.5vh, 3.5rem);
-    font-size: clamp(0.625rem, 1.6vh, 1rem);
-  }
-
-  .tv-court-card-body .tv-score-readout {
-    font-size: clamp(1.5rem, 4vh, 2.75rem);
-  }
-
-  /* Two courts — extra room per card; scale up for distance viewing. */
-  .tv-game-courts-grid--duo {
-    gap: 0.75rem;
-  }
-
-  .tv-game-courts-grid--duo .tv-court-card > :first-child .tv-court-label {
-    font-size: clamp(4rem, 9vh, 6.5rem);
-  }
-
-  .tv-game-courts-grid--duo .tv-court-card-body .truncate {
-    font-size: clamp(2.25rem, 5.8vh, 4rem);
-  }
-
-  .tv-game-courts-grid--duo .tv-court-card-body .tv-team-label {
-    font-size: clamp(1.75rem, 4.5vh, 3.25rem);
-  }
-
-  .tv-game-courts-grid--duo .tv-court-card-body img.rounded-full {
-    width: clamp(3.5rem, 8.5vh, 5.5rem);
-    height: clamp(3.5rem, 8.5vh, 5.5rem);
-  }
-
-  .tv-game-courts-grid--duo .tv-court-card-body span.rounded-full {
-    width: clamp(3.5rem, 8.5vh, 5.5rem);
-    height: clamp(3.5rem, 8.5vh, 5.5rem);
-    font-size: clamp(1.5rem, 3.6vh, 2.5rem);
-  }
-
-  .tv-game-courts-grid--duo .tv-court-card-body .tv-score-stepper .tv-score-input {
-    height: clamp(3.5rem, 9vh, 5.5rem);
-    width: clamp(3.5rem, 9vh, 5.5rem);
-    font-size: clamp(1.75rem, 4.5vh, 3.25rem);
-  }
-
-  .tv-game-courts-grid--duo .tv-court-card-body .tv-score-stepper .tv-score-step-btn {
-    height: clamp(1.75rem, 4.5vh, 2.75rem);
-    width: clamp(2.75rem, 7vh, 4.25rem);
-    font-size: clamp(0.75rem, 2vh, 1.25rem);
-  }
-
-  .tv-game-courts-grid--duo .tv-court-card-body .tv-score-readout {
-    font-size: clamp(2rem, 5.5vh, 3.75rem);
-  }
-
-  .tv-game-courts-grid--duo .tv-court-match-grid {
-    gap: clamp(0.75rem, 2.5vh, 2rem);
-  }
-
-  .tv-game-carousel-side-btn {
-    position: absolute;
-    top: 50%;
-    z-index: 35;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: clamp(1.55rem, 2.2vw, 2.25rem);
-    height: clamp(4rem, 10vh, 6.5rem);
-    border: 2px solid rgb(125 211 252 / 0.42);
-    border-radius: 9999px;
-    background: rgb(8 30 54 / 0.55);
-    color: rgb(125 211 252 / 0.82);
-    font-family: ui-serif, Georgia, serif;
-    font-size: clamp(2.3rem, 6vh, 3.75rem);
-    font-weight: 900;
-    line-height: 1;
-    text-shadow: 0 0 12px rgb(96 165 250 / 0.4);
-    transform: translateY(-50%);
-    box-shadow: 0 0 20px rgb(37 99 235 / 0.16);
-    transition: opacity 0.15s ease, transform 0.15s ease;
-  }
-
-  .tv-game-carousel-side-btn-left {
-    left: 0.1rem;
-  }
-
-  .tv-game-carousel-side-btn-right {
-    right: 0.1rem;
-  }
-
-  .tv-game-carousel-side-btn:disabled {
-    opacity: 0.22;
-  }
-
-  .tv-game-carousel-side-btn:not(:disabled):active {
-    opacity: 0.75;
-    transform: translateY(-50%) scale(0.97);
-  }
-
-  .tv-game-header-qr {
-    width: 58px;
-    height: 58px;
-    flex-shrink: 0;
-    align-self: center;
-    margin: 0 0.2rem;
-    border-radius: 0.5rem;
-    border: 2px solid rgba(255, 255, 255, 0.45);
-    background: #fff;
-  }
-
-  .tv-game-card .game-card-racetrack {
-    min-height: 0;
-    flex: 1 1 0%;
-  }
-
-  /* Legacy selector — racetrack wraps .tv-game-card, not the reverse. */
-
   .tv-play-scroll {
     min-height: 0;
     flex: 1 1 0%;
@@ -1482,137 +1135,18 @@ html[data-tv-kiosk] body > :not(#root) {
 }
 
 /* Friendly / mobile play — one game per carousel card, swipe or side arrows. */
-.friendly-play-panel .app-shell-panel-slot {
+/* Game card — swipe courts ↔ leaderboard inside the card shell. */
+.game-card-panel-carousel {
+  min-height: 0;
+  flex: 1 1 0%;
+}
+
+.game-card-panel-carousel-track {
   display: flex;
-  min-height: 0;
-  flex: 1 1 0%;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.play-game-carousel {
-  display: flex;
-  min-height: 0;
-  flex: 1 1 0%;
-  flex-direction: column;
-}
-
-.play-game-carousel > :not(.tv-game-carousel-side-btn) {
-  display: flex;
-  min-height: 0;
-  flex: 1 1 0%;
-  flex-direction: column;
-}
-
-.play-game-carousel {
-  padding-inline: 0.65rem;
-}
-
-@media (min-width: 1536px) {
-  .play-game-carousel {
-    padding-inline: clamp(0.25rem, 0.5vw, 0.5rem);
-  }
-}
-
-.play-game-carousel .tv-game-card-racetrack > .tv-game-card,
-.play-game-carousel .tv-game-card {
-  min-height: 0;
-  flex: 1 1 0%;
-  border-width: 0 !important;
-  border-radius: 0 !important;
-  background: var(--color-brand-bg-alt) !important;
-  overflow: visible !important;
-  box-shadow: none !important;
-}
-
-.play-game-carousel .tv-game-card-racetrack {
-  padding: 0;
-  overflow: visible;
-  background: var(--color-brand-bg-alt);
-}
-
-.play-game-carousel .tv-game-card-racetrack::before {
-  display: none;
-}
-
-.play-game-carousel .tv-game-courts-body {
-  display: flex;
-  min-height: 0;
-  flex: 1 1 0%;
-  flex-direction: column;
-  overflow: hidden;
-  background: var(--color-brand-bg-alt);
-}
-
-.play-game-carousel .tv-game-courts-grid {
-  display: grid;
-  min-height: 0;
-  flex: 1 1 0%;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-content: stretch;
-  align-items: stretch;
-  gap: 0.5rem;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
-}
-
-.play-game-carousel .tv-game-courts-grid--single {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.play-game-carousel .tv-game-courts-grid > * {
-  min-height: 0;
   height: 100%;
-  align-self: stretch;
-}
-
-.play-game-carousel .tv-court-card {
-  display: flex;
   min-height: 0;
-  height: 100%;
-  flex-direction: column;
-  border-width: 1px !important;
-  box-shadow: none !important;
 }
 
-.play-game-carousel .tv-game-carousel-side-btn {
-  position: absolute;
-  top: 50%;
-  z-index: 35;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.55rem;
-  height: 4rem;
-  border: 2px solid rgb(125 211 252 / 0.42);
-  border-radius: 9999px;
-  background: rgb(8 30 54 / 0.55);
-  color: rgb(125 211 252 / 0.82);
-  font-family: ui-serif, Georgia, serif;
-  font-size: 2rem;
-  font-weight: 900;
-  line-height: 1;
-  transform: translateY(-50%);
-  box-shadow: 0 0 16px rgb(37 99 235 / 0.16);
-  transition: opacity 0.15s ease, transform 0.15s ease;
-}
-
-.play-game-carousel .tv-game-carousel-side-btn-left {
-  left: 0.05rem;
-}
-
-.play-game-carousel .tv-game-carousel-side-btn-right {
-  right: 0.05rem;
-}
-
-.play-game-carousel .tv-game-carousel-side-btn:disabled {
-  opacity: 0.22;
-}
-
-.play-game-carousel .tv-game-carousel-side-btn:not(:disabled):active {
-  opacity: 0.75;
-  transform: translateY(-50%) scale(0.97);
+.game-card-panel-carousel-scroll {
+  padding: 0.5rem 0.625rem 0.625rem;
 }

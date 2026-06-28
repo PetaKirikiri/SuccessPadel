@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { IconJoin, IconOpenPad } from '../components/ButtonIcons'
-import { AppShellColumn } from '../components/AppShellColumn'
-import { CompetitionPlayStandardView } from '../components/competitionPlay/CompetitionPlayStandardView'
-import { CompetitionPlayTvView } from '../components/competitionPlay/CompetitionPlayTvView'
+import { AppShellColumn } from '../components/AppShell'
+import { PlayStandardView } from '../components/play/PlayStandardView'
+import { PlayTvView } from '../components/play/PlayTvView'
 import type { PlayViewTab } from '../components/PlayViewTabs'
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { GameBoardPreview } from '../components/GameBoardPreview'
-import { CompetitionLeaderboard } from '../components/CompetitionLeaderboard'
-import { LeaderboardViewAlongQrPanel } from '../components/LeaderboardViewAlongQrPanel'
+import { Leaderboard, LeaderboardViewAlongQrPanel } from '../components/leaderboard'
 import { useAuth } from '../hooks/useAuth'
 import { useLineClientProfile } from '../hooks/useLineClientProfile'
 import { useFriendlyGame } from '../hooks/useFriendlyGame'
@@ -279,25 +278,55 @@ export function FriendlyGamePage() {
         </Link>
       ) : null}
 
-      {isAdmin && finished ? (
-        <Link
-          to={`/friendly/${game.id}/heatmap`}
-          className="block w-full rounded-xl border border-brand-border bg-brand-surface py-3 text-center text-sm font-semibold text-brand-primary transition active:opacity-80"
-        >
-          {t('stats.title')}
-        </Link>
-      ) : null}
-
       {joinError ? <p className="text-xs text-red-600">{joinError}</p> : null}
     </div>
   ) : null
 
   const viewAlongUrl = game?.id ? friendlyViewAlongUrl(game.id) : null
 
+  const leaderboardStandard =
+    enrichedStandings.length > 0 ? (
+      <div className="space-y-3">
+        <Leaderboard
+          entries={enrichedStandings}
+          scoreUnit={scoreUnit}
+          currentUserId={user?.id ?? null}
+          competitionId={null}
+          achievements={achievements}
+          showAchievements={Boolean(achievements)}
+          flushBottom
+        />
+        {viewAlongUrl ? <LeaderboardViewAlongQrPanel url={viewAlongUrl} /> : null}
+      </div>
+    ) : (
+      <div className="game-card space-y-1 px-3 py-4 text-center">
+        <p className="text-sm text-brand-muted">{t('friendly.noLeaderboardScores')}</p>
+        <p className="text-xs text-brand-muted">{t('friendly.noLeaderboardHint')}</p>
+      </div>
+    )
+
+  const leaderboardTv =
+    enrichedStandings.length > 0 ? (
+      <Leaderboard
+        entries={enrichedStandings}
+        scoreUnit={scoreUnit}
+        currentUserId={user?.id ?? null}
+        competitionId={null}
+        achievements={achievements}
+        showAchievements={false}
+        compact
+        embedded
+      />
+    ) : (
+      <div className="space-y-1 px-3 py-4 text-center">
+        <p className="text-sm text-brand-muted">{t('friendly.noLeaderboardScores')}</p>
+        <p className="text-xs text-brand-muted">{t('friendly.noLeaderboardHint')}</p>
+      </div>
+    )
+
   const gamesBody = (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="min-h-0 flex-1 overflow-hidden">
-        <GameBoardPreview
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      <GameBoardPreview
           session={previewSession}
           games={previewGames}
           eventStartsAt={startsAtIso}
@@ -316,55 +345,20 @@ export function FriendlyGamePage() {
           viewAlongUrl={isTvLayout ? viewAlongUrl : null}
           currentUserDisplayName={playerDisplayName}
           onBack={() => navigate('/friendly')}
+          leaderboardBody={!isTvLayout ? leaderboardStandard : undefined}
+          activePanel={viewTab === 'games' ? 'game' : 'leaderboard'}
+          onActivePanel={(panel) => setViewTab(panel === 'game' ? 'games' : 'leaderboard')}
         />
-      </div>
-      {!isTvLayout && actionCard ? <div className="shrink-0 px-2 pb-2">{actionCard}</div> : null}
+      {!isTvLayout && actionCard ? <div className="shrink-0 pt-2">{actionCard}</div> : null}
     </div>
   )
-
-  const leaderboardStandard =
-    enrichedStandings.length > 0 ? (
-      <CompetitionLeaderboard
-        entries={enrichedStandings}
-        scoreUnit={scoreUnit}
-        currentUserId={user?.id ?? null}
-        competitionId={null}
-        achievements={achievements}
-        showAchievements={Boolean(achievements)}
-        flushBottom
-      />
-    ) : (
-      <div className="game-card space-y-1 px-3 py-4 text-center">
-        <p className="text-sm text-brand-muted">{t('friendly.noLeaderboardScores')}</p>
-        <p className="text-xs text-brand-muted">{t('friendly.noLeaderboardHint')}</p>
-      </div>
-    )
-
-  const leaderboardTv =
-    enrichedStandings.length > 0 ? (
-      <CompetitionLeaderboard
-        entries={enrichedStandings}
-        scoreUnit={scoreUnit}
-        currentUserId={user?.id ?? null}
-        competitionId={null}
-        achievements={achievements}
-        showAchievements={false}
-        compact
-        embedded
-      />
-    ) : (
-      <div className="space-y-1 px-3 py-4 text-center">
-        <p className="text-sm text-brand-muted">{t('friendly.noLeaderboardScores')}</p>
-        <p className="text-xs text-brand-muted">{t('friendly.noLeaderboardHint')}</p>
-      </div>
-    )
 
   const gamesContent = showPlayTabs ? gamesBody : actionCard
 
   if (!showPlayTabs) {
     return (
       <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden bg-brand-bg">
-        <AppShellColumn className="overflow-y-auto pb-6 pt-1">
+        <AppShellColumn className="scroll-y overflow-y-auto pb-6 pt-1" data-scroll-y>
           <div className="space-y-3">
             <Link to="/friendly" className="text-sm font-medium text-brand-accent">
               {t('common.back')}
@@ -377,14 +371,10 @@ export function FriendlyGamePage() {
   }
 
   return (
-    <div
-      className={`flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden ${
-        isTvLayout ? 'game-bg' : 'bg-brand-bg'
-      }`}
-    >
+    <div className={`flex min-h-0 flex-1 flex-col overflow-hidden${isTvLayout ? ' game-bg' : ''}`}>
       {isTvLayout ? (
         <div className="tv-play-view flex min-h-0 flex-1 flex-col overflow-hidden">
-          <CompetitionPlayTvView
+          <PlayTvView
             t={t}
             loadOrError={null}
             session={displayGame}
@@ -393,21 +383,7 @@ export function FriendlyGamePage() {
           />
         </div>
       ) : (
-        <>
-          <CompetitionPlayStandardView
-            t={t}
-            tab={viewTab}
-            onTab={setViewTab}
-            scrollBody={false}
-            loadOrError={null}
-            session={displayGame}
-            gamesBody={gamesBody}
-            leaderboardBody={leaderboardStandard}
-          />
-          {viewTab === 'leaderboard' && viewAlongUrl && enrichedStandings.length > 0 ? (
-            <LeaderboardViewAlongQrPanel url={viewAlongUrl} />
-          ) : null}
-        </>
+        <PlayStandardView loadOrError={null} session={displayGame} gamesBody={gamesBody} />
       )}
     </div>
   )

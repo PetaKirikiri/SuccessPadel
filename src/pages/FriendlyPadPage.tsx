@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { GestureAnnotationPad } from '../components/GestureAnnotationPad'
 import { GesturePadDashboard } from '../components/GesturePadDashboard'
+import { GesturePadShell } from '../surfaces/gesture-score'
 import { useTranslation } from '../hooks/useTranslation'
 import { useAuth } from '../hooks/useAuth'
 import { useLineClientProfile } from '../hooks/useLineClientProfile'
@@ -51,9 +52,17 @@ export function FriendlyPadPage() {
   }
 
   return (
-    <div className="gesture-pad-page fixed inset-0 z-[400] flex flex-col overflow-hidden bg-[#1a5fa8]">
-      <div className="gesture-pad-device flex min-h-0 flex-1 flex-col">
-        <GestureAnnotationPad
+    <GesturePadShell
+      dashboard={
+        <GesturePadDashboard
+          onBack={() => navigate(isFreeFriendly(game) ? '/friendly' : `/friendly/${game.id}`)}
+          backLabel={t('common.back')}
+          onUndo={() => setUndoSignal((n) => n + 1)}
+          onResetGame={handleResetGame}
+        />
+      }
+    >
+      <GestureAnnotationPad
           key={padEpoch}
           courtSetupKey={game.id}
           onMatchClosed={() =>
@@ -68,15 +77,7 @@ export function FriendlyPadPage() {
           padResetAt={friendlyPadResetAt(game)}
           reviewMode={reviewMode}
           undoSignal={undoSignal}
-        />
-      </div>
-      <GesturePadDashboard
-        onBack={() => navigate(isFreeFriendly(game) ? '/friendly' : `/friendly/${game.id}`)}
-        backLabel={t('common.back')}
-        onUndo={() => setUndoSignal((n) => n + 1)}
-        onResetGame={handleResetGame}
-        onStats={() => navigate(`/friendly/${game.id}/heatmap`)}
       />
-    </div>
+    </GesturePadShell>
   )
 }

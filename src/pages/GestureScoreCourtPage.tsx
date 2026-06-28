@@ -1,5 +1,5 @@
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision'
+import type { HandLandmarker } from '@mediapipe/tasks-vision'
 import { ArrowLeft } from 'lucide-react'
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
@@ -9,14 +9,12 @@ import { useFriendlyGame } from '../hooks/useFriendlyGame'
 import { usePublicCompetition } from '../hooks/usePublicCompetition'
 import { useSetupCourts } from '../hooks/useSetupCourts'
 import { pivotScheduleByCourt, pivotScheduleByGame } from '../lib/competitionCourtBoard'
-import { americanoScoringUnit } from '../lib/competitionPresets'
+import { americanoScoringUnit, americanoTargetPoints } from '../lib/competitionPresets'
 import {
   fingerActionFromLandmarks,
   gestureCameraBeep,
   GESTURE_CAMERA_COOLDOWN_MS,
   GESTURE_CAMERA_HOLD_MS,
-  GESTURE_CAMERA_MODEL_URL,
-  GESTURE_CAMERA_WASM_BASE,
   pickGestureHandLandmarks,
   pickGestureHandWorldLandmarks,
   type FingerAction,
@@ -34,6 +32,7 @@ import {
   undoGestureCameraPoint,
   type GestureCameraContext,
 } from '../lib/gestureCameraScore'
+import { createGestureHandLandmarker } from '../lib/gestureCameraRuntime'
 import {
   requestGestureScoreCamera,
   supportsGestureScoreCamera,
@@ -46,6 +45,7 @@ import {
   friendlyStartsAtIso,
 } from '../lib/friendlyGames'
 import { useGesturePadChrome } from '../lib/gesturePadChrome'
+import { GestureScoreCourtShell } from '../surfaces/gesture-score'
 import { breakMinutesFromConfig } from '../lib/competitionLayout'
 import { formatDateInput } from '../lib/courtSchedule'
 
@@ -174,10 +174,18 @@ export function GestureScoreCourtPage() {
   }, [friendlyGame, friendlyRoute, session])
 
   const playTo = useMemo(() => {
-    if (friendlyRoute) return undefined
-    const cfg = session?.scoring_config as { play_to?: number } | undefined
-    return cfg?.play_to
-  }, [friendlyRoute, session?.scoring_config])
+    if (friendlyRoute && friendlyGame) {
+      const config = friendlyGame.organizedConfig ?? DEFAULT_FRIENDLY_ORGANIZED_CONFIG
+      const organized = friendlyOrganizedSession(config)
+      if (americanoScoringUnit(organized) === 'open') return undefined
+      return americanoTargetPoints(organized)
+    }
+    if (session) {
+      if (americanoScoringUnit(session) === 'open') return undefined
+      return americanoTargetPoints(session)
+    }
+    return undefined
+  }, [friendlyGame, friendlyRoute, session])
 
   const cameraCtx = useMemo((): GestureCameraContext | null => {
     if (!courtSetupKey || !user?.id || !id || !Number.isFinite(gameNum)) return null
@@ -384,29 +392,7 @@ export function GestureScoreCourtPage() {
 
     try {
       setStatus('loading')
-      const vision = await FilesetResolver.forVisionTasks(GESTURE_CAMERA_WASM_BASE)
-      const recognizerOptions = {
-        runningMode: 'VIDEO' as const,
-        numHands: 1,
-      }
-      let recognizer: HandLandmarker
-      try {
-        recognizer = await HandLandmarker.createFromOptions(vision, {
-          baseOptions: {
-            modelAssetPath: GESTURE_CAMERA_MODEL_URL,
-            delegate: 'GPU',
-          },
-          ...recognizerOptions,
-        })
-      } catch {
-        recognizer = await HandLandmarker.createFromOptions(vision, {
-          baseOptions: {
-            modelAssetPath: GESTURE_CAMERA_MODEL_URL,
-            delegate: 'CPU',
-          },
-          ...recognizerOptions,
-        })
-      }
+      const recognizer = await createGestureHandLandmarker()
       if (cameraRunRef.current !== runId) {
         recognizer.close()
         return
@@ -467,12 +453,12 @@ export function GestureScoreCourtPage() {
   const showStartCameraButton = status === 'error' || status === 'unsupported'
 
   return (
-    <main className="fixed inset-y-0 left-0 right-0 z-[420] flex min-h-0 w-screen max-w-none flex-col overflow-hidden bg-[#0b2a4a] text-white [width:100dvw]">
+    <GestureScoreCourtShell>
       <video
         ref={videoRef}
         muted
         playsInline
-        className={`pointer-events-none fixed right-2 top-[max(0.5rem,env(safe-area-inset-top))] z-[430] h-14 w-20 scale-x-[-1] rounded-lg border border-white/20 bg-[#06192d] object-cover shadow-2xl shadow-black/35 transition-opacity sm:right-3 sm:h-16 sm:w-24 md:right-6 md:h-36 md:w-48 ${
+        className={`gesture-score-court__camera pointer-events-none fixed right-2 top-[max(0.5rem,env(safe-area-inset-top))] z-[430] h-14 w-20 scale-x-[-1] rounded-lg border border-white/20 bg-[#06192d] object-cover shadow-2xl shadow-black/35 transition-opacity sm:right-3 sm:h-16 sm:w-24 md:right-6 md:h-36 md:w-48 ${
           status === 'running' || status === 'loading' ? 'opacity-100' : 'opacity-0'
         }`}
       />
@@ -480,7 +466,7 @@ export function GestureScoreCourtPage() {
         <button
           type="button"
           onClick={() => void startCamera()}
-          className="fixed right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-[440] rounded-full border border-[#34d399]/45 bg-[#34d399]/15 px-4 py-2 text-sm font-black uppercase tracking-wide text-[#34d399] shadow-lg shadow-black/25 active:scale-[0.98]"
+          className="fixed right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-[440] rounded-full border border-[#2dffc4]/45 bg-[#2dffc4]/15 px-4 py-2 text-sm font-black uppercase tracking-wide text-[#2dffc4] shadow-lg shadow-black/25 active:scale-[0.98]"
         >
           Start Camera
         </button>
@@ -515,12 +501,12 @@ export function GestureScoreCourtPage() {
           </div>
           <div className="flex min-h-0 min-w-[2.5rem] flex-col items-center justify-center gap-1 md:min-w-[8rem] md:gap-2">
             {goldenPoint ? (
-              <p className="rounded-full border border-white/15 bg-[#34d399]/15 px-3 py-1 text-center text-[10px] font-black uppercase tracking-wide text-[#34d399] md:text-xs">
+              <p className="rounded-full border border-white/15 bg-[#2dffc4]/15 px-3 py-1 text-center text-[10px] font-black uppercase tracking-wide text-[#2dffc4] md:text-xs">
                 Golden point
               </p>
             ) : null}
             {matchEnded ? (
-              <p className="rounded-full border border-white/15 bg-[#fbbf24]/15 px-3 py-1 text-center text-[10px] font-black uppercase tracking-wide text-[#fde68a] md:text-xs">
+              <p className="rounded-full border border-white/15 bg-[#efff3d]/15 px-3 py-1 text-center text-[10px] font-black uppercase tracking-wide text-[#f4ff7a] md:text-xs">
                 Final
               </p>
             ) : null}
@@ -537,7 +523,7 @@ export function GestureScoreCourtPage() {
           </div>
         </div>
 
-        <div className="mx-auto grid w-full max-w-7xl grid-cols-3 gap-1 py-0 md:gap-4 md:py-5">
+        <div className="gesture-score-court__teams mx-auto grid w-full max-w-7xl grid-cols-3 gap-1 py-0 md:gap-4 md:py-5">
           {(
             [
               { action: 'team1' as const, count: 1 as const, label: 'Team 1' },
@@ -552,9 +538,9 @@ export function GestureScoreCourtPage() {
               onClick={() => void applyFingerAction(action)}
               className={`flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl border px-1 py-3 shadow-xl shadow-black/25 active:scale-[0.96] sm:gap-1 sm:py-3.5 md:flex-row md:gap-5 md:rounded-full md:px-7 md:py-7 ${
                 action === 'team1'
-                  ? 'border-[#34d399]/45 bg-[#34d399]/15 text-[#34d399]'
+                  ? 'border-[#2dffc4]/45 bg-[#2dffc4]/15 text-[#2dffc4]'
                   : action === 'team2'
-                    ? 'border-[#60a5fa]/45 bg-[#60a5fa]/15 text-[#60a5fa]'
+                    ? 'border-[#4da3ff]/45 bg-[#4da3ff]/15 text-[#4da3ff]'
                     : 'border-white/15 bg-[#11355c] text-[#7dd3fc]'
               }`}
             >
@@ -565,16 +551,16 @@ export function GestureScoreCourtPage() {
         </div>
 
         {error || syncError ? (
-          <p className="mx-auto max-w-xl rounded-lg border border-[#60a5fa]/45 bg-[#60a5fa]/15 px-3 py-2 text-center text-sm font-bold text-[#60a5fa]">
+          <p className="mx-auto max-w-xl rounded-lg border border-[#4da3ff]/45 bg-[#4da3ff]/15 px-3 py-2 text-center text-sm font-bold text-[#4da3ff]">
             {syncError ?? error}
           </p>
         ) : null}
         {status === 'unsupported' ? (
-          <p className="mx-auto max-w-xl rounded-lg border border-[#fbbf24]/45 bg-[#fbbf24]/15 px-3 py-2 text-center text-sm font-bold text-[#fde68a]">
+          <p className="mx-auto max-w-xl rounded-lg border border-[#efff3d]/45 bg-[#efff3d]/15 px-3 py-2 text-center text-sm font-bold text-[#f4ff7a]">
             This browser does not support camera access.
           </p>
         ) : null}
       </section>
-    </main>
+    </GestureScoreCourtShell>
   )
 }

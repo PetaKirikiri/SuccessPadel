@@ -315,7 +315,7 @@ export function GestureScoreTestPage() {
         <button
           type="button"
           onClick={() => void startCameraTest()}
-          className="fixed right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-[440] rounded-full border border-[#34d399]/45 bg-[#34d399]/15 px-4 py-2 text-sm font-black uppercase tracking-wide text-[#34d399] shadow-lg shadow-black/25 active:scale-[0.98] md:right-6 md:px-5 md:py-3 md:text-base"
+          className="fixed right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-[440] rounded-full border border-[#2dffc4]/45 bg-[#2dffc4]/15 px-4 py-2 text-sm font-black uppercase tracking-wide text-[#2dffc4] shadow-lg shadow-black/25 active:scale-[0.98] md:right-6 md:px-5 md:py-3 md:text-base"
         >
           Start Camera
         </button>
@@ -350,7 +350,7 @@ export function GestureScoreTestPage() {
 
           <div className="flex min-h-0 min-w-[2.5rem] flex-col items-center justify-center gap-1 md:min-w-[8rem] md:gap-2">
             {goldenPoint ? (
-              <p className="rounded-full border border-white/15 bg-[#34d399]/15 px-3 py-1 text-center text-[10px] font-black uppercase tracking-wide text-[#34d399] md:text-xs">
+              <p className="rounded-full border border-white/15 bg-[#2dffc4]/15 px-3 py-1 text-center text-[10px] font-black uppercase tracking-wide text-[#2dffc4] md:text-xs">
                 Golden point
               </p>
             ) : null}
@@ -374,7 +374,7 @@ export function GestureScoreTestPage() {
           <button
             type="button"
             onClick={() => applyFingerAction('team1')}
-            className="flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-[#34d399]/45 bg-[#34d399]/15 px-1 py-3 text-[#34d399] shadow-xl shadow-black/25 active:scale-[0.96] sm:gap-1 sm:py-3.5 md:flex-row md:gap-5 md:rounded-full md:px-7 md:py-7"
+            className="flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-[#2dffc4]/45 bg-[#2dffc4]/15 px-1 py-3 text-[#2dffc4] shadow-xl shadow-black/25 active:scale-[0.96] sm:gap-1 sm:py-3.5 md:flex-row md:gap-5 md:rounded-full md:px-7 md:py-7"
             aria-label="Point for team 1"
             title="Point for team 1"
           >
@@ -384,7 +384,7 @@ export function GestureScoreTestPage() {
           <button
             type="button"
             onClick={() => applyFingerAction('team2')}
-            className="flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-[#60a5fa]/45 bg-[#60a5fa]/15 px-1 py-3 text-[#60a5fa] shadow-xl shadow-black/25 active:scale-[0.96] sm:gap-1 sm:py-3.5 md:flex-row md:gap-5 md:rounded-full md:px-7 md:py-7"
+            className="flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-[#4da3ff]/45 bg-[#4da3ff]/15 px-1 py-3 text-[#4da3ff] shadow-xl shadow-black/25 active:scale-[0.96] sm:gap-1 sm:py-3.5 md:flex-row md:gap-5 md:rounded-full md:px-7 md:py-7"
             aria-label="Point for team 2"
             title="Point for team 2"
           >
@@ -405,12 +405,12 @@ export function GestureScoreTestPage() {
 
         <div className="relative flex min-h-0 items-center justify-center">
           {error ? (
-            <p className="mx-auto max-w-xl rounded-lg border border-[#60a5fa]/45 bg-[#60a5fa]/15 px-3 py-2 text-center text-sm font-bold text-[#60a5fa]">
+            <p className="mx-auto max-w-xl rounded-lg border border-[#4da3ff]/45 bg-[#4da3ff]/15 px-3 py-2 text-center text-sm font-bold text-[#4da3ff]">
               {error}
             </p>
           ) : null}
           {status === 'unsupported' ? (
-            <p className="mx-auto max-w-xl rounded-lg border border-[#fbbf24]/45 bg-[#fbbf24]/15 px-3 py-2 text-center text-sm font-bold text-[#fde68a]">
+            <p className="mx-auto max-w-xl rounded-lg border border-[#efff3d]/45 bg-[#efff3d]/15 px-3 py-2 text-center text-sm font-bold text-[#f4ff7a]">
               This browser does not support camera access.
             </p>
           ) : null}

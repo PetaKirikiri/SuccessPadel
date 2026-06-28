@@ -1,8 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { useLocation } from 'react-router-dom'
-import { CompetitionTable, splitCompetitionRows } from '../components/CompetitionTable'
-import { FriendlyGamesList } from '../components/FriendlyGamesList'
-import { GamesHubView } from '../components/GamesHubView'
+import { GamesList, splitCompetitionRows } from '../components/hub/GamesList'
+import { GamesHubView } from '../components/hub/GamesHubView'
 import { useAuth } from '../hooks/useAuth'
 import { useCompetitionSetup } from '../hooks/useCompetitionSetup'
 import { usePublicFriendlyGames } from '../hooks/usePublicFriendlyGames'
@@ -55,7 +54,8 @@ export function GamesHomePage({ mode }: { mode: Mode }) {
   }, [mode, user, competition.refresh])
 
   if (mode === 'competitive') {
-    const tableProps = {
+    const listProps = {
+      mode: 'competitive' as const,
       rows: competition.rows,
       loading: authLoading || competition.loading,
       error: competition.error,
@@ -72,13 +72,14 @@ export function GamesHomePage({ mode }: { mode: Mode }) {
         currentCount={currentRows.length}
         pastCount={pastRows.length}
         initialGenderFilter={initialGenderFilter}
-        currentPanel={<CompetitionTable {...tableProps} listTab="current" />}
-        pastPanel={<CompetitionTable {...tableProps} listTab="past" />}
+        currentPanel={<GamesList {...listProps} listTab="current" />}
+        pastPanel={<GamesList {...listProps} listTab="past" />}
       />
     )
   }
 
   const friendlyListProps = {
+    mode: 'friendly' as const,
     loading: friendly.loading,
     isAdmin,
     onRefresh: friendly.refresh,
@@ -99,16 +100,16 @@ export function GamesHomePage({ mode }: { mode: Mode }) {
       currentCount={currentGames.length}
       pastCount={pastGames.length}
       currentPanel={
-        <>
+        <div className="flex min-h-0 flex-1 flex-col">
           {errorBanner}
-          <FriendlyGamesList games={currentGames} {...friendlyListProps} />
-        </>
+          <GamesList games={currentGames} {...friendlyListProps} />
+        </div>
       }
       pastPanel={
-        <>
+        <div className="flex min-h-0 flex-1 flex-col">
           {errorBanner}
-          <FriendlyGamesList games={pastGames} past {...friendlyListProps} />
-        </>
+          <GamesList games={pastGames} past {...friendlyListProps} />
+        </div>
       }
     />
   )

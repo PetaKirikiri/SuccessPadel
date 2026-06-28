@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactElement } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { Plus } from 'lucide-react'
-import type { GamesHubTab } from './GamesHubView'
+import type { GamesHubTab } from './hub/GamesHubView'
 import { useAuth } from '../hooks/useAuth'
 import { useTranslation } from '../hooks/useTranslation'
 import {
@@ -13,6 +13,7 @@ import {
   shellTabClass,
 } from './ShellTabIcons'
 import { ProfileChip } from './ProfileChip'
+import { TemporaryPaletteButton } from './TemporaryPaletteButton'
 
 type NavVariant = 'rank' | 'competition'
 type HubKind = 'friendly' | 'competitive'
@@ -203,12 +204,15 @@ export function AppBottomNav({ embedded = false }: { embedded?: boolean }) {
   }
 
   return (
-    <nav className="app-shell-dock" aria-label={t('aria.playModes')}>
-      <div className="app-shell-dock-inner">
-        <HubNavItem kind="friendly" />
-        <HubNavItem kind="competitive" />
-        <ProfileChip navItem className="min-w-0 flex-1 basis-0" />
-      </div>
-    </nav>
+    <>
+      <TemporaryPaletteButton />
+      <nav className="shell-dock-inner app-shell-dock" aria-label={t('aria.playModes')}>
+        <div className="app-shell-dock-inner">
+          <HubNavItem kind="friendly" />
+          <HubNavItem kind="competitive" />
+          <ProfileChip navItem className="min-w-0 flex-1 basis-0" />
+        </div>
+      </nav>
+    </>
   )
 }

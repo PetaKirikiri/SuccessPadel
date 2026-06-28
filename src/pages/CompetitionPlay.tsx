@@ -2,10 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ensureCompetitionScheduleSaved } from '../lib/persistCompetitionSchedule'
 import { GameBoard } from '../components/GameBoard'
-import { CompetitionLeaderboard } from '../components/CompetitionLeaderboard'
-import { CompetitionPlayStandardView } from '../components/competitionPlay/CompetitionPlayStandardView'
-import { CompetitionPlayTvView } from '../components/competitionPlay/CompetitionPlayTvView'
-import { CompetitionTvScoreInputPanel } from '../components/competitionPlay/CompetitionTvScoreInputPanel'
+import { Leaderboard } from '../components/leaderboard'
+import { PlayStandardView } from '../components/play/PlayStandardView'
+import { PlayTvView } from '../components/play/PlayTvView'
+import { TvScoreInputPanel } from '../components/play/TvScoreInputPanel'
 import type { PlayViewTab } from '../components/PlayViewTabs'
 import { useAuth } from '../hooks/useAuth'
 import { useIsTvLayout } from '../hooks/useIsTvLayout'
@@ -25,7 +25,6 @@ import { computeDuoStandings } from '../lib/computeDuoStandings'
 import { duoLabelsForMatch } from '../lib/competitionFormatPresets'
 import type { CourtPlayer } from '../lib/americanoSchedule'
 import { rosterDisplayName } from '../hooks/useCompetitions'
-import { AppTopBar } from '../components/AppTopBar'
 import { useTranslation } from '../hooks/useTranslation'
 import { enrichStandingsWithAvatars } from '../lib/leaderboardEntries'
 import { competitionViewAlongUrl } from '../lib/siteUrl'
@@ -270,7 +269,7 @@ export function CompetitionPlay() {
 
   const leaderboardStandard =
     standings.length > 0 ? (
-      <CompetitionLeaderboard
+      <Leaderboard
         entries={standings}
         scoreUnit={scoreUnit}
         currentUserId={user?.id ?? null}
@@ -288,7 +287,7 @@ export function CompetitionPlay() {
 
   const leaderboardTv =
     standings.length > 0 ? (
-      <CompetitionLeaderboard
+      <Leaderboard
         entries={standings}
         scoreUnit={scoreUnit}
         currentUserId={user?.id ?? null}
@@ -305,7 +304,7 @@ export function CompetitionPlay() {
 
   const tvScoreInput =
     session ? (
-      <CompetitionTvScoreInputPanel
+      <TvScoreInputPanel
         columns={columns}
         gameNumber={tvScoreGameNumber}
         roundId={tvScoreRoundId}
@@ -329,7 +328,8 @@ export function CompetitionPlay() {
 
   const gamesBody =
     columns.length > 0 ? (
-      <GameBoard
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <GameBoard
         competitionId={id}
         columns={columns}
         mode={started ? 'scoring' : 'preview'}
@@ -356,7 +356,11 @@ export function CompetitionPlay() {
         viewAlongUrl={isTvLayout ? viewAlongUrl : null}
         onTvGameChange={setTvGameNumber}
         onTvBack={() => navigate('/competitions')}
-      />
+        leaderboardBody={!isTvLayout ? leaderboardStandard : undefined}
+        activePanel={tab === 'games' ? 'game' : 'leaderboard'}
+        onActivePanel={(panel) => setTab(panel === 'game' ? 'games' : 'leaderboard')}
+        />
+      </div>
     ) : started ? (
       <p className="game-card px-3 py-4 text-sm text-brand-muted">
         {t('competition.courtLayoutNotReady')}
@@ -384,42 +388,17 @@ export function CompetitionPlay() {
   }
 
   return (
-    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden bg-brand-bg">
-      {!isTvLayout ? (
-        <AppTopBar className="shrink-0 border-b border-brand-border/40 bg-brand-bg">
-          <div className="flex min-w-0 items-center gap-2">
-            <button
-              type="button"
-              onClick={() => navigate('/competitions')}
-              aria-label={t('aria.back')}
-              className="shrink-0 text-xl font-medium leading-none text-brand-accent"
-            >
-              ←
-            </button>
-            <img
-              src="/brand/logo-padel.webp"
-              alt={t('common.brandAlt')}
-              className="h-8 w-auto max-w-[7rem] shrink-0 md:h-10 md:max-w-[9rem]"
-            />
-          </div>
-        </AppTopBar>
-      ) : null}
-
+    <div className={`flex min-h-0 flex-1 flex-col overflow-hidden${isTvLayout ? ' game-bg' : ''}`}>
       {isTvLayout ? (
         <div className="tv-play-view flex min-h-0 flex-1 flex-col overflow-hidden">
-          <CompetitionPlayTvView
+          <PlayTvView
             {...sharedViewProps}
             leaderboardBody={showTvScoreInput ? tvScoreInput : leaderboardTv}
             leaderboardLabel={showTvScoreInput ? 'Score input' : t('leaderboard.standings')}
           />
         </div>
       ) : (
-        <CompetitionPlayStandardView
-          {...sharedViewProps}
-          tab={tab}
-          onTab={setTab}
-          leaderboardBody={leaderboardStandard}
-        />
+        <PlayStandardView {...sharedViewProps} />
       )}
     </div>
   )

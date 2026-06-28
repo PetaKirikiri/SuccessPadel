@@ -124,16 +124,16 @@ export function CourtGameForm() {
       setError(rpcError.message)
       return
     }
-    navigate('/fun')
+    navigate('/competitive')
   }
 
   const canSave = courtId && startHour !== null && !busy
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div data-scroll-y className="scroll-y min-h-0 flex-1 space-y-3 pb-24">
+    <>
+      <div className="space-y-3 pb-24">
         <div className="flex items-center justify-between">
-          <Link to="/fun" className="text-sm font-medium text-brand-accent">
+          <Link to="/competitive" className="text-sm font-medium text-brand-accent">
             ← Back
           </Link>
           <span className="text-xs font-semibold uppercase tracking-wide text-brand-muted">New game</span>
@@ -319,6 +319,6 @@ export function CourtGameForm() {
           </button>
         </div>
       </div>
-    </div>
+    </>
   )
 }

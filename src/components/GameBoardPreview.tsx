@@ -6,6 +6,7 @@ import { pivotScheduleByCourt } from '../lib/competitionCourtBoard'
 import type { LiveCourtGamesScore, LiveCourtPointFeed } from '../lib/liveCourtScore'
 import type { FriendlyCourtScoreSubmit } from '../lib/friendlyManualScore'
 import type { GameSession } from '../lib/types'
+import type { GameCardPanel } from './gameCard'
 import { GameBoard } from './GameBoard'
 
 type Props = {
@@ -28,6 +29,9 @@ type Props = {
   onBack?: () => void
   viewAlongUrl?: string | null
   scoreSubmitEnabled?: boolean
+  leaderboardBody?: React.ReactNode
+  activePanel?: GameCardPanel
+  onActivePanel?: (panel: GameCardPanel) => void
 }
 
 export function GameBoardPreview({
@@ -49,6 +53,9 @@ export function GameBoardPreview({
   onBack,
   viewAlongUrl = null,
   scoreSubmitEnabled = true,
+  leaderboardBody,
+  activePanel,
+  onActivePanel,
 }: Props) {
   const scoreUnit = americanoScoringUnit(session)
   const breakMinutes = breakMinutesFromConfig(session.scoring_config)
@@ -112,6 +119,9 @@ export function GameBoardPreview({
       viewAlongUrl={viewAlongUrl}
       scoreSubmitEnabled={scoreSubmitEnabled}
       onTvBack={onBack}
+      leaderboardBody={leaderboardBody}
+      activePanel={activePanel}
+      onActivePanel={onActivePanel}
     />
     </div>
   )

@@ -1,9 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { useTranslation } from '../hooks/useTranslation'
-import { isGesturePadRoute } from '../lib/gesturePadChrome'
 import { AppBottomNav } from './AppBottomNav'
-import { AppShellColumn } from './AppShellColumn'
-import { AppShellPanel } from './AppShellPanel'
+import { AppShellColumn, hasAppBottomNav, isPlaySessionPath } from './AppShell'
 import { AppTopBar } from './AppTopBar'
 import { LineBookmarkBanner } from './LineBookmarkBanner'
 
@@ -12,15 +10,13 @@ export function Layout() {
   const loc = useLocation()
   const onPlayerProfile = loc.pathname.startsWith('/players/')
   const isGamesHub = loc.pathname === '/friendly' || loc.pathname === '/competitive'
-  const isFriendlySession = /^\/friendly\/(?!new(?:\/|$))[^/]+$/.test(loc.pathname)
-  const isCompetitionRun = /^\/competitions\/[^/]+\/run$/.test(loc.pathname)
-  const showBottomNav =
-    !onPlayerProfile && !isGesturePadRoute(loc.pathname) && !isCompetitionRun && !isFriendlySession
-  const useSessionShell = isGamesHub || showBottomNav || isFriendlySession
+  const isPlaySession = isPlaySessionPath(loc.pathname)
+  const showBottomNav = hasAppBottomNav(loc.pathname)
+  const needsFillViewport = isGamesHub || isPlaySession
 
   return (
-    <div className="game-bg flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">
-      {!onPlayerProfile && !isFriendlySession && !showBottomNav ? (
+    <div className="shell-paper game-bg flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">
+      {!onPlayerProfile && !isPlaySession && !showBottomNav ? (
         <AppTopBar>
           <img
             src="/brand/logo-padel.webp"
@@ -31,42 +27,40 @@ export function Layout() {
       ) : null}
 
       <main
-        data-scroll-y={onPlayerProfile || useSessionShell ? undefined : true}
-        className={`min-h-0 min-w-0 flex-1 basis-0 ${
+        data-scroll-y={onPlayerProfile || needsFillViewport ? undefined : true}
+        className={`shell-main min-h-0 min-w-0 flex-1 basis-0 ${
           onPlayerProfile
-            ? 'flex flex-col overflow-hidden p-0'
-            : useSessionShell
+            ? 'shell-main--profile flex flex-col overflow-hidden p-0'
+            : needsFillViewport
               ? 'flex flex-col overflow-hidden'
-              : 'scroll-y'
+              : 'scroll-y flex flex-col'
         }`}
       >
         {onPlayerProfile ? (
           <Outlet />
-        ) : (
+        ) : showBottomNav ? (
           <AppShellColumn
+            edgeToEdge
+            fill={needsFillViewport}
             className={
-              showBottomNav
-                ? 'overflow-hidden pt-1'
-                : isGamesHub || isFriendlySession
-                  ? 'overflow-hidden pb-2 pt-0'
-                  : 'pb-2 pt-1'
+              needsFillViewport ? 'min-h-0 flex-1 overflow-hidden' : 'w-full min-w-0'
             }
           >
-            {showBottomNav ? (
-              <AppShellPanel scrollBody={!isGamesHub}>
-                {!isGamesHub ? <LineBookmarkBanner /> : null}
-                <Outlet />
-              </AppShellPanel>
-            ) : (
-              <>
-                {!isGamesHub && !isFriendlySession ? <LineBookmarkBanner /> : null}
-                <Outlet />
-              </>
-            )}
+            {!isGamesHub && !isPlaySession ? <LineBookmarkBanner /> : null}
+            <Outlet />
+          </AppShellColumn>
+        ) : (
+          <AppShellColumn className={isGamesHub ? 'overflow-hidden' : 'pb-2 pt-1'}>
+            {!isGamesHub ? <LineBookmarkBanner /> : null}
+            <Outlet />
           </AppShellColumn>
         )}
       </main>
-      {showBottomNav ? <AppBottomNav /> : null}
+      {showBottomNav ? (
+        <div className="shell-dock">
+          <AppBottomNav />
+        </div>
+      ) : null}
     </div>
   )
 }

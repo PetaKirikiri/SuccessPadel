@@ -1,4 +1,4 @@
-import type { LeaderboardEntry } from '../components/CompetitionLeaderboard'
+import type { LeaderboardEntry } from './leaderboardTypes'
 import type { CourtPlayer } from './americanoSchedule'
 import {
   achievementsFromTeamGames,

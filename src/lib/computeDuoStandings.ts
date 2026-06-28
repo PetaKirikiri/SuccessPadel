@@ -1,4 +1,4 @@
-import type { LeaderboardEntry } from '../components/CompetitionLeaderboard'
+import type { LeaderboardEntry } from './leaderboardTypes'
 import type { CompetitionTeamConfig } from './competitionFormatPresets'
 import { normalizeLeaderboardEntries } from './leaderboardEntries'
 import { rosterDisplayName, type CompetitionPlayer } from '../hooks/useCompetitions'

@@ -1,4 +1,4 @@
-import type { LeaderboardEntry } from '../components/CompetitionLeaderboard'
+import type { LeaderboardEntry } from './leaderboardTypes'
 import type { Quadrant } from './gestureCapture'
 import { listMatchSessions } from './matchSessionLog'
 import { normalizeLeaderboardEntries } from './leaderboardEntries'

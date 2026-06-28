@@ -1,0 +1,10 @@
+/* Locked layout layer — edit only for explicit layout tasks. See AGENTS.md */
+@import './shell.layout.css';
+@import './hub.layout.css';
+@import './invite.layout.css';
+@import './settings.layout.css';
+@import './game-card.layout.css';
+@import './leaderboard.layout.css';
+@import './profile.layout.css';
+@import './gesture-pad.layout.css';
+@import './gesture-score.layout.css';

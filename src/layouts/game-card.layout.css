@@ -1,0 +1,159 @@
+/* Game card surface — bucket-specific layout hooks (logic stays in gameCard/) */
+
+.game-card-surface {
+  width: 100%;
+  min-width: 0;
+}
+
+html[data-viewport='tv'] .game-card-surface {
+  max-width: 100%;
+}
+
+/* Tablet + web + TV — card fills play carousel height */
+html[data-viewport='tablet'] .game-card-fill > :first-child,
+html[data-viewport='web'] .game-card-fill > :first-child,
+html[data-viewport='tv'] .game-card-fill > :first-child {
+  flex-shrink: 0;
+}
+
+html[data-viewport='tablet'] .game-card-courts-body,
+html[data-viewport='web'] .game-card-courts-body,
+html[data-viewport='tv'] .game-card-courts-body {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+}
+
+/* Portrait — stack courts on tablet + web */
+html[data-viewport='tablet'] .game-card-courts-grid,
+html[data-viewport='web'] .game-card-courts-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+/* Landscape — 2-column court grid fills remaining height */
+@media (orientation: landscape) {
+  html[data-viewport='tablet'] .game-card-courts-grid,
+  html[data-viewport='web'] .game-card-courts-grid,
+  html[data-viewport='tv'] .game-card-courts-grid {
+    display: grid;
+    height: 100%;
+    min-height: 0;
+    flex: 1 1 0%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: stretch;
+    align-items: stretch;
+    gap: 0.5rem;
+    overflow: hidden;
+  }
+
+  html[data-viewport='tablet'] .game-card-courts-grid--single,
+  html[data-viewport='web'] .game-card-courts-grid--single,
+  html[data-viewport='tv'] .game-card-courts-grid--single {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  html[data-viewport='tablet'] .game-card-courts-grid > *,
+  html[data-viewport='web'] .game-card-courts-grid > *,
+  html[data-viewport='tv'] .game-card-courts-grid > * {
+    min-height: 0;
+    height: 100%;
+    align-self: stretch;
+  }
+
+  html[data-viewport='tablet'] .game-card-court-card,
+  html[data-viewport='web'] .game-card-court-card,
+  html[data-viewport='tv'] .game-card-court-card {
+    display: flex;
+    min-height: 0;
+    height: 100%;
+    flex-direction: column;
+    container-type: size;
+  }
+
+  html[data-viewport='tablet'] .game-card-court-card-body,
+  html[data-viewport='web'] .game-card-court-card-body,
+  html[data-viewport='tv'] .game-card-court-card-body {
+    min-height: 0;
+    flex: 1 1 0%;
+  }
+
+  html[data-viewport='tablet'] .game-card-court-label-row,
+  html[data-viewport='web'] .game-card-court-label-row,
+  html[data-viewport='tv'] .game-card-court-label-row {
+    flex-shrink: 0;
+    padding-block: clamp(0.25rem, 4cqh, 0.75rem);
+  }
+
+  html[data-viewport='tablet'] .game-card-court-label,
+  html[data-viewport='web'] .game-card-court-label,
+  html[data-viewport='tv'] .game-card-court-label {
+    font-size: clamp(0.95rem, calc(var(--court-ui-scale, 1) * 0.55rem + 5cqh), 3.5rem);
+    line-height: 1.05;
+  }
+
+  html[data-viewport='tablet'] .game-card-court-team-label,
+  html[data-viewport='web'] .game-card-court-team-label,
+  html[data-viewport='tv'] .game-card-court-team-label {
+    font-size: clamp(0.8rem, calc(var(--court-ui-scale, 1) * 0.45rem + 4cqh), 2.75rem);
+    line-height: 1.1;
+  }
+
+  html[data-viewport='tablet'] .game-card-court-player__name,
+  html[data-viewport='web'] .game-card-court-player__name,
+  html[data-viewport='tv'] .game-card-court-player__name {
+    font-size: clamp(0.75rem, calc(var(--court-ui-scale, 1) * 0.4rem + 3.8cqh), 2.5rem);
+    line-height: 1.1;
+  }
+
+  html[data-viewport='tablet'] .game-card-court-player__avatar,
+  html[data-viewport='web'] .game-card-court-player__avatar,
+  html[data-viewport='tv'] .game-card-court-player__avatar {
+    width: clamp(1.75rem, calc(var(--court-ui-scale, 1) * 0.5rem + 9cqh), 4.5rem);
+    height: clamp(1.75rem, calc(var(--court-ui-scale, 1) * 0.5rem + 9cqh), 4.5rem);
+  }
+
+  html[data-viewport='tablet'] .game-card-court-card .tv-court-match-grid,
+  html[data-viewport='web'] .game-card-court-card .tv-court-match-grid,
+  html[data-viewport='tv'] .game-card-court-card .tv-court-match-grid {
+    min-height: 0;
+    flex: 1 1 0%;
+    gap: clamp(0.35rem, 2cqw, 1.25rem);
+    padding-inline: clamp(0.35rem, 3cqw, 1.5rem);
+  }
+}
+
+/* Court match — team A left, team B right */
+@media (orientation: landscape) {
+  html[data-viewport='tablet'] .game-card-court-match,
+  html[data-viewport='web'] .game-card-court-match,
+  html[data-viewport='tv'] .game-card-court-match {
+    width: 100%;
+    column-gap: clamp(0.5rem, 3cqw, 1.5rem);
+    padding-inline: clamp(0.35rem, 2cqw, 1rem);
+  }
+
+  html[data-viewport='tablet'] .game-card-court-match__side--left,
+  html[data-viewport='web'] .game-card-court-match__side--left,
+  html[data-viewport='tv'] .game-card-court-match__side--left {
+    justify-self: start;
+    align-self: center;
+    text-align: left;
+  }
+
+  html[data-viewport='tablet'] .game-card-court-match__side--right,
+  html[data-viewport='web'] .game-card-court-match__side--right,
+  html[data-viewport='tv'] .game-card-court-match__side--right {
+    justify-self: end;
+    align-self: center;
+    text-align: right;
+  }
+
+  html[data-viewport='tablet'] .game-card-court-match--sides,
+  html[data-viewport='web'] .game-card-court-match--sides,
+  html[data-viewport='tv'] .game-card-court-match--sides {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}

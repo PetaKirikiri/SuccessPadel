@@ -1,5 +1,5 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { liveCourtScoreKey, type LiveCourtGamesScore, type LiveCourtPointFeed } from '../lib/liveCourtScore'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { type LiveCourtGamesScore, type LiveCourtPointFeed } from '../lib/liveCourtScore'
 import { useTranslation } from '../hooks/useTranslation'
 import type { TranslateFn } from '../i18n'
 import type { AmericanoScoringUnit } from '../lib/competitionPresets'
@@ -16,21 +16,10 @@ import type { CourtScoreSubmit } from '../lib/competitionScoreInput'
 import { courtGameScoreMax } from '../lib/competitionScoreInput'
 import type { FriendlyCourtScoreSubmit } from '../lib/friendlyManualScore'
 import type { MatchTeam } from '../lib/types'
-import { CompetitionTvGameCarousel, type TvGameNav } from './competitionPlay/CompetitionTvGameCarousel'
-import { CourtCard, CourtMatchCell, courtGestureScoreHref, courtLiveHref } from './cards/CourtCard'
-import { LiveScoreFeed } from './LiveScoreFeed'
-import type { LiveCourt } from './cards/gameBoardTypes'
+import { TvGameCarousel, type TvGameNav } from './play/TvGameCarousel'
+import type { LiveCourt } from './gameCard/gameBoardTypes'
 import type { CourtPlayer } from '../lib/americanoSchedule'
-import {
-  FriendlyManualGameCard,
-  GameCardHeader,
-  GameCardShell,
-  ScoringGameCard,
-  courtsGridProps,
-  tvCourtsBodyClass,
-  courtIdForLabel,
-  type ScoringGame,
-} from './cards/GameCard'
+import { GameCard, courtIdForLabel, type GameCardPanel, type GameCardSession, type ScoringGame } from './gameCard'
 
 export type { FriendlyCourtScoreSubmit }
 
@@ -82,6 +71,9 @@ type Props = {
   scoreSubmitEnabled?: boolean
   onTvGameChange?: (gameNumber: number) => void
   onTvBack?: () => void
+  leaderboardBody?: ReactNode
+  activePanel?: GameCardPanel
+  onActivePanel?: (panel: GameCardPanel) => void
 }
 
 type RoundStatus = 'pending' | 'active' | 'complete'
@@ -258,8 +250,12 @@ export function GameBoard({
   scoreSubmitEnabled = true,
   onTvGameChange,
   onTvBack,
+  leaderboardBody,
+  activePanel = 'game',
+  onActivePanel,
 }: Props) {
   const { t } = useTranslation()
+  const useCarousel = tvCarousel
   const games = useMemo(() => {
     const rows = pivotScheduleByGame(columns)
     if (!roundTimesByGame?.size) return rows
@@ -292,8 +288,8 @@ export function GameBoard({
 
   useEffect(() => {
     if (mode !== 'scoring' && !previewTimed) return
-    const t = setInterval(() => setTick(Date.now()), 1000)
-    return () => clearInterval(t)
+    const timer = setInterval(() => setTick(Date.now()), 1000)
+    return () => clearInterval(timer)
   }, [mode, previewTimed])
 
   const clock = mode === 'scoring' || previewTimed ? tick : (now ?? tick)
@@ -384,7 +380,7 @@ export function GameBoard({
 
   const focusGameNumber = useMemo(
     () => {
-      if (tvCarousel && matchForCourt) {
+      if (useCarousel && matchForCourt) {
         return gameNumbers.find((gameNumber) => !finishedByGame.get(gameNumber)) ?? gameNumbers[gameNumbers.length - 1]
       }
       const focused = roundTimesByGame?.size
@@ -392,7 +388,7 @@ export function GameBoard({
         : activeGameNumber
       return focused
     },
-    [activeGameNumber, clock, finishedByGame, gameNumbers, matchForCourt, roundTimesByGame, tvCarousel],
+    [activeGameNumber, clock, finishedByGame, gameNumbers, matchForCourt, roundTimesByGame, useCarousel],
   )
 
   const toggleCollapsed = (gameNumber: number) => {
@@ -401,8 +397,6 @@ export function GameBoard({
       [gameNumber]: !(prev[gameNumber] ?? false),
     }))
   }
-
-  const tvCompact = tvCarousel
 
   const renderGameCard = (game: ScoringGame, tvNav?: TvGameNav) => {
     const isActive = activeGameNumber === game.gameNumber
@@ -425,7 +419,7 @@ export function GameBoard({
       ? gameCountdown(clock, times, gameMinutes, game.gameNumber, roundTimesByGame)
       : null
     const state = countdownState(clock, times, submitted, game.gameNumber, roundTimesByGame)
-    const collapsed = tvCarousel ? false : (collapsedGames[game.gameNumber] ?? false)
+    const collapsed = useCarousel ? false : (collapsedGames[game.gameNumber] ?? false)
     const isCurrentGame =
       isLiveNow ||
       inBreakAfter ||
@@ -433,228 +427,96 @@ export function GameBoard({
     const canEditGame =
       Boolean(canLog) &&
       (scoringTimeUnlocked ||
-        tvCarousel ||
+        useCarousel ||
         submitted ||
         roundStatus === 'complete' ||
         isLiveNow ||
         timeUp)
-    const canEditCourtCardScores = tvCarousel ? Boolean(canLog && gameRoundId) : canEditGame
+    const canEditCourtCardScores = useCarousel ? Boolean(canLog && gameRoundId) : canEditGame
     const displayTimeLabel =
       times != null ? formatGameTimeLabel(times.startsAt, times.endsAt) : game.timeLabel
 
-    if ((mode === 'scoring' || tvCarousel) && matchForCourt && onSubmitScores) {
-      return (
-        <ScoringGameCard
-          key={game.gameNumber}
-          game={game}
-          displayTimeLabel={displayTimeLabel}
-          liveCourtEnabled={liveCourtEnabled}
-          gestureScoreEnabled={gestureScoreEnabled}
-          friendly={friendly}
-          sessionId={sessionId}
-          competitionId={competitionId}
-          gameRoundId={gameRoundId}
-          courtsForGame={courtsForGame}
-          courtIdByLabel={courtIdByLabel}
-          matchForCourt={matchForCourt}
-          scoreUnit={scoreUnit}
-          canEdit={canEditCourtCardScores}
-          onSubmitScores={onSubmitScores}
-          onSaved={onSaved}
-          playTo={courtPlayTo}
-          courtScoreMax={courtScoreMax}
-          isLiveNow={isLiveNow}
-          isCurrentGame={isCurrentGame}
-          countdown={countdown}
-          countdownLabelText={countdownLabel(state, t)}
-          finished={finished}
-          collapsed={collapsed}
-          onToggleCollapsed={() => toggleCollapsed(game.gameNumber)}
-          currentUserId={currentUserId}
-          currentUserDisplayName={currentUserDisplayName}
-          currentUserAvatarUrl={currentUserAvatarUrl}
-          duoTeamLabels={duoTeamLabels}
-          liveCourtScores={liveCourtScores}
-          liveCourtFeeds={liveCourtFeeds}
-          tvCompact={tvCompact}
-          tvNav={tvNav}
-          onBack={tvCompact ? onTvBack : undefined}
-          viewAlongUrl={viewAlongUrl}
-          t={t}
-        />
-      )
-    }
-
-    if (mode === 'preview' && friendlyManualScoring) {
-      return (
-        <FriendlyManualGameCard
-          key={game.gameNumber}
-          game={game}
-          scoreUnit={scoreUnit}
-          liveCourtScores={liveCourtScores}
-          liveCourtFeeds={liveCourtFeeds}
-          gestureScoreEnabled={gestureScoreEnabled}
-          manualScoreEnabled={manualScoreEnabled}
-          friendlySessionId={sessionId}
-          currentUserId={currentUserId}
-          currentUserDisplayName={currentUserDisplayName}
-          onSubmitFriendlyScores={onSubmitFriendlyScores}
-          onSaved={onSaved}
-          scoreSubmitEnabled={scoreSubmitEnabled}
-          courtScoreMax={courtScoreMax}
-          courtPlayTo={courtPlayTo}
-          isLiveNow={isLiveNow}
-          isCurrentGame={isCurrentGame}
-          countdown={countdown}
-          countdownLabelText={countdownLabel(state, t)}
-          finished={finished}
-          collapsed={collapsed}
-          onToggleCollapsed={() => toggleCollapsed(game.gameNumber)}
-          currentUserAvatarUrl={currentUserAvatarUrl}
-          tvCompact={tvCompact}
-          tvNav={tvNav}
-          onBack={tvCompact ? onTvBack : undefined}
-          viewAlongUrl={viewAlongUrl}
-          t={t}
-        />
-      )
+    let session: GameCardSession
+    if (friendlyManualScoring && sessionId) {
+      session = {
+        kind: 'friendly',
+        sessionId,
+        onSubmitScores: onSubmitFriendlyScores,
+        scoreSubmitEnabled,
+        scoringEnabled: true,
+      }
+    } else if ((mode === 'scoring' || useCarousel) && matchForCourt && onSubmitScores) {
+      session = {
+        kind: 'competition',
+        competitionId,
+        sessionId,
+        gameRoundId,
+        courtsForGame,
+        courtIdByLabel,
+        matchForCourt,
+        onSubmitScores,
+        scoringEnabled: true,
+      }
+    } else {
+      session = {
+        kind: 'preview',
+        sessionId,
+        competitionId,
+        gameRoundId,
+        courtsForGame,
+        courtIdByLabel,
+        matchForCourt,
+        scoringEnabled: false,
+      }
     }
 
     return (
-      <GameCardShell
+      <GameCard
         key={game.gameNumber}
-        gameNumber={game.gameNumber}
+        game={game}
+        session={session}
+        displayTimeLabel={displayTimeLabel}
+        scoreUnit={scoreUnit}
         finished={finished}
+        isLiveNow={isLiveNow}
         isCurrentGame={isCurrentGame}
-        tvCompact={tvCompact}
-      >
-        <GameCardHeader
-          gameNumber={game.gameNumber}
-          isLiveNow={isLiveNow}
-          isCurrentGame={isCurrentGame}
-          timeLabel={displayTimeLabel}
-          countdown={countdown}
-          countdownLabelText={countdownLabel(state, t)}
-          finished={finished}
-          collapsed={collapsed}
-          onToggleCollapsed={() => toggleCollapsed(game.gameNumber)}
-          hideCollapse={tvCompact}
-          tvCompact={tvCompact}
-          tvNav={tvNav}
-          carouselHideLogo={Boolean(tvNav && friendly)}
-          onBack={tvCompact ? onTvBack : undefined}
-          viewAlongUrl={viewAlongUrl}
-          t={t}
-        />
-        {!collapsed && (
-          <div className={tvCourtsBodyClass(tvCompact, finished)}>
-            <div {...courtsGridProps(tvCompact, game.courts.length)}>
-              {game.courts.map((court, courtIndex) => {
-                const liveCourt = courtsForGame.find((c) => c.courtName === court.courtLabel)
-                const courtId = courtIdForLabel(
-                  court.courtLabel,
-                  courtIndex,
-                  courtsForGame,
-                  courtIdByLabel,
-                )
-                const saved =
-                  gameRoundId && courtId && matchForCourt
-                    ? matchForCourt(gameRoundId, courtId)
-                    : undefined
-                const liveScore = liveCourtScores?.get(
-                  liveCourtScoreKey(game.gameNumber, court.courtLabel),
-                )
-                const teamA = liveCourt?.teamA ?? court.teamA
-                const teamB = liveCourt?.teamB ?? court.teamB
-                const teamAPlayers = liveCourt?.teamAPlayers ?? court.teamAPlayers
-                const teamBPlayers = liveCourt?.teamBPlayers ?? court.teamBPlayers
-                const sideLabels = duoTeamLabels?.(
-                  [teamA[0] ?? '', teamA[1] ?? ''],
-                  [teamB[0] ?? '', teamB[1] ?? ''],
-                  teamAPlayers,
-                  teamBPlayers,
-                )
-                const courtScoreKey = liveCourtScoreKey(game.gameNumber, court.courtLabel)
-                const feed = liveCourtFeeds?.get(courtScoreKey)
-                const gestureHref = courtGestureScoreHref({
-                  gestureScoreEnabled,
-                  friendly,
-                  sessionId,
-                  competitionId,
-                  gameNumber: game.gameNumber,
-                  courtLabel: court.courtLabel,
-                  courtId,
-                  currentUserId,
-                  currentUserDisplayName,
-                  court: liveCourt ?? court,
-                  finished,
-                })
-                const href = courtLiveHref({
-                  liveCourtEnabled,
-                  friendly,
-                  sessionId,
-                  competitionId,
-                  gameNumber: game.gameNumber,
-                  courtLabel: court.courtLabel,
-                  courtId,
-                  canEditScores: false,
-                })
-
-                return (
-                  <CourtCard
-                    key={court.courtLabel}
-                    courtLabel={court.courtLabel}
-                    currentUserId={currentUserId}
-                    currentUserDisplayName={currentUserDisplayName}
-                    court={liveCourt ?? court}
-                    finished={finished}
-                    href={href}
-                    gestureScoreHref={gestureHref}
-                    gestureScoreLive={feed?.live}
-                    tvCompact={tvCompact}
-                    t={t}
-                  >
-                    <CourtMatchCell
-                      teamA={teamA}
-                      teamB={teamB}
-                      teamAPlayers={teamAPlayers}
-                      teamBPlayers={teamBPlayers}
-                      teamALabel={sideLabels?.teamALabel}
-                      teamBLabel={sideLabels?.teamBLabel}
-                      scoreUnit={scoreUnit}
-                      scoreA={
-                        liveScore?.scoreA ??
-                        (saved?.teamAPoints != null ? String(saved.teamAPoints) : undefined)
-                      }
-                      scoreB={
-                        liveScore?.scoreB ??
-                        (saved?.teamBPoints != null ? String(saved.teamBPoints) : undefined)
-                      }
-                      scoreMax={courtScoreMax}
-                      disabled
-                      finished={finished}
-                      currentUserId={currentUserId}
-                      currentUserDisplayName={currentUserDisplayName}
-                      currentUserAvatarUrl={currentUserAvatarUrl}
-                      embedded
-                      compact={tvCompact}
-                      t={t}
-                    />
-                    <LiveScoreFeed points={feed?.points} compact={tvCompact} />
-                  </CourtCard>
-                )
-              })}
-            </div>
-          </div>
-        )}
-      </GameCardShell>
+        countdown={countdown}
+        countdownLabelText={countdownLabel(state, t)}
+        collapsed={collapsed}
+        onToggleCollapsed={() => toggleCollapsed(game.gameNumber)}
+        currentUserId={currentUserId}
+        currentUserDisplayName={currentUserDisplayName}
+        currentUserAvatarUrl={currentUserAvatarUrl}
+        liveCourtEnabled={liveCourtEnabled}
+        gestureScoreEnabled={gestureScoreEnabled}
+        manualScoreEnabled={manualScoreEnabled}
+        friendly={friendly}
+        duoTeamLabels={duoTeamLabels}
+        courtScoreMax={courtScoreMax}
+        courtPlayTo={courtPlayTo}
+        liveCourtScores={liveCourtScores}
+        liveCourtFeeds={liveCourtFeeds}
+        onSaved={onSaved}
+        canEdit={canEditCourtCardScores}
+        tvNav={tvNav}
+        onBack={onTvBack}
+        viewAlongUrl={viewAlongUrl}
+        leaderboardBody={
+          leaderboardBody && (focusGameNumber ?? gameNumbers[0]) === game.gameNumber
+            ? leaderboardBody
+            : undefined
+        }
+        activePanel={activePanel}
+        onActivePanel={onActivePanel}
+        t={t}
+      />
     )
   }
 
-  if (tvCarousel) {
+  if (useCarousel) {
     const gameByNumber = new Map(orderedGames.map((game) => [game.gameNumber, game]))
     return (
-      <CompetitionTvGameCarousel
+      <TvGameCarousel
         gameNumbers={gameNumbers}
         activeGameNumber={focusGameNumber}
         renderGame={(gameNumber, nav) => {

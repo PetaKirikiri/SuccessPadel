@@ -2,6 +2,7 @@ import { useMemo, useCallback, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { GestureAnnotationPad } from '../components/GestureAnnotationPad'
 import { GesturePadDashboard } from '../components/GesturePadDashboard'
+import { GesturePadShell } from '../surfaces/gesture-score'
 import { useTranslation } from '../hooks/useTranslation'
 import { useAuth } from '../hooks/useAuth'
 import { useCompetitionBoard } from '../hooks/useCompetitionBoard'
@@ -107,9 +108,19 @@ export function GesturePadPage() {
   }
 
   return (
-    <div className="gesture-pad-page fixed inset-0 z-[400] flex flex-col overflow-hidden bg-[#1a5fa8]">
-      <div className="gesture-pad-device flex min-h-0 flex-1 flex-col">
-        <GestureAnnotationPad
+    <GesturePadShell
+      dashboard={
+        <GesturePadDashboard
+          onBack={goBack}
+          backLabel={t('common.back')}
+          onUndo={courtSetupKey ? () => setUndoSignal((n) => n + 1) : undefined}
+          onResetGame={courtSetupKey ? handleResetGame : undefined}
+          competitionId={id}
+          gameNumber={gameNumber}
+        />
+      }
+    >
+      <GestureAnnotationPad
           key={padEpoch}
           competitionId={id}
           gameNumber={gameNumber}
@@ -123,16 +134,7 @@ export function GesturePadPage() {
           currentUserId={user?.id ?? null}
           currentUserAvatarUrl={headerAvatar}
           undoSignal={undoSignal}
-        />
-      </div>
-      <GesturePadDashboard
-        onBack={goBack}
-        backLabel={t('common.back')}
-        onUndo={courtSetupKey ? () => setUndoSignal((n) => n + 1) : undefined}
-        onResetGame={courtSetupKey ? handleResetGame : undefined}
-        competitionId={id}
-        gameNumber={gameNumber}
       />
-    </div>
+    </GesturePadShell>
   )
 }

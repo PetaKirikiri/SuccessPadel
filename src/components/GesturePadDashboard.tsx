@@ -62,7 +62,7 @@ export function GesturePadDashboard({
 
   return (
     <nav
-      className="pointer-events-none fixed right-[max(0.5rem,env(safe-area-inset-right))] top-1/2 z-[420] flex -translate-y-1/2 flex-col gap-1.5"
+      className="gesture-pad-dashboard pointer-events-none fixed right-[max(0.5rem,env(safe-area-inset-right))] top-1/2 z-[420] flex -translate-y-1/2 flex-col gap-1.5"
       aria-label={t('pad.dashboard.controlsAria')}
     >
       <button

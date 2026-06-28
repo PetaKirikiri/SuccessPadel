@@ -122,6 +122,18 @@ export function competitionPlayStartFromSession(
   return playStartsAt ?? new Date()
 }
 
+/** ISO timestamp for first game slot — matches invite card playStartsAt, not raw anchor. */
+export function competitionPlayStartIso(
+  session: Pick<
+    GameSession,
+    'starts_at' | 'ends_at' | 'scoring_config' | 'target_players' | 'max_players'
+  > | null,
+): string | undefined {
+  if (!session?.starts_at) return undefined
+  const { playStartsAt } = resolveCompetitionSchedule(session)
+  return playStartsAt?.toISOString() ?? session.starts_at
+}
+
 export type ResolvedCompetitionSchedule = {
   totalGames: number
   breakMinutes: number
@@ -414,13 +426,14 @@ export function competitionRoundTimesByGame(
   gameCount?: number,
 ): Map<number, { startsAt: number; endsAt: number }> {
   const map = new Map<number, { startsAt: number; endsAt: number }>()
-  if (!session?.starts_at) return map
+  const playStartIso = competitionPlayStartIso(session)
+  if (!playStartIso) return map
   const schedule = resolveCompetitionSchedule(session)
   const count = gameCount ?? schedule.totalGames
   const slotOpts = gameSlotOptsFromSchedule(schedule)
   for (let g = 1; g <= count; g++) {
     const slot = gameSlotTimes(
-      session.starts_at,
+      playStartIso,
       g,
       schedule.gameMinutes,
       schedule.breakMinutes,

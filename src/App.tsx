@@ -17,7 +17,6 @@ import { CompetitionForm } from './pages/CompetitionForm'
 import { CompetitionJoin } from './pages/CompetitionJoin'
 import { CompetitionPublicGate } from './pages/CompetitionPublicGate'
 import { CompetitionRun } from './pages/CompetitionRun'
-import { FindGame } from './pages/FindGame'
 import { FriendlyGameForm } from './pages/FriendlyGameForm'
 import { useFriendlyGame } from './hooks/useFriendlyGame'
 import { canEditFriendlySession } from './lib/friendlyGames'
@@ -26,20 +25,14 @@ import { GamesHomePage } from './pages/GamesHomePage'
 import { FriendlyCourtPage } from './pages/FriendlyCourtPage'
 import { FriendlyPadPage } from './pages/FriendlyPadPage'
 import { GesturePadPage } from './pages/GesturePadPage'
-import { PracticeCourtPage } from './pages/PracticeCourtPage'
-import { FriendlyHeatMapPage } from './pages/FriendlyHeatMapPage'
 import { AuthCallback } from './pages/AuthCallback'
 import { LineAuthCallback } from './pages/LineAuthCallback'
 import { LineAuthComplete } from './pages/LineAuthComplete'
 import { Login } from './pages/Login'
-import { PlayerFighterPage } from './pages/PlayerFighterPage'
 import { PlayerProfilePage } from './pages/PlayerProfilePage'
 import { Profile } from './pages/Profile'
 import { ResetPassword } from './pages/ResetPassword'
-import { MakeGame } from './pages/MakeGame'
 import { MembersPage } from './pages/MembersPage'
-import { MatchNew } from './pages/MatchNew'
-import { Week } from './pages/Week'
 import { NativeDeepLinkHandler } from './components/NativeDeepLinkHandler'
 
 const GestureScoreCourtRoute = lazy(() =>
@@ -162,8 +155,6 @@ function MainAppRoutes() {
           }
         />
         <Route path="friendly/:id/pad" element={<FriendlyPadPage />} />
-        <Route path="friendly/:id/heatmap" element={<FriendlyHeatMapPage />} />
-        <Route path="practice" element={<PracticeCourtPage />} />
         <Route
           path="friendly/:id/games/:gameNumber/courts/:courtSlug/manual-score"
           element={
@@ -188,6 +179,7 @@ function MainAppRoutes() {
           path="friendly/:id/games/:gameNumber/courts/:courtSlug"
           element={<FriendlyCourtPage />}
         />
+        <Route path="friendly/:id" element={<FriendlyGamePage />} />
         <Route
           path="competitions/:id/games/:gameNumber/courts/:courtId/gesture-score"
           element={
@@ -204,14 +196,6 @@ function MainAppRoutes() {
         />
         <Route path="competitive" element={<GamesHomePage mode="competitive" />} />
         <Route path="competitions" element={<Navigate to="/competitive" replace />} />
-        <Route
-          path="players/:playerId/fighter"
-          element={
-            <ProtectedRoute>
-              <PlayerFighterPage />
-            </ProtectedRoute>
-          }
-        />
         <Route path="players/:playerId" element={<PlayerProfilePage />} />
         <Route
           path="members"
@@ -221,19 +205,6 @@ function MainAppRoutes() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="fun/new"
-          element={
-            <AdminRoute>
-              <AdminOnly>
-                <CourtGameForm />
-              </AdminOnly>
-            </AdminRoute>
-          }
-        />
-        <Route path="fun" element={<FindGame />} />
-        <Route path="find" element={<Navigate to="/fun" replace />} />
-        <Route path="make" element={<MakeGame />} />
         <Route
           path="competitions/:id/edit"
           element={
@@ -245,20 +216,12 @@ function MainAppRoutes() {
           }
         />
         <Route path="competitions/:id/run" element={<CompetitionRun />} />
-        <Route path="week" element={<Week />} />
+        <Route path="competitions/:id" element={<CompetitionPublicGate />} />
         <Route
           path="profile"
           element={
             <ProtectedRoute>
               <Profile />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="match/new"
-          element={
-            <ProtectedRoute>
-              <MatchNew />
             </ProtectedRoute>
           }
         />
@@ -366,22 +329,6 @@ export default function App() {
                   }
                 />
               </Route>
-              <Route
-                path="/competitions/:id"
-                element={
-                  <AppFrame>
-                    <CompetitionPublicGate />
-                  </AppFrame>
-                }
-              />
-              <Route
-                path="/friendly/:id"
-                element={
-                  <AppFrame>
-                    <FriendlyGamePage />
-                  </AppFrame>
-                }
-              />
               <Route
                 path="/competitions/:id/games/:gameNumber/courts/:courtId/gesture-pad"
                 element={<Navigate to="/friendly" replace />}

@@ -1,0 +1,16 @@
+/* Leaderboard surface */
+
+.leaderboard-surface {
+  width: 100%;
+  min-width: 0;
+}
+
+html[data-viewport='mobile'] .leaderboard-surface {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+html[data-viewport='web'] .leaderboard-surface {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}

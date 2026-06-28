@@ -1,0 +1,45 @@
+/* Camera point scorer — court TV / phone */
+
+html[data-gesture-ui='court'] .gesture-score-court {
+  position: fixed;
+  inset: 0;
+  z-index: 420;
+  display: flex;
+  min-height: 0;
+  width: 100vw;
+  max-width: none;
+  flex-direction: column;
+  overflow: hidden;
+  background: #0b2a4a;
+  color: #fff;
+}
+
+html[data-viewport='mobile'] .gesture-score-court__camera {
+  pointer-events: none;
+  position: fixed;
+  right: 0.5rem;
+  top: max(0.5rem, env(safe-area-inset-top, 0px));
+  z-index: 430;
+  height: 3.5rem;
+  width: 5rem;
+  transform: scaleX(-1);
+  border-radius: 0.5rem;
+  border: 1px solid rgb(255 255 255 / 0.2);
+  object-fit: cover;
+}
+
+html[data-viewport='tv'] .gesture-score-court__camera {
+  height: 9rem;
+  width: 12rem;
+  right: 1.5rem;
+}
+
+html[data-viewport='mobile'] .gesture-score-court__teams {
+  display: grid;
+  width: 100%;
+  max-width: 48rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.25rem;
+  margin-inline: auto;
+  padding: 0.5rem;
+}

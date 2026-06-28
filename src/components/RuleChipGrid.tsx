@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { RuleChip } from '../lib/friendlyGameDisplay'
 import { RuleChipIcon } from './RuleChipIcon'
 import { RuleHintModal } from './RuleHintModal'
@@ -7,17 +7,61 @@ type Props = {
   chips: RuleChip[]
   /** Inline chips in the schedule panel (right column). */
   inline?: boolean
+  /** Compact badges for invite card headers. */
+  compact?: boolean
   /** Extra grid cells after chips (e.g. admin badge buttons). */
   trailing?: ReactNode
 }
 
+function chipColumns(compact: boolean, inline: boolean): number {
+  if (compact || inline) return 2
+  return 3
+}
+
+function gridClass(compact: boolean, inline: boolean): string {
+  const cols = chipColumns(compact, inline)
+  const variant = compact ? 'rule-chip-grid--compact' : inline ? 'rule-chip-grid--inline' : 'rule-chip-grid--default'
+  return `rule-chip-grid rule-chip-grid--cols-${cols} ${variant}`
+}
+
+function useEqualChipWidth(chipCount: number, columns: number) {
+  const gridRef = useRef<HTMLUListElement>(null)
+
+  useLayoutEffect(() => {
+    const grid = gridRef.current
+    if (!grid) return
+
+    const measure = () => {
+      const items = Array.from(
+        grid.querySelectorAll<HTMLElement>(':scope > .rule-chip-grid__item'),
+      )
+      if (items.length === 0) return
+
+      grid.style.removeProperty('--rule-chip-width')
+      items.forEach((item) => {
+        item.style.width = ''
+      })
+
+      const max = Math.max(...items.map((item) => item.getBoundingClientRect().width), 0)
+      if (max > 0) {
+        grid.style.setProperty('--rule-chip-width', `${Math.ceil(max)}px`)
+      }
+    }
+
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(grid)
+    return () => observer.disconnect()
+  }, [chipCount, columns])
+
+  return gridRef
+}
+
 function RuleChipButton({
   chip,
-  inline,
   onSelect,
 }: {
   chip: RuleChip
-  inline: boolean
   onSelect: (chip: RuleChip) => void
 }) {
   const open = (e: React.SyntheticEvent) => {
@@ -38,45 +82,26 @@ function RuleChipButton({
           onSelect(chip)
         }
       }}
-      className={
-        inline
-          ? 'flex min-h-[2.75rem] min-w-0 max-w-full cursor-pointer items-center gap-1.5 rounded-lg border-2 border-brand-primary/30 bg-brand-bg-alt px-2 py-1.5 transition active:opacity-80 sm:gap-2 sm:px-2.5'
-          : 'inline-flex max-w-full cursor-pointer items-center gap-1.5 rounded-lg border-2 border-brand-primary/30 bg-brand-bg-alt py-2 pl-2.5 pr-2 transition active:opacity-80'
-      }
+      className="rule-chip-grid__item"
     >
-      <span
-        className={
-          inline
-            ? 'min-w-0 flex-1 whitespace-normal break-normal text-[11px] font-bold leading-snug text-brand-primary [overflow-wrap:normal] sm:text-xs xl:text-sm'
-            : 'text-sm font-bold leading-snug text-brand-primary'
-        }
-      >
-        {chip.label}
-      </span>
-      <RuleChipIcon
-        icon={chip.icon}
-        className={inline ? 'h-5 w-5 shrink-0 text-brand-accent sm:h-6 sm:w-6' : 'h-6 w-6 text-brand-accent'}
-      />
+      <span className="rule-chip-grid__label">{chip.label}</span>
+      <RuleChipIcon icon={chip.icon} className="rule-chip-grid__icon" />
     </li>
   )
 }
 
-export function RuleChipGrid({ chips, inline = false, trailing }: Props) {
+export function RuleChipGrid({ chips, inline = false, compact = false, trailing }: Props) {
   const [active, setActive] = useState<RuleChip | null>(null)
+  const columns = chipColumns(compact, inline)
+  const gridRef = useEqualChipWidth(chips.length + (trailing ? 1 : 0), columns)
 
   if (chips.length === 0 && !trailing) return null
 
   return (
     <>
-      <ul
-        className={
-          inline
-            ? 'm-0 grid w-full min-w-0 list-none grid-cols-1 gap-1.5 p-0 sm:grid-cols-2 sm:gap-2'
-            : 'm-0 grid list-none grid-cols-3 gap-1.5 p-0'
-        }
-      >
+      <ul ref={gridRef} className={gridClass(compact, inline)}>
         {chips.map((chip) => (
-          <RuleChipButton key={chip.key} chip={chip} inline={inline} onSelect={setActive} />
+          <RuleChipButton key={chip.key} chip={chip} onSelect={setActive} />
         ))}
         {trailing}
       </ul>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { LeaderboardEntry } from '../components/CompetitionLeaderboard'
+import type { LeaderboardEntry } from '../lib/leaderboardTypes'
 import {
   DEFAULT_LEADERBOARD_FILTERS,
   leaderboardFiltersToRpc,

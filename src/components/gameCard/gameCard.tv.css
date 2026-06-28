@@ -1,0 +1,325 @@
+/* Game card carousel layout — imported from TvGameCarousel (all viewport sizes). */
+
+.play-game-carousel {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  margin-inline: 0;
+  padding-inline: 0;
+}
+
+.play-game-carousel > * {
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+  width: 100%;
+  margin-inline: 0;
+}
+
+@media (min-width: 768px) {
+  .play-game-carousel > * {
+    width: 100%;
+    margin-inline: 0;
+  }
+}
+
+@media (min-width: 1536px) {
+  .tv-play-view .play-game-carousel,
+  .tv-play-view .tv-game-carousel {
+    padding-inline: 0;
+  }
+
+  .play-game-carousel {
+    padding-inline: clamp(0.25rem, 0.5vw, 0.5rem);
+  }
+
+  .tv-game-carousel {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 0%;
+    flex-direction: column;
+    padding-inline: clamp(0.5rem, 1vw, 1rem);
+  }
+
+  .tv-game-carousel > * {
+    display: flex;
+    min-height: 0;
+    min-width: 0;
+    flex: 1 1 0%;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .tv-game-card-racetrack > .tv-game-card {
+    min-height: 0;
+    flex: 1 1 0%;
+  }
+
+  .tv-game-card-racetrack {
+    padding: 0;
+    overflow: visible;
+  }
+
+  .tv-game-card-racetrack::before {
+    display: none;
+  }
+
+  .tv-game-card {
+    min-height: 0;
+    flex: 1 1 0%;
+    border-width: 0 !important;
+    border-radius: 0 !important;
+    background: var(--color-brand-bg-alt) !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+  }
+
+  .tv-game-courts-body {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 0%;
+    flex-direction: column;
+    background: var(--color-brand-bg-alt);
+  }
+
+  .tv-game-card > :first-child {
+    flex-shrink: 0;
+  }
+
+  .play-game-carousel .tv-game-courts-grid {
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+  }
+
+  .tv-game-courts-grid {
+    display: grid;
+    min-height: 0;
+    flex: 1 1 0%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: stretch;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .tv-game-courts-grid > * {
+    min-height: 0;
+    height: 100%;
+    align-self: stretch;
+  }
+
+  .tv-game-courts-grid--single {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tv-court-card {
+    display: flex;
+    min-height: 0;
+    height: 100%;
+    flex-direction: column;
+    border-width: 1px !important;
+    box-shadow: none !important;
+  }
+
+  .tv-court-card > :first-child {
+    flex-shrink: 0;
+  }
+
+  .tv-court-card-body {
+    min-height: 0;
+    flex: 1 1 0%;
+  }
+
+  .tv-court-card-body > * {
+    min-height: 0;
+  }
+
+  .tv-court-match-grid {
+    height: 100%;
+    width: 100%;
+  }
+
+  .tv-court-match-grid > :first-child {
+    justify-content: center;
+    justify-self: start;
+  }
+
+  .tv-court-match-grid > :last-child {
+    justify-content: center;
+    justify-self: end;
+  }
+
+  .tv-court-card > :first-child .tv-court-label {
+    font-size: clamp(3rem, 7vh, 5rem);
+    line-height: 1.1;
+  }
+
+  .tv-court-card-body .truncate {
+    font-size: clamp(1.5rem, 4.2vh, 3rem);
+  }
+
+  .tv-court-card-body .tv-team-label {
+    font-size: clamp(1.25rem, 3.4vh, 2.5rem);
+  }
+
+  .tv-court-card-body img.rounded-full {
+    width: clamp(3rem, 7vh, 4.5rem);
+    height: clamp(3rem, 7vh, 4.5rem);
+  }
+
+  .tv-court-card-body span.rounded-full {
+    width: clamp(3rem, 7vh, 4.5rem);
+    height: clamp(3rem, 7vh, 4.5rem);
+    font-size: clamp(1.25rem, 3vh, 2rem);
+  }
+
+  .tv-court-card-body .tv-score-stepper .tv-score-input {
+    height: clamp(2.75rem, 7vh, 4.5rem);
+    width: clamp(2.75rem, 7vh, 4.5rem);
+    font-size: clamp(1.25rem, 3.5vh, 2.5rem);
+  }
+
+  .tv-court-card-body .tv-score-stepper .tv-score-step-btn {
+    height: clamp(1.5rem, 3.5vh, 2.25rem);
+    width: clamp(2.25rem, 5.5vh, 3.5rem);
+    font-size: clamp(0.625rem, 1.6vh, 1rem);
+  }
+
+  .tv-court-card-body .tv-score-readout {
+    font-size: clamp(1.5rem, 4vh, 2.75rem);
+  }
+
+  .tv-game-courts-grid--duo {
+    gap: 0.75rem;
+  }
+
+  .tv-game-courts-grid--duo .tv-court-card > :first-child .tv-court-label {
+    font-size: clamp(4rem, 9vh, 6.5rem);
+  }
+
+  .tv-game-courts-grid--duo .tv-court-card-body .truncate {
+    font-size: clamp(2.25rem, 5.8vh, 4rem);
+  }
+
+  .tv-game-courts-grid--duo .tv-court-card-body .tv-team-label {
+    font-size: clamp(1.75rem, 4.5vh, 3.25rem);
+  }
+
+  .tv-game-courts-grid--duo .tv-court-card-body img.rounded-full {
+    width: clamp(3.5rem, 8.5vh, 5.5rem);
+    height: clamp(3.5rem, 8.5vh, 5.5rem);
+  }
+
+  .tv-game-courts-grid--duo .tv-court-card-body span.rounded-full {
+    width: clamp(3.5rem, 8.5vh, 5.5rem);
+    height: clamp(3.5rem, 8.5vh, 5.5rem);
+    font-size: clamp(1.5rem, 3.6vh, 2.5rem);
+  }
+
+  .tv-game-courts-grid--duo .tv-court-card-body .tv-score-stepper .tv-score-input {
+    height: clamp(3.5rem, 9vh, 5.5rem);
+    width: clamp(3.5rem, 9vh, 5.5rem);
+    font-size: clamp(1.75rem, 4.5vh, 3.25rem);
+  }
+
+  .tv-game-courts-grid--duo .tv-court-card-body .tv-score-stepper .tv-score-step-btn {
+    height: clamp(1.75rem, 4.5vh, 2.75rem);
+    width: clamp(2.75rem, 7vh, 4.25rem);
+    font-size: clamp(0.75rem, 2vh, 1.25rem);
+  }
+
+  .tv-game-courts-grid--duo .tv-court-card-body .tv-score-readout {
+    font-size: clamp(2rem, 5.5vh, 3.75rem);
+  }
+
+  .tv-game-courts-grid--duo .tv-court-match-grid {
+    gap: clamp(0.75rem, 2.5vh, 2rem);
+  }
+
+  .tv-game-header-qr {
+    width: 58px;
+    height: 58px;
+    flex-shrink: 0;
+    align-self: center;
+    margin: 0 0.2rem;
+    border-radius: 0.5rem;
+    border: 2px solid rgba(255, 255, 255, 0.45);
+    background: #fff;
+  }
+
+  .tv-game-card .game-card-racetrack {
+    min-height: 0;
+    flex: 1 1 0%;
+  }
+}
+
+.play-game-carousel .tv-game-card-racetrack > .tv-game-card,
+.play-game-carousel .tv-game-card {
+  min-height: 0;
+  flex: 1 1 0%;
+  border-width: 0 !important;
+  border-radius: 0 !important;
+  background: var(--color-brand-bg-alt) !important;
+  overflow: visible !important;
+  box-shadow: none !important;
+}
+
+.play-game-carousel .tv-game-card-racetrack {
+  padding: 0;
+  overflow: visible;
+  background: var(--color-brand-bg-alt);
+}
+
+.play-game-carousel .tv-game-card-racetrack::before {
+  display: none;
+}
+
+.play-game-carousel .tv-game-courts-body {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-brand-bg-alt);
+}
+
+.play-game-carousel .tv-game-courts-grid {
+  display: grid;
+  min-height: 0;
+  flex: 1 1 0%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: stretch;
+  align-items: stretch;
+  gap: 0.5rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+.play-game-carousel .tv-game-courts-grid--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.play-game-carousel .tv-game-courts-grid > * {
+  min-height: 0;
+  height: 100%;
+  align-self: stretch;
+}
+
+.play-game-carousel .tv-court-card {
+  display: flex;
+  min-height: 0;
+  height: 100%;
+  flex-direction: column;
+  border-width: 1px !important;
+  box-shadow: none !important;
+}

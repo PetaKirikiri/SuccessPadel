@@ -1,4 +1,4 @@
-import type { LeaderboardEntry } from '../components/CompetitionLeaderboard'
+import type { LeaderboardEntry } from './leaderboardTypes'
 import { normalizeLeaderboardEntries } from './leaderboardEntries'
 import { rosterDisplayName, type CompetitionPlayer } from '../hooks/useCompetitions'
 import type { CompetitionRound, CourtMatch } from '../hooks/useCompetitionRun'

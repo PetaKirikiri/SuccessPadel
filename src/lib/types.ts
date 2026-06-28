@@ -15,7 +15,7 @@ export type AvatarMode = 'photo' | 'pixel'
 export type PixelAvatarConfig = {
   v: 1
   characterId: string
-  /** @deprecated Legacy stance URL — use characterId + pose catalog */
+  /** Test/custom showdown media. Prefer canonical app assets, not external URLs. */
   reference?: string
 }
 

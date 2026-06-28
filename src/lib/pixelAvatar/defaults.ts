@@ -25,11 +25,15 @@ export function normalizePixelAvatarConfig(raw: unknown): PixelAvatarConfig | nu
   if (o.v !== 1) return null
 
   const rawCharacterId = typeof o.characterId === 'string' ? o.characterId.trim() : ''
+  const rawReference = typeof o.reference === 'string' ? o.reference.trim() : ''
+  if (rawReference && rawReference.startsWith('/profile-videos/')) {
+    return { v: 1, characterId: rawCharacterId || DEFAULT_SHOWDOWN_CHARACTER_ID, reference: rawReference }
+  }
+
   if (rawCharacterId && gameCharacterById(rawCharacterId)) {
     return { v: 1, characterId: rawCharacterId }
   }
 
-  const rawReference = typeof o.reference === 'string' ? o.reference.trim() : ''
   if (rawReference && !rawReference.includes('/pixel-avatar/lpc-parts/')) {
     const fromRef = gameCharacterByStanceSrc(rawReference)?.id
     if (fromRef) return { v: 1, characterId: fromRef, reference: rawReference }

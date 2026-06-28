@@ -85,7 +85,7 @@ export function PlayerProfileBanner({
 
   return (
     <div
-      className={`flex items-center gap-3 px-4 py-4 ${embedded ? 'border-b border-brand-border/60' : 'game-card'}`}
+      className={`profile-banner flex items-center gap-3 px-4 py-4 ${embedded ? 'border-b border-brand-border/60' : 'game-card'}`}
     >
       <div className="flex min-w-0 flex-1 items-center gap-3">
         {avatar}
@@ -117,7 +117,7 @@ export function PlayerProfileBanner({
         </div>
       </div>
       {(canShareProfile || canAddLine || showdownSpriteUrl || fighterEditTo) && (
-        <div className="flex shrink-0 items-end gap-2">
+        <div className="profile-banner__actions flex shrink-0 items-end gap-2">
           {(canShareProfile || canAddLine) && (
             <div className="flex flex-col items-end gap-2">
               {canShareProfile && onShareProfile && (

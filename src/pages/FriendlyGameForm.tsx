@@ -2,10 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   IconSave,
 } from '../components/ButtonIcons'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
-import { SetupCard } from '../components/cards/SetupCard'
-import { SessionSetupControls } from '../components/SessionSetupControls'
-import { MemberPlayerSlots, type PadelPlayerOption } from '../components/MemberPlayerSlots'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { SetupCard } from '../components/setup/SetupCard'
+import { SessionSetupControls } from '../components/setup/SessionSetupControls'
+import { MemberPlayerSlots, type PadelPlayerOption } from '../components/setup/MemberPlayerSlots'
 import { useAuth } from '../hooks/useAuth'
 import { useFriendlyFormDraft } from '../hooks/useFriendlyFormDraft'
 import { useFriendlyGame } from '../hooks/useFriendlyGame'
@@ -46,7 +46,6 @@ import {
 } from '../lib/friendlyGames'
 import { GAME_SETUP_MIN_BREAK_MINUTES } from '../lib/gameSchedule'
 import { publishFriendlySession, updateFriendlySession } from '../lib/friendlyServer'
-import { ruleChips as sessionRuleChips } from '../lib/sessionDisplay'
 import { supabase } from '../lib/supabaseClient'
 import type { Profile } from '../lib/types'
 
@@ -269,24 +268,6 @@ export function FriendlyGameForm() {
     if (playMode === 'organized' && !titleEdited) setTitle(autoTitle)
   }, [autoTitle, playMode, titleEdited])
 
-  const ruleChips = useMemo(() => {
-    return sessionRuleChips({ kind: 'preset', mode: 'singles' }, t, {
-      skillLevel,
-      gender,
-      courtCount,
-      schedule: {
-        games: rulesSetup.gameCount,
-        gameMinutes: rulesSetup.gameMinutes,
-        breakMinutes: Math.max(GAME_SETUP_MIN_BREAK_MINUTES, rulesSetup.breakMinutes),
-      },
-    })
-  }, [courtCount, gender, rulesSetup, skillLevel, t])
-
-  const courtCaption = useMemo(
-    () => t('competition.courtsPlayers', { courts: courtCount, players: playersFromCourtCount(courtCount) }),
-    [courtCount, t],
-  )
-
   const handlePlayersChange = (
     names: string[],
     ids: (string | null)[],
@@ -375,21 +356,16 @@ export function FriendlyGameForm() {
     return <Navigate to={`/friendly/${editId}`} replace />
   }
 
-  const backTo = isEdit && editId ? `/friendly/${editId}` : '/friendly'
-
   return (
-    <div className="w-full min-w-0 space-y-3 pb-4">
-      <Link to={backTo} className="text-sm font-medium text-brand-accent">
-        {t('common.back')}
-      </Link>
-
+    <div className="w-full space-y-3 pb-[calc(var(--app-shell-dock-height)+2rem)]">
       <SetupCard
-        ruleChips={playMode === 'organized' ? ruleChips : []}
         onBlur={isEdit ? undefined : persistNow}
         header={
           isEdit ? (
-            <p className="text-sm font-semibold text-brand-primary">{t('friendly.editTitle')}</p>
-          ) : null
+            <p className="min-w-0 truncate text-sm font-semibold text-brand-primary">
+              {t('friendly.editTitle')}
+            </p>
+          ) : undefined
         }
       >
         {playMode === 'free' ? (
@@ -418,7 +394,6 @@ export function FriendlyGameForm() {
             courtsLabel={t('competition.courts')}
             courtCount={courtCount}
             courtOptions={COURT_COUNT_OPTIONS}
-            courtCaption={courtCaption}
             onCourtCountChange={applyCourtCount}
             schedule={{
               value: {

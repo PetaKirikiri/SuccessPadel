@@ -1,5 +1,5 @@
 import type { NavigateFunction } from 'react-router-dom'
-import type { LeaderboardEntry } from '../components/CompetitionLeaderboard'
+import type { LeaderboardEntry } from '../lib/leaderboardTypes'
 import type { Achievement } from './competitionAchievements'
 import { isPlayerUuid, playerProfilePath } from './playerProfileSlug'
 import { supabase } from './supabaseClient'

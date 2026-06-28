@@ -1,4 +1,4 @@
-import type { LeaderboardEntry } from '../components/CompetitionLeaderboard'
+import type { LeaderboardEntry } from './leaderboardTypes'
 import { isDuoLeaderboardEntry } from './leaderboardFilters'
 
 /** Ensure guest rows have claim ids even when RPC fields are partial. */

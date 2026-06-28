@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import type { LeaderboardEntry } from '../components/CompetitionLeaderboard'
+import type { LeaderboardEntry } from '../lib/leaderboardTypes'
 import { normalizeLeaderboardEntries } from '../lib/leaderboardEntries'
 import type { CompetitionPlayer } from './useCompetitions'
 import type { GameSession } from '../lib/types'

@@ -10,6 +10,8 @@
     "dev:tunnel": "npx cloudflared tunnel --url http://localhost:5173",
     "build": "tsc -b && vite build",
     "check:cycles": "npx vite-node scripts/check-cycles.mts",
+    "check:layouts": "npx vite-node scripts/check-layouts.mts",
+    "check:dead": "npx vite-node scripts/check-dead.mts",
     "showdown:sync": "npx vite-node scripts/sync-showdown-assets.mts",
     "lint": "eslint .",
     "preview": "vite preview",

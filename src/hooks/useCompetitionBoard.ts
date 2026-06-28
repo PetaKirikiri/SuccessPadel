@@ -10,6 +10,7 @@ import {
 } from '../lib/competitionFormatPresets'
 import {
   americanoScheduleFromSession,
+  competitionPlayStartIso,
   courtsNeeded,
   gameSlotOptsFromSchedule,
 } from '../lib/competitionLayout'
@@ -208,7 +209,7 @@ export function useCompetitionBoard(
     if (!isAmericano || americanoGames.length === 0) return []
     return pivotScheduleByCourt(
       americanoGames,
-      session?.starts_at ?? undefined,
+      competitionPlayStartIso(session),
       gameMinutes || RANKED_GAME_MINUTES,
       scheduledBreakMinutes,
       session?.ends_at ?? undefined,

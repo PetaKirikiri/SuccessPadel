@@ -172,9 +172,6 @@ export function FriendlyCourtPage() {
         backLabel={t('common.back')}
         onUndo={isAdmin && !reviewMode ? () => setUndoSignal((n) => n + 1) : undefined}
         onResetGame={isAdmin && !reviewMode ? handleResetGame : undefined}
-        onStats={
-          isAdmin ? () => navigate(`/friendly/${game.id}/heatmap`) : undefined
-        }
       />
     </div>
   )

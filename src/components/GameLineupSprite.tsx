@@ -8,6 +8,26 @@ type Props = {
 }
 
 export function GameLineupSprite({ src, facing, size = 48, className = '' }: Props) {
+  if (src.toLowerCase().includes('.mp4')) {
+    return (
+      <video
+        src={src}
+        width={size}
+        height={size}
+        className={`shrink-0 object-contain object-bottom ${className}`}
+        style={{
+          width: size,
+          height: size,
+          transform: facing === 'left' ? 'scaleX(-1)' : undefined,
+        }}
+        autoPlay
+        loop
+        muted
+        playsInline
+      />
+    )
+  }
+
   return (
     <img
       src={src}
