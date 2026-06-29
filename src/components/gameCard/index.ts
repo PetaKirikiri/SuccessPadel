@@ -1,3 +1,6 @@
+export { GameBoard } from './GameBoard'
+export { GameBoardPreview } from './GameBoardPreview'
+export type { FriendlyCourtScoreSubmit } from './GameBoard'
 export { GameCard } from './GameCard'
 export type {
   GameCardInputProps,

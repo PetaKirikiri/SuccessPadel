@@ -231,6 +231,7 @@ export const ru: Messages = {
     openCourtView: 'Открыть вид корта',
     liveCourt: 'Живой корт',
     scoreTrackerAria: 'Трекер счёта',
+    startScoring: 'Счёт в реальном времени',
   },
   competition: {
     games: 'Игры',

@@ -1,6 +1,8 @@
 import { FunctionsHttpError } from '@supabase/supabase-js'
 import { syncProfileForUser } from '../authProfile'
 import { lineHandshakeDebug } from '../debug/lineHandshakeDebug'
+import { rememberBrowserSession } from '../auth/cachedSession'
+import { rememberCachedProfile } from '../auth/cachedProfile'
 import { supabase } from '../supabaseClient'
 import {
   clearLiffLoginCooldown,
@@ -227,9 +229,12 @@ export async function signInWithLine(): Promise<LineSignInResult> {
     return { error: 'Sign-in did not stick — try again.', redirected: false }
   }
 
+  rememberBrowserSession(confirmed.session)
+
   const user = confirmed.session.user
 
-  await syncProfileForUser(user)
+  const profile = await syncProfileForUser(user)
+  if (profile) rememberCachedProfile(profile)
   clearLiffLoginCooldown()
   window.dispatchEvent(new Event('successpadel:profile-synced'))
   // #region agent log

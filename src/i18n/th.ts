@@ -229,6 +229,7 @@ export const th: Messages = {
     openCourtView: 'เปิดมุมมองสนาม',
     liveCourt: 'สนามสด',
     scoreTrackerAria: 'ติดตามคะแนน',
+    startScoring: 'บันทึกคะแนนสด',
   },
   competition: {
     games: 'เกม',

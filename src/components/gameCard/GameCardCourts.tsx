@@ -1,10 +1,9 @@
 import { useRef, useSyncExternalStore } from 'react'
 import { useCourtsGridMetrics } from '../../hooks/useCourtsGridMetrics'
-import { liveCourtScoreKey } from '../../lib/liveCourtScore'
+import { liveCourtScoreKey, liveCourtPointScores, liveCourtGameResults } from '../../lib/liveCourtScore'
 import type { AmericanoScoringUnit } from '../../lib/competitionPresets'
 import type { TranslateFn } from '../../i18n'
 import type { GameCardSize } from '../../lib/viewBreakpoints'
-import { LiveScoreFeed } from '../LiveScoreFeed'
 import {
   CourtCard,
   CourtMatchCell,
@@ -168,12 +167,19 @@ export function GameCardCourts({
           canEditScores: canEdit && hasScoring,
         })
 
+        const trackingLive = feed?.live ?? false
         const scoreA =
           liveScore?.scoreA ??
-          (hasScoring ? row.teamAStr : saved?.teamAPoints != null ? String(saved.teamAPoints) : undefined)
+          (trackingLive ? '0' : hasScoring ? row.teamAStr : saved?.teamAPoints != null ? String(saved.teamAPoints) : undefined)
         const scoreB =
           liveScore?.scoreB ??
-          (hasScoring ? row.teamBStr : saved?.teamBPoints != null ? String(saved.teamBPoints) : undefined)
+          (trackingLive ? '0' : hasScoring ? row.teamBStr : saved?.teamBPoints != null ? String(saved.teamBPoints) : undefined)
+        const courtFinished =
+          finished || Boolean(feed && feed.live === false && (feed.points.length > 0 || trackingLive))
+        const scoringLive = trackingLive && !courtFinished
+        const pointScores = liveCourtPointScores(feed, scoringLive)
+        const gameResults = liveCourtGameResults(feed?.points)
+        const hasCourtScores = scoreA !== undefined || scoreB !== undefined || pointScores != null
 
         return (
           <CourtCard
@@ -182,7 +188,7 @@ export function GameCardCourts({
             currentUserId={currentUserId}
             currentUserDisplayName={currentUserDisplayName}
             court={liveCourt ?? court}
-            finished={finished}
+            finished={courtFinished}
             href={href}
             gestureScoreHref={gestureHref}
             gestureScoreLive={feed?.live}
@@ -201,16 +207,17 @@ export function GameCardCourts({
               scoreUnit={scoreUnit}
               scoreA={scoreA}
               scoreB={scoreB}
-              finished={finished}
+              livePointScores={pointScores}
+              liveGameResults={gameResults}
+              finished={courtFinished}
               currentUserId={currentUserId}
               currentUserDisplayName={currentUserDisplayName}
               currentUserAvatarUrl={currentUserAvatarUrl}
               embedded
               compact={compact}
-              showScores={false}
+              showScores={hasCourtScores}
               t={t}
             />
-            <LiveScoreFeed points={feed?.points} compact={compact} />
           </CourtCard>
         )
       })}

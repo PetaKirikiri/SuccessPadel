@@ -428,26 +428,36 @@ html[data-viewport='tv'] .invite-game-card__badges {
   max-width: none;
 }
 
+html[data-viewport='web'] .invite-game-card__badges .rule-chip-grid,
 html[data-viewport='tv'] .invite-game-card__badges .rule-chip-grid {
-  width: 100%;
-  grid-template-columns: repeat(2, minmax(7rem, 1fr));
-  gap: 0.4rem;
-}
-
-html[data-viewport='tv'] .invite-game-card__badges .rule-chip-grid {
-  grid-template-columns: repeat(2, minmax(8.25rem, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  width: auto;
   gap: 0.45rem;
 }
 
+html[data-viewport='web'] .invite-game-card__badges .rule-chip-grid__item,
 html[data-viewport='tv'] .invite-game-card__badges .rule-chip-grid__item {
-  width: 100%;
-  min-height: 2.35rem;
-  padding: 0.3rem 0.55rem;
+  width: auto;
+  min-height: 0;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 9999px;
 }
 
-html[data-viewport='tv'] .invite-game-card__badges .rule-chip-grid__item {
-  min-height: 2.45rem;
-  padding: 0.35rem 0.6rem;
+html[data-viewport='web'] .invite-game-card__badges .rule-chip-grid__icon,
+html[data-viewport='tv'] .invite-game-card__badges .rule-chip-grid__icon {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+html[data-viewport='web'] .invite-game-card__badges .rule-chip-grid__value,
+html[data-viewport='tv'] .invite-game-card__badges .rule-chip-grid__value {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: var(--color-brand-primary);
 }
 
 html[data-viewport='tablet'] .invite-game-card__roster,
@@ -778,16 +788,31 @@ html[data-viewport='tablet'] .invite-game-card__badges {
 }
 
 html[data-viewport='tablet'] .invite-game-card__badges .rule-chip-grid {
-  width: 100%;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  width: auto;
   gap: 0.4rem;
 }
 
 html[data-viewport='tablet'] .invite-game-card__badges .rule-chip-grid__item {
-  width: 100%;
-  min-height: 2.1rem;
-  padding: 0.28rem 0.5rem;
-  font-size: 0.72rem;
+  width: auto;
+  min-height: 0;
+  justify-content: center;
+  gap: 0.28rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 9999px;
+}
+
+html[data-viewport='tablet'] .invite-game-card__badges .rule-chip-grid__icon {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+html[data-viewport='tablet'] .invite-game-card__badges .rule-chip-grid__value {
+  font-size: 0.9rem;
+  font-weight: 900;
+  color: var(--color-brand-primary);
 }
 
 
@@ -842,16 +867,31 @@ html[data-viewport='mobile'] .invite-game-card__badges {
 }
 
 html[data-viewport='mobile'] .invite-game-card__badges .rule-chip-grid {
-  width: 100%;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.35rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  width: auto;
+  gap: 0.3rem;
 }
 
 html[data-viewport='mobile'] .invite-game-card__badges .rule-chip-grid__item {
-  width: 100%;
-  min-height: 2rem;
-  padding: 0.25rem 0.45rem;
-  font-size: 0.68rem;
+  width: auto;
+  min-height: 0;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+}
+
+html[data-viewport='mobile'] .invite-game-card__badges .rule-chip-grid__icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__badges .rule-chip-grid__value {
+  font-size: 0.8rem;
+  font-weight: 900;
+  color: var(--color-brand-primary);
 }
 
 html[data-viewport='mobile'] .invite-game-card__schedule-date {

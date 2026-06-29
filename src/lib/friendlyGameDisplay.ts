@@ -43,6 +43,8 @@ export type RuleIcon =
   | 'partners-fixed'
   | 'partners-swapped'
   | 'scoring'
+  | 'check'
+  | 'infinity'
   | 'rounds'
   | 'game-minutes'
   | 'break'
@@ -55,6 +57,8 @@ export type RuleChip = {
   hintKey: string
   hintParams?: Record<string, string | number>
   icon: RuleIcon
+  /** Compact value shown on invite-card badges (icon + number). '' = icon only; undefined = keep label. */
+  value?: string
 }
 
 export type FriendlyScheduleDisplay = {
@@ -151,6 +155,7 @@ export function friendlyRuleChips(game: FriendlyGameRecord, t: TranslateFn): Rul
       label: ruleFormatLabel(config.ruleFormat),
       hintKey: 'friendly.hint.format',
       icon: formatIcon,
+      value: '',
     },
   ]
   if (config.ruleFormat === 'king_of_court') {
@@ -159,6 +164,7 @@ export function friendlyRuleChips(game: FriendlyGameRecord, t: TranslateFn): Rul
       label: partnerStyleLabel(config.partnerStyle),
       hintKey: 'friendly.hint.partners',
       icon: config.partnerStyle === 'fixed' ? 'partners-fixed' : 'partners-swapped',
+      value: '',
     })
   }
   if (config.ruleFormat === 'americano') {
@@ -172,19 +178,22 @@ export function friendlyRuleChips(game: FriendlyGameRecord, t: TranslateFn): Rul
       key: 'scoring',
       label: scoring,
       hintKey: isOpen ? 'friendly.hint.scoringOpen' : 'friendly.hint.scoring',
-      icon: 'scoring',
+      icon: isOpen ? 'infinity' : 'check',
+      value: isOpen ? '' : String(config.americanoScoring),
     })
     chips.push({
       key: 'rounds',
       label: t('friendly.chip.matches', { n: config.gameCount }),
       hintKey: 'friendly.hint.rounds',
       icon: 'rounds',
+      value: String(config.gameCount),
     })
     chips.push({
       key: 'gameMin',
       label: t('friendly.chip.minsPerGame', { n: config.gameMinutes }),
       hintKey: 'friendly.hint.gameMinutes',
       icon: 'game-minutes',
+      value: String(config.gameMinutes),
     })
     if (config.breakMinutes > 0) {
       chips.push({
@@ -192,6 +201,7 @@ export function friendlyRuleChips(game: FriendlyGameRecord, t: TranslateFn): Rul
         label: t('friendly.chip.minBreaks', { n: config.breakMinutes }),
         hintKey: 'friendly.hint.break',
         icon: 'break',
+        value: String(config.breakMinutes),
       })
     }
   }

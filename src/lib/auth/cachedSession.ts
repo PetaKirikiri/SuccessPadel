@@ -1,4 +1,5 @@
 import type { Session } from '@supabase/supabase-js'
+import { readCachedProfile } from './cachedProfile'
 import { AUTH_STORAGE_KEY, hasPersistedAuthRecord } from './authStorage'
 import { supabase } from '../supabaseClient'
 
@@ -24,18 +25,11 @@ export function hadPreviousLogin(): boolean {
   return hasCachedAuthStorage() || Boolean(readBrowserSessionBackup())
 }
 
-function isLineContext(): boolean {
-  if (typeof window === 'undefined') return false
-  const ua = navigator.userAgent
-  const qs = `${window.location.search}${window.location.hash}`
-  return (
-    /\bLine\//i.test(ua) ||
-    document.referrer.includes('liff.line.me') ||
-    qs.includes('liff.state') ||
-    qs.includes('liff.auth') ||
-    qs.includes('liffClientId') ||
-    qs.includes('liff.referrer')
-  )
+/** User id from profile cache or session backup — survives navigation and refresh. */
+export function readStoredAuthUserId(): string | null {
+  const fromProfile = readCachedProfile()?.id
+  if (fromProfile) return fromProfile
+  return readBrowserSessionBackup()?.userId ?? null
 }
 
 function readBrowserSessionBackup(): BrowserSessionBackup | null {
@@ -105,7 +99,6 @@ async function refreshPersistedSession(): Promise<Session | null> {
 }
 
 async function restoreBrowserSessionBackup(): Promise<Session | null> {
-  if (isLineContext()) return null
   const backup = readBrowserSessionBackup()
   if (!backup) return null
 
@@ -116,7 +109,11 @@ async function restoreBrowserSessionBackup(): Promise<Session | null> {
     access_token: backup.accessToken,
     refresh_token: backup.refreshToken,
   })
-  if (error) return null
+  if (error) {
+    const retry = await refreshWithToken(backup.refreshToken)
+    if (retry) return retry
+    return null
+  }
   const { data } = await supabase.auth.refreshSession()
   const session = data.session
   if (!session?.user) return null
@@ -138,18 +135,70 @@ async function refreshWithToken(refreshToken: string): Promise<Session | null> {
 
 /** Restore Supabase session from browser storage and refresh if needed. */
 export async function tryRestoreCachedSession(): Promise<Session | null> {
-  if (!hasCachedAuthStorage()) return restoreBrowserSessionBackup()
-
-  const { data, error } = await supabase.auth.getSession()
-  if (error) return (await refreshPersistedSession()) ?? restoreBrowserSessionBackup()
-
-  const session = data.session
-  if (!session?.user) return (await refreshPersistedSession()) ?? restoreBrowserSessionBackup()
-  if (sessionExpiresSoon(session)) {
+  if (hasCachedAuthStorage()) {
+    const { data, error } = await supabase.auth.getSession()
+    if (!error && data.session?.user) {
+      if (sessionExpiresSoon(data.session)) {
+        const refreshed = await refreshPersistedSession()
+        if (refreshed) return refreshed
+      }
+      rememberBrowserSession(data.session)
+      return data.session
+    }
     const refreshed = await refreshPersistedSession()
-    return refreshed ?? session
+    if (refreshed) return refreshed
   }
 
+  return restoreBrowserSessionBackup()
+}
+
+/** Restore a JWT the RPC layer will accept (re-hydrates the Supabase client if needed). */
+export async function ensureWritableSession(): Promise<Session | null> {
+  const { data: current } = await supabase.auth.getSession()
+  if (current.session?.access_token) {
+    if (sessionExpiresSoon(current.session)) {
+      const refreshed = await refreshPersistedSession()
+      if (refreshed?.access_token) return refreshed
+    }
+    rememberBrowserSession(current.session)
+    return current.session
+  }
+
+  const restored = await tryRestoreCachedSession()
+  if (!restored?.access_token) {
+    return restoreBrowserSessionBackup()
+  }
+
+  const { data: afterRestore } = await supabase.auth.getSession()
+  if (afterRestore.session?.access_token) {
+    rememberBrowserSession(afterRestore.session)
+    return afterRestore.session
+  }
+
+  const { error } = await supabase.auth.setSession({
+    access_token: restored.access_token,
+    refresh_token: restored.refresh_token,
+  })
+  if (error) {
+    const fromBackup = await restoreBrowserSessionBackup()
+    if (fromBackup?.access_token) return fromBackup
+    return null
+  }
+
+  const { data: confirmed } = await supabase.auth.getSession()
+  if (!confirmed.session?.access_token) return null
+  rememberBrowserSession(confirmed.session)
+  return confirmed.session
+}
+
+/** Keep access token fresh while the app is open. */
+export async function keepSessionAlive(): Promise<Session | null> {
+  const { data } = await supabase.auth.getSession()
+  const session = data.session
+  if (!session?.user) return tryRestoreCachedSession()
+  if (sessionExpiresSoon(session, 5 * 60_000)) {
+    return (await refreshPersistedSession()) ?? session
+  }
   rememberBrowserSession(session)
   return session
 }

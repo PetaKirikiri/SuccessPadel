@@ -451,20 +451,7 @@ body {
   height: 1rem;
 }
 
-.rule-chip-grid--compact .rule-chip-grid__item {
-  min-height: 2rem;
-  padding: 0.125rem 0.5rem 0.125rem 0.5rem;
-}
-
-.rule-chip-grid--compact .rule-chip-grid__label {
-  font-size: 0.625rem;
-  font-weight: 900;
-}
-
-.rule-chip-grid--compact .rule-chip-grid__icon {
-  width: 1rem;
-  height: 1rem;
-}
+/* Compact (invite-card) badge look is owned by invite.layout.css per viewport. */
 
 .invite-card-carousel-item {
   min-width: 100%;

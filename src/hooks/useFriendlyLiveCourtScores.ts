@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { AmericanoScoringUnit } from '../lib/competitionPresets'
+import { gestureScoreDebug } from '../lib/debug/gestureScoreDebug'
 import {
   liveCourtFeedsFromLogs,
   liveCourtScoresFromLogs,
@@ -7,61 +8,45 @@ import {
   type LiveCourtGamesScore,
   type LiveCourtPointFeed,
 } from '../lib/liveCourtScore'
-import type { MatchGestureLog } from '../lib/matchLogServer'
-import type { GameLogGesture, GameLogPoint, GameLogRosterSlot } from '../lib/gameLogSerialize'
-import type { MatchTeam } from '../lib/types'
-import type { PlayerStatsSnapshot } from '../lib/matchSessionLog'
-import type { TennisScore } from '../lib/tennisScore'
+import { fetchFriendlySessionMatchLogs, type MatchGestureLog } from '../lib/matchLogServer'
 import { supabase } from '../lib/supabaseClient'
-
-function rowToLog(row: Record<string, unknown>): MatchGestureLog {
-  return {
-    courtSetupKey: String(row.court_setup_key),
-    friendlySessionId: (row.friendly_session_id as string | null) ?? null,
-    competitionId: (row.competition_id as string | null) ?? null,
-    gameNumber: (row.game_number as string | null) ?? null,
-    courtId: (row.court_id as string | null) ?? null,
-    matchStartedAt: String(row.match_started_at),
-    matchEndedAt: (row.match_ended_at as string | null) ?? null,
-    finalScore: (row.final_score ?? null) as TennisScore | null,
-    winner: (row.winner ?? null) as MatchTeam | null,
-    playerStats: (row.player_stats ?? []) as PlayerStatsSnapshot[],
-    pointEvents: (row.point_events ?? []) as GameLogPoint[],
-    gestures: (row.gestures ?? []) as GameLogGesture[],
-    roster: (row.roster ?? []) as GameLogRosterSlot[],
-    setupState: (row.setup_state ?? null) as MatchGestureLog['setupState'],
-    updatedAt: (row.updated_at as string | null) ?? null,
-  }
-}
 
 export function useFriendlyLiveCourtScores(
   friendlySessionId: string | undefined,
   scoreUnit: AmericanoScoringUnit = 'games',
+  pollMs = 0,
+  courtSetupKeys: string[] = [],
 ) {
   const [scores, setScores] = useState<Map<string, LiveCourtGamesScore>>(() => new Map())
   const [feeds, setFeeds] = useState<Map<string, LiveCourtPointFeed>>(() => new Map())
+  const [logs, setLogs] = useState<MatchGestureLog[]>([])
 
   const refresh = useCallback(async () => {
     if (!friendlySessionId) {
       setScores(new Map())
       setFeeds(new Map())
+      setLogs([])
       return
     }
-    const { data, error } = await supabase
-      .from('match_gesture_logs')
-      .select('*')
-      .eq('friendly_session_id', friendlySessionId)
-
-    if (error) {
-      console.error('useFriendlyLiveCourtScores', error.message)
-      return
-    }
-    const logs = (data ?? []).map((row) => rowToLog(row))
-    setScores(liveCourtScoresFromLogs(logs, scoreUnit))
-    setFeeds(
-      liveCourtFeedsFromLogs(logs, (log) => liveCourtScoreKeyFromSetupKey(log.courtSetupKey)),
-    )
-  }, [friendlySessionId, scoreUnit])
+    const rows = await fetchFriendlySessionMatchLogs(friendlySessionId, courtSetupKeys)
+    setLogs(rows)
+    const nextScores = liveCourtScoresFromLogs(rows, scoreUnit)
+    const nextFeeds = liveCourtFeedsFromLogs(rows, (log) => liveCourtScoreKeyFromSetupKey(log.courtSetupKey))
+    setScores(nextScores)
+    setFeeds(nextFeeds)
+    gestureScoreDebug('H10', 'useFriendlyLiveCourtScores:refresh', 'game card feed', {
+      sessionId: friendlySessionId.slice(0, 8),
+      logCount: rows.length,
+      courtKeys: [...nextScores.keys()],
+      scoreCourts: [...nextScores.entries()].map(([k, v]) => ({ k, ...v })),
+      liveFeeds: [...nextFeeds.entries()].map(([k, f]) => ({
+        k,
+        live: f.live,
+        points: f.points.length,
+        last: f.points[f.points.length - 1]?.scoreAfter,
+      })),
+    })
+  }, [courtSetupKeys, friendlySessionId, scoreUnit])
 
   useEffect(() => {
     void refresh()
@@ -87,5 +72,11 @@ export function useFriendlyLiveCourtScores(
     }
   }, [friendlySessionId, refresh])
 
-  return { scores, feeds, refresh }
+  useEffect(() => {
+    if (!pollMs || !friendlySessionId) return
+    const timer = window.setInterval(() => void refresh(), pollMs)
+    return () => window.clearInterval(timer)
+  }, [friendlySessionId, pollMs, refresh])
+
+  return { scores, feeds, logs, refresh }
 }

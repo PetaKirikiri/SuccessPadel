@@ -13,7 +13,14 @@ import type { MatchSessionRecord, PlayerStatsSnapshot } from './matchSessionLog'
 import type { QuadrantPlayers } from './gesturePadPlayers'
 import type { MatchTeam } from './types'
 import type { TennisScore } from './tennisScore'
+import { ensureWritableSession } from './auth/cachedSession'
+import { gestureScoreDebug } from './debug/gestureScoreDebug'
 import { supabase } from './supabaseClient'
+
+/** Supabase JWT for RPC writes — restores from browser backup when the in-memory session dropped. */
+export async function ensureSupabaseSession() {
+  return ensureWritableSession()
+}
 
 export type MatchGestureLog = {
   courtSetupKey: string
@@ -89,8 +96,11 @@ export function buildGameLogPayload(
 export async function upsertMatchGestureLog(
   payload: GameLogPayload,
 ): Promise<{ error: string | null }> {
-  const { data: live } = await supabase.auth.getSession()
-  if (!live.session) return { error: 'Not authenticated' }
+  const isFriendly = Boolean(payload.friendlySessionId)
+  if (!isFriendly) {
+    const liveSession = await ensureSupabaseSession()
+    if (!liveSession) return { error: 'Not authenticated' }
+  }
 
   const { error } = await supabase.rpc('upsert_match_gesture_log', {
     p_court_setup_key: payload.courtSetupKey,
@@ -111,8 +121,18 @@ export async function upsertMatchGestureLog(
 
   if (error) {
     console.error('upsertMatchGestureLog', error.message)
+    gestureScoreDebug('H3', 'matchLogServer:upsert', 'rpc error', {
+      friendly: isFriendly,
+      err: error.message.slice(0, 160),
+      events: payload.pointEvents.length,
+    })
     return { error: error.message }
   }
+  gestureScoreDebug('H3', 'matchLogServer:upsert', 'rpc ok', {
+    friendly: isFriendly,
+    events: payload.pointEvents.length,
+    courtKey: payload.courtSetupKey.slice(-24),
+  })
   return { error: null }
 }
 
@@ -136,6 +156,38 @@ function mapMatchGestureLogRow(data: Record<string, unknown>): MatchGestureLog {
   }
 }
 
+/** All gesture logs for a friendly session — RPC fallback when RLS blocks direct select. */
+export async function fetchFriendlySessionMatchLogs(
+  friendlySessionId: string,
+  courtSetupKeys: string[] = [],
+): Promise<MatchGestureLog[]> {
+  const { data, error } = await supabase
+    .from('match_gesture_logs')
+    .select('*')
+    .eq('friendly_session_id', friendlySessionId)
+
+  if (!error && (data?.length ?? 0) > 0) {
+    return data.map((row) => mapMatchGestureLogRow(row as Record<string, unknown>))
+  }
+
+  const { data: rpcRows, error: rpcError } = await supabase.rpc('get_public_friendly_match_logs', {
+    p_session_id: friendlySessionId,
+  })
+  if (!rpcError && rpcRows?.length) {
+    return (rpcRows as Record<string, unknown>[]).map(mapMatchGestureLogRow)
+  }
+
+  if (courtSetupKeys.length > 0) {
+    const perCourt = await Promise.all(courtSetupKeys.map((key) => fetchMatchGestureLog(key)))
+    const logs = perCourt.filter((log): log is MatchGestureLog => log != null)
+    if (logs.length > 0) return logs
+  }
+
+  if (error) console.error('fetchFriendlySessionMatchLogs', error.message)
+  if (rpcError) console.error('fetchFriendlySessionMatchLogs rpc', rpcError.message)
+  return []
+}
+
 /** Read back a stored match log (admin or owner per RLS) by court_setup_key. */
 export async function fetchMatchGestureLog(
   courtSetupKey: string,
@@ -146,12 +198,18 @@ export async function fetchMatchGestureLog(
     .eq('court_setup_key', courtSetupKey)
     .maybeSingle()
 
-  if (error) {
-    console.error('fetchMatchGestureLog', error.message)
-    return null
+  if (!error && data) return mapMatchGestureLogRow(data)
+
+  const { sessionId } = parseFriendlyCourtSetupKey(courtSetupKey)
+  if (sessionId) {
+    const { data: rows, error: rpcError } = await supabase.rpc('get_public_court_gesture_log', {
+      p_court_setup_key: courtSetupKey,
+    })
+    if (!rpcError && rows?.[0]) return mapMatchGestureLogRow(rows[0] as Record<string, unknown>)
   }
-  if (!data) return null
-  return mapMatchGestureLogRow(data)
+
+  if (error) console.error('fetchMatchGestureLog', error.message)
+  return null
 }
 
 /**

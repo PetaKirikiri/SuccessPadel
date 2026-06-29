@@ -7,7 +7,6 @@ import {
 } from './competitionAchievements'
 import type { AmericanoScoringUnit } from './competitionPresets'
 import {
-  friendlyScheduleLive,
   friendlyStartsAtIso,
   type FriendlyOrganizedConfig,
 } from './friendlyGames'
@@ -56,7 +55,7 @@ function teamScores(
   log: MatchGestureLog,
   scoreUnit: AmericanoScoringUnit,
 ): [number, number] | null {
-  const score = log.finalScore
+  const score = log.finalScore ?? log.pointEvents[log.pointEvents.length - 1]?.scoreAfter
   if (!score) return null
   if (scoreUnit === 'points') return [score.pointsA ?? 0, score.pointsB ?? 0]
   return [score.gamesA ?? 0, score.gamesB ?? 0]
@@ -91,21 +90,23 @@ function emptyTotals(key: string, name: string, playerId: string | null): Player
   }
 }
 
-/** Ignore pre-start test scores until the scheduled session time. */
+/** Ignore pre-start test scores until the scheduled session time. Keeps live logs during testing. */
 export function filterFriendlyMatchLogsForSchedule(
   logs: MatchGestureLog[],
   config: FriendlyOrganizedConfig,
-  nowMs = Date.now(),
+  _nowMs = Date.now(),
 ): MatchGestureLog[] {
-  if (!friendlyScheduleLive(config, nowMs)) return []
   const startsAt = friendlyStartsAtIso(config)
-  if (!startsAt) return logs
-  const startsAtMs = Date.parse(startsAt)
-  if (!Number.isFinite(startsAtMs)) return logs
-  return logs.filter((log) => {
+  const startsAtMs = startsAt ? Date.parse(startsAt) : Number.NaN
+  const afterScheduledStart = (log: MatchGestureLog) => {
+    if (!Number.isFinite(startsAtMs)) return true
     const stamp = Date.parse(log.matchStartedAt)
     return Number.isFinite(stamp) && stamp >= startsAtMs
-  })
+  }
+
+  const filtered = logs.filter(afterScheduledStart)
+  if (filtered.length > 0) return filtered
+  return logs.filter((log) => log.pointEvents.length > 0 || log.finalScore)
 }
 
 export function computeFriendlySessionStandings(
@@ -126,12 +127,20 @@ export function computeFriendlySessionStandings(
   }
 
   for (const log of latestLogsByCourt(logs)) {
-    if (!log.matchEndedAt || !log.winner) continue
     const scores = teamScores(log, scoreUnit)
     if (!scores) continue
+    const isComplete = Boolean(log.matchEndedAt && log.winner)
     const [scoreA, scoreB] = scores
+    const rosterSlots =
+      log.roster.length > 0
+        ? log.roster
+        : sessionRoster.map((player, index) => ({
+            quadrant: (['TL', 'TR', 'BL', 'BR'] as const)[index % 4]!,
+            playerId: player.id ?? null,
+            name: player.name,
+          }))
 
-    for (const slot of log.roster) {
+    for (const slot of rosterSlots) {
       const key = rosterPlayerKey(slot, keyLookup)
       if (!key) continue
       const team = quadrantTeam(slot.quadrant)
@@ -147,10 +156,10 @@ export function computeFriendlySessionStandings(
         member_profile_id: slot.playerId ?? rosterPlayer?.id ?? cur.member_profile_id,
         avatar_url: cur.avatar_url ?? rosterPlayer?.avatarUrl ?? null,
         points: cur.points + teamScore,
-        games: cur.games + 1,
-        wins: cur.wins + (teamScore > oppScore ? 1 : 0),
-        losses: cur.losses + (teamScore < oppScore ? 1 : 0),
-        draws: cur.draws + (teamScore === oppScore ? 1 : 0),
+        games: cur.games + (isComplete ? 1 : 0),
+        wins: cur.wins + (isComplete && teamScore > oppScore ? 1 : 0),
+        losses: cur.losses + (isComplete && teamScore < oppScore ? 1 : 0),
+        draws: cur.draws + (isComplete && teamScore === oppScore ? 1 : 0),
       })
     }
   }
@@ -158,7 +167,12 @@ export function computeFriendlySessionStandings(
   const rosterOrder = new Map(sessionRoster.map((p, i) => [p.id ?? p.name, i]))
 
   const rows = [...totals.values()]
-    .filter((row) => row.games > 0 || sessionRoster.some((p) => (p.id ?? p.name) === row.profile_id))
+    .filter(
+      (row) =>
+        row.points > 0 ||
+        row.games > 0 ||
+        sessionRoster.some((p) => (p.id ?? p.name) === row.profile_id),
+    )
     .map((row) => ({
       profile_id: row.profile_id,
       member_profile_id: row.member_profile_id,

@@ -1,0 +1,29 @@
+import { useParams } from 'react-router-dom'
+import { AppTopBar } from '../shared/NavBar/AppTopBar'
+import { CompetitionPlay } from '../foundation/play/GameCardPlayEvent'
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+function BadLink() {
+  return (
+    <div className="game-bg flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden">
+      <AppTopBar className="py-3">
+        <img
+          src="/brand/logo-padel.webp"
+          alt="Success Padel"
+          className="h-8 w-auto max-w-[10rem]"
+        />
+      </AppTopBar>
+      <main className="flex min-h-0 flex-1 items-center justify-center px-6">
+        <p className="text-center text-sm text-brand-muted">This link doesn&apos;t work. Check the message you were sent.</p>
+      </main>
+    </div>
+  )
+}
+
+export function PublicSessionGate() {
+  const { id } = useParams()
+  if (!id || !UUID_RE.test(id)) return <BadLink />
+  return <CompetitionPlay />
+}

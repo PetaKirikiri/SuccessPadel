@@ -13,6 +13,7 @@ import { readLineProfilePatch } from './profileSync'
 import { lineOAuthRedirectUri } from './oauth'
 import { handshakeSiteOrigin, siteOrigin } from '../siteUrl'
 import { supabase } from '../supabaseClient'
+import { rememberBrowserSession } from '../auth/cachedSession'
 import { syncProfileForUser } from '../authProfile'
 import { clearClaimPadelPlayer } from '../authClaimPlayer'
 
@@ -394,6 +395,7 @@ export async function consumeLineHandoffToken(handoffToken: string): Promise<{
     return { competitionId: null, error: 'Session did not stick — try again.' }
   }
 
+  rememberBrowserSession(confirmed.session)
   await syncProfileForUser(confirmed.session.user)
   clearClaimPadelPlayer()
 

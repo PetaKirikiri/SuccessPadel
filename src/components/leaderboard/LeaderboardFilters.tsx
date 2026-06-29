@@ -6,7 +6,7 @@ import {
   LEADERBOARD_SKILL_OPTIONS,
   type LeaderboardFilters,
 } from '../../lib/leaderboardFilters'
-import { IconGauge, IconStar, IconUser, IconUsers } from '../ButtonIcons'
+import { IconGauge, IconStar, IconUser, IconUsers } from '../../shared/Button/ButtonIcons'
 
 type Props = {
   filters: LeaderboardFilters

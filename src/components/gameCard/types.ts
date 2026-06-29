@@ -8,7 +8,7 @@ import { pivotScheduleByGame } from '../../lib/competitionCourtBoard'
 import type { LiveCourtGamesScore, LiveCourtPointFeed } from '../../lib/liveCourtScore'
 import type { MatchTeam } from '../../lib/types'
 import type { GameCardSize } from '../../lib/viewBreakpoints'
-import type { TvGameNav } from '../play/TvGameCarousel'
+import type { TvGameNav } from './TvGameCarousel'
 import type { LiveCourt } from './gameBoardTypes'
 
 export type ScoringGame = ReturnType<typeof pivotScheduleByGame>[number]

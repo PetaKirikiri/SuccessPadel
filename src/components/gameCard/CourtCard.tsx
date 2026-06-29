@@ -1,5 +1,6 @@
-import { type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useRef, type ReactNode } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { ChevronsUpDown } from 'lucide-react'
 import { displayCourtLabel } from '../../lib/courtDisplay'
 import type { TranslateFn } from '../../i18n'
 import type { AmericanoScoringUnit } from '../../lib/competitionPresets'
@@ -8,26 +9,141 @@ import { compactDisplayNames } from '../../lib/leaderboardEntries'
 import type { CourtPlayer } from '../../lib/americanoSchedule'
 import type { GameCardSize } from '../../lib/viewBreakpoints'
 import { isTvSize } from './gameCardSizes'
-import { CourtGestureScoreButton } from '../CourtGestureScoreButton'
-import { CourtManualScoreButton } from '../CourtManualScoreButton'
-import { PlayerAvatarLink } from '../PlayerAvatarLink'
-import { PlayerNameLink } from '../PlayerNameLink'
+import { warmupGestureScoreCamera } from '../../lib/gestureScoreCamera'
+import { ScoreTrackerIcon } from '../../shared/Button/ScoreTrackerIcon'
+import { PlayerAvatarLink } from '../../shared/ProfilePhoto/PlayerAvatarLink'
+import { PlayerNameLink } from '../../shared/ProfilePhoto/PlayerNameLink'
+import type { LiveCourtGameResult } from '../../lib/liveCourtScore'
 import type { LiveCourt, ScoringGameCourt } from './gameBoardTypes'
 
 export function stopCardNav(e: { stopPropagation: () => void }) {
   e.stopPropagation()
 }
 
-export function courtLiveHref({
-  liveCourtEnabled,
-  friendly,
-  sessionId,
-  competitionId,
-  gameNumber,
-  courtLabel: _courtLabel,
-  courtId,
-  canEditScores,
+/** Gesture-scoring entry button — icon in the court header, or a full-width bar on phone. */
+function CourtGestureScoreButton({
+  href,
+  live = false,
+  ariaLabel = 'Live gesture scoring',
+  variant = 'icon',
+  label,
+  showLabel = false,
 }: {
+  href: string
+  live?: boolean
+  ariaLabel?: string
+  variant?: 'icon' | 'bar'
+  label?: string
+  showLabel?: boolean
+}) {
+  const onPress = (e: { stopPropagation: () => void }) => {
+    stopCardNav(e)
+    warmupGestureScoreCamera()
+  }
+
+  if (variant === 'bar') {
+    return (
+      <Link
+        to={href}
+        aria-label={ariaLabel}
+        onClick={onPress}
+        onPointerDown={stopCardNav}
+        className="relative flex w-full min-h-11 items-center justify-center gap-2 rounded-xl border-2 border-brand-accent/50 bg-brand-accent/10 px-4 py-2.5 text-sm font-bold text-brand-accent shadow-sm transition active:scale-[0.98] dark:border-brand-accent/40 dark:bg-brand-accent/15 dark:text-brand-accent-light"
+      >
+        <ScoreTrackerIcon className="h-5 w-5 shrink-0" />
+        <span>{label ?? ariaLabel}</span>
+      </Link>
+    )
+  }
+
+  return (
+    <Link
+      to={href}
+      aria-label={ariaLabel}
+      title={ariaLabel}
+      onClick={onPress}
+      onPointerDown={stopCardNav}
+      className={`relative flex shrink-0 items-center justify-center rounded-full border border-brand-accent/40 bg-brand-bg-alt text-brand-accent shadow-sm transition active:scale-95 dark:border-brand-accent/35 dark:bg-white/10 dark:text-brand-accent-light ${
+        showLabel ? 'h-8 gap-1 px-2' : 'h-8 w-8'
+      }`}
+    >
+      <ScoreTrackerIcon className="h-4 w-4 shrink-0" />
+      {showLabel ? (
+        <span className="max-w-[4.5rem] truncate text-[10px] font-bold uppercase leading-none">
+          {label ?? 'Score'}
+        </span>
+      ) : null}
+      {live ? (
+        <span
+          className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-brand-surface bg-emerald-400 dark:border-[#0b2a4a]"
+          aria-hidden
+        />
+      ) : null}
+    </Link>
+  )
+}
+
+/** Manual score-entry button — opens the stepper page. */
+function CourtManualScoreButton({
+  href,
+  ariaLabel = 'Manual score entry',
+}: {
+  href: string
+  ariaLabel?: string
+}) {
+  const navigate = useNavigate()
+  return (
+    <button
+      type="button"
+      aria-label={ariaLabel}
+      title={ariaLabel}
+      onClick={(e) => {
+        e.stopPropagation()
+        navigate(href)
+      }}
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brand-accent/40 bg-brand-bg-alt text-brand-accent shadow-sm transition active:scale-95 dark:border-brand-accent/35 dark:bg-white/10 dark:text-brand-accent-light"
+    >
+      <ChevronsUpDown className="h-4 w-4" strokeWidth={2.25} aria-hidden />
+    </button>
+  )
+}
+
+/** Completed games — cumulative games score only (e.g. 1 - 0). */
+function LiveCourtGameTrail({ games, compact = false }: { games: LiveCourtGameResult[]; compact?: boolean }) {
+  const trailRef = useRef<HTMLOListElement>(null)
+
+  useEffect(() => {
+    if (!compact) return
+    const el = trailRef.current
+    if (!el) return
+    el.scrollTop = el.scrollHeight
+  }, [compact, games])
+
+  if (!games.length) return null
+  return (
+    <ol
+      ref={trailRef}
+      className={`game-card-court-game-trail m-0 list-none space-y-0 p-0 ${
+        compact ? 'mt-1 max-h-24 overflow-x-hidden overflow-y-auto overscroll-contain' : 'mt-0.5'
+      }`}
+      aria-label="Completed games"
+    >
+      {games.map((game) => (
+        <li
+          key={game.gameNumber}
+          className={`text-center font-bold tabular-nums text-brand-primary dark:text-brand-accent-light ${
+            compact ? 'text-[11px] leading-tight md:text-xs' : 'text-xs leading-snug md:text-sm'
+          }`}
+        >
+          {game.gamesA} — {game.gamesB}
+        </li>
+      ))}
+    </ol>
+  )
+}
+
+/** Live-court (on-court shot pad) was removed — there is no live href. */
+export function courtLiveHref(_props: {
   liveCourtEnabled: boolean
   friendly: boolean
   sessionId?: string
@@ -37,10 +153,6 @@ export function courtLiveHref({
   courtId?: string
   canEditScores: boolean
 }): string | undefined {
-  if (!liveCourtEnabled || !sessionId || friendly) return undefined
-  if (competitionId && courtId && !canEditScores) {
-    return `/competitions/${competitionId}/games/${gameNumber}/courts/${courtId}/live-court`
-  }
   return undefined
 }
 
@@ -62,7 +174,7 @@ export function courtGestureScoreHref({
   currentUserId,
   currentUserDisplayName: _currentUserDisplayName,
   court: _court,
-  finished,
+  finished: _finished,
 }: {
   gestureScoreEnabled: boolean
   friendly: boolean
@@ -82,7 +194,8 @@ export function courtGestureScoreHref({
   }
   finished: boolean
 }): string | undefined {
-  if (!gestureScoreEnabled || finished || !sessionId || !currentUserId) return undefined
+  if (!gestureScoreEnabled || !sessionId) return undefined
+  if (!friendly && !currentUserId) return undefined
   if (friendly) {
     return `/friendly/${sessionId}/games/${gameNumber}/courts/${encodeURIComponent(courtLabel)}/gesture-score`
   }
@@ -238,6 +351,8 @@ export function CourtCard({
             ? 'border-brand-border/40 bg-brand-surface dark:bg-white/[0.03]'
             : 'border-brand-border/50 bg-brand-surface dark:bg-white/[0.04]'
         }`}
+        onClick={href ? stopCardNav : undefined}
+        onPointerDown={href ? stopCardNav : undefined}
       >
         <CourtLabelRow
           courtLabel={courtLabel}
@@ -455,6 +570,8 @@ export function CourtMatchCell({
   embedded = false,
   compact = false,
   showScores = true,
+  livePointScores,
+  liveGameResults,
   t,
 }: {
   teamA: string[]
@@ -477,10 +594,17 @@ export function CourtMatchCell({
   embedded?: boolean
   compact?: boolean
   showScores?: boolean
+  /** Live gesture points in the centre; games stay in scoreA/scoreB for the subline. */
+  livePointScores?: { scoreA: string; scoreB: string }
+  liveGameResults?: LiveCourtGameResult[]
   t: TranslateFn
 }) {
   const fieldLabel = scoreFieldLabel(scoreUnit, t)
   const editable = showScores && Boolean(onScoreA && onScoreB && !disabled)
+  const readoutClass =
+    'tv-score-readout rounded-xl border-2 border-brand-primary/55 bg-brand-bg-alt px-3 py-1.5 text-4xl leading-none text-brand-primary shadow-md dark:border-brand-accent/60 dark:bg-white/10 dark:text-brand-accent-light md:text-5xl'
+  const displayScoreA = livePointScores?.scoreA ?? scoreA
+  const displayScoreB = livePointScores?.scoreB ?? scoreB
   const fallbackNames = compactDisplayNames([
     teamA[0] ?? '',
     teamA[1] ?? '',
@@ -516,15 +640,13 @@ export function CourtMatchCell({
       scoreMax={scoreMax}
       tv={compact}
     />
-  ) : scoreA ? (
+  ) : displayScoreA ? (
     <span
       className={`font-display font-extrabold tabular-nums ${
-        compact
-          ? 'tv-score-readout rounded-xl border-2 border-brand-primary/55 bg-brand-bg-alt px-3 py-1.5 text-2xl leading-none text-brand-primary shadow-md dark:border-brand-accent/60 dark:bg-white/10 dark:text-brand-accent-light'
-          : 'text-base text-brand-accent md:text-lg'
+        compact ? readoutClass : 'text-base text-brand-accent md:text-lg'
       }`}
     >
-      {scoreA}
+      {displayScoreA}
     </span>
   ) : (
     <span className="inline-block min-w-[1.25rem]" aria-hidden />
@@ -540,15 +662,13 @@ export function CourtMatchCell({
       scoreMax={scoreMax}
       tv={compact}
     />
-  ) : scoreB ? (
+  ) : displayScoreB ? (
     <span
       className={`font-display font-extrabold tabular-nums ${
-        compact
-          ? 'tv-score-readout rounded-xl border-2 border-brand-primary/55 bg-brand-bg-alt px-3 py-1.5 text-2xl leading-none text-brand-primary shadow-md dark:border-brand-accent/60 dark:bg-white/10 dark:text-brand-accent-light'
-          : 'text-base text-brand-accent md:text-lg'
+        compact ? readoutClass : 'text-base text-brand-accent md:text-lg'
       }`}
     >
-      {scoreB}
+      {displayScoreB}
     </span>
   ) : (
     <span className="inline-block min-w-[1.25rem]" aria-hidden />
@@ -619,6 +739,22 @@ export function CourtMatchCell({
       </p>
     ) : null
 
+  const scoreCenter = showScores ? (
+    <div className="game-card-court-score-stack flex flex-col items-center gap-0.5">
+      <div className={`flex items-stretch ${compact ? 'gap-3' : 'items-center gap-x-2'}`}>
+        <div className="flex items-center justify-center tabular-nums">{scoreAEl}</div>
+        <span
+          className={`bg-brand-border/60 ${compact ? 'w-px self-stretch' : 'h-full min-h-[2.5rem] w-px'}`}
+          aria-hidden="true"
+        />
+        <div className="flex items-center justify-center tabular-nums">{scoreBEl}</div>
+      </div>
+      {liveGameResults?.length ? (
+        <LiveCourtGameTrail games={liveGameResults} compact={compact} />
+      ) : null}
+    </div>
+  ) : null
+
   const grid = compact ? (
     <div
       className={`game-card-court-match tv-court-match-grid grid min-h-0 w-full flex-1 items-center ${
@@ -633,11 +769,7 @@ export function CourtMatchCell({
         {playerEl(teamAPlayerList[1]!, 'left')}
       </div>
       {showScores ? (
-        <div className="tv-court-match-scores flex shrink-0 items-stretch gap-3 justify-self-center">
-          <div className="flex items-center justify-center tabular-nums">{scoreAEl}</div>
-          <span className="w-px self-stretch bg-brand-border/60" aria-hidden="true" />
-          <div className="flex items-center justify-center tabular-nums">{scoreBEl}</div>
-        </div>
+        <div className="tv-court-match-scores flex shrink-0 justify-self-center">{scoreCenter}</div>
       ) : null}
       <div className="game-card-court-match__side game-card-court-match__side--right flex min-w-0 flex-col justify-center gap-2.5 justify-self-end">
         {teamTitle(teamBLabel, 'right')}
@@ -652,9 +784,7 @@ export function CourtMatchCell({
         {playerEl(teamAPlayerList[0]!, 'left')}
         {playerEl(teamAPlayerList[1]!, 'left')}
       </div>
-      <div className="flex min-w-[1.25rem] items-center justify-center tabular-nums">{scoreAEl}</div>
-      <span className="h-full min-h-[2.5rem] w-px bg-brand-border/60" aria-hidden="true" />
-      <div className="flex min-w-[1.25rem] items-center justify-center tabular-nums">{scoreBEl}</div>
+      <div className="col-start-2 col-span-3 flex justify-center">{scoreCenter}</div>
       <div className="min-w-0 justify-self-end space-y-1">
         {teamTitle(teamBLabel, 'right')}
         {playerEl(teamBPlayerList[0]!, 'right')}
@@ -730,23 +860,25 @@ function CourtLabelRow({
   const gridCell = fillCell || isTvSize(size)
   return (
     <div
-      className={`flex items-center justify-center gap-2 px-2 ${
+      className={`flex items-center gap-2 px-2 ${
         gridCell ? 'game-card-court-label-row tv-court-label-row min-h-0 shrink-0 py-2' : 'min-h-12 px-3 py-2'
       }`}
     >
-      {gestureScoreHref ? (
-        <CourtGestureScoreButton href={gestureScoreHref} live={gestureScoreLive} />
-      ) : (
-        <span className="w-8 shrink-0" aria-hidden />
-      )}
       <p className={`game-card-court-label min-w-0 flex-1 truncate text-center ${titleClass}${gridCell ? ' tv-court-label' : ''}`}>
         {label}
       </p>
-      {manualScoreHref ? (
-        <CourtManualScoreButton href={manualScoreHref} />
-      ) : (
-        <span className="w-8 shrink-0" aria-hidden />
-      )}
+      <div className="flex shrink-0 items-center gap-1.5">
+        {gestureScoreHref ? (
+          <CourtGestureScoreButton
+            href={gestureScoreHref}
+            live={gestureScoreLive}
+            ariaLabel={t('court.scoreTrackerAria')}
+            label={t('court.startScoring')}
+            showLabel={!gridCell}
+          />
+        ) : null}
+        {manualScoreHref ? <CourtManualScoreButton href={manualScoreHref} /> : null}
+      </div>
     </div>
   )
 }

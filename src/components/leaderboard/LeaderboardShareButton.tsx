@@ -4,7 +4,7 @@ import type { TranslateFn } from '../../i18n'
 import { ACHIEVEMENT_IMAGE } from '../../lib/competitionAchievements'
 import { copyLeaderboardImage, embedRowAvatars } from '../../lib/leaderboardShareImage'
 import { shareSiteOrigin } from '../../lib/siteUrl'
-import { IconShare } from '../ButtonIcons'
+import { IconShare } from '../../shared/Button/ButtonIcons'
 
 export type LeaderboardShareRow = {
   rank: number

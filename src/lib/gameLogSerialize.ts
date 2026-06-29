@@ -15,6 +15,8 @@ export type GameLogPoint = {
   at: string
   winner: MatchTeam
   scoreAfter: TennisScore
+  /** Point score immediately before a game was won (40-30 etc.). */
+  scoreBefore?: TennisScore
   winnerGestureId: string
   loserGestureId: string
   winnerQuadrant: string

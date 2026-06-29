@@ -1,6 +1,7 @@
 import { FunctionsHttpError } from '@supabase/supabase-js'
 import { Browser } from '@capacitor/browser'
 import { saveReturnTo } from '../authReturnTo'
+import { rememberBrowserSession } from '../auth/cachedSession'
 import { syncProfileForUser } from '../authProfile'
 import { claimPendingPadelPlayer } from '../claimPadelPlayer'
 import { isNativeApp, NATIVE_LINE_REDIRECT_URI } from '../native/app'
@@ -118,6 +119,8 @@ export async function completeLineOAuthFromUrl(search: string): Promise<string |
     return 'Sign-in did not stick — try again.'
   }
 
+  rememberBrowserSession(confirmed.session)
+  window.dispatchEvent(new Event('successpadel:session-ready'))
   await syncProfileForUser(confirmed.session.user)
   await claimPendingPadelPlayer()
   return null

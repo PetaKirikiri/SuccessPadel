@@ -4,10 +4,14 @@ import { supabase } from '../lib/supabaseClient'
 import type { NormalizedPoint, Quadrant } from '../lib/gestureCapture'
 import type { PendingBallPathExchange } from '../lib/ballPathExchange'
 
+import type { TennisScore } from '../lib/tennisScore'
+
 /** Live ephemeral state shared between devices on the same court. */
 export type CourtLiveEphemeral = {
   coins?: Partial<Record<Quadrant, NormalizedPoint>>
   pending?: PendingBallPathExchange | null
+  /** Optimistic score from the gesture scorer — applied before DB round-trip. */
+  scoreAfter?: TennisScore
 }
 
 type Options = {

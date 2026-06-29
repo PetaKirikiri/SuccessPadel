@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { PlayerAvatar } from '../PlayerAvatar'
+import { PlayerAvatar } from '../../shared/ProfilePhoto/PlayerAvatar'
 import { useTranslation } from '../../hooks/useTranslation'
 import type { TranslateFn } from '../../i18n'
 import {
@@ -99,6 +99,7 @@ function AchievementBadge({
 function entryRecord(
   entry: LeaderboardEntry,
 ): { wins: number; losses: number; draws: number } | null {
+  if (entry.games <= 0 && entry.total_points > 0) return null
   if (entry.wins == null && entry.losses == null && entry.draws == null) {
     if (entry.games <= 0) return { wins: 0, losses: 0, draws: 0 }
     return null

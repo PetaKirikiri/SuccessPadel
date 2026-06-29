@@ -1,3 +1,4 @@
+import { rememberBrowserSession } from './cachedSession'
 import { supabase } from '../supabaseClient'
 
 function normalizeUsername(username: string): string {
@@ -31,6 +32,8 @@ export async function signInWithBrowserPlayerUsername(usernameInput: string): Pr
 
   const { data: confirmed } = await supabase.auth.getSession()
   if (!confirmed.session?.user) return 'Sign-in did not stick — try again.'
+  rememberBrowserSession(confirmed.session)
+  window.dispatchEvent(new Event('successpadel:session-ready'))
 
   return null
 }

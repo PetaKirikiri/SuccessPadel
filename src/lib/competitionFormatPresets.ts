@@ -102,6 +102,7 @@ export function presetRuleChips(
       label: formatLabel,
       hintKey: mode === 'duos' ? 'competition.hintDuosFormat' : 'friendly.hint.format',
       icon: mode === 'duos' ? 'rounds' : 'americano',
+      value: '',
     },
   ]
   if (courts != null) {
@@ -116,6 +117,7 @@ export function presetRuleChips(
           ? { courts, teams: teamsFromCourtCount(courts), players }
           : { courts, players },
       icon: 'rounds',
+      value: String(courts),
     })
   }
   chips.push(
@@ -124,25 +126,29 @@ export function presetRuleChips(
       label: t('friendly.chip.firstToPoints', { n: preset.americanoTarget }),
       hintKey: 'friendly.hint.scoringFirstToPoints',
       hintParams: { n: preset.americanoTarget },
-      icon: 'scoring',
+      icon: 'check',
+      value: String(preset.americanoTarget),
     },
     {
       key: 'rounds',
       label: t('friendly.chip.matches', { n: gameCount }),
       hintKey: 'friendly.hint.rounds',
       icon: 'rounds',
+      value: String(gameCount),
     },
     {
       key: 'gameMin',
       label: t('friendly.chip.minsPerGame', { n: gameMinutes }),
       hintKey: 'friendly.hint.gameMinutes',
       icon: 'game-minutes',
+      value: String(gameMinutes),
     },
     {
       key: 'break',
       label: t('friendly.chip.minBreaks', { n: breakMinutes }),
       hintKey: 'friendly.hint.break',
       icon: 'break',
+      value: String(breakMinutes),
     },
   )
   return chips

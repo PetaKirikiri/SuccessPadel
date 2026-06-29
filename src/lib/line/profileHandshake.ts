@@ -1,4 +1,5 @@
 import { FunctionsHttpError } from '@supabase/supabase-js'
+import { rememberBrowserSession } from '../auth/cachedSession'
 import { syncProfileForUser } from '../authProfile'
 import { lineHandshakeDebug } from '../debug/lineHandshakeDebug'
 import { supabase } from '../supabaseClient'
@@ -117,6 +118,7 @@ export async function runLinePlayerProfileHandshake(
 
   const { data: confirmed } = await supabase.auth.getSession()
   if (confirmed.session?.user) {
+    rememberBrowserSession(confirmed.session)
     await syncProfileForUser(confirmed.session.user)
   }
 

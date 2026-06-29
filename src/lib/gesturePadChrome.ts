@@ -4,11 +4,14 @@ export function isGesturePadRoute(pathname: string): boolean {
   return (
     /\/gesture-pad\/?$/.test(pathname) ||
     /\/gesture-score\/?$/.test(pathname) ||
+    /\/gesture-score-pad\/?$/.test(pathname) ||
     /\/gesture-score-test\/?$/.test(pathname) ||
     /\/dev\/gesture-score-test\/?$/.test(pathname) ||
     /\/live-court\/?$/.test(pathname) ||
     /\/friendly\/[^/]+\/pad\/?$/.test(pathname) ||
-    /\/friendly\/[^/]+\/games\/[^/]+\/courts\/[^/]+\/?$/.test(pathname)
+    /\/friendly\/[^/]+\/games\/[^/]+\/courts\/[^/]+\/?$/.test(pathname) ||
+    /\/friendly\/[^/]+\/games\/[^/]+\/courts\/[^/]+\/gesture-score\/?$/.test(pathname) ||
+    /\/competitions\/[^/]+\/games\/[^/]+\/courts\/[^/]+\/gesture-score\/?$/.test(pathname)
   )
 }
 

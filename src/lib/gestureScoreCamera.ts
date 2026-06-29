@@ -28,3 +28,13 @@ export function takeGestureScoreCameraRequest(): Promise<MediaStream> | null {
   pendingCameraRequest = null
   return request
 }
+
+export function clearGestureScoreCameraCache(): void {
+  pendingCameraRequest = null
+}
+
+/** Pre-request camera permission when user taps Score live. */
+export function warmupGestureScoreCamera(): void {
+  if (!supportsGestureScoreCamera()) return
+  void requestGestureScoreCamera()
+}

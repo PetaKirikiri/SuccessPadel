@@ -9,7 +9,11 @@ import {
 } from './competitionPresets'
 import {
   americanoRoundsForFullRotation,
+  breakMinutesFromConfig,
   courtsNeeded,
+  eventDurationMinutes,
+  gameSlotOptsFromSchedule,
+  gameSlotTimes,
   isValidCourtLayout,
   totalScheduleMinutes,
 } from './competitionLayout'
@@ -325,6 +329,38 @@ export function isOrganizedFriendly(game: FriendlyGameRecord): boolean {
 export function isFreeFriendly(game: FriendlyGameRecord | null | undefined): boolean {
   if (!game) return false
   return !isOrganizedFriendly(game)
+}
+
+/** Wall-clock start/end for one game round (same math as the game card timer). */
+export function friendlyGameSlotMillis(
+  config: FriendlyOrganizedConfig,
+  gameNumber: number,
+  totalGames: number,
+): { startsAt: number; endsAt: number } | null {
+  const organized = {
+    ...DEFAULT_FRIENDLY_ORGANIZED_CONFIG,
+    ...config,
+    day: config.day || clubTodayDateInput(),
+  }
+  const startsAtIso = friendlyStartsAtIso(organized)
+  if (!startsAtIso) return null
+  const session = friendlyOrganizedSession(organized)
+  const breakMinutes = breakMinutesFromConfig(session.scoring_config)
+  const endsAtIso = friendlyEndsAtIso(organized)
+  const slotOpts = endsAtIso
+    ? gameSlotOptsFromSchedule({
+        eventMinutes: eventDurationMinutes(startsAtIso, endsAtIso),
+        totalGames,
+      })
+    : undefined
+  const slot = gameSlotTimes(
+    startsAtIso,
+    gameNumber,
+    organized.gameMinutes,
+    breakMinutes,
+    slotOpts,
+  )
+  return { startsAt: slot.startsAt.getTime(), endsAt: slot.endsAt.getTime() }
 }
 
 export function friendlyScheduleLive(

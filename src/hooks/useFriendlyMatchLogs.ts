@@ -26,7 +26,7 @@ function rowToLog(row: Record<string, unknown>): MatchGestureLog {
   }
 }
 
-export function useFriendlyMatchLogs(friendlySessionId: string | undefined) {
+export function useFriendlyMatchLogs(friendlySessionId: string | undefined, pollMs = 0) {
   const [logs, setLogs] = useState<MatchGestureLog[]>([])
 
   const refresh = useCallback(async () => {
@@ -69,6 +69,12 @@ export function useFriendlyMatchLogs(friendlySessionId: string | undefined) {
       void supabase.removeChannel(channel)
     }
   }, [friendlySessionId, refresh])
+
+  useEffect(() => {
+    if (!pollMs || !friendlySessionId) return
+    const timer = window.setInterval(() => void refresh(), pollMs)
+    return () => window.clearInterval(timer)
+  }, [friendlySessionId, pollMs, refresh])
 
   return { logs, refresh }
 }

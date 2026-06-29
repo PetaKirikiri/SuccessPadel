@@ -404,6 +404,13 @@ export function gameSlotOptsFromSchedule(
   return { eventMinutes: schedule.eventMinutes, totalGames: schedule.totalGames }
 }
 
+export function formatGameCountdown(remainingMs: number): string {
+  if (remainingMs <= 0) return '0:00'
+  const m = Math.floor(remainingMs / 60000)
+  const s = Math.floor((remainingMs % 60000) / 1000)
+  return `${m}:${String(s).padStart(2, '0')}`
+}
+
 export function gameSlotTimes(
   eventStartsAt: string,
   gameNumber: number,

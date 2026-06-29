@@ -42,8 +42,8 @@ function countMatches(source: string, pattern: string): number {
   return source.split(pattern).length - 1
 }
 
-const competitionFormSource = await readProjectFile('src/pages/CompetitionForm.tsx')
-const friendlyFormSource = await readProjectFile('src/pages/FriendlyGameForm.tsx')
+const competitionFormSource = await readProjectFile('src/components/SetupCard/SetupCardEventForm.tsx')
+const friendlyFormSource = await readProjectFile('src/components/SetupCard/SetupCardSessionForm.tsx')
 
 if (countMatches(competitionFormSource, '<SessionSetupControls') !== 1) {
   throw new Error('CompetitionForm must render exactly one shared SessionSetupControls block')

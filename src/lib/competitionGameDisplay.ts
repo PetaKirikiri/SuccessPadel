@@ -229,6 +229,7 @@ export function competitionRuleChips(row: CompetitionRow, t: TranslateFn): RuleC
         : ruleFormatLabel(usesGameScoring ? 'americano' : 'king_of_court'),
       hintKey: isDuos ? 'competition.hintDuosFormat' : 'friendly.hint.format',
       icon: isDuos ? 'rounds' : usesGameScoring ? 'americano' : 'king',
+      value: '',
     },
   ]
 
@@ -239,6 +240,7 @@ export function competitionRuleChips(row: CompetitionRow, t: TranslateFn): RuleC
       label: partnerStyleLabel(style),
       hintKey: 'friendly.hint.partners',
       icon: style === 'fixed' ? 'partners-fixed' : 'partners-swapped',
+      value: '',
     })
   }
 
@@ -259,12 +261,14 @@ export function competitionRuleChips(row: CompetitionRow, t: TranslateFn): RuleC
       label: t('friendly.chip.matches', { n: totalGames }),
       hintKey: 'friendly.hint.rounds',
       icon: 'rounds',
+      value: String(totalGames),
     },
     {
       key: 'gameMin',
       label: t('friendly.chip.minsPerGame', { n: gameMinutes }),
       hintKey: 'friendly.hint.gameMinutes',
       icon: 'game-minutes',
+      value: String(gameMinutes),
     },
   )
 
@@ -274,6 +278,7 @@ export function competitionRuleChips(row: CompetitionRow, t: TranslateFn): RuleC
       label: t('friendly.chip.minBreaks', { n: breakMinutes }),
       hintKey: 'friendly.hint.break',
       icon: 'break',
+      value: String(breakMinutes),
     })
   }
 
