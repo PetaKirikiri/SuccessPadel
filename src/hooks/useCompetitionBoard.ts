@@ -23,6 +23,7 @@ import {
   storedScheduleFromConfig,
   padRosterToTarget,
   targetPlayerCount,
+  courtPlayerFromRoster,
 } from '../lib/rankedSchedule'
 import { buildDuoStoredSchedule } from '../lib/duoRoundRobinSchedule'
 import { DUO_GAME_COUNT } from '../lib/competitionFormatPresets'
@@ -31,6 +32,8 @@ import type { CourtPlayer, GameRound } from '../lib/americanoSchedule'
 import type { PlaySide } from '../lib/types'
 import { pivotScheduleByCourt, sortGameRoundsByCourt, sortLiveCourtsByClubOrder, type CourtColumn } from '../lib/competitionCourtBoard'
 import type { CompetitionPlayer, CompetitionSessionPair } from './useCompetitions'
+import { buildRosterNameById, rosterDisplayName } from './useCompetitions'
+import type { LeaderboardEntry } from '../lib/leaderboardTypes'
 import {
   matchWinnerTeam,
   roundPlayerName,
@@ -40,6 +43,7 @@ import {
   type RoundPlayer,
 } from './useCompetitionRun'
 import type { GameSession, MatchTeam } from '../lib/types'
+import { debugSessionLog } from '../lib/debug/devDebug'
 type LiveCourt = {
   courtId: string
   courtName: string
@@ -50,7 +54,11 @@ type LiveCourt = {
   teamBPlayers: CourtPlayer[]
 }
 
-function groupLiveCourts(players: RoundPlayer[]): LiveCourt[] {
+function groupLiveCourts(
+  players: RoundPlayer[],
+  rosterById: Map<string, CompetitionPlayer>,
+  rosterNameById: Map<string, string>,
+): LiveCourt[] {
   const map = new Map<string, LiveCourt>()
   for (const p of players) {
     const row =
@@ -64,27 +72,57 @@ function groupLiveCourts(players: RoundPlayer[]): LiveCourt[] {
         teamAPlayers: [],
         teamBPlayers: [],
       } satisfies LiveCourt)
-    const label = roundPlayerName(p)
-    const profile = p.session_players?.profiles
-    const pid = p.profile_id ?? p.session_players?.profile_id
-    const padelPlayerId = p.padel_player_id ?? p.session_players?.padel_player_id ?? null
-    const rawSide = profile?.preferred_side
+    const rosterEntry = rosterById.get(p.roster_entry_id)
+    const label =
+      rosterNameById.get(p.roster_entry_id) ??
+      (rosterEntry ? rosterDisplayName(rosterEntry) : roundPlayerName(p))
+    // #region agent log
+    if (import.meta.env.DEV && label === 'Player') {
+      debugSessionLog(
+        'useCompetitionBoard.ts:groupLiveCourts',
+        'generic player label resolved',
+        {
+          rosterEntryId: p.roster_entry_id,
+          hasRosterEntry: Boolean(rosterEntry),
+          rosterName: rosterEntry ? rosterDisplayName(rosterEntry) : null,
+          roundPlayerName: roundPlayerName(p),
+          profileId: p.profile_id,
+          sessionProfileName: p.session_players?.profiles?.display_name ?? null,
+          guestName: p.session_players?.guest_name ?? null,
+        },
+        'H-A',
+        '5d6061',
+      )
+    }
+    // #endregion
+    const profile = rosterEntry?.profiles ?? p.session_players?.profiles
+    const pid =
+      rosterEntry?.profile_id ??
+      rosterEntry?.profiles?.id ??
+      p.profile_id ??
+      p.session_players?.profile_id ??
+      null
+    const padelPlayerId =
+      rosterEntry?.padel_player_id ?? p.padel_player_id ?? p.session_players?.padel_player_id ?? null
+    const rawSide = profile && 'preferred_side' in profile ? profile.preferred_side : null
     const preferredSide: PlaySide | null =
       rawSide === 'left' || rawSide === 'right' || rawSide === 'both' ? rawSide : null
-    const player = courtPlayerFromProfile({
-      profileId: pid ?? null,
-      rosterId: p.roster_entry_id ?? null,
-      padelPlayerId,
-      name: label,
-      profile:
-        pid && profile
-          ? {
-              avatar_url: profile.avatar_url ?? null,
-              pixel_avatar: profile.pixel_avatar ?? null,
-            }
-          : null,
-      preferredSide,
-    })
+    const player = rosterEntry
+      ? { ...courtPlayerFromRoster(rosterEntry), name: label, rosterId: p.roster_entry_id }
+      : courtPlayerFromProfile({
+          profileId: pid ?? null,
+          rosterId: p.roster_entry_id ?? null,
+          padelPlayerId,
+          name: label,
+          profile:
+            pid && profile
+              ? {
+                  avatar_url: profile.avatar_url ?? null,
+                  pixel_avatar: profile.pixel_avatar ?? null,
+                }
+              : null,
+          preferredSide,
+        })
     if (p.team === 'a') {
       row.teamA.push(label)
       row.teamAPlayers.push(player)
@@ -98,12 +136,21 @@ function groupLiveCourts(players: RoundPlayer[]): LiveCourt[] {
   return [...map.values()]
 }
 
-export function gamesFromDbRounds(rounds: CompetitionRound[], clubCourts: ClubCourt[]): GameRound[] {
+export function gamesFromDbRounds(
+  rounds: CompetitionRound[],
+  clubCourts: ClubCourt[],
+  rosterById: Map<string, CompetitionPlayer>,
+  rosterNameById: Map<string, string>,
+): GameRound[] {
   const courtOrder = new Map(clubCourts.map((c) => [c.id, c.sort_order]))
   return [...rounds]
     .sort((a, b) => a.round_number - b.round_number)
     .map((round) => {
-      const courts = groupLiveCourts(round.competition_round_players ?? [])
+      const courts = groupLiveCourts(
+        round.competition_round_players ?? [],
+        rosterById,
+        rosterNameById,
+      )
       courts.sort(
         (a, b) => (courtOrder.get(a.courtId) ?? 99) - (courtOrder.get(b.courtId) ?? 99),
       )
@@ -133,6 +180,7 @@ export function useCompetitionBoard(
   clubCourts: ClubCourt[],
   courtMatches: CourtMatch[],
   sessionPairs: CompetitionSessionPair[] = [],
+  leaderboard: LeaderboardEntry[] = [],
 ) {
   const isDuo = isDuoCompetition(session)
   const slotCount = targetPlayerCount(session, roster.length, isDuo)
@@ -161,6 +209,14 @@ export function useCompetitionBoard(
     () => (layoutValid ? padRosterToTarget(rankedRoster, slotCount) : rankedRoster),
     [layoutValid, rankedRoster, slotCount],
   )
+  const rosterById = useMemo(
+    () => new Map(paddedRoster.map((player) => [player.id, player])),
+    [paddedRoster],
+  )
+  const rosterNameById = useMemo(
+    () => buildRosterNameById(roster, leaderboard),
+    [roster, leaderboard],
+  )
 
   const hasLiveRounds = rounds.some((r) => (r.competition_round_players ?? []).length > 0)
   const storedSchedule = useMemo(
@@ -171,22 +227,45 @@ export function useCompetitionBoard(
   const americanoGames = useMemo(() => {
     if (!isAmericano || !layoutValid) return []
     let games: GameRound[]
-    if (hasLiveRounds) games = gamesFromDbRounds(rounds, clubCourts)
+    if (hasLiveRounds) games = gamesFromDbRounds(rounds, clubCourts, rosterById, rosterNameById)
     else if (isDuo && teams.length >= 2) {
-      const duoSchedule =
-        storedSchedule.length > 0
-          ? storedSchedule
-          : buildDuoStoredSchedule(
-              teams.map((t) => ({ label: t.label, rosterIds: t.roster_ids })),
-              totalGames || DUO_GAME_COUNT,
-              scheduleSeed,
-            )
-      games = gamesFromStoredSchedule(paddedRoster, duoSchedule, courtNames)
-    } else if (storedSchedule.length > 0) {
-      games = gamesFromStoredSchedule(paddedRoster, storedSchedule, courtNames)
+      const duoSchedule = buildDuoStoredSchedule(
+        teams.map((t) => ({ label: t.label, rosterIds: t.roster_ids })),
+        totalGames || DUO_GAME_COUNT,
+        scheduleSeed,
+      )
+      games = gamesFromStoredSchedule(paddedRoster, duoSchedule, courtNames, rosterNameById, roster)
     } else {
-      games = planRankedSchedule(rankedRoster, courtNames, totalGames, scheduleSeed, slotCount)
+      // Same technique as invite / friendly preview: build from current roster indices + rosterDisplayName.
+      games = planRankedSchedule(
+        rankedRoster,
+        courtNames,
+        totalGames,
+        scheduleSeed,
+        slotCount,
+        rosterNameById,
+      )
     }
+    // #region agent log
+    if (import.meta.env.DEV && games.length > 0 && games[0]!.matches[0]) {
+      debugSessionLog(
+        'useCompetitionBoard.ts:americanoGames',
+        'court preview games built',
+        {
+          runId: isDuo ? 'post-fix-duo' : 'post-fix-3',
+          hasLiveRounds,
+          isDuo,
+          firstCourtTeamA: games[0]!.matches[0]!.teamA,
+          firstCourtRosterIds: [
+            games[0]!.matches[0]!.teamAPlayers?.[0]?.rosterId ?? null,
+            games[0]!.matches[0]!.teamAPlayers?.[1]?.rosterId ?? null,
+          ],
+        },
+        'H-H',
+        '5d6061',
+      )
+    }
+    // #endregion
     return sortGameRoundsByCourt(games)
   }, [
     isAmericano,
@@ -203,6 +282,9 @@ export function useCompetitionBoard(
     isDuo,
     teams,
     slotCount,
+    rosterById,
+    rosterNameById,
+    roster,
   ])
 
   const columns: CourtColumn[] = useMemo(() => {
@@ -222,14 +304,57 @@ export function useCompetitionBoard(
     const map = new Map<number, LiveCourt[]>()
     for (const round of rounds) {
       const groups = sortLiveCourtsByClubOrder(
-        groupLiveCourts(round.competition_round_players ?? []),
+        groupLiveCourts(round.competition_round_players ?? [], rosterById, rosterNameById),
         sortOrderByCourtId,
       )
       if (groups.length === 0) continue
       map.set(round.round_number, groups)
     }
     return map
-  }, [rounds, clubCourts])
+  }, [rounds, clubCourts, rosterById, rosterNameById])
+
+  // #region agent log
+  useMemo(() => {
+    if (!import.meta.env.DEV || rosterNameById.size === 0) return null
+    const named = [...rosterNameById.entries()].filter(([, name]) => name !== 'Player')
+    debugSessionLog(
+      'useCompetitionBoard.ts:rosterNameById',
+      'post-fix enriched roster names',
+      {
+        runId: 'post-fix',
+        namedCount: named.length,
+        sample: named.slice(0, 4).map(([id, name]) => ({ id, name })),
+      },
+      'H-B',
+      '5d6061',
+    )
+    return null
+  }, [rosterNameById])
+  // #endregion
+
+  // #region agent log
+  useMemo(() => {
+    if (!import.meta.env.DEV || rosterById.size === 0) return null
+    const genericRoster = [...rosterById.values()]
+      .map((row) => ({
+        id: row.id,
+        name: rosterDisplayName(row),
+        profileName: row.profiles?.display_name ?? null,
+        guestName: row.guest_name ?? null,
+      }))
+      .filter((row) => row.name === 'Player')
+    if (genericRoster.length > 0) {
+      debugSessionLog(
+        'useCompetitionBoard.ts:rosterById',
+        'roster rows resolving to Player',
+        { count: genericRoster.length, sample: genericRoster.slice(0, 4) },
+        'H-B',
+        '5d6061',
+      )
+    }
+    return null
+  }, [rosterById])
+  // #endregion
 
   const roundIdForGame = useCallback(
     (gameNumber: number) => rounds.find((r) => r.round_number === gameNumber)?.id,

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { CourtMatchCell, ScoreStepper } from '../../components/GameCard/CourtCard'
-import { useAuth } from '../../hooks/useAuth'
 import { useFriendlyGame } from '../../hooks/useFriendlyGame'
 import { useMatchGestureLog } from '../../hooks/useMatchGestureLog'
 import { useSetupCourts } from '../../hooks/useSetupCourts'
@@ -32,7 +31,6 @@ export function ManualScoreCourtPage() {
   const { id, gameNumber, courtSlug } = useParams()
   const navigate = useNavigate()
   const { t } = useTranslation()
-  const { user, loading: authLoading } = useAuth()
   const gameNum = Number(gameNumber)
   const courtLabel = courtSlug ? decodeURIComponent(courtSlug) : ''
   const { game, loading: gameLoading } = useFriendlyGame(id)
@@ -98,10 +96,10 @@ export function ManualScoreCourtPage() {
     ? friendlyScheduleLive(game.organizedConfig ?? DEFAULT_FRIENDLY_ORGANIZED_CONFIG)
     : false
 
-  if (authLoading || gameLoading || logLoading) {
+  if (gameLoading || logLoading) {
     return <p className="p-4 text-center text-sm text-brand-muted">{t('common.loading')}</p>
   }
-  if (!user || !game || !courtMatch || !id || !courtLabel || !Number.isFinite(gameNum)) {
+  if (!game || !courtMatch || !id || !courtLabel || !Number.isFinite(gameNum)) {
     return <Navigate to="/friendly" replace />
   }
   if (!scheduleLive) {

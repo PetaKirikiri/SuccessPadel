@@ -1,60 +1,13 @@
 import './gameCard.tv.css'
-import { useEffect, useRef, type ReactNode } from 'react'
-import type { GameCardInputProps, GameCardPanel } from './types'
+import type { ReactNode } from 'react'
+import type { GameCardInputProps } from './types'
 import type { GameCardSize } from '../../lib/viewBreakpoints'
 import { useGameCardSize } from '../../hooks/useGameCardSize'
 import { GameCardHeader } from './GameCardHeader'
 import { GameCardCourts } from './GameCardCourts'
 import { courtsBodyClass, cardFillsViewport, isTvSize } from './GameCard.styles'
 import { useGameCardScoring } from './useGameCardScoring'
-
-/** Swipe game courts <-> leaderboard — header trophy toggles; no side arrows. */
-function GameCardPanelCarousel({
-  activePanel,
-  onActivePanel,
-  gamePanel,
-  leaderboardPanel,
-}: {
-  activePanel: GameCardPanel
-  onActivePanel: (panel: GameCardPanel) => void
-  gamePanel: ReactNode
-  leaderboardPanel: ReactNode
-}) {
-  const scrollerRef = useRef<HTMLDivElement>(null)
-  const panelRef = useRef(activePanel)
-  panelRef.current = activePanel
-
-  useEffect(() => {
-    const scroller = scrollerRef.current
-    if (!scroller) return
-    const targetLeft = (activePanel === 'game' ? 0 : 1) * scroller.clientWidth
-    if (Math.abs(scroller.scrollLeft - targetLeft) < 2) return
-    scroller.scrollTo({ left: targetLeft, behavior: 'smooth' })
-  }, [activePanel])
-
-  const onScroll = () => {
-    const scroller = scrollerRef.current
-    if (!scroller || scroller.clientWidth <= 0) return
-    const index = Math.round(scroller.scrollLeft / scroller.clientWidth)
-    const next: GameCardPanel = index <= 0 ? 'game' : 'leaderboard'
-    if (next !== panelRef.current) onActivePanel(next)
-  }
-
-  return (
-    <div className="game-card-panel-carousel flex min-h-0 min-w-0 flex-1 flex-col">
-      <div
-        ref={scrollerRef}
-        onScroll={onScroll}
-        className="invite-card-carousel game-card-panel-carousel-track min-h-0 min-w-0 flex-1"
-      >
-        <div className="invite-card-carousel-item flex min-h-0 flex-col">{gamePanel}</div>
-        <div className="invite-card-carousel-item flex min-h-0 flex-col overflow-hidden">
-          <div className="game-card-panel-carousel-scroll min-h-0 flex-1 overflow-y-auto">{leaderboardPanel}</div>
-        </div>
-      </div>
-    </div>
-  )
-}
+import { HorizontalPanelCarousel } from '../../shared/carousel/HorizontalPanelCarousel'
 
 function gameCardClass({
   finished,
@@ -68,7 +21,7 @@ function gameCardClass({
   const tv = isTvSize(size)
   const fills = cardFillsViewport(size)
   const parts = [
-    'flex min-h-0 w-full min-w-0 flex-col overflow-hidden rounded-2xl border-2 bg-brand-surface shadow-[0_10px_30px_-12px_rgba(96,45,36,0.35)] transition-colors dark:border-white/15 dark:bg-white/[0.07] dark:shadow-none',
+    'game-card-shell flex min-h-0 w-full min-w-0 flex-col overflow-hidden rounded-2xl border-2 bg-brand-surface shadow-[0_10px_30px_-12px_rgba(96,45,36,0.35)] transition-colors dark:border-white/15 dark:bg-white/[0.07] dark:shadow-none',
   ]
   if (finished) {
     parts.push(
@@ -88,30 +41,31 @@ function gameCardClass({
 function GameCardRoot({
   gameNumber,
   finished,
-  isCurrentGame,
   isMyGame,
   size,
+  live,
+  racetrackPaused = false,
   children,
 }: {
   gameNumber: number
   finished: boolean
-  isCurrentGame: boolean
   isMyGame: boolean
   size: GameCardSize
+  live: boolean
+  racetrackPaused?: boolean
   children: ReactNode
 }) {
   const tv = isTvSize(size)
   const fills = cardFillsViewport(size)
   const cardClass = gameCardClass({ finished, isMyGame, size })
-  const live = isCurrentGame && !finished
 
   if (live) {
     return (
       <div
         id={`game-${gameNumber}`}
         className={`game-card-racetrack rounded-2xl${
-          tv || fills ? ' flex min-h-0 flex-1 flex-col' : ''
-        }${tv ? ' tv-game-card-racetrack' : ''}`}
+          racetrackPaused ? ' game-card-racetrack--paused' : ''
+        }${tv || fills ? ' flex min-h-0 flex-1 flex-col' : ''}${tv ? ' tv-game-card-racetrack' : ''}`}
       >
         <div className={`${cardClass} !rounded-[14px]${tv || fills ? ' min-h-0 flex-1' : ''}`}>{children}</div>
       </div>
@@ -164,6 +118,9 @@ export function GameCard(props: GameCardInputProps) {
     leaderboardBody,
     activePanel = 'game',
     onActivePanel,
+    courtStandings,
+    roster,
+    rosterNameById,
     t,
   } = props
 
@@ -281,31 +238,62 @@ export function GameCard(props: GameCardInputProps) {
         courtScoreMax={courtScoreMax}
         liveCourtScores={liveCourtScores}
         liveCourtFeeds={liveCourtFeeds}
+        courtStandings={courtStandings}
+        roster={roster}
+        rosterNameById={rosterNameById}
         t={t}
       />
     </div>
   ) : null
 
+  const showRacetrack = isCurrentGame && !finished
+
   return (
     <GameCardRoot
       gameNumber={game.gameNumber}
       finished={finished}
-      isCurrentGame={isCurrentGame}
       isMyGame={isMyGame}
       size={size}
+      live={showRacetrack}
+      racetrackPaused={activePanel === 'leaderboard'}
     >
       {showLeaderboardCarousel && onActivePanel ? (
-        <GameCardPanelCarousel
-          activePanel={activePanel}
-          onActivePanel={onActivePanel}
-          gamePanel={
-            <>
-              {header}
-              {courts}
-            </>
+        <HorizontalPanelCarousel
+          activeIndex={activePanel === 'leaderboard' ? 1 : 0}
+          onIndexChange={(index) => onActivePanel(index === 0 ? 'game' : 'leaderboard')}
+          getPanelHeader={(index) =>
+            index === 1 ? (
+              <div className="flex shrink-0 items-center justify-start border-b border-brand-border/60 bg-brand-surface px-3 py-2">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onActivePanel('game')
+                  }}
+                  aria-label={t('aria.back')}
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-lg font-medium leading-none shadow-sm transition active:scale-95 ${
+                    finished
+                      ? 'border-brand-border/60 bg-brand-bg-alt text-brand-primary'
+                      : 'border-white/25 bg-white/10 text-brand-bg-alt dark:border-white/15 dark:text-brand-accent-light'
+                  }`}
+                >
+                  ←
+                </button>
+              </div>
+            ) : null
           }
-          leaderboardPanel={leaderboardBody}
-        />
+          panelClassName={(index) =>
+            index === 0 ? 'flex min-h-0 flex-col' : 'flex min-h-0 flex-col overflow-hidden'
+          }
+        >
+          <>
+            {header}
+            {courts}
+          </>
+          <div className="game-card-panel-carousel-scroll min-h-0 flex-1 overflow-y-auto">
+            {leaderboardBody}
+          </div>
+        </HorizontalPanelCarousel>
       ) : (
         <>
           {header}

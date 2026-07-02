@@ -59,15 +59,33 @@ export function useCompetitionLiveCourtScores(
       return
     }
     const logs = (data ?? []).map((row) => rowToLog(row))
-    setScores(liveCourtScoresFromCompetitionLogs(logs, courtIdToLabel, scoreUnit))
-    setFeeds(
-      liveCourtFeedsFromLogs(logs, (log) => {
-        const gameNumber = log.gameNumber ? Number(log.gameNumber) : null
-        const courtLabel = log.courtId ? courtIdToLabel.get(log.courtId) ?? null : null
-        if (gameNumber == null || !courtLabel) return null
-        return liveCourtScoreKey(gameNumber, courtLabel)
-      }),
-    )
+    const scoresMap = liveCourtScoresFromCompetitionLogs(logs, courtIdToLabel, scoreUnit)
+    const feedsMap = liveCourtFeedsFromLogs(logs, (log) => {
+      const gameNumber = log.gameNumber ? Number(log.gameNumber) : null
+      if (gameNumber == null || !log.courtId) return null
+      const courtLabel = courtIdToLabel.get(log.courtId) ?? log.courtId
+      return liveCourtScoreKey(gameNumber, courtLabel)
+    })
+    for (const log of logs) {
+      const gameNumber = log.gameNumber ? Number(log.gameNumber) : null
+      if (gameNumber == null || !log.courtId) continue
+      const label = courtIdToLabel.get(log.courtId)
+      if (!label || label === log.courtId) continue
+      const labelKey = liveCourtScoreKey(gameNumber, label)
+      const idKey = liveCourtScoreKey(gameNumber, log.courtId)
+      const feed = feedsMap.get(labelKey) ?? feedsMap.get(idKey)
+      if (feed) {
+        feedsMap.set(labelKey, feed)
+        feedsMap.set(idKey, feed)
+      }
+      const score = scoresMap.get(labelKey) ?? scoresMap.get(idKey)
+      if (score) {
+        scoresMap.set(labelKey, score)
+        scoresMap.set(idKey, score)
+      }
+    }
+    setScores(scoresMap)
+    setFeeds(feedsMap)
   }, [competitionId, courtIdToLabel, scoreUnit])
 
   useEffect(() => {

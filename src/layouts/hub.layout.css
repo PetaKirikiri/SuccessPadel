@@ -17,6 +17,18 @@
   padding-top: 0.125rem;
 }
 
+
+.hub-gender-shell {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  flex: 1 1 0%;
+}
+
 html[data-viewport='mobile'] .hub-gender-bar {
   padding-left: 0.75rem;
   padding-right: 0.75rem;
@@ -33,6 +45,16 @@ html[data-viewport='web'] .hub-gender-bar {
 }
 
 html[data-viewport='web'] .hub-list {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+html[data-viewport='tablet'] .hub-list {
+  padding-left: 0.625rem;
+  padding-right: 0.625rem;
+}
+
+html[data-viewport='tv'] .hub-list {
   padding-left: 0.75rem;
   padding-right: 0.75rem;
 }

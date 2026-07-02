@@ -337,7 +337,7 @@ export function CompetitionForm() {
       supabase.from('profiles').select('id, display_name, avatar_url').order('display_name'),
       supabase
         .from('padel_players')
-        .select('id, display_name, profile_id')
+        .select('id, display_name, profile_id, line_picture_url')
         .is('profile_id', null)
         .order('display_name'),
     ]).then(([profilesRes, playersRes]) => {
@@ -514,7 +514,7 @@ export function CompetitionForm() {
       if (padelIdsOnRoster.size > 0) {
         const { data: rosterPadel } = await supabase
           .from('padel_players')
-          .select('id, display_name, profile_id')
+          .select('id, display_name, profile_id, line_picture_url')
           .in('id', [...padelIdsOnRoster])
         if (rosterPadel?.length) {
           setPadelPlayers((prev) => {

@@ -1,5 +1,6 @@
 import type { CompetitionPlayer } from '../hooks/useCompetitions'
 import { rosterDisplayName } from '../hooks/useCompetitions'
+import { debugSessionLog } from './debug/devDebug'
 import { clubDisplayName } from './clubMemberDisplay'
 import { courtPlayerFromProfile } from './courtPlayerFromProfile'
 import type { CourtPlayer, GameRound } from './americanoSchedule'
@@ -137,30 +138,23 @@ export function roundsToGames(
   ranked: CompetitionPlayer[],
   rounds: RoundAssignment[],
   courtNames: string[],
+  rosterNameById?: Map<string, string>,
 ): GameRound[] {
   const courts = courtsNeeded(ranked.length)
   const courtsInUse = courtNames.slice(0, courts)
+  const nameAt = (rosterIndex: number) =>
+    nameForRosterId(ranked, ranked[rosterIndex]?.id ?? '', rosterNameById)
+  const playerAt = (rosterIndex: number) =>
+    courtPlayerForRosterId(ranked, ranked[rosterIndex]?.id ?? '', rosterNameById)
 
   return rounds.map((round) => ({
     gameNumber: round.round,
     matches: round.courts.map((court, courtIndex) => ({
       courtLabel: courtsInUse[courtIndex] ?? `Court ${courtIndex + 1}`,
-      teamA: [
-        rosterDisplayName(ranked[court.teamA[0]]),
-        rosterDisplayName(ranked[court.teamA[1]]),
-      ],
-      teamB: [
-        rosterDisplayName(ranked[court.teamB[0]]),
-        rosterDisplayName(ranked[court.teamB[1]]),
-      ],
-      teamAPlayers: [
-        courtPlayerFromRoster(ranked[court.teamA[0]]),
-        courtPlayerFromRoster(ranked[court.teamA[1]]),
-      ],
-      teamBPlayers: [
-        courtPlayerFromRoster(ranked[court.teamB[0]]),
-        courtPlayerFromRoster(ranked[court.teamB[1]]),
-      ],
+      teamA: [nameAt(court.teamA[0]), nameAt(court.teamA[1])],
+      teamB: [nameAt(court.teamB[0]), nameAt(court.teamB[1])],
+      teamAPlayers: [playerAt(court.teamA[0]), playerAt(court.teamA[1])],
+      teamBPlayers: [playerAt(court.teamB[0]), playerAt(court.teamB[1])],
     })),
   }))
 }
@@ -181,26 +175,43 @@ export function storedScheduleFromConfig(
   return out.sort((a, b) => a.round - b.round)
 }
 
-function nameForRosterId(ranked: CompetitionPlayer[], id: string): string {
+function nameForRosterId(
+  roster: CompetitionPlayer[],
+  id: string,
+  rosterNameById?: Map<string, string>,
+): string {
   if (isOpenSlotId(id)) return OPEN_SLOT_NAME
-  const player = ranked.find((p) => p.id === id)
+  const player = roster.find((p) => p.id === id)
+  if (player) {
+    const fromRoster = rosterDisplayName(player)
+    if (fromRoster !== 'Player') return fromRoster
+  }
+  const fromMap = rosterNameById?.get(id)?.trim()
+  if (fromMap && fromMap !== 'Player') return fromMap
   return player ? rosterDisplayName(player) : 'Player'
 }
 
-function courtPlayerForRosterId(ranked: CompetitionPlayer[], id: string): CourtPlayer {
+function courtPlayerForRosterId(
+  roster: CompetitionPlayer[],
+  id: string,
+  rosterNameById?: Map<string, string>,
+): CourtPlayer {
   if (isOpenSlotId(id)) return { id: null, rosterId: null, name: OPEN_SLOT_NAME, avatarUrl: null }
-  const player = ranked.find((p) => p.id === id)
+  const player = roster.find((p) => p.id === id)
+  const name = nameForRosterId(roster, id, rosterNameById)
   return player
-    ? { ...courtPlayerFromRoster(player), rosterId: id }
-    : { id: null, rosterId: isOpenSlotId(id) ? null : id, name: 'Player', avatarUrl: null }
+    ? { ...courtPlayerFromRoster(player), rosterId: id, name }
+    : { id: null, rosterId: id, name, avatarUrl: null }
 }
 
 export function gamesFromStoredSchedule(
-  ranked: CompetitionPlayer[],
+  paddedRoster: CompetitionPlayer[],
   stored: StoredScheduleRound[],
   courtNames: string[],
+  rosterNameById?: Map<string, string>,
+  fullRoster: CompetitionPlayer[] = paddedRoster,
 ): GameRound[] {
-  const courts = courtsNeeded(ranked.length)
+  const courts = courtsNeeded(paddedRoster.length)
   const courtsInUse = courtNames.slice(0, courts)
   return stored.map((round) => ({
     gameNumber: round.round,
@@ -208,25 +219,44 @@ export function gamesFromStoredSchedule(
       .sort((a, b) => a.court - b.court)
       .filter((match) => match.court <= courts)
       .slice(0, courts)
-      .map((match, courtIndex) => ({
-        courtLabel: courtsInUse[match.court - 1] ?? courtsInUse[courtIndex] ?? `Court ${match.court}`,
-        teamA: [
-          nameForRosterId(ranked, match.team_a[0]),
-          nameForRosterId(ranked, match.team_a[1]),
-        ],
-        teamB: [
-          nameForRosterId(ranked, match.team_b[0]),
-          nameForRosterId(ranked, match.team_b[1]),
-        ],
-        teamAPlayers: [
-          courtPlayerForRosterId(ranked, match.team_a[0]),
-          courtPlayerForRosterId(ranked, match.team_a[1]),
-        ],
-        teamBPlayers: [
-          courtPlayerForRosterId(ranked, match.team_b[0]),
-          courtPlayerForRosterId(ranked, match.team_b[1]),
-        ],
-      })),
+      .map((match, courtIndex) => {
+        const teamA = [
+          nameForRosterId(fullRoster, match.team_a[0], rosterNameById),
+          nameForRosterId(fullRoster, match.team_a[1], rosterNameById),
+        ]
+        // #region agent log
+        if (import.meta.env.DEV && round.round === 1 && courtIndex === 0) {
+          const storedId = match.team_a[0]
+          debugSessionLog(
+            'rankedSchedule.ts:gamesFromStoredSchedule',
+            'stored schedule name resolve',
+            {
+              runId: 'post-fix-duo',
+              storedId,
+              resolvedName: teamA[0],
+            },
+            'H-F',
+            '5d6061',
+          )
+        }
+        // #endregion
+        return {
+          courtLabel: courtsInUse[match.court - 1] ?? courtsInUse[courtIndex] ?? `Court ${match.court}`,
+          teamA,
+          teamB: [
+            nameForRosterId(fullRoster, match.team_b[0], rosterNameById),
+            nameForRosterId(fullRoster, match.team_b[1], rosterNameById),
+          ],
+          teamAPlayers: [
+            courtPlayerForRosterId(fullRoster, match.team_a[0], rosterNameById),
+            courtPlayerForRosterId(fullRoster, match.team_a[1], rosterNameById),
+          ],
+          teamBPlayers: [
+            courtPlayerForRosterId(fullRoster, match.team_b[0], rosterNameById),
+            courtPlayerForRosterId(fullRoster, match.team_b[1], rosterNameById),
+          ],
+        }
+      }),
   }))
 }
 
@@ -236,6 +266,7 @@ export function planRankedSchedule(
   totalGames = RANKED_AMERICANO_GAMES,
   scheduleSeed = 0,
   slotCount?: number,
+  rosterNameById?: Map<string, string>,
 ): GameRound[] {
   const n = slotCount ?? sortRosterByRank(roster).length
   if (n < 4 || n % 4 !== 0) return []
@@ -243,5 +274,5 @@ export function planRankedSchedule(
   const padded = padRosterToTarget(roster, n)
   const seed = Math.max(0, Math.floor(scheduleSeed))
   const rounds = solveBalancedSchedule(n, totalGames, seed)
-  return roundsToGames(padded, rounds, courtNames)
+  return roundsToGames(padded, rounds, courtNames, rosterNameById)
 }

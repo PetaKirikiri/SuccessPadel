@@ -12,8 +12,8 @@ const btnBase =
   'inline-flex items-center justify-center rounded-xl border shadow-sm backdrop-blur-sm transition active:scale-[0.98]'
 
 const btnSize = {
-  default: 'h-10 w-10 sm:h-11 sm:w-11',
-  compact: 'h-8 w-8 sm:h-9 sm:w-9',
+  default: 'h-10 w-10',
+  compact: 'h-8 w-8',
 }
 
 const GENDER_ICON_SRC: Record<Gender, string> = {
@@ -42,7 +42,7 @@ export function GamesGenderFilterButtons({ value, onChange, compact = false }: P
 
   return (
     <div
-      className={`flex shrink-0 ${compact ? 'flex-row gap-1' : 'gap-2 sm:gap-2.5'}`}
+      className={`flex shrink-0 ${compact ? 'flex-row gap-1' : 'gap-2'}`}
       role="group"
       aria-label={t('friendly.hint.gender')}
     >

@@ -1,6 +1,6 @@
 import { supabase } from '../supabaseClient'
 import { mirrorLineAvatarToStorage } from '../profileAvatar'
-import { isLineCdnAvatarUrl, shouldRefreshLineAvatar } from '../lineAvatar'
+import { isLineCdnAvatarUrl, shouldMirrorLineAvatarOnSync } from '../lineAvatar'
 import {
   getDecodedLineClaims,
   getLineProfile,
@@ -53,9 +53,11 @@ export async function applyLineProfilePatch(
 ): Promise<boolean> {
   const { data: existing } = await supabase
     .from('profiles')
-    .select('display_name, avatar_url')
+    .select('display_name, avatar_url, line_user_id')
     .eq('id', userId)
     .maybeSingle()
+
+  const lineLinked = Boolean(existing?.line_user_id?.trim() || patch.user_id?.trim())
 
   const staleName =
     !existing?.display_name ||
@@ -70,7 +72,7 @@ export async function applyLineProfilePatch(
 
   const profileUpdate: Record<string, string | null> = {}
   if (staleName && patch.display_name) profileUpdate.display_name = patch.display_name
-  if (avatarUrl && shouldRefreshLineAvatar(existing?.avatar_url, avatarUrl)) {
+  if (avatarUrl && shouldMirrorLineAvatarOnSync(existing?.avatar_url, patch.picture_url, lineLinked)) {
     profileUpdate.avatar_url = avatarUrl
   }
   if (patch.user_id) profileUpdate.line_user_id = patch.user_id
@@ -78,8 +80,16 @@ export async function applyLineProfilePatch(
   if (Object.keys(profileUpdate).length === 0) return true
 
   const { error } = await supabase.from('profiles').update(profileUpdate).eq('id', userId)
+  if (error) return false
 
-  return !error
+  if (profileUpdate.avatar_url && patch.picture_url && isLineCdnAvatarUrl(patch.picture_url)) {
+    await supabase
+      .from('padel_players')
+      .update({ line_picture_url: patch.picture_url })
+      .eq('profile_id', userId)
+  }
+
+  return true
 }
 
 /** Pull LINE name/photo from LIFF when logged in inside the LINE app. */

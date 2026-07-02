@@ -10,6 +10,7 @@ import type { PlayViewTab } from '../../foundation/play/PlayViewTabs'
 import { useAuth } from '../../hooks/useAuth'
 import { useIsTvLayout } from '../../hooks/useIsTvLayout'
 import { useCompetitionLiveCourtScores } from '../../hooks/useCompetitionLiveCourtScores'
+import { useCourtEphemeralScores } from '../../hooks/useCourtEphemeralScores'
 import { useCompetitionBoard } from '../../hooks/useCompetitionBoard'
 import { useLineClientProfile } from '../../hooks/useLineClientProfile'
 import { usePublicCompetition } from '../../hooks/usePublicCompetition'
@@ -24,12 +25,17 @@ import { computeAmericanoStandings } from '../../lib/competitionStandings'
 import { computeDuoStandings } from '../../lib/computeDuoStandings'
 import { duoLabelsForMatch } from '../../lib/competitionFormatPresets'
 import type { CourtPlayer } from '../../lib/americanoSchedule'
-import { rosterDisplayName } from '../../hooks/useCompetitions'
+import { buildRosterNameById } from '../../hooks/useCompetitions'
 import { useTranslation } from '../../hooks/useTranslation'
 import { enrichStandingsWithAvatars } from '../../lib/leaderboardEntries'
 import { competitionViewAlongUrl } from '../../lib/siteUrl'
 import { supabase } from '../../lib/supabaseClient'
 import { pivotScheduleByGame } from '../../lib/competitionCourtBoard'
+import { competitionCourtSetupKey } from '../../lib/gestureCameraScore'
+import {
+  mergeEphemeralLiveCourtFeeds,
+  mergeEphemeralLiveCourtScores,
+} from '../../lib/liveCourtScore'
 
 type PlayTab = PlayViewTab
 const TV_SCORE_INPUT_LEAD_MS = 4 * 60_000
@@ -101,7 +107,7 @@ export function CompetitionPlay() {
     pollMs: 20_000,
   })
   const { columns, liveCourtsByGame, roundIdForGame, courtIdByLabel, scoreUnit, playTo, matchForCourt, isDuo, teams } =
-    useCompetitionBoard(session, rounds, roster, clubCourts, courtMatches, sessionPairs)
+    useCompetitionBoard(session, rounds, roster, clubCourts, courtMatches, sessionPairs, leaderboard)
   const courtIdToLabel = useMemo(() => {
     const map = new Map<string, string>()
     for (const [label, courtId] of courtIdByLabel) map.set(courtId, label)
@@ -112,10 +118,40 @@ export function CompetitionPlay() {
   }, [courtIdByLabel, liveCourtsByGame])
   const started = Boolean(session?.competition_started_at)
   const { scores: liveCourtScores, feeds: liveCourtFeeds } = useCompetitionLiveCourtScores(
-    started ? id : undefined,
+    id,
     courtIdToLabel,
     scoreUnit,
   )
+
+  const courtSetupKeys = useMemo(() => {
+    if (!id) return []
+    const keys = new Set<string>()
+    for (const game of pivotScheduleByGame(columns)) {
+      for (const court of game.courts) {
+        const courtId = courtIdByLabel.get(court.courtLabel)
+        if (courtId) keys.add(competitionCourtSetupKey(id, game.gameNumber, courtId))
+      }
+    }
+    for (const [gameNumber, courts] of liveCourtsByGame) {
+      for (const court of courts) {
+        keys.add(competitionCourtSetupKey(id, gameNumber, court.courtId))
+      }
+    }
+    return [...keys]
+  }, [columns, courtIdByLabel, id, liveCourtsByGame, started])
+
+  const ephemeralScores = useCourtEphemeralScores(courtSetupKeys)
+
+  const mergedLiveCourtScores = useMemo(
+    () => mergeEphemeralLiveCourtScores(liveCourtScores, ephemeralScores, courtIdToLabel),
+    [courtIdToLabel, ephemeralScores, liveCourtScores],
+  )
+
+  const mergedLiveCourtFeeds = useMemo(
+    () => mergeEphemeralLiveCourtFeeds(liveCourtFeeds, ephemeralScores, courtIdToLabel),
+    [courtIdToLabel, ephemeralScores, liveCourtFeeds],
+  )
+
   const [now, setNow] = useState(Date.now())
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000)
@@ -132,8 +168,8 @@ export function CompetitionPlay() {
   )
 
   const rosterNameById = useMemo(
-    () => new Map(roster.map((row) => [row.id, rosterDisplayName(row)])),
-    [roster],
+    () => buildRosterNameById(roster, leaderboard),
+    [roster, leaderboard],
   )
 
   const duoTeamLabels = useCallback(
@@ -349,9 +385,12 @@ export function CompetitionPlay() {
         currentUserId={user?.id ?? null}
         currentUserAvatarUrl={headerAvatar}
         isAdmin={isAdmin}
-        liveCourtScores={liveCourtScores}
-        liveCourtFeeds={liveCourtFeeds}
+        liveCourtScores={mergedLiveCourtScores}
+        liveCourtFeeds={mergedLiveCourtFeeds}
         duoTeamLabels={isDuo ? duoTeamLabels : undefined}
+        courtStandings={standings}
+        roster={roster}
+        rosterNameById={rosterNameById}
         tvCarousel={columns.length > 0}
         viewAlongUrl={isTvLayout ? viewAlongUrl : null}
         onTvGameChange={setTvGameNumber}

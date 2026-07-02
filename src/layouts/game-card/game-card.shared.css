@@ -1,0 +1,6 @@
+/* Game card surface — shared hooks only. Bucket layout lives beside this file. */
+
+.game-card-surface {
+  width: 100%;
+  min-width: 0;
+}

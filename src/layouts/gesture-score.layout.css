@@ -10,18 +10,56 @@ html[data-gesture-ui='court'] .gesture-score-court {
   max-width: none;
   flex-direction: column;
   overflow: hidden;
-  background: linear-gradient(180deg, #0a2440 0%, #0b2a4a 45%, #082038 100%);
+  background: #0b2a4a;
   color: #fff;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__top-center .gesture-score-court__camera-preview {
+  position: relative;
+  right: auto;
+  top: auto;
+  z-index: auto;
+  order: 0;
+  display: block;
+  width: min(100%, 10rem);
+  height: auto;
+  aspect-ratio: 16 / 10;
+  margin-inline: auto;
+  pointer-events: none;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__top-center .gesture-score-court__camera-preview--hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__top-center .gesture-score-court__start-camera {
+  order: 0;
+}
+
+html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__top-center .gesture-score-court__start-camera {
+  order: 0;
+  min-width: min(100%, 10rem);
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__camera-preview {
   position: fixed;
-  right: 0.5rem;
-  top: max(0.5rem, env(safe-area-inset-top, 0px));
+  right: 0.75rem;
+  top: max(0.75rem, env(safe-area-inset-top, 0px));
   z-index: 430;
-  width: 5rem;
-  height: 3.5rem;
-  border-radius: 0.5rem;
+  display: block;
+  width: 6rem;
+  height: 4rem;
+  border-radius: 0.75rem;
   border: 1px solid rgb(255 255 255 / 0.2);
   background: #06192d;
   object-fit: cover;
@@ -29,6 +67,85 @@ html[data-gesture-ui='court'] .gesture-score-court__camera-preview {
   pointer-events: none;
   box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.35);
   transition: opacity 0.15s ease;
+}
+
+
+html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__top-center .gesture-score-court__camera-preview {
+  position: relative;
+  right: auto;
+  top: auto;
+  z-index: auto;
+  width: min(100%, 9.5rem);
+  height: auto;
+  aspect-ratio: 16 / 10;
+  order: 0;
+  margin-inline: auto;
+}
+
+
+html[data-gesture-ui='court'] .gesture-score-court__start-camera {
+  position: relative;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.25rem;
+  min-width: 11rem;
+  margin: 0;
+  padding: 0.9rem 1.75rem;
+  border: 2px solid rgb(52 211 153 / 0.6);
+  border-radius: 999px;
+  background: rgb(52 211 153 / 0.28);
+  color: #ecfdf5;
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  text-align: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow:
+    0 10px 24px -8px rgb(0 0 0 / 0.55),
+    inset 0 1px 0 rgb(255 255 255 / 0.12);
+  transition:
+    transform 0.12s ease,
+    background 0.12s ease,
+    border-color 0.12s ease;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__start-camera:active:not(:disabled) {
+  transform: scale(0.97);
+  background: rgb(52 211 153 / 0.4);
+  border-color: rgb(52 211 153 / 0.85);
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__start-camera:disabled {
+  cursor: wait;
+  opacity: 0.85;
+}
+
+html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__start-camera {
+  min-height: 3.5rem;
+  min-width: min(100%, 14rem);
+  padding: 1rem 1.5rem;
+  font-size: 1rem;
+}
+
+html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__camera-preview--hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__camera-preview--hidden {
@@ -39,8 +156,21 @@ html[data-viewport='tablet'][data-gesture-ui='court'] .gesture-score-court__came
 html[data-viewport='web'][data-gesture-ui='court'] .gesture-score-court__camera-preview,
 html[data-viewport='tv'][data-gesture-ui='court'] .gesture-score-court__camera-preview {
   right: 1.5rem;
-  width: 9rem;
-  height: 6rem;
+  width: 12rem;
+  height: 9rem;
+}
+
+html[data-viewport='tablet'][data-gesture-ui='court'] .gesture-score-court__top-center .gesture-score-court__camera-preview,
+html[data-viewport='web'][data-gesture-ui='court'] .gesture-score-court__top-center .gesture-score-court__camera-preview,
+html[data-viewport='tv'][data-gesture-ui='court'] .gesture-score-court__top-center .gesture-score-court__camera-preview {
+  position: relative;
+  right: auto;
+  top: auto;
+  z-index: auto;
+  width: min(100%, 12rem);
+  height: auto;
+  aspect-ratio: 16 / 10;
+  margin-inline: auto;
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__main {
@@ -48,27 +178,31 @@ html[data-gesture-ui='court'] .gesture-score-court__main {
   min-height: 0;
   flex: 1 1 0%;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: max(0.5rem, env(safe-area-inset-top, 0px)) 0.5rem max(0.5rem, env(safe-area-inset-bottom, 0px));
+  gap: 1rem;
+  padding: max(0.75rem, env(safe-area-inset-top, 0px)) 1rem max(1rem, env(safe-area-inset-bottom, 0px));
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__top {
   display: grid;
-  flex-shrink: 0;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: start;
-  gap: 0.4rem;
+  flex: 1 1 0%;
+  min-height: min(70vh, 28rem);
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0.75rem;
   border-radius: 1rem;
-  padding: 0.55rem 0.45rem 0.65rem;
-  background: rgb(255 255 255 / 0.06);
-  border: 1px solid rgb(255 255 255 / 0.1);
+  padding: 1rem;
+  background: #11355c;
+  border: 1px solid rgb(255 255 255 / 0.15);
+  box-shadow: 0 24px 60px -36px rgb(0 0 0 / 0.7);
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__team-header {
   display: flex;
   min-width: 0;
+  min-height: 0;
   flex-direction: column;
-  gap: 0.35rem;
+  justify-content: center;
+  gap: 0.75rem;
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__team-header--left {
@@ -77,6 +211,11 @@ html[data-gesture-ui='court'] .gesture-score-court__team-header--left {
 
 html[data-gesture-ui='court'] .gesture-score-court__team-header--right {
   align-items: flex-end;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__team-chips {
+  order: -2;
+  align-self: center;
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__team-chips {
@@ -113,20 +252,33 @@ html[data-gesture-ui='court'] .gesture-score-court__team-chips--large > div > sp
   font-size: 1rem;
 }
 
+html[data-gesture-ui='court'] .gesture-score-court__team-chips > div {
+  border-color: rgb(255 255 255 / 0.12);
+  background: rgb(255 255 255 / 0.04);
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__team-chips > div span:first-child {
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.55);
+}
+
 html[data-gesture-ui='court'] .gesture-score-court__team-score {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  gap: 0.25rem;
 }
 
-html[data-gesture-ui='court'] .gesture-score-court__team-header--left .gesture-score-court__team-score {
-  align-items: flex-start;
-  text-align: left;
+html[data-gesture-ui='court'] .gesture-score-court__team-games::before {
+  content: 'Games ';
 }
 
+html[data-gesture-ui='court'] .gesture-score-court__team-header--left .gesture-score-court__team-score,
 html[data-gesture-ui='court'] .gesture-score-court__team-header--right .gesture-score-court__team-score {
-  align-items: flex-end;
-  text-align: right;
+  align-items: center;
+  text-align: center;
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__team-score-wrap {
@@ -143,41 +295,121 @@ html[data-gesture-ui='court'] .gesture-score-court__serve {
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__team-point {
-  font-size: clamp(4.5rem, 30vw, 10rem);
-  font-weight: 800;
+  font-family: var(--font-display, ui-sans-serif, system-ui, sans-serif);
+  font-size: clamp(4.5rem, 22vw, 12rem);
+  font-weight: 900;
   font-variant-numeric: tabular-nums;
-  line-height: 0.82;
+  line-height: 0.9;
   letter-spacing: -0.04em;
+  color: #f8fafc;
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__team-games {
-  font-size: clamp(1.25rem, 5vw, 2rem);
+  order: -1;
+  align-self: center;
+  min-height: 2rem;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  background: transparent;
+  font: inherit;
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: rgb(255 255 255 / 0.5);
+  color: #7dd3fc;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__team-games:active:not(:disabled) {
+  border-color: rgb(125 211 252 / 0.35);
+  background: rgb(125 211 252 / 0.08);
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__team-games:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__team-games-edit {
+  width: 3rem;
+  text-align: center;
+  border-color: rgb(125 211 252 / 0.45);
+  background: rgb(255 255 255 / 0.06);
+  color: #e0f2fe;
+  outline: none;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__team-games-edit:focus {
+  border-color: #7dd3fc;
+  box-shadow: 0 0 0 2px rgb(125 211 252 / 0.25);
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__top-center {
   display: flex;
+  min-width: 5rem;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  gap: 0.45rem;
-  padding-top: 0.15rem;
-  padding-inline: 0.2rem;
+  justify-content: center;
+  gap: 0.5rem;
+  padding-inline: 0.25rem;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__top-center .gesture-score-court__badge {
+  order: 1;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__top-center .gesture-score-court__camera-preview,
+html[data-gesture-ui='court'] .gesture-score-court__top-center .gesture-score-court__start-camera {
+  order: 0;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__top-center::after {
+  content: ':';
+  order: 3;
+  font-family: var(--font-display, ui-sans-serif, system-ui, sans-serif);
+  font-size: clamp(3rem, 8vw, 5rem);
+  font-weight: 900;
+  line-height: 1;
+  color: #7dd3fc;
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__badge {
   border-radius: 999px;
-  padding: 0.2rem 0.55rem;
-  background: rgb(255 213 74 / 0.2);
-  color: #ffd54a;
-  font-size: 0.6875rem;
-  font-weight: 700;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid rgb(255 255 255 / 0.15);
+  background: rgb(52 211 153 / 0.15);
+  color: #34d399;
+  font-size: 0.625rem;
+  font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
 }
 
+
+
+html[data-gesture-ui='court'] .gesture-score-court__finger-row {
+  display: grid;
+  flex-shrink: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  padding-block: 0.25rem;
+  height: 4.5rem;
+  min-height: 4.5rem;
+  max-height: 4.5rem;
+  align-items: stretch;
+  box-sizing: border-box;
+}
+
+html[data-viewport='tablet'][data-gesture-ui='court'] .gesture-score-court__finger-row,
+html[data-viewport='web'][data-gesture-ui='court'] .gesture-score-court__finger-row,
+html[data-viewport='tv'][data-gesture-ui='court'] .gesture-score-court__finger-row {
+  gap: 1rem;
+  max-width: 56rem;
+  margin-inline: auto;
+  width: 100%;
+  padding-block: 0.5rem;
+}
 
 html[data-gesture-detect-preview='true'] .gesture-score-court__detect-banner {
   margin: 0 0 0.5rem;
@@ -219,29 +451,29 @@ html[data-gesture-detect-preview='true'] .gesture-score-court__finger-btn--undo 
   filter: grayscale(0.6);
 }
 
-html[data-gesture-detect-preview='true'] .gesture-score-court__undo-label {
+html[data-gesture-detect-preview='true'] .gesture-score-court__finger-label {
   color: rgb(255 255 255 / 0.28);
 }
 
 html[data-gesture-detect-preview='true'] .gesture-score-court__finger-btn[data-seen],
 html[data-gesture-detect-preview='true'] .gesture-score-court__finger-btn[data-seen] .gesture-score-court__finger-icon,
-html[data-gesture-detect-preview='true'] .gesture-score-court__finger-btn[data-seen] .gesture-score-court__undo-label {
+html[data-gesture-detect-preview='true'] .gesture-score-court__finger-btn[data-seen] .gesture-score-court__finger-label {
   transition: none;
 }
 
 html[data-gesture-detect-preview='true'] .gesture-score-court__finger-btn--team1[data-seen] {
   border-color: rgb(61 217 168);
-  box-shadow: 0 0 0 2px rgb(61 217 168 / 0.55);
+  box-shadow: inset 0 0 0 2px rgb(61 217 168 / 0.55);
 }
 
 html[data-gesture-detect-preview='true'] .gesture-score-court__finger-btn--team2[data-seen] {
   border-color: rgb(94 176 255);
-  box-shadow: 0 0 0 2px rgb(94 176 255 / 0.55);
+  box-shadow: inset 0 0 0 2px rgb(94 176 255 / 0.55);
 }
 
 html[data-gesture-detect-preview='true'] .gesture-score-court__finger-btn--undo[data-seen] {
   border-color: rgb(255 179 71);
-  box-shadow: 0 0 0 2px rgb(255 179 71 / 0.55);
+  box-shadow: inset 0 0 0 2px rgb(255 179 71 / 0.55);
 }
 
 html[data-gesture-detect-preview='true'] .gesture-score-court__finger-btn[data-seen] .gesture-score-court__finger-icon {
@@ -249,7 +481,7 @@ html[data-gesture-detect-preview='true'] .gesture-score-court__finger-btn[data-s
   filter: none;
 }
 
-html[data-gesture-detect-preview='true'] .gesture-score-court__finger-btn[data-seen] .gesture-score-court__undo-label {
+html[data-gesture-detect-preview='true'] .gesture-score-court__finger-btn[data-seen] .gesture-score-court__finger-label {
   color: rgb(255 179 71);
 }
 
@@ -271,11 +503,21 @@ html[data-gesture-ui='court'] .gesture-score-court__finger-btn {
   align-items: center;
   justify-content: center;
   gap: 0.25rem;
-  border: 2px solid rgb(255 255 255 / 0.18);
-  border-radius: 1rem;
-  padding: 0.5rem 0.4rem;
-  background: rgb(255 255 255 / 0.07);
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  border-radius: 999px;
+  padding: 0.75rem 0.5rem;
+  background: rgb(17 53 92 / 0.8);
   color: inherit;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.25);
+  transition: opacity 0.12s ease, filter 0.12s ease, border-color 0.12s ease, background-color 0.12s ease;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__finger-btn:active:not(:disabled) {
+  opacity: 0.92;
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__finger-btn::before {
@@ -304,23 +546,29 @@ html[data-gesture-ui='court'] .gesture-score-court__finger-btn--undo[data-holdin
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__finger-btn .gesture-score-court__finger-icon,
-html[data-gesture-ui='court'] .gesture-score-court__finger-btn .gesture-score-court__undo-label {
+html[data-gesture-ui='court'] .gesture-score-court__finger-btn .gesture-score-court__finger-label,
+html[data-gesture-ui='court'] .gesture-score-court__finger-btn .gesture-score-court__finger-label {
   position: relative;
   z-index: 1;
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__finger-btn--team1,
-html[data-gesture-ui='court'] .gesture-score-court__finger-btn--team2 {
-  min-height: 4.5rem;
-  min-width: 3.5rem;
+html[data-gesture-ui='court'] .gesture-score-court__finger-btn--team2,
+html[data-gesture-ui='court'] .gesture-score-court__finger-btn--undo {
+  min-width: 0;
+  width: 100%;
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__finger-btn--team1 {
-  border-color: rgb(61 217 168 / 0.45);
+  border-color: rgb(52 211 153 / 0.45);
+  background: rgb(52 211 153 / 0.15);
+  color: #34d399;
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__finger-btn--team2 {
-  border-color: rgb(94 176 255 / 0.45);
+  border-color: rgb(96 165 250 / 0.45);
+  background: rgb(96 165 250 / 0.15);
+  color: #60a5fa;
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__finger-btn--team1 .gesture-score-court__finger-icon,
@@ -331,22 +579,16 @@ html[data-gesture-ui='court'] .gesture-score-court__finger-btn--team2 .gesture-s
 
 html[data-gesture-ui='court'] .gesture-score-court__finger-btn--undo {
   border-color: rgb(255 255 255 / 0.1);
-  min-height: 3.25rem;
-  min-width: 2.75rem;
-  padding: 0.35rem 0.3rem 0.25rem;
-  opacity: 0.45;
+  background: rgb(17 53 92 / 0.8);
+  color: rgb(255 255 255 / 0.55);
+  min-width: 0;
+  padding: 0.75rem 0.5rem;
+  opacity: 1;
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__finger-btn--undo .gesture-score-court__finger-icon {
-  opacity: 0.3;
+  opacity: 0.4;
   filter: grayscale(0.55);
-  width: clamp(1.75rem, 8vw, 2.5rem);
-  height: clamp(1.75rem, 8vw, 2.5rem);
-}
-
-html[data-gesture-ui='court'] .gesture-score-court__finger-btn--undo .gesture-score-court__undo-label {
-  color: rgb(255 255 255 / 0.3);
-  font-size: 0.625rem;
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__finger-btn--undo[data-holding] {
@@ -357,13 +599,10 @@ html[data-gesture-ui='court'] .gesture-score-court__finger-btn--undo[data-holdin
 html[data-gesture-ui='court'] .gesture-score-court__finger-btn--undo[data-holding] .gesture-score-court__finger-icon {
   opacity: 1;
   filter: none;
-  width: clamp(2.5rem, 11vw, 3.5rem);
-  height: clamp(2.5rem, 11vw, 3.5rem);
 }
 
-html[data-gesture-ui='court'] .gesture-score-court__finger-btn--undo[data-holding] .gesture-score-court__undo-label {
+html[data-gesture-ui='court'] .gesture-score-court__finger-btn--undo[data-holding] .gesture-score-court__finger-label {
   color: rgb(255 255 255 / 0.75);
-  font-size: 0.75rem;
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__finger-btn[data-detected] {
@@ -379,28 +618,42 @@ html[data-gesture-ui='court'] .gesture-score-court__finger-btn:disabled {
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__finger-icon {
-  width: clamp(2.5rem, 11vw, 3.5rem);
-  height: clamp(2.5rem, 11vw, 3.5rem);
+  flex-shrink: 0;
+  width: clamp(2.25rem, 9vw, 3.5rem);
+  height: clamp(2.25rem, 9vw, 3.5rem);
+  min-width: clamp(2.25rem, 9vw, 3.5rem);
+  min-height: clamp(2.25rem, 9vw, 3.5rem);
+  max-width: clamp(2.25rem, 9vw, 3.5rem);
+  max-height: clamp(2.25rem, 9vw, 3.5rem);
+  object-fit: contain;
 }
 
-html[data-gesture-ui='court'] .gesture-score-court__undo-label {
-  font-size: 0.75rem;
-  font-weight: 700;
+html[data-gesture-ui='court'] .gesture-score-court__finger-label,
+html[data-gesture-ui='court'] .gesture-score-court__finger-label {
+  flex-shrink: 0;
+  min-height: 0.6875rem;
+  font-size: 0.6875rem;
+  font-weight: 900;
   line-height: 1;
-  color: rgb(255 255 255 / 0.75);
+  color: inherit;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__finger-btn--undo .gesture-score-court__finger-label {
+  color: rgb(255 255 255 / 0.55);
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__history {
   display: flex;
   min-height: 0;
-  flex: 1 1 0%;
+  flex: 0 1 auto;
+  max-height: 8rem;
   flex-direction: column;
   overflow: hidden;
   border-radius: 1rem;
-  background: rgb(255 255 255 / 0.04);
-  border: 1px solid rgb(255 255 255 / 0.08);
+  background: #11355c;
+  border: 1px solid rgb(255 255 255 / 0.15);
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__history-list {
@@ -441,4 +694,355 @@ html[data-gesture-ui='court'] .gesture-score-court__history-row--b {
 html[data-gesture-ui='court'] .gesture-score-court__history-score {
   min-width: 0;
   flex: 1 1 0%;
+}
+
+html[data-viewport='tablet'][data-gesture-ui='court'] .gesture-score-court__top,
+html[data-viewport='web'][data-gesture-ui='court'] .gesture-score-court__top,
+html[data-viewport='tv'][data-gesture-ui='court'] .gesture-score-court__top {
+  padding: 1.5rem 2rem;
+  gap: 1rem;
+}
+
+html[data-viewport='tablet'][data-gesture-ui='court'] .gesture-score-court__main,
+html[data-viewport='web'][data-gesture-ui='court'] .gesture-score-court__main,
+html[data-viewport='tv'][data-gesture-ui='court'] .gesture-score-court__main {
+  padding-inline: 2rem;
+  gap: 1.5rem;
+}
+
+html[data-viewport='tablet'][data-gesture-ui='court'] .gesture-score-court__finger-row,
+html[data-viewport='web'][data-gesture-ui='court'] .gesture-score-court__finger-row,
+html[data-viewport='tv'][data-gesture-ui='court'] .gesture-score-court__finger-row {
+  height: 5.5rem;
+  min-height: 5.5rem;
+  max-height: 5.5rem;
+}
+
+html[data-viewport='tablet'][data-gesture-ui='court'] .gesture-score-court__finger-btn--team1,
+html[data-viewport='tablet'][data-gesture-ui='court'] .gesture-score-court__finger-btn--team2,
+html[data-viewport='tablet'][data-gesture-ui='court'] .gesture-score-court__finger-btn--undo,
+html[data-viewport='web'][data-gesture-ui='court'] .gesture-score-court__finger-btn--team1,
+html[data-viewport='web'][data-gesture-ui='court'] .gesture-score-court__finger-btn--team2,
+html[data-viewport='web'][data-gesture-ui='court'] .gesture-score-court__finger-btn--undo,
+html[data-viewport='tv'][data-gesture-ui='court'] .gesture-score-court__finger-btn--team1,
+html[data-viewport='tv'][data-gesture-ui='court'] .gesture-score-court__finger-btn--team2,
+html[data-viewport='tv'][data-gesture-ui='court'] .gesture-score-court__finger-btn--undo {
+  flex-direction: row;
+  gap: 1.25rem;
+  padding: 1.25rem 1.75rem;
+}
+
+html[data-viewport='tablet'][data-gesture-ui='court'] .gesture-score-court__finger-icon,
+html[data-viewport='web'][data-gesture-ui='court'] .gesture-score-court__finger-icon,
+html[data-viewport='tv'][data-gesture-ui='court'] .gesture-score-court__finger-icon {
+  width: 5rem;
+  height: 5rem;
+  min-width: 5rem;
+  min-height: 5rem;
+  max-width: 5rem;
+  max-height: 5rem;
+}
+
+html[data-viewport='tablet'][data-gesture-ui='court'] .gesture-score-court__top-center::after,
+html[data-viewport='web'][data-gesture-ui='court'] .gesture-score-court__top-center::after,
+html[data-viewport='tv'][data-gesture-ui='court'] .gesture-score-court__top-center::after {
+  font-size: clamp(4rem, 6vw, 6rem);
+}
+
+@media (orientation: portrait) {
+  html[data-viewport='mobile'] .gesture-score-pad,
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court {
+    position: fixed;
+    inset: 0 auto auto 100vw;
+    width: 100vh;
+    height: 100vw;
+    width: 100dvh;
+    height: 100dvw;
+    min-width: 100vh;
+    min-height: 100vw;
+    min-width: 100dvh;
+    min-height: 100dvw;
+    max-width: none;
+    overflow: hidden;
+    transform: rotate(90deg);
+    transform-origin: top left;
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__main {
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__main {
+    gap: 0.35rem;
+    padding: max(0.25rem, env(safe-area-inset-right, 0px)) max(0.5rem, env(safe-area-inset-bottom, 0px))
+      max(0.25rem, env(safe-area-inset-left, 0px)) max(0.5rem, env(safe-area-inset-top, 0px));
+  }
+
+  html[data-viewport='mobile'] .gesture-score-pad__body {
+    gap: 0.45rem;
+    grid-template-rows: minmax(8rem, 1fr) auto minmax(1.5rem, 0.08fr);
+    padding: 0.35rem 0.55rem max(0.35rem, env(safe-area-inset-left, 0px));
+  }
+
+  html[data-viewport='mobile'] .gesture-score-pad__header {
+    padding: max(0.3rem, env(safe-area-inset-right, 0px)) 0.55rem 0.2rem;
+  }
+
+  html[data-viewport='mobile'] .gesture-score-pad__timer {
+    padding: 0.3rem 1.1rem;
+  }
+
+  html[data-viewport='mobile'] .gesture-score-pad__score-panel {
+    gap: 0.5rem;
+    border-radius: 0.75rem;
+    padding: 0.45rem 0.65rem;
+  }
+
+  html[data-viewport='mobile'] .gesture-score-pad__actions {
+    gap: 0.4rem;
+    padding-block: 0.2rem;
+  }
+
+  html[data-viewport='mobile'] .gesture-score-pad__camera {
+    right: max(0.35rem, env(safe-area-inset-bottom, 0px));
+    top: max(0.3rem, env(safe-area-inset-right, 0px));
+    width: 4.5rem;
+    height: 3rem;
+  }
+
+  html[data-viewport='mobile'] .gesture-score-pad__start-camera {
+    right: max(0.35rem, env(safe-area-inset-bottom, 0px));
+    top: max(0.3rem, env(safe-area-inset-right, 0px));
+    padding: 0.35rem 0.7rem;
+    font-size: 0.65rem;
+  }
+
+  html[data-viewport='mobile'] .gesture-score-pad__back {
+    bottom: max(0.35rem, env(safe-area-inset-left, 0px));
+    left: max(0.35rem, env(safe-area-inset-top, 0px));
+  }
+}
+
+@media (orientation: landscape), (orientation: portrait) {
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__main {
+    gap: 0.35rem;
+    padding: max(0.25rem, env(safe-area-inset-top, 0px)) max(0.5rem, env(safe-area-inset-right, 0px))
+      max(0.25rem, env(safe-area-inset-bottom, 0px)) max(0.5rem, env(safe-area-inset-left, 0px));
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__top {
+    min-height: 0;
+    flex: 1 1 0%;
+    grid-template-columns: minmax(0, 1fr) clamp(2.4rem, 7vw, 4rem) minmax(0, 1fr);
+    gap: 0.35rem;
+    overflow: hidden;
+    border-radius: 0.65rem;
+    padding: 0.2rem 0.45rem;
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__team-header {
+    gap: 0.15rem;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__team-header--left,
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__team-header--right {
+    align-items: center;
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__team-chips {
+    grid-area: names;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+    gap: 0.45rem;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__team-header--left .gesture-score-court__team-chips,
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__team-header--right .gesture-score-court__team-chips {
+    justify-content: center;
+    align-items: center;
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__team-chips--large > div,
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__team-chips > div {
+    display: inline-flex;
+    align-items: center;
+    width: auto;
+    height: auto;
+    min-height: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__player-avatar {
+    display: none;
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__player-name {
+    font-size: clamp(0.625rem, 2.6vh, 0.8125rem);
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: rgb(255 255 255 / 0.55);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__team-score {
+    display: grid;
+    width: 100%;
+    flex: 1 1 0%;
+    min-height: 0;
+    min-width: 0;
+    grid-template-columns: minmax(2.2rem, auto) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas:
+      "names names"
+      "games point";
+    align-items: center;
+    justify-items: center;
+    justify-content: stretch;
+    gap: 0.2rem 0.32rem;
+    overflow: hidden;
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__team-header--right .gesture-score-court__team-score {
+    grid-template-columns: minmax(0, 1fr) minmax(2.2rem, auto);
+    grid-template-areas:
+      "names names"
+      "point games";
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__team-games::before {
+    content: '';
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__team-games {
+    display: inline-flex;
+    grid-area: games;
+    align-items: center;
+    justify-content: center;
+    order: -1;
+    min-width: 2.2rem;
+    min-height: 2rem;
+    padding: 0.15rem 0.42rem;
+    border-color: rgb(125 211 252 / 0.42);
+    border-radius: 0.65rem;
+    background: rgb(125 211 252 / 0.1);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12), 0 0.35rem 1rem rgb(0 0 0 / 0.12);
+    font-size: clamp(0.875rem, 3vh, 1.05rem);
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__team-score-wrap {
+    grid-area: point;
+    flex: 1 1 0%;
+    width: 100%;
+    min-height: 0;
+    min-width: 0;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__serve {
+    display: none;
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__team-point {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: clamp(3rem, min(48vh, 25vw), 7rem);
+    line-height: 0.85;
+    letter-spacing: 0;
+    text-align: center;
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__top-center {
+    min-width: clamp(2.5rem, 8vw, 4.5rem);
+    gap: 0.2rem;
+    justify-content: center;
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__top-center::after {
+    font-size: clamp(2rem, min(42vh, 24vw), 10rem);
+    line-height: 0.85;
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__badge {
+    padding: 0.15rem 0.45rem;
+    font-size: 0.5625rem;
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__top-center .gesture-score-court__camera-preview {
+    position: relative;
+    right: auto;
+    top: auto;
+    z-index: auto;
+    width: min(100%, 9.5rem);
+    height: auto;
+    aspect-ratio: 16 / 10;
+    order: 0;
+    margin-inline: auto;
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__top-center .gesture-score-court__start-camera {
+    order: 0;
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__start-camera {
+    min-height: 3.25rem;
+    min-width: min(100%, 13rem);
+    padding: 0.85rem 1.35rem;
+    font-size: 0.9375rem;
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__history {
+    display: none;
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__finger-row {
+    flex-shrink: 0;
+    gap: 0.35rem;
+    padding-block: 0.1rem;
+    height: clamp(2.75rem, 15vh, 4.25rem);
+    min-height: clamp(2.75rem, 15vh, 4.25rem);
+    max-height: clamp(2.75rem, 15vh, 4.25rem);
+    align-items: stretch;
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__finger-btn {
+    height: 100%;
+    min-height: 0;
+    max-height: 100%;
+    padding: 0.3rem 0.35rem;
+    gap: 0.15rem;
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__finger-icon {
+    width: clamp(1.85rem, 11vh, 3rem);
+    height: clamp(1.85rem, 11vh, 3rem);
+    min-width: clamp(1.85rem, 11vh, 3rem);
+    min-height: clamp(1.85rem, 11vh, 3rem);
+    max-width: clamp(1.85rem, 11vh, 3rem);
+    max-height: clamp(1.85rem, 11vh, 3rem);
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__finger-label {
+    font-size: clamp(0.5625rem, 2vh, 0.6875rem);
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__finger-btn--undo .gesture-score-court__finger-icon {
+    opacity: 0.55;
+    filter: grayscale(0.35);
+  }
 }

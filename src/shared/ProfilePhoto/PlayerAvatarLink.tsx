@@ -31,6 +31,7 @@ export function PlayerAvatarLink({
     <PlayerAvatar
       displayName={displayName}
       avatarUrl={avatarUrl}
+      profileId={profileId}
       imgClassName={imgClassName}
       pixelated={avatarUrl?.includes('/pixel.png') ?? false}
     />

@@ -187,7 +187,7 @@ export function FriendlyGameForm() {
   useEffect(() => {
     void supabase
       .from('padel_players')
-      .select('id, display_name, profile_id')
+      .select('id, display_name, profile_id, line_picture_url')
       .is('profile_id', null)
       .order('display_name')
       .then(({ data }) => setPadelPlayers((data as PadelPlayerOption[]) ?? []))

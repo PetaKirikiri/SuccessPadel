@@ -1,0 +1,21 @@
+/* Mobile game card and court card layout lock. */
+
+html[data-viewport='mobile'] .game-card-surface {
+  max-width: 100%;
+}
+
+html[data-viewport='mobile'] .game-card-shell {
+  border-color: rgb(125 211 252 / 0.28);
+  background:
+    radial-gradient(ellipse 90% 52% at 22% 0%, rgb(77 163 255 / 0.2), transparent 58%),
+    radial-gradient(ellipse 70% 38% at 100% 100%, rgb(45 255 196 / 0.1), transparent 62%),
+    linear-gradient(180deg, var(--color-brand-bg-alt) 0%, var(--color-brand-bg) 100%);
+  box-shadow: none;
+}
+
+html[data-viewport='mobile'] .game-card-courts-body {
+  border-color: rgb(125 211 252 / 0.22);
+  background:
+    radial-gradient(ellipse 90% 45% at 18% 0%, rgb(77 163 255 / 0.14), transparent 60%),
+    linear-gradient(180deg, rgb(11 42 74 / 0.98) 0%, rgb(6 29 54 / 0.98) 100%);
+}

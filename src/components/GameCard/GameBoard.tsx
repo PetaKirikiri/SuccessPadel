@@ -19,6 +19,8 @@ import type { MatchTeam } from '../../lib/types'
 import { TvGameCarousel, type TvGameNav } from './TvGameCarousel'
 import type { LiveCourt } from './gameBoardTypes'
 import type { CourtPlayer } from '../../lib/americanoSchedule'
+import type { LeaderboardEntry } from '../../lib/leaderboardTypes'
+import type { CompetitionPlayer } from '../../hooks/useCompetitions'
 import { GameCard, courtIdForLabel, type GameCardPanel, type GameCardSession, type ScoringGame } from '.'
 
 export type { FriendlyCourtScoreSubmit }
@@ -60,6 +62,9 @@ type Props = {
   isAdmin?: boolean
   liveCourtScores?: Map<string, LiveCourtGamesScore>
   liveCourtFeeds?: Map<string, LiveCourtPointFeed>
+  courtStandings?: LeaderboardEntry[]
+  roster?: CompetitionPlayer[]
+  rosterNameById?: Map<string, string>
   duoTeamLabels?: (
     teamA: [string, string],
     teamB: [string, string],
@@ -245,6 +250,9 @@ export function GameBoard({
   liveCourtScores,
   liveCourtFeeds,
   duoTeamLabels,
+  courtStandings,
+  roster,
+  rosterNameById,
   tvCarousel = false,
   viewAlongUrl = null,
   scoreSubmitEnabled = true,
@@ -274,11 +282,9 @@ export function GameBoard({
   const [collapsedGames, setCollapsedGames] = useState<Record<number, boolean>>({})
   const collapseSeedKeyRef = useRef<string | null>(null)
   const sessionId = friendlySessionId ?? competitionId
-  const liveCourtEnabled = Boolean(
-    sessionId && isAdmin && currentUserId && !(friendly && onSubmitFriendlyScores),
-  )
-  const gestureScoreEnabled = Boolean(sessionId && (friendly || (currentUserId && mode === 'scoring')))
-  const manualScoreEnabled = Boolean(friendly && onSubmitFriendlyScores && sessionId && currentUserId)
+  const liveCourtEnabled = Boolean(sessionId && !(friendly && onSubmitFriendlyScores))
+  const gestureScoreEnabled = Boolean(sessionId && (friendly || competitionId))
+  const manualScoreEnabled = Boolean(friendly && onSubmitFriendlyScores && sessionId)
   const friendlyManualScoring = Boolean(friendly && sessionId && mode === 'preview')
   const scoringTimeUnlocked = isScoringTimeUnlocked()
   const courtScoreMax = courtGameScoreMax(scoreUnit === 'games' ? playTo : undefined)
@@ -492,6 +498,9 @@ export function GameBoard({
         manualScoreEnabled={manualScoreEnabled}
         friendly={friendly}
         duoTeamLabels={duoTeamLabels}
+        courtStandings={courtStandings}
+        roster={roster}
+        rosterNameById={rosterNameById}
         courtScoreMax={courtScoreMax}
         courtPlayTo={courtPlayTo}
         liveCourtScores={liveCourtScores}

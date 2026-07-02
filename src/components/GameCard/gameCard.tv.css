@@ -74,7 +74,10 @@
     flex: 1 1 0%;
     border-width: 0 !important;
     border-radius: 0 !important;
-    background: var(--color-brand-bg-alt) !important;
+    background:
+      radial-gradient(ellipse 92% 50% at 22% 0%, rgb(77 163 255 / 0.2), transparent 58%),
+      radial-gradient(ellipse 70% 38% at 100% 100%, rgb(45 255 196 / 0.1), transparent 62%),
+      linear-gradient(180deg, var(--color-brand-bg-alt) 0%, var(--color-brand-bg) 100%) !important;
     overflow: visible !important;
     box-shadow: none !important;
   }
@@ -266,7 +269,10 @@
   flex: 1 1 0%;
   border-width: 0 !important;
   border-radius: 0 !important;
-  background: var(--color-brand-bg-alt) !important;
+  background:
+    radial-gradient(ellipse 92% 50% at 22% 0%, rgb(77 163 255 / 0.2), transparent 58%),
+    radial-gradient(ellipse 70% 38% at 100% 100%, rgb(45 255 196 / 0.1), transparent 62%),
+    linear-gradient(180deg, var(--color-brand-bg-alt) 0%, var(--color-brand-bg) 100%) !important;
   overflow: visible !important;
   box-shadow: none !important;
 }
@@ -287,7 +293,9 @@
   flex: 1 1 0%;
   flex-direction: column;
   overflow: hidden;
-  background: var(--color-brand-bg-alt);
+  background:
+    radial-gradient(ellipse 90% 45% at 18% 0%, rgb(77 163 255 / 0.14), transparent 60%),
+    linear-gradient(180deg, rgb(11 42 74 / 0.98) 0%, rgb(6 29 54 / 0.98) 100%);
 }
 
 .play-game-carousel .tv-game-courts-grid {

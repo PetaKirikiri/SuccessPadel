@@ -13,7 +13,6 @@ import {
   shellTabClass,
 } from './ShellTabIcons'
 import { ProfileChip } from '../ProfilePhoto/ProfileChip'
-import { TemporaryPaletteButton } from '../../shared/NavBar/TemporaryPaletteButton'
 
 type NavVariant = 'rank' | 'competition'
 type HubKind = 'friendly' | 'competitive'
@@ -204,15 +203,12 @@ export function AppBottomNav({ embedded = false }: { embedded?: boolean }) {
   }
 
   return (
-    <>
-      <TemporaryPaletteButton />
-      <nav className="shell-dock-inner app-shell-dock" aria-label={t('aria.playModes')}>
-        <div className="app-shell-dock-inner">
-          <HubNavItem kind="friendly" />
-          <HubNavItem kind="competitive" />
-          <ProfileChip navItem className="min-w-0 flex-1 basis-0" />
-        </div>
-      </nav>
-    </>
+    <nav className="shell-dock-inner app-shell-dock" aria-label={t('aria.playModes')}>
+      <div className="app-shell-dock-inner">
+        <HubNavItem kind="friendly" />
+        <HubNavItem kind="competitive" />
+        <ProfileChip navItem className="min-w-0 flex-1 basis-0" />
+      </div>
+    </nav>
   )
 }

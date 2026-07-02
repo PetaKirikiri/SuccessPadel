@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { DuoTeamSlots } from '../../components/SetupCard/SetupCardTeamSlots'
 import { MemberPlayerSlots, type PadelPlayerOption } from '../../components/SetupCard/MemberPlayerSlots'
 import { useTranslation } from '../../hooks/useTranslation'
+import { clubDisplayName } from '../../lib/clubMemberDisplay'
 import type { DuoTeamDraft } from '../../lib/competitionDuoTeams'
 import { duoTeamDraftsFromRow, competitionRosterSlots } from '../../lib/competitionGameDisplay'
 import { isDuoCompetition } from '../../lib/competitionFormatPresets'
@@ -32,6 +33,17 @@ function padArray<T>(values: T[], count: number, fill: T): T[] {
   return next
 }
 
+type PadelPlayerRow = Omit<PadelPlayerOption, 'profiles'> & {
+  profiles?: PadelPlayerOption['profiles'] | PadelPlayerOption['profiles'][]
+}
+
+function normalizePadelPlayers(rows: PadelPlayerRow[] | null): PadelPlayerOption[] {
+  return (rows ?? []).map((row) => ({
+    ...row,
+    profiles: Array.isArray(row.profiles) ? row.profiles[0] ?? null : row.profiles ?? null,
+  }))
+}
+
 function singlesFromRow(row: CompetitionRow) {
   const slots = competitionRosterSlots(row)
   return {
@@ -53,6 +65,84 @@ function draftFromRow(row: CompetitionRow, isDuos: boolean) {
     profileIds: singles.profileIds,
     padelPlayerIds: singles.padelPlayerIds,
     slotCount: singles.slotCount,
+  }
+}
+
+function resolveLinkedSlotName(
+  storedName: string,
+  profileId: string | null,
+  padelPlayerId: string | null,
+  profileById: Map<string, Profile>,
+  playerById: Map<string, PadelPlayerOption>,
+): string {
+  const profile = profileId ? profileById.get(profileId) : undefined
+  if (profileId && profile?.display_name?.trim()) {
+    return clubDisplayName(profileId, profile.display_name)
+  }
+  const player = padelPlayerId ? playerById.get(padelPlayerId) : undefined
+  if (player?.profile_id && player.profiles?.display_name?.trim()) {
+    return clubDisplayName(player.profile_id, player.profiles.display_name)
+  }
+  if (padelPlayerId && player?.display_name?.trim()) {
+    return player.display_name
+  }
+  return storedName
+}
+
+function refreshDuoTeamNames(
+  teams: DuoTeamDraft[],
+  profiles: Profile[],
+  padelPlayers: PadelPlayerOption[],
+): DuoTeamDraft[] {
+  const profileById = new Map(profiles.map((profile) => [profile.id, profile]))
+  const playerById = new Map(padelPlayers.map((player) => [player.id, player]))
+  return teams.map((team) => ({
+    ...team,
+    names: [0, 1].map((side) =>
+      resolveLinkedSlotName(
+        team.names[side],
+        team.profileIds[side],
+        team.padelPlayerIds[side],
+        profileById,
+        playerById,
+      ),
+    ) as [string, string],
+  }))
+}
+
+function refreshSinglesNames(
+  names: string[],
+  profileIds: (string | null)[],
+  padelPlayerIds: (string | null)[],
+  profiles: Profile[],
+  padelPlayers: PadelPlayerOption[],
+): string[] {
+  const profileById = new Map(profiles.map((profile) => [profile.id, profile]))
+  const playerById = new Map(padelPlayers.map((player) => [player.id, player]))
+  return names.map((name, index) =>
+    resolveLinkedSlotName(
+      name,
+      profileIds[index] ?? null,
+      padelPlayerIds[index] ?? null,
+      profileById,
+      playerById,
+    ),
+  )
+}
+
+async function loadRosterDirectory() {
+  const [profilesRes, playersRes] = await Promise.all([
+    supabase.from('profiles').select('id, display_name, avatar_url').order('display_name'),
+    supabase
+      .from('padel_players')
+      .select(
+        'id, display_name, profile_id, line_picture_url, profiles(id, display_name, avatar_url)',
+      )
+      .order('display_name'),
+  ])
+  return {
+    profiles: (profilesRes.data as Profile[]) ?? [],
+    padelPlayers: normalizePadelPlayers(playersRes.data as PadelPlayerRow[] | null),
   }
 }
 
@@ -106,18 +196,38 @@ export function InviteCardRosterEditor({ row, onSaved }: Props) {
   }, [isDuos, duoTeams, playerSlots, profileIds, padelPlayerIds])
 
   useEffect(() => {
-    void Promise.all([
-      supabase.from('profiles').select('id, display_name, avatar_url').order('display_name'),
-      supabase
-        .from('padel_players')
-        .select('id, display_name, profile_id')
-        .is('profile_id', null)
-        .order('display_name'),
-    ]).then(([profilesRes, playersRes]) => {
-      setProfiles((profilesRes.data as Profile[]) ?? [])
-      setPadelPlayers((playersRes.data as PadelPlayerOption[]) ?? [])
+    let active = true
+    void loadRosterDirectory().then(({ profiles: nextProfiles, padelPlayers: nextPadel }) => {
+      if (!active) return
+      setProfiles(nextProfiles)
+      setPadelPlayers(nextPadel)
     })
+    return () => {
+      active = false
+    }
   }, [])
+
+  useEffect(() => {
+    const onProfileSynced = () => {
+      void loadRosterDirectory().then(({ profiles: nextProfiles, padelPlayers: nextPadel }) => {
+        setProfiles(nextProfiles)
+        setPadelPlayers(nextPadel)
+      })
+    }
+    window.addEventListener('successpadel:profile-synced', onProfileSynced)
+    return () => window.removeEventListener('successpadel:profile-synced', onProfileSynced)
+  }, [])
+
+  useEffect(() => {
+    if (profiles.length === 0 && padelPlayers.length === 0) return
+    if (isDuos) {
+      setDuoTeams((teams) => refreshDuoTeamNames(teams, profiles, padelPlayers))
+      return
+    }
+    setPlayerSlots((names) =>
+      refreshSinglesNames(names, profileIds, padelPlayerIds, profiles, padelPlayers),
+    )
+  }, [profiles, padelPlayers, isDuos, profileIds, padelPlayerIds])
 
   useEffect(() => {
     dirtyRef.current = false
@@ -268,6 +378,7 @@ export function InviteCardRosterEditor({ row, onSaved }: Props) {
           linkAvatarsToProfile
           competitionId={sessionId}
           showSlotNumbers={false}
+          inviteChipLayout
         />
       )}
       {error ? <p className="mt-2 text-xs text-red-600">{error}</p> : null}

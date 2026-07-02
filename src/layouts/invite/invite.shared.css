@@ -1,0 +1,8 @@
+/* Invite card layout: shared unscoped baseline only. */
+
+/* Layer 0 — base (unscoped, minimal) */
+.invite-game-card {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}

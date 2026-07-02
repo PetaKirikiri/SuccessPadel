@@ -1,0 +1,1375 @@
+/* Invite card layout: mobile viewport only. */
+
+/* Shared — left: gender | center: prev/date/time/level/next | right: admin + badges */
+html[data-viewport='mobile'] .invite-game-card {
+display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 0%;
+  overflow: hidden;
+}
+
+html[data-viewport='mobile'] .invite-game-card__frame {
+display: grid;
+  grid-template-rows: minmax(0, auto) minmax(0, 1fr);
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow: hidden;
+  gap: 0.5rem;
+  padding: 0.375rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__header {
+display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, 42vw) minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 0;
+  overflow: visible;
+}
+
+html[data-viewport='mobile'] .invite-game-card__left-rail {
+display: flex;
+  justify-self: start;
+  align-self: start;
+  flex-shrink: 0;
+}
+
+html[data-viewport='mobile'] .invite-game-card__header-spacer {
+min-width: 0;
+  min-height: 0;
+}
+
+html[data-viewport='mobile'] .invite-game-card__header {
+background: color-mix(in srgb, var(--color-brand-bg-alt) 88%, transparent);
+  border: 1px solid var(--color-brand-border);
+  border-radius: 0.85rem;
+  padding: 0.5rem 0.625rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__banner-center {
+display: flex;
+  grid-column: 2;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  gap: 0.375rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__title-slot {
+display: flex;
+  min-width: 0;
+  flex: 1 1 0%;
+  max-width: 100%;
+  justify-content: center;
+}
+
+html[data-viewport='mobile'] .invite-game-card__title-link {
+display: flex;
+  width: min(100%, 34rem);
+  max-width: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: clamp(0.05rem, 0.35vh, 0.15rem);
+}
+
+html[data-viewport='mobile'] .invite-game-card__schedule-date {
+margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-brand-primary);
+}
+
+html[data-viewport='mobile'] .invite-game-card__schedule-time {
+margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-brand-primary);
+}
+
+html[data-viewport='mobile'] .invite-game-card__level {
+margin: 0;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--color-brand-primary);
+}
+
+html[data-viewport='mobile'] .invite-game-card__schedule-date {
+font-size: clamp(0.95rem, 4.8vw, 1.25rem);
+}
+
+html[data-viewport='mobile'] .invite-game-card__schedule-time {
+font-size: clamp(0.9rem, 4.2vw, 1.15rem);
+}
+
+html[data-viewport='mobile'] .invite-game-card__level {
+font-size: clamp(0.85rem, 3.8vw, 1.05rem);
+}
+
+html[data-viewport='mobile'] .invite-game-card__level {
+overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+html[data-viewport='mobile'] .invite-game-card__right-rail {
+display: flex;
+  grid-column: 3;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  justify-self: end;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  min-width: 0;
+  max-width: 100%;
+}
+
+html[data-viewport='mobile'] .invite-game-card__admin {
+display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.3rem;
+}
+
+html[data-viewport='mobile'] .invite-card-admin-btn {
+display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-brand-border);
+  background: var(--color-brand-bg-alt);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+html[data-viewport='mobile'] .invite-card-admin-btn:active {
+transform: scale(0.98);
+}
+
+html[data-viewport='mobile'] .invite-card-admin-btn--edit {
+border-color: color-mix(in srgb, var(--color-brand-primary) 35%, transparent);
+  color: var(--color-brand-primary);
+}
+
+html[data-viewport='mobile'] .invite-card-admin-btn--delete {
+color: var(--color-brand-muted);
+}
+
+html[data-viewport='mobile'] .invite-card-admin-btn__icon {
+width: 1rem;
+  height: 1rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__badges {
+min-width: 0;
+  flex: 0 1 auto;
+}
+
+html[data-viewport='mobile'] .invite-game-card__badges .rule-chip-grid {
+justify-self: end;
+}
+
+html[data-viewport='mobile'] .invite-game-card__roster {
+display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 0%;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--color-brand-bg-alt) 88%, transparent);
+  border: 1px solid var(--color-brand-border);
+  border-radius: 0.85rem;
+  padding: 0.5rem 0.625rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__roster > .invite-roster-grid {
+flex: 1 1 0%;
+  min-height: 0;
+}
+
+/* Mobile sizing */
+html[data-viewport='mobile'] .invite-game-card__frame {
+padding-inline: 0.25rem;
+}
+
+html[data-viewport='mobile'] .invite-card-gender-controls button {
+width: 2rem;
+  height: 2rem;
+  border-radius: 0.75rem;
+}
+
+html[data-viewport='mobile'] .invite-card-gender-controls .gender-raster-icon {
+width: 1.35rem;
+  height: 1.35rem;
+}
+
+html[data-viewport='mobile'] .invite-carousel-header-nav {
+width: 1.75rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  font-size: 1.35rem;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor__submit {
+display: none;
+}
+
+/* Mobile — two-row header (gender | title | admin, then badges); roster fill */
+html[data-viewport='mobile'] .invite-game-card__header {
+grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: start;
+  gap: 0.375rem 0.5rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__left-rail,
+html[data-viewport='mobile'] .invite-game-card__header-spacer:first-child {
+grid-column: 1;
+  grid-row: 1;
+  align-self: start;
+}
+
+html[data-viewport='mobile'] .invite-game-card__banner-center {
+grid-column: 2;
+  grid-row: 1;
+  width: 100%;
+  min-width: 0;
+  align-self: center;
+}
+
+html[data-viewport='mobile'] .invite-game-card__title-slot {
+min-width: 0;
+  width: 100%;
+}
+
+html[data-viewport='mobile'] .invite-game-card__title-link {
+width: 100%;
+  max-width: 100%;
+}
+
+html[data-viewport='mobile'] .invite-game-card__right-rail {
+display: contents;
+}
+
+html[data-viewport='mobile'] .invite-game-card__admin {
+grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+  align-self: start;
+}
+
+html[data-viewport='mobile'] .invite-game-card__badges {
+grid-column: 1 / -1;
+  grid-row: 2;
+  width: 100%;
+}
+
+html[data-viewport='mobile'] .invite-game-card__badges .rule-chip-grid {
+display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  width: auto;
+  gap: 0.3rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__badges .rule-chip-grid__item {
+width: auto;
+  min-height: 0;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+}
+
+html[data-viewport='mobile'] .invite-game-card__badges .rule-chip-grid__icon {
+width: 1rem;
+  height: 1rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__badges .rule-chip-grid__value {
+font-size: 0.8rem;
+  font-weight: 900;
+  color: var(--color-brand-primary);
+}
+
+html[data-viewport='mobile'] .invite-game-card__schedule-date {
+font-size: clamp(1rem, 5.2vw, 1.35rem);
+}
+
+html[data-viewport='mobile'] .invite-game-card__schedule-time {
+font-size: clamp(0.95rem, 4.5vw, 1.2rem);
+}
+
+html[data-viewport='mobile'] .invite-game-card__level {
+font-size: clamp(0.85rem, 3.8vw, 1.05rem);
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor {
+display: flex;
+  min-height: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor > .duo-team-slots--grid {
+display: grid;
+  min-height: 0;
+  flex: 1 1 0%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(4, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+html[data-viewport='mobile'] .invite-roster-grid {
+height: 100%;
+  min-height: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(var(--roster-rows, 4), minmax(0, 1fr));
+  --roster-chip-width: 100%;
+}
+
+html[data-viewport='mobile'] .invite-roster-grid--prominent,
+html[data-viewport='mobile'] .invite-roster-grid--fill {
+height: 100%;
+  min-height: 0;
+  gap: 0.35rem;
+}
+
+html[data-viewport='mobile'] .invite-roster-grid > .invite-duo-team-card,
+html[data-viewport='mobile'] .invite-roster-editor .invite-duo-team-card,
+html[data-viewport='mobile'] .invite-roster-editor .duo-team-card {
+display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+}
+
+html[data-viewport='mobile'] .invite-duo-team-card {
+justify-content: flex-start;
+  align-items: stretch;
+  padding: 0.35rem 0.4rem;
+  border-radius: 0.65rem;
+}
+
+html[data-viewport='mobile'] .invite-duo-team-label {
+flex-shrink: 0;
+  margin: 0 0 0.2rem;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+  color: var(--color-brand-primary);
+  font-size: clamp(0.7rem, 2.2vh, 1rem);
+}
+
+html[data-viewport='mobile'] .invite-duo-team-players {
+display: flex;
+  flex: 1 1 0%;
+  flex-direction: column;
+  justify-content: space-evenly;
+  min-height: 0;
+  gap: clamp(0.2rem, 0.8vh, 0.5rem);
+}
+
+html[data-viewport='mobile'] .invite-roster-chip {
+flex: 1 1 0%;
+  width: 100%;
+  max-width: none;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(0.15rem, 0.6vh, 0.45rem) clamp(0.35rem, 1.5vw, 0.65rem);
+  gap: clamp(0.25rem, 0.6vh, 0.5rem);
+}
+
+html[data-viewport='mobile'] .invite-roster-chip .invite-roster-chip__avatar,
+html[data-viewport='mobile'] .invite-roster-chip__vacant-avatar {
+width: clamp(1.5rem, 4.5vh, 2.5rem);
+  height: clamp(1.5rem, 4.5vh, 2.5rem);
+}
+
+html[data-viewport='mobile'] .invite-roster-chip__name,
+html[data-viewport='mobile'] .invite-roster-chip__vacant-name {
+flex: 1 1 0%;
+  min-width: 0;
+  font-size: clamp(0.7rem, 2.5vh, 1.1rem);
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.1;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor .invite-duo-team-label .brand-input {
+height: clamp(1.5rem, 3vh, 2rem);
+  font-size: clamp(0.65rem, 1.8vh, 0.85rem);
+  text-align: center;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor-chip .invite-roster-chip__name {
+height: auto;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  text-align: center;
+  font-weight: 800;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor .duo-team-card img,
+html[data-viewport='mobile'] .invite-roster-editor .duo-team-card a {
+width: clamp(1.5rem, 4.5vh, 2.5rem);
+  height: clamp(1.5rem, 4.5vh, 2.5rem);
+}
+
+/* Mobile isolation — compact, scrollable roster; do not inherit tablet/TV fill scaling. */
+html[data-viewport='mobile'] .invite-game-card__frame {
+grid-template-rows: auto minmax(0, 1fr);
+  gap: 0.45rem;
+  padding: 0.375rem 0.5rem 0.5rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__roster {
+min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.4rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor {
+display: block;
+  min-height: 0;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor > .duo-team-slots--grid {
+display: grid;
+  min-height: 0;
+  flex: 0 0 auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: none;
+  grid-auto-rows: auto;
+  align-content: start;
+  gap: 0.45rem;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor .invite-duo-team-card,
+html[data-viewport='mobile'] .invite-roster-editor .duo-team-card {
+display: flex;
+  height: auto;
+  min-height: 7.25rem;
+  flex-direction: column;
+  justify-content: flex-start;
+  overflow: hidden;
+  border-radius: 0.65rem;
+  padding: 0.4rem;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor .invite-duo-team-label {
+width: 100%;
+  margin: 0 0 0.25rem;
+  flex: 0 0 auto;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor .invite-duo-team-label .brand-input {
+height: 1.7rem;
+  min-height: 0;
+  border-radius: 0.55rem;
+  padding: 0.15rem 0.35rem;
+  font-size: 0.72rem;
+  line-height: 1;
+  text-align: center;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor .invite-duo-team-players {
+display: flex;
+  min-height: 0;
+  flex: 0 0 auto;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 0.35rem;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor .invite-roster-chip {
+height: 2.35rem;
+  min-height: 2.35rem;
+  flex: 0 0 auto;
+  justify-content: flex-start;
+  overflow: hidden;
+  padding: 0.2rem 0.35rem;
+  gap: 0.35rem;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor .invite-roster-chip .invite-roster-chip__avatar,
+html[data-viewport='mobile'] .invite-roster-editor .invite-roster-chip__vacant-avatar,
+html[data-viewport='mobile'] .invite-roster-editor .duo-team-card img,
+html[data-viewport='mobile'] .invite-roster-editor .duo-team-card a {
+width: 1.9rem;
+  height: 1.9rem;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor .invite-roster-chip__name,
+html[data-viewport='mobile'] .invite-roster-editor .invite-roster-chip__vacant-name {
+min-width: 0;
+  flex: 1 1 0%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.1;
+  text-align: left;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor-chip .invite-roster-chip__name {
+height: auto;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Mobile roster hard clamp: keep editor pills inside their team cards only on phones. */
+html[data-viewport='mobile'] .invite-roster-editor,
+html[data-viewport='mobile'] .invite-roster-editor *,
+html[data-viewport='mobile'] .invite-roster-editor *::before,
+html[data-viewport='mobile'] .invite-roster-editor *::after {
+box-sizing: border-box;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor > .duo-team-slots--grid {
+width: 100%;
+  max-width: 100%;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor .invite-duo-team-card,
+html[data-viewport='mobile'] .invite-roster-editor .duo-team-card {
+width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor .invite-duo-team-players > div,
+html[data-viewport='mobile'] .invite-roster-editor .invite-duo-team-players > div > div {
+display: flex;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor .invite-roster-chip {
+width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor .invite-roster-chip__avatar,
+html[data-viewport='mobile'] .invite-roster-editor .invite-roster-chip__vacant-avatar,
+html[data-viewport='mobile'] .invite-roster-editor .invite-roster-chip > a {
+flex: 0 0 1.9rem;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor .invite-roster-chip__name {
+width: 0;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Mobile scale lock — no viewport-height text scaling in roster editor. */
+html[data-viewport='mobile'] .invite-roster-editor > .duo-team-slots--grid {
+grid-auto-rows: minmax(6.35rem, auto);
+  gap: 0.4rem;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor .invite-duo-team-card,
+html[data-viewport='mobile'] .invite-roster-editor .duo-team-card {
+min-height: 6.35rem;
+  max-height: none;
+  padding: 0.32rem;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor .invite-duo-team-label {
+height: 1.45rem;
+  max-height: 1.45rem;
+  margin-bottom: 0.25rem;
+  overflow: hidden;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor .invite-duo-team-label .brand-input {
+display: block;
+  width: 100%;
+  height: 1.45rem;
+  min-height: 1.45rem;
+  max-height: 1.45rem;
+  padding: 0.1rem 0.35rem;
+  overflow: hidden;
+  font-size: 0.68rem;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor .invite-duo-team-players {
+gap: 0.3rem;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor .invite-duo-team-players > div,
+html[data-viewport='mobile'] .invite-roster-editor .invite-duo-team-players > div > div {
+gap: 0.3rem;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor .invite-roster-chip {
+height: 2rem;
+  min-height: 2rem;
+  max-height: 2rem;
+  padding: 0.16rem 0.3rem;
+  gap: 0.3rem;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor .invite-roster-chip__avatar,
+html[data-viewport='mobile'] .invite-roster-editor .invite-roster-chip__vacant-avatar,
+html[data-viewport='mobile'] .invite-roster-editor .invite-roster-chip > a,
+html[data-viewport='mobile'] .invite-roster-editor .duo-team-card img,
+html[data-viewport='mobile'] .invite-roster-editor .duo-team-card a {
+width: 1.55rem;
+  height: 1.55rem;
+  flex: 0 0 1.55rem;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor .invite-roster-chip__name,
+html[data-viewport='mobile'] .invite-roster-editor .invite-roster-chip__vacant-name {
+height: auto;
+  max-height: 1rem;
+  overflow: hidden;
+  font-size: 0.78rem;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Duo team card — optional label watermark (e.g. Team 7) */
+html[data-viewport='mobile'] .invite-duo-team-card--watermarked {
+position: relative;
+  overflow: hidden;
+}
+
+html[data-viewport='mobile'] .invite-duo-team-card--watermarked::before {
+content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: var(--team-watermark-url);
+  background-position: center 20%;
+  background-repeat: no-repeat;
+  background-size: min(88%, 14rem) auto;
+  opacity: 0.16;
+  pointer-events: none;
+}
+
+html[data-viewport='mobile'] .invite-duo-team-card--watermarked > * {
+position: relative;
+  z-index: 1;
+}
+
+html[data-viewport='mobile'] .invite-duo-team-card--watermarked .invite-duo-team-label {
+text-shadow: 0 1px 8px color-mix(in srgb, var(--color-brand-bg-alt) 85%, transparent);
+}
+
+/* Mobile read-only roster: match the logged-in editor card scale. */
+html[data-viewport='mobile'] .invite-game-card__roster > .invite-roster-grid {
+width: 100%;
+  max-width: 100%;
+  height: auto;
+  min-height: 0;
+  flex: 0 0 auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: none;
+  grid-auto-rows: minmax(6.35rem, auto);
+  align-content: start;
+  gap: 0.4rem;
+  --roster-chip-width: 100%;
+}
+
+html[data-viewport='mobile'] .invite-game-card__roster > .invite-roster-grid > .invite-duo-team-card {
+box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  min-width: 0;
+  min-height: 6.35rem;
+  max-height: none;
+  justify-content: flex-start;
+  overflow: hidden;
+  border-radius: 0.65rem;
+  padding: 0.32rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__roster > .invite-roster-grid .invite-duo-team-label {
+height: 1.45rem;
+  max-height: 1.45rem;
+  margin: 0 0 0.25rem;
+  overflow: hidden;
+  font-size: 0.68rem;
+  line-height: 1.45rem;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-viewport='mobile'] .invite-game-card__roster > .invite-roster-grid .invite-duo-team-players {
+display: flex;
+  min-height: 0;
+  flex: 0 0 auto;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 0.3rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__roster > .invite-roster-grid .invite-roster-chip {
+box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  height: 2rem;
+  min-width: 0;
+  min-height: 2rem;
+  max-height: 2rem;
+  flex: 0 0 auto;
+  justify-content: flex-start;
+  overflow: hidden;
+  padding: 0.16rem 0.3rem;
+  gap: 0.3rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__roster > .invite-roster-grid .invite-roster-chip__avatar,
+html[data-viewport='mobile'] .invite-game-card__roster > .invite-roster-grid .invite-roster-chip__vacant-avatar,
+html[data-viewport='mobile'] .invite-game-card__roster > .invite-roster-grid .invite-roster-chip > a {
+width: 1.55rem;
+  height: 1.55rem;
+  flex: 0 0 1.55rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__roster > .invite-roster-grid .invite-roster-chip__name,
+html[data-viewport='mobile'] .invite-game-card__roster > .invite-roster-grid .invite-roster-chip__vacant-name {
+width: 0;
+  max-width: 100%;
+  max-height: 1rem;
+  min-width: 0;
+  flex: 1 1 0%;
+  overflow: hidden;
+  font-size: 0.78rem;
+  line-height: 1;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Auth-state normalization: editor and read-only roster use the same grid contract. */
+html[data-viewport='mobile'] .invite-roster-editor > .duo-team-slots--grid.invite-roster-grid {
+width: 100%;
+  max-width: 100%;
+  min-height: 0;
+  flex: 1 1 0%;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor > .duo-team-slots--grid.invite-roster-grid {
+height: auto;
+  flex: 0 0 auto;
+  grid-template-columns: repeat(var(--roster-cols-mobile, 2), minmax(0, 1fr));
+  grid-template-rows: none;
+  grid-auto-rows: minmax(6.35rem, auto);
+  align-content: start;
+  gap: 0.4rem;
+}
+
+/* Mobile-only invite header overlay. Do not add tablet/web/tv rules here. */
+html[data-viewport='mobile'] .invite-game-card {
+position: relative;
+}
+
+html[data-viewport='mobile'] .invite-game-card__left-rail {
+position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  z-index: 4;
+}
+
+html[data-viewport='mobile'] .invite-game-card__header {
+padding-top: 3rem;
+}
+
+@media (orientation: landscape) {
+html[data-viewport='mobile'] .invite-game-card__left-rail {
+top: 0.45rem;
+    right: 0.45rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__header {
+padding-top: 0.35rem;
+    padding-right: 6.9rem;
+}
+}
+
+/* Final mobile composition: compact header + dense roster cards. */
+html[data-viewport='mobile'] .hub-gender-shell > .invite-card-gender-controls {
+  position: absolute;
+  top: 0.5rem;
+  right: auto;
+  left: 0.5rem;
+  z-index: 5;
+  margin: 0;
+  padding: 0;
+}
+
+html[data-viewport='mobile'] .hub-gender-body {
+  height: 100%;
+  min-height: 0;
+  padding-top: 0;
+}
+
+html[data-viewport='mobile'] .invite-game-card__frame {
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0.55rem;
+  padding: 0.55rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__header {
+  position: relative;
+  min-height: 14.25rem;
+  grid-template-columns: 2.35rem minmax(0, 1fr) 2.35rem;
+  grid-template-rows: minmax(4.65rem, auto) auto;
+  align-items: center;
+  gap: 0.45rem 0.5rem;
+  overflow: hidden;
+  padding: 0.55rem;
+  border-radius: 0.95rem;
+}
+
+html[data-viewport='mobile'] .invite-card-gender-controls {
+  display: flex;
+  gap: 0.35rem;
+}
+
+html[data-viewport='mobile'] .invite-card-gender-controls button {
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 0.75rem;
+}
+
+html[data-viewport='mobile'] .invite-card-gender-controls .gender-raster-icon {
+  width: 1.45rem;
+  height: 1.45rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__banner-center {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  display: grid;
+  width: 100%;
+  grid-template-columns: 2.35rem minmax(0, 1fr) 2.35rem;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0 0.1rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__title-slot {
+  grid-column: 2;
+}
+
+html[data-viewport='mobile'] .invite-game-card__title-link {
+  gap: 0.08rem;
+}
+
+html[data-viewport='mobile'] .invite-carousel-header-nav {
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 9999px;
+  font-size: 1.7rem;
+}
+
+html[data-viewport='mobile'] .invite-carousel-header-nav--prev {
+  grid-column: 1;
+}
+
+html[data-viewport='mobile'] .invite-carousel-header-nav--next {
+  grid-column: 3;
+}
+
+html[data-viewport='mobile'] .invite-game-card__schedule-date {
+  font-size: clamp(1.35rem, 6.2vw, 1.75rem);
+}
+
+html[data-viewport='mobile'] .invite-game-card__schedule-time {
+  font-size: clamp(1.05rem, 5vw, 1.4rem);
+}
+
+html[data-viewport='mobile'] .invite-game-card__level {
+  font-size: clamp(0.95rem, 4.1vw, 1.15rem);
+  line-height: 1.05;
+  -webkit-line-clamp: 1;
+}
+
+html[data-viewport='mobile'] .invite-game-card__admin {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 3;
+  flex-direction: row;
+  gap: 0.4rem;
+}
+
+html[data-viewport='mobile'] .invite-card-admin-btn {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 0.75rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__badges {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  width: 100%;
+  min-width: 0;
+  overflow: visible;
+}
+
+html[data-viewport='mobile'] .invite-game-card__badges .rule-chip-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+  gap: 0.4rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__badges .rule-chip-grid__item {
+  min-width: 0;
+  min-height: 2.35rem;
+  justify-content: space-between;
+  gap: 0.35rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: 0.85rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__badges .rule-chip-grid__icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__badges .rule-chip-grid__label,
+html[data-viewport='mobile'] .invite-game-card__badges .rule-chip-grid__value {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-viewport='mobile'] .invite-game-card__roster {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.45rem;
+  border-radius: 0.95rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__roster > .invite-roster-grid,
+html[data-viewport='mobile'] .invite-roster-editor > .duo-team-slots--grid.invite-roster-grid,
+html[data-viewport='mobile'] .invite-roster-editor > div:not(.duo-team-slots) > div {
+  display: grid;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  min-height: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: none;
+  grid-auto-rows: minmax(4.2rem, auto);
+  align-content: start;
+  gap: 0.45rem;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor,
+html[data-viewport='mobile'] .invite-roster-editor > div:not(.duo-team-slots) {
+  display: block;
+  min-height: 0;
+  width: 100%;
+}
+
+html[data-viewport='mobile'] .invite-game-card__roster > .invite-roster-grid > .invite-roster-chip,
+html[data-viewport='mobile'] .invite-roster-editor .invite-roster-editor-chip {
+  display: grid;
+  height: auto;
+  min-height: 4.2rem;
+  max-height: none;
+  grid-template-columns: 2.15rem minmax(0, 1fr);
+  align-items: center;
+  justify-content: start;
+  gap: 0.4rem;
+  overflow: hidden;
+  border-radius: 0.8rem;
+  padding: 0.4rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__roster > .invite-roster-grid .invite-roster-chip__avatar,
+html[data-viewport='mobile'] .invite-game-card__roster > .invite-roster-grid .invite-roster-chip__vacant-avatar,
+html[data-viewport='mobile'] .invite-game-card__roster > .invite-roster-grid .invite-roster-chip > a,
+html[data-viewport='mobile'] .invite-roster-editor .invite-roster-chip__avatar,
+html[data-viewport='mobile'] .invite-roster-editor .invite-roster-chip__vacant-avatar,
+html[data-viewport='mobile'] .invite-roster-editor .invite-roster-chip > a {
+  width: 2.15rem;
+  height: 2.15rem;
+  flex: 0 0 2.15rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__roster > .invite-roster-grid .invite-roster-chip__name,
+html[data-viewport='mobile'] .invite-game-card__roster > .invite-roster-grid .invite-roster-chip__vacant-name,
+html[data-viewport='mobile'] .invite-roster-editor .invite-roster-chip__name,
+html[data-viewport='mobile'] .invite-roster-editor .invite-roster-chip__vacant-name {
+  width: auto;
+  max-height: none;
+  min-width: 0;
+  overflow: hidden;
+  font-size: clamp(0.9rem, 3.8vw, 1.05rem);
+  line-height: 1.05;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-viewport='mobile'] .invite-game-card__roster > .invite-roster-grid > .invite-duo-team-card,
+html[data-viewport='mobile'] .invite-roster-editor .invite-duo-team-card,
+html[data-viewport='mobile'] .invite-roster-editor .duo-team-card {
+  min-height: 7.5rem;
+  border-radius: 0.85rem;
+  padding: 0.45rem;
+}
+
+html[data-viewport='mobile'] .invite-duo-team-label,
+html[data-viewport='mobile'] .invite-game-card__roster > .invite-roster-grid .invite-duo-team-label,
+html[data-viewport='mobile'] .invite-roster-editor .invite-duo-team-label {
+  height: auto;
+  max-height: none;
+  margin: 0 0 0.35rem;
+  font-size: clamp(0.75rem, 3.2vw, 0.9rem);
+  line-height: 1.1;
+}
+
+html[data-viewport='mobile'] .invite-roster-editor .invite-duo-team-label .brand-input {
+  height: 1.75rem;
+  min-height: 1.75rem;
+  max-height: 1.75rem;
+  font-size: 0.78rem;
+}
+
+html[data-viewport='mobile'] .invite-duo-team-players,
+html[data-viewport='mobile'] .invite-game-card__roster > .invite-roster-grid .invite-duo-team-players,
+html[data-viewport='mobile'] .invite-roster-editor .invite-duo-team-players {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 0.35rem;
+}
+
+html[data-viewport='mobile'] .invite-duo-team-players .invite-roster-chip,
+html[data-viewport='mobile'] .invite-game-card__roster > .invite-roster-grid .invite-duo-team-players .invite-roster-chip,
+html[data-viewport='mobile'] .invite-roster-editor .invite-duo-team-players .invite-roster-chip {
+  display: grid;
+  height: 2.25rem;
+  min-height: 2.25rem;
+  max-height: 2.25rem;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  gap: 0.35rem;
+  border-radius: 9999px;
+  padding: 0.2rem 0.35rem;
+}
+
+html[data-viewport='mobile'] .invite-duo-team-players .invite-roster-chip__avatar,
+html[data-viewport='mobile'] .invite-duo-team-players .invite-roster-chip__vacant-avatar,
+html[data-viewport='mobile'] .invite-duo-team-players .invite-roster-chip > a {
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: 0 0 1.75rem;
+}
+
+@media (orientation: landscape) {
+  html[data-viewport='mobile'] .invite-game-card__header {
+    min-height: 9.5rem;
+    grid-template-rows: minmax(4.2rem, auto) auto;
+    padding-left: 0.55rem;
+    padding-right: 5.25rem;
+  }
+
+  html[data-viewport='mobile'] .invite-game-card__banner-center {
+    grid-row: 1;
+  }
+
+  html[data-viewport='mobile'] .invite-game-card__badges {
+    grid-row: 2;
+  }
+}
+
+/* Mobile balance pass: absolute filter, content-sized roster. */
+html[data-viewport='mobile'] .hub-gender-shell > .invite-card-gender-controls {
+  top: 0.65rem;
+  right: auto;
+  left: 0.65rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__frame {
+  align-content: start;
+  grid-template-rows: auto auto;
+}
+
+html[data-viewport='mobile'] .invite-game-card__header {
+  padding-top: 2.9rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__roster {
+  flex: 0 0 auto;
+  max-height: min(50vh, 32rem);
+}
+
+html[data-viewport='mobile'] .invite-game-card__roster > .invite-roster-grid,
+html[data-viewport='mobile'] .invite-roster-editor > div:not(.duo-team-slots) > div {
+  height: auto;
+  flex: 0 0 auto;
+}
+
+/* Locked invite header: gender is hub-level absolute; this card owns title + badges only. */
+html[data-viewport='mobile'] .invite-game-card__header {
+  display: grid;
+  min-height: 0;
+  grid-template-areas:
+    "title"
+    "badges";
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 0.55rem;
+  padding: 3.15rem 0.85rem 0.75rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__header-title {
+  display: flex;
+  min-width: 0;
+  grid-area: title;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.35rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__title-nav {
+  display: grid;
+  width: min(100%, 25rem);
+  grid-template-columns: 2.35rem minmax(0, 1fr) 2.35rem;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__title-slot,
+html[data-viewport='mobile'] .invite-game-card__title-link {
+  min-width: 0;
+  text-align: center;
+}
+
+html[data-viewport='mobile'] .invite-carousel-header-nav {
+  width: 2.35rem;
+  height: 2.35rem;
+  font-size: 1.75rem;
+}
+
+html[data-viewport='mobile'] .invite-carousel-header-nav--ghost {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+html[data-viewport='mobile'] .invite-game-card__title-admin {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+html[data-viewport='mobile'] .invite-card-admin-btn {
+  display: inline-flex;
+  width: 2.2rem;
+  height: 2.2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+}
+
+html[data-viewport='mobile'] .invite-card-admin-btn--edit {
+  border-color: color-mix(in srgb, var(--color-brand-primary) 55%, transparent);
+  background: color-mix(in srgb, var(--color-brand-primary) 14%, transparent);
+  color: var(--color-brand-primary);
+}
+
+html[data-viewport='mobile'] .invite-card-admin-btn--delete {
+  border-color: rgb(248 113 113 / 0.55);
+  background: rgb(248 113 113 / 0.12);
+  color: rgb(248 113 113);
+}
+
+html[data-viewport='mobile'] .invite-card-admin-btn__icon {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__badges {
+  width: min(100%, 25rem);
+  min-width: 0;
+  grid-area: badges;
+  justify-self: center;
+}
+
+html[data-viewport='mobile'] .invite-game-card__badges .rule-chip-grid {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__badges .rule-chip-grid__item {
+  min-width: 0;
+  min-height: 2.35rem;
+  justify-content: flex-start;
+  gap: 0.35rem;
+  padding: 0.35rem 0.55rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__badges .rule-chip-grid__label,
+html[data-viewport='mobile'] .invite-game-card__badges .rule-chip-grid__value {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Mobile header correction: title/actions left, compact rule badges right. */
+html[data-viewport='mobile'] .invite-game-card__header {
+  grid-template-areas: "title badges";
+  grid-template-columns: minmax(0, 1.15fr) minmax(6.75rem, 8rem);
+  gap: 0.55rem;
+  padding: 3.1rem 0.65rem 0.6rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__header-title {
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 0.25rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__title-nav {
+  width: 100%;
+  grid-template-columns: 1.85rem minmax(0, 1fr) 1.85rem;
+  gap: 0.3rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__title-slot,
+html[data-viewport='mobile'] .invite-game-card__title-link {
+  text-align: left;
+}
+
+html[data-viewport='mobile'] .invite-game-card__schedule-date {
+  overflow: hidden;
+  font-size: clamp(1.05rem, 5.2vw, 1.35rem);
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-viewport='mobile'] .invite-game-card__schedule-time {
+  font-size: clamp(1rem, 5vw, 1.25rem);
+  line-height: 1;
+}
+
+html[data-viewport='mobile'] .invite-game-card__level {
+  overflow: hidden;
+  font-size: clamp(0.88rem, 4.1vw, 1.05rem);
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-viewport='mobile'] .invite-carousel-header-nav {
+  width: 1.85rem;
+  height: 1.85rem;
+  font-size: 1.35rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__title-admin {
+  justify-content: flex-start;
+  gap: 0.35rem;
+  padding-left: 2.15rem;
+}
+
+html[data-viewport='mobile'] .invite-card-admin-btn {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.6rem;
+}
+
+html[data-viewport='mobile'] .invite-card-admin-btn__icon {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__badges {
+  width: 100%;
+  align-self: start;
+  justify-self: stretch;
+}
+
+html[data-viewport='mobile'] .invite-game-card__badges .rule-chip-grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.25rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__badges .rule-chip-grid__item {
+  min-height: 1.7rem;
+  gap: 0.25rem;
+  border-width: 2px;
+  border-radius: 0.65rem;
+  padding: 0.2rem 0.35rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__badges .rule-chip-grid__icon {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__badges .rule-chip-grid__label,
+html[data-viewport='mobile'] .invite-game-card__badges .rule-chip-grid__value {
+  font-size: 0.58rem;
+  line-height: 1;
+}

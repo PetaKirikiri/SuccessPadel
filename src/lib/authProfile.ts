@@ -9,8 +9,9 @@ async function resolveAvatarForProfile(
   userId: string,
   stored: string | null | undefined,
   incoming: string | null | undefined,
+  lineLinked: boolean,
 ): Promise<string | null> {
-  if (!incoming || !shouldRefreshLineAvatar(stored, incoming)) return stored ?? null
+  if (!incoming || !shouldRefreshLineAvatar(stored, incoming, lineLinked)) return stored ?? null
   if (isLineCdnAvatarUrl(incoming)) {
     const mirrored = await mirrorLineAvatarToStorage(userId, incoming)
     return mirrored ?? incoming
@@ -35,7 +36,8 @@ export async function syncProfileForUser(user: User): Promise<Profile | null> {
     const staleName = !existing.display_name || existing.display_name === 'Player'
     const hasBetterName = Boolean(metaName && metaName !== 'Player')
     const needsAvatar = Boolean(
-      metaAvatar && shouldRefreshLineAvatar(existing.avatar_url, metaAvatar),
+      metaAvatar &&
+        shouldRefreshLineAvatar(existing.avatar_url, metaAvatar, Boolean(existing.line_user_id || lineId)),
     )
     const needsLineId = Boolean(lineId && !existing.line_user_id)
 
@@ -47,6 +49,7 @@ export async function syncProfileForUser(user: User): Promise<Profile | null> {
           user.id,
           existing.avatar_url,
           metaAvatar ?? null,
+          Boolean(existing.line_user_id || lineId),
         )
       }
       if (needsLineId && lineId) patch.line_user_id = lineId

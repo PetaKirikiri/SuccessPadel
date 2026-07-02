@@ -7,6 +7,8 @@ export type PadelPlayerOption = {
   id: string
   display_name: string
   profile_id: string | null
+  line_picture_url?: string | null
+  profiles?: Pick<Profile, 'id' | 'display_name' | 'avatar_url'> | null
 }
 
 type Props = {
@@ -252,7 +254,10 @@ const PlayerSlotCombobox = memo(function PlayerSlotCombobox({
               item.kind === 'member'
                 ? clubDisplayName(item.profile.id, item.profile.display_name)
                 : item.player.display_name
-            const avatar = item.kind === 'member' ? item.profile.avatar_url : null
+            const avatar =
+              item.kind === 'member'
+                ? item.profile.avatar_url
+                : item.player.profiles?.avatar_url ?? item.player.line_picture_url ?? null
             return (
               <li key={item.kind === 'member' ? `m-${item.profile.id}` : `p-${item.player.id}`}>
                 {showHeader ? (
@@ -292,6 +297,9 @@ function resolveSlotDisplayName(
 ): string {
   if (profileId && profile?.display_name?.trim()) {
     return clubDisplayName(profileId, profile.display_name)
+  }
+  if (player?.profile_id && player.profiles?.display_name?.trim()) {
+    return clubDisplayName(player.profile_id, player.profiles.display_name)
   }
   if (padelPlayerId && player?.display_name?.trim()) {
     return player.display_name
@@ -501,6 +509,11 @@ export function MemberPlayerSlots({
           const padelPlayerId = paddedPadelIds[index] ?? null
           const selectedProfile = profileId ? profileById.get(profileId) : null
           const selectedPlayer = padelPlayerId ? playerById.get(padelPlayerId) : null
+          const selectedAvatar =
+            selectedProfile?.avatar_url ??
+            selectedPlayer?.profiles?.avatar_url ??
+            selectedPlayer?.line_picture_url ??
+            null
           const slotName = paddedNames[index] ?? ''
           const displayName = resolveSlotDisplayName(
             slotName,
@@ -526,7 +539,7 @@ export function MemberPlayerSlots({
             {linkAvatarsToProfile ? (
               <PlayerAvatarLink
                 displayName={displayName}
-                avatarUrl={selectedProfile?.avatar_url ?? null}
+                avatarUrl={selectedAvatar}
                 profileId={profileId}
                 padelPlayerId={padelPlayerId}
                 competitionId={competitionId}
@@ -537,7 +550,7 @@ export function MemberPlayerSlots({
                 }
               />
             ) : (
-              <SlotAvatar url={selectedProfile?.avatar_url ?? null} name={displayName} />
+              <SlotAvatar url={selectedAvatar} name={displayName} />
             )}
             {canPick ? (
               <PlayerSlotCombobox

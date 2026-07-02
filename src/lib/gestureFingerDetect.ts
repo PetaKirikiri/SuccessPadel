@@ -7,7 +7,6 @@ import { FilesetResolver, HandLandmarker, type Landmark, type NormalizedLandmark
 import {
   clearGestureScoreCameraCache,
   requestGestureScoreCamera,
-  supportsGestureScoreCamera,
   takeGestureScoreCameraRequest,
 } from './gestureScoreCamera'
 
@@ -251,12 +250,20 @@ export class GestureCameraEngine {
 
   async start(): Promise<void> {
     const runId = ++this.runId
-    if (!supportsGestureScoreCamera()) {
-      this.config.onStatus?.('unsupported')
-      return
-    }
     try {
       this.config.onStatus?.('loading')
+      const stream = await (takeGestureScoreCameraRequest() ?? requestGestureScoreCamera())
+      if (this.runId !== runId) {
+        stream.getTracks().forEach((track) => track.stop())
+        return
+      }
+
+      this.stream = stream
+      const { video } = this.config
+      video.srcObject = stream
+      await video.play()
+      if (this.runId !== runId) return
+
       const vision = await FilesetResolver.forVisionTasks(WASM)
       const opts = { runningMode: 'VIDEO' as const, numHands: 1 }
       let landmarker: HandLandmarker
@@ -276,16 +283,6 @@ export class GestureCameraEngine {
         return
       }
       this.landmarker = landmarker
-      const stream = await (takeGestureScoreCameraRequest() ?? requestGestureScoreCamera())
-      if (this.runId !== runId) {
-        stream.getTracks().forEach((t) => t.stop())
-        return
-      }
-      this.stream = stream
-      const { video } = this.config
-      video.srcObject = stream
-      await video.play()
-      if (this.runId !== runId) return
       this.config.onStatus?.('running')
       this.frameId = requestAnimationFrame(this.tick)
     } catch (e) {
@@ -300,10 +297,10 @@ export class GestureCameraEngine {
     this.runId += 1
     if (this.frameId !== null) cancelAnimationFrame(this.frameId)
     this.frameId = null
-    this.stream?.getTracks().forEach((t) => t.stop())
+    this.stream?.getTracks().forEach((track) => track.stop())
     this.stream = null
-    clearGestureScoreCameraCache()
     if (this.config.video) this.config.video.srcObject = null
+    clearGestureScoreCameraCache()
     this.landmarker?.close()
     this.landmarker = null
     this.frameTs = 0

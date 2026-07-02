@@ -14,7 +14,6 @@ import type { QuadrantPlayers } from './gesturePadPlayers'
 import type { MatchTeam } from './types'
 import type { TennisScore } from './tennisScore'
 import { ensureWritableSession } from './auth/cachedSession'
-import { gestureScoreDebug } from './debug/gestureScoreDebug'
 import { supabase } from './supabaseClient'
 
 /** Supabase JWT for RPC writes — restores from browser backup when the in-memory session dropped. */
@@ -96,12 +95,6 @@ export function buildGameLogPayload(
 export async function upsertMatchGestureLog(
   payload: GameLogPayload,
 ): Promise<{ error: string | null }> {
-  const isFriendly = Boolean(payload.friendlySessionId)
-  if (!isFriendly) {
-    const liveSession = await ensureSupabaseSession()
-    if (!liveSession) return { error: 'Not authenticated' }
-  }
-
   const { error } = await supabase.rpc('upsert_match_gesture_log', {
     p_court_setup_key: payload.courtSetupKey,
     p_friendly_session_id: payload.friendlySessionId,
@@ -121,18 +114,8 @@ export async function upsertMatchGestureLog(
 
   if (error) {
     console.error('upsertMatchGestureLog', error.message)
-    gestureScoreDebug('H3', 'matchLogServer:upsert', 'rpc error', {
-      friendly: isFriendly,
-      err: error.message.slice(0, 160),
-      events: payload.pointEvents.length,
-    })
     return { error: error.message }
   }
-  gestureScoreDebug('H3', 'matchLogServer:upsert', 'rpc ok', {
-    friendly: isFriendly,
-    events: payload.pointEvents.length,
-    courtKey: payload.courtSetupKey.slice(-24),
-  })
   return { error: null }
 }
 

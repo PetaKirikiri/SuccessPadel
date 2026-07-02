@@ -6,12 +6,14 @@ export function PlayerChip({ player }: { player?: CourtPlayer }) {
   const name = (player.name || 'Player').split(' ')[0]
   const initial = name[0]?.toUpperCase() ?? '?'
   return (
-    <div>
-      <span>{name}</span>
+    <div className="gesture-score-court__player-chip">
+      <span className="gesture-score-court__player-name">{name}</span>
       {player.avatarUrl ? (
-        <img src={player.avatarUrl} alt="" />
+        <img className="gesture-score-court__player-avatar" src={player.avatarUrl} alt="" />
       ) : (
-        <span>{initial}</span>
+        <span className="gesture-score-court__player-avatar" aria-hidden>
+          {initial}
+        </span>
       )}
     </div>
   )

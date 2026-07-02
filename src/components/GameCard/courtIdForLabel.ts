@@ -2,7 +2,7 @@ import type { LiveCourt } from './gameBoardTypes'
 
 export function courtIdForLabel(
   courtLabel: string,
-  courtIndex: number,
+  _courtIndex: number,
   courtsForGame: LiveCourt[],
   courtIdByLabel?: Map<string, string>,
 ): string | undefined {
@@ -15,6 +15,5 @@ export function courtIdForLabel(
   for (const [name, id] of courtIdByLabel ?? []) {
     if (name.toLowerCase() === courtLabel.toLowerCase()) return id
   }
-  const ordered = [...(courtIdByLabel?.values() ?? [])]
-  return ordered[courtIndex]
+  return undefined
 }

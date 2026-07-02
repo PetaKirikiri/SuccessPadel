@@ -25,6 +25,7 @@ import {
   profileSideLabel,
   profileSkillLabel,
 } from '../../lib/profileI18n'
+import { syncPadelPlayerDisplayName } from '../../lib/syncPadelPlayerDisplayName'
 import { supabase } from '../../lib/supabaseClient'
 import type { DominantHand, PlaySide, Profile } from '../../lib/types'
 import {
@@ -357,6 +358,9 @@ export function ProfileDetailsForm({
     }
 
     const { error: err } = await supabase.from('profiles').update(payload).eq('id', profile.id)
+    if (!err) {
+      await syncPadelPlayerDisplayName(profile.id, trimmedName)
+    }
     setBusy(false)
     if (err) setError(err.message)
     else {

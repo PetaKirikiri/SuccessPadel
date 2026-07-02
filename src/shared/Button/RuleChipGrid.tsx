@@ -9,6 +9,8 @@ type Props = {
   inline?: boolean
   /** Compact badges for invite card headers. */
   compact?: boolean
+  /** Show full chip labels even in compact badge styling. */
+  showLabels?: boolean
   /** Extra grid cells after chips (e.g. admin badge buttons). */
   trailing?: ReactNode
 }
@@ -64,10 +66,12 @@ function useEqualChipWidth(chipCount: number, columns: number, enabled: boolean)
 function RuleChipButton({
   chip,
   compact,
+  showLabels,
   onSelect,
 }: {
   chip: RuleChip
   compact: boolean
+  showLabels: boolean
   onSelect: (chip: RuleChip) => void
 }) {
   const open = (e: React.SyntheticEvent) => {
@@ -76,9 +80,12 @@ function RuleChipButton({
     onSelect(chip)
   }
 
-  // Compact (invite card): icon + value only. value '' = icon only; undefined = fall back to label.
-  const text = compact && chip.value !== undefined ? chip.value : chip.label
-  const textClass = compact && chip.value !== undefined ? 'rule-chip-grid__value' : 'rule-chip-grid__label'
+  // Compact (invite card): icon + value only unless the caller opts into full labels.
+  const text = compact && !showLabels && chip.value !== undefined ? chip.value : chip.label
+  const textClass =
+    compact && !showLabels && chip.value !== undefined
+      ? 'rule-chip-grid__value'
+      : 'rule-chip-grid__label'
 
   return (
     <li
@@ -100,7 +107,13 @@ function RuleChipButton({
   )
 }
 
-export function RuleChipGrid({ chips, inline = false, compact = false, trailing }: Props) {
+export function RuleChipGrid({
+  chips,
+  inline = false,
+  compact = false,
+  showLabels = false,
+  trailing,
+}: Props) {
   const [active, setActive] = useState<RuleChip | null>(null)
   const columns = chipColumns(compact, inline)
   const gridRef = useEqualChipWidth(chips.length + (trailing ? 1 : 0), columns, !compact)
@@ -111,7 +124,13 @@ export function RuleChipGrid({ chips, inline = false, compact = false, trailing 
     <>
       <ul ref={gridRef} className={gridClass(compact, inline)}>
         {chips.map((chip) => (
-          <RuleChipButton key={chip.key} chip={chip} compact={compact} onSelect={setActive} />
+          <RuleChipButton
+            key={chip.key}
+            chip={chip}
+            compact={compact}
+            showLabels={showLabels}
+            onSelect={setActive}
+          />
         ))}
         {trailing}
       </ul>

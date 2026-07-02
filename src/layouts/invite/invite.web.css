@@ -1,0 +1,723 @@
+/* Invite card layout: web viewport only. */
+
+/* Shared — left: gender | center: prev/date/time/level/next | right: admin + badges */
+html[data-viewport='web'] .invite-game-card {
+display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 0%;
+  overflow: hidden;
+}
+
+html[data-viewport='web'] .invite-game-card__frame {
+display: grid;
+  grid-template-rows: minmax(0, auto) minmax(0, 1fr);
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow: hidden;
+  gap: 0.5rem;
+  padding: 0.375rem;
+}
+
+html[data-viewport='web'] .invite-game-card__header {
+display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, 42vw) minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 0;
+  overflow: visible;
+}
+
+html[data-viewport='web'] .invite-game-card__left-rail {
+display: flex;
+  justify-self: start;
+  align-self: start;
+  flex-shrink: 0;
+}
+
+html[data-viewport='web'] .invite-game-card__header-spacer {
+min-width: 0;
+  min-height: 0;
+}
+
+html[data-viewport='web'] .invite-game-card__header {
+background: color-mix(in srgb, var(--color-brand-bg-alt) 88%, transparent);
+  border: 1px solid var(--color-brand-border);
+  border-radius: 0.85rem;
+  padding: 0.5rem 0.625rem;
+}
+
+html[data-viewport='web'] .invite-game-card__banner-center {
+display: flex;
+  grid-column: 2;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  gap: 0.375rem;
+}
+
+html[data-viewport='web'] .invite-game-card__title-slot {
+display: flex;
+  min-width: 0;
+  flex: 1 1 0%;
+  max-width: 100%;
+  justify-content: center;
+}
+
+html[data-viewport='web'] .invite-game-card__title-link {
+display: flex;
+  width: min(100%, 34rem);
+  max-width: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: clamp(0.05rem, 0.35vh, 0.15rem);
+}
+
+html[data-viewport='web'] .invite-game-card__schedule-date {
+margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-brand-primary);
+}
+
+html[data-viewport='web'] .invite-game-card__schedule-time {
+margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-brand-primary);
+}
+
+html[data-viewport='web'] .invite-game-card__level {
+margin: 0;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--color-brand-primary);
+}
+
+html[data-viewport='web'] .invite-game-card__schedule-date {
+font-size: clamp(1rem, 1.8vw, 1.5rem);
+}
+
+html[data-viewport='web'] .invite-game-card__schedule-time {
+font-size: clamp(0.95rem, 1.6vw, 1.35rem);
+}
+
+html[data-viewport='web'] .invite-game-card__level {
+font-size: clamp(0.9rem, 1.4vw, 1.2rem);
+}
+
+html[data-viewport='web'] .invite-game-card__level {
+overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+html[data-viewport='web'] .invite-game-card__right-rail {
+display: flex;
+  grid-column: 3;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  justify-self: end;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  min-width: 0;
+  max-width: 100%;
+}
+
+html[data-viewport='web'] .invite-game-card__admin {
+display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.3rem;
+}
+
+html[data-viewport='web'] .invite-card-admin-btn {
+display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-brand-border);
+  background: var(--color-brand-bg-alt);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+html[data-viewport='web'] .invite-card-admin-btn:active {
+transform: scale(0.98);
+}
+
+html[data-viewport='web'] .invite-card-admin-btn--edit {
+border-color: color-mix(in srgb, var(--color-brand-primary) 35%, transparent);
+  color: var(--color-brand-primary);
+}
+
+html[data-viewport='web'] .invite-card-admin-btn--delete {
+color: var(--color-brand-muted);
+}
+
+html[data-viewport='web'] .invite-card-admin-btn__icon {
+width: 1rem;
+  height: 1rem;
+}
+
+html[data-viewport='web'] .invite-game-card__badges {
+min-width: 0;
+  flex: 0 1 auto;
+}
+
+html[data-viewport='web'] .invite-game-card__badges .rule-chip-grid {
+justify-self: end;
+}
+
+html[data-viewport='web'] .invite-game-card__roster {
+display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 0%;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--color-brand-bg-alt) 88%, transparent);
+  border: 1px solid var(--color-brand-border);
+  border-radius: 0.85rem;
+  padding: 0.5rem 0.625rem;
+}
+
+html[data-viewport='web'] .invite-game-card__roster > .invite-roster-grid {
+flex: 1 1 0%;
+  min-height: 0;
+}
+
+/* Tablet + web sizing */
+html[data-viewport='web'] .invite-game-card__frame {
+padding-inline: 0.5rem;
+}
+
+html[data-viewport='web'] .invite-game-card__roster {
+padding-top: 0.5rem;
+}
+
+html[data-viewport='web'] .invite-carousel-header-nav {
+width: 2.5rem;
+  height: 2.5rem;
+  font-size: 1.75rem;
+}
+
+html[data-viewport='web'] .invite-game-card__badges .rule-chip-grid {
+display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  width: auto;
+  gap: 0.45rem;
+}
+
+html[data-viewport='web'] .invite-game-card__badges .rule-chip-grid__item {
+width: auto;
+  min-height: 0;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 9999px;
+}
+
+html[data-viewport='web'] .invite-game-card__badges .rule-chip-grid__icon {
+width: 1.35rem;
+  height: 1.35rem;
+}
+
+html[data-viewport='web'] .invite-game-card__badges .rule-chip-grid__value {
+font-size: 1.05rem;
+  font-weight: 900;
+  color: var(--color-brand-primary);
+}
+
+html[data-viewport='web'] .invite-roster-editor__submit {
+display: none;
+}
+
+/* Tablet + TV roster — fill remaining area */
+html[data-viewport='web'] .invite-roster-grid--prominent {
+height: 100%;
+  min-height: 0;
+  gap: clamp(0.5rem, 1vh, 1rem);
+}
+
+html[data-viewport='web'] .invite-roster-grid--fill > .invite-duo-team-card {
+height: 100%;
+  min-height: 0;
+}
+
+html[data-viewport='web'] .invite-duo-team-card {
+display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  min-height: 0;
+  border-radius: 0.85rem;
+  border-width: 1px;
+  border-style: solid;
+  padding: clamp(0.4rem, 1.1vh, 0.9rem) clamp(0.5rem, 1vw, 0.85rem);
+  text-align: center;
+}
+
+html[data-viewport='web'] .invite-duo-team-label {
+width: 100%;
+  flex-shrink: 0;
+  margin: 0 0 clamp(0.3rem, 0.65vh, 0.65rem);
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  line-height: 1.1;
+  color: var(--color-brand-primary);
+}
+
+html[data-viewport='web'] .invite-duo-team-players {
+display: flex;
+  flex: 1 1 0%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  width: 100%;
+  min-height: 0;
+  gap: clamp(0.4rem, 0.9vh, 1rem);
+}
+
+html[data-viewport='web'] .invite-roster-chip {
+width: 100%;
+  max-width: 100%;
+  flex: 1 1 0%;
+  min-height: 0;
+  justify-content: center;
+  border-radius: 9999px;
+}
+
+html[data-viewport='web'] .invite-roster-chip {
+padding: clamp(0.25rem, 1vh, 0.7rem) clamp(0.5rem, 1vw, 1rem);
+  gap: clamp(0.35rem, 1vh, 0.7rem);
+}
+
+html[data-viewport='web'] .invite-roster-chip .invite-roster-chip__avatar {
+width: clamp(1.85rem, 5.5vh, 3.4rem);
+  height: clamp(1.85rem, 5.5vh, 3.4rem);
+}
+
+html[data-viewport='web'] .invite-roster-chip__name,
+html[data-viewport='web'] .invite-roster-chip__vacant-name {
+min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  white-space: nowrap;
+  font-weight: 800;
+  line-height: 1.1;
+  font-size: clamp(0.9rem, 3.2vh, 1.85rem);
+}
+
+/* Tablet + web + TV — standard roster fill */
+html[data-viewport='web'] .invite-roster-grid {
+grid-template-columns: repeat(var(--roster-cols, 2), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--roster-rows, 1), minmax(0, 1fr));
+  height: 100%;
+  min-height: 0;
+  gap: clamp(0.5rem, 1vh, 1rem);
+  --roster-chip-width: 100%;
+}
+
+html[data-viewport='web'] .invite-roster-grid > .invite-duo-team-card {
+height: 100%;
+  min-height: 0;
+}
+
+html[data-viewport='web'] .invite-duo-team-label {
+flex: 0 0 auto;
+  text-align: center;
+  font-size: clamp(0.9rem, 2.8vh, 1.7rem);
+}
+
+html[data-viewport='web'] .invite-duo-team-players {
+align-items: stretch;
+  justify-content: space-evenly;
+  gap: clamp(0.3rem, 1.4vh, 0.85rem);
+}
+
+html[data-viewport='web'] .invite-roster-chip {
+width: 100%;
+  max-width: none;
+  flex: 1 1 0%;
+  align-items: center;
+  justify-content: center;
+}
+
+html[data-viewport='web'] .invite-roster-editor {
+display: flex;
+  min-height: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+}
+
+html[data-viewport='web'] .invite-roster-editor > .duo-team-slots--grid {
+display: grid;
+  min-height: 0;
+  flex: 1 1 0%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(4, minmax(0, 1fr));
+  gap: clamp(0.5rem, 1vh, 1rem);
+}
+
+html[data-viewport='web'] .invite-roster-editor .invite-duo-team-card {
+height: 100%;
+  min-height: 0;
+}
+
+html[data-viewport='web'] .invite-roster-editor .invite-duo-team-label .brand-input {
+height: clamp(1.75rem, 3.8vh, 2.7rem);
+  border-radius: 0.7rem;
+  font-size: clamp(0.8rem, 2.2vh, 1.1rem);
+  text-align: center;
+}
+
+html[data-viewport='web'] .invite-roster-editor-chip .invite-roster-chip__name {
+height: auto;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  text-align: center;
+  font-weight: 800;
+}
+
+/* Duo team card — optional label watermark (e.g. Team 7) */
+html[data-viewport='web'] .invite-duo-team-card--watermarked {
+position: relative;
+  overflow: hidden;
+}
+
+html[data-viewport='web'] .invite-duo-team-card--watermarked::before {
+content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: var(--team-watermark-url);
+  background-position: center 20%;
+  background-repeat: no-repeat;
+  background-size: min(88%, 14rem) auto;
+  opacity: 0.16;
+  pointer-events: none;
+}
+
+html[data-viewport='web'] .invite-duo-team-card--watermarked::before {
+background-size: min(92%, 18rem) auto;
+  opacity: 0.18;
+}
+
+html[data-viewport='web'] .invite-duo-team-card--watermarked > * {
+position: relative;
+  z-index: 1;
+}
+
+html[data-viewport='web'] .invite-duo-team-card--watermarked .invite-duo-team-label {
+text-shadow: 0 1px 8px color-mix(in srgb, var(--color-brand-bg-alt) 85%, transparent);
+}
+
+/* Auth-state normalization: editor and read-only roster use the same grid contract. */
+html[data-viewport='web'] .invite-roster-editor > .duo-team-slots--grid.invite-roster-grid {
+width: 100%;
+  max-width: 100%;
+  min-height: 0;
+  flex: 1 1 0%;
+}
+
+html[data-viewport='web'] .invite-roster-editor > .duo-team-slots--grid.invite-roster-grid {
+height: 100%;
+  grid-template-columns: repeat(var(--roster-cols, 2), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--roster-rows, 1), minmax(0, 1fr));
+  gap: clamp(0.5rem, 1vh, 1rem);
+}
+
+/* Singles editor: override child flex wrappers from MemberPlayerSlots on web only. */
+html[data-viewport='web'] .invite-roster-editor > div:not(.duo-team-slots) {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 0%;
+}
+
+html[data-viewport='web'] .invite-roster-editor > div:not(.duo-team-slots) > div {
+  display: grid;
+  width: 100%;
+  min-height: 0;
+  flex: 1 1 0%;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: minmax(3.5rem, auto);
+  align-content: center;
+  align-items: center;
+  gap: clamp(0.5rem, 1vh, 1rem);
+}
+
+html[data-viewport='web'] .invite-roster-editor .invite-roster-editor-chip {
+  width: 100%;
+  height: clamp(3.5rem, 6vh, 5rem);
+  max-height: 5rem;
+  min-width: 0;
+  min-height: 3.5rem;
+  flex: 0 0 auto;
+  align-self: center;
+}
+
+html[data-viewport='web'] .invite-game-card__roster > .invite-roster-grid > .invite-roster-chip {
+  height: clamp(3.5rem, 6vh, 5rem);
+  max-height: 5rem;
+  min-height: 3.5rem;
+  flex: 0 0 auto;
+  align-self: center;
+}
+
+/* Wide invite card composition: web */
+html[data-viewport='web'] .invite-game-card__frame {
+  grid-template-rows: minmax(clamp(9rem, 18vh, 13rem), auto) minmax(0, 1fr);
+  gap: 0.85rem;
+  padding: 0.6rem;
+}
+
+html[data-viewport='web'] .invite-game-card__header {
+  min-height: clamp(9rem, 18vh, 13rem);
+  grid-template-columns: minmax(10rem, 18vw) minmax(22rem, 1fr) minmax(24rem, 32vw);
+  align-items: center;
+  padding: 1.1rem 1.35rem;
+}
+
+html[data-viewport='web'] .invite-game-card__left-rail,
+html[data-viewport='web'] .invite-game-card__header-spacer:first-child {
+  align-self: center;
+}
+
+html[data-viewport='web'] .invite-game-card__banner-center {
+  align-self: center;
+}
+
+html[data-viewport='web'] .invite-game-card__right-rail {
+  align-items: center;
+}
+
+html[data-viewport='web'] .invite-game-card__schedule-date {
+  font-size: clamp(1.8rem, 2.45vw, 2.7rem);
+}
+
+html[data-viewport='web'] .invite-game-card__schedule-time {
+  font-size: clamp(1.35rem, 1.9vw, 2rem);
+}
+
+html[data-viewport='web'] .invite-game-card__level {
+  font-size: clamp(1.15rem, 1.55vw, 1.65rem);
+}
+
+html[data-viewport='web'] .invite-carousel-header-nav {
+  width: 3.25rem;
+  height: 3.25rem;
+  font-size: 2.15rem;
+}
+
+html[data-viewport='web'] .invite-roster-editor > div:not(.duo-team-slots) > div {
+  grid-auto-rows: minmax(clamp(5rem, 9vh, 7rem), auto);
+  align-content: center;
+}
+
+html[data-viewport='web'] .invite-roster-editor .invite-roster-editor-chip,
+html[data-viewport='web'] .invite-game-card__roster > .invite-roster-grid > .invite-roster-chip {
+  height: clamp(5rem, 9vh, 7rem);
+  max-height: 7rem;
+  min-height: 5rem;
+  border-radius: 0.9rem;
+  padding-inline: 0.9rem;
+}
+
+/* Web placement polish: viewport-owned controls and top-weighted roster. */
+html[data-viewport='web'] .hub-gender-shell > .invite-card-gender-controls {
+  position: absolute;
+  top: 0.75rem;
+  right: auto;
+  left: 0.75rem;
+  z-index: 5;
+  margin: 0;
+  padding: 0;
+}
+
+html[data-viewport='web'] .hub-gender-body {
+  height: 100%;
+  min-height: 0;
+  padding-top: 0;
+}
+
+html[data-viewport='web'] .invite-card-gender-controls {
+  gap: 0.5rem;
+}
+
+html[data-viewport='web'] .invite-card-gender-controls button {
+  width: 2.65rem;
+  height: 2.65rem;
+  border-radius: 0.85rem;
+}
+
+html[data-viewport='web'] .invite-card-gender-controls .gender-raster-icon {
+  width: 1.65rem;
+  height: 1.65rem;
+}
+
+html[data-viewport='web'] .invite-game-card__roster {
+  justify-content: flex-start;
+  padding: 1rem;
+}
+
+html[data-viewport='web'] .invite-game-card__roster > .invite-roster-grid,
+html[data-viewport='web'] .invite-roster-editor > div:not(.duo-team-slots) > div {
+  align-content: start;
+}
+
+/* Web balance pass: keep filter over card and remove empty roster height. */
+html[data-viewport='web'] .invite-game-card__frame {
+  align-content: start;
+  grid-template-rows: auto auto;
+}
+
+html[data-viewport='web'] .invite-game-card__header {
+  padding-left: clamp(10rem, 18vw, 13rem);
+}
+
+html[data-viewport='web'] .invite-game-card__roster {
+  flex: 0 0 auto;
+  max-height: min(58vh, 38rem);
+}
+
+html[data-viewport='web'] .invite-game-card__roster > .invite-roster-grid,
+html[data-viewport='web'] .invite-roster-editor > div:not(.duo-team-slots) > div {
+  height: auto;
+  flex: 0 0 auto;
+}
+
+/* Locked invite header: gender is hub-level absolute; this card owns title + badges only. */
+html[data-viewport='web'] .invite-game-card__header {
+  display: grid;
+  min-height: clamp(8rem, 14vh, 10.5rem);
+  grid-template-areas: "title badges";
+  grid-template-columns: minmax(28rem, 1fr) minmax(24rem, 36rem);
+  align-items: start;
+  gap: clamp(1rem, 2vw, 2rem);
+  padding: 3.35rem 1.35rem 0.95rem;
+}
+
+html[data-viewport='web'] .invite-game-card__header-title {
+  display: flex;
+  min-width: 0;
+  grid-area: title;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+html[data-viewport='web'] .invite-game-card__title-nav {
+  display: grid;
+  width: min(100%, 31rem);
+  grid-template-columns: 3rem minmax(0, 1fr) 3rem;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+html[data-viewport='web'] .invite-game-card__title-slot,
+html[data-viewport='web'] .invite-game-card__title-link {
+  min-width: 0;
+  text-align: center;
+}
+
+html[data-viewport='web'] .invite-carousel-header-nav {
+  width: 3rem;
+  height: 3rem;
+  font-size: 2rem;
+}
+
+html[data-viewport='web'] .invite-carousel-header-nav--ghost {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+html[data-viewport='web'] .invite-game-card__title-admin {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+html[data-viewport='web'] .invite-card-admin-btn {
+  display: inline-flex;
+  width: 2.35rem;
+  height: 2.35rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.8rem;
+}
+
+html[data-viewport='web'] .invite-card-admin-btn--edit {
+  border-color: color-mix(in srgb, var(--color-brand-primary) 55%, transparent);
+  background: color-mix(in srgb, var(--color-brand-primary) 14%, transparent);
+  color: var(--color-brand-primary);
+}
+
+html[data-viewport='web'] .invite-card-admin-btn--delete {
+  border-color: rgb(248 113 113 / 0.55);
+  background: rgb(248 113 113 / 0.12);
+  color: rgb(248 113 113);
+}
+
+html[data-viewport='web'] .invite-card-admin-btn__icon {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+html[data-viewport='web'] .invite-game-card__badges {
+  min-width: 0;
+  grid-area: badges;
+  align-self: start;
+  justify-self: end;
+}
+
+html[data-viewport='web'] .invite-game-card__badges .rule-chip-grid {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+html[data-viewport='web'] .invite-game-card__badges .rule-chip-grid__item {
+  min-width: 0;
+  justify-content: flex-start;
+  gap: 0.45rem;
+}
+
+html[data-viewport='web'] .invite-game-card__badges .rule-chip-grid__label,
+html[data-viewport='web'] .invite-game-card__badges .rule-chip-grid__value {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.88rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

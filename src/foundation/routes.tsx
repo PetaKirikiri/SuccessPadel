@@ -158,11 +158,9 @@ function MainAppRoutes() {
         <Route
           path="friendly/:id/games/:gameNumber/courts/:courtSlug/manual-score"
           element={
-            <ProtectedRoute>
-              <Suspense fallback={null}>
-                <ManualScoreCourtRoute />
-              </Suspense>
-            </ProtectedRoute>
+            <Suspense fallback={null}>
+              <ManualScoreCourtRoute />
+            </Suspense>
           }
         />
         <Route
@@ -172,11 +170,7 @@ function MainAppRoutes() {
         <Route path="friendly/:id" element={<FriendlyGamePage />} />
         <Route
           path="competitions/:id/games/:gameNumber/courts/:courtId/gesture-score"
-          element={
-            <ProtectedRoute>
-              <GestureScoreCourtEntry />
-            </ProtectedRoute>
-          }
+          element={<GestureScoreCourtEntry />}
         />
         <Route path="competitive" element={<GamesHomePage mode="competitive" />} />
         <Route path="competitions" element={<Navigate to="/competitive" replace />} />

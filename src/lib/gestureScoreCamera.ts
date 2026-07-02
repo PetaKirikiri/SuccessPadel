@@ -14,8 +14,12 @@ export function supportsGestureScoreCamera(): boolean {
 }
 
 export function requestGestureScoreCamera(): Promise<MediaStream> {
+  const getUserMedia = navigator.mediaDevices?.getUserMedia?.bind(navigator.mediaDevices)
+  if (!getUserMedia) {
+    return Promise.reject(new Error('Camera is not available in this browser.'))
+  }
   if (!pendingCameraRequest) {
-    pendingCameraRequest = navigator.mediaDevices.getUserMedia(CAMERA_CONSTRAINTS).catch((error) => {
+    pendingCameraRequest = getUserMedia(CAMERA_CONSTRAINTS).catch((error) => {
       pendingCameraRequest = null
       throw error
     })

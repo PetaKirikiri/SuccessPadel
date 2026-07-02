@@ -3,6 +3,7 @@ import postcss from 'postcss'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import basicSsl from '@vitejs/plugin-basic-ssl'
 import { viteDebugIngestPlugin } from './scripts/viteDebugIngestPlugin'
 
 function lanAddress(): string | undefined {
@@ -46,7 +47,14 @@ function legacyTvCssPlugin(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), viteDebugIngestPlugin(), legacyTvCssPlugin()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    viteDebugIngestPlugin(),
+    legacyTvCssPlugin(),
+    // HTTPS for phone/iPad camera over LAN — getUserMedia needs a secure origin.
+    ...(phoneDev ? [basicSsl()] : []),
+  ],
   build: {
     cssTarget: 'chrome61',
   },
@@ -54,6 +62,8 @@ export default defineConfig({
     host: phoneDev ? true : undefined,
     port: 5173,
     strictPort: true,
+    // Allow cloudflared tunnel host so `npm run dev:tunnel` serves the app (else Vite 403s).
+    allowedHosts: ['.trycloudflare.com'],
     // LAN HMR only for npm run dev:phone — avoids ws://172.x on localhost Mac dev.
     hmr: phoneDev && lan ? { host: lan, port: 5173 } : undefined,
   },

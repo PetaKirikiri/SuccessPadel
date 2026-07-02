@@ -102,6 +102,9 @@ export type GameCardProps = {
   leaderboardBody?: ReactNode
   activePanel?: GameCardPanel
   onActivePanel?: (panel: GameCardPanel) => void
+  courtStandings?: import('../../lib/leaderboardTypes').LeaderboardEntry[]
+  roster?: import('../../hooks/useCompetitions').CompetitionPlayer[]
+  rosterNameById?: Map<string, string>
   t: TranslateFn
 }
 

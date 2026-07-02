@@ -96,7 +96,9 @@ export function useCompetitionRun(sessionId: string | undefined) {
         .not('competition_round_id', 'is', null),
       supabase
         .from('session_players')
-        .select('id, profile_id, guest_name, guest_email, rank_order, profiles(id, display_name, avatar_url, avatar_mode, pixel_avatar)')
+        .select(
+          'id, profile_id, padel_player_id, guest_name, guest_email, rank_order, profiles(id, display_name, avatar_url, avatar_mode, pixel_avatar), padel_players(id, display_name, profile_id, line_picture_url, profiles(id, display_name, avatar_url))',
+        )
         .eq('session_id', sessionId)
         .order('rank_order')
         .order('id'),

@@ -1,0 +1,107 @@
+/* Mobile court card layout lock. */
+
+html[data-viewport='mobile'] .game-card-court-shell {
+  border-color: rgb(125 211 252 / 0.24);
+  background:
+    radial-gradient(ellipse 80% 48% at 16% 0%, rgb(77 163 255 / 0.16), transparent 62%),
+    linear-gradient(180deg, rgb(17 53 92 / 0.82) 0%, rgb(11 42 74 / 0.92) 100%);
+  box-shadow: none;
+}
+
+html[data-viewport='mobile'] .game-card-court-header {
+  flex-shrink: 0;
+  border-color: rgb(125 211 252 / 0.2);
+  background:
+    radial-gradient(ellipse 80% 70% at 18% 0%, rgb(125 211 252 / 0.12), transparent 66%),
+    rgb(255 255 255 / 0.035);
+}
+
+html[data-viewport='mobile'] .game-card-court-label-row {
+  min-height: 2.65rem;
+  padding: 0.45rem 0.6rem;
+}
+
+html[data-viewport='mobile'] .game-card-court-label {
+  text-align: left;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+html[data-viewport='mobile'] .game-card-court-label-row a[aria-label],
+html[data-viewport='mobile'] .game-card-court-label-row button[aria-label] {
+  width: 2rem;
+  height: 2rem;
+  min-height: 2rem;
+  border-radius: 9999px;
+  padding: 0;
+}
+
+html[data-viewport='mobile'] .game-card-court-label-row a[aria-label] span {
+  display: none;
+}
+
+html[data-viewport='mobile'] .game-card-court-card-body {
+  background: transparent;
+  padding: 0.45rem 0.55rem 0.6rem;
+}
+
+html[data-viewport='mobile'] .game-card-court-match-wrap {
+  gap: 0.45rem;
+}
+
+html[data-viewport='mobile'] .game-card-court-match-scores {
+  order: 0;
+  width: 100%;
+  padding: 0.15rem 0 0.25rem;
+}
+
+html[data-viewport='mobile'] .game-card-court-score-stack {
+  width: 100%;
+  gap: 0.25rem;
+}
+
+html[data-viewport='mobile'] .game-card-court-score-stack > div:first-child {
+  gap: 0.55rem;
+  align-items: center;
+  justify-content: center;
+}
+
+html[data-viewport='mobile'] .game-card-court-score-stack .tv-score-stepper {
+  transform: scale(0.9);
+  transform-origin: center;
+}
+
+html[data-viewport='mobile'] .game-card-court-score-stack .tv-score-readout,
+html[data-viewport='mobile'] .game-card-court-score-stack .tv-score-input {
+  min-width: 2.35rem;
+}
+
+html[data-viewport='mobile'] .game-card-court-game-trail {
+  display: flex;
+  max-width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.2rem;
+}
+
+html[data-viewport='mobile'] .game-card-court-match--score-first {
+  order: 1;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 0.55rem;
+}
+
+html[data-viewport='mobile'] .game-card-court-match--score-first .game-card-court-match__side {
+  gap: 0.35rem;
+  justify-self: stretch;
+}
+
+html[data-viewport='mobile'] .game-card-court-player__name {
+  font-size: 0.9rem;
+  line-height: 1.05;
+}
+
+html[data-viewport='mobile'] .game-card-court-player__avatar {
+  width: 1.85rem;
+  height: 1.85rem;
+}

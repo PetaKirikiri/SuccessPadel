@@ -1,4 +1,4 @@
-import { useMemo, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { MemberPlayerSlots, type PadelPlayerOption } from './MemberPlayerSlots'
 import type { Profile } from '../../lib/types'
 import type { DuoTeamDraft } from '../../lib/competitionDuoTeams'
@@ -18,6 +18,81 @@ type Props = {
   competitionId?: string | null
   /** Pill layout for invite card roster editor. */
   inviteChipLayout?: boolean
+}
+
+function TeamLabelInput({
+  teamIndex,
+  teams,
+  value,
+  placeholder,
+  disabled,
+  className,
+  commitOnEnter,
+  onChange,
+  onFieldCommit,
+}: {
+  teamIndex: number
+  teams: DuoTeamDraft[]
+  value: string
+  placeholder: string
+  disabled?: boolean
+  className: string
+  commitOnEnter: boolean
+  onChange: (teams: DuoTeamDraft[]) => void
+  onFieldCommit?: () => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [draft, setDraft] = useState(value)
+
+  useEffect(() => {
+    if (document.activeElement !== inputRef.current) setDraft(value)
+  }, [value])
+
+  const commit = (label: string) => {
+    if (label === value) return
+    const next = [...teams]
+    next[teamIndex] = { ...teams[teamIndex], label }
+    onChange(next)
+    onFieldCommit?.()
+  }
+
+  return (
+    <input
+      ref={inputRef}
+      type="text"
+      value={commitOnEnter ? draft : value}
+      disabled={disabled}
+      placeholder={placeholder}
+      onClick={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+      }}
+      onPointerDown={(e) => e.stopPropagation()}
+      onChange={(e) => {
+        if (commitOnEnter) {
+          setDraft(e.target.value)
+          return
+        }
+        const next = [...teams]
+        next[teamIndex] = { ...teams[teamIndex], label: e.target.value }
+        onChange(next)
+      }}
+      onKeyDown={(e) => {
+        if (!commitOnEnter || e.key !== 'Enter') return
+        e.preventDefault()
+        commit(draft)
+        inputRef.current?.blur()
+      }}
+      onBlur={() => {
+        if (commitOnEnter) {
+          setDraft(value)
+          return
+        }
+        onFieldCommit?.()
+      }}
+      className={className}
+    />
+  )
 }
 
 export function DuoTeamSlots({
@@ -117,22 +192,15 @@ export function DuoTeamSlots({
                 Team {teamIndex + 1}
               </span>
             ) : null}
-            <input
-              type="text"
+            <TeamLabelInput
+              teamIndex={teamIndex}
+              teams={teams}
               value={team.label}
               disabled={disabled}
               placeholder={`Team ${teamIndex + 1}`}
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-              }}
-              onPointerDown={(e) => e.stopPropagation()}
-              onChange={(e) => {
-                const next = [...teams]
-                next[teamIndex] = { ...team, label: e.target.value }
-                onChange(next)
-              }}
-              onBlur={() => onFieldCommit?.()}
+              commitOnEnter={inviteChipLayout}
+              onChange={onChange}
+              onFieldCommit={onFieldCommit}
               className={`brand-input min-w-0 flex-1 font-semibold uppercase tracking-wide ${
                 layout === 'grid' ? 'px-2' : 'h-9 text-sm'
               }`}

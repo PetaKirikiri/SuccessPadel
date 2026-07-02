@@ -14,6 +14,7 @@ import {
   type FingerAction,
   type HoldUi,
 } from '../../lib/gestureFingerDetect'
+import { supportsGestureScoreCamera } from '../../lib/gestureScoreCamera'
 import {
   competitionCourtSetupKey,
   ensureGestureCameraSession,
@@ -23,13 +24,16 @@ import {
   gestureCameraPlayEnded,
   planGestureCameraPoint,
   planGestureCameraUndo,
+  planGestureCameraGamesOverride,
   rosterFromCourt,
   scoreFromLog,
   syncGestureCameraPointForTeam,
+  syncGestureCameraGamesOverride,
   undoGestureCameraPoint,
   type GestureCameraContext,
 } from '../../lib/gestureCameraScore'
 import type { MatchGestureLog } from '../../lib/matchLogServer'
+import type { MatchTeam } from '../../lib/types'
 import type { GameLogPoint } from '../../lib/gameLogSerialize'
 import {
   DEFAULT_FRIENDLY_ORGANIZED_CONFIG,
@@ -41,7 +45,6 @@ import { CameraScoreTrackerShell } from './'
 import { CameraScoreTracker, type CameraScoreTrackerHandle } from './'
 import { breakMinutesFromConfig } from '../../lib/competitionLayout'
 import { formatDateInput } from '../../lib/courtSchedule'
-import { gestureScoreDebug } from '../../lib/debug/gestureScoreDebug'
 import {
   newerGestureCameraLog,
   readLocalGestureCameraLog,
@@ -64,7 +67,7 @@ export function GestureScoreCourtPage() {
   const friendlyRoute = location.pathname.includes('/friendly/')
   const { id, gameNumber, courtId, courtSlug } = useParams()
   const { user, session: authSession, loading: authLoading, restoreSession } = useAuth()
-  const needsAuth = !friendlyRoute
+  const needsAuth = false
   const gameNum = Number(gameNumber)
   const courtLabel = courtSlug ? decodeURIComponent(courtSlug) : ''
   const competitionCourtId = courtId ?? ''
@@ -73,7 +76,7 @@ export function GestureScoreCourtPage() {
   const { session, rounds, roster, clubCourts, courtMatches } = usePublicCompetition(
     friendlyRoute ? undefined : id,
   )
-  const { columns, liveCourtsByGame } = useCompetitionBoard(
+  const { columns, liveCourtsByGame, courtIdByLabel } = useCompetitionBoard(
     session,
     rounds,
     roster,
@@ -120,20 +123,41 @@ export function GestureScoreCourtPage() {
     return scheduleGame?.courts.find((court) => court.courtLabel === courtLabel) ?? null
   }, [courtLabel, courtNames, friendlyGame, friendlyRoute, gameNum])
 
+  const competitionCourtLabel = useMemo(() => {
+    if (friendlyRoute || !competitionCourtId) return ''
+    const live = (liveCourtsByGame.get(gameNum) ?? []).find(
+      (court) => court.courtId === competitionCourtId,
+    )
+    if (live?.courtName) return live.courtName
+    for (const [label, courtId] of courtIdByLabel) {
+      if (courtId === competitionCourtId) return label
+    }
+    return competitionCourtId
+  }, [competitionCourtId, courtIdByLabel, friendlyRoute, gameNum, liveCourtsByGame])
+
   const competitionCourtMatch = useMemo(() => {
     if (friendlyRoute || !competitionCourtId) return null
     const live = (liveCourtsByGame.get(gameNum) ?? []).find((court) => court.courtId === competitionCourtId)
     if (live) return live
     const game = competitionGames.find((row) => row.gameNumber === gameNum)
-    return game?.courts.find((court) => court.courtLabel === competitionCourtId) ?? null
-  }, [competitionCourtId, competitionGames, friendlyRoute, gameNum, liveCourtsByGame])
+    if (!game) return null
+    return (
+      game.courts.find((court) => courtIdByLabel.get(court.courtLabel) === competitionCourtId) ??
+      game.courts.find((court) => court.courtLabel === competitionCourtLabel) ??
+      null
+    )
+  }, [
+    competitionCourtId,
+    competitionCourtLabel,
+    competitionGames,
+    courtIdByLabel,
+    friendlyRoute,
+    gameNum,
+    liveCourtsByGame,
+  ])
 
   const courtMatch = friendlyRoute ? friendlyCourtMatch : competitionCourtMatch
-  const resolvedCourtLabel = friendlyRoute
-    ? courtLabel
-    : (liveCourtsByGame.get(gameNum) ?? []).find((court) => court.courtId === competitionCourtId)
-        ?.courtName ??
-      (courtMatch && 'courtLabel' in courtMatch ? courtMatch.courtLabel : competitionCourtId)
+  const resolvedCourtLabel = friendlyRoute ? courtLabel : competitionCourtLabel
 
   const ourTeam = useMemo(
     () =>
@@ -206,7 +230,7 @@ export function GestureScoreCourtPage() {
 
   const canOpenGestureScore = friendlyRoute
     ? Boolean(courtSetupKey && courtLabel && friendlyGame)
-    : Boolean(courtMatch && scorerUserId)
+    : Boolean(courtSetupKey && competitionCourtId)
 
   const waitingForFriendlySchedule =
     friendlyRoute && Boolean(friendlyGame && courtLabel && courtNames.length === 0 && !courtMatch)
@@ -215,6 +239,7 @@ export function GestureScoreCourtPage() {
   const engineRef = useRef<GestureCameraEngine | null>(null)
   const trackerRef = useRef<CameraScoreTrackerHandle>(null)
   const busyRef = useRef(false)
+  const undoSeqRef = useRef(0)
   const matchEndedRef = useRef(false)
   const applyFingerActionRef = useRef<(action: FingerAction) => void>(() => {})
   const localLogRef = useRef<MatchGestureLog | null>(null)
@@ -222,6 +247,10 @@ export function GestureScoreCourtPage() {
   detectPreviewRef.current = detectPreview
 
   const [status, setStatus] = useState<Status>('idle')
+  const [cameraError, setCameraError] = useState<string | null>(null)
+  const setCameraStatus = useCallback((next: Status) => {
+    setStatus(next)
+  }, [])
   const [sessionSyncing, setSessionSyncing] = useState(() => needsAuth)
   const canSaveRef = useRef(!needsAuth)
   const [pointsA, setPointsA] = useState(0)
@@ -245,13 +274,6 @@ export function GestureScoreCourtPage() {
       if (courtSetupKey && log) writeLocalGestureCameraLog(courtSetupKey, log)
       localLogRef.current = log
       const score = scoreFromLog(log)
-      gestureScoreDebug('H4', 'GestureScoreCourtPage:applyScoreFromLog', 'ui score', {
-        pointsA: score.pointsA,
-        pointsB: score.pointsB,
-        gamesA: score.gamesA,
-        gamesB: score.gamesB,
-        eventCount: log?.pointEvents.length ?? 0,
-      })
       setPointsA(score.pointsA)
       setPointsB(score.pointsB)
       setGamesA(score.gamesA)
@@ -288,17 +310,10 @@ export function GestureScoreCourtPage() {
     if (cached) applyScoreFromLog(cached)
 
     void (async () => {
-      const { error, log } = await ensureGestureCameraSession(cameraCtx)
-      if (error) gestureScoreDebug('H3', 'GestureScoreCourtPage:refreshLog', 'session error', { error })
+      const { log } = await ensureGestureCameraSession(cameraCtx)
       const remote = log ?? (await loadGestureCameraLog(cameraCtx.courtSetupKey))
       const merged = newerGestureCameraLog(localLogRef.current, remote)
       if (merged) applyScoreFromLog(merged)
-      gestureScoreDebug('H7', 'GestureScoreCourtPage:ensureSession', 'court log ready', {
-        courtKey: cameraCtx.courtSetupKey,
-        hasLog: Boolean(merged),
-        error,
-        cached: Boolean(cached),
-      })
     })()
   }, [applyScoreFromLog, cameraCtx, courtSetupKey])
 
@@ -333,21 +348,12 @@ export function GestureScoreCourtPage() {
     async (action: FingerAction) => {
       const engine = engineRef.current
       if (!cameraCtx || busyRef.current) {
-        gestureScoreDebug('H2', 'GestureScoreCourtPage:applyFingerAction', 'blocked', {
-          reason: !cameraCtx ? 'no-ctx' : 'busy',
-          action,
-        })
         return
       }
       if (matchEndedRef.current && action !== 'undo') {
-        gestureScoreDebug('H2', 'GestureScoreCourtPage:applyFingerAction', 'blocked', {
-          reason: 'match-ended',
-          action,
-        })
         engine?.markScoreBlocked(performance.now())
         return
       }
-      gestureScoreDebug('H2', 'GestureScoreCourtPage:applyFingerAction', 'start', { action })
       engine?.resetHoldTracking()
       trackerRef.current?.setHold(EMPTY_HOLD_UI)
       busyRef.current = true
@@ -363,6 +369,7 @@ export function GestureScoreCourtPage() {
             engine?.markScoreBlocked(performance.now())
             return
           }
+          undoSeqRef.current += 1
         } else {
           const team = action === 'team1' ? 'a' : 'b'
           const result = planGestureCameraPoint(cameraCtx, prior, team)
@@ -379,15 +386,6 @@ export function GestureScoreCourtPage() {
 
         engine?.resumeVideo()
 
-        const score = scoreFromLog(planned)
-        gestureScoreDebug('H8', 'GestureScoreCourtPage:applyFingerAction', 'local applied', {
-          action,
-          gamesA: score.gamesA,
-          gamesB: score.gamesB,
-          pointsA: score.pointsA,
-          pointsB: score.pointsB,
-        })
-
         void (async () => {
           if (needsAuth) {
             const liveSession = await restoreSession()
@@ -399,17 +397,11 @@ export function GestureScoreCourtPage() {
           }
 
           if (action === 'undo') {
+            const undoSeq = undoSeqRef.current
             const { error, log } = await undoGestureCameraPoint(cameraCtx, prior)
-            if (error) {
-              gestureScoreDebug('H3', 'GestureScoreCourtPage:applyFingerAction', 'undo sync failed', {
-                err: error.slice(0, 160),
-              })
-              return
-            }
-            if (log) {
-              const merged = newerGestureCameraLog(localLogRef.current, log)
-              if (merged) applyScoreFromLog(merged)
-            }
+            if (undoSeq !== undoSeqRef.current) return
+            if (error) return
+            if (log) applyScoreFromLog(log)
             return
           }
 
@@ -420,18 +412,9 @@ export function GestureScoreCourtPage() {
             prior,
           )
           if (error) {
-            gestureScoreDebug('H3', 'GestureScoreCourtPage:applyFingerAction', 'sync failed', {
-              action,
-              err: error.slice(0, 160),
-            })
             if (error === 'Not authenticated') canSaveRef.current = false
             return
           }
-          gestureScoreDebug('H3', 'GestureScoreCourtPage:applyFingerAction', 'sync ok', {
-            action,
-            hasLog: Boolean(log),
-            ended: syncedEnded,
-          })
           if (log) {
             const merged = newerGestureCameraLog(localLogRef.current, log)
             if (merged) applyScoreFromLog(merged)
@@ -449,29 +432,59 @@ export function GestureScoreCourtPage() {
     void applyFingerAction(action)
   }
 
-  useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
+  const applyGamesEdit = useCallback(
+    async (team: MatchTeam, games: number) => {
+      if (!cameraCtx || busyRef.current) return
 
-    const engine = new GestureCameraEngine({
-      video,
-      preview: detectPreviewRef.current,
-      onFire: (action) => {
-        if (action === 'reset') return
-        applyFingerActionRef.current(action)
-      },
-      onHoldUi: (ui) => trackerRef.current?.setHold(ui),
-      onStatus: setStatus,
-    })
-    engineRef.current = engine
-    void engine.start()
+      const prior = localLogRef.current
+      const current = scoreFromLog(prior)
+      const gamesA = team === 'a' ? games : current.gamesA
+      const gamesB = team === 'b' ? games : current.gamesB
+      const planned = planGestureCameraGamesOverride(cameraCtx, prior, gamesA, gamesB)
+      if (!planned) return
 
-    return () => {
-      engine.stop()
-      engineRef.current = null
-      trackerRef.current?.setHold(EMPTY_HOLD_UI)
-    }
-  }, [])
+      busyRef.current = true
+      try {
+        const { log, matchEnded } = planned
+        applyScoreFromLog(log)
+        publishLocalScore(log)
+        gestureScoreBeep()
+        setMatchEnded(matchEnded)
+        engineRef.current?.resetHoldTracking()
+        trackerRef.current?.setHold(EMPTY_HOLD_UI)
+
+        void (async () => {
+          if (needsAuth) {
+            const liveSession = await restoreSession()
+            if (!liveSession?.access_token) {
+              canSaveRef.current = false
+              return
+            }
+            canSaveRef.current = true
+          }
+
+          const { error, log: synced, matchEnded: syncedEnded } = await syncGestureCameraGamesOverride(
+            cameraCtx,
+            gamesA,
+            gamesB,
+            prior,
+          )
+          if (error) {
+            if (error === 'Not authenticated') canSaveRef.current = false
+            return
+          }
+          if (synced) {
+            const merged = newerGestureCameraLog(localLogRef.current, synced)
+            if (merged) applyScoreFromLog(merged)
+          }
+          if (syncedEnded) setMatchEnded(true)
+        })()
+      } finally {
+        busyRef.current = false
+      }
+    },
+    [applyScoreFromLog, cameraCtx, needsAuth, publishLocalScore, restoreSession],
+  )
 
   useEffect(() => {
     const video = videoRef.current
@@ -491,9 +504,46 @@ export function GestureScoreCourtPage() {
     engineRef.current?.resumeVideo()
   }, [])
 
+  const startCamera = useCallback(() => {
+    setCameraError(null)
+    void engineRef.current?.restart()
+  }, [])
+
+  const showStartCamera =
+    status === 'idle' || status === 'loading' || status === 'error' || status === 'unsupported'
+
   const pageLoading =
     (needsAuth && (authLoading || sessionSyncing)) || friendlyLoading || waitingForFriendlySchedule
   const scorerReady = Boolean(courtSetupKey && canOpenGestureScore && cameraCtx)
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    const engine = new GestureCameraEngine({
+      video,
+      preview: detectPreviewRef.current,
+      onFire: (action) => {
+        if (action === 'reset') return
+        applyFingerActionRef.current(action)
+      },
+      onHoldUi: (ui) => trackerRef.current?.setHold(ui),
+      onStatus: setCameraStatus,
+      onError: (message) => {
+        setCameraError(message)
+      },
+    })
+    engineRef.current = engine
+    if (supportsGestureScoreCamera()) {
+      void engine.start()
+    }
+
+    return () => {
+      engine.stop()
+      engineRef.current = null
+      trackerRef.current?.setHold(EMPTY_HOLD_UI)
+    }
+  }, [pageLoading, scorerReady, setCameraStatus])
 
   useEffect(() => {
     if (detectPreview) document.documentElement.dataset.gestureDetectPreview = 'true'
@@ -512,19 +562,28 @@ export function GestureScoreCourtPage() {
 
   return (
     <CameraScoreTrackerShell onSurfacePointerDown={resumeCameraVideo}>
-      <video
-        ref={videoRef}
-        muted
-        playsInline
-        className={`gesture-score-court__camera-preview${
-          status === 'running' || status === 'loading' ? '' : ' gesture-score-court__camera-preview--hidden'
-        }`}
-        aria-label="Camera preview"
-      />
       {pageLoading ? null : scorerReady ? (
         <CameraScoreTracker
           ref={trackerRef}
           preview={detectPreview}
+          showStartCamera={showStartCamera}
+          cameraStarting={status === 'loading'}
+          cameraError={cameraError}
+          cameraStatus={status}
+          onStartCamera={startCamera}
+          cameraPreview={
+            <video
+              ref={videoRef}
+              muted
+              playsInline
+              className={`gesture-score-court__camera-preview${
+                status === 'running' || status === 'loading'
+                  ? ''
+                  : ' gesture-score-court__camera-preview--hidden'
+              }`}
+              aria-label="Camera preview"
+            />
+          }
           pointLeft={pointsA}
           pointRight={pointsB}
           gamesLeft={gamesA}
@@ -535,6 +594,8 @@ export function GestureScoreCourtPage() {
           team2Players={teamBPlayers}
           pointHistory={pointHistory}
           scoreDisabled={matchEnded}
+          onGamesLeftChange={(games) => void applyGamesEdit('a', games)}
+          onGamesRightChange={(games) => void applyGamesEdit('b', games)}
           onTeam1={() => void applyFingerAction('team1')}
           onTeam2={() => void applyFingerAction('team2')}
           onUndo={() => void applyFingerAction('undo')}

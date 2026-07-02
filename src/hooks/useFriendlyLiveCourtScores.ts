@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { AmericanoScoringUnit } from '../lib/competitionPresets'
-import { gestureScoreDebug } from '../lib/debug/gestureScoreDebug'
 import {
   liveCourtFeedsFromLogs,
   liveCourtScoresFromLogs,
@@ -34,18 +33,6 @@ export function useFriendlyLiveCourtScores(
     const nextFeeds = liveCourtFeedsFromLogs(rows, (log) => liveCourtScoreKeyFromSetupKey(log.courtSetupKey))
     setScores(nextScores)
     setFeeds(nextFeeds)
-    gestureScoreDebug('H10', 'useFriendlyLiveCourtScores:refresh', 'game card feed', {
-      sessionId: friendlySessionId.slice(0, 8),
-      logCount: rows.length,
-      courtKeys: [...nextScores.keys()],
-      scoreCourts: [...nextScores.entries()].map(([k, v]) => ({ k, ...v })),
-      liveFeeds: [...nextFeeds.entries()].map(([k, f]) => ({
-        k,
-        live: f.live,
-        points: f.points.length,
-        last: f.points[f.points.length - 1]?.scoreAfter,
-      })),
-    })
   }, [courtSetupKeys, friendlySessionId, scoreUnit])
 
   useEffect(() => {

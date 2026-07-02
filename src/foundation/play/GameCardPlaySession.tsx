@@ -42,38 +42,12 @@ import { americanoScoringUnit } from '../../lib/competitionPresets'
 import { friendlyCourtSetupKey } from '../../lib/friendlyCourtLive'
 import {
   liveCourtScoreKeyFromSetupKey,
-  type LiveCourtPointFeed,
+  patchEphemeralFeed,
 } from '../../lib/liveCourtScore'
-import type { TennisScore } from '../../lib/tennisScore'
 import { useSetupCourts } from '../../hooks/useSetupCourts'
 import { formatDateInput } from '../../lib/courtSchedule'
 import { supabase } from '../../lib/supabaseClient'
-import { gestureScoreDebug } from '../../lib/debug/gestureScoreDebug'
 import type { Profile } from '../../lib/types'
-
-function patchEphemeralFeed(
-  feed: LiveCourtPointFeed | undefined,
-  courtKey: string,
-  score: TennisScore,
-): LiveCourtPointFeed {
-  const points = [...(feed?.points ?? [])]
-  const last = points[points.length - 1]
-  if (last) {
-    points[points.length - 1] = { ...last, scoreAfter: score }
-  } else {
-    points.push({
-      at: new Date().toISOString(),
-      winner: 'a',
-      scoreAfter: score,
-      winnerGestureId: 'ephemeral',
-      loserGestureId: '',
-      winnerQuadrant: '',
-      loserQuadrant: '',
-      isServe: false,
-    })
-  }
-  return { courtKey, points, live: true }
-}
 
 export function FriendlyGamePage() {
   const { id } = useParams()
@@ -197,7 +171,7 @@ export function FriendlyGamePage() {
     [displayGame],
   )
 
-  const scoreSubmitEnabled = Boolean(user)
+  const scoreSubmitEnabled = true
 
   const standingsLogs = useMemo(
     () => filterFriendlyMatchLogsForSchedule(matchLogs, organizedConfig, now),
@@ -247,18 +221,6 @@ export function FriendlyGamePage() {
     }))
   }, [standings, avatarSources, sessionRoster])
 
-  useEffect(() => {
-    gestureScoreDebug('H6', 'FriendlyGamePage:standings', 'leaderboard snapshot', {
-      logCount: standingsLogs.length,
-      liveFeedCourts: liveCourtFeeds.size,
-      rows: enrichedStandings.map((row) => ({
-        name: row.display_name,
-        pts: row.total_points,
-        matchWins: row.wins ?? 0,
-      })),
-    })
-  }, [enrichedStandings, liveCourtFeeds.size, standingsLogs.length])
-
   const scoredCourts = useMemo(
     () =>
       new Set(matchLogs.filter((log) => log.matchEndedAt).map((log) => log.courtSetupKey)).size,
@@ -284,13 +246,13 @@ export function FriendlyGamePage() {
 
   const handleSubmitFriendlyScores = useCallback(
     async (entries: FriendlyCourtScoreSubmit[]) => {
-      if (!game || !user) return
+      if (!game) return
       for (const entry of entries) {
         const { error } = await saveFriendlyManualCourtScore(game.id, entry, scoreUnit)
         if (error) throw new Error(error)
       }
     },
-    [game, scoreUnit, user],
+    [game, scoreUnit],
   )
 
   const handleScoresSaved = useCallback(async () => {

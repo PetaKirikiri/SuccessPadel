@@ -48,7 +48,16 @@ export function competitionScheduleDisplay(
 }
 
 function rosterProfileId(sp: CompetitionPlayer): string | null {
-  return sp.profile_id ?? sp.profiles?.id ?? null
+  return sp.profile_id ?? sp.profiles?.id ?? sp.padel_players?.profile_id ?? null
+}
+
+function rosterAvatarUrl(sp: CompetitionPlayer): string | null {
+  return (
+    sp.profiles?.avatar_url ??
+    sp.padel_players?.profiles?.avatar_url ??
+    sp.padel_players?.line_picture_url ??
+    null
+  )
 }
 
 export function competitionRosterSlots(row: CompetitionRow): RosterSlot[] {
@@ -57,7 +66,7 @@ export function competitionRosterSlots(row: CompetitionRow): RosterSlot[] {
     name: rosterDisplayName(sp),
     profileId: rosterProfileId(sp),
     padelPlayerId: sp.padel_player_id,
-    avatarUrl: sp.profiles?.avatar_url ?? null,
+    avatarUrl: rosterAvatarUrl(sp),
     vacant: false,
   }))
 
@@ -88,7 +97,7 @@ function playerRosterSlot(sp: CompetitionPlayer): RosterSlot {
     name,
     profileId: rosterProfileId(sp),
     padelPlayerId: sp.padel_player_id,
-    avatarUrl: sp.profiles?.avatar_url ?? null,
+    avatarUrl: rosterAvatarUrl(sp),
     vacant: !name.trim(),
   }
 }

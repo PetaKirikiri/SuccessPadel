@@ -1,15 +1,12 @@
 import type { KeyboardEvent, MouseEvent, ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useTranslation } from '../../hooks/useTranslation'
-import { useGamesGenderFilterControls } from '../../contexts/GamesGenderFilterContext'
 import { RosterList } from './RosterList'
-import { RuleChipGrid } from '../../shared/Button/RuleChipGrid'
-import { GamesGenderFilterButtons } from './GamesGenderFilterButtons'
 import { IconDelete, IconEdit } from '../../shared/Button/ButtonIcons'
 import type { CompetitionTeamSlot } from '../../lib/competitionGameDisplay'
 import type { RosterSlot, RuleChip } from '../../lib/friendlyGameDisplay'
-import { useInviteCarouselNav } from './InviteCardCarousel'
 import { inviteCardRootClass } from './InviteCard.styles'
+import { InviteCardHeaderBadges } from './InviteCardHeaderBadges'
+import { InviteCardHeaderTitle } from './InviteCardHeaderTitle'
 
 export type InviteCardProps = {
   title: string
@@ -75,37 +72,6 @@ function cleanInviteTitle(title: string, dateLine: string, timeLine: string): st
   return cleaned || title
 }
 
-function InviteCarouselNavButton({
-  direction,
-  onClick,
-  disabled,
-  ariaLabel,
-}: {
-  direction: 'prev' | 'next'
-  onClick: () => void
-  disabled: boolean
-  ariaLabel: string
-}) {
-  return (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation()
-        onClick()
-      }}
-      disabled={disabled}
-      aria-label={ariaLabel}
-      className="invite-carousel-header-nav flex shrink-0 items-center justify-center rounded-full border border-brand-primary/35 bg-brand-bg-alt font-bold leading-none text-brand-primary shadow-sm transition active:scale-95 disabled:opacity-30"
-    >
-      {direction === 'prev' ? '‹' : '›'}
-    </button>
-  )
-}
-
-function stopCardNav(e: { stopPropagation: () => void }) {
-  e.stopPropagation()
-}
-
 export function InviteCard({
   title,
   dateLine,
@@ -131,11 +97,7 @@ export function InviteCard({
   sessionKind,
 }: InviteCardProps) {
   const navigate = useNavigate()
-  const { t } = useTranslation()
-  const carouselNav = useInviteCarouselNav()
-  const genderControls = useGamesGenderFilterControls()
   const showAdminActions = (canEdit && editTo) || (canDelete && onDelete)
-  const showCarouselNav = Boolean(carouselNav?.show)
 
   const openDetail = () => {
     if (detailTo) navigate(detailTo)
@@ -190,82 +152,16 @@ export function InviteCard({
   const dateCompact = dateParts.length >= 3 ? `${dateParts[0]} ${dateParts[1]} ${dateParts[2]}` : dateLine
   const cleanTitle = cleanInviteTitle(title, dateLine, timeLine)
 
-  const titleBlock = (
-    <Link
-      to={detailTo}
-      className="invite-game-card__title-link touch-manipulation transition active:opacity-80"
-      onClick={(e) => e.stopPropagation()}
-      onPointerDown={(e) => e.stopPropagation()}
-    >
-      <p className="invite-game-card__schedule-date">{dateCompact}</p>
-      {timeLine ? <p className="invite-game-card__schedule-time">{timeLine}</p> : null}
-      <p className="invite-game-card__level">{cleanTitle}</p>
-    </Link>
-  )
-
-  const genderRail = genderControls ? (
-    <div
-      className="invite-game-card__left-rail"
-      onClick={stopCardNav}
-      onKeyDown={stopCardNav}
-    >
-      <div className="invite-card-gender-controls">
-        <GamesGenderFilterButtons
-          compact
-          value={genderControls.gender}
-          onChange={genderControls.setGender}
-        />
-      </div>
-    </div>
-  ) : (
-    <div className="invite-game-card__header-spacer" aria-hidden />
-  )
-
-  const rightRail =
-    showAdminActions || ruleChips.length > 0 ? (
-      <div
-        className="invite-game-card__right-rail"
-        onClick={stopCardNav}
-        onKeyDown={stopCardNav}
-      >
-        {showAdminActions ? (
-          <div className="invite-game-card__admin invite-card-admin-controls">
-            {adminActions}
-          </div>
-        ) : null}
-        {ruleChips.length > 0 ? (
-          <div className="invite-game-card__badges">
-            <RuleChipGrid chips={ruleChips} compact />
-          </div>
-        ) : null}
-      </div>
-    ) : (
-      <div className="invite-game-card__header-spacer" aria-hidden />
-    )
-
   const headerContent = (
     <header className="invite-game-card__header">
-      {genderRail}
-      <div className="invite-game-card__banner-center">
-        {showCarouselNav ? (
-          <InviteCarouselNavButton
-            direction="prev"
-            onClick={carouselNav!.onPrev}
-            disabled={carouselNav!.atStart}
-            ariaLabel={t('competition.prevGame')}
-          />
-        ) : null}
-        <div className="invite-game-card__title-slot">{titleBlock}</div>
-        {showCarouselNav ? (
-          <InviteCarouselNavButton
-            direction="next"
-            onClick={carouselNav!.onNext}
-            disabled={carouselNav!.atEnd}
-            ariaLabel={t('competition.nextGame')}
-          />
-        ) : null}
-      </div>
-      {rightRail}
+      <InviteCardHeaderTitle
+        detailTo={detailTo}
+        dateLine={dateCompact}
+        timeLine={timeLine}
+        titleLine={cleanTitle}
+        adminActions={adminActions}
+      />
+      <InviteCardHeaderBadges chips={ruleChips} />
     </header>
   )
 

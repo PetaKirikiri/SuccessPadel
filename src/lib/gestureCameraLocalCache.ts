@@ -28,19 +28,20 @@ export function writeLocalGestureCameraLog(courtSetupKey: string, log: MatchGest
   }
 }
 
-/** Prefer the log with more committed points; on a tie prefer still-active (no matchEndedAt). */
+/** Prefer the most recently updated log; event count only breaks ties (supports multi-undo). */
 export function newerGestureCameraLog(
   a: MatchGestureLog | null,
   b: MatchGestureLog | null,
 ): MatchGestureLog | null {
   if (!a) return b
   if (!b) return a
+  const aTs = Date.parse(a.updatedAt ?? '') || 0
+  const bTs = Date.parse(b.updatedAt ?? '') || 0
+  if (aTs !== bTs) return bTs > aTs ? b : a
   if (b.pointEvents.length > a.pointEvents.length) return b
   if (a.pointEvents.length > b.pointEvents.length) return a
   const aEnded = Boolean(a.matchEndedAt)
   const bEnded = Boolean(b.matchEndedAt)
   if (aEnded !== bEnded) return aEnded ? b : a
-  const aTs = Date.parse(a.updatedAt ?? '') || 0
-  const bTs = Date.parse(b.updatedAt ?? '') || 0
-  return bTs > aTs ? b : a
+  return b
 }

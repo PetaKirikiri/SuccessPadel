@@ -1,0 +1,70 @@
+/* TV court card layout lock. */
+
+@media (orientation: landscape) {
+  html[data-viewport='tv'] .game-card-court-card {
+    display: flex;
+    min-height: 0;
+    height: 100%;
+    flex-direction: column;
+    container-type: size;
+  }
+
+  html[data-viewport='tv'] .game-card-court-card-body {
+    min-height: 0;
+    flex: 1 1 0%;
+  }
+
+  html[data-viewport='tv'] .game-card-court-label-row {
+    flex-shrink: 0;
+    padding-block: clamp(0.25rem, 4cqh, 0.75rem);
+  }
+
+  html[data-viewport='tv'] .game-card-court-label {
+    font-size: clamp(0.95rem, calc(var(--court-ui-scale, 1) * 0.55rem + 5cqh), 3.5rem);
+    line-height: 1.05;
+  }
+
+  html[data-viewport='tv'] .game-card-court-team-label {
+    font-size: clamp(0.8rem, calc(var(--court-ui-scale, 1) * 0.45rem + 4cqh), 2.75rem);
+    line-height: 1.1;
+  }
+
+  html[data-viewport='tv'] .game-card-court-player__name {
+    font-size: clamp(0.75rem, calc(var(--court-ui-scale, 1) * 0.4rem + 3.8cqh), 2.5rem);
+    line-height: 1.1;
+  }
+
+  html[data-viewport='tv'] .game-card-court-player__avatar {
+    width: clamp(1.75rem, calc(var(--court-ui-scale, 1) * 0.5rem + 9cqh), 4.5rem);
+    height: clamp(1.75rem, calc(var(--court-ui-scale, 1) * 0.5rem + 9cqh), 4.5rem);
+  }
+
+  html[data-viewport='tv'] .game-card-court-card .tv-court-match-grid {
+    min-height: 0;
+    flex: 1 1 0%;
+    gap: clamp(0.35rem, 2cqw, 1.25rem);
+    padding-inline: clamp(0.35rem, 3cqw, 1.5rem);
+  }
+
+  html[data-viewport='tv'] .game-card-court-match {
+    width: 100%;
+    column-gap: clamp(0.5rem, 3cqw, 1.5rem);
+    padding-inline: clamp(0.35rem, 2cqw, 1rem);
+  }
+
+  html[data-viewport='tv'] .game-card-court-match__side--left {
+    justify-self: start;
+    align-self: center;
+    text-align: left;
+  }
+
+  html[data-viewport='tv'] .game-card-court-match__side--right {
+    justify-self: end;
+    align-self: center;
+    text-align: right;
+  }
+
+  html[data-viewport='tv'] .game-card-court-match--sides {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}

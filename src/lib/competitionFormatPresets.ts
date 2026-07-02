@@ -281,6 +281,12 @@ export function duoTeamsForPlay(
     roster.map((player) => [player.id, player.rank_order ?? 0]),
   )
   const orderedPairs = orderSessionPairsByTeamIndex(pairs ?? [], rankByRosterId, teamCount)
+  const rosterIds = new Set(roster.map((player) => player.id))
+  const resolveRosterId = (id: string | null | undefined, rank: number) => {
+    const trimmed = id?.trim()
+    if (trimmed && rosterIds.has(trimmed)) return trimmed
+    return byRank.get(rank) ?? trimmed ?? ''
+  }
 
   return Array.from({ length: teamCount }, (_, index) => {
     const pair = orderedPairs[index]
@@ -288,8 +294,8 @@ export function duoTeamsForPlay(
     return {
       label: pair?.pair_label?.trim() || cfg?.label?.trim() || `Team ${index + 1}`,
       roster_ids: [
-        pair?.roster_a_id ?? cfg?.roster_ids?.[0] ?? byRank.get(index * 2) ?? '',
-        pair?.roster_b_id ?? cfg?.roster_ids?.[1] ?? byRank.get(index * 2 + 1) ?? '',
+        resolveRosterId(pair?.roster_a_id ?? cfg?.roster_ids?.[0], index * 2),
+        resolveRosterId(pair?.roster_b_id ?? cfg?.roster_ids?.[1], index * 2 + 1),
       ] as [string, string],
     }
   })

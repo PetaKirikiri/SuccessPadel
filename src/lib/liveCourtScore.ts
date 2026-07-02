@@ -45,6 +45,12 @@ export function liveCourtGamesScore(
   if (!camera && log.finalScore && log.pointEvents.length === 0 && log.gestures.length === 0) {
     return manualScoreStrings(score, scoreUnit)
   }
+  if (camera) {
+    return {
+      scoreA: String(score.gamesA ?? 0),
+      scoreB: String(score.gamesB ?? 0),
+    }
+  }
   return manualScoreStrings(score, scoreUnit)
 }
 
@@ -56,6 +62,71 @@ export function liveCourtScoreKeyFromSetupKey(courtSetupKey: string): string | n
   const { gameNumber, courtLabel } = parseFriendlyCourtSetupKey(courtSetupKey)
   if (gameNumber == null || !courtLabel) return null
   return liveCourtScoreKey(gameNumber, courtLabel)
+}
+
+/** Court card keys for a setup key — matches label and court-id aliases. */
+export function liveCourtScoreKeysForSetupKey(
+  courtSetupKey: string,
+  courtIdToLabel?: Map<string, string>,
+): string[] {
+  const { gameNumber, courtLabel } = parseFriendlyCourtSetupKey(courtSetupKey)
+  if (gameNumber == null || !courtLabel) return []
+  const keys = new Set<string>([liveCourtScoreKey(gameNumber, courtLabel)])
+  const mapped = courtIdToLabel?.get(courtLabel)
+  if (mapped && mapped !== courtLabel) keys.add(liveCourtScoreKey(gameNumber, mapped))
+  return [...keys]
+}
+
+export function patchEphemeralFeed(
+  feed: LiveCourtPointFeed | undefined,
+  courtKey: string,
+  score: TennisScore,
+): LiveCourtPointFeed {
+  const points = [...(feed?.points ?? [])]
+  const last = points[points.length - 1]
+  if (last) {
+    points[points.length - 1] = { ...last, scoreAfter: score }
+  } else {
+    points.push({
+      at: new Date().toISOString(),
+      winner: 'a',
+      scoreAfter: score,
+      winnerGestureId: 'ephemeral',
+      loserGestureId: '',
+      winnerQuadrant: '',
+      loserQuadrant: '',
+      isServe: false,
+    })
+  }
+  return { courtKey, points, live: true }
+}
+
+export function mergeEphemeralLiveCourtScores(
+  scores: Map<string, LiveCourtGamesScore>,
+  ephemeralScores: Map<string, TennisScore>,
+  courtIdToLabel?: Map<string, string>,
+): Map<string, LiveCourtGamesScore> {
+  const map = new Map(scores)
+  for (const [setupKey, score] of ephemeralScores) {
+    for (const courtKey of liveCourtScoreKeysForSetupKey(setupKey, courtIdToLabel)) {
+      map.set(courtKey, { scoreA: String(score.gamesA), scoreB: String(score.gamesB) })
+    }
+  }
+  return map
+}
+
+export function mergeEphemeralLiveCourtFeeds(
+  feeds: Map<string, LiveCourtPointFeed>,
+  ephemeralScores: Map<string, TennisScore>,
+  courtIdToLabel?: Map<string, string>,
+): Map<string, LiveCourtPointFeed> {
+  const map = new Map(feeds)
+  for (const [setupKey, score] of ephemeralScores) {
+    for (const courtKey of liveCourtScoreKeysForSetupKey(setupKey, courtIdToLabel)) {
+      map.set(courtKey, patchEphemeralFeed(map.get(courtKey), courtKey, score))
+    }
+  }
+  return map
 }
 
 export function liveCourtScoresFromLogs(
@@ -132,6 +203,18 @@ export function liveCourtPointScores(
   return undefined
 }
 
+/** Resolve centre tennis points for gesture-scored courts. */
+export function resolveGestureCourtPointScores(
+  feed: LiveCourtPointFeed | undefined,
+  trackingLive: boolean,
+  gestureScoring: boolean,
+): LiveCourtPointScores | undefined {
+  const fromFeed = liveCourtPointScores(feed, trackingLive || Boolean(feed?.live))
+  if (fromFeed) return fromFeed
+  if (gestureScoring) return { scoreA: '0', scoreB: '0' }
+  return undefined
+}
+
 /** Tennis point readout for under games on a court card (e.g. `15 - 30`). */
 export function liveCourtPointLine(
   feed: LiveCourtPointFeed | undefined,
@@ -169,7 +252,9 @@ export function liveCourtGameResults(points: GameLogPoint[] | undefined): LiveCo
         gamesA,
         gamesB,
         winner: 'a',
-        lastPointLine: point.scoreBefore ? formatGameScore(point.scoreBefore) : undefined,
+        lastPointLine: point.scoreBefore
+          ? formatGameScore(point.scoreBefore)
+          : formatGameScore(point.scoreAfter),
       })
     } else if (gamesB > prevB) {
       gameNumber += 1
@@ -178,7 +263,9 @@ export function liveCourtGameResults(points: GameLogPoint[] | undefined): LiveCo
         gamesA,
         gamesB,
         winner: 'b',
-        lastPointLine: point.scoreBefore ? formatGameScore(point.scoreBefore) : undefined,
+        lastPointLine: point.scoreBefore
+          ? formatGameScore(point.scoreBefore)
+          : formatGameScore(point.scoreAfter),
       })
     }
     prevA = gamesA

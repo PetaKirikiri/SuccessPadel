@@ -4,6 +4,7 @@
 @import './invite.layout.css';
 @import './settings.layout.css';
 @import './game-card.layout.css';
+@import './court-card.layout.css';
 @import './leaderboard.layout.css';
 @import './profile.layout.css';
 @import './gesture-pad.layout.css';

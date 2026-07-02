@@ -8,8 +8,18 @@ import { fileURLToPath } from 'node:url'
 
 const root = path.dirname(fileURLToPath(import.meta.url)) + '/..'
 const layoutsDir = path.join(root, 'src/layouts')
+const inviteComponentFiles = [
+  'src/components/InviteCard/InviteCard.tsx',
+  'src/components/InviteCard/RosterList.tsx',
+  'src/components/InviteCard/InviteCardRosterEditor.tsx',
+  'src/components/InviteCard/GamesGenderFilterButtons.tsx',
+  'src/components/InviteCard/InviteCardHeaderBadges.tsx',
+  'src/components/InviteCard/InviteCardHeaderTitle.tsx',
+]
 
 const INVITE_ROOT = '.invite-game-card'
+const VIEWPORTS = ['mobile', 'tablet', 'web', 'tv'] as const
+const BREAKPOINT_CLASS_RE = /\b(?:sm|md|lg|xl|2xl):[\w:[\]()/%.#-]+/g
 const ALLOWED_ROOT_PROPS = new Set([
   'display',
   'width',
@@ -78,15 +88,64 @@ function checkInviteRule(rule: Rule): string | null {
   return null
 }
 
-const files = (await readdir(layoutsDir)).filter((name) => name.endsWith('.layout.css'))
+async function findCssFiles(dir: string): Promise<string[]> {
+  const entries = await readdir(dir, { withFileTypes: true })
+  const files: string[] = []
+
+  for (const entry of entries) {
+    const entryPath = path.join(dir, entry.name)
+    if (entry.isDirectory()) {
+      files.push(...await findCssFiles(entryPath))
+      continue
+    }
+
+    if (entry.name.endsWith('.css')) {
+      files.push(entryPath)
+    }
+  }
+
+  return files
+}
+
+function checkViewportFileRule(rule: Rule): string | null {
+  const viewportFile = rule.file.match(/\.([^.]+)\.css$/)?.[1]
+  if (!viewportFile) return null
+
+  const expectedViewport = VIEWPORTS.find((viewport) => viewport === viewportFile)
+  if (!expectedViewport) return null
+
+  for (const viewport of VIEWPORTS) {
+    if (viewport === expectedViewport) continue
+    if (rule.selector.includes(`html[data-viewport='${viewport}']`)) {
+      return `${rule.file}:${rule.line} ${viewportFile} CSS may not target ${viewport}`
+    }
+  }
+
+  return null
+}
+
+const files = await findCssFiles(layoutsDir)
 const violations: string[] = []
 
-for (const name of files) {
-  const filePath = path.join(layoutsDir, name)
+for (const filePath of files) {
   const css = await readFile(filePath, 'utf8')
-  for (const rule of parseRules(css, `src/layouts/${name}`)) {
+  const relFile = path.relative(root, filePath)
+  for (const rule of parseRules(css, relFile)) {
     const violation = checkInviteRule(rule)
     if (violation) violations.push(violation)
+
+    const viewportViolation = checkViewportFileRule(rule)
+    if (viewportViolation) violations.push(viewportViolation)
+  }
+}
+
+for (const relFile of inviteComponentFiles) {
+  const source = await readFile(path.join(root, relFile), 'utf8')
+  const matches = source.match(BREAKPOINT_CLASS_RE) ?? []
+  if (matches.length > 0) {
+    violations.push(
+      `${relFile} contains responsive utility classes (${[...new Set(matches)].join(', ')}) — use split invite CSS files`,
+    )
   }
 }
 
@@ -96,4 +155,4 @@ if (violations.length > 0) {
   process.exit(1)
 }
 
-console.log(`check:layouts ok (${files.length} layout files)`)
+console.log(`check:layouts ok (${files.length} layout css files)`)

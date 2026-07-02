@@ -6,6 +6,7 @@ import { useSeasonLeaderboard } from '../../hooks/useSeasonLeaderboard'
 import type { Gender } from '../../lib/competitionPresets'
 import { consumeStoredCompetitiveGenderFilter } from '../../lib/gamesGenderFilter'
 import { Leaderboard as HubLeaderboard } from '../../components/Leaderboard/Leaderboard.logic'
+import { GamesGenderFilterButtons } from './GamesGenderFilterButtons'
 import {
   IconHubCurrent,
   IconHubLeaderboard,
@@ -199,7 +200,12 @@ export function GamesHubView({
 
   const listBody = showGenderFilterControls ? (
     <GamesGenderFilterProvider gender={genderFilter} setGender={setGenderFilter}>
-      {listContent}
+      <div className="hub-gender-shell">
+        <div className="invite-card-gender-controls">
+          <GamesGenderFilterButtons compact value={genderFilter} onChange={setGenderFilter} />
+        </div>
+        <div className="hub-gender-body">{listContent}</div>
+      </div>
     </GamesGenderFilterProvider>
   ) : (
     listContent

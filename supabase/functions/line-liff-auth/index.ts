@@ -184,8 +184,11 @@ async function sessionForLineUser(admin: ReturnType<typeof createClient>, lineUs
   }
 
   if (lineUser.picture) {
+    const lineLinked = Boolean(existing?.line_user_id || lineSub)
     const staleAvatar =
-      !existing?.avatar_url || existing.avatar_url.includes('profile.line-scdn.net')
+      !existing?.avatar_url ||
+      existing.avatar_url.includes('profile.line-scdn.net') ||
+      lineLinked
     if (!existing || staleAvatar) profilePatch.avatar_url = lineUser.picture
   }
 

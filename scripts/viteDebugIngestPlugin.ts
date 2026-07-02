@@ -9,6 +9,7 @@ const CURSOR_DEBUG_LOGS: Record<string, string> = {
   c0312c: path.join(process.cwd(), '.cursor', 'debug-c0312c.log'),
   ce1aed: path.join(process.cwd(), '.cursor', 'debug-ce1aed.log'),
   d2fcaa: path.join(process.cwd(), '.cursor', 'debug-d2fcaa.log'),
+  '5d6061': path.join(process.cwd(), '.cursor', 'debug-5d6061.log'),
 }
 
 function appendCursorDebugLog(sessionId: string, record: Record<string, unknown>) {
