@@ -10,12 +10,16 @@ import {
 import type { CourtPlayer } from '../../lib/americanoSchedule'
 import type { GameLogPoint } from '../../lib/gameLogSerialize'
 import { MANUAL_GAMES_GESTURE_ID } from '../../lib/gestureCameraScore'
-import type { HoldUi } from '../../lib/gestureFingerDetect'
+import { type HoldUi } from '../../lib/gestureFingerDetect'
 import { PlayerChip } from './PlayerChip'
 import { formatGameScore, formatTennisPoint } from '../../lib/tennisScore'
 import { cameraScoreTrackerRootClass } from './CameraScoreTracker.styles'
 
 type HoldFinger = 'team1' | 'team2' | 'undo'
+
+function holdStyle(progress: number): CSSProperties {
+  return { '--hold-progress': String(progress) } as CSSProperties
+}
 
 function FingerIcon({ count }: { count: 1 | 2 | 3 }) {
   const src =
@@ -40,6 +44,7 @@ function FingerBtn({
   action,
   activeHold,
   holdProgress,
+  gestureCooldown,
   preview,
   ariaLabel,
   className,
@@ -52,6 +57,7 @@ function FingerBtn({
   action: HoldFinger
   activeHold: HoldFinger | null
   holdProgress: number
+  gestureCooldown?: boolean
   preview?: boolean
   ariaLabel: string
   className: string
@@ -63,10 +69,19 @@ function FingerBtn({
   const lit = activeHold === action
   const seen = Boolean(preview && lit)
   const holding = Boolean(!preview && lit)
-  const pct = holding ? `${Math.round(holdProgress * 100)}%` : '0%'
+  const progress = holding ? holdProgress : 0
+  const activate = () => {
+    if (disabled) return
+    onClick()
+  }
   const labelNode = label ? (
     <span className="gesture-score-court__finger-label">{label}</span>
   ) : null
+
+  const buttonStyle =
+    preview || !holding
+      ? ({ touchAction: 'manipulation' } as CSSProperties)
+      : ({ ...holdStyle(progress), touchAction: 'manipulation' } as CSSProperties)
 
   return (
     <button
@@ -75,9 +90,10 @@ function FingerBtn({
       aria-label={ariaLabel}
       data-seen={seen || undefined}
       data-holding={holding || undefined}
-      style={preview ? undefined : ({ '--hold-pct': pct } as CSSProperties)}
+      data-cooldown={gestureCooldown || undefined}
+      style={buttonStyle}
       disabled={disabled}
-      onClick={onClick}
+      onClick={activate}
     >
       {labelAbove ? labelNode : null}
       <FingerIcon count={count} />
@@ -166,6 +182,7 @@ export type CameraScoreTrackerProps = {
   team2Players?: CourtPlayer[]
   pointHistory?: GameLogPoint[]
   scoreDisabled?: boolean
+  undoDisabled?: boolean
   gamesEditDisabled?: boolean
   preview?: boolean
   cameraPreview?: ReactNode
@@ -196,6 +213,7 @@ export const CameraScoreTracker = forwardRef<CameraScoreTrackerHandle, CameraSco
       team2Players,
       pointHistory = [],
       scoreDisabled = false,
+      undoDisabled = false,
       gamesEditDisabled = false,
       preview = false,
       cameraPreview,
@@ -214,45 +232,7 @@ export const CameraScoreTracker = forwardRef<CameraScoreTrackerHandle, CameraSco
   ) {
     const [hold, setHold] = useState<HoldUi>(EMPTY_HOLD)
     useImperativeHandle(ref, () => ({ setHold }), [])
-    const { activeHold, holdProgress } = hold
-
-    useEffect(() => {
-      if (preview) return
-      const root = document.documentElement
-      const camera = document.querySelector('.gesture-score-court__top-center .gesture-score-court__camera-preview')
-      const games = document.querySelector('.gesture-score-court__team-games')
-      const chips = document.querySelector('.gesture-score-court__team-chips')
-      const cameraStyle = camera ? getComputedStyle(camera) : null
-      const gamesStyle = games ? getComputedStyle(games) : null
-      const chipsStyle = chips ? getComputedStyle(chips) : null
-      // #region agent log
-      fetch('http://127.0.0.1:7695/ingest/c4960c9b-f3c9-4190-b564-b1526039f3c6', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '5d6061' },
-        body: JSON.stringify({
-          sessionId: '5d6061',
-          runId: 'layout-probe',
-          hypothesisId: 'H1-H5',
-          location: 'CameraScoreTracker.tsx:mount',
-          message: 'gesture court layout probe',
-          data: {
-            viewport: root.dataset.viewport ?? null,
-            gestureUi: root.dataset.gestureUi ?? null,
-            gamesLeft,
-            gamesRight,
-            hasGamesEl: Boolean(games),
-            gamesDisplay: gamesStyle?.display ?? null,
-            hasCameraInTopCenter: Boolean(camera),
-            cameraPosition: cameraStyle?.position ?? null,
-            cameraRight: cameraStyle?.right ?? null,
-            chipsJustify: chipsStyle?.justifyContent ?? null,
-            chipsWidth: chipsStyle?.width ?? null,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {})
-      // #endregion
-    }, [gamesLeft, gamesRight, preview])
+    const { activeHold, holdProgress, gestureCooldown } = hold
 
     const team1Header = useMemo(
       () => (
@@ -357,7 +337,9 @@ export const CameraScoreTracker = forwardRef<CameraScoreTrackerHandle, CameraSco
                 {cameraStarting ? 'Starting camera…' : 'Start camera'}
               </button>
             ) : null}
-            {cameraPreview}
+            {cameraPreview ? (
+              <div className="gesture-score-court__camera-wrap">{cameraPreview}</div>
+            ) : null}
             {centerBadges}
           </div>
 
@@ -372,6 +354,7 @@ export const CameraScoreTracker = forwardRef<CameraScoreTrackerHandle, CameraSco
             action="team1"
             activeHold={activeHold}
             holdProgress={holdProgress}
+            gestureCooldown={gestureCooldown}
             preview={preview}
             ariaLabel="Team 1 point"
             className="gesture-score-court__finger-btn gesture-score-court__finger-btn--team1"
@@ -383,10 +366,11 @@ export const CameraScoreTracker = forwardRef<CameraScoreTrackerHandle, CameraSco
             action="undo"
             activeHold={activeHold}
             holdProgress={holdProgress}
+            gestureCooldown={gestureCooldown}
             preview={preview}
             ariaLabel="Undo last point"
             className="gesture-score-court__finger-btn gesture-score-court__finger-btn--undo"
-            disabled={preview ? false : scoreDisabled}
+            disabled={preview ? false : undoDisabled}
             onClick={onUndo}
             label="Undo"
             labelAbove
@@ -396,6 +380,7 @@ export const CameraScoreTracker = forwardRef<CameraScoreTrackerHandle, CameraSco
             action="team2"
             activeHold={activeHold}
             holdProgress={holdProgress}
+            gestureCooldown={gestureCooldown}
             preview={preview}
             ariaLabel="Team 2 point"
             className="gesture-score-court__finger-btn gesture-score-court__finger-btn--team2"

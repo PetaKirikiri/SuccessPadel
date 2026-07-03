@@ -1,6 +1,18 @@
-import { useRef, useSyncExternalStore } from 'react'
+import { useRef, useState, useSyncExternalStore } from 'react'
 import { useCourtsGridMetrics } from '../../hooks/useCourtsGridMetrics'
-import { liveCourtScoreKey, resolveGestureCourtPointScores, liveCourtGameResults } from '../../lib/liveCourtScore'
+import {
+  liveCourtScoreKey,
+  resolveGestureCourtPointScores,
+  liveCourtGameResults,
+} from '../../lib/liveCourtScore'
+import {
+  competitionCourtSetupKey,
+  friendlyGestureCourtSetupKey,
+  rosterFromCourt,
+  syncGestureCameraGamesOverride,
+  syncGestureCameraPointsOverride,
+} from '../../lib/gestureCameraScore'
+import { parseTennisPointInput } from '../../lib/tennisScore'
 import type { AmericanoScoringUnit } from '../../lib/competitionPresets'
 import type { TranslateFn } from '../../i18n'
 import type { GameCardSize } from '../../lib/viewBreakpoints'
@@ -24,7 +36,11 @@ import type { LiveCourtGamesScore, LiveCourtPointFeed } from '../../lib/liveCour
 import { debugSessionLog } from '../../lib/debug/devDebug'
 import type { LeaderboardEntry } from '../../lib/leaderboardTypes'
 import type { CourtPlayer } from '../../lib/americanoSchedule'
-import { rosterDisplayName, type CompetitionPlayer } from '../../hooks/useCompetitions'
+import {
+  resolveCourtPlayerDisplayName,
+  rosterEntryGender,
+  type CompetitionPlayer,
+} from '../../hooks/useCompetitions'
 
 function useLandscapeOrientation(): boolean {
   return useSyncExternalStore(
@@ -47,7 +63,7 @@ export function GameCardCourts({
   courtIdByLabel,
   gameRoundId,
   matchForCourt,
-  setDraft: _setDraft,
+  setDraft,
   submitCourt: _submitCourt,
   busyCourtKey: _busyCourtKey,
   courtError: _courtError,
@@ -57,7 +73,7 @@ export function GameCardCourts({
   finished,
   currentUserId,
   currentUserDisplayName,
-  currentUserAvatarUrl,
+  currentUserAvatarUrl: _currentUserAvatarUrl,
   liveCourtEnabled = false,
   gestureScoreEnabled = false,
   manualScoreEnabled = false,
@@ -65,7 +81,7 @@ export function GameCardCourts({
   competitionId,
   sessionId,
   duoTeamLabels,
-  courtScoreMax: _courtScoreMax,
+  courtScoreMax,
   liveCourtScores,
   liveCourtFeeds,
   courtStandings,
@@ -112,6 +128,10 @@ export function GameCardCourts({
   const scoreFirst = size === 'mobile' && !landscape
   const gridRef = useRef<HTMLDivElement>(null)
   const courtCount = courtScoreRows.length
+  const gamesSyncTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+  const pointsSyncTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+  const [pointBackups, setPointBackups] = useState<Record<string, { a: string; b: string }>>({})
+  const [pointBackupDirty, setPointBackupDirty] = useState<Set<string>>(() => new Set())
   useCourtsGridMetrics(gridRef, courtCount, size, landscape)
   const gridProps = courtsGridProps(size, courtCount)
 
@@ -120,10 +140,17 @@ export function GameCardCourts({
     fallback: string,
   ): CourtPlayer | undefined => {
     if (!player || !roster?.length) return player
+    const name = resolveCourtPlayerDisplayName(
+      player,
+      fallback,
+      roster,
+      rosterNameById ?? new Map(),
+      courtStandings ?? [],
+    )
     const row = player.rosterId ? roster.find((r) => r.id === player.rosterId) : undefined
-    const name = row ? rosterDisplayName(row) : fallback
-    if (!name || name === 'Player') return player
-    return { ...player, name }
+    const gender = player.gender ?? rosterEntryGender(row)
+    if (!name || name === 'Player') return gender ? { ...player, gender } : player
+    return { ...player, name, gender }
   }
 
   const enrichCourtSide = (
@@ -133,7 +160,7 @@ export function GameCardCourts({
     if (!roster?.length) return { names, players }
     const enrichedPlayers = players?.map((player, index) =>
       enrichCourtPlayer(player, names[index] ?? ''),
-    )
+    ).filter((player): player is CourtPlayer => Boolean(player))
     return {
       names: [
         enrichedPlayers?.[0]?.name ?? names[0] ?? '',
@@ -172,7 +199,7 @@ export function GameCardCourts({
             'GameCardCourts.tsx',
             'court card name inputs',
             {
-              runId: 'post-fix-3',
+              runId: 'post-fix-verify',
               gameNumber: game.gameNumber,
               courtLabel: row.courtLabel,
               usedLiveCourt: Boolean(liveCourt),
@@ -269,11 +296,18 @@ export function GameCardCourts({
         const courtFinished =
           finished || Boolean(feed && feed.live === false && (feed.points.length > 0 || trackingLive))
         const scoringLive = trackingLive && !courtFinished
-        const gestureScoring = gestureScoreEnabled && Boolean(feed || trackingLive || liveScore)
+        const showGesturePoints = gestureCourt
+        const gestureScoring = showGesturePoints || Boolean(feed || trackingLive || liveScore)
+        if (gestureScoring && row.teamAStr !== '' && row.teamAStr !== (liveScore?.scoreA ?? '')) {
+          scoreA = row.teamAStr
+        }
+        if (gestureScoring && row.teamBStr !== '' && row.teamBStr !== (liveScore?.scoreB ?? '')) {
+          scoreB = row.teamBStr
+        }
         const pointScores = resolveGestureCourtPointScores(
           feed,
-          scoringLive || Boolean(feed?.live),
-          gestureScoring,
+          showGesturePoints || scoringLive || Boolean(feed?.live),
+          showGesturePoints,
         )
         const gameResults = liveCourtGameResults(feed?.points)
         const hasCourtScores =
@@ -282,12 +316,120 @@ export function GameCardCourts({
           (scoreB != null && scoreB !== '') ||
           pointScores != null
 
+        const gamesEditable =
+          !courtFinished && (gestureCourt || (canEdit && hasScoring && Boolean(row.courtId || friendly)))
+
+        const backupKey = row.courtKey ?? liveCourtScoreKey(game.gameNumber, row.courtLabel)
+        const backupDirty = pointBackupDirty.has(backupKey)
+        const backupPointA = backupDirty
+          ? pointBackups[backupKey]?.a ?? pointScores?.scoreA ?? '0'
+          : pointScores?.scoreA ?? '0'
+        const backupPointB = backupDirty
+          ? pointBackups[backupKey]?.b ?? pointScores?.scoreB ?? '0'
+          : pointScores?.scoreB ?? '0'
+
+        const gestureCameraCtx = () => {
+          const courtSetupKey = friendly
+            ? sessionId
+              ? friendlyGestureCourtSetupKey(sessionId, game.gameNumber, row.courtLabel)
+              : null
+            : competitionId && courtId
+              ? competitionCourtSetupKey(competitionId, game.gameNumber, courtId)
+              : null
+          if (!courtSetupKey) return null
+          return {
+            courtSetupKey,
+            friendly,
+            friendlySessionId: friendly ? sessionId : undefined,
+            competitionId: friendly ? undefined : competitionId,
+            gameNumber: game.gameNumber,
+            courtId: friendly ? row.courtLabel : courtId!,
+            courtLabel: row.courtLabel,
+            roundId: gameRoundId,
+            playTo: courtScoreMax,
+            scoreUnit,
+            roster: rosterFromCourt(teamAPlayers, teamBPlayers),
+            ourTeam: 'a' as const,
+          }
+        }
+
+        const scheduleGestureGamesSync = (gamesA: string, gamesB: string) => {
+          if (!gestureScoring) return
+          const ctx = gestureCameraCtx()
+          if (!ctx) return
+
+          const syncKey = row.courtKey ?? ctx.courtSetupKey
+          const timers = gamesSyncTimers.current
+          const prior = timers.get(syncKey)
+          if (prior) clearTimeout(prior)
+
+          timers.set(
+            syncKey,
+            setTimeout(() => {
+              timers.delete(syncKey)
+              void syncGestureCameraGamesOverride(ctx, Number(gamesA) || 0, Number(gamesB) || 0)
+            }, 450),
+          )
+        }
+
+        const scheduleGesturePointsSync = (pointsA: string, pointsB: string) => {
+          if (!gestureScoring) return
+          const parsedA = parseTennisPointInput(pointsA)
+          const parsedB = parseTennisPointInput(pointsB)
+          if (parsedA == null || parsedB == null) return
+          const ctx = gestureCameraCtx()
+          if (!ctx) return
+
+          const syncKey = `pts:${row.courtKey ?? ctx.courtSetupKey}`
+          const timers = pointsSyncTimers.current
+          const prior = timers.get(syncKey)
+          if (prior) clearTimeout(prior)
+
+          timers.set(
+            syncKey,
+            setTimeout(() => {
+              timers.delete(syncKey)
+              void syncGestureCameraPointsOverride(ctx, parsedA, parsedB).then(() => {
+                setPointBackupDirty((prev) => {
+                  const next = new Set(prev)
+                  next.delete(backupKey)
+                  return next
+                })
+              })
+            }, 450),
+          )
+        }
+
+        const onGamesA = (value: string) => {
+          if (row.courtKey) setDraft(row.courtKey, 'teamA', value)
+          scheduleGestureGamesSync(value, scoreB ?? '0')
+        }
+        const onGamesB = (value: string) => {
+          if (row.courtKey) setDraft(row.courtKey, 'teamB', value)
+          scheduleGestureGamesSync(scoreA ?? '0', value)
+        }
+
+        const onBackupPointA = (value: string) => {
+          setPointBackupDirty((prev) => new Set(prev).add(backupKey))
+          setPointBackups((prev) => ({
+            ...prev,
+            [backupKey]: { a: value, b: prev[backupKey]?.b ?? backupPointB },
+          }))
+          scheduleGesturePointsSync(value, backupPointB)
+        }
+        const onBackupPointB = (value: string) => {
+          setPointBackupDirty((prev) => new Set(prev).add(backupKey))
+          setPointBackups((prev) => ({
+            ...prev,
+            [backupKey]: { a: prev[backupKey]?.a ?? backupPointA, b: value },
+          }))
+          scheduleGesturePointsSync(backupPointA, value)
+        }
+
         return (
           <CourtCard
             key={row.courtLabel}
             courtLabel={row.courtLabel}
-            currentUserId={currentUserId}
-            currentUserDisplayName={currentUserDisplayName}
             court={liveCourt ?? court}
             finished={courtFinished}
             href={href}
@@ -308,16 +450,24 @@ export function GameCardCourts({
               scoreUnit={scoreUnit}
               scoreA={scoreA}
               scoreB={scoreB}
-              livePointScores={gestureScoring ? pointScores : undefined}
+              onScoreA={gamesEditable ? onGamesA : undefined}
+              onScoreB={gamesEditable ? onGamesB : undefined}
+              scoreMax={courtScoreMax}
+              disabled={!gamesEditable}
+              livePointScores={
+                showGesturePoints ? (pointScores ?? { scoreA: '0', scoreB: '0' }) : undefined
+              }
+              backupPointA={showGesturePoints ? backupPointA : undefined}
+              backupPointB={showGesturePoints ? backupPointB : undefined}
+              onBackupPointA={gamesEditable ? onBackupPointA : undefined}
+              onBackupPointB={gamesEditable ? onBackupPointB : undefined}
               liveGameResults={gameResults}
               finished={courtFinished}
-              currentUserId={currentUserId}
-              currentUserDisplayName={currentUserDisplayName}
-              currentUserAvatarUrl={currentUserAvatarUrl}
               embedded
               compact={compact}
               scoreFirst={scoreFirst}
               showScores={hasCourtScores}
+              colorNamesByGender={Boolean(duoTeamLabels)}
               t={t}
             />
           </CourtCard>

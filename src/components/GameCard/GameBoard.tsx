@@ -246,7 +246,7 @@ export function GameBoard({
   currentUserId,
   currentUserDisplayName,
   currentUserAvatarUrl,
-  isAdmin = false,
+  isAdmin: _isAdmin = false,
   liveCourtScores,
   liveCourtFeeds,
   duoTeamLabels,

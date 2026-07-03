@@ -16,22 +16,27 @@
 
   html[data-viewport='tv'] .game-card-court-label-row {
     flex-shrink: 0;
-    padding-block: clamp(0.25rem, 4cqh, 0.75rem);
+    padding-block: clamp(0.12rem, 2.5cqh, 0.45rem);
   }
 
   html[data-viewport='tv'] .game-card-court-label {
-    font-size: clamp(0.95rem, calc(var(--court-ui-scale, 1) * 0.55rem + 5cqh), 3.5rem);
+    font-size: clamp(0.75rem, calc(var(--court-ui-scale, 1) * 0.32rem + 2.4cqh), 1.25rem);
     line-height: 1.05;
   }
 
   html[data-viewport='tv'] .game-card-court-team-label {
-    font-size: clamp(0.8rem, calc(var(--court-ui-scale, 1) * 0.45rem + 4cqh), 2.75rem);
-    line-height: 1.1;
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    white-space: normal;
+    font-size: clamp(0.72rem, calc(var(--court-ui-scale, 1) * 0.34rem + 3cqh), 2rem);
+    line-height: 1.05;
   }
 
   html[data-viewport='tv'] .game-card-court-player__name {
-    font-size: clamp(0.75rem, calc(var(--court-ui-scale, 1) * 0.4rem + 3.8cqh), 2.5rem);
-    line-height: 1.1;
+    font-size: clamp(0.72rem, calc(var(--court-ui-scale, 1) * 0.32rem + 3cqh), 1.95rem);
+    line-height: 1.05;
   }
 
   html[data-viewport='tv'] .game-card-court-player__avatar {
@@ -67,4 +72,21 @@
   html[data-viewport='tv'] .game-card-court-match--sides {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
+
+  html[data-viewport='tv'] .game-card-court-score-row {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: center;
+    gap: clamp(0.35rem, 2cqw, 0.85rem);
+  }
+
+  html[data-viewport='tv'] .game-card-court-score-section--points,
+  html[data-viewport='tv'] .game-card-court-score-section--games {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
 }

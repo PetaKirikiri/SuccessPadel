@@ -11,6 +11,7 @@ import {
 import {
   americanoScheduleFromSession,
   competitionPlayStartIso,
+  courtNamesForPlay,
   courtsNeeded,
   gameSlotOptsFromSchedule,
 } from '../lib/competitionLayout'
@@ -33,6 +34,7 @@ import type { PlaySide } from '../lib/types'
 import { pivotScheduleByCourt, sortGameRoundsByCourt, sortLiveCourtsByClubOrder, type CourtColumn } from '../lib/competitionCourtBoard'
 import type { CompetitionPlayer, CompetitionSessionPair } from './useCompetitions'
 import { buildRosterNameById, rosterDisplayName } from './useCompetitions'
+import { parsePlayerGender } from '../lib/profileFields'
 import type { LeaderboardEntry } from '../lib/leaderboardTypes'
 import {
   matchWinnerTeam,
@@ -122,6 +124,9 @@ function groupLiveCourts(
                 }
               : null,
           preferredSide,
+          gender: parsePlayerGender(
+            profile && 'gender' in profile ? (profile.gender as string | null | undefined) : null,
+          ),
         })
     if (p.team === 'a') {
       row.teamA.push(label)
@@ -196,13 +201,10 @@ export function useCompetitionBoard(
     americanoScheduleFromSession(session)
   const gameMinutes = isAmericano ? scheduledGameMinutes : 0
 
-  const courtNames = useMemo(() => {
-    const fromClub = clubCourts.slice(0, neededCourts).map((c) => c.name)
-    return Array.from(
-      { length: neededCourts },
-      (_, i) => fromClub[i] ?? `Court ${i + 1}`,
-    )
-  }, [clubCourts, neededCourts])
+  const courtNames = useMemo(
+    () => courtNamesForPlay(clubCourts, neededCourts, session?.scoring_config),
+    [clubCourts, neededCourts, session?.scoring_config],
+  )
 
   const rankedRoster = useMemo(() => sortRosterByRank(roster), [roster])
   const paddedRoster = useMemo(
@@ -252,7 +254,7 @@ export function useCompetitionBoard(
         'useCompetitionBoard.ts:americanoGames',
         'court preview games built',
         {
-          runId: isDuo ? 'post-fix-duo' : 'post-fix-3',
+          runId: isDuo ? 'post-fix-verify' : 'post-fix-verify',
           hasLiveRounds,
           isDuo,
           firstCourtTeamA: games[0]!.matches[0]!.teamA,

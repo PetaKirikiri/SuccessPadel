@@ -61,6 +61,7 @@ export function AppShell({ children }: ShellProps) {
   return (
     <ViewportProvider>
       <GesturePadChromeContext.Provider value={setGesturePadActive}>
+        {/* ViewportProvider is the single authority for data-viewport, data-orientation, and app dimensions. */}
         <div className="viewport-lock flex flex-col">
           <LineEntryGate>
             <AuthSessionSync />

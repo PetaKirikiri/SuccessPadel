@@ -1,19 +1,50 @@
-/** Shared viewport lock dimensions — used by useLockViewport. */
+/** Single source for app viewport lock dimensions. */
 
-function screenWidthPx(): string {
-  const w = window.visualViewport?.width ?? window.innerWidth
-  return `${Math.round(w)}px`
+export type ViewportOrientation = 'portrait' | 'landscape'
+
+export type ViewportLockMetrics = {
+  widthPx: number
+  heightPx: number
+  width: string
+  height: string
+  orientation: ViewportOrientation
 }
 
-function screenHeightPx(): string {
-  return `${Math.round(window.innerHeight)}px`
+function readViewportNumber(value: number | undefined): number {
+  return Number.isFinite(value) && value != null ? value : 0
 }
 
-export function syncViewportLockDimensions(): void {
+export function readViewportLockMetrics(): ViewportLockMetrics {
+  const visualViewport = window.visualViewport
+  const widthPx = Math.round(
+    Math.max(
+      window.innerWidth,
+      readViewportNumber(visualViewport?.width),
+      document.documentElement.clientWidth,
+    ),
+  )
+  const heightPx = Math.round(
+    Math.max(
+      window.innerHeight,
+      readViewportNumber(visualViewport?.height),
+      document.documentElement.clientHeight,
+    ),
+  )
+  const orientation: ViewportOrientation = widthPx > heightPx ? 'landscape' : 'portrait'
+
+  return {
+    widthPx,
+    heightPx,
+    width: `${widthPx}px`,
+    height: `${heightPx}px`,
+    orientation,
+  }
+}
+
+export function syncViewportLockDimensions(metrics = readViewportLockMetrics()): void {
   if (typeof document === 'undefined') return
 
-  const width = screenWidthPx()
-  const height = screenHeightPx()
+  const { width, height } = metrics
   const html = document.documentElement
   const body = document.body
 

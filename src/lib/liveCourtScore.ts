@@ -129,6 +129,58 @@ export function mergeEphemeralLiveCourtFeeds(
   return map
 }
 
+export function tennisScoreFromFeed(feed: LiveCourtPointFeed | undefined): TennisScore | null {
+  return feed?.points[feed.points.length - 1]?.scoreAfter ?? null
+}
+
+function feedDisplayProgress(feed: LiveCourtPointFeed): number {
+  const score = tennisScoreFromFeed(feed)
+  if (!score) return feed.live ? 0 : -1
+  return feed.points.length * 1_000_000 + (score.gamesA + score.gamesB) * 10_000 + score.pointsA * 100 + score.pointsB
+}
+
+/** Never let a DB refresh rewind live point feeds already shown on court cards. */
+export function latchLiveCourtFeeds(
+  prev: Map<string, LiveCourtPointFeed>,
+  next: Map<string, LiveCourtPointFeed>,
+): Map<string, LiveCourtPointFeed> {
+  const out = new Map(next)
+  for (const [key, prevFeed] of prev) {
+    const nextFeed = out.get(key)
+    if (!nextFeed) {
+      out.set(key, prevFeed)
+      continue
+    }
+    if (feedDisplayProgress(prevFeed) > feedDisplayProgress(nextFeed)) {
+      out.set(key, prevFeed)
+    }
+  }
+  return out
+}
+
+function gamesScoreTotal(score: LiveCourtGamesScore): number {
+  return (Number(score.scoreA) || 0) + (Number(score.scoreB) || 0)
+}
+
+/** Never let a DB refresh rewind games already shown on court cards. */
+export function latchLiveCourtGamesScores(
+  prev: Map<string, LiveCourtGamesScore>,
+  next: Map<string, LiveCourtGamesScore>,
+): Map<string, LiveCourtGamesScore> {
+  const out = new Map(next)
+  for (const [key, prevScore] of prev) {
+    const nextScore = out.get(key)
+    if (!nextScore) {
+      out.set(key, prevScore)
+      continue
+    }
+    if (gamesScoreTotal(prevScore) > gamesScoreTotal(nextScore)) {
+      out.set(key, prevScore)
+    }
+  }
+  return out
+}
+
 export function liveCourtScoresFromLogs(
   logs: MatchGestureLog[],
   scoreUnit: AmericanoScoringUnit = 'games',
@@ -203,16 +255,15 @@ export function liveCourtPointScores(
   return undefined
 }
 
-/** Resolve centre tennis points for gesture-scored courts. */
+/** Resolve centre tennis points for gesture-scored courts — always 0-0 until feed/ephemeral arrives. */
 export function resolveGestureCourtPointScores(
   feed: LiveCourtPointFeed | undefined,
   trackingLive: boolean,
-  gestureScoring: boolean,
+  showGesturePoints: boolean,
 ): LiveCourtPointScores | undefined {
+  if (!showGesturePoints) return undefined
   const fromFeed = liveCourtPointScores(feed, trackingLive || Boolean(feed?.live))
-  if (fromFeed) return fromFeed
-  if (gestureScoring) return { scoreA: '0', scoreB: '0' }
-  return undefined
+  return fromFeed ?? { scoreA: '0', scoreB: '0' }
 }
 
 /** Tennis point readout for under games on a court card (e.g. `15 - 30`). */

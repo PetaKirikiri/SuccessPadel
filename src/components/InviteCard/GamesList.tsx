@@ -10,10 +10,12 @@ import { useLineClientProfile } from '../../hooks/useLineClientProfile'
 import { useTranslation } from '../../hooks/useTranslation'
 import type { TranslateFn } from '../../i18n'
 import { competitionIsPast } from '../../lib/competitionListCard'
-import { canEditFriendlySession, type FriendlyGameRecord } from '../../lib/friendlyGames'
+import { canEditFriendlySession, splitFriendlyGames, type FriendlyGameRecord } from '../../lib/friendlyGames'
 import { deleteFriendlySession } from '../../lib/friendlyServer'
 import { friendlyDivisionLabels } from '../../lib/friendlyGameDisplay'
 import { matchesGamesGenderFilter, genderFilterLabel } from '../../lib/gamesGenderFilter'
+import { useCompetitionHubRows } from '../../hooks/useCompetitionHubRows'
+import { useFriendlyHubGames } from '../../hooks/useFriendlyHubGames'
 import { InviteCardCarousel } from './InviteCardCarousel'
 import { InviteGameCard } from './InviteCard.logic'
 import { GamesHubEmpty, GamesHubLoading } from './GamesHubView'
@@ -30,16 +32,16 @@ type SharedProps = {
 
 type FriendlyProps = SharedProps & {
   mode: 'friendly'
-  games: FriendlyGameRecord[]
+  games?: FriendlyGameRecord[]
   onRefresh?: () => void
 }
 
 type CompetitiveProps = SharedProps & {
   mode: 'competitive'
-  rows: CompetitionRow[]
+  rows?: CompetitionRow[]
   error?: string | null
   userId?: string
-  onRefresh: () => void
+  onRefresh?: () => void
 }
 
 type Props = FriendlyProps | CompetitiveProps
@@ -108,12 +110,21 @@ export function GamesList(props: Props) {
 }
 
 function FriendlyGamesListBody({
-  games,
-  loading = false,
+  games: gamesProp,
+  loading: loadingProp = false,
   past = false,
   isAdmin = false,
-  onRefresh,
+  onRefresh: onRefreshProp,
 }: FriendlyProps) {
+  const selfFetch = gamesProp === undefined
+  const hub = useFriendlyHubGames(selfFetch)
+  const allGames = gamesProp ?? hub.games
+  const loading = selfFetch ? hub.loading : loadingProp
+  const onRefresh = onRefreshProp ?? (selfFetch ? () => void hub.refresh() : undefined)
+  const games = useMemo(() => {
+    const { currentGames, pastGames } = splitFriendlyGames(allGames)
+    return past ? pastGames : currentGames
+  }, [allGames, past])
   const { t } = useTranslation()
   const { user, profile } = useAuth()
   const lineClient = useLineClientProfile()
@@ -167,6 +178,9 @@ function FriendlyGamesListBody({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
+      {selfFetch && hub.error ? (
+        <p className="mb-2 shrink-0 text-xs text-red-600">{hub.error}</p>
+      ) : null}
       {deleteError ? <p className="mb-2 shrink-0 text-xs text-red-600">{deleteError}</p> : null}
       <InviteCardCarousel className="min-h-0 flex-1">
         {filteredGames.map((game) => (
@@ -202,15 +216,21 @@ function FriendlyGamesListBody({
 }
 
 function CompetitiveGamesListBody({
-  rows,
-  loading,
-  error,
+  rows: rowsProp,
+  loading: loadingProp,
+  error: errorProp,
   isAdmin,
   userId,
-  onRefresh,
+  onRefresh: onRefreshProp,
   listTab,
   showListTabs = true,
 }: CompetitiveProps) {
+  const selfFetch = rowsProp === undefined
+  const hub = useCompetitionHubRows(selfFetch)
+  const rows = rowsProp ?? hub.rows
+  const loading = selfFetch ? hub.loading : (loadingProp ?? false)
+  const error = selfFetch ? hub.error : errorProp
+  const onRefresh = onRefreshProp ?? (selfFetch ? () => void hub.refresh() : undefined)
   const { t } = useTranslation()
   const [internalTab, setInternalTab] = useState<GamesListTab>('current')
   const didDefaultTab = useRef(false)
@@ -311,7 +331,7 @@ function CompetitiveGamesListBody({
                 row={row}
                 isAdmin={isAdmin}
                 userId={userId}
-                onRefresh={onRefresh}
+                onRefresh={onRefresh ? () => void onRefresh() : undefined}
               />
             </li>
             ))}

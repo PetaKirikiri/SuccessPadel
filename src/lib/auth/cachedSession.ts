@@ -7,6 +7,11 @@ export { AUTH_STORAGE_KEY }
 
 const BROWSER_SESSION_BACKUP_KEY = 'success-padel-browser-session'
 const BACKUP_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 90
+const BACKUP_RESTORE_COOLDOWN_MS = 60_000
+
+let restoreInFlight: Promise<Session | null> | null = null
+let blockedBackupRefreshToken: string | null = null
+let blockedBackupRestoreUntil = 0
 
 type BrowserSessionBackup = {
   savedAt: number
@@ -61,6 +66,23 @@ function readBrowserSessionBackup(): BrowserSessionBackup | null {
   }
 }
 
+function authErrorStatus(error: unknown): number | null {
+  const status = (error as { status?: unknown } | null)?.status
+  return typeof status === 'number' ? status : null
+}
+
+function blockBackupRestore(refreshToken: string, ms = BACKUP_RESTORE_COOLDOWN_MS): void {
+  blockedBackupRefreshToken = refreshToken
+  blockedBackupRestoreUntil = Date.now() + ms
+}
+
+function shouldSkipBackupRestore(backup: BrowserSessionBackup): boolean {
+  return (
+    blockedBackupRefreshToken === backup.refreshToken &&
+    blockedBackupRestoreUntil > Date.now()
+  )
+}
+
 export function rememberBrowserSession(session: Session | null): void {
   if (!session?.user || !session.access_token || !session.refresh_token) return
   try {
@@ -101,40 +123,34 @@ async function refreshPersistedSession(): Promise<Session | null> {
 async function restoreBrowserSessionBackup(): Promise<Session | null> {
   const backup = readBrowserSessionBackup()
   if (!backup) return null
+  if (shouldSkipBackupRestore(backup)) return null
 
   const refreshed = await refreshWithToken(backup.refreshToken)
-  if (refreshed) return refreshed
+  if (refreshed.session) return refreshed.session
 
-  const { error } = await supabase.auth.setSession({
-    access_token: backup.accessToken,
-    refresh_token: backup.refreshToken,
-  })
-  if (error) {
-    const retry = await refreshWithToken(backup.refreshToken)
-    if (retry) return retry
+  if (refreshed.status === 400 || refreshed.status === 401) {
+    clearBrowserSessionBackup()
+    blockBackupRestore(backup.refreshToken, 5 * 60_000)
     return null
   }
-  const { data } = await supabase.auth.refreshSession()
-  const session = data.session
-  if (!session?.user) return null
-  rememberBrowserSession(session)
-  return session
+
+  blockBackupRestore(backup.refreshToken)
+  return null
 }
 
-async function refreshWithToken(refreshToken: string): Promise<Session | null> {
+async function refreshWithToken(refreshToken: string): Promise<{ session: Session | null; status: number | null }> {
   try {
     const { data, error } = await supabase.auth.refreshSession({ refresh_token: refreshToken })
     const session = data.session
-    if (error || !session?.user) return null
+    if (error || !session?.user) return { session: null, status: authErrorStatus(error) }
     rememberBrowserSession(session)
-    return session
-  } catch {
-    return null
+    return { session, status: null }
+  } catch (error) {
+    return { session: null, status: authErrorStatus(error) }
   }
 }
 
-/** Restore Supabase session from browser storage and refresh if needed. */
-export async function tryRestoreCachedSession(): Promise<Session | null> {
+async function restoreCachedSessionInternal(): Promise<Session | null> {
   if (hasCachedAuthStorage()) {
     const { data, error } = await supabase.auth.getSession()
     if (!error && data.session?.user) {
@@ -150,6 +166,14 @@ export async function tryRestoreCachedSession(): Promise<Session | null> {
   }
 
   return restoreBrowserSessionBackup()
+}
+
+/** Restore Supabase session from browser storage and refresh if needed. */
+export async function tryRestoreCachedSession(): Promise<Session | null> {
+  restoreInFlight ??= restoreCachedSessionInternal().finally(() => {
+    restoreInFlight = null
+  })
+  return restoreInFlight
 }
 
 /** Restore a JWT the RPC layer will accept (re-hydrates the Supabase client if needed). */

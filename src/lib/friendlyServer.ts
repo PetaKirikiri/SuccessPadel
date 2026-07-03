@@ -109,13 +109,6 @@ export async function fetchFriendlyHomeGames(): Promise<{
   }
 }
 
-export async function fetchPublicFriendlyGames(): Promise<FriendlyGameRecord[]> {
-  const { data, error } = await supabase.rpc('list_public_friendly_sessions')
-  if (error || !Array.isArray(data)) return []
-  const games = (data as FriendlySessionRow[]).map(friendlyFromServerRow)
-  return enrichFriendlyGameRosters(games)
-}
-
 export async function fetchFriendlySession(id: string): Promise<FriendlyGameRecord | null> {
   const { data, error } = await supabase.rpc('get_friendly_session', { p_id: id })
   if (error || !data) return null
@@ -136,6 +129,9 @@ async function enrichFriendlyGameRosters(
     ),
   ]
   if (profileIds.length === 0) return games
+
+  const { data: sessionData } = await supabase.auth.getSession()
+  if (!sessionData.session) return games
 
   const { data: profiles } = await supabase
     .from('profiles')

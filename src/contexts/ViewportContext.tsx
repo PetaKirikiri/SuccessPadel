@@ -1,60 +1,73 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { listenToMediaQuery } from '../lib/dom/mediaQuery'
 import {
-  TABLET_MIN_WIDTH_PX,
-  TV_MIN_WIDTH_PX,
   VIEWPORT_BUCKETS,
-  WEB_MIN_WIDTH_PX,
   viewportFromWidth,
   type ViewportBucket,
 } from '../lib/viewBreakpoints'
+import {
+  readViewportLockMetrics,
+  syncViewportLockDimensions,
+  type ViewportOrientation,
+} from '../lib/viewportLock'
 
 type ViewportContextValue = {
   bucket: ViewportBucket
+  orientation: ViewportOrientation
 }
 
 const ViewportContext = createContext<ViewportContextValue | null>(null)
 
-function readWidthPx(): number {
-  if (typeof window === 'undefined') return 0
-  return Math.round(window.visualViewport?.width ?? window.innerWidth)
-}
-
-function readBucket(): ViewportBucket {
-  return viewportFromWidth(readWidthPx())
+function readSnapshot(): ViewportContextValue {
+  if (typeof window === 'undefined') return { bucket: 'mobile', orientation: 'portrait' }
+  const metrics = readViewportLockMetrics()
+  return {
+    bucket: viewportFromWidth(metrics.widthPx),
+    orientation: metrics.orientation,
+  }
 }
 
 export function ViewportProvider({ children }: { children: ReactNode }) {
-  const [bucket, setBucket] = useState<ViewportBucket>(readBucket)
+  const [snapshot, setSnapshot] = useState<ViewportContextValue>(readSnapshot)
 
   useEffect(() => {
-    const tabletMq = window.matchMedia(`(min-width: ${TABLET_MIN_WIDTH_PX}px)`)
-    const webMq = window.matchMedia(`(min-width: ${WEB_MIN_WIDTH_PX}px)`)
-    const tvMq = window.matchMedia(`(min-width: ${TV_MIN_WIDTH_PX}px)`)
-    const update = () => setBucket(readBucket())
-    const cleanups = [
-      listenToMediaQuery(tabletMq, update),
-      listenToMediaQuery(webMq, update),
-      listenToMediaQuery(tvMq, update),
-    ]
+    const orientationMq = window.matchMedia('(orientation: landscape)')
+    const update = () => {
+      const metrics = readViewportLockMetrics()
+      syncViewportLockDimensions(metrics)
+      setSnapshot({
+        bucket: viewportFromWidth(metrics.widthPx),
+        orientation: metrics.orientation,
+      })
+    }
+    const delayedUpdate = () => {
+      update()
+      window.setTimeout(update, 150)
+      window.setTimeout(update, 400)
+    }
+    const cleanupOrientation = listenToMediaQuery(orientationMq, delayedUpdate)
     window.addEventListener('resize', update)
+    window.addEventListener('orientationchange', delayedUpdate)
     window.visualViewport?.addEventListener('resize', update)
     update()
     return () => {
-      cleanups.forEach((cleanup) => cleanup())
+      cleanupOrientation()
       window.removeEventListener('resize', update)
+      window.removeEventListener('orientationchange', delayedUpdate)
       window.visualViewport?.removeEventListener('resize', update)
     }
   }, [])
 
   useEffect(() => {
-    document.documentElement.dataset.viewport = bucket
+    document.documentElement.dataset.viewport = snapshot.bucket
+    document.documentElement.dataset.orientation = snapshot.orientation
     return () => {
       delete document.documentElement.dataset.viewport
+      delete document.documentElement.dataset.orientation
     }
-  }, [bucket])
+  }, [snapshot.bucket, snapshot.orientation])
 
-  const value = useMemo(() => ({ bucket }), [bucket])
+  const value = useMemo(() => snapshot, [snapshot])
 
   return <ViewportContext.Provider value={value}>{children}</ViewportContext.Provider>
 }

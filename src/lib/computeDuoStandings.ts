@@ -1,5 +1,8 @@
 import type { LeaderboardEntry } from './leaderboardTypes'
-import type { CompetitionTeamConfig } from './competitionFormatPresets'
+import {
+  formatTeamLabelForDisplay,
+  type CompetitionTeamConfig,
+} from './competitionFormatPresets'
 import { normalizeLeaderboardEntries } from './leaderboardEntries'
 import { rosterDisplayName, type CompetitionPlayer } from '../hooks/useCompetitions'
 import type { CompetitionRound, CourtMatch } from '../hooks/useCompetitionRun'
@@ -49,7 +52,7 @@ export function computeDuoStandings(
       player_b_name: nameB,
       player_a_avatar_url: playerA?.profiles?.avatar_url ?? null,
       player_b_avatar_url: playerB?.profiles?.avatar_url ?? null,
-      display_name: label,
+      display_name: formatTeamLabelForDisplay(label) || label,
       avatar_url: null,
       total_points: 0,
       games: 0,

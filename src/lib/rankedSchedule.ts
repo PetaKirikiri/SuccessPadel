@@ -1,5 +1,5 @@
 import type { CompetitionPlayer } from '../hooks/useCompetitions'
-import { rosterDisplayName } from '../hooks/useCompetitions'
+import { rosterDisplayName, rosterEntryGender } from '../hooks/useCompetitions'
 import { debugSessionLog } from './debug/devDebug'
 import { clubDisplayName } from './clubMemberDisplay'
 import { courtPlayerFromProfile } from './courtPlayerFromProfile'
@@ -20,6 +20,21 @@ export function openSlotId(rank: number): string {
   return `00000000-0000-4000-8000-${String(rank).padStart(12, '0')}`
 }
 
+function rosterRowHasDisplayName(row: CompetitionPlayer): boolean {
+  return rosterDisplayName(row) !== 'Player'
+}
+
+/** When duplicate session_players share a rank, prefer the row with a real display name. */
+export function pickRosterIdForRank(
+  roster: CompetitionPlayer[],
+  rank: number,
+): string | undefined {
+  const candidates = roster.filter((player) => (player.rank_order ?? -1) === rank)
+  if (!candidates.length) return undefined
+  const named = candidates.find(rosterRowHasDisplayName)
+  return (named ?? candidates[0])!.id
+}
+
 /** Pad roster to target size with open slots at missing rank positions. */
 export function padRosterToTarget(
   roster: CompetitionPlayer[],
@@ -29,7 +44,15 @@ export function padRosterToTarget(
   const byRank = new Map<number, CompetitionPlayer>()
   for (const player of sorted) {
     const rank = player.rank_order ?? 0
-    if (!byRank.has(rank)) byRank.set(rank, player)
+    const existing = byRank.get(rank)
+    if (!existing) {
+      byRank.set(rank, player)
+      continue
+    }
+    byRank.set(
+      rank,
+      rosterRowHasDisplayName(player) && !rosterRowHasDisplayName(existing) ? player : existing,
+    )
   }
   return Array.from({ length: target }, (_, rank) => {
     const existing = byRank.get(rank)
@@ -101,14 +124,22 @@ export function courtPlayerFromRoster(sp: CompetitionPlayer): CourtPlayer {
   if (isOpenSlotId(sp.id)) {
     return { id: null, rosterId: null, name: OPEN_SLOT_NAME, avatarUrl: null, gameCharacterId: null }
   }
-  const profileId = sp.profile_id ?? sp.profiles?.id ?? null
+  const profileId =
+    sp.profile_id ?? sp.profiles?.id ?? sp.padel_players?.profile_id ?? sp.padel_players?.profiles?.id ?? null
+  const padelPlayerId = sp.padel_player_id ?? sp.padel_players?.id ?? null
+  const profile = sp.profiles ?? sp.padel_players?.profiles ?? null
   const name = clubDisplayName(profileId, rosterDisplayName(sp))
-  return courtPlayerFromProfile({
+  const player = courtPlayerFromProfile({
     profileId,
     rosterId: sp.id,
+    padelPlayerId,
     name,
-    profile: profileId ? sp.profiles : null,
+    profile: profileId ? profile : null,
+    gender: rosterEntryGender(sp),
   })
+  const lineAvatar = sp.padel_players?.line_picture_url?.trim()
+  if (!player.avatarUrl && lineAvatar) return { ...player, avatarUrl: lineAvatar }
+  return player
 }
 
 export function sortRosterByRank(roster: CompetitionPlayer[]): CompetitionPlayer[] {
@@ -181,13 +212,19 @@ function nameForRosterId(
   rosterNameById?: Map<string, string>,
 ): string {
   if (isOpenSlotId(id)) return OPEN_SLOT_NAME
+  const fromMap = rosterNameById?.get(id)?.trim()
+  if (fromMap && fromMap !== 'Player') return fromMap
   const player = roster.find((p) => p.id === id)
   if (player) {
     const fromRoster = rosterDisplayName(player)
     if (fromRoster !== 'Player') return fromRoster
+    const profileId = player.profile_id ?? player.profiles?.id ?? player.padel_players?.profile_id
+    const padelId = player.padel_player_id ?? player.padel_players?.id
+    const fromProfile = profileId ? rosterNameById?.get(profileId)?.trim() : undefined
+    if (fromProfile && fromProfile !== 'Player') return fromProfile
+    const fromPadel = padelId ? rosterNameById?.get(padelId)?.trim() : undefined
+    if (fromPadel && fromPadel !== 'Player') return fromPadel
   }
-  const fromMap = rosterNameById?.get(id)?.trim()
-  if (fromMap && fromMap !== 'Player') return fromMap
   return player ? rosterDisplayName(player) : 'Player'
 }
 
@@ -220,7 +257,7 @@ export function gamesFromStoredSchedule(
       .filter((match) => match.court <= courts)
       .slice(0, courts)
       .map((match, courtIndex) => {
-        const teamA = [
+        const teamA: [string, string] = [
           nameForRosterId(fullRoster, match.team_a[0], rosterNameById),
           nameForRosterId(fullRoster, match.team_a[1], rosterNameById),
         ]
@@ -231,7 +268,7 @@ export function gamesFromStoredSchedule(
             'rankedSchedule.ts:gamesFromStoredSchedule',
             'stored schedule name resolve',
             {
-              runId: 'post-fix-duo',
+              runId: 'post-fix-verify',
               storedId,
               resolvedName: teamA[0],
             },

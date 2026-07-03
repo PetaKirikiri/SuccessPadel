@@ -6,6 +6,8 @@
 @custom-variant viewport-tablet (&:where(html[data-viewport="tablet"] *));
 @custom-variant viewport-web (&:where(html[data-viewport="web"] *));
 @custom-variant viewport-tv (&:where(html[data-viewport="tv"] *));
+@custom-variant orientation-portrait (&:where(html[data-orientation="portrait"] *));
+@custom-variant orientation-landscape (&:where(html[data-orientation="landscape"] *));
 
 @theme {
   --font-sans: 'Roboto', ui-sans-serif, system-ui, sans-serif;
@@ -115,6 +117,7 @@ html.dark .brand-btn-outline {
 }
 
 html {
+  /* Root viewport contract: ViewportProvider + viewportLock.ts own these vars and data attributes. */
   @apply m-0 bg-brand-bg;
   --app-shell-dock-height: calc(3.75rem + max(0.5rem, env(safe-area-inset-bottom, 0px)));
   position: fixed;
@@ -172,6 +175,15 @@ body {
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
   @apply bg-brand-bg;
+}
+
+html[data-viewport='mobile'],
+html[data-viewport='mobile'] body,
+html[data-viewport='mobile'] #root,
+html[data-viewport='mobile'] .viewport-lock {
+  background:
+    radial-gradient(ellipse 90% 45% at 50% -5%, rgb(77 163 255 / 0.14), transparent),
+    linear-gradient(180deg, var(--color-brand-bg-alt) 0%, var(--color-brand-bg) 100%);
 }
 
 .scroll-y {

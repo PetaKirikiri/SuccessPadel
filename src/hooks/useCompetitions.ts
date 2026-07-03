@@ -6,7 +6,11 @@ import { clubDisplayName } from '../lib/clubMemberDisplay'
 import type { LeaderboardEntry } from '../lib/leaderboardTypes'
 import { leaderboardEntryLookupIds } from '../lib/leaderboardEntries'
 import type { CourtPlayer } from '../lib/americanoSchedule'
+import { parsePlayerGender, type PlayerGender } from '../lib/profileFields'
 import { isOpenSlotId, sortRosterByRank } from '../lib/rankedSchedule'
+
+type CompetitionProfileSnapshot = Pick<Profile, 'id' | 'display_name' | 'avatar_url'> &
+  Partial<Pick<Profile, 'avatar_mode' | 'pixel_avatar' | 'gender'>>
 
 export type CompetitionPlayer = {
   id: string
@@ -15,12 +19,20 @@ export type CompetitionPlayer = {
   guest_name: string | null
   guest_email: string | null
   rank_order: number | null
-  profiles: Pick<Profile, 'id' | 'display_name' | 'avatar_url' | 'avatar_mode' | 'pixel_avatar'> | null
+  profiles: CompetitionProfileSnapshot | null
   padel_players?: (Pick<Profile, 'id' | 'display_name'> & {
     profile_id?: string | null
     line_picture_url?: string | null
-    profiles?: Pick<Profile, 'id' | 'display_name' | 'avatar_url'> | null
+    profiles?: CompetitionProfileSnapshot | null
   }) | null
+}
+
+export function rosterEntryGender(sp: CompetitionPlayer | undefined): PlayerGender | null {
+  if (!sp) return null
+  return (
+    parsePlayerGender(sp.profiles?.gender) ??
+    parsePlayerGender(sp.padel_players?.profiles?.gender)
+  )
 }
 
 export function rosterDisplayName(sp: CompetitionPlayer): string {
@@ -182,7 +194,7 @@ export function useCompetitions(_userId?: string) {
       .from('game_sessions')
       .select(
         `*,
-         session_players(id, profile_id, padel_player_id, guest_name, guest_email, rank_order, profiles(id, display_name, avatar_url, avatar_mode, pixel_avatar), padel_players(id, display_name, profile_id, line_picture_url, profiles(id, display_name, avatar_url))),
+         session_players(id, profile_id, padel_player_id, guest_name, guest_email, rank_order, profiles(id, display_name, avatar_url, avatar_mode, pixel_avatar, gender), padel_players(id, display_name, profile_id, line_picture_url, profiles(id, display_name, avatar_url, avatar_mode, pixel_avatar, gender))),
          session_pairs(id, pair_label, roster_a_id, roster_b_id)`,
       )
       .eq('game_kind', 'competition')

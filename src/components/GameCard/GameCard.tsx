@@ -11,11 +11,9 @@ import { HorizontalPanelCarousel } from '../../shared/carousel/HorizontalPanelCa
 
 function gameCardClass({
   finished,
-  isMyGame = false,
   size,
 }: {
   finished: boolean
-  isMyGame?: boolean
   size: GameCardSize
 }) {
   const tv = isTvSize(size)
@@ -30,9 +28,6 @@ function gameCardClass({
   } else {
     parts.push('border-brand-primary/40 dark:border-brand-accent/35')
   }
-  if (isMyGame && !finished) {
-    parts.push('ring-2 ring-brand-accent/70 dark:ring-brand-accent/50')
-  }
   if (tv) parts.push('tv-game-card flex min-h-0 flex-1 flex-col')
   else if (fills) parts.push('game-card-fill flex min-h-0 flex-1 flex-col')
   return parts.join(' ')
@@ -41,7 +36,6 @@ function gameCardClass({
 function GameCardRoot({
   gameNumber,
   finished,
-  isMyGame,
   size,
   live,
   racetrackPaused = false,
@@ -49,7 +43,6 @@ function GameCardRoot({
 }: {
   gameNumber: number
   finished: boolean
-  isMyGame: boolean
   size: GameCardSize
   live: boolean
   racetrackPaused?: boolean
@@ -57,7 +50,7 @@ function GameCardRoot({
 }) {
   const tv = isTvSize(size)
   const fills = cardFillsViewport(size)
-  const cardClass = gameCardClass({ finished, isMyGame, size })
+  const cardClass = gameCardClass({ finished, size })
 
   if (live) {
     return (
@@ -170,16 +163,6 @@ export function GameCard(props: GameCardInputProps) {
     t,
   })
 
-  const isMyGame = Boolean(
-    currentUserId &&
-      courtsForGame.some(
-        (court) =>
-          court.teamAPlayers?.some((player) => player.id === currentUserId) ||
-          court.teamBPlayers?.some((player) => player.id === currentUserId) ||
-          court.playerIds.includes(currentUserId),
-      ),
-  )
-
   const showLeaderboardCarousel = Boolean(leaderboardBody && onActivePanel && !isTvSize(size))
 
   const header = (
@@ -252,7 +235,6 @@ export function GameCard(props: GameCardInputProps) {
     <GameCardRoot
       gameNumber={game.gameNumber}
       finished={finished}
-      isMyGame={isMyGame}
       size={size}
       live={showRacetrack}
       racetrackPaused={activePanel === 'leaderboard'}

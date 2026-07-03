@@ -17,7 +17,8 @@ import {
   type CompetitionScheduleValues,
   mergeScheduleIntoScoringConfig,
 } from './competitionScheduleLayout'
-import { OPEN_SLOT_NAME } from './rankedSchedule'
+import { OPEN_SLOT_NAME, pickRosterIdForRank } from './rankedSchedule'
+import type { CompetitionPlayer } from '../hooks/useCompetitions'
 import { orderSessionPairsByTeamIndex } from './competitionDuoTeams'
 import type { TranslateFn } from '../i18n'
 import type { RuleChip } from './friendlyGameDisplay'
@@ -261,7 +262,7 @@ function activeSideNames(names: string[]): string[] {
 
 /** Build duo teams for play UI from config, session pairs, and roster slot positions. */
 export function duoTeamsForPlay(
-  roster: Array<{ id: string; rank_order?: number | null }>,
+  roster: CompetitionPlayer[],
   config: ScoringConfig | null | undefined,
   slotCount: number,
   pairs?: Array<{
@@ -272,20 +273,22 @@ export function duoTeamsForPlay(
 ): CompetitionTeamConfig[] {
   const configTeams = teamsFromConfig(config)
   const teamCount = Math.max(2, teamsFromCourtCount(courtCountFromPlayers(slotCount)))
-  const byRank = new Map(
-    roster
-      .filter((player) => player.rank_order != null)
-      .map((player) => [player.rank_order as number, player.id]),
-  )
+  const byRank = new Map<number, string>()
+  for (let rank = 0; rank < slotCount; rank++) {
+    const id = pickRosterIdForRank(roster, rank)
+    if (id) byRank.set(rank, id)
+  }
   const rankByRosterId = new Map(
     roster.map((player) => [player.id, player.rank_order ?? 0]),
   )
   const orderedPairs = orderSessionPairsByTeamIndex(pairs ?? [], rankByRosterId, teamCount)
   const rosterIds = new Set(roster.map((player) => player.id))
   const resolveRosterId = (id: string | null | undefined, rank: number) => {
+    const atRank = byRank.get(rank)
+    if (atRank) return atRank
     const trimmed = id?.trim()
     if (trimmed && rosterIds.has(trimmed)) return trimmed
-    return byRank.get(rank) ?? trimmed ?? ''
+    return trimmed ?? ''
   }
 
   return Array.from({ length: teamCount }, (_, index) => {
@@ -299,6 +302,12 @@ export function duoTeamsForPlay(
       ] as [string, string],
     }
   })
+}
+
+export function formatTeamLabelForDisplay(label: string | undefined | null): string {
+  const trimmed = label?.trim()
+  if (!trimmed) return ''
+  return trimmed.toUpperCase()
 }
 
 /** Match live court side names to configured duo team labels. */
@@ -322,15 +331,15 @@ export function duoLabelsForMatch(
         .filter((name) => name.trim() && name !== OPEN_SLOT_NAME)
 
       if (activeRosterIds.some((id) => teamRosterIds.includes(id))) {
-        return team.label.trim() || teamNames.join(' & ') || undefined
+        return formatTeamLabelForDisplay(team.label.trim() || teamNames.join(' & ')) || undefined
       }
 
       if (activeNames.some((name) => teamNames.some((tn) => tn.toLowerCase() === name.toLowerCase()))) {
-        return team.label.trim() || teamNames.join(' & ') || undefined
+        return formatTeamLabelForDisplay(team.label.trim() || teamNames.join(' & ')) || undefined
       }
 
       if (activeNames.length >= 2 && teamNames.length >= 2 && duoNameKey(activeNames) === duoNameKey(teamNames)) {
-        return team.label.trim() || teamNames.join(' & ')
+        return formatTeamLabelForDisplay(team.label.trim() || teamNames.join(' & ')) || undefined
       }
     }
     return undefined

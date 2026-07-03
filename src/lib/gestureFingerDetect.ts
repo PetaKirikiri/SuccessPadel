@@ -25,8 +25,15 @@ const WASM =
   'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm'
 const MODEL =
   'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task'
-const HOLD_MS = 400
-const COOLDOWN_MS = 1200
+
+/** Min time the same pose must be held once detection is stable. */
+export const GESTURE_HOLD_MS = 100
+/** Block repeat fires after a score (manual tap or camera). */
+export const GESTURE_COOLDOWN_MS = 200
+/** Keep hold progress when the camera briefly loses the hand between frames. */
+const DROP_GRACE_MS = 400
+/** Consecutive frames with the same finger count before hold timer counts. */
+const STABLE_FRAMES = 2
 
 const DIGITS = [
   { tip: 8, pip: 6, mcp: 5 },
@@ -38,8 +45,11 @@ const DIGITS = [
 type HoldState = {
   held: FingerScoreAction | null
   heldSince: number | null
+  lastDetectedAt: number | null
+  stableFrames: number
   cooldownUntil: number
   awaitingRelease: boolean
+  lastFired: FingerScoreAction | null
 }
 
 function dist3(a: { x: number; y: number; z?: number }, b: { x: number; y: number; z?: number }): number {
@@ -60,7 +70,7 @@ function digitExtended(
     const mcpLm = world[mcp]
     if (!wrist || !tipLm || !pipLm || !mcpLm) return false
     const tipDist = dist3(tipLm, wrist)
-    return tipDist > dist3(pipLm, wrist) * 1.04 && tipDist > dist3(mcpLm, wrist) * 1.02
+    return tipDist > dist3(pipLm, wrist) * 1.03 && tipDist > dist3(mcpLm, wrist) * 1.01
   }
   const wrist = norm[0]
   const tipLm = norm[tip]
@@ -68,7 +78,7 @@ function digitExtended(
   if (!wrist || !tipLm || !pipLm) return false
   const tipDist = Math.hypot(tipLm.x - wrist.x, tipLm.y - wrist.y)
   const pipDist = Math.hypot(pipLm.x - wrist.x, pipLm.y - wrist.y)
-  return tipDist > pipDist * 1.08
+  return tipDist > pipDist * 1.06
 }
 
 /** How many digits are up — any finger, same rule for all four. */
@@ -107,7 +117,42 @@ function pickHand<T>(hands: T[][] | undefined): T[] | undefined {
 }
 
 function emptyHold(): HoldState {
-  return { held: null, heldSince: null, cooldownUntil: 0, awaitingRelease: false }
+  return {
+    held: null,
+    heldSince: null,
+    lastDetectedAt: null,
+    stableFrames: 0,
+    cooldownUntil: 0,
+    awaitingRelease: false,
+    lastFired: null,
+  }
+}
+
+/** 0→1 over stabilize-then-hold; reaches 1 only when a score would fire. */
+function holdProgress(heldSince: number | null, stableFrames: number, now: number): number {
+  if (heldSince == null || stableFrames < 1) return 0
+  const stabilize = Math.min(1, stableFrames / STABLE_FRAMES) * 0.28
+  const hold = Math.min(1, (now - heldSince) / GESTURE_HOLD_MS) * 0.72
+  return Math.min(1, stabilize + hold)
+}
+
+export function gestureHoldHint(progress: number): string {
+  if (progress < 0.28) return 'Hold pose…'
+  if (progress < 0.82) return 'Keep holding…'
+  return 'Almost ready…'
+}
+
+function afterFireState(state: HoldState, action: FingerScoreAction, now: number): HoldState {
+  return {
+    ...state,
+    held: null,
+    heldSince: null,
+    lastDetectedAt: null,
+    stableFrames: 0,
+    lastFired: action,
+    cooldownUntil: now + GESTURE_COOLDOWN_MS,
+    awaitingRelease: true,
+  }
 }
 
 function stepHold(
@@ -128,51 +173,93 @@ function stepHold(
     }
   }
 
-  const cooldown = !preview && now < state.cooldownUntil
-  const ui = (hold: FingerAction | null, progress: number): HoldUi => ({
+  const uiFrom = (s: HoldState, hold: FingerAction | null, progress: number): HoldUi => ({
     activeHold: hold,
     holdProgress: progress,
-    gestureCooldown: cooldown,
+    gestureCooldown: now < s.cooldownUntil,
   })
 
   if (state.awaitingRelease) {
-    const next = detected ? state : { ...state, awaitingRelease: false }
-    return { state: { ...next, held: null, heldSince: null }, ui: ui(null, 0), fire: null }
+    if (!detected) {
+      const released = { ...state, awaitingRelease: false, held: null, heldSince: null, stableFrames: 0 }
+      return {
+        state: released,
+        ui: uiFrom(released, null, 0),
+        fire: null,
+      }
+    }
+    if (now < state.cooldownUntil) {
+      const blocked = { ...state, held: null, heldSince: null, stableFrames: 0 }
+      return { state: blocked, ui: uiFrom(blocked, null, 0), fire: null }
+    }
+    if (detected === state.lastFired) {
+      const blocked = { ...state, held: null, heldSince: null, stableFrames: 0 }
+      return { state: blocked, ui: uiFrom(blocked, null, 0), fire: null }
+    }
+    state = { ...state, awaitingRelease: false }
   }
 
   if (!detected) {
-    const grace =
-      state.held && state.heldSince != null && now - state.heldSince < HOLD_MS ? state.held : null
-    if (!grace) {
-      return { state: { ...state, held: null, heldSince: null }, ui: ui(null, 0), fire: null }
+    if (
+      state.held &&
+      state.lastDetectedAt != null &&
+      now - state.lastDetectedAt < DROP_GRACE_MS
+    ) {
+      return {
+        state,
+        ui: uiFrom(state, asFingerAction(state.held), holdProgress(state.heldSince, state.stableFrames, now)),
+        fire: null,
+      }
     }
-    const progress = Math.min(1, (now - (state.heldSince ?? now)) / HOLD_MS)
-    return { state, ui: ui(asFingerAction(grace), progress), fire: null }
-  }
-
-  if (cooldown) {
-    return { state: { ...state, held: null, heldSince: null }, ui: ui(null, 0), fire: null }
-  }
-
-  if (state.held !== detected) {
+    const cleared = { ...state, held: null, heldSince: null, lastDetectedAt: null, stableFrames: 0 }
     return {
-      state: { ...state, held: detected, heldSince: now },
-      ui: ui(asFingerAction(detected), 0),
+      state: cleared,
+      ui: uiFrom(cleared, null, 0),
       fire: null,
     }
   }
 
-  const heldFor = now - (state.heldSince ?? now)
-  const progress = Math.min(1, heldFor / HOLD_MS)
-  if (!preview && heldFor >= HOLD_MS) {
+  if (now < state.cooldownUntil) {
+    const blocked = { ...state, held: null, heldSince: null, stableFrames: 0 }
+    return { state: blocked, ui: uiFrom(blocked, null, 0), fire: null }
+  }
+
+  if (state.held !== detected) {
+    const started = {
+      ...state,
+      held: detected,
+      heldSince: now,
+      lastDetectedAt: now,
+      stableFrames: 1,
+    }
     return {
-      state: { ...state, held: null, heldSince: null },
-      ui: ui(null, 0),
+      state: started,
+      ui: uiFrom(started, asFingerAction(detected), 0),
+      fire: null,
+    }
+  }
+
+  const stableFrames = state.stableFrames + 1
+  const heldSince = state.heldSince ?? now
+  const heldFor = now - heldSince
+  const progress = holdProgress(heldSince, stableFrames, now)
+  const nextState: HoldState = {
+    ...state,
+    heldSince,
+    lastDetectedAt: now,
+    stableFrames,
+  }
+
+  if (stableFrames >= STABLE_FRAMES && heldFor >= GESTURE_HOLD_MS) {
+    const fired = afterFireState(nextState, detected, now)
+    return {
+      state: fired,
+      ui: uiFrom(fired, null, 0),
       fire: detected,
     }
   }
 
-  return { state, ui: ui(asFingerAction(detected), progress), fire: null }
+  return { state: nextState, ui: uiFrom(nextState, asFingerAction(detected), progress), fire: null }
 }
 
 export function gestureScoreBeep(): void {
@@ -226,21 +313,17 @@ export class GestureCameraEngine {
   }
 
   resetHoldTracking(): void {
-    this.hold = { ...this.hold, held: null, heldSince: null }
+    this.hold = { ...this.hold, held: null, heldSince: null, stableFrames: 0, lastDetectedAt: null }
   }
 
-  markScoreCommitted(now = performance.now()): void {
-    this.hold = {
-      ...this.hold,
-      held: null,
-      heldSince: null,
-      cooldownUntil: now + COOLDOWN_MS,
-      awaitingRelease: true,
-    }
+  markScoreCommitted(now = performance.now(), action?: FingerScoreAction): void {
+    const fired = action ?? this.hold.lastFired
+    if (!fired || fired === 'reset') return
+    this.hold = afterFireState(this.hold, fired, now)
   }
 
   markScoreBlocked(now = performance.now()): void {
-    this.hold = { ...this.hold, held: null, heldSince: null, cooldownUntil: now + COOLDOWN_MS }
+    this.hold = { ...this.hold, held: null, heldSince: null, stableFrames: 0, cooldownUntil: now + GESTURE_COOLDOWN_MS }
   }
 
   async restart(): Promise<void> {
@@ -345,7 +428,7 @@ export class GestureCameraEngine {
         !prev ||
         prev.activeHold !== ui.activeHold ||
         prev.gestureCooldown !== ui.gestureCooldown ||
-        Math.abs(prev.holdProgress - ui.holdProgress) > 0.012
+        Math.abs(prev.holdProgress - ui.holdProgress) > 0.008
       ) {
         this.lastUi = ui
         onHoldUi(ui)

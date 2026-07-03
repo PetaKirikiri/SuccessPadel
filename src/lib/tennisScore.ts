@@ -21,6 +21,19 @@ export function formatTennisPoint(p: number): string {
   return '40'
 }
 
+/** Parse court-card backup input (`0`, `15`, `30`, `40`) to tennis point index. */
+export function parseTennisPointInput(raw: string): number | null {
+  const v = raw.trim().toUpperCase()
+  if (!v) return 0
+  if (v === '0') return 0
+  if (v === '15') return 1
+  if (v === '30') return 2
+  if (v === '40' || v === 'AD') return 3
+  const n = Number(v)
+  if (!Number.isFinite(n) || n < 0) return null
+  return Math.min(3, Math.floor(n))
+}
+
 export function isDeuce(score: TennisScore): boolean {
   return score.pointsA >= 3 && score.pointsB >= 3 && score.pointsA === score.pointsB
 }

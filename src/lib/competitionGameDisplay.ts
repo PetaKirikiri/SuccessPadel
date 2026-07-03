@@ -20,6 +20,7 @@ import {
 import { formatClubDateInvite, formatClubTimeLocalized, parseClubDate } from './courtSchedule'
 import type { AppLocale } from './locale'
 import type { RosterSlot, RuleChip } from './friendlyGameDisplay'
+import { competitionPlayerAvatarUrl } from './competitionRosterAvatars'
 import type { GameSession } from './types'
 
 export function competitionScheduleDisplay(
@@ -52,12 +53,7 @@ function rosterProfileId(sp: CompetitionPlayer): string | null {
 }
 
 function rosterAvatarUrl(sp: CompetitionPlayer): string | null {
-  return (
-    sp.profiles?.avatar_url ??
-    sp.padel_players?.profiles?.avatar_url ??
-    sp.padel_players?.line_picture_url ??
-    null
-  )
+  return competitionPlayerAvatarUrl(sp)
 }
 
 export function competitionRosterSlots(row: CompetitionRow): RosterSlot[] {

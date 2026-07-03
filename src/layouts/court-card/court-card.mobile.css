@@ -17,14 +17,14 @@ html[data-viewport='mobile'] .game-card-court-header {
 }
 
 html[data-viewport='mobile'] .game-card-court-label-row {
-  min-height: 2.65rem;
-  padding: 0.45rem 0.6rem;
+  min-height: 2rem;
+  padding: 0.3rem 0.5rem;
 }
 
 html[data-viewport='mobile'] .game-card-court-label {
   text-align: left;
-  font-size: 1.2rem;
-  line-height: 1;
+  font-size: 0.8rem;
+  line-height: 1.05;
 }
 
 html[data-viewport='mobile'] .game-card-court-label-row a[aria-label],
@@ -60,8 +60,19 @@ html[data-viewport='mobile'] .game-card-court-score-stack {
   gap: 0.25rem;
 }
 
-html[data-viewport='mobile'] .game-card-court-score-stack > div:first-child {
-  gap: 0.55rem;
+html[data-viewport='mobile'] .game-card-court-score-row {
+  display: flex;
+  width: 100%;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+html[data-viewport='mobile'] .game-card-court-score-section--points,
+html[data-viewport='mobile'] .game-card-court-score-section--games {
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
 }
@@ -96,8 +107,18 @@ html[data-viewport='mobile'] .game-card-court-match--score-first .game-card-cour
   justify-self: stretch;
 }
 
+html[data-viewport='mobile'] .game-card-court-team-label {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+  font-size: 0.78rem;
+  line-height: 1.05;
+}
+
 html[data-viewport='mobile'] .game-card-court-player__name {
-  font-size: 0.9rem;
+  font-size: 0.78rem;
   line-height: 1.05;
 }
 

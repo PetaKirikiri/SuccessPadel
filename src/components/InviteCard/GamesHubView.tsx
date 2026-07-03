@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState, type ReactElement, type React
 import { useSearchParams } from 'react-router-dom'
 import { GamesGenderFilterProvider } from '../../contexts/GamesGenderFilterContext'
 import { useTranslation } from '../../hooks/useTranslation'
-import { useSeasonLeaderboard } from '../../hooks/useSeasonLeaderboard'
 import type { Gender } from '../../lib/competitionPresets'
 import { consumeStoredCompetitiveGenderFilter } from '../../lib/gamesGenderFilter'
 import { Leaderboard as HubLeaderboard } from '../../components/Leaderboard/Leaderboard.logic'
@@ -25,7 +24,7 @@ function searchTab(value: string | null): GamesHubTab | null {
 }
 
 type Props = {
-  currentCount: number
+  currentCount?: number
   currentPanel: ReactNode
   /** Tab row (competition), title bar, or none (friendly list only). */
   hubNav?: 'tabs' | 'title' | 'none'
@@ -102,7 +101,7 @@ function HubTitleBar({ label, addon }: { label: string; addon?: ReactNode }) {
 }
 
 export function GamesHubView({
-  currentCount,
+  currentCount = 0,
   currentPanel,
   hubNav = 'tabs',
   titleLabel,
@@ -118,7 +117,6 @@ export function GamesHubView({
   initialGenderFilter = null,
 }: Props) {
   const { t } = useTranslation()
-  const { season } = useSeasonLeaderboard(leaderboardVariant === 'competition')
   const [searchParams, setSearchParams] = useSearchParams()
   const [tab, setTabState] = useState<GamesHubTab>(() => searchTab(searchParams.get('view')) ?? 'current')
   const [genderFilter, setGenderFilterState] = useState<Gender>(initialGenderFilter ?? 'Mixed')
@@ -178,9 +176,7 @@ export function GamesHubView({
     setTabState(next)
   }, [searchParams])
 
-  const leaderboardLabel = season?.name
-    ? t('hub.seasonLeaderboard', { name: season.name })
-    : t('nav.leaderboard')
+  const leaderboardLabel = t('nav.leaderboard')
 
   const showGenderFilterControls = showGenderFilter && tab !== 'leaderboard'
 

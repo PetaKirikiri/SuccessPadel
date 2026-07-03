@@ -545,3 +545,22 @@ export function buildCourtLayout(
 
   return slots
 }
+
+export function courtSortStartFromConfig(config: ScoringConfig | null | undefined): number {
+  const n = config?.court_sort_start
+  if (typeof n === 'number' && Number.isFinite(n) && n >= 1) return Math.floor(n)
+  return 1
+}
+
+/** Map logical court slots to physical club courts (e.g. start at Court 2). */
+export function courtNamesForPlay(
+  clubCourts: { name: string; sort_order: number }[],
+  neededCourts: number,
+  scoringConfig?: ScoringConfig | null,
+): string[] {
+  const sorted = [...clubCourts].sort((a, b) => a.sort_order - b.sort_order)
+  const start = courtSortStartFromConfig(scoringConfig)
+  const fromStart = sorted.filter((court) => court.sort_order >= start)
+  const pool = fromStart.length >= neededCourts ? fromStart : sorted
+  return Array.from({ length: neededCourts }, (_, i) => pool[i]?.name ?? `Court ${start + i}`)
+}

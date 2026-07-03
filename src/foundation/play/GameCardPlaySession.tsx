@@ -12,6 +12,7 @@ import { useLineClientProfile } from '../../hooks/useLineClientProfile'
 import { useFriendlyGame } from '../../hooks/useFriendlyGame'
 import { useFriendlyLiveCourtScores } from '../../hooks/useFriendlyLiveCourtScores'
 import { useCourtEphemeralScores } from '../../hooks/useCourtEphemeralScores'
+import { useLatchedLiveCourtDisplay } from '../../hooks/useLatchedLiveCourtDisplay'
 import { useMatchGestureLog } from '../../hooks/useMatchGestureLog'
 import { useTranslation } from '../../hooks/useTranslation'
 import { useIsTvLayout } from '../../hooks/useIsTvLayout'
@@ -40,10 +41,6 @@ import {
 } from '../../lib/friendlyManualScore'
 import { americanoScoringUnit } from '../../lib/competitionPresets'
 import { friendlyCourtSetupKey } from '../../lib/friendlyCourtLive'
-import {
-  liveCourtScoreKeyFromSetupKey,
-  patchEphemeralFeed,
-} from '../../lib/liveCourtScore'
 import { useSetupCourts } from '../../hooks/useSetupCourts'
 import { formatDateInput } from '../../lib/courtSchedule'
 import { supabase } from '../../lib/supabaseClient'
@@ -125,7 +122,7 @@ export function FriendlyGamePage() {
 
   const scoreUnit = useMemo(() => americanoScoringUnit(previewSession), [previewSession])
 
-  const livePollMs = 2000
+  const receiverPollMs = 2000
 
   const courtSetupKeys = useMemo(
     () =>
@@ -142,29 +139,15 @@ export function FriendlyGamePage() {
     feeds: liveCourtFeeds,
     logs: matchLogs,
     refresh: refreshLiveScores,
-  } = useFriendlyLiveCourtScores(id, scoreUnit, livePollMs, courtSetupKeys)
+  } = useFriendlyLiveCourtScores(id, scoreUnit, receiverPollMs, courtSetupKeys)
 
   const ephemeralScores = useCourtEphemeralScores(courtSetupKeys)
 
-  const mergedLiveCourtScores = useMemo(() => {
-    const map = new Map(liveCourtScores)
-    for (const [setupKey, score] of ephemeralScores) {
-      const courtKey = liveCourtScoreKeyFromSetupKey(setupKey)
-      if (!courtKey) continue
-      map.set(courtKey, { scoreA: String(score.gamesA), scoreB: String(score.gamesB) })
-    }
-    return map
-  }, [ephemeralScores, liveCourtScores])
-
-  const mergedLiveCourtFeeds = useMemo(() => {
-    const map = new Map(liveCourtFeeds)
-    for (const [setupKey, score] of ephemeralScores) {
-      const courtKey = liveCourtScoreKeyFromSetupKey(setupKey)
-      if (!courtKey) continue
-      map.set(courtKey, patchEphemeralFeed(map.get(courtKey), courtKey, score))
-    }
-    return map
-  }, [ephemeralScores, liveCourtFeeds])
+  const { feeds: mergedLiveCourtFeeds, scores: mergedLiveCourtScores } = useLatchedLiveCourtDisplay(
+    liveCourtFeeds,
+    liveCourtScores,
+    ephemeralScores,
+  )
 
   const sessionRoster = useMemo(
     () => (displayGame ? friendlySessionRoster(displayGame) : []),

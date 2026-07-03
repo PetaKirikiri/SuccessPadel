@@ -22,6 +22,7 @@ export type RoundPlayer = {
       avatar_mode?: string | null
       pixel_avatar?: { v: 1; characterId: string; reference?: string } | null
       preferred_side?: string | null
+      gender?: string | null
     } | null
   } | null
   courts: { id: string; name: string } | null
@@ -84,7 +85,7 @@ export function useCompetitionRun(sessionId: string | undefined) {
         .select(
           `*,
            competition_round_players(court_id, team, roster_entry_id, profile_id,
-             session_players(guest_name, profile_id, profiles(id, display_name, avatar_url, avatar_mode, pixel_avatar, preferred_side)),
+             session_players(guest_name, profile_id, profiles(id, display_name, avatar_url, avatar_mode, pixel_avatar, preferred_side, gender)),
              courts(id, name))`,
         )
         .eq('session_id', sessionId)
@@ -97,7 +98,7 @@ export function useCompetitionRun(sessionId: string | undefined) {
       supabase
         .from('session_players')
         .select(
-          'id, profile_id, padel_player_id, guest_name, guest_email, rank_order, profiles(id, display_name, avatar_url, avatar_mode, pixel_avatar), padel_players(id, display_name, profile_id, line_picture_url, profiles(id, display_name, avatar_url))',
+          'id, profile_id, padel_player_id, guest_name, guest_email, rank_order, profiles(id, display_name, avatar_url, avatar_mode, pixel_avatar, gender), padel_players(id, display_name, profile_id, line_picture_url, profiles(id, display_name, avatar_url, gender))',
         )
         .eq('session_id', sessionId)
         .order('rank_order')
@@ -125,8 +126,8 @@ export function useCompetitionRun(sessionId: string | undefined) {
       setClubCourts(courtsRes.data as ClubCourt[])
     }
 
-    const { data: authData } = await supabase.auth.getUser()
-    const uid = authData.user?.id
+    const { data: authData } = await supabase.auth.getSession()
+    const uid = authData.session?.user?.id
     setOnRoster(Boolean(uid && rosterRes.data?.some((r) => r.profile_id === uid)))
 
     if (!silent) setLoading(false)

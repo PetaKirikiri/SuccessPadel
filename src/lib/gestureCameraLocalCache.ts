@@ -45,3 +45,44 @@ export function newerGestureCameraLog(
   if (aEnded !== bEnded) return aEnded ? b : a
   return b
 }
+
+/** Keep optimistic local score while a background save is still in flight. */
+export function shouldPreferLocalGestureLog(
+  local: MatchGestureLog | null,
+  remote: MatchGestureLog | null,
+): boolean {
+  if (!local) return false
+  if (!remote) return true
+  if (local.pointEvents.length > remote.pointEvents.length) return true
+  return newerGestureCameraLog(local, remote) === local
+}
+
+/** Prefer the log with more committed points; timestamp only breaks ties (undo). */
+export function displayGestureCameraLog(
+  a: MatchGestureLog | null,
+  b: MatchGestureLog | null,
+): MatchGestureLog | null {
+  if (!a) return b
+  if (!b) return a
+  if (b.pointEvents.length !== a.pointEvents.length) {
+    return b.pointEvents.length > a.pointEvents.length ? b : a
+  }
+  return newerGestureCameraLog(a, b)
+}
+
+/** Merge fetched logs with prior state so a stale read cannot rewind live scores. */
+export function mergeMatchGestureLogsByCourt(
+  prev: MatchGestureLog[],
+  incoming: MatchGestureLog[],
+): MatchGestureLog[] {
+  const prevByKey = new Map(prev.map((log) => [log.courtSetupKey, log]))
+  const merged = new Map<string, MatchGestureLog>()
+  for (const log of incoming) {
+    const prior = prevByKey.get(log.courtSetupKey) ?? null
+    merged.set(log.courtSetupKey, displayGestureCameraLog(prior, log) ?? log)
+  }
+  for (const log of prev) {
+    if (!merged.has(log.courtSetupKey)) merged.set(log.courtSetupKey, log)
+  }
+  return [...merged.values()]
+}

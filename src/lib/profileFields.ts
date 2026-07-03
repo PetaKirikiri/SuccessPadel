@@ -4,6 +4,10 @@ import { SKILL_LEVELS } from './competitionPresets'
 export const PLAYER_GENDERS = ['Male', 'Female'] as const
 export type PlayerGender = (typeof PLAYER_GENDERS)[number]
 
+export function parsePlayerGender(value: string | null | undefined): PlayerGender | null {
+  return value === 'Male' || value === 'Female' ? value : null
+}
+
 export { SKILL_LEVELS }
 
 export const DOMINANT_HANDS: { value: 'left' | 'right'; label: string }[] = [

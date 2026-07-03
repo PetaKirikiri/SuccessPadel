@@ -721,3 +721,45 @@ html[data-viewport='web'] .invite-game-card__badges .rule-chip-grid__value {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* Duo roster scale-up: use full card height and enlarge team player chips (web). */
+html[data-viewport='web'] .invite-game-card__frame {
+  grid-template-rows: minmax(0, auto) minmax(0, 1fr);
+}
+
+html[data-viewport='web'] .invite-game-card__roster {
+  flex: 1 1 0%;
+  min-height: 0;
+  max-height: none;
+}
+
+html[data-viewport='web'] .invite-game-card__roster > .invite-roster-grid,
+html[data-viewport='web'] .invite-roster-editor > div:not(.duo-team-slots) > div {
+  flex: 1 1 0%;
+  height: 100%;
+  min-height: 0;
+}
+
+html[data-viewport='web'] .invite-roster-grid--fill > .invite-duo-team-card {
+  height: 100%;
+}
+
+html[data-viewport='web'] .invite-duo-team-players {
+  justify-content: stretch;
+  gap: clamp(0.35rem, 1vh, 0.85rem);
+}
+
+html[data-viewport='web'] .invite-duo-team-players .invite-roster-chip {
+  flex: 1 1 0%;
+  min-height: clamp(2.75rem, 12vh, 5.5rem);
+}
+
+html[data-viewport='web'] .invite-duo-team-players .invite-roster-chip .invite-roster-chip__avatar {
+  width: clamp(2.35rem, 7.5vh, 4.5rem);
+  height: clamp(2.35rem, 7.5vh, 4.5rem);
+}
+
+html[data-viewport='web'] .invite-duo-team-players .invite-roster-chip__name,
+html[data-viewport='web'] .invite-duo-team-players .invite-roster-chip__vacant-name {
+  font-size: clamp(1.05rem, 3.8vh, 2.15rem);
+}

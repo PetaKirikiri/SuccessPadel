@@ -26,6 +26,7 @@ export type GestureCameraSetupState = GameLogSetupState & {
 }
 
 export const MANUAL_GAMES_GESTURE_ID = 'manual-games'
+export const MANUAL_POINTS_GESTURE_ID = 'manual-points'
 
 export type GestureCameraContext = {
   courtSetupKey: string
@@ -338,18 +339,82 @@ export async function syncGestureCameraGamesOverride(
   return { error: null, log, matchEnded }
 }
 
+/** Human points edit: keep games, set tennis points for dispute / backup entry. */
+export function planGestureCameraPointsOverride(
+  ctx: GestureCameraContext,
+  priorLog: MatchGestureLog | null,
+  pointsA: number,
+  pointsB: number,
+): { log: MatchGestureLog; matchEnded: boolean } | null {
+  const current = scoreFromLog(priorLog)
+  const scoreAfter: TennisScore = {
+    pointsA: Math.max(0, Math.min(3, Math.floor(pointsA))),
+    pointsB: Math.max(0, Math.min(3, Math.floor(pointsB))),
+    gamesA: current.gamesA,
+    gamesB: current.gamesB,
+  }
+  if (current.pointsA === scoreAfter.pointsA && current.pointsB === scoreAfter.pointsB) {
+    return null
+  }
+
+  const now = new Date().toISOString()
+  const pointEvents: GameLogPoint[] = [
+    {
+      at: now,
+      winner: scoreAfter.pointsA >= scoreAfter.pointsB ? 'a' : 'b',
+      scoreAfter,
+      winnerGestureId: MANUAL_POINTS_GESTURE_ID,
+      loserGestureId: '',
+      winnerQuadrant: '',
+      loserQuadrant: '',
+      isServe: false,
+    },
+  ]
+  const matchEnded = isGestureMatchComplete(scoreAfter, ctx.playTo)
+  const log = snapshotLog(ctx, scoreAfter, pointEvents, matchEnded, priorLog)
+  return { log, matchEnded }
+}
+
+export async function syncGestureCameraPointsOverride(
+  ctx: GestureCameraContext,
+  pointsA: number,
+  pointsB: number,
+  priorLog?: MatchGestureLog | null,
+): Promise<{ error: string | null; log: MatchGestureLog | null; matchEnded: boolean }> {
+  const prior = priorLog !== undefined ? priorLog : await loadGestureCameraLog(ctx.courtSetupKey)
+  const planned = planGestureCameraPointsOverride(ctx, prior, pointsA, pointsB)
+  if (!planned) return { error: null, log: prior, matchEnded: gestureCameraPlayEnded(prior, ctx.playTo) }
+
+  const { log, matchEnded } = planned
+  const manualOnly = isManualOnlyCourtLog(prior)
+  const payload = buildPayload(
+    ctx,
+    manualOnly ? null : prior,
+    log.finalScore!,
+    log.pointEvents,
+    matchEnded,
+  )
+  const { error } = await upsertMatchGestureLog(payload)
+  if (error) return { error, log: null, matchEnded: false }
+
+  if (!ctx.friendly && matchEnded && ctx.roundId) {
+    const submitErr = await submitCompetitionFinalScore(
+      ctx.roundId,
+      ctx.courtId,
+      log.finalScore!.gamesA,
+      log.finalScore!.gamesB,
+    )
+    if (submitErr) return { error: submitErr, log: null, matchEnded: true }
+  }
+
+  return { error: null, log, matchEnded }
+}
+
 export function planGestureCameraUndo(
   ctx: GestureCameraContext,
   priorLog: MatchGestureLog | null,
 ): MatchGestureLog | null {
   if (!priorLog?.pointEvents.length) return priorLog
-  const last = priorLog.pointEvents[priorLog.pointEvents.length - 1]
-  if (
-    priorLog.pointEvents.length === 1 &&
-    last?.winnerGestureId === MANUAL_GAMES_GESTURE_ID
-  ) {
-    return priorLog
-  }
   const pointEvents = priorLog.pointEvents.slice(0, -1)
   const scoreAfter = pointEvents.length
     ? pointEvents[pointEvents.length - 1]!.scoreAfter
@@ -386,6 +451,38 @@ export async function syncGestureCameraPointForTeam(
   }
 
   return { error: null, log, matchEnded }
+}
+
+/** Persist a log already planned client-side — avoids replanning from stale prior. */
+export async function persistPlannedGestureCameraLog(
+  ctx: GestureCameraContext,
+  prior: MatchGestureLog | null,
+  planned: MatchGestureLog,
+  matchEnded: boolean,
+): Promise<{ error: string | null; log: MatchGestureLog | null; matchEnded: boolean }> {
+  const manualOnly = isManualOnlyCourtLog(prior)
+  const payload = buildPayload(
+    ctx,
+    manualOnly ? null : prior,
+    planned.finalScore!,
+    planned.pointEvents,
+    matchEnded,
+  )
+  const { error } = await upsertMatchGestureLog(payload)
+  if (error) return { error, log: null, matchEnded: false }
+
+  if (!ctx.friendly && matchEnded && ctx.roundId) {
+    const score = planned.finalScore!
+    const submitErr = await submitCompetitionFinalScore(
+      ctx.roundId,
+      ctx.courtId,
+      score.gamesA,
+      score.gamesB,
+    )
+    if (submitErr) return { error: submitErr, log: null, matchEnded: true }
+  }
+
+  return { error: null, log: planned, matchEnded }
 }
 
 export async function undoGestureCameraPoint(

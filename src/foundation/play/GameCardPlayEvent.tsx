@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ensureCompetitionScheduleSaved } from '../../lib/persistCompetitionSchedule'
 import { GameBoard } from '../../components/GameCard/GameBoard'
@@ -11,6 +11,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { useIsTvLayout } from '../../hooks/useIsTvLayout'
 import { useCompetitionLiveCourtScores } from '../../hooks/useCompetitionLiveCourtScores'
 import { useCourtEphemeralScores } from '../../hooks/useCourtEphemeralScores'
+import { useLatchedLiveCourtDisplay } from '../../hooks/useLatchedLiveCourtDisplay'
 import { useCompetitionBoard } from '../../hooks/useCompetitionBoard'
 import { useLineClientProfile } from '../../hooks/useLineClientProfile'
 import { usePublicCompetition } from '../../hooks/usePublicCompetition'
@@ -32,10 +33,6 @@ import { competitionViewAlongUrl } from '../../lib/siteUrl'
 import { supabase } from '../../lib/supabaseClient'
 import { pivotScheduleByGame } from '../../lib/competitionCourtBoard'
 import { competitionCourtSetupKey } from '../../lib/gestureCameraScore'
-import {
-  mergeEphemeralLiveCourtFeeds,
-  mergeEphemeralLiveCourtScores,
-} from '../../lib/liveCourtScore'
 
 type PlayTab = PlayViewTab
 const TV_SCORE_INPUT_LEAD_MS = 4 * 60_000
@@ -88,6 +85,7 @@ export function CompetitionPlay() {
   const [tab, setTab] = useState<PlayTab>(() =>
     searchParams.get('view') === 'leaderboard' ? 'leaderboard' : 'games',
   )
+  const autoStartAttemptedRef = useRef<string | null>(null)
   const [tvGameNumber, setTvGameNumber] = useState<number | undefined>(undefined)
 
   const {
@@ -117,10 +115,12 @@ export function CompetitionPlay() {
     return map
   }, [courtIdByLabel, liveCourtsByGame])
   const started = Boolean(session?.competition_started_at)
+  const receiverPollMs = 2000
   const { scores: liveCourtScores, feeds: liveCourtFeeds } = useCompetitionLiveCourtScores(
     id,
     courtIdToLabel,
     scoreUnit,
+    receiverPollMs,
   )
 
   const courtSetupKeys = useMemo(() => {
@@ -142,14 +142,11 @@ export function CompetitionPlay() {
 
   const ephemeralScores = useCourtEphemeralScores(courtSetupKeys)
 
-  const mergedLiveCourtScores = useMemo(
-    () => mergeEphemeralLiveCourtScores(liveCourtScores, ephemeralScores, courtIdToLabel),
-    [courtIdToLabel, ephemeralScores, liveCourtScores],
-  )
-
-  const mergedLiveCourtFeeds = useMemo(
-    () => mergeEphemeralLiveCourtFeeds(liveCourtFeeds, ephemeralScores, courtIdToLabel),
-    [courtIdToLabel, ephemeralScores, liveCourtFeeds],
+  const { feeds: mergedLiveCourtFeeds, scores: mergedLiveCourtScores } = useLatchedLiveCourtDisplay(
+    liveCourtFeeds,
+    liveCourtScores,
+    ephemeralScores,
+    courtIdToLabel,
   )
 
   const [now, setNow] = useState(Date.now())
@@ -244,6 +241,8 @@ export function CompetitionPlay() {
   useEffect(() => {
     if (!isAdmin || !id || !session || started || loading) return
     if (session.status !== 'open') return
+    if (autoStartAttemptedRef.current === id) return
+    autoStartAttemptedRef.current = id
     void (async () => {
       const scheduleErr = await ensureCompetitionScheduleSaved(id, session, roster, sessionPairs)
       if (scheduleErr) return

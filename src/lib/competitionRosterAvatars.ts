@@ -1,8 +1,10 @@
 import { clubDisplayName } from './clubMemberDisplay'
 import { supabase } from './supabaseClient'
 import type { CompetitionPlayer, CompetitionRow } from '../hooks/useCompetitions'
+import { resolveRosterAvatarUrl } from './resolveProfileAvatar'
 
 import type { PixelAvatarConfig } from './pixelAvatar/types'
+import type { ProfileAvatarFields } from './pixelAvatar/types'
 
 type ProfileRow = {
   id: string
@@ -12,7 +14,23 @@ type ProfileRow = {
   pixel_avatar?: PixelAvatarConfig | null
   pixel_avatar_url?: string | null
 }
-type PadelRow = { id: string; display_name: string; profile_id: string | null }
+type PadelRow = {
+  id: string
+  display_name: string
+  profile_id: string | null
+  line_picture_url?: string | null
+}
+
+export function competitionPlayerAvatarUrl(
+  sp: CompetitionPlayer,
+  padel?: PadelRow | null,
+  profileRow?: ProfileRow | null,
+): string | null {
+  const linePicture =
+    padel?.line_picture_url ?? sp.padel_players?.line_picture_url ?? null
+  const profile = profileRow ?? sp.profiles ?? sp.padel_players?.profiles ?? null
+  return resolveRosterAvatarUrl(profile as ProfileAvatarFields | null, linePicture)
+}
 
 function resolveRosterPlayer(
   sp: CompetitionPlayer,
@@ -35,10 +53,7 @@ function resolveRosterPlayer(
   if (!displayName) return sp
 
   const profileRow = directProfile ?? padelProfile
-  const avatarUrl =
-    profileRow?.avatar_url?.trim() ||
-    sp.profiles?.avatar_url?.trim() ||
-    null
+  const avatarUrl = competitionPlayerAvatarUrl(sp, padel, profileRow)
 
   return {
     ...sp,
@@ -79,7 +94,7 @@ export async function enrichCompetitionRowsAvatars(
     padelIds.size > 0
       ? await supabase
           .from('padel_players')
-          .select('id, display_name, profile_id')
+          .select('id, display_name, profile_id, line_picture_url')
           .in('id', [...padelIds])
       : { data: [] as PadelRow[] }
 
@@ -122,7 +137,7 @@ export async function enrichCompetitionPlayersAvatars(
     padelIds.size > 0
       ? await supabase
           .from('padel_players')
-          .select('id, display_name, profile_id')
+          .select('id, display_name, profile_id, line_picture_url')
           .in('id', [...padelIds])
       : { data: [] as PadelRow[] }
 

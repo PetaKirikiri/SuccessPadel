@@ -66,6 +66,8 @@ export type ScoringConfig = {
   schedule?: unknown
   schedule_seed?: number
   schedule_version?: number
+  /** First physical court sort_order used for slot 1 (e.g. 2 → Court 2 & 3). */
+  court_sort_start?: number
 }
 
 export type Court = {

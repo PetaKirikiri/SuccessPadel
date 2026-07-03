@@ -33,8 +33,9 @@ import {
   friendlyFormInitialState,
   friendlyFormValuesFromGame,
 } from '../../lib/friendlyFormDraft'
+import { clearFriendlyGamesCache } from '../../lib/friendlyGames'
+import { clearFriendlyHubCache } from '../../hooks/useFriendlyHubGames'
 import {
-  clearFriendlyGamesCache,
   canEditFriendlySession,
   friendlyConfigWithSessionEnd,
   friendlyStartsAtIso,
@@ -340,6 +341,7 @@ export function FriendlyGameForm() {
     }
     clearDraft()
     clearFriendlyGamesCache()
+    clearFriendlyHubCache()
     setBusy(false)
     navigate(`/friendly/${serverId}`)
   }

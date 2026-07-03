@@ -2,6 +2,7 @@ import type { CourtPlayer } from './americanoSchedule'
 import { resolveGameCharacterIdFromProfile } from './pixelAvatar/resolveCharacterSprite'
 import type { ProfileAvatarFields } from './pixelAvatar/types'
 import { resolveProfileAvatarUrl } from './resolveProfileAvatar'
+import type { PlayerGender } from './profileFields'
 
 export function courtPlayerFromProfile(opts: {
   profileId: string | null
@@ -10,6 +11,7 @@ export function courtPlayerFromProfile(opts: {
   padelPlayerId?: string | null
   profile?: ProfileAvatarFields | null
   preferredSide?: CourtPlayer['preferredSide']
+  gender?: PlayerGender | null
 }): CourtPlayer {
   const profile = opts.profileId ? opts.profile : null
   return {
@@ -20,5 +22,6 @@ export function courtPlayerFromProfile(opts: {
     avatarUrl: profile ? resolveProfileAvatarUrl(profile) : null,
     gameCharacterId: profile ? resolveGameCharacterIdFromProfile(profile.pixel_avatar) : null,
     preferredSide: opts.preferredSide ?? null,
+    gender: opts.gender ?? null,
   }
 }

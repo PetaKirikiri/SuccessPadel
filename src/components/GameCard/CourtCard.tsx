@@ -15,6 +15,7 @@ import { PlayerAvatarLink } from '../../shared/ProfilePhoto/PlayerAvatarLink'
 import { PlayerNameLink } from '../../shared/ProfilePhoto/PlayerNameLink'
 import type { LiveCourtGameResult } from '../../lib/liveCourtScore'
 import { debugSessionLog } from '../../lib/debug/devDebug'
+import { GENDER_CHIP_COLORS } from '../../foundation/profile/profileFormUi'
 import type { LiveCourt, ScoringGameCourt } from './gameBoardTypes'
 
 export function stopCardNav(e: { stopPropagation: () => void }) {
@@ -172,7 +173,7 @@ export function courtGestureScoreHref({
   gameNumber,
   courtLabel,
   courtId,
-  currentUserId,
+  currentUserId: _currentUserId,
   currentUserDisplayName: _currentUserDisplayName,
   court: _court,
   finished: _finished,
@@ -212,7 +213,7 @@ export function courtManualScoreHref({
   gameNumber,
   courtLabel,
   finished,
-  currentUserId,
+  currentUserId: _currentUserId,
 }: {
   manualScoreEnabled: boolean
   friendly: boolean
@@ -260,33 +261,15 @@ export function courtHasCurrentUser(
 }
 
 const COURT_LABEL_CLASS =
-  'text-center font-display text-2xl font-bold text-brand-accent dark:text-brand-tan md:text-3xl'
-const CURRENT_PLAYER_HIGHLIGHT_CLASS =
-  'my-court-player-highlight rounded-lg px-2 text-emerald-950 dark:text-emerald-50'
+  'text-center font-display text-lg font-bold text-brand-accent dark:text-brand-tan md:text-xl'
 
-function courtLabelClass(
-  currentUserId: string | null | undefined,
-  court: Parameters<typeof courtHasCurrentUser>[1],
-  finished = false,
-  currentUserDisplayName?: string | null,
-) {
-  const base = finished
-    ? 'text-center font-display text-2xl font-bold text-brand-sage dark:text-brand-muted md:text-3xl'
-    : 'text-center font-display text-2xl font-bold md:text-3xl'
-  return courtHasCurrentUser(currentUserId, court, currentUserDisplayName)
-    ? `${base} ${CURRENT_PLAYER_HIGHLIGHT_CLASS}`
-    : finished
-      ? base
-      : COURT_LABEL_CLASS
+function courtLabelClass(finished = false) {
+  return finished
+    ? 'text-center font-display text-lg font-bold text-brand-sage dark:text-brand-muted md:text-xl'
+    : COURT_LABEL_CLASS
 }
 
-function courtCardShellClass({
-  finished,
-  isMyCourt = false,
-}: {
-  finished: boolean
-  isMyCourt?: boolean
-}) {
+function courtCardShellClass({ finished }: { finished: boolean }) {
   const parts = [
     'game-card-court-shell w-full min-w-0 overflow-hidden rounded-xl border-2 bg-brand-surface shadow-[0_6px_18px_-8px_rgba(96,45,36,0.28)] transition dark:border-white/15 dark:bg-white/[0.06] dark:shadow-none',
   ]
@@ -297,16 +280,13 @@ function courtCardShellClass({
   } else {
     parts.push('border-brand-primary/35 dark:border-brand-accent/30')
   }
-  if (isMyCourt && !finished) {
-    parts.push('my-court-card-highlight ring-2 ring-emerald-400/80')
-  }
   return parts.join(' ')
 }
 
 export function CourtCard({
   courtLabel,
-  currentUserId,
-  currentUserDisplayName,
+  currentUserId: _currentUserId,
+  currentUserDisplayName: _currentUserDisplayName,
   court,
   finished,
   href,
@@ -335,8 +315,7 @@ export function CourtCard({
   const navigate = useNavigate()
   const tv = isTvSize(size)
   const gridCell = fillCell || tv
-  const isMyCourt = courtHasCurrentUser(currentUserId, court, currentUserDisplayName)
-  const shellClass = `${courtCardShellClass({ finished, isMyCourt })}${
+  const shellClass = `${courtCardShellClass({ finished })}${
     gridCell ? ' game-card-court-card tv-court-card' : ''
   }${
     href
@@ -356,8 +335,6 @@ export function CourtCard({
       >
         <CourtLabelRow
           courtLabel={courtLabel}
-          currentUserId={currentUserId}
-          currentUserDisplayName={currentUserDisplayName}
           court={court}
           finished={finished}
           gestureScoreHref={gestureScoreHref}
@@ -413,6 +390,7 @@ export function ScoreStepper({
   ariaLabel,
   scoreMax,
   tv = false,
+  hideSteps = false,
 }: {
   value: string
   onChange: (v: string) => void
@@ -421,6 +399,7 @@ export function ScoreStepper({
   ariaLabel: string
   scoreMax?: number
   tv?: boolean
+  hideSteps?: boolean
 }) {
   const inputClass = tv
     ? finished
@@ -439,19 +418,21 @@ export function ScoreStepper({
       onClick={stopCardNav}
       onKeyDown={stopCardNav}
     >
-      <button
-        type="button"
-        disabled={disabled}
-        aria-label={`Increase ${ariaLabel}`}
-        className={stepClass}
-        onClick={() => onChange(bumpScoreField(value, 1, scoreMax))}
-      >
-        ▲
-      </button>
+      {!hideSteps ? (
+        <button
+          type="button"
+          disabled={disabled}
+          aria-label={`Increase ${ariaLabel}`}
+          className={stepClass}
+          onClick={() => onChange(bumpScoreField(value, 1, scoreMax))}
+        >
+          ▲
+        </button>
+      ) : null}
       <input
         type="text"
-        inputMode="numeric"
-        pattern="[0-9]*"
+        inputMode={hideSteps ? 'text' : 'numeric'}
+        pattern={hideSteps ? undefined : '[0-9]*'}
         value={value}
         placeholder="0"
         disabled={disabled}
@@ -463,15 +444,17 @@ export function ScoreStepper({
         className={`tv-score-input ${inputClass}`}
         aria-label={ariaLabel}
       />
-      <button
-        type="button"
-        disabled={disabled}
-        aria-label={`Decrease ${ariaLabel}`}
-        className={stepClass}
-        onClick={() => onChange(bumpScoreField(value, -1, scoreMax))}
-      >
-        ▼
-      </button>
+      {!hideSteps ? (
+        <button
+          type="button"
+          disabled={disabled}
+          aria-label={`Decrease ${ariaLabel}`}
+          className={stepClass}
+          onClick={() => onChange(bumpScoreField(value, -1, scoreMax))}
+        >
+          ▼
+        </button>
+      ) : null}
     </div>
   )
 }
@@ -549,6 +532,151 @@ export function CourtTvScorePanel({
   )
 }
 
+function CourtScoreInput({
+  value,
+  onChange,
+  disabled,
+  finished,
+  ariaLabel,
+}: {
+  value: string
+  onChange?: (v: string) => void
+  disabled?: boolean
+  finished?: boolean
+  ariaLabel: string
+}) {
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      pattern="[0-9]*"
+      value={value}
+      placeholder="0"
+      disabled={disabled || finished || !onChange}
+      onClick={stopCardNav}
+      onKeyDown={stopCardNav}
+      onChange={(event) => onChange?.(scoreDigitsOnly(event.target.value))}
+      onFocus={(event) => event.currentTarget.select()}
+      className={`game-card-court-score-input tv-score-input w-[3.25rem] rounded-lg border px-2 py-1 text-center font-display font-extrabold tabular-nums outline-none ${
+        finished
+          ? 'border-brand-border/40 bg-brand-bg-alt text-brand-muted'
+          : 'border-brand-accent/50 bg-brand-bg-alt text-brand-accent focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20'
+      } disabled:opacity-70`}
+      aria-label={ariaLabel}
+    />
+  )
+}
+
+function CourtScores({
+  scoreUnit,
+  scoreA,
+  scoreB,
+  onScoreA,
+  onScoreB,
+  disabled,
+  finished,
+  compact,
+  livePointScores,
+  liveGameResults,
+  t,
+}: {
+  scoreUnit: AmericanoScoringUnit
+  scoreA?: string
+  scoreB?: string
+  onScoreA?: (v: string) => void
+  onScoreB?: (v: string) => void
+  disabled?: boolean
+  finished?: boolean
+  compact?: boolean
+  livePointScores?: { scoreA: string; scoreB: string }
+  liveGameResults?: LiveCourtGameResult[]
+  t: TranslateFn
+}) {
+  const fieldLabel = scoreFieldLabel(scoreUnit, t)
+  const gamesA = scoreA ?? '0'
+  const gamesB = scoreB ?? '0'
+  const historyGames =
+    liveGameResults?.filter((game, index, games) => {
+      if (index < games.length - 1) return true
+      return String(game.gamesA) !== gamesA || String(game.gamesB) !== gamesB
+    }) ?? []
+  const pointsClass = compact
+    ? 'tv-score-readout rounded-xl border-2 border-brand-primary/55 bg-brand-bg-alt px-3 py-1.5 text-4xl leading-none text-brand-primary shadow-md dark:border-brand-accent/60 dark:bg-white/10 dark:text-brand-accent-light md:text-5xl'
+    : 'text-base text-brand-accent md:text-lg'
+  const dividerClass = `game-card-court-score-divider bg-brand-border/50 ${
+    compact ? 'w-px self-stretch' : 'h-full min-h-[2.25rem] w-px'
+  }`
+  const scorePairClass = `game-card-court-score-pair flex items-stretch ${
+    compact ? 'gap-3' : 'items-center gap-x-2'
+  }`
+
+  const rowDividerClass = `game-card-court-score-row-divider bg-brand-border/50 ${
+    compact ? 'w-px self-stretch' : 'h-full min-h-[2rem] w-px'
+  }`
+
+  return (
+    <div className="game-card-court-score-stack game-card-court-scores flex flex-col items-center gap-1">
+      <div className="game-card-court-score-row flex items-stretch justify-center gap-2">
+        {livePointScores ? (
+          <section
+            className="game-card-court-score-section game-card-court-score-section--points"
+            aria-label="Points"
+          >
+            <div className={scorePairClass}>
+              <div className="flex items-center justify-center tabular-nums">
+                <span className={`font-display font-extrabold tabular-nums ${pointsClass}`}>
+                  {livePointScores.scoreA}
+                </span>
+              </div>
+              <span className={dividerClass} aria-hidden="true" />
+              <div className="flex items-center justify-center tabular-nums">
+                <span className={`font-display font-extrabold tabular-nums ${pointsClass}`}>
+                  {livePointScores.scoreB}
+                </span>
+              </div>
+            </div>
+          </section>
+        ) : null}
+
+        {livePointScores ? <span className={rowDividerClass} aria-hidden="true" /> : null}
+
+        <section className="game-card-court-score-section game-card-court-score-section--games" aria-label="Games">
+          <div className={scorePairClass}>
+            <div className="flex items-center justify-center tabular-nums">
+              <CourtScoreInput
+                value={gamesA}
+                onChange={onScoreA}
+                disabled={disabled}
+                finished={finished}
+                ariaLabel={t('aria.teamAScore', { unit: fieldLabel })}
+              />
+            </div>
+            <span className={dividerClass} aria-hidden="true" />
+            <div className="flex items-center justify-center tabular-nums">
+              <CourtScoreInput
+                value={gamesB}
+                onChange={onScoreB}
+                disabled={disabled}
+                finished={finished}
+                ariaLabel={t('aria.teamBScore', { unit: fieldLabel })}
+              />
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {historyGames.length ? (
+        <section className="game-card-court-score-section game-card-court-score-section--history" aria-label="Game history">
+          <p className="game-card-court-score-label text-[10px] font-bold uppercase tracking-wide text-brand-muted md:text-xs">
+            History
+          </p>
+          <LiveCourtGameTrail games={historyGames} compact={compact} />
+        </section>
+      ) : null}
+    </div>
+  )
+}
+
 export function CourtMatchCell({
   teamA,
   teamB,
@@ -559,20 +687,25 @@ export function CourtMatchCell({
   onScoreB,
   disabled = false,
   finished = false,
-  scoreMax,
+  scoreMax: _scoreMax,
   teamAPlayers,
   teamBPlayers,
   teamALabel,
   teamBLabel,
-  currentUserId,
-  currentUserDisplayName,
-  currentUserAvatarUrl,
+  currentUserId: _currentUserId,
+  currentUserDisplayName: _currentUserDisplayName,
+  currentUserAvatarUrl: _currentUserAvatarUrl,
   embedded = false,
   compact = false,
   scoreFirst = false,
   showScores = true,
   livePointScores,
+  backupPointA: _backupPointA,
+  backupPointB: _backupPointB,
+  onBackupPointA: _onBackupPointA,
+  onBackupPointB: _onBackupPointB,
   liveGameResults,
+  colorNamesByGender = false,
   t,
 }: {
   teamA: string[]
@@ -598,15 +731,15 @@ export function CourtMatchCell({
   showScores?: boolean
   /** Live gesture points in the centre; games stay in scoreA/scoreB for the subline. */
   livePointScores?: { scoreA: string; scoreB: string }
+  /** Editable backup tennis points (0 / 15 / 30 / 40) under the live readout. */
+  backupPointA?: string
+  backupPointB?: string
+  onBackupPointA?: (v: string) => void
+  onBackupPointB?: (v: string) => void
   liveGameResults?: LiveCourtGameResult[]
+  colorNamesByGender?: boolean
   t: TranslateFn
 }) {
-  const fieldLabel = scoreFieldLabel(scoreUnit, t)
-  const editable = showScores && Boolean(onScoreA && onScoreB && !disabled)
-  const readoutClass =
-    'tv-score-readout rounded-xl border-2 border-brand-primary/55 bg-brand-bg-alt px-3 py-1.5 text-4xl leading-none text-brand-primary shadow-md dark:border-brand-accent/60 dark:bg-white/10 dark:text-brand-accent-light md:text-5xl'
-  const displayScoreA = livePointScores?.scoreA ?? scoreA
-  const displayScoreB = livePointScores?.scoreB ?? scoreB
   const fallbackNames = compactDisplayNames([
     teamA[0] ?? '',
     teamA[1] ?? '',
@@ -664,81 +797,32 @@ export function CourtMatchCell({
     }
   }, [compact, teamA, teamB, teamAPlayers, teamBPlayers, teamAPlayerList, teamBPlayerList, fallbackNames])
   // #endregion
-  const playerClass = (isCurrent: boolean) =>
+  const playerClass = () =>
     `flex min-w-0 items-center rounded ${
       compact ? 'min-h-16 gap-3 py-1.5' : 'min-h-11 gap-1.5 py-0.5'
-    } ${
-      isCurrent
-        ? CURRENT_PLAYER_HIGHLIGHT_CLASS
-        : finished
-          ? 'px-0 text-brand-muted'
-          : 'px-0 text-brand-text'
-    }`
+    } ${finished ? 'px-0 text-brand-muted' : 'px-0 text-brand-text'}`
 
-  const scoreAEl = editable ? (
-    <ScoreStepper
-      value={scoreA ?? ''}
-      onChange={(v) => onScoreA?.(v)}
-      disabled={disabled}
-      finished={finished}
-      ariaLabel={t('aria.teamAScore', { unit: fieldLabel })}
-      scoreMax={scoreMax}
-      tv={compact}
-    />
-  ) : displayScoreA ? (
-    <span
-      className={`font-display font-extrabold tabular-nums ${
-        compact ? readoutClass : 'text-base text-brand-accent md:text-lg'
-      }`}
-    >
-      {displayScoreA}
-    </span>
-  ) : (
-    <span className="inline-block min-w-[1.25rem]" aria-hidden />
-  )
-
-  const scoreBEl = editable ? (
-    <ScoreStepper
-      value={scoreB ?? ''}
-      onChange={(v) => onScoreB?.(v)}
-      disabled={disabled}
-      finished={finished}
-      ariaLabel={t('aria.teamBScore', { unit: fieldLabel })}
-      scoreMax={scoreMax}
-      tv={compact}
-    />
-  ) : displayScoreB ? (
-    <span
-      className={`font-display font-extrabold tabular-nums ${
-        compact ? readoutClass : 'text-base text-brand-accent md:text-lg'
-      }`}
-    >
-      {displayScoreB}
-    </span>
-  ) : (
-    <span className="inline-block min-w-[1.25rem]" aria-hidden />
-  )
-
-  const nameClass = compact
-    ? 'game-card-court-player__name truncate font-extrabold leading-tight text-brand-text'
-    : 'truncate text-lg font-semibold leading-tight text-brand-text md:text-xl'
+  const nameClass = (player: CourtPlayer) => {
+    const genderColor =
+      colorNamesByGender && player.gender ? GENDER_CHIP_COLORS[player.gender] : 'text-brand-text'
+    return compact
+      ? `game-card-court-player__name truncate font-extrabold leading-tight ${genderColor}`
+      : `truncate text-lg font-semibold leading-tight ${genderColor} md:text-xl`
+  }
   const avatarClass = compact
     ? 'game-card-court-player__avatar shrink-0 rounded-full object-cover ring-2 ring-brand-border/60'
     : 'h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-brand-border/60 md:h-9 md:w-9'
 
   const playerEl = (player: CourtPlayer, align: 'left' | 'right') => {
-    const isCurrent = isCurrentCourtPlayer(player, currentUserId, currentUserDisplayName)
     const isRegistered = Boolean(player.id)
-    const displayAvatarUrl = isRegistered
-      ? player.avatarUrl ?? (isCurrent ? currentUserAvatarUrl ?? null : null)
-      : null
+    const displayAvatarUrl = isRegistered ? player.avatarUrl ?? null : null
     const [displayName] = compactDisplayNames([player.name])
     const nameEl = (
       <PlayerNameLink
         displayName={displayName}
         profileId={player.id}
         padelPlayerId={player.padelPlayerId}
-        className={nameClass}
+        className={nameClass(player)}
       />
     )
     const avatarEl = (
@@ -754,7 +838,7 @@ export function CourtMatchCell({
 
     return (
       <p
-        className={`${playerClass(isCurrent)} ${
+        className={`${playerClass()} ${
           align === 'right' ? 'justify-end text-right' : ''
         }`}
       >
@@ -784,36 +868,59 @@ export function CourtMatchCell({
       </p>
     ) : null
 
-  const scoreCenter = showScores ? (
-    <div className="game-card-court-score-stack flex flex-col items-center gap-0.5">
-      <div className={`flex items-stretch ${compact ? 'gap-3' : 'items-center gap-x-2'}`}>
-        <div className="flex items-center justify-center tabular-nums">{scoreAEl}</div>
-        <span
-          className={`bg-brand-border/60 ${compact ? 'w-px self-stretch' : 'h-full min-h-[2.5rem] w-px'}`}
-          aria-hidden="true"
-        />
-        <div className="flex items-center justify-center tabular-nums">{scoreBEl}</div>
-      </div>
-      {liveGameResults?.length ? (
-        <LiveCourtGameTrail games={liveGameResults} compact={compact} />
-      ) : null}
-    </div>
-  ) : null
-
-  const compactTeamSides = (
+  const showTeamLabels = Boolean(teamALabel || teamBLabel)
+  const sideCellClass = (side: 'left' | 'right') =>
+    `game-card-court-match__side game-card-court-match__side--${side} min-w-0 w-full ${
+      side === 'right' ? 'justify-self-end' : 'justify-self-start'
+    }`
+  const labelSlotClass = 'game-card-court-team-label-slot min-h-12'
+  const duoAlignedSides = (
     <>
-      <div className="game-card-court-match__side game-card-court-match__side--left flex min-w-0 flex-col justify-center gap-2.5 justify-self-start">
-        {teamTitle(teamALabel, 'left')}
+      {showTeamLabels ? (
+        <>
+          <div className={`${sideCellClass('left')} col-start-1 row-start-1 self-start`}>
+            <div className={labelSlotClass}>{teamTitle(teamALabel, 'left')}</div>
+          </div>
+          <div className={`${sideCellClass('right')} col-start-2 row-start-1 self-start`}>
+            <div className={labelSlotClass}>{teamTitle(teamBLabel, 'right')}</div>
+          </div>
+        </>
+      ) : null}
+      <div className={`${sideCellClass('left')} ${showTeamLabels ? 'row-start-2' : 'row-start-1'} self-center`}>
         {playerEl(teamAPlayerList[0]!, 'left')}
+      </div>
+      <div className={`${sideCellClass('right')} ${showTeamLabels ? 'row-start-2' : 'row-start-1'} self-center`}>
+        {playerEl(teamBPlayerList[0]!, 'right')}
+      </div>
+      <div className={`${sideCellClass('left')} ${showTeamLabels ? 'row-start-3' : 'row-start-2'} self-center`}>
         {playerEl(teamAPlayerList[1]!, 'left')}
       </div>
-      <div className="game-card-court-match__side game-card-court-match__side--right flex min-w-0 flex-col justify-center gap-2.5 justify-self-end">
-        {teamTitle(teamBLabel, 'right')}
-        {playerEl(teamBPlayerList[0]!, 'right')}
+      <div className={`${sideCellClass('right')} ${showTeamLabels ? 'row-start-3' : 'row-start-2'} self-center`}>
         {playerEl(teamBPlayerList[1]!, 'right')}
       </div>
     </>
   )
+  const sidesGridClass = `game-card-court-match tv-court-match-grid grid min-h-0 w-full flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-stretch gap-y-2.5 game-card-court-match--sides${
+    showTeamLabels ? ' grid-rows-[auto_auto_auto]' : ' grid-rows-[auto_auto]'
+  }`
+
+  const scoreCenter = showScores ? (
+    <CourtScores
+      scoreUnit={scoreUnit}
+      scoreA={scoreA}
+      scoreB={scoreB}
+      onScoreA={onScoreA}
+      onScoreB={onScoreB}
+      disabled={disabled}
+      finished={finished}
+      compact={compact}
+      livePointScores={livePointScores}
+      liveGameResults={liveGameResults}
+      t={t}
+    />
+  ) : null
+
+  const compactTeamSides = duoAlignedSides
 
   const usesScoreFirstLayout = compact || scoreFirst
 
@@ -821,42 +928,31 @@ export function CourtMatchCell({
     showScores ? (
       <>
         <div className="tv-court-match-scores game-card-court-match-scores flex shrink-0 justify-center">{scoreCenter}</div>
-        <div className={`game-card-court-match tv-court-match-grid grid min-h-0 w-full flex-1 items-start game-card-court-match--sides grid-cols-[minmax(0,1fr)_minmax(0,1fr)]${scoreFirst ? ' game-card-court-match--score-first' : ''}`}>
+        <div className={`${sidesGridClass}${scoreFirst ? ' game-card-court-match--score-first' : ''}`}>
           {compactTeamSides}
         </div>
       </>
     ) : (
-      <div className={`game-card-court-match tv-court-match-grid grid min-h-0 w-full flex-1 items-center game-card-court-match--sides grid-cols-[minmax(0,1fr)_minmax(0,1fr)]${scoreFirst ? ' game-card-court-match--score-first' : ''}`}>
+      <div className={`${sidesGridClass}${scoreFirst ? ' game-card-court-match--score-first' : ''}`}>
         {compactTeamSides}
       </div>
     )
   ) : showScores ? (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto_1px_auto_minmax(0,1fr)] items-center gap-x-2 gap-y-1 px-0.5 py-1 md:gap-x-3 md:px-1 md:py-1.5">
+    <div className="grid grid-cols-[minmax(0,1fr)_auto_1px_auto_minmax(0,1fr)] items-start gap-x-2 gap-y-1 px-0.5 py-1 md:gap-x-3 md:px-1 md:py-1.5">
       <div className="min-w-0 justify-self-start space-y-1">
-        {teamTitle(teamALabel, 'left')}
+        {showTeamLabels ? <div className={labelSlotClass}>{teamTitle(teamALabel, 'left')}</div> : null}
         {playerEl(teamAPlayerList[0]!, 'left')}
         {playerEl(teamAPlayerList[1]!, 'left')}
       </div>
       <div className="col-start-2 col-span-3 flex justify-center">{scoreCenter}</div>
       <div className="min-w-0 justify-self-end space-y-1">
-        {teamTitle(teamBLabel, 'right')}
+        {showTeamLabels ? <div className={labelSlotClass}>{teamTitle(teamBLabel, 'right')}</div> : null}
         {playerEl(teamBPlayerList[0]!, 'right')}
         {playerEl(teamBPlayerList[1]!, 'right')}
       </div>
     </div>
   ) : (
-    <div className="grid grid-cols-2 items-start gap-x-4 gap-y-1 px-0.5 py-1 md:gap-x-6 md:px-1 md:py-1.5">
-      <div className="min-w-0 space-y-1">
-        {teamTitle(teamALabel, 'left')}
-        {playerEl(teamAPlayerList[0]!, 'left')}
-        {playerEl(teamAPlayerList[1]!, 'left')}
-      </div>
-      <div className="min-w-0 space-y-1">
-        {teamTitle(teamBLabel, 'right')}
-        {playerEl(teamBPlayerList[0]!, 'right')}
-        {playerEl(teamBPlayerList[1]!, 'right')}
-      </div>
-    </div>
+    <div className={`${sidesGridClass} px-0.5 py-1 md:px-1 md:py-1.5`}>{duoAlignedSides}</div>
   )
 
   if (embedded) {
@@ -885,9 +981,7 @@ export function CourtMatchCell({
 }
 function CourtLabelRow({
   courtLabel,
-  currentUserId,
-  currentUserDisplayName,
-  court,
+  court: _court,
   finished,
   gestureScoreHref,
   gestureScoreLive = false,
@@ -897,8 +991,6 @@ function CourtLabelRow({
   t,
 }: {
   courtLabel: string
-  currentUserId?: string | null
-  currentUserDisplayName?: string | null
   court: LiveCourt | ScoringGameCourt
   finished: boolean
   gestureScoreHref?: string
@@ -909,12 +1001,12 @@ function CourtLabelRow({
   t: TranslateFn
 }) {
   const label = displayCourtLabel(courtLabel, t)
-  const titleClass = courtLabelClass(currentUserId, court, finished, currentUserDisplayName)
+  const titleClass = courtLabelClass(finished)
   const gridCell = fillCell || isTvSize(size)
   return (
     <div
       className={`game-card-court-label-row flex items-center gap-2 px-2 ${
-        gridCell ? 'game-card-court-label-row tv-court-label-row min-h-0 shrink-0 py-2' : 'min-h-12 px-3 py-2'
+        gridCell ? 'game-card-court-label-row tv-court-label-row min-h-0 shrink-0 py-1' : 'min-h-9 px-3 py-1.5'
       }`}
     >
       <p className={`game-card-court-label min-w-0 flex-1 truncate text-center ${titleClass}${gridCell ? ' tv-court-label' : ''}`}>
