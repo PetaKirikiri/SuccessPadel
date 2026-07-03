@@ -46,7 +46,7 @@ import { formatDateInput } from '../../lib/courtSchedule'
 import { supabase } from '../../lib/supabaseClient'
 import type { Profile } from '../../lib/types'
 
-export function FriendlyGamePage() {
+export function GameCardPlaySession() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()

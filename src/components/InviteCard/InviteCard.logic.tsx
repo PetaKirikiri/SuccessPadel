@@ -179,5 +179,3 @@ export function InviteGameCard(props: Props) {
   )
 }
 
-/** @deprecated Use InviteGameCard */
-export const SessionInviteCard = InviteGameCard

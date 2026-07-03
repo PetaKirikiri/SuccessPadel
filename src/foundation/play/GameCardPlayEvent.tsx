@@ -72,7 +72,7 @@ function gameHasSubmittedScores({
   })
 }
 
-export function CompetitionPlay() {
+export function GameCardPlayEvent() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()

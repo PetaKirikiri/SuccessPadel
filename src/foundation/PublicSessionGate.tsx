@@ -1,6 +1,6 @@
 import { useParams } from 'react-router-dom'
 import { AppTopBar } from '../shared/NavBar/AppTopBar'
-import { CompetitionPlay } from '../foundation/play/GameCardPlayEvent'
+import { GameCardPlayEvent } from '../foundation/play/GameCardPlayEvent'
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -25,5 +25,5 @@ function BadLink() {
 export function PublicSessionGate() {
   const { id } = useParams()
   if (!id || !UUID_RE.test(id)) return <BadLink />
-  return <CompetitionPlay />
+  return <GameCardPlayEvent />
 }

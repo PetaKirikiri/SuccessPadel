@@ -74,7 +74,7 @@ function toEditableProfile(
   }
 }
 
-export function PlayerProfilePage() {
+export function PlayerProfileSurface() {
   const { playerId } = useParams()
   const [searchParams] = useSearchParams()
   const location = useLocation()

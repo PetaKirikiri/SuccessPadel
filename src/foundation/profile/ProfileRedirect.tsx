@@ -1,9 +1,10 @@
 import { useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
-import { playerProfilePath } from '../lib/playerProfileSlug'
+import { useAuth } from '../../hooks/useAuth'
+import { playerProfilePath } from '../../lib/playerProfileSlug'
 
-export function Profile() {
+/** `/profile` dock tab → canonical player profile URL. */
+export function ProfileRedirect() {
   const { profile, loading, refreshProfile } = useAuth()
 
   useEffect(() => {

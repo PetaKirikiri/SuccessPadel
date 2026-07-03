@@ -8,15 +8,15 @@ import { useFriendlyGame } from '../hooks/useFriendlyGame'
 import { canEditFriendlySession } from '../lib/friendlyGames'
 import { CompetitionForm } from '../components/SetupCard/SetupCardEventForm'
 import { FriendlyGameForm } from '../components/SetupCard/SetupCardSessionForm'
-import { FriendlyGamePage } from '../foundation/play/GameCardPlaySession'
+import { GameCardPlaySession } from '../foundation/play/GameCardPlaySession'
 import { GamesHomePage } from '../components/InviteCard/GamesHomeSurface'
 import { PublicSessionGate } from './PublicSessionGate'
-import { PlayerProfilePage } from './profile/PlayerProfileSurface'
+import { PlayerProfileSurface } from './profile/PlayerProfileSurface'
 import { AuthCallback } from './AuthCallback'
 import { LineAuthCallback } from './LineAuthCallback'
 import { LineAuthComplete } from './LineAuthComplete'
 import { Login } from './Login'
-import { Profile } from './Profile'
+import { ProfileRedirect } from './profile/ProfileRedirect'
 import { ResetPassword } from './ResetPassword'
 import { MembersPage } from './MembersPage'
 import { CameraScoreTrackerShell } from '../components/CameraScoreTracker'
@@ -167,14 +167,14 @@ function MainAppRoutes() {
           path="friendly/:id/games/:gameNumber/courts/:courtSlug/gesture-score"
           element={<GestureScoreCourtEntry />}
         />
-        <Route path="friendly/:id" element={<FriendlyGamePage />} />
+        <Route path="friendly/:id" element={<GameCardPlaySession />} />
         <Route
           path="competitions/:id/games/:gameNumber/courts/:courtId/gesture-score"
           element={<GestureScoreCourtEntry />}
         />
         <Route path="competitive" element={<GamesHomePage mode="competitive" />} />
         <Route path="competitions" element={<Navigate to="/competitive" replace />} />
-        <Route path="players/:playerId" element={<PlayerProfilePage />} />
+        <Route path="players/:playerId" element={<PlayerProfileSurface />} />
         <Route
           path="members"
           element={
@@ -198,7 +198,7 @@ function MainAppRoutes() {
           path="profile"
           element={
             <ProtectedRoute>
-              <Profile />
+              <ProfileRedirect />
             </ProtectedRoute>
           }
         />
