@@ -217,12 +217,28 @@ export function GameCardPlayEvent() {
     return players
   }, [columns])
 
-  const effectiveCourtMatches = useMemo(() => {
+  const liveCourtScoreOverrides = useMemo(() => {
+    const dbCourtScores = new Map<string, ManualCourtScore>()
+    for (const match of courtMatches) {
+      const round = rounds.find((row) => row.id === match.competition_round_id)
+      const parts = match.score_summary?.split('-').map((score) => Number(score.trim()))
+      if (!round || !match.court_id || !parts || parts.length !== 2) continue
+      const [teamA, teamB] = parts
+      if (!Number.isFinite(teamA) || !Number.isFinite(teamB)) continue
+      dbCourtScores.set(manualCourtScoreKey(round.round_number, match.court_id), {
+        gameNumber: round.round_number,
+        courtId: match.court_id,
+        teamA: teamA!,
+        teamB: teamB!,
+      })
+    }
+
     const gestureCourtScores = new Map<string, ManualCourtScore>()
     for (const log of gestureLogs) {
       const gameNumber = Number(log.gameNumber)
       if (!Number.isFinite(gameNumber) || !log.courtId || !log.finalScore) continue
       const [teamA, teamB] = americanoCourtTotals(log.finalScore, scoreUnit)
+      if (teamA === 0 && teamB === 0 && log.pointEvents.length === 0) continue
       gestureCourtScores.set(manualCourtScoreKey(gameNumber, log.courtId), {
         gameNumber,
         courtId: log.courtId,
@@ -231,10 +247,13 @@ export function GameCardPlayEvent() {
       })
     }
 
-    const scoreOverrides = new Map([...gestureCourtScores, ...manualCourtScores])
-    if (scoreOverrides.size === 0) return courtMatches
+    return new Map([...dbCourtScores, ...gestureCourtScores, ...manualCourtScores])
+  }, [courtMatches, gestureLogs, manualCourtScores, rounds, scoreUnit])
+
+  const effectiveCourtMatches = useMemo(() => {
+    if (liveCourtScoreOverrides.size === 0) return courtMatches
     const next = [...courtMatches]
-    for (const score of scoreOverrides.values()) {
+    for (const score of liveCourtScoreOverrides.values()) {
       const roundId = roundIdForGame(score.gameNumber)
       if (!roundId) continue
       const scoreSummary = `${score.teamA}-${score.teamB}`
@@ -259,7 +278,7 @@ export function GameCardPlayEvent() {
       }
     }
     return next
-  }, [courtMatches, gestureLogs, manualCourtScores, roundIdForGame, scoreUnit])
+  }, [courtMatches, liveCourtScoreOverrides, roundIdForGame])
 
   const effectivePlayerStandings = useMemo(
     () =>
@@ -289,26 +308,26 @@ export function GameCardPlayEvent() {
   const manualStandings = useMemo(
     () =>
       computeManualCourtStandings({
-        scores: manualCourtScores,
+        scores: liveCourtScoreOverrides,
         columns,
         courtIdByLabel,
         isDuo,
         teams,
         roster,
       }),
-    [manualCourtScores, columns, courtIdByLabel, isDuo, teams, roster],
+    [columns, courtIdByLabel, isDuo, liveCourtScoreOverrides, roster, teams],
   )
 
   const liveStandings = useMemo(() => {
+    if (manualStandings.length > 0) {
+      return enrichStandingsWithAvatars(manualStandings, leaderboard)
+    }
     const useDb = effectiveCourtMatches.length > 0 && rounds.length > 0
     if (useDb) {
       if (isDuo && teams.length >= 2) {
         return effectiveDuoStandings
       }
       return effectivePlayerStandings
-    }
-    if (manualStandings.length > 0) {
-      return enrichStandingsWithAvatars(manualStandings, leaderboard)
     }
     return enrichStandingsWithAvatars(gestureStandings, leaderboard)
   }, [
