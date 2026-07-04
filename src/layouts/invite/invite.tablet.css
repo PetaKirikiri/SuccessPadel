@@ -846,3 +846,32 @@ html[data-viewport='tablet'] .invite-game-card__badges .rule-chip-grid__value {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* Large invite roster: keep players as compact rows, not stretched pills. */
+html[data-viewport='tablet'] .invite-game-card__roster .invite-duo-team-players {
+  justify-content: center;
+  gap: clamp(0.4rem, 0.9vh, 0.7rem);
+}
+
+html[data-viewport='tablet'] .invite-game-card__roster .invite-duo-team-players .invite-roster-chip {
+  flex: 0 0 auto;
+  min-height: clamp(2.55rem, 5.8vh, 3.65rem);
+  border-radius: 0.6rem;
+  justify-content: flex-start;
+  padding: clamp(0.34rem, 0.7vh, 0.55rem) clamp(0.5rem, 0.9vw, 0.78rem);
+  gap: clamp(0.4rem, 0.75vw, 0.65rem);
+  text-align: left;
+}
+
+html[data-viewport='tablet'] .invite-game-card__roster .invite-duo-team-players .invite-roster-chip .invite-roster-chip__avatar,
+html[data-viewport='tablet'] .invite-game-card__roster .invite-duo-team-players .invite-roster-chip__vacant-avatar {
+  width: clamp(1.75rem, 4vh, 2.4rem);
+  height: clamp(1.75rem, 4vh, 2.4rem);
+}
+
+html[data-viewport='tablet'] .invite-game-card__roster .invite-duo-team-players .invite-roster-chip__name,
+html[data-viewport='tablet'] .invite-game-card__roster .invite-duo-team-players .invite-roster-chip__vacant-name {
+  flex: 1 1 auto;
+  text-align: left;
+  font-size: clamp(0.88rem, 2.1vh, 1.18rem);
+}

@@ -840,3 +840,32 @@ html[data-viewport='tv'] .invite-duo-team-players .invite-roster-chip__name,
 html[data-viewport='tv'] .invite-duo-team-players .invite-roster-chip__vacant-name {
   font-size: clamp(1.25rem, 4.5vh, 2.75rem);
 }
+
+/* Large invite roster: keep players as compact rows, not stretched pills. */
+html[data-viewport='tv'] .invite-game-card__roster .invite-duo-team-players {
+  justify-content: center;
+  gap: clamp(0.5rem, 1vh, 0.95rem);
+}
+
+html[data-viewport='tv'] .invite-game-card__roster .invite-duo-team-players .invite-roster-chip {
+  flex: 0 0 auto;
+  min-height: clamp(3.2rem, 6.8vh, 4.8rem);
+  border-radius: 0.65rem;
+  justify-content: flex-start;
+  padding: clamp(0.42rem, 0.8vh, 0.72rem) clamp(0.65rem, 0.9vw, 1rem);
+  gap: clamp(0.55rem, 0.75vw, 0.85rem);
+  text-align: left;
+}
+
+html[data-viewport='tv'] .invite-game-card__roster .invite-duo-team-players .invite-roster-chip .invite-roster-chip__avatar,
+html[data-viewport='tv'] .invite-game-card__roster .invite-duo-team-players .invite-roster-chip__vacant-avatar {
+  width: clamp(2.2rem, 4.8vh, 3.1rem);
+  height: clamp(2.2rem, 4.8vh, 3.1rem);
+}
+
+html[data-viewport='tv'] .invite-game-card__roster .invite-duo-team-players .invite-roster-chip__name,
+html[data-viewport='tv'] .invite-game-card__roster .invite-duo-team-players .invite-roster-chip__vacant-name {
+  flex: 1 1 auto;
+  text-align: left;
+  font-size: clamp(1.05rem, 2.5vh, 1.55rem);
+}
