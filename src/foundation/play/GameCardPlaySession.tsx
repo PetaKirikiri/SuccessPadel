@@ -149,6 +149,8 @@ export function GameCardPlaySession() {
     liveCourtFeeds,
     liveCourtScores,
     ephemeralScores,
+    undefined,
+    scoreUnit,
   )
 
   const sessionRoster = useMemo(

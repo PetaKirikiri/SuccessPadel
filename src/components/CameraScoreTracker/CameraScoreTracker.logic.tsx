@@ -277,10 +277,10 @@ export function GestureScoreCourtPage() {
     () => {
       const options = scheduleGames.map((game) => ({
         value: String(game.gameNumber),
-        label: `Game ${game.gameNumber}`,
+        label: `G${game.gameNumber}`,
       }))
       if (options.some((option) => option.value === String(gameNum))) return options
-      return [{ value: String(gameNum), label: `Game ${gameNum}` }, ...options]
+      return [{ value: String(gameNum), label: `G${gameNum}` }, ...options]
     },
     [gameNum, scheduleGames],
   )
@@ -735,10 +735,10 @@ export function GestureScoreCourtPage() {
       }
 
       applyScoreLocal(planned, ended, true)
+      publishLocalScore(planned)
 
       queueMicrotask(() => {
         if (courtSetupKey) writeLocalGestureCameraLog(courtSetupKey, planned)
-        publishLocalScore(planned)
         engine?.markScoreCommitted(performance.now(), action)
         gestureScoreBeep()
         engine?.resumeVideo()
@@ -766,10 +766,10 @@ export function GestureScoreCourtPage() {
 
       const { log, matchEnded } = planned
       applyScoreLocal(log, matchEnded, true)
+      publishLocalScore(log)
 
       queueMicrotask(() => {
         if (courtSetupKey) writeLocalGestureCameraLog(courtSetupKey, log)
-        publishLocalScore(log)
         gestureScoreBeep()
         engineRef.current?.resetHoldTracking()
         enqueuePersist(log, prior, matchEnded)
@@ -889,7 +889,7 @@ export function GestureScoreCourtPage() {
           cameraStarting={status === 'loading'}
           cameraError={cameraError}
           cameraStatus={status}
-          gameLabel={`Game ${gameNum}`}
+          gameLabel={`G${gameNum}`}
           courtLabel={displayCourtLabel}
           gameOptions={gameOptions}
           selectedGame={String(gameNum)}

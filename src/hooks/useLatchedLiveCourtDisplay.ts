@@ -7,6 +7,7 @@ import {
   type LiveCourtGamesScore,
   type LiveCourtPointFeed,
 } from '../lib/liveCourtScore'
+import type { AmericanoScoringUnit } from '../lib/competitionPresets'
 import type { TennisScore } from '../lib/tennisScore'
 
 /**
@@ -18,6 +19,7 @@ export function useLatchedLiveCourtDisplay(
   dbScores: Map<string, LiveCourtGamesScore>,
   ephemeralScores: Map<string, TennisScore>,
   courtIdToLabel?: Map<string, string>,
+  scoreUnit: AmericanoScoringUnit = 'games',
 ) {
   const latchedFeedsRef = useRef<Map<string, LiveCourtPointFeed>>(new Map())
   const latchedScoresRef = useRef<Map<string, LiveCourtGamesScore>>(new Map())
@@ -31,10 +33,10 @@ export function useLatchedLiveCourtDisplay(
 
   const scores = useMemo(() => {
     const dbLatched = latchLiveCourtGamesScores(latchedScoresRef.current, dbScores)
-    const merged = mergeEphemeralLiveCourtScores(dbLatched, ephemeralScores, courtIdToLabel)
+    const merged = mergeEphemeralLiveCourtScores(dbLatched, ephemeralScores, courtIdToLabel, scoreUnit)
     latchedScoresRef.current = merged
     return merged
-  }, [courtIdToLabel, dbScores, ephemeralScores])
+  }, [courtIdToLabel, dbScores, ephemeralScores, scoreUnit])
 
   return { feeds, scores }
 }

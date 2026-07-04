@@ -160,6 +160,7 @@ export function GameCardPlayEvent() {
     liveCourtScores,
     ephemeralScores,
     courtIdToLabel,
+    scoreUnit,
   )
 
   const [now, setNow] = useState(Date.now())

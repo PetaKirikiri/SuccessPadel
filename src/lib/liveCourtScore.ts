@@ -117,12 +117,13 @@ export function mergeEphemeralLiveCourtScores(
   scores: Map<string, LiveCourtGamesScore>,
   ephemeralScores: Map<string, TennisScore>,
   courtIdToLabel?: Map<string, string>,
+  scoreUnit: AmericanoScoringUnit = 'games',
 ): Map<string, LiveCourtGamesScore> {
   const map = new Map(scores)
   for (const [setupKey, score] of ephemeralScores) {
     for (const courtKey of liveCourtScoreKeysForEphemeralSource(setupKey, courtIdToLabel)) {
       if (map.get(courtKey)?.gamesManualOverrideAt) continue
-      map.set(courtKey, { scoreA: String(score.gamesA), scoreB: String(score.gamesB) })
+      map.set(courtKey, manualScoreStrings(score, scoreUnit))
     }
   }
   return map
