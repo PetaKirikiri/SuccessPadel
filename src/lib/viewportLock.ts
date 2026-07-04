@@ -14,19 +14,27 @@ function readViewportNumber(value: number | undefined): number {
   return Number.isFinite(value) && value != null ? value : 0
 }
 
+function firstUsableViewportNumber(...values: Array<number | undefined>): number {
+  for (const value of values) {
+    const next = readViewportNumber(value)
+    if (next > 0) return next
+  }
+  return 0
+}
+
 export function readViewportLockMetrics(): ViewportLockMetrics {
   const visualViewport = window.visualViewport
   const widthPx = Math.round(
-    Math.max(
+    firstUsableViewportNumber(
+      visualViewport?.width,
       window.innerWidth,
-      readViewportNumber(visualViewport?.width),
       document.documentElement.clientWidth,
     ),
   )
   const heightPx = Math.round(
-    Math.max(
+    firstUsableViewportNumber(
+      visualViewport?.height,
       window.innerHeight,
-      readViewportNumber(visualViewport?.height),
       document.documentElement.clientHeight,
     ),
   )

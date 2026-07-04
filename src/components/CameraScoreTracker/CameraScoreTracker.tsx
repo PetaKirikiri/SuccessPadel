@@ -6,6 +6,8 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type MouseEvent,
+  type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from 'react'
 import type { CourtPlayer } from '../../lib/americanoSchedule'
@@ -15,6 +17,7 @@ import { type HoldUi } from '../../lib/gestureFingerDetect'
 import { PlayerChip } from './PlayerChip'
 import { formatGameScore, formatTennisPoint } from '../../lib/tennisScore'
 import { cameraScoreTrackerRootClass } from './CameraScoreTracker.styles'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 type HoldFinger = 'team1' | 'team2' | 'undo'
 type TrackerSelectOption = {
@@ -300,17 +303,61 @@ function GestureScoreCourtNavigator({
   timerValue?: string | null
   timerTimeLabel?: string
 }) {
+  const selectedGameIndex = gameOptions.findIndex((option) => option.value === selectedGame)
+  const canGoPrevGame = selectedGameIndex > 0
+  const canGoNextGame = selectedGameIndex >= 0 && selectedGameIndex < gameOptions.length - 1
+  const changeGameBy = (offset: -1 | 1) => {
+    const nextOption = gameOptions[selectedGameIndex + offset]
+    if (!nextOption) return
+    onGameChange?.(nextOption.value)
+  }
+  const changeGameFromPointer = (
+    event: ReactPointerEvent<HTMLButtonElement>,
+    offset: -1 | 1,
+  ) => {
+    if (offset === -1 && !canGoPrevGame) return
+    if (offset === 1 && !canGoNextGame) return
+    event.preventDefault()
+    event.stopPropagation()
+    changeGameBy(offset)
+  }
+  const changeGameFromKeyboardClick = (event: MouseEvent<HTMLButtonElement>, offset: -1 | 1) => {
+    if (event.detail !== 0) return
+    changeGameBy(offset)
+  }
+  const selectedGameOption =
+    gameOptions.find((option) => option.value === selectedGame) ?? gameOptions[0]
+
   return (
     <section className="gesture-score-court__navigator" aria-label="Court and game controls">
       <div className="gesture-score-court__navigator-controls">
-        <div className="gesture-score-court__navigator-field">
+        <div className="gesture-score-court__navigator-field gesture-score-court__navigator-field--game">
           <span className="gesture-score-court__navigator-caption">Game</span>
-          <GestureScoreNavigatorMenu
-            label={gameLabel ?? 'Game'}
-            options={gameOptions}
-            selectedValue={selectedGame}
-            onChange={onGameChange}
-          />
+          <div className="gesture-score-court__game-stepper">
+            <button
+              type="button"
+              className="gesture-score-court__game-stepper-button gesture-score-court__game-stepper-button--prev"
+              aria-label="Previous game"
+              disabled={!canGoPrevGame}
+              onPointerDown={(event) => changeGameFromPointer(event, -1)}
+              onClick={(event) => changeGameFromKeyboardClick(event, -1)}
+            >
+              <ChevronLeft className="gesture-score-court__game-stepper-icon" aria-hidden />
+            </button>
+            <div className="gesture-score-court__game-stepper-label" aria-label={gameLabel ?? 'Game'}>
+              {selectedGameOption?.label ?? gameLabel ?? 'Game'}
+            </div>
+            <button
+              type="button"
+              className="gesture-score-court__game-stepper-button gesture-score-court__game-stepper-button--next"
+              aria-label="Next game"
+              disabled={!canGoNextGame}
+              onPointerDown={(event) => changeGameFromPointer(event, 1)}
+              onClick={(event) => changeGameFromKeyboardClick(event, 1)}
+            >
+              <ChevronRight className="gesture-score-court__game-stepper-icon" aria-hidden />
+            </button>
+          </div>
         </div>
         <div className="gesture-score-court__navigator-field">
           <span className="gesture-score-court__navigator-caption">Court</span>

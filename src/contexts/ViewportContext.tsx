@@ -22,9 +22,15 @@ function readSnapshot(): ViewportContextValue {
   if (typeof window === 'undefined') return { bucket: 'mobile', orientation: 'portrait' }
   const metrics = readViewportLockMetrics()
   return {
-    bucket: viewportFromWidth(metrics.widthPx),
+    bucket: viewportBucketFromMetrics(metrics.widthPx, metrics.heightPx),
     orientation: metrics.orientation,
   }
+}
+
+function viewportBucketFromMetrics(widthPx: number, heightPx: number): ViewportBucket {
+  const compactTouchDevice =
+    navigator.maxTouchPoints > 0 && Math.min(widthPx, heightPx) < 768
+  return compactTouchDevice ? 'mobile' : viewportFromWidth(widthPx)
 }
 
 export function ViewportProvider({ children }: { children: ReactNode }) {
@@ -36,7 +42,7 @@ export function ViewportProvider({ children }: { children: ReactNode }) {
       const metrics = readViewportLockMetrics()
       syncViewportLockDimensions(metrics)
       setSnapshot({
-        bucket: viewportFromWidth(metrics.widthPx),
+        bucket: viewportBucketFromMetrics(metrics.widthPx, metrics.heightPx),
         orientation: metrics.orientation,
       })
     }

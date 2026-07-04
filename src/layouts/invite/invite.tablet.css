@@ -203,6 +203,14 @@ flex: 1 1 0%;
   min-height: 0;
 }
 
+html[data-viewport='tablet'] .invite-card-carousel,
+html[data-viewport='tablet'] .invite-card-carousel-item,
+html[data-viewport='tablet'] .invite-game-card,
+html[data-viewport='tablet'] .invite-game-card__frame {
+  height: 100%;
+  min-height: 0;
+}
+
 /* Tablet + web sizing */
 html[data-viewport='tablet'] .invite-game-card__frame {
 padding-inline: 0.5rem;
@@ -692,6 +700,11 @@ html[data-viewport='tablet'] .hub-gender-body {
   padding-top: 0;
 }
 
+html[data-viewport='tablet'] .hub-gender-body > div {
+  height: 100%;
+  min-height: 0;
+}
+
 html[data-viewport='tablet'] .invite-card-gender-controls {
   gap: 0.45rem;
 }
@@ -874,4 +887,51 @@ html[data-viewport='tablet'] .invite-game-card__roster .invite-duo-team-players 
   flex: 1 1 auto;
   text-align: left;
   font-size: clamp(0.88rem, 2.1vh, 1.18rem);
+}
+
+/* Read-only duo roster: split each team card into a header and a full-height player body. */
+html[data-viewport='tablet'] .invite-game-card__roster > .invite-roster-grid--fill {
+  height: 100%;
+  grid-template-rows: repeat(var(--roster-rows, 1), minmax(0, 1fr));
+  align-content: stretch;
+  overflow: hidden;
+}
+
+html[data-viewport='tablet'] .invite-game-card__roster > .invite-roster-grid--fill > .invite-duo-team-card {
+  display: grid;
+  height: 100%;
+  min-height: 0;
+  grid-template-rows: minmax(3rem, auto) minmax(0, 1fr);
+  overflow: hidden;
+}
+
+html[data-viewport='tablet'] .invite-game-card__roster .invite-duo-team-label {
+  display: -webkit-box;
+  min-height: 3rem;
+  margin: 0;
+  align-self: center;
+  overflow: hidden;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+html[data-viewport='tablet'] .invite-game-card__roster .invite-duo-team-players {
+  display: grid;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  min-height: 0;
+  height: 100%;
+  justify-content: stretch;
+}
+
+html[data-viewport='tablet'] .invite-game-card__roster .invite-duo-team-players .invite-roster-chip {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
+  align-items: center;
 }

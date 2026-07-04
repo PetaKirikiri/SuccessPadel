@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
-import { Navigate, useLocation, useParams, useSearchParams } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { useCompetitionBoard } from '../../hooks/useCompetitionBoard'
 import { useCourtLive } from '../../hooks/useCourtLive'
@@ -49,6 +49,7 @@ import {
   isGameSlotInBreakAfter,
   isGameSlotLive,
 } from '../../lib/competitionLayout'
+import { ensureCompetitionRoundId } from '../../lib/competitionRoundResolve'
 import { formatDateInput } from '../../lib/courtSchedule'
 import {
   newerGestureCameraLog,
@@ -120,6 +121,7 @@ function timerValue(
 
 export function GestureScoreCourtPage() {
   const location = useLocation()
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const detectPreview =
     searchParams.get('gestureDetect') === '1' || searchParams.get('detect') === '1'
@@ -142,6 +144,7 @@ export function GestureScoreCourtPage() {
     session,
     rounds,
     roster,
+    sessionPairs,
     clubCourts,
     courtMatches,
     loading: competitionLoading,
@@ -351,17 +354,6 @@ export function GestureScoreCourtPage() {
   const currentTimerValue = timerValue(tick, gameNum, currentTimes, roundTimesByGame)
   const displayCourtLabel = resolvedCourtLabel || courtOptions.find((option) => option.value === selectedCourtValue)?.label || 'Court'
 
-  useEffect(() => {
-    if (scheduleGames.length === 0) return
-    if (!scheduleGames.some((game) => game.gameNumber === activeGameNum)) {
-      setActiveGameNum(scheduleGames[0].gameNumber)
-      return
-    }
-    if (!activeCourtValue && courtOptions[0]) {
-      setActiveCourtValue(courtOptions[0].value)
-    }
-  }, [activeCourtValue, activeGameNum, courtOptions, scheduleGames])
-
   const courtOptionsForGame = useCallback(
     (nextGameNumber: number): CourtOption[] => {
       const nextGame = scheduleGames.find((game) => game.gameNumber === nextGameNumber)
@@ -382,18 +374,43 @@ export function GestureScoreCourtPage() {
     [courtIdByLabel, friendlyRoute, liveCourtsByGame, scheduleGames],
   )
 
+  useEffect(() => {
+    if (scheduleGames.length === 0) return
+    if (!scheduleGames.some((game) => game.gameNumber === activeGameNum)) {
+      setActiveGameNum(scheduleGames[0].gameNumber)
+      return
+    }
+    const optionsForActiveGame = courtOptionsForGame(activeGameNum)
+    if (!activeCourtValue && optionsForActiveGame[0]) {
+      setActiveCourtValue(optionsForActiveGame[0].value)
+      return
+    }
+    if (activeCourtValue && optionsForActiveGame.length > 0) {
+      const currentOption = optionsForActiveGame.find((option) => option.value === activeCourtValue)
+      if (currentOption) return
+      const currentCourtLabel = resolvedCourtLabel || activeCourtValue
+      const matchingCourt = optionsForActiveGame.find(
+        (option) => option.label === currentCourtLabel || option.label === activeCourtValue,
+      )
+      if (matchingCourt) setActiveCourtValue(matchingCourt.value)
+    }
+  }, [activeCourtValue, activeGameNum, courtOptionsForGame, resolvedCourtLabel, scheduleGames])
+
   const changeGame = useCallback(
     (value: string) => {
       const nextGameNumber = Number(value)
       if (!Number.isFinite(nextGameNumber)) return
       const nextCourtOptions = courtOptionsForGame(nextGameNumber)
+      const currentCourtLabel =
+        courtOptionsForGame(gameNum).find((option) => option.value === selectedCourtValue)?.label ??
+        displayCourtLabel
       const sameCourt =
         nextCourtOptions.find((option) => option.value === selectedCourtValue) ??
-        nextCourtOptions.find((option) => option.label === displayCourtLabel)
+        nextCourtOptions.find((option) => option.label === currentCourtLabel)
       setActiveGameNum(nextGameNumber)
       setActiveCourtValue(sameCourt?.value ?? nextCourtOptions[0]?.value ?? selectedCourtValue)
     },
-    [courtOptionsForGame, displayCourtLabel, selectedCourtValue],
+    [courtOptionsForGame, displayCourtLabel, gameNum, selectedCourtValue],
   )
 
   const changeCourt = useCallback(
@@ -402,6 +419,26 @@ export function GestureScoreCourtPage() {
     },
     [],
   )
+
+  useEffect(() => {
+    if (!id || !Number.isFinite(gameNum) || !selectedCourtValue) return
+    const courtSegment = encodeURIComponent(selectedCourtValue)
+    const nextPath = friendlyRoute
+      ? `/friendly/${id}/games/${gameNum}/courts/${courtSegment}/gesture-score`
+      : `/competitions/${id}/games/${gameNum}/courts/${courtSegment}/gesture-score`
+    const nextUrl = `${nextPath}${location.search}`
+    if (`${location.pathname}${location.search}` !== nextUrl) {
+      navigate(nextUrl, { replace: true })
+    }
+  }, [
+    friendlyRoute,
+    gameNum,
+    id,
+    location.pathname,
+    location.search,
+    navigate,
+    selectedCourtValue,
+  ])
 
   const ourTeam = useMemo(
     () =>
@@ -636,8 +673,20 @@ export function GestureScoreCourtPage() {
             canSaveRef.current = true
           }
 
+          let ctxForSave = cameraCtx
+          if (!cameraCtx.friendly && !cameraCtx.roundId && session) {
+            const result = await ensureCompetitionRoundId(cameraCtx.competitionId!, cameraCtx.gameNumber, {
+              session,
+              roster,
+              sessionPairs,
+            })
+            if (result.roundId) {
+              ctxForSave = { ...cameraCtx, roundId: result.roundId }
+            }
+          }
+
           const { error } = await persistPlannedGestureCameraLog(
-            cameraCtx,
+            ctxForSave,
             priorForSave,
             planned,
             matchEnded,
@@ -653,7 +702,7 @@ export function GestureScoreCourtPage() {
           pendingSavesRef.current = Math.max(0, pendingSavesRef.current - 1)
         })
     },
-    [cameraCtx, needsAuth, restoreSession],
+    [cameraCtx, needsAuth, restoreSession, roster, session, sessionPairs],
   )
 
   const applyFingerAction = useCallback(
@@ -833,6 +882,7 @@ export function GestureScoreCourtPage() {
       ) : null}
       {scorerReady ? (
         <CameraScoreTracker
+          key={courtSetupKey}
           ref={trackerRef}
           preview={detectPreview}
           showStartCamera={showStartCamera}

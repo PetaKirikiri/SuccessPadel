@@ -34,14 +34,14 @@
 
 ## Game card (viewport sizes)
 
-**One game card** for friendly and competition — import `GameCard` from [`src/components/gameCard`](src/components/gameCard), never `ScoringGameCard` / `FriendlyManualGameCard`.
+**One game card** for friendly and competition — import `GameCard` from [`src/components/GameCard`](src/components/GameCard), never `ScoringGameCard` / `FriendlyManualGameCard`.
 
 | Size | Viewport | File |
 |------|----------|------|
-| `mobile` | &lt; 768px | [`GameCardMobile.tsx`](src/components/gameCard/GameCardMobile.tsx) |
-| `tablet` | 768–1023px | [`GameCardTablet.tsx`](src/components/gameCard/GameCardTablet.tsx) |
-| `web` | 1024–1535px | [`GameCardWeb.tsx`](src/components/gameCard/GameCardWeb.tsx) |
-| `tv` | ≥ 1536px | [`GameCardTv.tsx`](src/components/gameCard/GameCardTv.tsx) + [`gameCard.tv.css`](src/components/gameCard/gameCard.tv.css) |
+| `mobile` | &lt; 768px | [`GameCardMobile.tsx`](src/components/GameCard/GameCardMobile.tsx) |
+| `tablet` | 768–1023px | [`GameCardTablet.tsx`](src/components/GameCard/GameCardTablet.tsx) |
+| `web` | 1024–1535px | [`GameCardWeb.tsx`](src/components/GameCard/GameCardWeb.tsx) |
+| `tv` | ≥ 1536px | [`GameCardTv.tsx`](src/components/GameCard/GameCardTv.tsx) + [`gameCard.tv.css`](src/components/GameCard/gameCard.tv.css) |
 
 **Rules:** Edit the size-specific file for layout changes. Do not add `tvCompact` or size `if` branches in shared shell/header/courts code. TV court grid / carousel CSS lives in `gameCard.tv.css` only. Hook: [`useGameCardSize`](src/hooks/useGameCardSize.ts). Breakpoints: [`viewBreakpoints.ts`](src/lib/viewBreakpoints.ts).
 
@@ -68,7 +68,17 @@ Gesture routes use **gesture-shell** (fullscreen, no dock): [`src/surfaces/gestu
 | web | 1024px | `web` |
 | tv | 1536px | `tv` |
 
-[`ViewportProvider`](src/contexts/ViewportContext.tsx) sets `data-viewport` from each device’s real width (phone / tablet / laptop / TV).
+[`ViewportProvider`](src/contexts/ViewportContext.tsx) sets `data-viewport` and `data-orientation` from the centralized viewport lock in [`src/lib/viewportLock.ts`](src/lib/viewportLock.ts).
+
+**Viewport lock invariants:**
+
+- `ViewportProvider` + `viewportLock.ts` are the only owners of `html[data-viewport]`, `html[data-orientation]`, `--app-width`, and `--app-height`.
+- Use the visible viewport first (`window.visualViewport.width/height`) when available. **Do not** compute app size with `Math.max(window.innerWidth, visualViewport.width, clientWidth)` or similar; on iPhone landscape that can make the app wider/taller than the visible screen, causing white gutters, horizontal scroll, short pages, and broken vertical scroll.
+- Phone landscape remains `mobile` when it is a touch device with a phone-sized short side (`min(width,height) < 768`). Do not bucket phone landscape as `tablet` just because its long side is wider than 768px.
+- `.viewport-lock` must not add global left/right safe-area padding. Safe-area padding belongs only in the specific UI chrome that needs it, not on the root app wrapper.
+- If mobile pages show white side gutters or horizontal scroll, inspect `viewportLock.ts`, `ViewportProvider`, `.viewport-lock`, and shell scroll owners before editing child cards.
+
+`npm run check:layouts` enforces that root viewport authority stays centralized.
 
 **Layout is locked** in [`src/layouts/*.layout.css`](src/layouts/) (listed in `.cursorignore`). Logic tasks must **not** edit `src/layouts/**`. Layout tasks edit **one bucket block** in one layout file only.
 
@@ -80,7 +90,13 @@ Gesture routes use **gesture-shell** (fullscreen, no dock): [`src/surfaces/gestu
 | **gesture code only** | `src/lib/gesture*.ts` — no TSX, no layouts |
 | **gesture-score layout only** | `gesture-score.layout.css` |
 
-TSX uses **semantic hooks** (`hub-root`, `invite-game-card`, `profile-banner`) — not `md:`/`lg:` for layout forks.
+TSX uses **semantic hooks** (`hub-root`, `invite-game-card`, `profile-banner`) — not Tailwind utility strings for layout. The target architecture is semantic TSX + viewport CSS: TSX names the part, CSS owns the display, spacing, sizing, scrolling, color, and responsive behavior.
+
+**No explicit CSS in TSX:** TSX files must not contain visual/layout utility classes (`flex`, `w-full`, `px-*`, `md:*`, colors, borders, shadows, etc.) or inline `style={{ ... }}` for UI. Use one or more semantic class hooks only, then declare the CSS in the correct external file. Run `npm run audit:tsx-css` to see remaining debt; run `npm run check:tsx-css` only when the touched surface has been fully extracted and is expected to be clean.
+
+**Component UI lock:** If a TSX component has a guard comment saying layout belongs in `src/layouts/**`, do not change spacing, height, width, scrolling, breakpoints, color, visual state, or class names in that TSX file for UI/layout work. Existing semantic hooks may be used from the correct per-bucket CSS file; if a needed hook is missing, stop and ask before changing component markup.
+
+**Semantic extraction only:** Removing Tailwind/CSS-like strings from TSX is allowed only as an explicit refactor, not while fixing a viewport/layout bug. In that refactor, replace utility class strings with named semantic classes, move the declarations into the appropriate `src/layouts/**` file, and keep viewport differences in the matching bucket file. Do not mix “fix mobile layout” with “change TSX class structure” in one step.
 
 **Unscoped layout ban (invite):** In `invite.layout.css`, only `.invite-game-card { display; width; min-width }` may be unscoped. Every `.invite-game-card__*` rule must live under `html[data-viewport='…']`. `npm run check:layouts` enforces this.
 
@@ -92,9 +108,9 @@ Never add `Friendly*Card` / `Competition*Card` visual duplicates — `kind` = da
 
 | # | Surface | TSX | Layout CSS |
 |---|---------|-----|------------|
-| 1 | Invite game card | [`InviteGameCard`](src/components/invite/SessionInviteCard.tsx) | `invite.layout.css` |
-| 2 | Settings | [`SetupCard`](src/components/setup/SetupCard.tsx) | `settings.layout.css` |
-| 3 | Game | [`GameCard`](src/components/gameCard/) | `game-card.layout.css` |
+| 1 | Invite game card | [`InviteGameCard`](src/components/InviteCard/InviteCard.logic.tsx) | `invite.layout.css` |
+| 2 | Settings | [`SetupCard`](src/components/SetupCard/SetupCard.tsx) | `settings.layout.css` |
+| 3 | Game | [`GameCard`](src/components/GameCard/) | `game-card.layout.css` |
 | 4 | Leaderboard | [`Leaderboard`](src/components/leaderboard/Leaderboard.tsx) | `leaderboard.layout.css` |
 | 5 | Profile | [`PlayerProfileCard`](src/components/PlayerProfileCard.tsx) | `profile.layout.css` |
 | 6 | Court | inside game card | `game-card.layout.css` |
@@ -108,13 +124,26 @@ Never add `Friendly*Card` / `Competition*Card` duplicates — use `kind` / `mode
 
 | Card | Path | Notes |
 |------|------|-------|
-| Invite | [`src/components/invite/`](src/components/invite/) | `InviteGameCard` (`SessionInviteCard` deprecated alias) |
-| Game | [`src/components/gameCard/`](src/components/gameCard/) | `GameCard` facade + size variants |
+| Invite | [`src/components/InviteCard/`](src/components/InviteCard/) | `InviteGameCard` |
+| Game | [`src/components/GameCard/`](src/components/GameCard/) | `GameCard` facade + size variants |
 | Leaderboard | [`src/components/leaderboard/Leaderboard.tsx`](src/components/leaderboard/Leaderboard.tsx) | Hub: [`pages/Leaderboard.tsx`](src/pages/Leaderboard.tsx) with `source: 'season' \| 'friendly'` |
-| Court | [`src/components/gameCard/CourtCard.tsx`](src/components/gameCard/CourtCard.tsx) | Inside game card + manual score page |
-| Setup | [`src/components/setup/SetupCard.tsx`](src/components/setup/SetupCard.tsx) | Shared by friendly + competition forms |
+| Court | [`src/components/GameCard/CourtCard.tsx`](src/components/GameCard/CourtCard.tsx) | Inside game card + manual score page |
+| Setup | [`src/components/SetupCard/SetupCard.tsx`](src/components/SetupCard/SetupCard.tsx) | Shared by friendly + competition forms |
 
-**Hub:** [`src/components/hub/`](src/components/hub/) — `GamesHubView`, `GamesList`. **Play:** [`src/components/play/`](src/components/play/). **Roster:** [`src/components/roster/RosterList.tsx`](src/components/roster/RosterList.tsx).
+**Hub:** [`src/components/InviteCard/`](src/components/InviteCard/) — `GamesHomeSurface`, `GamesHubView`, `GamesList`. **Play:** [`src/foundation/play/`](src/foundation/play/). **Roster:** [`src/components/InviteCard/RosterList.tsx`](src/components/InviteCard/RosterList.tsx).
+
+## Invite Card Data Map
+
+The invite card is a presenter, not the source of game/player truth.
+
+- Competition hub rows load through [`src/hooks/useCompetitionHubRows.ts`](src/hooks/useCompetitionHubRows.ts), which calls Supabase RPC `list_competitions_for_setup`, then enriches missing roster avatars through [`src/lib/competitionRosterAvatars.ts`](src/lib/competitionRosterAvatars.ts).
+- Competition row shape and roster naming live in [`src/hooks/useCompetitions.ts`](src/hooks/useCompetitions.ts): `CompetitionRow`, `CompetitionPlayer`, `rosterDisplayName`, and `buildRosterNameById`. This is the contract for `session_players`, nested `profiles`, nested `padel_players`, and `session_pairs`.
+- Friendly hub rows load through [`src/hooks/useFriendlyHubGames.ts`](src/hooks/useFriendlyHubGames.ts) and friendly display helpers in [`src/lib/friendlyGames.ts`](src/lib/friendlyGames.ts).
+- Visual card data is normalized in [`src/lib/sessionDisplay.ts`](src/lib/sessionDisplay.ts), then rendered by [`src/components/InviteCard/InviteCard.logic.tsx`](src/components/InviteCard/InviteCard.logic.tsx) and [`src/components/InviteCard/InviteCard.tsx`](src/components/InviteCard/InviteCard.tsx).
+- Invite roster editing is [`src/components/InviteCard/InviteCardRosterEditor.tsx`](src/components/InviteCard/InviteCardRosterEditor.tsx). It saves through [`src/lib/saveCompetitionInviteRoster.ts`](src/lib/saveCompetitionInviteRoster.ts), which must stay aligned with `sync_competition_roster_slots`.
+- Setup-card edit hydration is separate: [`src/components/SetupCard/SetupCardEventForm.tsx`](src/components/SetupCard/SetupCardEventForm.tsx) loads the same competition row contract before saving schedule/roster changes.
+
+When player names/photos look wrong on invite cards, inspect the data chain in that order. Do not patch the invite TSX to invent player data; fix the row contract or the normalizer.
 
 ## Shared component checklist
 

@@ -93,9 +93,9 @@ html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__top-
 
 
 html[data-gesture-ui='court'] .gesture-score-court__start-camera {
+  display: none;
   position: relative;
   z-index: 5;
-  display: inline-flex;
   align-items: center;
   justify-content: center;
   min-height: 3.25rem;
@@ -202,7 +202,7 @@ html[data-gesture-ui='court'] .gesture-score-court__navigator {
   width: clamp(18rem, 24vw, 30rem);
   grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
-  gap: 0.35rem;
+  gap: 0.45rem;
   padding: 0;
   transform: translateX(-50%);
 }
@@ -240,16 +240,83 @@ html[data-gesture-ui='court'] .gesture-score-court__navigator-caption {
 html[data-gesture-ui='court'] .gesture-score-court__navigator-menu {
   position: relative;
   min-width: 0;
+  height: 100%;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__game-stepper {
+  display: grid;
+  height: 100%;
+  min-width: 0;
+  grid-template-columns: 2.35rem minmax(0, 1fr) 2.35rem;
+  align-items: stretch;
+  background: rgb(17 53 92 / 0.94);
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__game-stepper-button {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 4.85rem;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__game-stepper-button--prev {
+  border-top-left-radius: 0.85rem;
+  border-bottom-left-radius: 0.85rem;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__game-stepper-button--next {
+  border-right: 1px solid rgb(255 255 255 / 0.1);
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__game-stepper-button:active:not(:disabled) {
+  color: #7dd3fc;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__game-stepper-button:disabled {
+  cursor: default;
+  opacity: 0.34;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__game-stepper-icon {
+  width: 2.15rem;
+  height: 2.15rem;
+  stroke-width: 3;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__game-stepper-label {
+  display: flex;
+  min-width: 0;
+  min-height: 4.85rem;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0.72rem 0.7rem;
+  border: 0;
+  background: transparent;
+  color: #f8fafc;
+  font-size: 1.58rem;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__navigator-button {
   position: relative;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   grid-template-rows: minmax(0, 1fr);
   align-items: center;
   column-gap: 0.4rem;
-  min-height: 3.45rem;
+  min-height: 4.85rem;
   width: 100%;
   border: 0;
   border-right: 1px solid rgb(255 255 255 / 0.1);
@@ -257,27 +324,19 @@ html[data-gesture-ui='court'] .gesture-score-court__navigator-button {
   background: rgb(17 53 92 / 0.94);
   color: #f8fafc;
   font: inherit;
-  font-size: 1.25rem;
+  font-size: 1.58rem;
   font-weight: 900;
   letter-spacing: 0;
   text-transform: none;
-  padding: 0.5rem 0.8rem;
+  padding: 0.72rem 1rem;
   text-align: center;
   appearance: none;
   cursor: pointer;
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__navigator-button::before {
-  width: 0.56rem;
-  height: 0.56rem;
-  border-radius: 999px;
-  background: var(--gesture-score-court-status, transparent);
-  box-shadow: 0 0 0 0.14rem rgb(255 255 255 / 0.05);
-  content: '';
-}
-
-html[data-gesture-ui='court'] .gesture-score-court__navigator-button:not([data-status])::before {
   display: none;
+  content: none;
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__navigator-button[data-status='available'],
@@ -345,7 +404,7 @@ html[data-gesture-ui='court'] .gesture-score-court__navigator-options {
 
 html[data-gesture-ui='court'] .gesture-score-court__navigator-option {
   display: grid;
-  min-height: 2.45rem;
+  min-height: 3.2rem;
   grid-template-columns: auto max-content auto;
   align-items: center;
   gap: 0.45rem;
@@ -355,7 +414,7 @@ html[data-gesture-ui='court'] .gesture-score-court__navigator-option {
   background: rgb(17 53 92 / 0.72);
   color: #f8fafc;
   font: inherit;
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   font-weight: 900;
   letter-spacing: 0;
   text-align: left;
@@ -398,7 +457,7 @@ html[data-gesture-ui='court'] .gesture-score-court__navigator-timer {
   align-content: center;
   gap: 0.02rem;
   min-width: 0;
-  padding: 0.28rem 0.65rem 0.35rem;
+  padding: 0.36rem 0.75rem 0.42rem;
   border: 1px solid rgb(255 255 255 / 0.1);
   border-radius: 0.7rem;
   background: rgb(6 25 45 / 0.78);
@@ -492,12 +551,12 @@ html[data-gesture-ui='court'] .gesture-score-court__team-chips--large > div {
   flex: 1 1 0;
   width: auto;
   min-width: 0;
-  height: 2.35rem;
-  padding-inline: 0.55rem;
+  height: 2.75rem;
+  padding-inline: 0.7rem;
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__team-chips--large > div span:first-child {
-  font-size: 0.9375rem;
+  font-size: 1.08rem;
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__team-chips--large .gesture-score-court__player-avatar {
@@ -568,13 +627,13 @@ html[data-gesture-ui='court'] .gesture-score-court__team-point {
 html[data-gesture-ui='court'] .gesture-score-court__team-games {
   order: -1;
   align-self: center;
-  min-height: 2rem;
-  padding: 0.15rem 0.5rem;
+  min-height: 2.25rem;
+  padding: 0.18rem 0.58rem;
   border: 1px solid transparent;
   border-radius: 0.5rem;
   background: transparent;
   font: inherit;
-  font-size: clamp(0.95rem, 2.2vw, 1.15rem);
+  font-size: clamp(1.08rem, 2.4vw, 1.32rem);
   font-weight: 900;
   font-variant-numeric: tabular-nums;
   color: #7dd3fc;
@@ -1146,7 +1205,7 @@ html[data-viewport='tv'][data-gesture-ui='court'] .gesture-score-court__finger-i
     top: max(0.38rem, env(safe-area-inset-top, 0px));
     width: clamp(16rem, 24vw, 26rem);
     grid-template-columns: minmax(0, 1fr);
-    gap: 0.18rem;
+    gap: 0.24rem;
     padding: 0;
   }
 
@@ -1163,9 +1222,28 @@ html[data-viewport='tv'][data-gesture-ui='court'] .gesture-score-court__finger-i
   }
 
   html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__navigator-button {
-    min-height: clamp(2.05rem, 7.2vh, 2.65rem);
-    padding: 0.18rem 0.45rem;
-    font-size: clamp(0.92rem, 3vh, 1.08rem);
+    min-height: clamp(3.15rem, 12vh, 4.05rem);
+    padding: 0.28rem 0.55rem;
+    font-size: clamp(1.08rem, 4.2vh, 1.42rem);
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__game-stepper {
+    grid-template-columns: 2rem minmax(0, 1fr) 2rem;
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__game-stepper-button {
+    min-height: clamp(3.15rem, 12vh, 4.05rem);
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__game-stepper-label {
+    min-height: clamp(3.15rem, 12vh, 4.05rem);
+    padding: 0.28rem 0.42rem;
+    font-size: clamp(1.08rem, 4.2vh, 1.42rem);
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__game-stepper-icon {
+    width: clamp(1.55rem, 5.4vh, 2rem);
+    height: clamp(1.55rem, 5.4vh, 2rem);
   }
 
   html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__navigator-button-status {
@@ -1190,12 +1268,12 @@ html[data-viewport='tv'][data-gesture-ui='court'] .gesture-score-court__finger-i
   }
 
   html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__navigator-option {
-    min-height: 2.12rem;
+    min-height: 2.8rem;
     grid-template-columns: auto max-content auto;
     gap: 0.34rem;
     padding: 0.24rem 0.35rem;
     border-radius: 0.36rem;
-    font-size: clamp(0.78rem, 2.45vh, 0.95rem);
+    font-size: clamp(0.9rem, 3.1vh, 1.1rem);
   }
 
   html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__navigator-option-status {
@@ -1279,7 +1357,7 @@ html[data-viewport='tv'][data-gesture-ui='court'] .gesture-score-court__finger-i
   }
 
   html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__player-name {
-    font-size: clamp(0.8rem, 3.2vh, 1rem);
+    font-size: clamp(0.92rem, 3.75vh, 1.16rem);
     font-weight: 900;
     letter-spacing: 0.055em;
     text-transform: uppercase;
@@ -1325,13 +1403,13 @@ html[data-viewport='tv'][data-gesture-ui='court'] .gesture-score-court__finger-i
     justify-content: center;
     order: -1;
     min-width: 2rem;
-    min-height: 1.25rem;
+    min-height: 1.45rem;
     padding: 0;
     border-color: transparent;
     border-radius: 0;
     background: transparent;
     box-shadow: none;
-    font-size: clamp(1.05rem, 3.6vh, 1.32rem);
+    font-size: clamp(1.18rem, 4.1vh, 1.5rem);
     font-weight: 900;
     line-height: 1;
   }

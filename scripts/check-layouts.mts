@@ -1,5 +1,9 @@
 /**
- * Blocks unscoped invite-card layout rules that leak across viewport buckets.
+ * Mechanical layout locks:
+ * - root viewport metrics belong to ViewportProvider + viewportLock only
+ * - viewport CSS files may only target their own bucket
+ * - protected surface internals must be scoped by html[data-viewport='…']
+ *
  * Run: npm run check:layouts
  */
 import { readFile, readdir } from 'node:fs/promises'
@@ -25,6 +29,45 @@ const ALLOWED_ROOT_PROPS = new Set([
   'width',
   'min-width',
 ])
+const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.css'])
+const ROOT_VIEWPORT_AUTHORITY_FILES = new Set([
+  'src/contexts/ViewportContext.tsx',
+  'src/lib/viewportLock.ts',
+  'src/index.css',
+])
+const ROOT_VIEWPORT_FORBIDDEN_PATTERNS: Array<[RegExp, string]> = [
+  [/\bvisualViewport\b/, 'reads visualViewport'],
+  [/\bdataset\.viewport\b/, 'mutates data-viewport'],
+  [/\bdataset\.orientation\b/, 'mutates data-orientation'],
+  [/\bsyncViewportLockDimensions\b/, 'uses viewport lock sync'],
+  [/\breadViewportLockMetrics\b/, 'reads viewport lock metrics'],
+  [/setProperty\(['"]--app-width['"]/, 'writes --app-width'],
+  [/setProperty\(['"]--app-height['"]/, 'writes --app-height'],
+]
+const UI_LAYOUT_LOCK_COMMENT = 'UI/layout lock:'
+const GUARDED_CLASS_ATTR_RE = /className\s*=\s*(?:"([^"]*)"|'([^']*)'|{`([^`]*)`})/g
+const GUARDED_LAYOUT_CLASS_RE =
+  /(?:^|\s)(?:sm:|md:|lg:|xl:|2xl:|flex|grid|block|inline-flex|relative|absolute|fixed|sticky|h-[\w[\]()/%.#-]+|w-[\w[\]()/%.#-]+|min-h-[\w[\]()/%.#-]+|min-w-[\w[\]()/%.#-]+|max-h-[\w[\]()/%.#-]+|max-w-[\w[\]()/%.#-]+|overflow-[\w-]+|p[trblxy]?-[\w[\]()/%.#-]+|m[trblxy]?-[\w[\]()/%.#-]+|gap-[\w[\]()/%.#-]+|items-[\w-]+|justify-[\w-]+|content-[\w-]+|rounded[\w:[\]()/%.#-]*|border[\w:[\]()/%.#-]*|bg-[\w:[\]()/%.#-]+|text-[\w:[\]()/%.#-]+|shadow[\w:[\]()/%.#-]*|z-[\w[\]()/%.#-]+|inset[\w:[\]()/%.#-]*|top-[\w[\]()/%.#-]+|right-[\w[\]()/%.#-]+|bottom-[\w[\]()/%.#-]+|left-[\w[\]()/%.#-]+)(?=\s|$)/
+const SURFACE_CONTRACTS = [
+  {
+    name: 'invite',
+    root: '.invite-game-card',
+    childPattern: /\.invite-game-card__/,
+    allowedRootProps: ALLOWED_ROOT_PROPS,
+  },
+  {
+    name: 'game-card',
+    root: '.game-card-surface',
+    childPattern: /\.game-card-(?:shell|fill|courts)/,
+    allowedRootProps: new Set(['display', 'width', 'min-width', 'max-width']),
+  },
+  {
+    name: 'court-card',
+    root: '.game-card-court-shell',
+    childPattern: /\.game-card-court-/,
+    allowedRootProps: new Set(['display', 'width', 'min-width', 'max-width']),
+  },
+]
 
 type Rule = { selector: string; body: string; file: string; line: number }
 
@@ -67,39 +110,43 @@ function parseProps(body: string): Map<string, string> {
   return props
 }
 
-function checkInviteRule(rule: Rule): string | null {
+function checkSurfaceRule(rule: Rule): string | null {
   const { selector, body, file, line } = rule
   if (isViewportScoped(selector)) return null
 
-  const isInviteRoot = selector === INVITE_ROOT
-  const isInviteChild = /\.invite-game-card__/.test(selector)
-  if (!isInviteRoot && !isInviteChild) return null
+  for (const contract of SURFACE_CONTRACTS) {
+    const isRoot = selector === contract.root
+    const isChild = contract.childPattern.test(selector)
+    if (!isRoot && !isChild) continue
 
-  if (isInviteChild) {
-    return `${file}:${line} unscoped ${selector} — move under html[data-viewport='…']`
-  }
-
-  const props = parseProps(body)
-  for (const key of props.keys()) {
-    if (!ALLOWED_ROOT_PROPS.has(key)) {
-      return `${file}:${line} ${INVITE_ROOT} may only set display/width/min-width unscoped (found ${key})`
+    if (isChild) {
+      return `${file}:${line} unscoped ${selector} — move ${contract.name} internals under html[data-viewport='…']`
     }
+
+    const props = parseProps(body)
+    for (const key of props.keys()) {
+      if (!contract.allowedRootProps.has(key)) {
+        return `${file}:${line} ${contract.root} may only set baseline root props unscoped (found ${key})`
+      }
+    }
+    return null
   }
+
   return null
 }
 
-async function findCssFiles(dir: string): Promise<string[]> {
+async function findFiles(dir: string, predicate: (entryPath: string) => boolean): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true })
   const files: string[] = []
 
   for (const entry of entries) {
     const entryPath = path.join(dir, entry.name)
     if (entry.isDirectory()) {
-      files.push(...await findCssFiles(entryPath))
+      files.push(...await findFiles(entryPath, predicate))
       continue
     }
 
-    if (entry.name.endsWith('.css')) {
+    if (predicate(entryPath)) {
       files.push(entryPath)
     }
   }
@@ -124,18 +171,51 @@ function checkViewportFileRule(rule: Rule): string | null {
   return null
 }
 
-const files = await findCssFiles(layoutsDir)
+const files = await findFiles(layoutsDir, (entryPath) => entryPath.endsWith('.css'))
 const violations: string[] = []
 
 for (const filePath of files) {
   const css = await readFile(filePath, 'utf8')
   const relFile = path.relative(root, filePath)
   for (const rule of parseRules(css, relFile)) {
-    const violation = checkInviteRule(rule)
+    const violation = checkSurfaceRule(rule)
     if (violation) violations.push(violation)
 
     const viewportViolation = checkViewportFileRule(rule)
     if (viewportViolation) violations.push(viewportViolation)
+  }
+}
+
+const sourceFiles = await findFiles(path.join(root, 'src'), (entryPath) =>
+  SOURCE_EXTENSIONS.has(path.extname(entryPath)),
+)
+
+for (const filePath of sourceFiles) {
+  const relFile = path.relative(root, filePath)
+  if (ROOT_VIEWPORT_AUTHORITY_FILES.has(relFile)) continue
+  const source = await readFile(filePath, 'utf8')
+  for (const [pattern, label] of ROOT_VIEWPORT_FORBIDDEN_PATTERNS) {
+    if (pattern.test(source)) {
+      violations.push(`${relFile} ${label} — root viewport authority belongs in ViewportProvider/viewportLock`)
+    }
+  }
+
+  if (path.extname(filePath) === '.tsx' && source.includes(UI_LAYOUT_LOCK_COMMENT)) {
+    if (/\bstyle\s*=/.test(source)) {
+      violations.push(`${relFile} is UI/layout locked — inline style belongs in layout CSS`)
+    }
+
+    let match: RegExpExecArray | null
+    while ((match = GUARDED_CLASS_ATTR_RE.exec(source))) {
+      const classValue = match[1] ?? match[2] ?? match[3] ?? ''
+      const layoutMatch = classValue.match(GUARDED_LAYOUT_CLASS_RE)
+      if (layoutMatch) {
+        const line = source.slice(0, match.index).split('\n').length
+        violations.push(
+          `${relFile}:${line} is UI/layout locked — "${layoutMatch[0].trim()}" belongs in layout CSS`,
+        )
+      }
+    }
   }
 }
 

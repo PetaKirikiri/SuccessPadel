@@ -12,3 +12,147 @@ html[data-viewport='mobile'] .settings-card {
 html[data-viewport='web'] .settings-card {
   padding: 1.25rem;
 }
+
+.settings-card .setup-duo-team-slots {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.settings-card .setup-duo-team-card {
+  display: grid;
+  gap: 0.55rem;
+  min-width: 0;
+  padding: 0.65rem;
+  border: 1px solid rgb(var(--brand-border) / 0.72);
+  border-radius: 0.8rem;
+  background: rgb(var(--brand-bg-alt) / 0.36);
+}
+
+.settings-card .setup-duo-team-label {
+  min-width: 0;
+}
+
+.settings-card .setup-duo-team-label__input {
+  width: 100%;
+  min-width: 0;
+  height: 2.75rem;
+  padding: 0 0.85rem;
+  border-color: rgb(var(--brand-primary) / 0.58);
+  border-radius: 0.55rem;
+  background: rgb(var(--brand-primary) / 0.2);
+  color: rgb(var(--brand-text));
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.05rem;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.settings-card .setup-duo-team-players {
+  min-width: 0;
+}
+
+.settings-card .setup-player-slots {
+  width: 100%;
+  min-width: 0;
+}
+
+.settings-card .setup-player-slots__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.settings-card .setup-player-slot {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.settings-card .setup-player-slot__number,
+.settings-card .setup-player-slot > span[aria-hidden],
+.settings-card .setup-player-slot > span:not(.sr-only),
+.settings-card .setup-player-slot img {
+  display: grid;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  min-width: 2.2rem;
+  border: 1px solid rgb(var(--brand-primary) / 0.45);
+  border-radius: 999px;
+  background: rgb(var(--brand-bg-alt) / 0.72);
+  color: rgb(var(--brand-muted));
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+}
+
+.settings-card .setup-player-slot img {
+  object-fit: cover;
+}
+
+.settings-card .setup-player-slot > .relative {
+  min-width: 0;
+  width: 100%;
+}
+
+.settings-card .setup-player-slot .brand-input,
+.settings-card .setup-player-slot__input {
+  width: 100%;
+  min-width: 0;
+  height: 2.2rem;
+  padding: 0 0.75rem;
+  border-color: rgb(var(--brand-primary) / 0.52);
+  border-radius: 0.45rem;
+  background: rgb(var(--brand-primary) / 0.18);
+  color: rgb(var(--brand-text));
+  font-size: 0.98rem;
+  line-height: 1;
+}
+
+html[data-viewport='mobile'][data-orientation='landscape'] .settings-card .setup-duo-team-slots,
+html[data-viewport='tablet'] .settings-card .setup-duo-team-slots,
+html[data-viewport='web'] .settings-card .setup-duo-team-slots,
+html[data-viewport='tv'] .settings-card .setup-duo-team-slots {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+html[data-viewport='mobile'][data-orientation='landscape'] .settings-card .setup-player-slots__grid,
+html[data-viewport='tablet'] .settings-card .setup-player-slots__grid,
+html[data-viewport='web'] .settings-card .setup-player-slots__grid,
+html[data-viewport='tv'] .settings-card .setup-player-slots__grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+html[data-viewport='web'] .settings-card .setup-duo-team-label__input,
+html[data-viewport='tv'] .settings-card .setup-duo-team-label__input {
+  height: 3rem;
+  font-size: 1.15rem;
+}
+
+html[data-viewport='web'] .settings-card .setup-player-slot__number,
+html[data-viewport='web'] .settings-card .setup-player-slot > span[aria-hidden],
+html[data-viewport='web'] .settings-card .setup-player-slot > span:not(.sr-only),
+html[data-viewport='web'] .settings-card .setup-player-slot img,
+html[data-viewport='tv'] .settings-card .setup-player-slot__number,
+html[data-viewport='tv'] .settings-card .setup-player-slot > span[aria-hidden],
+html[data-viewport='tv'] .settings-card .setup-player-slot > span:not(.sr-only),
+html[data-viewport='tv'] .settings-card .setup-player-slot img {
+  width: 2.45rem;
+  height: 2.45rem;
+  min-width: 2.45rem;
+}
+
+html[data-viewport='web'] .settings-card .setup-player-slot .brand-input,
+html[data-viewport='web'] .settings-card .setup-player-slot__input,
+html[data-viewport='tv'] .settings-card .setup-player-slot .brand-input,
+html[data-viewport='tv'] .settings-card .setup-player-slot__input {
+  height: 2.45rem;
+  font-size: 1.08rem;
+}

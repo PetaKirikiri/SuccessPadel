@@ -243,9 +243,9 @@ export function GamesHubView({
       )}
 
       <div
-        data-scroll-y={tab === 'leaderboard' ? true : undefined}
+        data-scroll-y
         className={`hub-list relative min-h-0 min-w-0 w-full max-w-full flex-1 basis-0 pb-2 pt-1 ${
-          tab === 'leaderboard' ? 'scroll-y overflow-y-auto' : 'flex min-h-0 flex-col overflow-hidden'
+          tab === 'leaderboard' ? 'scroll-y overflow-y-auto' : 'scroll-y flex min-h-0 flex-col overflow-y-auto'
         }`}
         role="tabpanel"
       >

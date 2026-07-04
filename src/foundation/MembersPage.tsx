@@ -18,11 +18,15 @@ type GuestPlayerRow = {
   display_name: string
   game_count: number
   line_user_id?: string | null
+  line_picture_url?: string | null
 }
 
 type PadelLineRow = {
-  profile_id: string
+  id: string
+  display_name: string
+  profile_id: string | null
   line_user_id: string | null
+  line_picture_url?: string | null
 }
 
 type DeleteTarget = { id: string; name: string }
@@ -162,9 +166,10 @@ function MemberSection({
 
 export function MembersPage() {
   const { t } = useTranslation()
-  const { user, profile, loading: authLoading } = useAuth()
+  const { user, profile, loading: authLoading, session, restoreSession } = useAuth()
   const isAdmin = !authLoading && Boolean(profile?.is_admin)
   const [members, setMembers] = useState<Profile[]>([])
+  const [linePadelPlayers, setLinePadelPlayers] = useState<GuestPlayerRow[]>([])
   const [guestPlayers, setGuestPlayers] = useState<GuestPlayerRow[]>([])
   const [padelLineByProfileId, setPadelLineByProfileId] = useState<Map<string, string>>(() => new Map())
   const [initialLoading, setInitialLoading] = useState(true)
@@ -179,26 +184,51 @@ export function MembersPage() {
 
   const load = useCallback(async () => {
     if (firstLoad.current) setInitialLoading(true)
+    const liveSession = session?.user ? session : await restoreSession()
+    if (!liveSession?.user) {
+      setMembers([])
+      setLinePadelPlayers([])
+      setGuestPlayers([])
+      setPadelLineByProfileId(new Map())
+      setInitialLoading(false)
+      firstLoad.current = false
+      return
+    }
+
     const [profilesRes, guestsRes, padelRes] = await Promise.all([
       supabase
         .from('profiles')
         .select('id, display_name, avatar_url, line_user_id, is_admin')
         .order('display_name'),
       supabase.rpc('list_guest_players_with_games'),
-      supabase.from('padel_players').select('profile_id, line_user_id').not('profile_id', 'is', null),
+      supabase
+        .from('padel_players')
+        .select('id, display_name, profile_id, line_user_id, line_picture_url')
+        .not('line_user_id', 'is', null)
+        .order('display_name'),
     ])
     setMembers((profilesRes.data as Profile[]) ?? [])
     setGuestPlayers((guestsRes.data as GuestPlayerRow[]) ?? [])
     const lineMap = new Map<string, string>()
+    const linkedPadelPlayers: GuestPlayerRow[] = []
     for (const row of (padelRes.data as PadelLineRow[] | null) ?? []) {
       if (row.profile_id && row.line_user_id?.trim()) {
         lineMap.set(row.profile_id, row.line_user_id)
+      } else if (row.line_user_id?.trim()) {
+        linkedPadelPlayers.push({
+          id: row.id,
+          display_name: row.display_name,
+          line_user_id: row.line_user_id,
+          line_picture_url: row.line_picture_url ?? null,
+          game_count: 0,
+        })
       }
     }
     setPadelLineByProfileId(lineMap)
+    setLinePadelPlayers(linkedPadelPlayers)
     setInitialLoading(false)
     firstLoad.current = false
-  }, [])
+  }, [restoreSession, session])
 
   useEffect(() => {
     void load()
@@ -211,19 +241,26 @@ export function MembersPage() {
       authLoading,
       profileIsAdmin: profile?.is_admin ?? null,
       initialLoading,
+      hasSession: Boolean(session?.user),
       userIdPrefix: user?.id?.slice(0, 8) ?? null,
     })
     // #endregion
-  }, [isAdmin, authLoading, profile?.is_admin, initialLoading, user?.id])
+  }, [isAdmin, authLoading, profile?.is_admin, initialLoading, session?.user, user?.id])
 
   const lineMembers = useMemo(
-    () => members.filter((m) => Boolean(m.line_user_id?.trim())),
-    [members],
+    () =>
+      members.filter((m) =>
+        Boolean(m.line_user_id?.trim() || padelLineByProfileId.get(m.id)?.trim()),
+      ),
+    [members, padelLineByProfileId],
   )
 
   const otherMembers = useMemo(
-    () => members.filter((m) => !m.line_user_id?.trim()),
-    [members],
+    () =>
+      members.filter(
+        (m) => !m.line_user_id?.trim() && !padelLineByProfileId.get(m.id)?.trim(),
+      ),
+    [members, padelLineByProfileId],
   )
 
   const createPlayer = async () => {
@@ -350,9 +387,30 @@ export function MembersPage() {
       <MemberSection
         title={t('members.lineLinked')}
         empty={t('members.noLineMembers')}
-        count={lineMembers.length}
+        count={lineMembers.length + linePadelPlayers.length}
       >
         {lineMembers.map(renderMemberRow)}
+        {linePadelPlayers.map((player) => {
+          const name = firstDisplayName(player.display_name)
+          return (
+            <MemberListRow
+              key={player.id}
+              id={player.id}
+              name={name}
+              avatarUrl={player.line_picture_url ?? null}
+              isMe={false}
+              subtitle={t('members.gameInvolvement', { count: player.game_count })}
+              canShare={isAdmin}
+              canDelete={false}
+              shareFeedback={shareFeedback?.id === player.id ? shareFeedback.message : null}
+              onShare={() => void handleShare(player.id, name)}
+              onDelete={() => {
+                setDeleteError(null)
+                setDeleteTarget({ id: player.id, name })
+              }}
+            />
+          )
+        })}
       </MemberSection>
 
       <MemberSection

@@ -13,7 +13,15 @@ export function CameraScoreTrackerShell({ children, onSurfacePointerDown }: Prop
   useGestureUi('court')
 
   return (
-    <div className="gesture-score-court" onPointerDownCapture={onSurfacePointerDown}>
+    <div
+      className="gesture-score-court"
+      onPointerDownCapture={(event) => {
+        if ((event.target as Element | null)?.closest('button,input,[role="button"],[role="listbox"]')) {
+          return
+        }
+        onSurfacePointerDown?.()
+      }}
+    >
       {children}
     </div>
   )

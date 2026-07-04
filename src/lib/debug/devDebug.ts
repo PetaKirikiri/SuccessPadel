@@ -78,7 +78,7 @@ export function postLocalDebugIngest(payload: unknown, sessionId = 'sp-dev'): vo
 const AGENT_DEBUG_ENDPOINT =
   'http://127.0.0.1:7695/ingest/c4960c9b-f3c9-4190-b564-b1526039f3c6'
 
-/** Debug mode: dual-write to Cursor ingest + Vite LAN ingest (phone → Mac). */
+/** Cursor agent session — Cursor ingest + Vite LAN ingest (phone → Mac). */
 export function agentDebugIngest(
   location: string,
   message: string,
@@ -86,7 +86,7 @@ export function agentDebugIngest(
   hypothesisId: string,
   sessionId = 'ce1aed',
 ): void {
-  if (!import.meta.env.DEV) return
+  if (!import.meta.env.DEV || typeof window === 'undefined') return
   const payload = {
     sessionId,
     location,
@@ -94,20 +94,18 @@ export function agentDebugIngest(
     hypothesisId,
     data,
     timestamp: Date.now(),
-    pageUrl: typeof window !== 'undefined' ? window.location.pathname + window.location.search : '',
+    pageUrl: window.location.pathname + window.location.search,
   }
-  debugSessionLog(location, message, data, hypothesisId, sessionId)
-  if (typeof window !== 'undefined') {
-    fetch(AGENT_DEBUG_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Debug-Session-Id': sessionId,
-      },
-      body: JSON.stringify(payload),
-      keepalive: true,
-    }).catch(() => {})
-  }
+  postLocalDebugIngest(payload, sessionId)
+  fetch(AGENT_DEBUG_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Debug-Session-Id': sessionId,
+    },
+    body: JSON.stringify(payload),
+    keepalive: true,
+  }).catch(() => {})
 }
 
 /** Cursor debug session — DEV + LAN host, no ?debug=1 required. Phone → Mac via dev IP. */

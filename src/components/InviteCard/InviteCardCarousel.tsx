@@ -10,6 +10,14 @@ import {
   type TouchEvent,
 } from 'react'
 
+/*
+ * UI/layout lock:
+ * Do not tune invite carousel spacing, height, scrolling, or viewport behavior here.
+ * Do not add classes/hooks for UI work without explicit approval.
+ * Put visual changes in src/layouts/invite/invite.{mobile,tablet,web,tv}.css
+ * or hub.layout.css.
+ */
+
 export type InviteCarouselNav = {
   onPrev: () => void
   onNext: () => void
@@ -76,7 +84,7 @@ export function InviteCardCarousel({ children, className = '' }: Props) {
   return (
     <InviteCarouselNavContext.Provider value={nav}>
       <div
-        className={`relative flex min-h-0 w-full flex-1 flex-col ${className}`}
+        className={`invite-card-carousel ${className}`}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >

@@ -484,12 +484,13 @@ export async function syncGestureCameraPointsOverride(
   const { error } = await upsertMatchGestureLog(payload)
   if (error) return { error, log: null, matchEnded: false }
 
-  if (!ctx.friendly && matchEnded && ctx.roundId) {
+  if (!ctx.friendly && ctx.roundId) {
+    const [teamA, teamB] = americanoCourtTotals(log.finalScore!, ctx.scoreUnit)
     const submitErr = await submitCompetitionFinalScore(
       ctx.roundId,
       ctx.courtId,
-      log.finalScore!.gamesA,
-      log.finalScore!.gamesB,
+      teamA,
+      teamB,
     )
     if (submitErr) return { error: submitErr, log: null, matchEnded: true }
   }
@@ -527,12 +528,13 @@ export async function syncGestureCameraPointForTeam(
   const { error } = await upsertMatchGestureLog(payload)
   if (error) return { error, log: null, matchEnded: false }
 
-  if (!ctx.friendly && matchEnded && ctx.roundId) {
+  if (!ctx.friendly && ctx.roundId) {
+    const [teamA, teamB] = americanoCourtTotals(log.finalScore!, ctx.scoreUnit)
     const submitErr = await submitCompetitionFinalScore(
       ctx.roundId,
       ctx.courtId,
-      log.finalScore!.gamesA,
-      log.finalScore!.gamesB,
+      teamA,
+      teamB,
     )
     if (submitErr) return { error: submitErr, log: null, matchEnded: true }
   }
@@ -558,13 +560,14 @@ export async function persistPlannedGestureCameraLog(
   const { error } = await upsertMatchGestureLog(payload)
   if (error) return { error, log: null, matchEnded: false }
 
-  if (!ctx.friendly && matchEnded && ctx.roundId) {
+  if (!ctx.friendly && ctx.roundId) {
     const score = planned.finalScore!
+    const [teamA, teamB] = americanoCourtTotals(score, ctx.scoreUnit)
     const submitErr = await submitCompetitionFinalScore(
       ctx.roundId,
       ctx.courtId,
-      score.gamesA,
-      score.gamesB,
+      teamA,
+      teamB,
     )
     if (submitErr) return { error: submitErr, log: null, matchEnded: true }
   }

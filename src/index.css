@@ -172,8 +172,8 @@ body {
   overflow: hidden;
   overscroll-behavior: none;
   touch-action: pan-y;
-  padding-left: env(safe-area-inset-left, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
+  padding-left: 0;
+  padding-right: 0;
   @apply bg-brand-bg;
 }
 
@@ -182,8 +182,16 @@ html[data-viewport='mobile'] body,
 html[data-viewport='mobile'] #root,
 html[data-viewport='mobile'] .viewport-lock {
   background:
-    radial-gradient(ellipse 90% 45% at 50% -5%, rgb(77 163 255 / 0.14), transparent),
-    linear-gradient(180deg, var(--color-brand-bg-alt) 0%, var(--color-brand-bg) 100%);
+    radial-gradient(ellipse 90% 45% at 50% -5%, rgb(77 163 255 / 0.18), transparent 62%),
+    radial-gradient(ellipse 70% 35% at 100% 100%, rgb(45 255 196 / 0.1), transparent 68%),
+    linear-gradient(180deg, #0b2a4a 0%, #061d36 100%);
+}
+
+html[data-viewport='mobile'] .game-bg {
+  background:
+    radial-gradient(ellipse 90% 45% at 50% -5%, rgb(77 163 255 / 0.18), transparent 62%),
+    radial-gradient(ellipse 70% 35% at 100% 100%, rgb(45 255 196 / 0.1), transparent 68%),
+    linear-gradient(180deg, #0b2a4a 0%, #061d36 100%);
 }
 
 .scroll-y {

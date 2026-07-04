@@ -178,6 +178,21 @@ export function gamesFromDbRounds(
     })
 }
 
+function mergeLiveGamesIntoPlannedGames(plannedGames: GameRound[], liveGames: GameRound[]): GameRound[] {
+  if (liveGames.length === 0) return plannedGames
+  const liveByGame = new Map(liveGames.map((game) => [game.gameNumber, game]))
+  const merged = plannedGames.map((game) => {
+    const live = liveByGame.get(game.gameNumber)
+    if (!live || live.matches.length === 0) return game
+    return live
+  })
+  const plannedNumbers = new Set(plannedGames.map((game) => game.gameNumber))
+  for (const live of liveGames) {
+    if (!plannedNumbers.has(live.gameNumber)) merged.push(live)
+  }
+  return sortGameRoundsByCourt(merged).sort((a, b) => a.gameNumber - b.gameNumber)
+}
+
 export function useCompetitionBoard(
   session: GameSession | null,
   rounds: CompetitionRound[],
@@ -228,18 +243,17 @@ export function useCompetitionBoard(
 
   const americanoGames = useMemo(() => {
     if (!isAmericano || !layoutValid) return []
-    let games: GameRound[]
-    if (hasLiveRounds) games = gamesFromDbRounds(rounds, clubCourts, rosterById, rosterNameById)
-    else if (isDuo && teams.length >= 2) {
+    let plannedGames: GameRound[]
+    if (isDuo && teams.length >= 2) {
       const duoSchedule = buildDuoStoredSchedule(
         teams.map((t) => ({ label: t.label, rosterIds: t.roster_ids })),
         totalGames || DUO_GAME_COUNT,
         scheduleSeed,
       )
-      games = gamesFromStoredSchedule(paddedRoster, duoSchedule, courtNames, rosterNameById, roster)
+      plannedGames = gamesFromStoredSchedule(paddedRoster, duoSchedule, courtNames, rosterNameById, roster)
     } else {
       // Same technique as invite / friendly preview: build from current roster indices + rosterDisplayName.
-      games = planRankedSchedule(
+      plannedGames = planRankedSchedule(
         rankedRoster,
         courtNames,
         totalGames,
@@ -248,6 +262,10 @@ export function useCompetitionBoard(
         rosterNameById,
       )
     }
+    const liveGames = hasLiveRounds
+      ? gamesFromDbRounds(rounds, clubCourts, rosterById, rosterNameById)
+      : []
+    const games = mergeLiveGamesIntoPlannedGames(plannedGames, liveGames)
     return sortGameRoundsByCourt(games)
   }, [
     isAmericano,

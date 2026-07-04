@@ -946,6 +946,7 @@ export function CompetitionForm() {
             onChange={setDuoTeams}
             disabled={busy}
             layout="grid"
+            setupRosterLayout
           />
         ) : (
           <MemberPlayerSlots
@@ -959,6 +960,8 @@ export function CompetitionForm() {
             disabled={busy}
             showMembers
             showPlayerProfiles
+            showSlotNumbers={false}
+            setupRosterLayout
           />
         )}
 

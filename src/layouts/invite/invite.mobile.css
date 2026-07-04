@@ -1373,3 +1373,32 @@ html[data-viewport='mobile'] .invite-game-card__badges .rule-chip-grid__value {
   font-size: 0.58rem;
   line-height: 1;
 }
+
+/* Mobile scroll lock: invite content grows; shell-main owns vertical page scroll. */
+html[data-viewport='mobile'] .invite-card-carousel-item,
+html[data-viewport='mobile'] .invite-card-carousel,
+html[data-viewport='mobile'] .invite-game-card,
+html[data-viewport='mobile'] .invite-game-card__frame,
+html[data-viewport='mobile'] .invite-game-card__roster,
+html[data-viewport='mobile'] .invite-roster-grid,
+html[data-viewport='mobile'] .invite-roster-grid--prominent,
+html[data-viewport='mobile'] .invite-roster-grid--fill {
+  height: auto;
+  max-height: none;
+  min-height: 0;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+html[data-viewport='mobile'] .invite-game-card {
+  width: 100%;
+  max-width: 100%;
+}
+
+html[data-viewport='mobile'] .invite-game-card__frame {
+  grid-template-rows: auto auto;
+}
+
+html[data-viewport='mobile'] .invite-game-card__roster {
+  -webkit-overflow-scrolling: auto;
+}

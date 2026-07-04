@@ -516,11 +516,7 @@ export function GameBoard({
         tvNav={tvNav}
         onBack={onTvBack}
         viewAlongUrl={viewAlongUrl}
-        leaderboardBody={
-          leaderboardBody && (focusGameNumber ?? gameNumbers[0]) === game.gameNumber
-            ? leaderboardBody
-            : undefined
-        }
+        leaderboardBody={leaderboardBody}
         activePanel={activePanel}
         onActivePanel={onActivePanel}
         t={t}

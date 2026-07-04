@@ -18,6 +18,7 @@ type Props = {
   competitionId?: string | null
   /** Pill layout for invite card roster editor. */
   inviteChipLayout?: boolean
+  setupRosterLayout?: boolean
 }
 
 function TeamLabelInput({
@@ -108,6 +109,7 @@ export function DuoTeamSlots({
   linkAvatarsToProfile = false,
   competitionId = null,
   inviteChipLayout = false,
+  setupRosterLayout = false,
 }: Props) {
   const gridColumns = teams.length <= 4 ? 2 : 4
   const gridRows = Math.max(1, Math.ceil(teams.length / gridColumns))
@@ -151,7 +153,9 @@ export function DuoTeamSlots({
   return (
     <div
       className={
-        layout === 'grid'
+        setupRosterLayout && layout === 'grid'
+          ? 'duo-team-slots duo-team-slots--grid setup-duo-team-slots'
+          : layout === 'grid'
           ? `duo-team-slots duo-team-slots--grid grid ${
               inviteChipLayout
                 ? 'invite-roster-grid invite-roster-grid--fill invite-roster-grid--prominent'
@@ -176,7 +180,9 @@ export function DuoTeamSlots({
         <div
           key={teamIndex}
           className={`duo-team-card ${
-            layout === 'grid'
+            setupRosterLayout && layout === 'grid'
+              ? 'setup-duo-team-card'
+              : layout === 'grid'
               ? `invite-duo-team-card border-brand-primary/15${watermark ? ' invite-duo-team-card--watermarked' : ''}`
               : 'rounded-xl border border-brand-border/50 bg-brand-bg-alt/40 p-3'
           }`}
@@ -186,7 +192,15 @@ export function DuoTeamSlots({
               : undefined
           }
         >
-          <div className={layout === 'grid' ? 'invite-duo-team-label flex min-w-0 items-center gap-2' : 'mb-2 flex items-center gap-2'}>
+          <div
+            className={
+              setupRosterLayout && layout === 'grid'
+                ? 'setup-duo-team-label'
+                : layout === 'grid'
+                  ? 'invite-duo-team-label flex min-w-0 items-center gap-2'
+                  : 'mb-2 flex items-center gap-2'
+            }
+          >
             {layout === 'stack' ? (
               <span className="shrink-0 text-xs font-semibold uppercase tracking-wide text-brand-muted">
                 Team {teamIndex + 1}
@@ -202,11 +216,23 @@ export function DuoTeamSlots({
               onChange={onChange}
               onFieldCommit={onFieldCommit}
               className={`brand-input min-w-0 flex-1 font-semibold uppercase tracking-wide ${
-                layout === 'grid' ? 'px-2' : 'h-9 text-sm'
+                setupRosterLayout && layout === 'grid'
+                  ? 'setup-duo-team-label__input'
+                  : layout === 'grid'
+                    ? 'px-2'
+                    : 'h-9 text-sm'
               }`}
             />
           </div>
-          <div className={inviteChipLayout && layout === 'grid' ? 'invite-duo-team-players' : undefined}>
+          <div
+            className={
+              setupRosterLayout && layout === 'grid'
+                ? 'setup-duo-team-players'
+                : inviteChipLayout && layout === 'grid'
+                  ? 'invite-duo-team-players'
+                  : undefined
+            }
+          >
             <MemberPlayerSlots
               count={2}
               profiles={profiles}
@@ -236,6 +262,7 @@ export function DuoTeamSlots({
               competitionId={competitionId}
               showSlotNumbers={layout !== 'grid'}
               inviteChipLayout={inviteChipLayout && layout === 'grid'}
+              setupRosterLayout={setupRosterLayout && layout === 'grid'}
             />
           </div>
         </div>

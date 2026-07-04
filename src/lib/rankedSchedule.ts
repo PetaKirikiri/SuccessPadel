@@ -1,6 +1,5 @@
 import type { CompetitionPlayer } from '../hooks/useCompetitions'
 import { rosterDisplayName, rosterEntryGender } from '../hooks/useCompetitions'
-import { debugSessionLog } from './debug/devDebug'
 import { clubDisplayName } from './clubMemberDisplay'
 import { courtPlayerFromProfile } from './courtPlayerFromProfile'
 import type { CourtPlayer, GameRound } from './americanoSchedule'
@@ -261,22 +260,6 @@ export function gamesFromStoredSchedule(
           nameForRosterId(fullRoster, match.team_a[0], rosterNameById),
           nameForRosterId(fullRoster, match.team_a[1], rosterNameById),
         ]
-        // #region agent log
-        if (import.meta.env.DEV && round.round === 1 && courtIndex === 0) {
-          const storedId = match.team_a[0]
-          debugSessionLog(
-            'rankedSchedule.ts:gamesFromStoredSchedule',
-            'stored schedule name resolve',
-            {
-              runId: 'post-fix-verify',
-              storedId,
-              resolvedName: teamA[0],
-            },
-            'H-F',
-            '5d6061',
-          )
-        }
-        // #endregion
         return {
           courtLabel: courtsInUse[match.court - 1] ?? courtsInUse[courtIndex] ?? `Court ${match.court}`,
           teamA,

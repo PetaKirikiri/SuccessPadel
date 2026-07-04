@@ -6,3 +6,12 @@
   width: 100%;
   min-width: 0;
 }
+
+.invite-card-carousel {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+}

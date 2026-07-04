@@ -35,6 +35,7 @@ type Props = {
   competitionId?: string | null
   showSlotNumbers?: boolean
   inviteChipLayout?: boolean
+  setupRosterLayout?: boolean
 }
 
 type Suggestion =
@@ -428,6 +429,7 @@ export function MemberPlayerSlots({
   competitionId = null,
   showSlotNumbers = true,
   inviteChipLayout = false,
+  setupRosterLayout = false,
 }: Props) {
   const paddedNames = pad(names, count, '')
   const paddedIds = pad(profileIds, count, null)
@@ -496,10 +498,20 @@ export function MemberPlayerSlots({
   }
 
   return (
-    <div className={inviteChipLayout ? 'flex min-h-0 flex-1 flex-col justify-evenly gap-2' : 'space-y-2'}>
+    <div
+      className={
+        setupRosterLayout
+          ? 'setup-player-slots'
+          : inviteChipLayout
+            ? 'flex min-h-0 flex-1 flex-col justify-evenly gap-2'
+            : 'space-y-2'
+      }
+    >
       <div
         className={
-          inviteChipLayout
+          setupRosterLayout
+            ? 'setup-player-slots__grid'
+            : inviteChipLayout
             ? 'flex min-h-0 flex-1 flex-col justify-evenly gap-2'
             : 'grid grid-cols-1 gap-y-2 sm:grid-cols-2 sm:gap-x-3 sm:gap-y-2'
         }
@@ -526,13 +538,15 @@ export function MemberPlayerSlots({
           <div
             key={index}
             className={
-              inviteChipLayout
+              setupRosterLayout
+                ? 'setup-player-slot'
+                : inviteChipLayout
                 ? 'invite-roster-chip invite-roster-editor-chip flex min-h-0 flex-1 items-center gap-2 rounded-full border border-brand-primary/20 bg-brand-bg-alt py-1 pl-1 pr-2'
                 : 'flex min-w-0 items-center gap-2'
             }
           >
             {showSlotNumbers ? (
-              <span className="w-5 shrink-0 text-center text-[10px] tabular-nums text-brand-muted">
+              <span className={setupRosterLayout ? 'setup-player-slot__number' : 'w-5 shrink-0 text-center text-[10px] tabular-nums text-brand-muted'}>
                 {index + 1}
               </span>
             ) : null}
@@ -579,7 +593,13 @@ export function MemberPlayerSlots({
                 onPick={(name, nextProfileId, nextPadelPlayerId) =>
                   pick(index, name, nextProfileId, nextPadelPlayerId)
                 }
-                inputClassName={inviteChipLayout ? 'invite-roster-chip__name brand-input min-w-0 flex-1 border-0 bg-transparent shadow-none' : undefined}
+                inputClassName={
+                  setupRosterLayout
+                    ? 'setup-player-slot__input brand-input'
+                    : inviteChipLayout
+                      ? 'invite-roster-chip__name brand-input min-w-0 flex-1 border-0 bg-transparent shadow-none'
+                      : undefined
+                }
               />
             )}
             <span className="sr-only">Player {index + 1}</span>
