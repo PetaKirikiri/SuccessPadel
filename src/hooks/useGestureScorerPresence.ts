@@ -47,11 +47,13 @@ export function useGestureScorerPresence(
     const readPresence = () => {
       const state = channel.presenceState() as Record<string, GestureScorerPresencePayload[]>
       const next = new Map<string, number>()
-      for (const entries of Object.values(state)) {
-        for (const entry of entries) {
-          if (!entry?.courtSetupKey) continue
-          next.set(entry.courtSetupKey, (next.get(entry.courtSetupKey) ?? 0) + 1)
-        }
+      for (const [presenceKey, entries] of Object.entries(state)) {
+        if (presenceKey === clientKey) continue
+        const latest = entries
+          .filter((entry) => entry?.courtSetupKey)
+          .sort((a, b) => (b.joinedAt ?? 0) - (a.joinedAt ?? 0))[0]
+        if (!latest?.courtSetupKey) continue
+        next.set(latest.courtSetupKey, (next.get(latest.courtSetupKey) ?? 0) + 1)
       }
       setCounts(next)
     }
