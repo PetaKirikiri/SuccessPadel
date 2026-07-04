@@ -280,7 +280,7 @@ export function GameCardCourts({
           pointScores != null
 
         const gamesEditable =
-          !courtFinished && (gestureCourt || (canEdit && hasScoring && Boolean(row.courtId || friendly)))
+          gestureCourt || (canEdit && hasScoring && Boolean(row.courtId || friendly))
 
         const backupKey = row.courtKey ?? liveCourtScoreKey(game.gameNumber, row.courtLabel)
         const gamesDraftKey = backupKey

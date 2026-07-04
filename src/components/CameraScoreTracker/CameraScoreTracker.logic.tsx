@@ -709,11 +709,6 @@ export function GestureScoreCourtPage() {
     (action: FingerAction) => {
       const engine = engineRef.current
       if (!cameraCtx) return
-      if (matchEndedRef.current && action !== 'undo') {
-        engine?.markScoreBlocked(performance.now())
-        return
-      }
-
       const prior = localLogRef.current
       let planned: MatchGestureLog
       let ended = false
@@ -924,7 +919,7 @@ export function GestureScoreCourtPage() {
           team1Players={teamAPlayers}
           team2Players={teamBPlayers}
           pointHistory={pointHistory}
-          scoreDisabled={matchEnded}
+          scoreDisabled={false}
           undoDisabled={undoDisabled}
           onGamesLeftChange={(games) => void applyGamesEdit('a', games)}
           onGamesRightChange={(games) => void applyGamesEdit('b', games)}
