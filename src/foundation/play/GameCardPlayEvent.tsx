@@ -5,7 +5,6 @@ import { GameBoard } from '../../components/GameCard/GameBoard'
 import { Leaderboard } from '../../components/leaderboard'
 import { PlayStandardView } from './PlayStandardView'
 import { PlayTvView } from './PlayTvView'
-import { TvScoreInputPanel } from '../../components/GameCard/TvScoreInputPanel'
 import type { PlayViewTab } from '../../foundation/play/PlayViewTabs'
 import { useAuth } from '../../hooks/useAuth'
 import { useIsTvLayout } from '../../hooks/useIsTvLayout'
@@ -21,7 +20,7 @@ import {
   isCompetitionComplete,
 } from '../../lib/competitionAchievements'
 import { americanoScheduleFromSession, competitionRoundTimesByGame } from '../../lib/competitionLayout'
-import { courtGameScoreMax, type CourtScoreSubmit } from '../../lib/competitionScoreInput'
+import type { CourtScoreSubmit } from '../../lib/competitionScoreInput'
 import { computeAmericanoStandings } from '../../lib/competitionStandings'
 import { computeDuoStandings } from '../../lib/computeDuoStandings'
 import { computeFriendlySessionStandings } from '../../lib/friendlySessionStandings'
@@ -45,42 +44,6 @@ import {
 } from '../../lib/competitionManualStandings'
 
 type PlayTab = PlayViewTab
-const TV_SCORE_INPUT_LEAD_MS = 4 * 60_000
-
-function gameCourtIds(
-  game: ReturnType<typeof pivotScheduleByGame>[number] | undefined,
-  courtsForGame: { courtId: string; courtName: string }[],
-  courtIdByLabel: Map<string, string>,
-): string[] {
-  if (courtsForGame.length > 0) return courtsForGame.map((court) => court.courtId)
-  return (
-    game?.courts
-      .map((court) => courtIdByLabel.get(court.courtLabel))
-      .filter((courtId): courtId is string => Boolean(courtId)) ?? []
-  )
-}
-
-function gameHasSubmittedScores({
-  game,
-  roundId,
-  courtsForGame,
-  courtIdByLabel,
-  matchForCourt,
-}: {
-  game: ReturnType<typeof pivotScheduleByGame>[number] | undefined
-  roundId?: string
-  courtsForGame: { courtId: string; courtName: string }[]
-  courtIdByLabel: Map<string, string>
-  matchForCourt: ReturnType<typeof useCompetitionBoard>['matchForCourt']
-}): boolean {
-  if (!game || !roundId) return false
-  const courtIds = gameCourtIds(game, courtsForGame, courtIdByLabel)
-  if (courtIds.length === 0) return false
-  return courtIds.every((courtId) => {
-    const score = matchForCourt(roundId, courtId)
-    return score?.teamAPoints != null && score?.teamBPoints != null
-  })
-}
 
 function scoreTotalsForUnit(score: TennisScore, scoreUnit: string): [number, number] {
   if (scoreUnit === 'points') return [score.pointsA ?? 0, score.pointsB ?? 0]
@@ -134,7 +97,7 @@ export function GameCardPlayEvent() {
     searchParams.get('view') === 'leaderboard' ? 'leaderboard' : 'games',
   )
   const autoStartAttemptedRef = useRef<string | null>(null)
-  const [tvGameNumber, setTvGameNumber] = useState<number | undefined>(undefined)
+  const [, setTvGameNumber] = useState<number | undefined>(undefined)
   const [manualCourtScores, setManualCourtScores] = useState<Map<string, ManualCourtScore>>(
     () => new Map(),
   )
@@ -574,42 +537,6 @@ export function GameCardPlayEvent() {
   }, [isAdmin, id, session, roster, sessionPairs, started, loading, refresh])
 
   const standings = liveStandings
-  const firstGameNumber = useMemo(
-    () => pivotScheduleByGame(columns)[0]?.gameNumber,
-    [columns],
-  )
-  const tvScoreGameNumber = tvGameNumber ?? activeRound?.round_number ?? firstGameNumber
-  const tvScoreGame = useMemo(
-    () => pivotScheduleByGame(columns).find((row) => row.gameNumber === tvScoreGameNumber),
-    [columns, tvScoreGameNumber],
-  )
-  const tvScoreRoundId = tvScoreGameNumber ? roundIdForGame(tvScoreGameNumber) : undefined
-  const tvScoreGameTimes = tvScoreGameNumber ? roundTimesByGame.get(tvScoreGameNumber) : undefined
-  const tvScoreGameSubmitted = useMemo(
-    () =>
-      gameHasSubmittedScores({
-        game: tvScoreGame,
-        roundId: tvScoreRoundId,
-        courtsForGame: tvScoreGameNumber ? (liveCourtsByGame.get(tvScoreGameNumber) ?? []) : [],
-        courtIdByLabel,
-        matchForCourt,
-      }),
-    [
-      courtIdByLabel,
-      liveCourtsByGame,
-      matchForCourt,
-      tvScoreGame,
-      tvScoreGameNumber,
-      tvScoreRoundId,
-    ],
-  )
-  const tvScoreInputWindowOpen = tvScoreGameTimes
-    ? now >= tvScoreGameTimes.endsAt - TV_SCORE_INPUT_LEAD_MS
-    : false
-  const showTvScoreInput =
-    Boolean(session && started && tvScoreRoundId && tvScoreInputWindowOpen) &&
-    !tvScoreGameSubmitted
-
   const complete = isCompetitionComplete(session, rounds, courtMatches)
   const standingsOrder = useMemo(
     () => liveStandings.filter((row) => row.games > 0).map((row) => row.profile_id),
@@ -656,28 +583,6 @@ export function GameCardPlayEvent() {
       />
     ) : (
       <p className="px-3 py-6 text-center text-sm text-brand-muted">{t('leaderboard.standings')}</p>
-    )
-
-  const tvScoreInput =
-    session ? (
-      <TvScoreInputPanel
-        columns={columns}
-        gameNumber={tvScoreGameNumber}
-        roundId={tvScoreRoundId}
-        liveCourtsByGame={liveCourtsByGame}
-        courtIdByLabel={courtIdByLabel}
-        matchForCourt={matchForCourt}
-        scoreUnit={scoreUnit}
-        canEdit={canScore}
-        onSubmitScores={handleSubmitScores}
-        courtScoreMax={courtGameScoreMax(scoreUnit === 'games' ? playTo : undefined)}
-        playTo={scoreUnit === 'games' ? playTo : undefined}
-        duoTeamLabels={isDuo ? duoTeamLabels : undefined}
-        competitionId={id ?? null}
-        t={t}
-      />
-    ) : (
-      leaderboardTv
     )
 
   const viewAlongUrl = id ? competitionViewAlongUrl(id) : null
@@ -755,8 +660,8 @@ export function GameCardPlayEvent() {
         <div className="tv-play-view flex min-h-0 flex-1 flex-col overflow-hidden">
           <PlayTvView
             {...sharedViewProps}
-            leaderboardBody={showTvScoreInput ? tvScoreInput : leaderboardTv}
-            leaderboardLabel={showTvScoreInput ? 'Score input' : t('leaderboard.standings')}
+            leaderboardBody={leaderboardTv}
+            leaderboardLabel={t('leaderboard.standings')}
           />
         </div>
       ) : (
