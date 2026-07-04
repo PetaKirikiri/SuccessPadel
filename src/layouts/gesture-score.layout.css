@@ -245,7 +245,7 @@ html[data-gesture-ui='court'] .gesture-score-court__navigator-menu {
 html[data-gesture-ui='court'] .gesture-score-court__navigator-button {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   grid-template-rows: minmax(0, 1fr);
   align-items: center;
   column-gap: 0.4rem;
@@ -265,6 +265,19 @@ html[data-gesture-ui='court'] .gesture-score-court__navigator-button {
   text-align: center;
   appearance: none;
   cursor: pointer;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__navigator-button::before {
+  width: 0.56rem;
+  height: 0.56rem;
+  border-radius: 999px;
+  background: var(--gesture-score-court-status, transparent);
+  box-shadow: 0 0 0 0.14rem rgb(255 255 255 / 0.05);
+  content: '';
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__navigator-button:not([data-status])::before {
+  display: none;
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__navigator-button[data-status='available'],
@@ -290,18 +303,13 @@ html[data-gesture-ui='court'] .gesture-score-court__navigator-button-text {
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__navigator-button-status {
-  grid-column: 1 / -1;
+  position: absolute;
+  width: 1px;
+  height: 1px;
   overflow: hidden;
-  min-width: 0;
-  margin-top: -0.2rem;
-  color: var(--gesture-score-court-status, rgb(255 255 255 / 0.46));
-  text-overflow: ellipsis;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
   white-space: nowrap;
-  font-size: 0.58rem;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  line-height: 1;
-  text-transform: uppercase;
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__navigator-button-caret {
@@ -320,10 +328,10 @@ html[data-gesture-ui='court'] .gesture-score-court__navigator-menu[data-open='tr
 html[data-gesture-ui='court'] .gesture-score-court__navigator-options {
   position: absolute;
   top: calc(100% + 0.32rem);
-  left: 0.35rem;
+  left: 50%;
   z-index: 45;
   display: grid;
-  width: calc(100% - 0.7rem);
+  width: max(100%, min(18rem, calc(100vw - 2rem)));
   max-height: min(45vh, 18rem);
   gap: 0.18rem;
   overflow-y: auto;
@@ -332,12 +340,13 @@ html[data-gesture-ui='court'] .gesture-score-court__navigator-options {
   border-radius: 0.65rem;
   background: rgb(6 25 45 / 0.98);
   box-shadow: 0 22px 48px -24px rgb(0 0 0 / 0.9);
+  transform: translateX(-50%);
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__navigator-option {
   display: grid;
   min-height: 2.45rem;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto max-content auto;
   align-items: center;
   gap: 0.45rem;
   border: 1px solid rgb(255 255 255 / 0.08);
@@ -367,9 +376,7 @@ html[data-gesture-ui='court'] .gesture-score-court__navigator-option-dot {
 
 html[data-gesture-ui='court'] .gesture-score-court__navigator-option-label,
 html[data-gesture-ui='court'] .gesture-score-court__navigator-option-status {
-  overflow: hidden;
   min-width: 0;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -1168,15 +1175,17 @@ html[data-viewport='tv'][data-gesture-ui='court'] .gesture-score-court__finger-i
 
   html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__navigator-options {
     top: calc(100% + 0.22rem);
-    left: 0.22rem;
-    width: calc(100% - 0.44rem);
+    left: 50%;
+    width: max(100%, min(15.5rem, calc(100vw - 1rem)));
     max-height: min(52vh, 14rem);
     padding: 0.22rem;
     border-radius: 0.48rem;
+    transform: translateX(-50%);
   }
 
   html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__navigator-option {
     min-height: 2.12rem;
+    grid-template-columns: auto max-content auto;
     gap: 0.34rem;
     padding: 0.24rem 0.35rem;
     border-radius: 0.36rem;
