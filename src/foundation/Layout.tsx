@@ -34,7 +34,7 @@ export function Layout() {
 
       <main
         data-scroll-y={onPlayerProfile ? undefined : true}
-        className={`shell-main min-h-0 min-w-0 flex-1 basis-0 ${
+        className={`shell-main${isPlaySession ? ' shell-main--play' : ''} min-h-0 min-w-0 flex-1 basis-0 ${
           onPlayerProfile
             ? 'shell-main--profile flex flex-col overflow-hidden p-0'
             : needsFillViewport

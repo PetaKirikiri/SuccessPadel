@@ -422,7 +422,7 @@ export function GameCardPlaySession() {
   }
 
   return (
-    <div className={`flex min-h-0 flex-1 flex-col overflow-hidden${isTvLayout ? ' game-bg' : ''}`}>
+    <div className={`play-session-root flex min-h-0 flex-1 flex-col overflow-hidden${isTvLayout ? ' game-bg' : ''}`}>
       {isTvLayout ? (
         <div className="tv-play-view flex min-h-0 flex-1 flex-col overflow-hidden">
           <PlayTvView

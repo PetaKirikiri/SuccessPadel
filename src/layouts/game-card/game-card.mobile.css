@@ -21,6 +21,20 @@ html[data-viewport='mobile'] .game-card-courts-body {
 }
 
 /* Mobile scroll lock: game cards grow; shell-main owns vertical page scroll. */
+html[data-viewport='mobile'] .shell-main--play {
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+html[data-viewport='mobile'] .shell-main--play > *,
+html[data-viewport='mobile'] .shell-main--play > * > *,
+html[data-viewport='mobile'] .shell-main--play .play-session-root {
+  min-height: 100%;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
 html[data-viewport='mobile'] .play-game-carousel,
 html[data-viewport='mobile'] .tv-game-carousel,
 html[data-viewport='mobile'] .game-board-preview,
