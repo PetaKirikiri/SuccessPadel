@@ -376,16 +376,14 @@ export function GameCardPlayEvent() {
     if (manualStandings.length > 0) {
       return enrichStandingsWithAvatars(manualStandings, leaderboard)
     }
-    const useDb = effectiveCourtMatches.length > 0 && rounds.length > 0
-    if (useDb) {
-      if (isDuo && teams.length >= 2) {
-        return effectiveDuoStandings
-      }
+    if (isDuo && teams.length >= 2 && effectiveDuoStandings.length > 0) {
+      return effectiveDuoStandings
+    }
+    if (effectivePlayerStandings.length > 0) {
       return effectivePlayerStandings
     }
     return enrichStandingsWithAvatars(gestureStandings, leaderboard)
   }, [
-    effectiveCourtMatches,
     effectiveDuoStandings,
     effectivePlayerStandings,
     gestureStandings,
