@@ -12,7 +12,7 @@ import {
   type CompetitionFormDraft,
   type CompetitionPlayerMode,
 } from '../../lib/competitionFormDraft'
-import type { CompetitionPlayer } from '../../hooks/useCompetitions'
+import { rosterDisplayName, type CompetitionPlayer, type CompetitionRow } from '../../hooks/useCompetitions'
 import { MemberPlayerSlots, type PadelPlayerOption } from './MemberPlayerSlots'
 import {
   DuoTeamSlots,
@@ -50,13 +50,11 @@ import { storeCompetitiveGenderFilter } from '../../lib/gamesGenderFilter'
 import { buildCompetitionRosterSlots } from '../../lib/competitionRosterSlots'
 import {
   COURT_COUNT_OPTIONS,
-  americanoGamesFromConfig,
-  breakMinutesFromConfig,
   courtCountFromPlayers,
-  gameMinutesFromConfig,
   competitionPlayStartFromAnchorIso,
   DEFAULT_SINGLES_COURT_COUNT,
   playersFromCourtCount,
+  resolveCompetitionSchedule,
   teamsFromCourtCount,
   type CompetitionPlayStartMinute,
   type CourtCount,
@@ -88,13 +86,6 @@ function flushPendingInputs(): Promise<void> {
 
 function rosterIdsInOrder(rows: CompetitionPlayer[]): string[] {
   return sortRosterByRank(rows).map((row) => row.id)
-}
-
-function profileDisplayName(
-  profile: { display_name?: string | null } | { display_name?: string | null }[] | null | undefined,
-): string | null {
-  const row = Array.isArray(profile) ? profile[0] : profile
-  return row?.display_name?.trim() || null
 }
 
 function parseTimeInput(value: string, fallbackHour: number, fallbackMinute: number) {
@@ -367,22 +358,35 @@ export function CompetitionForm() {
   useEffect(() => {
     setSeasonLoading(true)
     setSeasonError(null)
-    void supabase
-      .from('seasons')
-      .select('id')
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .then(({ data, error: seasonQueryError }) => {
-        if (seasonQueryError) {
-          setSeasonError(seasonQueryError.message)
-        } else if (!data?.[0]?.id) {
-          setSeasonError('No active season.')
-        } else {
-          setSeasonId(data[0].id)
-        }
+    void (async () => {
+      const { data, error: seasonQueryError } = await supabase
+        .from('seasons')
+        .select('id')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+
+      const activeSeasonId = seasonQueryError ? null : data?.[0]?.id
+      if (activeSeasonId) {
+        setSeasonId(activeSeasonId)
         setSeasonLoading(false)
-      })
+        return
+      }
+
+      const { data: fallbackRows, error: fallbackErr } = await supabase
+        .from('game_sessions')
+        .select('season_id')
+        .eq('game_kind', 'competition')
+        .not('season_id', 'is', null)
+        .order('starts_at', { ascending: false })
+        .limit(1)
+
+      const fallbackSeasonId = fallbackRows?.[0]?.season_id
+      if (fallbackErr) setSeasonError(fallbackErr.message)
+      else if (fallbackSeasonId) setSeasonId(fallbackSeasonId)
+      else if (seasonQueryError) setSeasonError(seasonQueryError.message)
+      setSeasonLoading(false)
+    })()
   }, [])
 
   useEffect(() => {
@@ -391,7 +395,11 @@ export function CompetitionForm() {
     void (async () => {
       const { data, error: sessionErr } = await supabase
         .from('game_sessions')
-        .select('*, scoring_config')
+        .select(
+          `*,
+           session_players(id, profile_id, padel_player_id, guest_name, guest_email, rank_order, profiles(id, display_name, avatar_url, avatar_mode, pixel_avatar, gender), padel_players(id, display_name, profile_id, line_picture_url, profiles(id, display_name, avatar_url, avatar_mode, pixel_avatar, gender))),
+           session_pairs(id, pair_label, roster_a_id, roster_b_id)`,
+        )
         .eq('id', id)
         .maybeSingle()
 
@@ -401,75 +409,62 @@ export function CompetitionForm() {
         return
       }
 
-      const mode = competitionPlayerMode(data.scoring_config as ScoringConfig)
+      const session = data as unknown as CompetitionRow
+      const mode = competitionPlayerMode(session.scoring_config as ScoringConfig)
       setPlayerMode(mode)
-      setIsLeagueWeek(Boolean(data.game_group_id))
+      setIsLeagueWeek(Boolean(session.game_group_id))
       const target =
-        data.target_players ?? data.max_players ?? competitionFormatPreset(mode).targetPlayers
+        session.target_players ?? session.max_players ?? competitionFormatPreset(mode).targetPlayers
       setSlotCount(target)
       setCourtCount(courtCountFromPlayers(target))
-      setCompetitionStarted(Boolean(data.competition_started_at))
-      if (data.season_id) setSeasonId(data.season_id)
-      if (data.skill_level && SKILL_LEVELS.includes(data.skill_level as SkillLevel)) {
-        setSkillLevel(data.skill_level as SkillLevel)
+      setCompetitionStarted(Boolean(session.competition_started_at))
+      if (session.season_id) {
+        setSeasonId(session.season_id)
+        setSeasonError(null)
       }
-      if (data.gender && GENDERS.includes(data.gender as Gender)) {
-        setGender(data.gender as Gender)
+      if (session.skill_level && SKILL_LEVELS.includes(session.skill_level as SkillLevel)) {
+        setSkillLevel(session.skill_level as SkillLevel)
       }
-      setTitle(data.title)
+      if (session.gender && GENDERS.includes(session.gender as Gender)) {
+        setGender(session.gender as Gender)
+      }
+      setTitle(session.title)
       setTitleEdited(true)
-      const config = data.scoring_config as ScoringConfig | null
+      const config = session.scoring_config as ScoringConfig | null
       if (typeof config?.schedule_seed === 'number') {
         setPreviewSeed(config.schedule_seed)
       }
+      const schedule = resolveCompetitionSchedule(session)
       setScheduleSetup({
-        gameCount: americanoGamesFromConfig(config),
-        gameMinutes: gameMinutesFromConfig(config, 0, americanoGamesFromConfig(config), breakMinutesFromConfig(config)),
-        breakMinutes: Math.max(GAME_SETUP_MIN_BREAK_MINUTES, breakMinutesFromConfig(config)),
+        gameCount: schedule.totalGames,
+        gameMinutes: schedule.gameMinutes,
+        breakMinutes: Math.max(GAME_SETUP_MIN_BREAK_MINUTES, schedule.breakMinutes),
       })
-      if (data.starts_at) {
-        setDay(bangkokDateFromIso(data.starts_at))
-        const parts = clubTimePartsFromDate(new Date(data.starts_at))
+      if (session.starts_at) {
+        setDay(bangkokDateFromIso(session.starts_at))
+        const parts = clubTimePartsFromDate(new Date(session.starts_at))
         setStartHour(parts.hour)
         setStartMinute(parts.minute)
-        if (data.ends_at) {
-          const endParts = clubTimePartsFromDate(new Date(data.ends_at))
+        const endAt = session.ends_at ?? schedule.eventEndsAt?.toISOString()
+        if (endAt) {
+          const endParts = clubTimePartsFromDate(new Date(endAt))
           setEndHour(endParts.hour)
           setEndMinute(endParts.minute)
         }
-      } else if (data.starts_on) {
-        setDay(data.starts_on)
-      }
-
-      const { data: rosterRows, error: rosterErr } = await supabase
-        .from('session_players')
-        .select('id, guest_name, rank_order, profile_id, padel_player_id, profiles(display_name)')
-        .eq('session_id', id)
-        .order('rank_order')
-
-      if (rosterErr) {
-        setError(rosterErr.message)
-        setRosterHydrated(true)
-        return
+      } else if (session.starts_on) {
+        setDay(session.starts_on)
       }
 
       const nextNames = Array(target).fill('')
       const nextIds = Array<string | null>(target).fill(null)
       const nextPadelIds = Array<string | null>(target).fill(null)
       const padelIdsOnRoster = new Set<string>()
+      const rosterRows = sortRosterByRank(session.session_players ?? [])
 
-      for (const row of rosterRows ?? []) {
-        const r = row as unknown as {
-          id: string
-          guest_name: string | null
-          rank_order: number | null
-          profile_id: string | null
-          padel_player_id: string | null
-          profiles: { display_name: string } | { display_name: string }[] | null
-        }
+      for (const r of rosterRows) {
         const idx = r.rank_order ?? 0
         if (idx >= 0 && idx < nextNames.length) {
-          nextNames[idx] = profileDisplayName(r.profiles) ?? r.guest_name ?? ''
+          nextNames[idx] = rosterDisplayName(r)
           nextIds[idx] = r.profile_id
           nextPadelIds[idx] = r.padel_player_id
           if (r.padel_player_id) padelIdsOnRoster.add(r.padel_player_id)
@@ -494,17 +489,10 @@ export function CompetitionForm() {
             }
           },
         )
-        const { data: pairRows } = await supabase
-          .from('session_pairs')
-          .select('pair_label, roster_a_id, roster_b_id')
-          .eq('session_id', id)
         const rankByRosterId = new Map(
-          (rosterRows ?? []).map((row) => [
-            (row as { id: string }).id,
-            (row as { rank_order: number | null }).rank_order ?? 0,
-          ]),
+          rosterRows.map((row) => [row.id, row.rank_order ?? 0]),
         )
-        for (const pair of pairRows ?? []) {
+        for (const pair of session.session_pairs ?? []) {
           const rankA = rankByRosterId.get(pair.roster_a_id ?? '')
           if (rankA == null) continue
           const teamIndex = Math.floor(rankA / 2)
