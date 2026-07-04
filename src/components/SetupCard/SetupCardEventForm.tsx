@@ -88,6 +88,28 @@ function rosterIdsInOrder(rows: CompetitionPlayer[]): string[] {
   return sortRosterByRank(rows).map((row) => row.id)
 }
 
+async function loadCompetitionRowForEdit(id: string): Promise<{ row: CompetitionRow | null; error: string | null }> {
+  const { data: listed, error: listErr } = await supabase.rpc('list_competitions_for_setup')
+  if (!listErr) {
+    const row = ((listed as CompetitionRow[] | null) ?? []).find((candidate) => candidate.id === id)
+    if (row) return { row, error: null }
+  }
+
+  const { data, error: sessionErr } = await supabase
+    .from('game_sessions')
+    .select(
+      `*,
+       session_players(id, profile_id, padel_player_id, guest_name, guest_email, rank_order, profiles(id, display_name, avatar_url, avatar_mode, pixel_avatar, gender), padel_players(id, display_name, profile_id, line_picture_url, profiles(id, display_name, avatar_url, avatar_mode, pixel_avatar, gender))),
+       session_pairs(id, pair_label, roster_a_id, roster_b_id)`,
+    )
+    .eq('id', id)
+    .maybeSingle()
+
+  if (sessionErr) return { row: null, error: sessionErr.message }
+  if (!data) return { row: null, error: listErr?.message ?? 'Competition not found.' }
+  return { row: data as unknown as CompetitionRow, error: null }
+}
+
 function parseTimeInput(value: string, fallbackHour: number, fallbackMinute: number) {
   const [hourRaw, minuteRaw] = value.split(':')
   const hour = Number(hourRaw)
@@ -393,23 +415,14 @@ export function CompetitionForm() {
     if (!id) return
     setRosterHydrated(false)
     void (async () => {
-      const { data, error: sessionErr } = await supabase
-        .from('game_sessions')
-        .select(
-          `*,
-           session_players(id, profile_id, padel_player_id, guest_name, guest_email, rank_order, profiles(id, display_name, avatar_url, avatar_mode, pixel_avatar, gender), padel_players(id, display_name, profile_id, line_picture_url, profiles(id, display_name, avatar_url, avatar_mode, pixel_avatar, gender))),
-           session_pairs(id, pair_label, roster_a_id, roster_b_id)`,
-        )
-        .eq('id', id)
-        .maybeSingle()
+      const { row: session, error: sessionErr } = await loadCompetitionRowForEdit(id)
 
-      if (sessionErr || !data) {
+      if (sessionErr || !session) {
         setRosterHydrated(true)
-        if (sessionErr) setError(sessionErr.message)
+        if (sessionErr) setError(sessionErr)
         return
       }
 
-      const session = data as unknown as CompetitionRow
       const mode = competitionPlayerMode(session.scoring_config as ScoringConfig)
       setPlayerMode(mode)
       setIsLeagueWeek(Boolean(session.game_group_id))
