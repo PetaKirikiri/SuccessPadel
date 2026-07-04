@@ -4,7 +4,7 @@ import { GamesGenderFilterProvider } from '../../contexts/GamesGenderFilterConte
 import { useTranslation } from '../../hooks/useTranslation'
 import type { Gender } from '../../lib/competitionPresets'
 import { consumeStoredCompetitiveGenderFilter } from '../../lib/gamesGenderFilter'
-import { Leaderboard as HubLeaderboard } from '../../components/Leaderboard/Leaderboard.logic'
+import { Leaderboard as HubLeaderboard } from '../../components/leaderboard/Leaderboard.logic'
 import { GamesGenderFilterButtons } from './GamesGenderFilterButtons'
 import {
   IconHubCurrent,
