@@ -763,3 +763,37 @@ html[data-viewport='web'] .invite-duo-team-players .invite-roster-chip__name,
 html[data-viewport='web'] .invite-duo-team-players .invite-roster-chip__vacant-name {
   font-size: clamp(1.05rem, 3.8vh, 2.15rem);
 }
+
+/* Large-screen roster polish: player rows read as cards, not oversized pills. */
+html[data-viewport='web'] .invite-duo-team-players .invite-roster-chip,
+html[data-viewport='web'] .invite-game-card__roster > .invite-roster-grid > .invite-roster-chip,
+html[data-viewport='web'] .invite-roster-editor .invite-roster-editor-chip {
+  display: flex;
+  min-height: clamp(3.25rem, 7vh, 4.85rem);
+  border-radius: 0.8rem;
+  justify-content: flex-start;
+  gap: clamp(0.5rem, 0.8vw, 0.85rem);
+  padding: clamp(0.45rem, 0.85vh, 0.7rem) clamp(0.6rem, 0.9vw, 0.9rem);
+  text-align: left;
+}
+
+html[data-viewport='web'] .invite-duo-team-players .invite-roster-chip .invite-roster-chip__avatar,
+html[data-viewport='web'] .invite-duo-team-players .invite-roster-chip__vacant-avatar,
+html[data-viewport='web'] .invite-game-card__roster > .invite-roster-grid > .invite-roster-chip .invite-roster-chip__avatar,
+html[data-viewport='web'] .invite-game-card__roster > .invite-roster-grid > .invite-roster-chip__vacant-avatar,
+html[data-viewport='web'] .invite-roster-editor .invite-roster-chip__avatar,
+html[data-viewport='web'] .invite-roster-editor .invite-roster-chip__vacant-avatar {
+  width: clamp(2rem, 4.5vh, 3rem);
+  height: clamp(2rem, 4.5vh, 3rem);
+}
+
+html[data-viewport='web'] .invite-duo-team-players .invite-roster-chip__name,
+html[data-viewport='web'] .invite-duo-team-players .invite-roster-chip__vacant-name,
+html[data-viewport='web'] .invite-game-card__roster > .invite-roster-grid .invite-roster-chip__name,
+html[data-viewport='web'] .invite-game-card__roster > .invite-roster-grid .invite-roster-chip__vacant-name,
+html[data-viewport='web'] .invite-roster-editor .invite-roster-chip__name,
+html[data-viewport='web'] .invite-roster-editor .invite-roster-chip__vacant-name {
+  flex: 1 1 auto;
+  text-align: left;
+  font-size: clamp(0.95rem, 2.4vh, 1.35rem);
+}

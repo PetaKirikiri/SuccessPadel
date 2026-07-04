@@ -846,3 +846,37 @@ html[data-viewport='tablet'] .invite-game-card__badges .rule-chip-grid__value {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* Large-screen roster polish: player rows read as cards, not oversized pills. */
+html[data-viewport='tablet'] .invite-duo-team-players .invite-roster-chip,
+html[data-viewport='tablet'] .invite-game-card__roster > .invite-roster-grid > .invite-roster-chip,
+html[data-viewport='tablet'] .invite-roster-editor .invite-roster-editor-chip {
+  display: flex;
+  min-height: clamp(3rem, 6.5vh, 4.4rem);
+  border-radius: 0.8rem;
+  justify-content: flex-start;
+  gap: clamp(0.45rem, 0.9vw, 0.75rem);
+  padding: clamp(0.4rem, 0.8vh, 0.65rem) clamp(0.55rem, 1vw, 0.8rem);
+  text-align: left;
+}
+
+html[data-viewport='tablet'] .invite-duo-team-players .invite-roster-chip .invite-roster-chip__avatar,
+html[data-viewport='tablet'] .invite-duo-team-players .invite-roster-chip__vacant-avatar,
+html[data-viewport='tablet'] .invite-game-card__roster > .invite-roster-grid > .invite-roster-chip .invite-roster-chip__avatar,
+html[data-viewport='tablet'] .invite-game-card__roster > .invite-roster-grid > .invite-roster-chip__vacant-avatar,
+html[data-viewport='tablet'] .invite-roster-editor .invite-roster-chip__avatar,
+html[data-viewport='tablet'] .invite-roster-editor .invite-roster-chip__vacant-avatar {
+  width: clamp(1.85rem, 4.2vh, 2.75rem);
+  height: clamp(1.85rem, 4.2vh, 2.75rem);
+}
+
+html[data-viewport='tablet'] .invite-duo-team-players .invite-roster-chip__name,
+html[data-viewport='tablet'] .invite-duo-team-players .invite-roster-chip__vacant-name,
+html[data-viewport='tablet'] .invite-game-card__roster > .invite-roster-grid .invite-roster-chip__name,
+html[data-viewport='tablet'] .invite-game-card__roster > .invite-roster-grid .invite-roster-chip__vacant-name,
+html[data-viewport='tablet'] .invite-roster-editor .invite-roster-chip__name,
+html[data-viewport='tablet'] .invite-roster-editor .invite-roster-chip__vacant-name {
+  flex: 1 1 auto;
+  text-align: left;
+  font-size: clamp(0.9rem, 2.2vh, 1.25rem);
+}
