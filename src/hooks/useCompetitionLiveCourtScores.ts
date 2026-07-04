@@ -153,5 +153,16 @@ export function useCompetitionLiveCourtScores(
     return () => window.clearInterval(timer)
   }, [competitionId, pollMs, refresh])
 
-  return { scores, feeds, logs, refresh }
+  const applyGestureLog = useCallback(
+    (log: MatchGestureLog) => {
+      setLogs((prev) => {
+        const merged = mergeMatchGestureLogsByCourt(prev, [log])
+        applyDisplayFromLogs(merged)
+        return merged
+      })
+    },
+    [applyDisplayFromLogs],
+  )
+
+  return { scores, feeds, logs, refresh, applyGestureLog }
 }

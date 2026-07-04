@@ -1,5 +1,6 @@
 import type { CourtPlayer } from './americanoSchedule'
 import type { AmericanoScoringUnit } from './competitionPresets'
+import { americanoCourtTotals, tennisScoreForManual } from './friendlyManualScore'
 import { friendlyCourtSetupKey } from './friendlyCourtLive'
 import type { GameLogPoint, GameLogRosterSlot } from './gameLogSerialize'
 import type { GameLogSetupState } from './gameLogSetupState'
@@ -10,6 +11,7 @@ import {
 } from './matchLogServer'
 import type { Quadrant } from './gestureCapture'
 import { supabase } from './supabaseClient'
+import { agentDebugIngest } from './debug/devDebug'
 import type { MatchTeam } from './types'
 import {
   applyTennisPoint,
@@ -27,6 +29,66 @@ export type GestureCameraSetupState = GameLogSetupState & {
 
 export const MANUAL_GAMES_GESTURE_ID = 'manual-games'
 export const MANUAL_POINTS_GESTURE_ID = 'manual-points'
+
+export function gamesManualOverrideAt(log: MatchGestureLog | null): string | undefined {
+  if (!log) return undefined
+  const fromSetup = (log.setupState as GestureCameraSetupState | null)?.gamesManualOverrideAt
+  if (fromSetup) return fromSetup
+  const last = log.pointEvents[log.pointEvents.length - 1]
+  if (last?.winnerGestureId === MANUAL_GAMES_GESTURE_ID) return last.at
+  return undefined
+}
+
+function buildManualCourtScoreEvents(
+  teamA: number,
+  teamB: number,
+  scoreUnit: AmericanoScoringUnit,
+  now: string,
+): GameLogPoint[] {
+  const events: GameLogPoint[] = []
+  let a = 0
+  let b = 0
+  const scoreAfter = (): TennisScore => tennisScoreForManual(a, b, scoreUnit)
+  const push = (winner: MatchTeam) => {
+    if (winner === 'a') a += 1
+    else b += 1
+    events.push({
+      at: now,
+      winner,
+      scoreAfter: scoreAfter(),
+      winnerGestureId: MANUAL_GAMES_GESTURE_ID,
+      loserGestureId: '',
+      winnerQuadrant: '',
+      loserQuadrant: '',
+      isServe: false,
+    })
+  }
+  for (let i = 0; i < teamA; i += 1) push('a')
+  for (let i = 0; i < teamB; i += 1) push('b')
+  if (!events.length) {
+    events.push({
+      at: now,
+      winner: 'a',
+      scoreAfter: tennisScoreForManual(0, 0, scoreUnit),
+      winnerGestureId: MANUAL_GAMES_GESTURE_ID,
+      loserGestureId: '',
+      winnerQuadrant: '',
+      loserQuadrant: '',
+      isServe: false,
+    })
+  }
+  return events
+}
+
+function isManualCourtMatchComplete(
+  score: TennisScore,
+  playTo: number | undefined,
+  scoreUnit: AmericanoScoringUnit,
+): boolean {
+  if (!playTo || playTo < 1) return false
+  const [a, b] = americanoCourtTotals(score, scoreUnit)
+  return a >= playTo || b >= playTo
+}
 
 export type GestureCameraContext = {
   courtSetupKey: string
@@ -161,9 +223,10 @@ function buildPayload(
 ): Parameters<typeof upsertMatchGestureLog>[0] {
   const now = new Date().toISOString()
   const winner: MatchTeam | null = matchEnded
-    ? score.gamesA >= score.gamesB
-      ? 'a'
-      : 'b'
+    ? (() => {
+        const [teamA, teamB] = americanoCourtTotals(score, ctx.scoreUnit)
+        return teamA >= teamB ? 'a' : 'b'
+      })()
     : null
   const startedAt = log?.matchStartedAt ?? now
   return {
@@ -261,43 +324,26 @@ export function planGestureCameraPoint(
   return { log, matchEnded }
 }
 
-/** Human games edit: games are authoritative; reset points and replace point history. */
+/** Human games edit: court match totals are authoritative; reset live tennis points. */
 export function planGestureCameraGamesOverride(
   ctx: GestureCameraContext,
   priorLog: MatchGestureLog | null,
   gamesA: number,
   gamesB: number,
 ): { log: MatchGestureLog; matchEnded: boolean } | null {
-  const scoreAfter: TennisScore = {
-    pointsA: 0,
-    pointsB: 0,
-    gamesA: Math.max(0, Math.floor(gamesA)),
-    gamesB: Math.max(0, Math.floor(gamesB)),
-  }
+  const targetA = Math.max(0, Math.floor(gamesA))
+  const targetB = Math.max(0, Math.floor(gamesB))
+  const scoreAfter = tennisScoreForManual(targetA, targetB, ctx.scoreUnit)
   const current = scoreFromLog(priorLog)
-  if (
-    current.gamesA === scoreAfter.gamesA &&
-    current.gamesB === scoreAfter.gamesB &&
-    current.pointsA === 0 &&
-    current.pointsB === 0
-  ) {
-    return null
+  const [curA, curB] = americanoCourtTotals(current, ctx.scoreUnit)
+  if (curA === targetA && curB === targetB) {
+    const tennisCleared = current.pointsA === 0 && current.pointsB === 0
+    if ((ctx.scoreUnit === 'games' && tennisCleared) || ctx.scoreUnit === 'points') return null
   }
 
   const now = new Date().toISOString()
-  const pointEvents: GameLogPoint[] = [
-    {
-      at: now,
-      winner: scoreAfter.gamesA >= scoreAfter.gamesB ? 'a' : 'b',
-      scoreAfter,
-      winnerGestureId: MANUAL_GAMES_GESTURE_ID,
-      loserGestureId: '',
-      winnerQuadrant: '',
-      loserQuadrant: '',
-      isServe: false,
-    },
-  ]
-  const matchEnded = isGestureMatchComplete(scoreAfter, ctx.playTo)
+  const pointEvents = buildManualCourtScoreEvents(targetA, targetB, ctx.scoreUnit, now)
+  const matchEnded = isManualCourtMatchComplete(scoreAfter, ctx.playTo, ctx.scoreUnit)
   const log = snapshotLog(ctx, scoreAfter, pointEvents, matchEnded, priorLog)
   const setup = log.setupState as GestureCameraSetupState
   setup.gamesManualOverrideAt = now
@@ -309,10 +355,17 @@ export async function syncGestureCameraGamesOverride(
   gamesA: number,
   gamesB: number,
   priorLog?: MatchGestureLog | null,
-): Promise<{ error: string | null; log: MatchGestureLog | null; matchEnded: boolean }> {
+): Promise<{ error: string | null; log: MatchGestureLog | null; matchEnded: boolean; saved: boolean }> {
   const prior = priorLog !== undefined ? priorLog : await loadGestureCameraLog(ctx.courtSetupKey)
   const planned = planGestureCameraGamesOverride(ctx, prior, gamesA, gamesB)
-  if (!planned) return { error: null, log: prior, matchEnded: gestureCameraPlayEnded(prior, ctx.playTo) }
+  if (!planned) {
+    return {
+      error: null,
+      log: prior,
+      matchEnded: gestureCameraPlayEnded(prior, ctx.playTo),
+      saved: false,
+    }
+  }
 
   const { log, matchEnded } = planned
   const manualOnly = isManualOnlyCourtLog(prior)
@@ -324,19 +377,53 @@ export async function syncGestureCameraGamesOverride(
     matchEnded,
   )
   const { error } = await upsertMatchGestureLog(payload)
-  if (error) return { error, log: null, matchEnded: false }
-
-  if (!ctx.friendly && matchEnded && ctx.roundId) {
-    const submitErr = await submitCompetitionFinalScore(
-      ctx.roundId,
-      ctx.courtId,
-      log.finalScore!.gamesA,
-      log.finalScore!.gamesB,
+  if (error) {
+    // #region agent log
+    agentDebugIngest(
+      'gestureCameraScore.ts:syncGestureCameraGamesOverride',
+      'upsert error',
+      { error, scoreUnit: ctx.scoreUnit, finalScore: log.finalScore },
+      'B',
+      '5d6061',
     )
-    if (submitErr) return { error: submitErr, log: null, matchEnded: true }
+    // #endregion
+    return { error, log: null, matchEnded: false, saved: false }
   }
 
-  return { error: null, log, matchEnded }
+  if (!ctx.friendly && ctx.roundId) {
+    const [teamA, teamB] = americanoCourtTotals(log.finalScore!, ctx.scoreUnit)
+    const submitErr = await submitCompetitionFinalScore(ctx.roundId, ctx.courtId, teamA, teamB)
+    if (submitErr) {
+      // #region agent log
+      agentDebugIngest(
+        'gestureCameraScore.ts:syncGestureCameraGamesOverride',
+        'competition RPC error',
+        { submitErr, teamA, teamB, roundId: ctx.roundId, courtId: ctx.courtId },
+        'D',
+        '5d6061',
+      )
+      // #endregion
+      return { error: submitErr, log: null, matchEnded, saved: false }
+    }
+  }
+
+  // #region agent log
+  agentDebugIngest(
+    'gestureCameraScore.ts:syncGestureCameraGamesOverride',
+    'saved ok',
+    {
+      scoreUnit: ctx.scoreUnit,
+      finalScore: log.finalScore,
+      totals: americanoCourtTotals(log.finalScore!, ctx.scoreUnit),
+      friendly: ctx.friendly,
+      roundId: ctx.roundId,
+      rosterLen: log.roster.length,
+    },
+    'C',
+    '5d6061',
+  )
+  // #endregion
+  return { error: null, log, matchEnded, saved: true }
 }
 
 /** Human points edit: keep games, set tennis points for dispute / backup entry. */

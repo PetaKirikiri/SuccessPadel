@@ -62,6 +62,15 @@ type Props = {
   isAdmin?: boolean
   liveCourtScores?: Map<string, LiveCourtGamesScore>
   liveCourtFeeds?: Map<string, LiveCourtPointFeed>
+  onGestureGamesSynced?: (log: import('../../lib/matchLogServer').MatchGestureLog) => void
+  onCompetitionCourtGamesSaved?: (
+    gameNumber: number,
+    courtId: string,
+    teamA: number,
+    teamB: number,
+    courtLabel?: string,
+  ) => Promise<void>
+  resolveCompetitionRoundId?: (gameNumber: number) => Promise<string | undefined>
   courtStandings?: LeaderboardEntry[]
   roster?: CompetitionPlayer[]
   rosterNameById?: Map<string, string>
@@ -249,6 +258,9 @@ export function GameBoard({
   isAdmin: _isAdmin = false,
   liveCourtScores,
   liveCourtFeeds,
+  onGestureGamesSynced,
+  onCompetitionCourtGamesSaved,
+  resolveCompetitionRoundId,
   duoTeamLabels,
   courtStandings,
   roster,
@@ -407,12 +419,10 @@ export function GameBoard({
   const renderGameCard = (game: ScoringGame, tvNav?: TvGameNav) => {
     const isActive = activeGameNumber === game.gameNumber
     const times = roundTimesByGame?.get(game.gameNumber)
-    const roundStatus = roundStatusByGame?.get(game.gameNumber)
     const courtsForGame = liveCourtsByGame?.get(game.gameNumber) ?? []
     const gameRoundId = roundIdForGame?.(game.gameNumber) ?? (isActive ? roundId : undefined)
     const timedMode = mode === 'scoring' || previewTimed
     const isLiveNow = timedMode && isGameLive(clock, times)
-    const timeUp = isGameTimeUp(game.gameNumber, clock, roundTimesByGame, roundStatusByGame)
     const submitted = finishedByGame.get(game.gameNumber) ?? false
     const finished = submitted
     const inBreakAfter = Boolean(
@@ -430,15 +440,8 @@ export function GameBoard({
       isLiveNow ||
       inBreakAfter ||
       (awaitingStart && focusGameNumber === game.gameNumber)
-    const canEditGame =
-      Boolean(canLog) &&
-      (scoringTimeUnlocked ||
-        useCarousel ||
-        submitted ||
-        roundStatus === 'complete' ||
-        isLiveNow ||
-        timeUp)
-    const canEditCourtCardScores = useCarousel ? Boolean(canLog && gameRoundId) : canEditGame
+    const canEditGame = Boolean(canLog)
+    const canEditCourtCardScores = useCarousel ? Boolean(canLog) : canEditGame
     const displayTimeLabel =
       times != null ? formatGameTimeLabel(times.startsAt, times.endsAt) : game.timeLabel
 
@@ -505,6 +508,9 @@ export function GameBoard({
         courtPlayTo={courtPlayTo}
         liveCourtScores={liveCourtScores}
         liveCourtFeeds={liveCourtFeeds}
+        onGestureGamesSynced={onGestureGamesSynced}
+        onCompetitionCourtGamesSaved={onCompetitionCourtGamesSaved}
+        resolveCompetitionRoundId={resolveCompetitionRoundId}
         onSaved={onSaved}
         canEdit={canEditCourtCardScores}
         tvNav={tvNav}

@@ -167,9 +167,17 @@ function MainAppRoutes() {
           path="friendly/:id/games/:gameNumber/courts/:courtSlug/gesture-score"
           element={<GestureScoreCourtEntry />}
         />
+        <Route
+          path="friendly/:id/games/:gameNumber/gesture-score"
+          element={<GestureScoreCourtEntry />}
+        />
         <Route path="friendly/:id" element={<GameCardPlaySession />} />
         <Route
           path="competitions/:id/games/:gameNumber/courts/:courtId/gesture-score"
+          element={<GestureScoreCourtEntry />}
+        />
+        <Route
+          path="competitions/:id/games/:gameNumber/gesture-score"
           element={<GestureScoreCourtEntry />}
         />
         <Route path="competitive" element={<GamesHomePage mode="competitive" />} />

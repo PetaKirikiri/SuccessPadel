@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ChevronsUpDown } from 'lucide-react'
 import { displayCourtLabel } from '../../lib/courtDisplay'
@@ -13,7 +13,6 @@ import { warmupGestureScoreCamera } from '../../lib/gestureScoreCamera'
 import { ScoreTrackerIcon } from '../../shared/Button/ScoreTrackerIcon'
 import { PlayerAvatarLink } from '../../shared/ProfilePhoto/PlayerAvatarLink'
 import { PlayerNameLink } from '../../shared/ProfilePhoto/PlayerNameLink'
-import type { LiveCourtGameResult } from '../../lib/liveCourtScore'
 import { debugSessionLog } from '../../lib/debug/devDebug'
 import { GENDER_CHIP_COLORS } from '../../foundation/profile/profileFormUi'
 import type { LiveCourt, ScoringGameCourt } from './gameBoardTypes'
@@ -107,40 +106,6 @@ function CourtManualScoreButton({
     >
       <ChevronsUpDown className="h-4 w-4" strokeWidth={2.25} aria-hidden />
     </button>
-  )
-}
-
-/** Completed games — cumulative games score only (e.g. 1 - 0). */
-function LiveCourtGameTrail({ games, compact = false }: { games: LiveCourtGameResult[]; compact?: boolean }) {
-  const trailRef = useRef<HTMLOListElement>(null)
-
-  useEffect(() => {
-    if (!compact) return
-    const el = trailRef.current
-    if (!el) return
-    el.scrollTop = el.scrollHeight
-  }, [compact, games])
-
-  if (!games.length) return null
-  return (
-    <ol
-      ref={trailRef}
-      className={`game-card-court-game-trail m-0 list-none space-y-0 p-0 ${
-        compact ? 'mt-1 max-h-24 overflow-x-hidden overflow-y-auto overscroll-contain' : 'mt-0.5'
-      }`}
-      aria-label="Completed games"
-    >
-      {games.map((game) => (
-        <li
-          key={game.gameNumber}
-          className={`text-center font-bold tabular-nums text-brand-primary dark:text-brand-accent-light ${
-            compact ? 'text-[11px] leading-tight md:text-xs' : 'text-xs leading-snug md:text-sm'
-          }`}
-        >
-          {game.gamesA} — {game.gamesB}
-        </li>
-      ))}
-    </ol>
   )
 }
 
@@ -535,15 +500,19 @@ export function CourtTvScorePanel({
 function CourtScoreInput({
   value,
   onChange,
+  onCommit,
   disabled,
   finished,
   ariaLabel,
+  className = '',
 }: {
   value: string
   onChange?: (v: string) => void
+  onCommit?: () => void
   disabled?: boolean
   finished?: boolean
   ariaLabel: string
+  className?: string
 }) {
   return (
     <input
@@ -554,10 +523,17 @@ function CourtScoreInput({
       placeholder="0"
       disabled={disabled || finished || !onChange}
       onClick={stopCardNav}
-      onKeyDown={stopCardNav}
+      onKeyDown={(event) => {
+        stopCardNav(event)
+        if (event.key === 'Enter') {
+          event.preventDefault()
+          event.currentTarget.blur()
+        }
+      }}
       onChange={(event) => onChange?.(scoreDigitsOnly(event.target.value))}
+      onBlur={() => onCommit?.()}
       onFocus={(event) => event.currentTarget.select()}
-      className={`game-card-court-score-input tv-score-input w-[3.25rem] rounded-lg border px-2 py-1 text-center font-display font-extrabold tabular-nums outline-none ${
+      className={`game-card-court-score-input tv-score-input w-[3.25rem] rounded-lg border px-2 py-1 text-center font-display font-extrabold tabular-nums outline-none ${className} ${
         finished
           ? 'border-brand-border/40 bg-brand-bg-alt text-brand-muted'
           : 'border-brand-accent/50 bg-brand-bg-alt text-brand-accent focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20'
@@ -573,11 +549,11 @@ function CourtScores({
   scoreB,
   onScoreA,
   onScoreB,
+  onGamesCommit,
   disabled,
   finished,
   compact,
   livePointScores,
-  liveGameResults,
   t,
 }: {
   scoreUnit: AmericanoScoringUnit
@@ -585,24 +561,20 @@ function CourtScores({
   scoreB?: string
   onScoreA?: (v: string) => void
   onScoreB?: (v: string) => void
+  onGamesCommit?: () => void
   disabled?: boolean
   finished?: boolean
   compact?: boolean
   livePointScores?: { scoreA: string; scoreB: string }
-  liveGameResults?: LiveCourtGameResult[]
   t: TranslateFn
 }) {
   const fieldLabel = scoreFieldLabel(scoreUnit, t)
   const gamesA = scoreA ?? '0'
   const gamesB = scoreB ?? '0'
-  const historyGames =
-    liveGameResults?.filter((game, index, games) => {
-      if (index < games.length - 1) return true
-      return String(game.gamesA) !== gamesA || String(game.gamesB) !== gamesB
-    }) ?? []
   const pointsClass = compact
     ? 'tv-score-readout rounded-xl border-2 border-brand-primary/55 bg-brand-bg-alt px-3 py-1.5 text-4xl leading-none text-brand-primary shadow-md dark:border-brand-accent/60 dark:bg-white/10 dark:text-brand-accent-light md:text-5xl'
-    : 'text-base text-brand-accent md:text-lg'
+    : 'rounded-lg border border-brand-primary/45 bg-brand-bg-alt px-2.5 py-1 text-3xl leading-none text-brand-primary shadow-sm dark:border-brand-accent/50 dark:bg-white/10 dark:text-brand-accent-light md:text-4xl'
+  const gamesInputClass = compact ? '' : 'text-lg md:text-xl'
   const dividerClass = `game-card-court-score-divider bg-brand-border/50 ${
     compact ? 'w-px self-stretch' : 'h-full min-h-[2.25rem] w-px'
   }`
@@ -646,9 +618,11 @@ function CourtScores({
               <CourtScoreInput
                 value={gamesA}
                 onChange={onScoreA}
+                onCommit={onGamesCommit}
                 disabled={disabled}
                 finished={finished}
                 ariaLabel={t('aria.teamAScore', { unit: fieldLabel })}
+                className={gamesInputClass}
               />
             </div>
             <span className={dividerClass} aria-hidden="true" />
@@ -656,23 +630,16 @@ function CourtScores({
               <CourtScoreInput
                 value={gamesB}
                 onChange={onScoreB}
+                onCommit={onGamesCommit}
                 disabled={disabled}
                 finished={finished}
                 ariaLabel={t('aria.teamBScore', { unit: fieldLabel })}
+                className={gamesInputClass}
               />
             </div>
           </div>
         </section>
       </div>
-
-      {historyGames.length ? (
-        <section className="game-card-court-score-section game-card-court-score-section--history" aria-label="Game history">
-          <p className="game-card-court-score-label text-[10px] font-bold uppercase tracking-wide text-brand-muted md:text-xs">
-            History
-          </p>
-          <LiveCourtGameTrail games={historyGames} compact={compact} />
-        </section>
-      ) : null}
     </div>
   )
 }
@@ -685,6 +652,7 @@ export function CourtMatchCell({
   scoreB,
   onScoreA,
   onScoreB,
+  onGamesCommit,
   disabled = false,
   finished = false,
   scoreMax: _scoreMax,
@@ -704,7 +672,6 @@ export function CourtMatchCell({
   backupPointB: _backupPointB,
   onBackupPointA: _onBackupPointA,
   onBackupPointB: _onBackupPointB,
-  liveGameResults,
   colorNamesByGender = false,
   t,
 }: {
@@ -715,6 +682,7 @@ export function CourtMatchCell({
   scoreB?: string
   onScoreA?: (v: string) => void
   onScoreB?: (v: string) => void
+  onGamesCommit?: () => void
   disabled?: boolean
   finished?: boolean
   scoreMax?: number
@@ -736,7 +704,6 @@ export function CourtMatchCell({
   backupPointB?: string
   onBackupPointA?: (v: string) => void
   onBackupPointB?: (v: string) => void
-  liveGameResults?: LiveCourtGameResult[]
   colorNamesByGender?: boolean
   t: TranslateFn
 }) {
@@ -911,11 +878,11 @@ export function CourtMatchCell({
       scoreB={scoreB}
       onScoreA={onScoreA}
       onScoreB={onScoreB}
+      onGamesCommit={onGamesCommit}
       disabled={disabled}
       finished={finished}
       compact={compact}
       livePointScores={livePointScores}
-      liveGameResults={liveGameResults}
       t={t}
     />
   ) : null

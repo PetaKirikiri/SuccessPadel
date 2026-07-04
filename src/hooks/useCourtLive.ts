@@ -12,6 +12,10 @@ export type CourtLiveEphemeral = {
   pending?: PendingBallPathExchange | null
   /** Optimistic score from the gesture scorer — applied before DB round-trip. */
   scoreAfter?: TennisScore
+  /** Explicit court-card routing from the gesture score navigator. */
+  gameNumber?: number
+  courtId?: string | null
+  courtLabel?: string | null
 }
 
 type Options = {
@@ -29,13 +33,27 @@ type Options = {
 export function useCourtLive(courtSetupKey: string | undefined, opts: Options) {
   const { enabled = true } = opts
   const channelRef = useRef<RealtimeChannel | null>(null)
+  const channelKeyRef = useRef<string | null>(null)
+  const activeKeyRef = useRef<string | null>(null)
+  const subscribedRef = useRef(false)
+  const pendingEphemeralRef = useRef<{ courtSetupKey: string; payload: CourtLiveEphemeral } | null>(
+    null,
+  )
   const onEphemeralRef = useRef(opts.onEphemeral)
   const onCommittedRef = useRef(opts.onCommitted)
+  activeKeyRef.current = courtSetupKey && enabled ? courtSetupKey : null
   onEphemeralRef.current = opts.onEphemeral
   onCommittedRef.current = opts.onCommitted
 
   useEffect(() => {
-    if (!courtSetupKey || !enabled) return
+    if (!courtSetupKey || !enabled) {
+      channelRef.current = null
+      channelKeyRef.current = null
+      subscribedRef.current = false
+      pendingEphemeralRef.current = null
+      return
+    }
+    subscribedRef.current = false
     const channel = supabase
       .channel(`court-live-${courtSetupKey}`, { config: { broadcast: { self: false } } })
       .on('broadcast', { event: 'ephemeral' }, ({ payload }) =>
@@ -51,16 +69,33 @@ export function useCourtLive(courtSetupKey: string | undefined, opts: Options) {
         },
         () => onCommittedRef.current?.(),
       )
-      .subscribe()
     channelRef.current = channel
+    channelKeyRef.current = courtSetupKey
+    channel.subscribe((status) => {
+      if (channelRef.current !== channel) return
+      subscribedRef.current = status === 'SUBSCRIBED'
+      if (!subscribedRef.current) return
+      const pending = pendingEphemeralRef.current
+      if (!pending || pending.courtSetupKey !== courtSetupKey) return
+      pendingEphemeralRef.current = null
+      void channel.send({ type: 'broadcast', event: 'ephemeral', payload: pending.payload })
+    })
     return () => {
-      channelRef.current = null
+      if (channelRef.current === channel) channelRef.current = null
+      if (channelKeyRef.current === courtSetupKey) channelKeyRef.current = null
+      subscribedRef.current = false
       void supabase.removeChannel(channel)
     }
   }, [courtSetupKey, enabled])
 
   const sendEphemeral = useCallback((payload: CourtLiveEphemeral) => {
-    channelRef.current?.send({ type: 'broadcast', event: 'ephemeral', payload })
+    const channel = channelRef.current
+    const activeKey = activeKeyRef.current
+    if (!channel || !subscribedRef.current || channelKeyRef.current !== activeKey) {
+      if (activeKey) pendingEphemeralRef.current = { courtSetupKey: activeKey, payload }
+      return
+    }
+    void channel.send({ type: 'broadcast', event: 'ephemeral', payload })
   }, [])
 
   return { sendEphemeral }

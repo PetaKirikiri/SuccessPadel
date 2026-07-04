@@ -12,6 +12,7 @@ import {
 } from '../lib/liveCourtScore'
 import { fetchFriendlySessionMatchLogs, type MatchGestureLog } from '../lib/matchLogServer'
 import { supabase } from '../lib/supabaseClient'
+import { agentDebugIngest } from '../lib/debug/devDebug'
 
 const RECEIVER_REALTIME_DEBOUNCE_MS = 500
 
@@ -98,5 +99,33 @@ export function useFriendlyLiveCourtScores(
     return () => window.clearInterval(timer)
   }, [friendlySessionId, pollMs, refresh])
 
-  return { scores, feeds, logs, refresh }
+  const applyGestureLog = useCallback(
+    (log: MatchGestureLog) => {
+      setLogs((prev) => {
+        const merged = mergeMatchGestureLogsByCourt(prev, [log])
+        const chosen = merged.find((row) => row.courtSetupKey === log.courtSetupKey)
+        // #region agent log
+        agentDebugIngest(
+          'useFriendlyLiveCourtScores.ts:applyGestureLog',
+          'merged log for court',
+          {
+            incomingFinal: log.finalScore,
+            chosenFinal: chosen?.finalScore ?? null,
+            prevCount: prev.length,
+            mergedCount: merged.length,
+            incomingEvents: log.pointEvents.length,
+            chosenEvents: chosen?.pointEvents.length ?? 0,
+          },
+          'E',
+          '5d6061',
+        )
+        // #endregion
+        applyDisplayFromLogs(merged)
+        return merged
+      })
+    },
+    [applyDisplayFromLogs],
+  )
+
+  return { scores, feeds, logs, refresh, applyGestureLog }
 }

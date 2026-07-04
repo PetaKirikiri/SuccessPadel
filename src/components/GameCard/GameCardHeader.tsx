@@ -1,5 +1,6 @@
 import QRCode from 'qrcode'
 import { useEffect, useState } from 'react'
+import { CircleDot } from 'lucide-react'
 import type { TranslateFn } from '../../i18n'
 import type { GameCardSize } from '../../lib/viewBreakpoints'
 import { useTranslation } from '../../hooks/useTranslation'
@@ -125,6 +126,28 @@ function GameCardLeaderboardButton({
   )
 }
 
+function GameCardGestureScoreButton({
+  href,
+  ariaLabel,
+  finished = false,
+}: {
+  href: string
+  ariaLabel: string
+  finished?: boolean
+}) {
+  return (
+    <a
+      href={href}
+      onClick={(e) => e.stopPropagation()}
+      aria-label={ariaLabel}
+      className="game-card-header-score-btn"
+      data-finished={finished || undefined}
+    >
+      <CircleDot className="game-card-header-score-icon" aria-hidden />
+    </a>
+  )
+}
+
 function GameCardGameNavButton({
   direction,
   onClick,
@@ -171,6 +194,7 @@ export function GameCardHeader({
   tvNav,
   onBack,
   viewAlongUrl,
+  gestureScoreHref,
   onLeaderboardToggle,
   leaderboardActive = false,
   t,
@@ -187,6 +211,7 @@ export function GameCardHeader({
   tvNav?: TvGameNav
   onBack?: () => void
   viewAlongUrl?: string | null
+  gestureScoreHref?: string
   onLeaderboardToggle?: () => void
   leaderboardActive?: boolean
   t: TranslateFn
@@ -291,6 +316,13 @@ export function GameCardHeader({
 
           <div className="absolute inset-y-0 right-0 z-10 flex items-center justify-end gap-2">
             {countdownBlock}
+            {gestureScoreHref ? (
+              <GameCardGestureScoreButton
+                href={gestureScoreHref}
+                ariaLabel="Open gesture score tracker"
+                finished={finished}
+              />
+            ) : null}
             {onLeaderboardToggle ? (
               <GameCardLeaderboardButton
                 active={leaderboardActive}
@@ -364,6 +396,13 @@ export function GameCardHeader({
               {countdown}
             </p>
           </div>
+        ) : null}
+        {gestureScoreHref ? (
+          <GameCardGestureScoreButton
+            href={gestureScoreHref}
+            ariaLabel="Open gesture score tracker"
+            finished={finished}
+          />
         ) : null}
         {onLeaderboardToggle ? (
           <GameCardLeaderboardButton

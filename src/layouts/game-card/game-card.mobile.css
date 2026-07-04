@@ -9,7 +9,7 @@ html[data-viewport='mobile'] .game-card-shell {
   background:
     radial-gradient(ellipse 90% 52% at 22% 0%, rgb(77 163 255 / 0.2), transparent 58%),
     radial-gradient(ellipse 70% 38% at 100% 100%, rgb(45 255 196 / 0.1), transparent 62%),
-    linear-gradient(180deg, var(--color-brand-bg-alt) 0%, var(--color-brand-bg) 100%);
+    linear-gradient(180deg, #0b2a4a 0%, #061d36 100%);
   box-shadow: none;
 }
 
@@ -18,4 +18,25 @@ html[data-viewport='mobile'] .game-card-courts-body {
   background:
     radial-gradient(ellipse 90% 45% at 18% 0%, rgb(77 163 255 / 0.14), transparent 60%),
     linear-gradient(180deg, rgb(11 42 74 / 0.98) 0%, rgb(6 29 54 / 0.98) 100%);
+}
+
+/* Mobile scroll lock: game cards grow; shell-main owns vertical page scroll. */
+html[data-viewport='mobile'] .play-game-carousel,
+html[data-viewport='mobile'] .tv-game-carousel,
+html[data-viewport='mobile'] .game-board-preview,
+html[data-viewport='mobile'] .game-card-racetrack,
+html[data-viewport='mobile'] .game-card-shell,
+html[data-viewport='mobile'] .game-card-courts-body,
+html[data-viewport='mobile'] .game-card-courts-grid {
+  height: auto;
+  max-height: none;
+  min-height: 0;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+html[data-viewport='mobile'] .game-card-surface,
+html[data-viewport='mobile'] .game-card-shell {
+  width: 100%;
+  max-width: 100%;
 }

@@ -92,7 +92,6 @@ export function GameCard(props: GameCardInputProps) {
     collapsed,
     onToggleCollapsed,
     currentUserId,
-    currentUserDisplayName,
     currentUserAvatarUrl,
     liveCourtEnabled = false,
     gestureScoreEnabled = false,
@@ -103,6 +102,9 @@ export function GameCard(props: GameCardInputProps) {
     courtPlayTo,
     liveCourtScores,
     liveCourtFeeds,
+    onGestureGamesSynced,
+    onCompetitionCourtGamesSaved,
+    resolveCompetitionRoundId,
     onSaved,
     canEdit = false,
     tvNav,
@@ -164,6 +166,14 @@ export function GameCard(props: GameCardInputProps) {
   })
 
   const showLeaderboardCarousel = Boolean(leaderboardBody && onActivePanel && !isTvSize(size))
+  const gestureScoreHref =
+    gestureScoreEnabled && !finished && sessionId
+      ? friendly
+        ? `/friendly/${sessionId}/games/${game.gameNumber}/gesture-score`
+        : competitionId
+          ? `/competitions/${competitionId}/games/${game.gameNumber}/gesture-score`
+          : undefined
+      : undefined
 
   const header = (
     <GameCardHeader
@@ -179,9 +189,15 @@ export function GameCard(props: GameCardInputProps) {
       tvNav={tvNav}
       onBack={onBack}
       viewAlongUrl={viewAlongUrl}
+      gestureScoreHref={gestureScoreHref}
       onLeaderboardToggle={
         showLeaderboardCarousel && onActivePanel
-          ? () => onActivePanel(activePanel === 'leaderboard' ? 'game' : 'leaderboard')
+          ? () => {
+              if (activePanel !== 'leaderboard' && document.activeElement instanceof HTMLElement) {
+                document.activeElement.blur()
+              }
+              onActivePanel(activePanel === 'leaderboard' ? 'game' : 'leaderboard')
+            }
           : undefined
       }
       leaderboardActive={activePanel === 'leaderboard'}
@@ -209,7 +225,6 @@ export function GameCard(props: GameCardInputProps) {
         hasScoring={scoring.hasScoring}
         finished={finished}
         currentUserId={currentUserId}
-        currentUserDisplayName={currentUserDisplayName}
         currentUserAvatarUrl={currentUserAvatarUrl}
         liveCourtEnabled={liveCourtEnabled}
         gestureScoreEnabled={gestureScoreEnabled}
@@ -221,6 +236,9 @@ export function GameCard(props: GameCardInputProps) {
         courtScoreMax={courtScoreMax}
         liveCourtScores={liveCourtScores}
         liveCourtFeeds={liveCourtFeeds}
+        onGestureGamesSynced={onGestureGamesSynced}
+        onCompetitionCourtGamesSaved={onCompetitionCourtGamesSaved}
+        resolveCompetitionRoundId={resolveCompetitionRoundId}
         courtStandings={courtStandings}
         roster={roster}
         rosterNameById={rosterNameById}
@@ -242,7 +260,12 @@ export function GameCard(props: GameCardInputProps) {
       {showLeaderboardCarousel && onActivePanel ? (
         <HorizontalPanelCarousel
           activeIndex={activePanel === 'leaderboard' ? 1 : 0}
-          onIndexChange={(index) => onActivePanel(index === 0 ? 'game' : 'leaderboard')}
+          onIndexChange={(index) => {
+            if (index === 1 && document.activeElement instanceof HTMLElement) {
+              document.activeElement.blur()
+            }
+            onActivePanel(index === 0 ? 'game' : 'leaderboard')
+          }}
           getPanelHeader={(index) =>
             index === 1 ? (
               <div className="flex shrink-0 items-center justify-start border-b border-brand-border/60 bg-brand-surface px-3 py-2">

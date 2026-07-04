@@ -94,6 +94,15 @@ export type GameCardProps = {
   courtPlayTo?: number
   liveCourtScores?: Map<string, LiveCourtGamesScore>
   liveCourtFeeds?: Map<string, LiveCourtPointFeed>
+  onGestureGamesSynced?: (log: import('../../lib/matchLogServer').MatchGestureLog) => void
+  onCompetitionCourtGamesSaved?: (
+    gameNumber: number,
+    courtId: string,
+    teamA: number,
+    teamB: number,
+    courtLabel?: string,
+  ) => Promise<void>
+  resolveCompetitionRoundId?: (gameNumber: number) => Promise<string | undefined>
   onSaved?: () => void | Promise<void>
   canEdit?: boolean
   tvNav?: TvGameNav

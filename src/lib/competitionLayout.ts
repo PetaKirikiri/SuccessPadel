@@ -266,6 +266,113 @@ export function totalScheduleMinutes(
   return totalGames * gameMinutes + Math.max(0, totalGames - 1) * breakMinutes
 }
 
+export type FittedCompetitionSchedule = {
+  totalGames: number
+  gameMinutes: number
+  breakMinutes: number
+  durationMinutes: number
+  usedMinutes: number
+  fits: boolean
+  changed: boolean
+  gameCountChanged: boolean
+}
+
+type SessionForSqlSchedule = Pick<
+  GameSession,
+  'starts_at' | 'ends_at' | 'scoring_config' | 'partnership_mode' | 'rules'
+>
+
+/** Mirror start_competition schedule validation (SQL defaults: break=3, games=7). */
+export function competitionSqlSchedule(
+  session: SessionForSqlSchedule,
+): Omit<FittedCompetitionSchedule, 'changed' | 'gameCountChanged'> {
+  const durationMinutes =
+    session.starts_at && session.ends_at
+      ? eventDurationMinutes(session.starts_at, session.ends_at)
+      : 0
+
+  const playerMode = session.scoring_config?.competition_player_mode ?? 'singles'
+  const isScored =
+    playerMode === 'duos' ||
+    session.partnership_mode === 'americano' ||
+    (session.rules ?? '').toLowerCase().includes('americano')
+
+  const breakMinutes = Math.max(0, Number(session.scoring_config?.break_minutes) || 3)
+  let totalGames = Math.max(1, Number(session.scoring_config?.americano_games) || 7)
+  let gameMinutes = Number(session.scoring_config?.game_minutes) || 0
+
+  if (!isScored) {
+    gameMinutes = 15
+    const slotMin = gameMinutes + breakMinutes
+    totalGames =
+      durationMinutes > 0 && slotMin > 0
+        ? Math.max(1, Math.floor((durationMinutes + breakMinutes) / slotMin))
+        : totalGames
+  } else if (gameMinutes < 1) {
+    gameMinutes =
+      durationMinutes > 0 && totalGames > 0
+        ? Math.max(1, Math.floor(durationMinutes / totalGames - breakMinutes))
+        : 1
+  }
+
+  const usedMinutes = totalScheduleMinutes(totalGames, gameMinutes, breakMinutes)
+  const sqlBudget = durationMinutes > 0 ? Math.max(1, Math.floor(durationMinutes) - 1) : 0
+  const fits = sqlBudget > 0 && usedMinutes <= sqlBudget
+  return { totalGames, gameMinutes, breakMinutes, durationMinutes, usedMinutes, fits }
+}
+
+/** Shrink game length (then round count) so start_competition passes session-time validation. */
+export function fitCompetitionScheduleToSession(
+  session: SessionForSqlSchedule,
+): FittedCompetitionSchedule {
+  const current = competitionSqlSchedule(session)
+  if (current.fits) {
+    return { ...current, changed: false, gameCountChanged: false }
+  }
+  if (current.durationMinutes <= 0) {
+    return { ...current, changed: false, gameCountChanged: false, fits: false }
+  }
+
+  const { breakMinutes, durationMinutes } = current
+  const requestedGames = current.totalGames
+  const budgetMinutes = Math.max(1, Math.floor(durationMinutes) - 1)
+
+  const fittedMinutes = gameDurationForEvent(budgetMinutes, requestedGames, breakMinutes)
+  const fittedUsed = totalScheduleMinutes(requestedGames, fittedMinutes, breakMinutes)
+  if (fittedUsed <= budgetMinutes) {
+    return {
+      totalGames: requestedGames,
+      gameMinutes: fittedMinutes,
+      breakMinutes,
+      durationMinutes,
+      usedMinutes: fittedUsed,
+      fits: true,
+      changed:
+        fittedMinutes !== current.gameMinutes || fittedUsed !== current.usedMinutes,
+      gameCountChanged: false,
+    }
+  }
+
+  for (let games = requestedGames - 1; games >= 1; games -= 1) {
+    const gm = gameDurationForEvent(budgetMinutes, games, breakMinutes)
+    const used = totalScheduleMinutes(games, gm, breakMinutes)
+    if (used <= budgetMinutes) {
+      return {
+        totalGames: games,
+        gameMinutes: gm,
+        breakMinutes,
+        durationMinutes,
+        usedMinutes: used,
+        fits: true,
+        changed: true,
+        gameCountChanged: games !== requestedGames,
+      }
+    }
+  }
+
+  return { ...current, changed: false, gameCountChanged: false, fits: false }
+}
+
 export function americanoScheduleUsedMinutes(
   totalGames: number,
   gameMinutes: number,

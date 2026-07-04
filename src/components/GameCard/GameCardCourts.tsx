@@ -3,7 +3,6 @@ import { useCourtsGridMetrics } from '../../hooks/useCourtsGridMetrics'
 import {
   liveCourtScoreKey,
   resolveGestureCourtPointScores,
-  liveCourtGameResults,
 } from '../../lib/liveCourtScore'
 import {
   competitionCourtSetupKey,
@@ -19,7 +18,6 @@ import type { GameCardSize } from '../../lib/viewBreakpoints'
 import {
   CourtCard,
   CourtMatchCell,
-  courtGestureScoreHref,
   courtLiveHref,
   courtManualScoreHref,
 } from './CourtCard'
@@ -33,7 +31,7 @@ import type {
   ScoringGame,
 } from './types'
 import type { LiveCourtGamesScore, LiveCourtPointFeed } from '../../lib/liveCourtScore'
-import { debugSessionLog } from '../../lib/debug/devDebug'
+import { agentDebugIngest } from '../../lib/debug/devDebug'
 import type { LeaderboardEntry } from '../../lib/leaderboardTypes'
 import type { CourtPlayer } from '../../lib/americanoSchedule'
 import {
@@ -64,7 +62,7 @@ export function GameCardCourts({
   gameRoundId,
   matchForCourt,
   setDraft,
-  submitCourt: _submitCourt,
+  submitCourt,
   busyCourtKey: _busyCourtKey,
   courtError: _courtError,
   canEdit,
@@ -72,7 +70,6 @@ export function GameCardCourts({
   hasScoring,
   finished,
   currentUserId,
-  currentUserDisplayName,
   currentUserAvatarUrl: _currentUserAvatarUrl,
   liveCourtEnabled = false,
   gestureScoreEnabled = false,
@@ -84,6 +81,9 @@ export function GameCardCourts({
   courtScoreMax,
   liveCourtScores,
   liveCourtFeeds,
+  onGestureGamesSynced,
+  onCompetitionCourtGamesSaved,
+  resolveCompetitionRoundId,
   courtStandings,
   roster,
   rosterNameById,
@@ -106,7 +106,6 @@ export function GameCardCourts({
   hasScoring: boolean
   finished: boolean
   currentUserId?: string | null
-  currentUserDisplayName?: string | null
   currentUserAvatarUrl?: string | null
   liveCourtEnabled?: boolean
   gestureScoreEnabled?: boolean
@@ -118,6 +117,15 @@ export function GameCardCourts({
   courtScoreMax?: number
   liveCourtScores?: Map<string, LiveCourtGamesScore>
   liveCourtFeeds?: Map<string, LiveCourtPointFeed>
+  onGestureGamesSynced?: (log: import('../../lib/matchLogServer').MatchGestureLog) => void
+  onCompetitionCourtGamesSaved?: (
+    gameNumber: number,
+    courtId: string,
+    teamA: number,
+    teamB: number,
+    courtLabel?: string,
+  ) => Promise<void>
+  resolveCompetitionRoundId?: (gameNumber: number) => Promise<string | undefined>
   courtStandings?: LeaderboardEntry[]
   roster?: CompetitionPlayer[]
   rosterNameById?: Map<string, string>
@@ -128,7 +136,8 @@ export function GameCardCourts({
   const scoreFirst = size === 'mobile' && !landscape
   const gridRef = useRef<HTMLDivElement>(null)
   const courtCount = courtScoreRows.length
-  const gamesSyncTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+  const gamesDraftRef = useRef<Map<string, { a: string; b: string }>>(new Map())
+  const gamesDirtyRef = useRef<Set<string>>(new Set())
   const pointsSyncTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
   const [pointBackups, setPointBackups] = useState<Record<string, { a: string; b: string }>>({})
   const [pointBackupDirty, setPointBackupDirty] = useState<Set<string>>(() => new Set())
@@ -193,38 +202,6 @@ export function GameCardCourts({
         const teamB = sideB.names
         const teamAPlayers = sideA.players
         const teamBPlayers = sideB.players
-        // #region agent log
-        if (import.meta.env.DEV && courtIndex < 4) {
-          debugSessionLog(
-            'GameCardCourts.tsx',
-            'court card name inputs',
-            {
-              runId: 'post-fix-verify',
-              gameNumber: game.gameNumber,
-              courtLabel: row.courtLabel,
-              usedLiveCourt: Boolean(liveCourt),
-              teamA,
-              teamB,
-              liveTeamA: liveCourt?.teamA ?? null,
-              schedTeamA: court.teamA,
-              playerNames: [
-                teamAPlayers?.[0]?.name ?? null,
-                teamAPlayers?.[1]?.name ?? null,
-                teamBPlayers?.[0]?.name ?? null,
-                teamBPlayers?.[1]?.name ?? null,
-              ],
-              rosterIds: [
-                teamAPlayers?.[0]?.rosterId ?? null,
-                teamAPlayers?.[1]?.rosterId ?? null,
-                teamBPlayers?.[0]?.rosterId ?? null,
-                teamBPlayers?.[1]?.rosterId ?? null,
-              ],
-            },
-            'H-G',
-            '5d6061',
-          )
-        }
-        // #endregion
         const sideLabels = duoTeamLabels?.(
           [teamA[0] ?? '', teamA[1] ?? ''],
           [teamB[0] ?? '', teamB[1] ?? ''],
@@ -245,19 +222,6 @@ export function GameCardCourts({
             ? matchForCourt(gameRoundId, courtId)
             : undefined
 
-        const gestureHref = courtGestureScoreHref({
-          gestureScoreEnabled,
-          friendly,
-          sessionId,
-          competitionId,
-          gameNumber: game.gameNumber,
-          courtLabel: row.courtLabel,
-          courtId,
-          currentUserId,
-          currentUserDisplayName,
-          court: liveCourt ?? court,
-          finished,
-        })
         const manualHref = courtManualScoreHref({
           manualScoreEnabled,
           friendly,
@@ -309,7 +273,6 @@ export function GameCardCourts({
           showGesturePoints || scoringLive || Boolean(feed?.live),
           showGesturePoints,
         )
-        const gameResults = liveCourtGameResults(feed?.points)
         const hasCourtScores =
           gestureCourt ||
           (scoreA != null && scoreA !== '') ||
@@ -320,6 +283,7 @@ export function GameCardCourts({
           !courtFinished && (gestureCourt || (canEdit && hasScoring && Boolean(row.courtId || friendly)))
 
         const backupKey = row.courtKey ?? liveCourtScoreKey(game.gameNumber, row.courtLabel)
+        const gamesDraftKey = backupKey
         const backupDirty = pointBackupDirty.has(backupKey)
         const backupPointA = backupDirty
           ? pointBackups[backupKey]?.a ?? pointScores?.scoreA ?? '0'
@@ -353,23 +317,83 @@ export function GameCardCourts({
           }
         }
 
-        const scheduleGestureGamesSync = (gamesA: string, gamesB: string) => {
+        const commitGestureGamesSync = (gamesA: string, gamesB: string) => {
           if (!gestureScoring) return
-          const ctx = gestureCameraCtx()
-          if (!ctx) return
+          const baseCtx = gestureCameraCtx()
+          if (!baseCtx) return
+          void (async () => {
+            let ctx = baseCtx
+            if (!ctx.friendly && !ctx.roundId && resolveCompetitionRoundId) {
+              const resolvedRoundId = await resolveCompetitionRoundId(game.gameNumber)
+              if (resolvedRoundId) ctx = { ...ctx, roundId: resolvedRoundId }
+            }
+            const { error, log, saved } = await syncGestureCameraGamesOverride(
+              ctx,
+              Number(gamesA) || 0,
+              Number(gamesB) || 0,
+            )
+            if (error) return
+            if (log) onGestureGamesSynced?.(log)
+            if (saved) {
+              gamesDraftRef.current.delete(gamesDraftKey)
+              gamesDirtyRef.current.delete(gamesDraftKey)
+            }
+          })()
+        }
 
-          const syncKey = row.courtKey ?? ctx.courtSetupKey
-          const timers = gamesSyncTimers.current
-          const prior = timers.get(syncKey)
-          if (prior) clearTimeout(prior)
-
-          timers.set(
-            syncKey,
-            setTimeout(() => {
-              timers.delete(syncKey)
-              void syncGestureCameraGamesOverride(ctx, Number(gamesA) || 0, Number(gamesB) || 0)
-            }, 450),
+        const commitGamesScore = () => {
+          const draftKey = gamesDraftKey
+          if (!gamesDirtyRef.current.has(draftKey)) return
+          const stored = gamesDraftRef.current.get(draftKey)
+          const gamesA = stored?.a ?? scoreA ?? '0'
+          const gamesB = stored?.b ?? scoreB ?? '0'
+          // #region agent log
+          agentDebugIngest(
+            'LB',
+            `① games updated ${row.courtLabel} — teamA=${gamesA} teamB=${gamesB}`,
+            {
+              courtLabel: row.courtLabel,
+              teamA: teamA.join(' / '),
+              teamB: teamB.join(' / '),
+              courtId,
+              gameNumber: game.gameNumber,
+            },
+            'LB',
+            '5d6061',
           )
+          // #endregion
+          if (!friendly && onCompetitionCourtGamesSaved && courtId) {
+            void onCompetitionCourtGamesSaved(
+              game.gameNumber,
+              courtId,
+              Number(gamesA) || 0,
+              Number(gamesB) || 0,
+              row.courtLabel,
+            )
+              .then(() => {
+                gamesDirtyRef.current.delete(draftKey)
+                gamesDraftRef.current.delete(draftKey)
+              })
+              .catch((err: unknown) => {
+                // #region agent log
+                agentDebugIngest(
+                  'LB',
+                  `① save failed — ${err instanceof Error ? err.message : String(err)}`,
+                  { courtLabel: row.courtLabel, courtId },
+                  'LB',
+                  '5d6061',
+                )
+                // #endregion
+              })
+          }
+          if (gestureScoring) {
+            commitGestureGamesSync(gamesA, gamesB)
+          } else if (submitCourt && row.courtKey) {
+            void submitCourt(row.courtKey).then(() => {
+              gamesDirtyRef.current.delete(draftKey)
+              gamesDraftRef.current.delete(draftKey)
+            })
+          }
         }
 
         const scheduleGesturePointsSync = (pointsA: string, pointsB: string) => {
@@ -401,12 +425,16 @@ export function GameCardCourts({
         }
 
         const onGamesA = (value: string) => {
+          gamesDirtyRef.current.add(gamesDraftKey)
           if (row.courtKey) setDraft(row.courtKey, 'teamA', value)
-          scheduleGestureGamesSync(value, scoreB ?? '0')
+          const cur = gamesDraftRef.current.get(gamesDraftKey) ?? { a: scoreA ?? '0', b: scoreB ?? '0' }
+          gamesDraftRef.current.set(gamesDraftKey, { ...cur, a: value })
         }
         const onGamesB = (value: string) => {
+          gamesDirtyRef.current.add(gamesDraftKey)
           if (row.courtKey) setDraft(row.courtKey, 'teamB', value)
-          scheduleGestureGamesSync(scoreA ?? '0', value)
+          const cur = gamesDraftRef.current.get(gamesDraftKey) ?? { a: scoreA ?? '0', b: scoreB ?? '0' }
+          gamesDraftRef.current.set(gamesDraftKey, { ...cur, b: value })
         }
 
         const onBackupPointA = (value: string) => {
@@ -433,7 +461,7 @@ export function GameCardCourts({
             court={liveCourt ?? court}
             finished={courtFinished}
             href={href}
-            gestureScoreHref={gestureHref}
+            gestureScoreHref={undefined}
             gestureScoreLive={feed?.live}
             manualScoreHref={manualHref}
             size={size}
@@ -452,6 +480,7 @@ export function GameCardCourts({
               scoreB={scoreB}
               onScoreA={gamesEditable ? onGamesA : undefined}
               onScoreB={gamesEditable ? onGamesB : undefined}
+              onGamesCommit={gamesEditable ? commitGamesScore : undefined}
               scoreMax={courtScoreMax}
               disabled={!gamesEditable}
               livePointScores={
@@ -461,7 +490,6 @@ export function GameCardCourts({
               backupPointB={showGesturePoints ? backupPointB : undefined}
               onBackupPointA={gamesEditable ? onBackupPointA : undefined}
               onBackupPointB={gamesEditable ? onBackupPointB : undefined}
-              liveGameResults={gameResults}
               finished={courtFinished}
               embedded
               compact={compact}

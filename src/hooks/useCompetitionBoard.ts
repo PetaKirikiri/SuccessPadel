@@ -248,26 +248,6 @@ export function useCompetitionBoard(
         rosterNameById,
       )
     }
-    // #region agent log
-    if (import.meta.env.DEV && games.length > 0 && games[0]!.matches[0]) {
-      debugSessionLog(
-        'useCompetitionBoard.ts:americanoGames',
-        'court preview games built',
-        {
-          runId: isDuo ? 'post-fix-verify' : 'post-fix-verify',
-          hasLiveRounds,
-          isDuo,
-          firstCourtTeamA: games[0]!.matches[0]!.teamA,
-          firstCourtRosterIds: [
-            games[0]!.matches[0]!.teamAPlayers?.[0]?.rosterId ?? null,
-            games[0]!.matches[0]!.teamAPlayers?.[1]?.rosterId ?? null,
-          ],
-        },
-        'H-H',
-        '5d6061',
-      )
-    }
-    // #endregion
     return sortGameRoundsByCourt(games)
   }, [
     isAmericano,
@@ -314,49 +294,6 @@ export function useCompetitionBoard(
     }
     return map
   }, [rounds, clubCourts, rosterById, rosterNameById])
-
-  // #region agent log
-  useMemo(() => {
-    if (!import.meta.env.DEV || rosterNameById.size === 0) return null
-    const named = [...rosterNameById.entries()].filter(([, name]) => name !== 'Player')
-    debugSessionLog(
-      'useCompetitionBoard.ts:rosterNameById',
-      'post-fix enriched roster names',
-      {
-        runId: 'post-fix',
-        namedCount: named.length,
-        sample: named.slice(0, 4).map(([id, name]) => ({ id, name })),
-      },
-      'H-B',
-      '5d6061',
-    )
-    return null
-  }, [rosterNameById])
-  // #endregion
-
-  // #region agent log
-  useMemo(() => {
-    if (!import.meta.env.DEV || rosterById.size === 0) return null
-    const genericRoster = [...rosterById.values()]
-      .map((row) => ({
-        id: row.id,
-        name: rosterDisplayName(row),
-        profileName: row.profiles?.display_name ?? null,
-        guestName: row.guest_name ?? null,
-      }))
-      .filter((row) => row.name === 'Player')
-    if (genericRoster.length > 0) {
-      debugSessionLog(
-        'useCompetitionBoard.ts:rosterById',
-        'roster rows resolving to Player',
-        { count: genericRoster.length, sample: genericRoster.slice(0, 4) },
-        'H-B',
-        '5d6061',
-      )
-    }
-    return null
-  }, [rosterById])
-  // #endregion
 
   const roundIdForGame = useCallback(
     (gameNumber: number) => rounds.find((r) => r.round_number === gameNumber)?.id,

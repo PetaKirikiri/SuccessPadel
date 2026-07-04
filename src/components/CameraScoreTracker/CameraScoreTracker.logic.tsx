@@ -15,7 +15,6 @@ import {
   type FingerAction,
   type HoldUi,
 } from '../../lib/gestureFingerDetect'
-import { supportsGestureScoreCamera } from '../../lib/gestureScoreCamera'
 import {
   competitionCourtSetupKey,
   ensureGestureCameraSession,
@@ -36,13 +35,19 @@ import type { MatchTeam } from '../../lib/types'
 import type { GameLogPoint } from '../../lib/gameLogSerialize'
 import {
   DEFAULT_FRIENDLY_ORGANIZED_CONFIG,
+  friendlyGameSlotMillis,
   friendlyOrganizedSession,
   friendlyPreviewGames,
   friendlyStartsAtIso,
 } from '../../lib/friendlyGames'
 import { CameraScoreTrackerShell } from './'
 import { CameraScoreTracker, type CameraScoreTrackerHandle } from './'
-import { breakMinutesFromConfig } from '../../lib/competitionLayout'
+import {
+  breakMinutesFromConfig,
+  competitionRoundTimesByGame,
+  isGameSlotInBreakAfter,
+  isGameSlotLive,
+} from '../../lib/competitionLayout'
 import { formatDateInput } from '../../lib/courtSchedule'
 import {
   newerGestureCameraLog,
@@ -58,6 +63,54 @@ const EMPTY_HOLD_UI: HoldUi = {
 }
 
 type Status = 'idle' | 'loading' | 'running' | 'unsupported' | 'error'
+type CountdownState = 'starts' | 'playing' | 'break' | 'finished' | 'scheduled'
+type GameOption = { value: string; label: string }
+type CourtOption = { value: string; label: string }
+
+function formatCountdown(ms: number): string {
+  if (ms <= 0) return '0:00'
+  const m = Math.floor(ms / 60000)
+  const s = Math.floor((ms % 60000) / 1000)
+  return `${m}:${String(s).padStart(2, '0')}`
+}
+
+function timerState(
+  now: number,
+  gameNumber: number,
+  times: { startsAt: number; endsAt: number } | undefined,
+  timesByGame?: Map<number, { startsAt: number; endsAt: number }>,
+): CountdownState {
+  if (!times) return 'scheduled'
+  if (isGameSlotLive(now, times)) return 'playing'
+  if (now < times.startsAt) return 'starts'
+  if (timesByGame && isGameSlotInBreakAfter(now, gameNumber, timesByGame)) return 'break'
+  if (now >= times.endsAt) return 'finished'
+  return 'scheduled'
+}
+
+function timerLabel(state: CountdownState): string {
+  if (state === 'starts') return 'Game starts in'
+  if (state === 'playing') return 'Current game'
+  if (state === 'break') return 'Break time'
+  if (state === 'finished') return 'Finished'
+  return 'Game time'
+}
+
+function timerValue(
+  now: number,
+  gameNumber: number,
+  times: { startsAt: number; endsAt: number } | undefined,
+  timesByGame?: Map<number, { startsAt: number; endsAt: number }>,
+): string | null {
+  if (!times) return null
+  if (now < times.startsAt) return formatCountdown(times.startsAt - now)
+  if (now < times.endsAt) return formatCountdown(times.endsAt - now)
+  if (timesByGame && isGameSlotInBreakAfter(now, gameNumber, timesByGame)) {
+    const next = timesByGame.get(gameNumber + 1)
+    return next ? formatCountdown(next.startsAt - now) : '0:00'
+  }
+  return '0:00'
+}
 
 export function GestureScoreCourtPage() {
   const location = useLocation()
@@ -68,9 +121,15 @@ export function GestureScoreCourtPage() {
   const { id, gameNumber, courtId, courtSlug } = useParams()
   const { user, session: authSession, loading: authLoading, restoreSession } = useAuth()
   const needsAuth = false
-  const gameNum = Number(gameNumber)
-  const courtLabel = courtSlug ? decodeURIComponent(courtSlug) : ''
-  const competitionCourtId = courtId ?? ''
+  const routeGameNum = Number(gameNumber)
+  const routeCourtValue = courtSlug ? decodeURIComponent(courtSlug) : (courtId ?? '')
+  const [activeGameNum, setActiveGameNum] = useState(() =>
+    Number.isFinite(routeGameNum) ? routeGameNum : 1,
+  )
+  const [activeCourtValue, setActiveCourtValue] = useState(routeCourtValue)
+  const gameNum = activeGameNum
+  const courtLabel = friendlyRoute ? activeCourtValue : ''
+  const competitionCourtId = friendlyRoute ? '' : activeCourtValue
 
   const { game: friendlyGame, loading: friendlyLoading } = useFriendlyGame(friendlyRoute ? id : undefined)
   const { session, rounds, roster, clubCourts, courtMatches } = usePublicCompetition(
@@ -84,6 +143,7 @@ export function GestureScoreCourtPage() {
     courtMatches,
   )
   const { courtNames } = useSetupCourts()
+  const [tick, setTick] = useState(() => Date.now())
 
   const courtSetupKey = useMemo(() => {
     if (!id || !Number.isFinite(gameNum)) return undefined
@@ -95,13 +155,21 @@ export function GestureScoreCourtPage() {
   }, [competitionCourtId, courtLabel, friendlyRoute, gameNum, id])
 
   const competitionGames = useMemo(() => pivotScheduleByGame(columns), [columns])
-  const competitionRoundId = useMemo(
-    () => rounds.find((round) => round.round_number === gameNum)?.id,
-    [gameNum, rounds],
+  const competitionRoundTimesByGameMap = useMemo(
+    () =>
+      friendlyRoute
+        ? new Map<number, { startsAt: number; endsAt: number }>()
+        : competitionRoundTimesByGame(session, Math.max(rounds.length, competitionGames.length)),
+    [competitionGames.length, friendlyRoute, rounds.length, session],
   )
 
-  const friendlyCourtMatch = useMemo(() => {
-    if (!friendlyRoute || !friendlyGame || !courtLabel || !Number.isFinite(gameNum)) return null
+  const friendlySchedule = useMemo(() => {
+    if (!friendlyRoute || !friendlyGame) {
+      return {
+        games: [],
+        roundTimesByGame: new Map<number, { startsAt: number; endsAt: number }>(),
+      }
+    }
     const config = friendlyGame.organizedConfig ?? DEFAULT_FRIENDLY_ORGANIZED_CONFIG
     const organizedConfig = {
       ...DEFAULT_FRIENDLY_ORGANIZED_CONFIG,
@@ -119,9 +187,33 @@ export function GestureScoreCourtPage() {
       breakMinutes,
     )
     const games = pivotScheduleByGame(cols)
-    const scheduleGame = games.find((game) => game.gameNumber === gameNum)
+    const roundTimesByGame = new Map<number, { startsAt: number; endsAt: number }>()
+    for (const game of games) {
+      const slot = friendlyGameSlotMillis(organizedConfig, game.gameNumber, games.length)
+      if (slot) roundTimesByGame.set(game.gameNumber, slot)
+    }
+    return { games, roundTimesByGame }
+  }, [courtNames, friendlyGame, friendlyRoute])
+
+  const scheduleGames = friendlyRoute ? friendlySchedule.games : competitionGames
+  const roundTimesByGame = friendlyRoute
+    ? friendlySchedule.roundTimesByGame
+    : competitionRoundTimesByGameMap
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setTick(Date.now()), 1000)
+    return () => window.clearInterval(timer)
+  }, [])
+  const competitionRoundId = useMemo(
+    () => rounds.find((round) => round.round_number === gameNum)?.id,
+    [gameNum, rounds],
+  )
+
+  const friendlyCourtMatch = useMemo(() => {
+    if (!friendlyRoute || !friendlyGame || !courtLabel || !Number.isFinite(gameNum)) return null
+    const scheduleGame = friendlySchedule.games.find((game) => game.gameNumber === gameNum)
     return scheduleGame?.courts.find((court) => court.courtLabel === courtLabel) ?? null
-  }, [courtLabel, courtNames, friendlyGame, friendlyRoute, gameNum])
+  }, [courtLabel, friendlyGame, friendlyRoute, friendlySchedule.games, gameNum])
 
   const competitionCourtLabel = useMemo(() => {
     if (friendlyRoute || !competitionCourtId) return ''
@@ -158,6 +250,112 @@ export function GestureScoreCourtPage() {
 
   const courtMatch = friendlyRoute ? friendlyCourtMatch : competitionCourtMatch
   const resolvedCourtLabel = friendlyRoute ? courtLabel : competitionCourtLabel
+  const selectedGame = useMemo(
+    () => scheduleGames.find((game) => game.gameNumber === gameNum) ?? null,
+    [gameNum, scheduleGames],
+  )
+  const gameOptions: GameOption[] = useMemo(
+    () => {
+      const options = scheduleGames.map((game) => ({
+        value: String(game.gameNumber),
+        label: `Game ${game.gameNumber}`,
+      }))
+      if (options.some((option) => option.value === String(gameNum))) return options
+      return [{ value: String(gameNum), label: `Game ${gameNum}` }, ...options]
+    },
+    [gameNum, scheduleGames],
+  )
+  const selectedCourtValue = friendlyRoute ? courtLabel : competitionCourtId
+  const courtOptions: CourtOption[] = useMemo(() => {
+    const fallback = selectedCourtValue
+      ? [{ value: selectedCourtValue, label: resolvedCourtLabel || selectedCourtValue }]
+      : []
+    if (!selectedGame) return fallback
+    if (friendlyRoute) {
+      const options = selectedGame.courts.map((court) => ({
+        value: court.courtLabel,
+        label: court.courtLabel,
+      }))
+      return options.some((option) => option.value === selectedCourtValue)
+        ? options
+        : [...fallback, ...options]
+    }
+    const liveCourts = liveCourtsByGame.get(selectedGame.gameNumber) ?? []
+    const options = selectedGame.courts
+      .map((court) => {
+        const live = liveCourts.find((row) => row.courtName === court.courtLabel)
+        const value = live?.courtId ?? courtIdByLabel.get(court.courtLabel)
+        if (!value) return null
+        return { value, label: court.courtLabel }
+      })
+      .filter((option): option is CourtOption => option != null)
+    return options.some((option) => option.value === selectedCourtValue)
+      ? options
+      : [...fallback, ...options]
+  }, [
+    courtIdByLabel,
+    friendlyRoute,
+    liveCourtsByGame,
+    resolvedCourtLabel,
+    selectedCourtValue,
+    selectedGame,
+  ])
+  const currentTimes = roundTimesByGame.get(gameNum)
+  const currentTimerState = timerState(tick, gameNum, currentTimes, roundTimesByGame)
+  const currentTimerValue = timerValue(tick, gameNum, currentTimes, roundTimesByGame)
+  const displayCourtLabel = resolvedCourtLabel || courtOptions.find((option) => option.value === selectedCourtValue)?.label || 'Court'
+
+  useEffect(() => {
+    if (scheduleGames.length === 0) return
+    if (!scheduleGames.some((game) => game.gameNumber === activeGameNum)) {
+      setActiveGameNum(scheduleGames[0].gameNumber)
+      return
+    }
+    if (!activeCourtValue && courtOptions[0]) {
+      setActiveCourtValue(courtOptions[0].value)
+    }
+  }, [activeCourtValue, activeGameNum, courtOptions, scheduleGames])
+
+  const courtOptionsForGame = useCallback(
+    (nextGameNumber: number): CourtOption[] => {
+      const nextGame = scheduleGames.find((game) => game.gameNumber === nextGameNumber)
+      if (!nextGame) return []
+      if (friendlyRoute) {
+        return nextGame.courts.map((court) => ({ value: court.courtLabel, label: court.courtLabel }))
+      }
+      const liveCourts = liveCourtsByGame.get(nextGameNumber) ?? []
+      return nextGame.courts
+        .map((court) => {
+          const live = liveCourts.find((row) => row.courtName === court.courtLabel)
+          const value = live?.courtId ?? courtIdByLabel.get(court.courtLabel)
+          if (!value) return null
+          return { value, label: court.courtLabel }
+        })
+        .filter((option): option is CourtOption => option != null)
+    },
+    [courtIdByLabel, friendlyRoute, liveCourtsByGame, scheduleGames],
+  )
+
+  const changeGame = useCallback(
+    (value: string) => {
+      const nextGameNumber = Number(value)
+      if (!Number.isFinite(nextGameNumber)) return
+      const nextCourtOptions = courtOptionsForGame(nextGameNumber)
+      const sameCourt =
+        nextCourtOptions.find((option) => option.value === selectedCourtValue) ??
+        nextCourtOptions.find((option) => option.label === displayCourtLabel)
+      setActiveGameNum(nextGameNumber)
+      setActiveCourtValue(sameCourt?.value ?? nextCourtOptions[0]?.value ?? selectedCourtValue)
+    },
+    [courtOptionsForGame, displayCourtLabel, selectedCourtValue],
+  )
+
+  const changeCourt = useCallback(
+    (value: string) => {
+      setActiveCourtValue(value)
+    },
+    [],
+  )
 
   const ourTeam = useMemo(
     () =>
@@ -234,6 +432,7 @@ export function GestureScoreCourtPage() {
 
   const waitingForFriendlySchedule =
     friendlyRoute && Boolean(friendlyGame && courtLabel && courtNames.length === 0 && !courtMatch)
+  const waitingForNavigatorSelection = scheduleGames.length > 0 && !activeCourtValue
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const engineRef = useRef<GestureCameraEngine | null>(null)
@@ -305,18 +504,28 @@ export function GestureScoreCourtPage() {
   const publishLocalScore = useCallback(
     (log: MatchGestureLog | null) => {
       if (!log) return
-      sendEphemeral({ scoreAfter: scoreFromLog(log) })
+      sendEphemeral({
+        scoreAfter: scoreFromLog(log),
+        gameNumber: cameraCtx?.gameNumber,
+        courtId: cameraCtx?.courtId ?? null,
+        courtLabel: cameraCtx?.courtLabel ?? null,
+      })
     },
-    [sendEphemeral],
+    [cameraCtx, sendEphemeral],
   )
 
   useEffect(() => {
     if (!cameraCtx || !courtSetupKey) return
 
+    const switchingCourt = sessionInitKeyRef.current !== courtSetupKey
+    if (switchingCourt) {
+      applyScoreLocal(null, false)
+      localLogRef.current = null
+    }
     const cached = readLocalGestureCameraLog(courtSetupKey)
     if (cached) applyScoreFromLog(cached)
 
-    if (sessionInitKeyRef.current === courtSetupKey) return
+    if (!switchingCourt) return
     sessionInitKeyRef.current = courtSetupKey
 
     void (async () => {
@@ -328,7 +537,7 @@ export function GestureScoreCourtPage() {
       const merged = newerGestureCameraLog(localLogRef.current, remote)
       if (merged && merged !== localLogRef.current) applyScoreFromLog(merged)
     })()
-  }, [applyScoreFromLog, cameraCtx, courtSetupKey])
+  }, [applyScoreFromLog, applyScoreLocal, cameraCtx, courtSetupKey])
 
   useEffect(() => {
     if (!needsAuth) return
@@ -476,6 +685,7 @@ export function GestureScoreCourtPage() {
   )
 
   useEffect(() => {
+    if (status !== 'running' && status !== 'loading') return
     const video = videoRef.current
     if (!video) return
     const replay = () => {
@@ -487,7 +697,7 @@ export function GestureScoreCourtPage() {
       video.removeEventListener('pause', replay)
       window.clearInterval(watchdog)
     }
-  }, [])
+  }, [status])
 
   const resumeCameraVideo = useCallback(() => {
     engineRef.current?.resumeVideo()
@@ -498,11 +708,20 @@ export function GestureScoreCourtPage() {
     void engineRef.current?.restart()
   }, [])
 
+  const stopCamera = useCallback(() => {
+    engineRef.current?.stop()
+    trackerRef.current?.setHold(EMPTY_HOLD_UI)
+    setCameraError(null)
+  }, [])
+
   const showStartCamera =
     status === 'idle' || status === 'loading' || status === 'error' || status === 'unsupported'
 
   const pageLoading =
-    (needsAuth && (authLoading || sessionSyncing)) || friendlyLoading || waitingForFriendlySchedule
+    (needsAuth && (authLoading || sessionSyncing)) ||
+    friendlyLoading ||
+    waitingForFriendlySchedule ||
+    waitingForNavigatorSelection
   const scorerReady = Boolean(courtSetupKey && canOpenGestureScore && cameraCtx)
 
   useEffect(() => {
@@ -533,9 +752,6 @@ export function GestureScoreCourtPage() {
         },
       })
       engineRef.current = engine
-      if (supportsGestureScoreCamera()) {
-        void engine.start()
-      }
     }
 
     mountEngine()
@@ -577,7 +793,19 @@ export function GestureScoreCourtPage() {
           cameraStarting={status === 'loading'}
           cameraError={cameraError}
           cameraStatus={status}
+          gameLabel={`Game ${gameNum}`}
+          courtLabel={displayCourtLabel}
+          gameOptions={gameOptions}
+          selectedGame={String(gameNum)}
+          onGameChange={changeGame}
+          courtOptions={courtOptions}
+          selectedCourt={selectedCourtValue}
+          onCourtChange={changeCourt}
+          timerLabel={timerLabel(currentTimerState)}
+          timerValue={currentTimerValue}
+          timerTimeLabel={selectedGame?.timeLabel}
           onStartCamera={startCamera}
+          onStopCamera={stopCamera}
           cameraPreview={
             <video
               ref={videoRef}

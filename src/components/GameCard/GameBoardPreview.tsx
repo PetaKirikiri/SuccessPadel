@@ -9,6 +9,14 @@ import type { GameSession } from '../../lib/types'
 import type { GameCardPanel } from '.'
 import { GameBoard } from './GameBoard'
 
+/*
+ * UI/layout lock:
+ * Do not tune game card spacing, height, scrolling, or viewport behavior here.
+ * Do not add classes/hooks for UI work without explicit approval.
+ * Put visual changes in src/layouts/game-card/game-card.{mobile,tablet,web,tv}.css
+ * or src/layouts/court-card/court-card.{mobile,tablet,web,tv}.css.
+ */
+
 type Props = {
   session: Pick<GameSession, 'partnership_mode' | 'rules' | 'scoring_config'> &
     Partial<Pick<GameSession, 'starts_at' | 'ends_at' | 'target_players' | 'max_players'>>
@@ -22,6 +30,7 @@ type Props = {
   currentUserAvatarUrl?: string | null
   liveCourtScores?: Map<string, LiveCourtGamesScore>
   liveCourtFeeds?: Map<string, LiveCourtPointFeed>
+  onGestureGamesSynced?: (log: import('../../lib/matchLogServer').MatchGestureLog) => void
   onSubmitFriendlyScores?: (entries: FriendlyCourtScoreSubmit[]) => Promise<void>
   onFriendlyScoresSaved?: () => void
   gameCarousel?: boolean
@@ -46,6 +55,7 @@ export function GameBoardPreview({
   currentUserAvatarUrl,
   liveCourtScores,
   liveCourtFeeds,
+  onGestureGamesSynced,
   onSubmitFriendlyScores,
   onFriendlyScoresSaved,
   gameCarousel = false,
@@ -98,7 +108,7 @@ export function GameBoardPreview({
   }, [breakMinutes, eventStartsAt, gameMinutes, games, session])
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+    <div className="game-board-preview">
       <GameBoard
       columns={columns}
       mode="preview"
@@ -113,6 +123,7 @@ export function GameBoardPreview({
       currentUserAvatarUrl={currentUserAvatarUrl}
       liveCourtScores={liveCourtScores}
       liveCourtFeeds={liveCourtFeeds}
+      onGestureGamesSynced={onGestureGamesSynced}
       onSubmitFriendlyScores={onSubmitFriendlyScores}
       onSaved={onFriendlyScoresSaved}
       tvCarousel={gameCarousel}

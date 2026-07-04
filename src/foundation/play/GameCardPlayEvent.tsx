@@ -24,6 +24,7 @@ import { americanoScheduleFromSession, competitionRoundTimesByGame } from '../..
 import { courtGameScoreMax, type CourtScoreSubmit } from '../../lib/competitionScoreInput'
 import { computeAmericanoStandings } from '../../lib/competitionStandings'
 import { computeDuoStandings } from '../../lib/computeDuoStandings'
+import { computeFriendlySessionStandings } from '../../lib/friendlySessionStandings'
 import { duoLabelsForMatch } from '../../lib/competitionFormatPresets'
 import type { CourtPlayer } from '../../lib/americanoSchedule'
 import { buildRosterNameById } from '../../hooks/useCompetitions'
@@ -33,6 +34,14 @@ import { competitionViewAlongUrl } from '../../lib/siteUrl'
 import { supabase } from '../../lib/supabaseClient'
 import { pivotScheduleByGame } from '../../lib/competitionCourtBoard'
 import { competitionCourtSetupKey } from '../../lib/gestureCameraScore'
+import { agentDebugIngest } from '../../lib/debug/devDebug'
+import { americanoCourtTotals } from '../../lib/friendlyManualScore'
+import { ensureCompetitionRoundId } from '../../lib/competitionRoundResolve'
+import {
+  computeManualCourtStandings,
+  manualCourtScoreKey,
+  type ManualCourtScore,
+} from '../../lib/competitionManualStandings'
 
 type PlayTab = PlayViewTab
 const TV_SCORE_INPUT_LEAD_MS = 4 * 60_000
@@ -87,6 +96,9 @@ export function GameCardPlayEvent() {
   )
   const autoStartAttemptedRef = useRef<string | null>(null)
   const [tvGameNumber, setTvGameNumber] = useState<number | undefined>(undefined)
+  const [manualCourtScores, setManualCourtScores] = useState<Map<string, ManualCourtScore>>(
+    () => new Map(),
+  )
 
   const {
     session,
@@ -115,8 +127,9 @@ export function GameCardPlayEvent() {
     return map
   }, [courtIdByLabel, liveCourtsByGame])
   const started = Boolean(session?.competition_started_at)
-  const receiverPollMs = 2000
-  const { scores: liveCourtScores, feeds: liveCourtFeeds } = useCompetitionLiveCourtScores(
+  const canScore = Boolean(session)
+  const receiverPollMs = 0
+  const { scores: liveCourtScores, feeds: liveCourtFeeds, logs: gestureLogs, applyGestureLog } = useCompetitionLiveCourtScores(
     id,
     courtIdToLabel,
     scoreUnit,
@@ -187,24 +200,127 @@ export function GameCardPlayEvent() {
     [teams, rosterNameById],
   )
 
-  const playerStandings = useMemo(
+  const scheduleRoster = useMemo(() => {
+    const seen = new Set<string>()
+    const players: CourtPlayer[] = []
+    for (const game of pivotScheduleByGame(columns)) {
+      for (const court of game.courts) {
+        for (const player of [...(court.teamAPlayers ?? []), ...(court.teamBPlayers ?? [])]) {
+          const key = player.rosterId ?? player.id ?? player.name
+          if (!key || seen.has(key)) continue
+          seen.add(key)
+          players.push(player)
+        }
+      }
+    }
+    return players
+  }, [columns])
+
+  const effectiveCourtMatches = useMemo(() => {
+    const gestureCourtScores = new Map<string, ManualCourtScore>()
+    for (const log of gestureLogs) {
+      const gameNumber = Number(log.gameNumber)
+      if (!Number.isFinite(gameNumber) || !log.courtId || !log.finalScore) continue
+      const [teamA, teamB] = americanoCourtTotals(log.finalScore, scoreUnit)
+      gestureCourtScores.set(manualCourtScoreKey(gameNumber, log.courtId), {
+        gameNumber,
+        courtId: log.courtId,
+        teamA,
+        teamB,
+      })
+    }
+
+    const scoreOverrides = new Map([...gestureCourtScores, ...manualCourtScores])
+    if (scoreOverrides.size === 0) return courtMatches
+    const next = [...courtMatches]
+    for (const score of scoreOverrides.values()) {
+      const roundId = roundIdForGame(score.gameNumber)
+      if (!roundId) continue
+      const scoreSummary = `${score.teamA}-${score.teamB}`
+      const playedAt = new Date().toISOString()
+      const index = next.findIndex(
+        (match) => match.competition_round_id === roundId && match.court_id === score.courtId,
+      )
+      if (index >= 0) {
+        next[index] = {
+          ...next[index]!,
+          score_summary: scoreSummary,
+          played_at: next[index]!.played_at ?? playedAt,
+        }
+      } else {
+        next.push({
+          competition_round_id: roundId,
+          court_id: score.courtId,
+          score_summary: scoreSummary,
+          played_at: playedAt,
+          match_players: [],
+        })
+      }
+    }
+    return next
+  }, [courtMatches, gestureLogs, manualCourtScores, roundIdForGame, scoreUnit])
+
+  const effectivePlayerStandings = useMemo(
     () =>
       enrichStandingsWithAvatars(
-        computeAmericanoStandings(roster, rounds, courtMatches),
+        computeAmericanoStandings(roster, rounds, effectiveCourtMatches),
         leaderboard,
       ),
-    [roster, rounds, courtMatches, leaderboard],
+    [effectiveCourtMatches, leaderboard, roster, rounds],
+  )
+
+  const effectiveDuoStandings = useMemo(
+    () =>
+      isDuo && teams.length >= 2
+        ? enrichStandingsWithAvatars(
+            computeDuoStandings(roster, rounds, effectiveCourtMatches, teams),
+            leaderboard,
+          )
+        : [],
+    [effectiveCourtMatches, isDuo, leaderboard, roster, rounds, teams],
+  )
+
+  const gestureStandings = useMemo(
+    () => computeFriendlySessionStandings(gestureLogs, scoreUnit, scheduleRoster),
+    [gestureLogs, scoreUnit, scheduleRoster],
+  )
+
+  const manualStandings = useMemo(
+    () =>
+      computeManualCourtStandings({
+        scores: manualCourtScores,
+        columns,
+        courtIdByLabel,
+        isDuo,
+        teams,
+        roster,
+      }),
+    [manualCourtScores, columns, courtIdByLabel, isDuo, teams, roster],
   )
 
   const liveStandings = useMemo(() => {
-    if (isDuo && teams.length >= 2) {
-      return enrichStandingsWithAvatars(
-        computeDuoStandings(roster, rounds, courtMatches, teams),
-        leaderboard,
-      )
+    const useDb = effectiveCourtMatches.length > 0 && rounds.length > 0
+    if (useDb) {
+      if (isDuo && teams.length >= 2) {
+        return effectiveDuoStandings
+      }
+      return effectivePlayerStandings
     }
-    return playerStandings
-  }, [isDuo, teams, roster, rounds, courtMatches, leaderboard, playerStandings])
+    if (manualStandings.length > 0) {
+      return enrichStandingsWithAvatars(manualStandings, leaderboard)
+    }
+    return enrichStandingsWithAvatars(gestureStandings, leaderboard)
+  }, [
+    effectiveCourtMatches,
+    effectiveDuoStandings,
+    effectivePlayerStandings,
+    gestureStandings,
+    isDuo,
+    leaderboard,
+    manualStandings,
+    rounds,
+    teams,
+  ])
 
   const roundTimesByGame = useMemo(
     () => competitionRoundTimesByGame(session, Math.max(rounds.length, schedule.totalGames)),
@@ -218,7 +334,7 @@ export function GameCardPlayEvent() {
   }, [rounds])
 
   const handleSubmitScores = useCallback(
-    async (entries: CourtScoreSubmit[]) => {
+    async (entries: CourtScoreSubmit[], label?: string) => {
       for (const entry of entries) {
         const winTeam = entry.teamA >= entry.teamB ? 'a' : 'b'
         const { error: err } = await supabase.rpc('record_competition_match', {
@@ -230,12 +346,146 @@ export function GameCardPlayEvent() {
           p_team_a_points: entry.teamA,
           p_team_b_points: entry.teamB,
         })
+        // #region agent log
+        agentDebugIngest(
+          'LB',
+          err
+            ? `③ RPC failed — ${err.message}`
+            : `③ RPC saved ${entry.teamA}-${entry.teamB}${label ? ` (${label})` : ''}`,
+          { roundId: entry.roundId, courtId: entry.courtId },
+          'LB',
+          '5d6061',
+        )
+        // #endregion
         if (err) throw new Error(err.message)
         applyMatchScore(entry.roundId, entry.courtId, `${entry.teamA}-${entry.teamB}`)
       }
       await refresh(true)
     },
     [applyMatchScore, refresh],
+  )
+
+  const resolveCompetitionRoundId = useCallback(
+    async (gameNumber: number): Promise<string | undefined> => {
+      const cached = roundIdForGame(gameNumber)
+      if (cached) return cached
+      if (!id || !session) return undefined
+      const result = await ensureCompetitionRoundId(id, gameNumber, {
+        session,
+        roster,
+        sessionPairs,
+      })
+      if (result.started) await refresh(true)
+      return result.roundId
+    },
+    [id, refresh, roster, roundIdForGame, session, sessionPairs],
+  )
+
+  const handleCompetitionCourtGamesSaved = useCallback(
+    async (
+      gameNumber: number,
+      courtId: string,
+      teamA: number,
+      teamB: number,
+      courtLabel?: string,
+    ) => {
+      setManualCourtScores((prev) => {
+        const next = new Map(prev)
+        next.set(manualCourtScoreKey(gameNumber, courtId), { gameNumber, courtId, teamA, teamB })
+        return next
+      })
+
+      const roundId = await resolveCompetitionRoundId(gameNumber)
+      if (roundId) {
+        await handleSubmitScores(
+          [{ roundId, courtId, teamA, teamB }],
+          courtLabel ?? `game ${gameNumber}`,
+        )
+      }
+
+      const preview = computeManualCourtStandings({
+        scores: new Map([
+          ...manualCourtScores,
+          [manualCourtScoreKey(gameNumber, courtId), { gameNumber, courtId, teamA, teamB }],
+        ]),
+        columns,
+        courtIdByLabel,
+        isDuo,
+        teams,
+        roster,
+      })
+      const top = preview.slice(0, 4).map((row) => ({
+        name: row.display_name,
+        pts: row.total_points,
+        wins: row.wins,
+      }))
+      // #region agent log
+      agentDebugIngest(
+        'LB',
+        `④ leaderboard — top: ${top.map((r) => `${r.name}=${r.pts}pt`).join(', ') || 'empty'}${roundId ? ' (RPC)' : ' (local)'}`,
+        { gameNumber, courtId, teamA, teamB, hadRoundId: Boolean(roundId), top },
+        'LB',
+        '5d6061',
+      )
+      // #endregion
+    },
+    [
+      columns,
+      courtIdByLabel,
+      handleSubmitScores,
+      isDuo,
+      manualCourtScores,
+      resolveCompetitionRoundId,
+      roster,
+      teams,
+    ],
+  )
+
+  const handleGestureGamesSynced = useCallback(
+    async (log: import('../../lib/matchLogServer').MatchGestureLog) => {
+      applyGestureLog(log)
+      const gameNumber = Number(log.gameNumber)
+      const [teamA, teamB] = log.finalScore
+        ? americanoCourtTotals(log.finalScore, scoreUnit)
+        : [0, 0]
+      if (log.courtId) {
+        setManualCourtScores((prev) => {
+          const next = new Map(prev)
+          next.set(manualCourtScoreKey(gameNumber, log.courtId!), {
+            gameNumber,
+            courtId: log.courtId!,
+            teamA,
+            teamB,
+          })
+          return next
+        })
+      }
+      const roundId = await resolveCompetitionRoundId(gameNumber)
+      // #region agent log
+      agentDebugIngest(
+        'LB',
+        `③ gesture synced ${teamA}-${teamB}${roundId ? '' : ' (no round)'}`,
+        { courtSetupKey: log.courtSetupKey, roundId, courtId: log.courtId, teamA, teamB },
+        'LB',
+        '5d6061',
+      )
+      // #endregion
+      if (roundId && log.courtId && log.finalScore) {
+        applyMatchScore(roundId, log.courtId, `${teamA}-${teamB}`)
+      }
+      void refresh(true)
+    },
+    [applyGestureLog, applyMatchScore, refresh, resolveCompetitionRoundId, scoreUnit],
+  )
+
+  const handleActivePanel = useCallback(
+    (panel: 'game' | 'leaderboard') => {
+      if (panel === 'leaderboard' && document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur()
+      }
+      setTab(panel === 'game' ? 'games' : 'leaderboard')
+    },
+    [],
   )
 
   useEffect(() => {
@@ -251,7 +501,6 @@ export function GameCardPlayEvent() {
     })()
   }, [isAdmin, id, session, roster, sessionPairs, started, loading, refresh])
 
-  const canScore = started
   const standings = liveStandings
   const firstGameNumber = useMemo(
     () => pivotScheduleByGame(columns)[0]?.gameNumber,
@@ -367,7 +616,7 @@ export function GameCardPlayEvent() {
         <GameBoard
         competitionId={id}
         columns={columns}
-        mode={started ? 'scoring' : 'preview'}
+        mode="scoring"
         activeGameNumber={activeRound?.round_number}
         scoreUnit={scoreUnit}
         playTo={playTo}
@@ -386,6 +635,9 @@ export function GameCardPlayEvent() {
         isAdmin={isAdmin}
         liveCourtScores={mergedLiveCourtScores}
         liveCourtFeeds={mergedLiveCourtFeeds}
+        onGestureGamesSynced={handleGestureGamesSynced}
+        onCompetitionCourtGamesSaved={handleCompetitionCourtGamesSaved}
+        resolveCompetitionRoundId={resolveCompetitionRoundId}
         duoTeamLabels={isDuo ? duoTeamLabels : undefined}
         courtStandings={standings}
         roster={roster}
@@ -396,7 +648,7 @@ export function GameCardPlayEvent() {
         onTvBack={() => navigate('/competitions')}
         leaderboardBody={!isTvLayout ? leaderboardStandard : undefined}
         activePanel={tab === 'games' ? 'game' : 'leaderboard'}
-        onActivePanel={(panel) => setTab(panel === 'game' ? 'games' : 'leaderboard')}
+        onActivePanel={handleActivePanel}
         />
       </div>
     ) : started ? (

@@ -29,9 +29,7 @@ export function parseTennisPointInput(raw: string): number | null {
   if (v === '15') return 1
   if (v === '30') return 2
   if (v === '40' || v === 'AD') return 3
-  const n = Number(v)
-  if (!Number.isFinite(n) || n < 0) return null
-  return Math.min(3, Math.floor(n))
+  return null
 }
 
 export function isDeuce(score: TennisScore): boolean {

@@ -40,6 +40,15 @@ export function tennisScoreForManual(
   return { ...INITIAL_TENNIS_SCORE, gamesA: teamA, gamesB: teamB }
 }
 
+/** Americo court totals for leaderboard / match result (not live tennis 15-30-40). */
+export function americanoCourtTotals(
+  score: TennisScore,
+  scoreUnit: AmericanoScoringUnit,
+): [number, number] {
+  if (scoreUnit === 'points') return [score.pointsA ?? 0, score.pointsB ?? 0]
+  return [score.gamesA ?? 0, score.gamesB ?? 0]
+}
+
 export async function saveFriendlyManualCourtScore(
   sessionId: string,
   entry: FriendlyCourtScoreSubmit,

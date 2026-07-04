@@ -1,5 +1,5 @@
 import type { AmericanoScoringUnit } from './competitionPresets'
-import { isGestureCameraCourtLog } from './gestureCameraScore'
+import { gamesManualOverrideAt, isGestureCameraCourtLog, MANUAL_GAMES_GESTURE_ID, MANUAL_POINTS_GESTURE_ID } from './gestureCameraScore'
 import type { GameLogPoint } from './gameLogSerialize'
 import type { MatchTeam } from './types'
 import { parseFriendlyCourtSetupKey, type MatchGestureLog } from './matchLogServer'
@@ -9,6 +9,8 @@ export type LiveCourtPointFeed = {
   courtKey: string
   points: GameLogPoint[]
   live: boolean
+  /** Set when games were typed on the court card — do not rewind with stale point feeds. */
+  gamesManualOverrideAt?: string
 }
 
 function manualScoreStrings(
@@ -24,6 +26,7 @@ function manualScoreStrings(
 export type LiveCourtGamesScore = {
   scoreA: string
   scoreB: string
+  gamesManualOverrideAt?: string
 }
 
 export function liveCourtGamesScore(
@@ -46,9 +49,10 @@ export function liveCourtGamesScore(
     return manualScoreStrings(score, scoreUnit)
   }
   if (camera) {
+    const manualAt = gamesManualOverrideAt(log)
     return {
-      scoreA: String(score.gamesA ?? 0),
-      scoreB: String(score.gamesB ?? 0),
+      ...manualScoreStrings(score, scoreUnit),
+      ...(manualAt ? { gamesManualOverrideAt: manualAt } : {}),
     }
   }
   return manualScoreStrings(score, scoreUnit)
@@ -75,6 +79,14 @@ export function liveCourtScoreKeysForSetupKey(
   const mapped = courtIdToLabel?.get(courtLabel)
   if (mapped && mapped !== courtLabel) keys.add(liveCourtScoreKey(gameNumber, mapped))
   return [...keys]
+}
+
+function liveCourtScoreKeysForEphemeralSource(
+  sourceKey: string,
+  courtIdToLabel?: Map<string, string>,
+): string[] {
+  if (/^\d+:.+/.test(sourceKey)) return [sourceKey]
+  return liveCourtScoreKeysForSetupKey(sourceKey, courtIdToLabel)
 }
 
 export function patchEphemeralFeed(
@@ -108,7 +120,8 @@ export function mergeEphemeralLiveCourtScores(
 ): Map<string, LiveCourtGamesScore> {
   const map = new Map(scores)
   for (const [setupKey, score] of ephemeralScores) {
-    for (const courtKey of liveCourtScoreKeysForSetupKey(setupKey, courtIdToLabel)) {
+    for (const courtKey of liveCourtScoreKeysForEphemeralSource(setupKey, courtIdToLabel)) {
+      if (map.get(courtKey)?.gamesManualOverrideAt) continue
       map.set(courtKey, { scoreA: String(score.gamesA), scoreB: String(score.gamesB) })
     }
   }
@@ -122,7 +135,8 @@ export function mergeEphemeralLiveCourtFeeds(
 ): Map<string, LiveCourtPointFeed> {
   const map = new Map(feeds)
   for (const [setupKey, score] of ephemeralScores) {
-    for (const courtKey of liveCourtScoreKeysForSetupKey(setupKey, courtIdToLabel)) {
+    for (const courtKey of liveCourtScoreKeysForEphemeralSource(setupKey, courtIdToLabel)) {
+      if (map.get(courtKey)?.gamesManualOverrideAt) continue
       map.set(courtKey, patchEphemeralFeed(map.get(courtKey), courtKey, score))
     }
   }
@@ -139,6 +153,15 @@ function feedDisplayProgress(feed: LiveCourtPointFeed): number {
   return feed.points.length * 1_000_000 + (score.gamesA + score.gamesB) * 10_000 + score.pointsA * 100 + score.pointsB
 }
 
+function shouldAcceptIncomingFeed(prev: LiveCourtPointFeed, next: LiveCourtPointFeed): boolean {
+  if (next.gamesManualOverrideAt) {
+    if (!prev.gamesManualOverrideAt) return true
+    return Date.parse(next.gamesManualOverrideAt) >= Date.parse(prev.gamesManualOverrideAt)
+  }
+  if (prev.gamesManualOverrideAt) return false
+  return feedDisplayProgress(next) >= feedDisplayProgress(prev)
+}
+
 /** Never let a DB refresh rewind live point feeds already shown on court cards. */
 export function latchLiveCourtFeeds(
   prev: Map<string, LiveCourtPointFeed>,
@@ -151,7 +174,7 @@ export function latchLiveCourtFeeds(
       out.set(key, prevFeed)
       continue
     }
-    if (feedDisplayProgress(prevFeed) > feedDisplayProgress(nextFeed)) {
+    if (!shouldAcceptIncomingFeed(prevFeed, nextFeed)) {
       out.set(key, prevFeed)
     }
   }
@@ -160,6 +183,18 @@ export function latchLiveCourtFeeds(
 
 function gamesScoreTotal(score: LiveCourtGamesScore): number {
   return (Number(score.scoreA) || 0) + (Number(score.scoreB) || 0)
+}
+
+function shouldAcceptIncomingGamesScore(
+  prev: LiveCourtGamesScore,
+  next: LiveCourtGamesScore,
+): boolean {
+  if (next.gamesManualOverrideAt) {
+    if (!prev.gamesManualOverrideAt) return true
+    return Date.parse(next.gamesManualOverrideAt) >= Date.parse(prev.gamesManualOverrideAt)
+  }
+  if (prev.gamesManualOverrideAt) return false
+  return gamesScoreTotal(next) >= gamesScoreTotal(prev)
 }
 
 /** Never let a DB refresh rewind games already shown on court cards. */
@@ -174,7 +209,7 @@ export function latchLiveCourtGamesScores(
       out.set(key, prevScore)
       continue
     }
-    if (gamesScoreTotal(prevScore) > gamesScoreTotal(nextScore)) {
+    if (!shouldAcceptIncomingGamesScore(prevScore, nextScore)) {
       out.set(key, prevScore)
     }
   }
@@ -220,10 +255,12 @@ export function liveCourtFeedsFromLogs(
     const courtKey = courtKeyForLog(log)
     if (!courtKey) continue
     if (log.pointEvents.length > 0) {
+      const manualAt = gamesManualOverrideAt(log)
       map.set(courtKey, {
         courtKey,
         points: log.pointEvents,
         live: !log.matchEndedAt,
+        ...(manualAt ? { gamesManualOverrideAt: manualAt } : {}),
       })
       continue
     }
@@ -262,6 +299,7 @@ export function resolveGestureCourtPointScores(
   showGesturePoints: boolean,
 ): LiveCourtPointScores | undefined {
   if (!showGesturePoints) return undefined
+  if (feed?.gamesManualOverrideAt) return { scoreA: '0', scoreB: '0' }
   const fromFeed = liveCourtPointScores(feed, trackingLive || Boolean(feed?.live))
   return fromFeed ?? { scoreA: '0', scoreB: '0' }
 }
@@ -295,6 +333,7 @@ export function liveCourtGameResults(points: GameLogPoint[] | undefined): LiveCo
   let prevB = 0
   let gameNumber = 0
   for (const point of points) {
+    if (point.winnerGestureId === MANUAL_POINTS_GESTURE_ID) continue
     const { gamesA, gamesB } = point.scoreAfter
     if (gamesA > prevA) {
       gameNumber += 1
@@ -303,9 +342,12 @@ export function liveCourtGameResults(points: GameLogPoint[] | undefined): LiveCo
         gamesA,
         gamesB,
         winner: 'a',
-        lastPointLine: point.scoreBefore
-          ? formatGameScore(point.scoreBefore)
-          : formatGameScore(point.scoreAfter),
+        lastPointLine:
+          point.winnerGestureId === MANUAL_GAMES_GESTURE_ID
+            ? undefined
+            : point.scoreBefore
+              ? formatGameScore(point.scoreBefore)
+              : formatGameScore(point.scoreAfter),
       })
     } else if (gamesB > prevB) {
       gameNumber += 1
@@ -314,9 +356,12 @@ export function liveCourtGameResults(points: GameLogPoint[] | undefined): LiveCo
         gamesA,
         gamesB,
         winner: 'b',
-        lastPointLine: point.scoreBefore
-          ? formatGameScore(point.scoreBefore)
-          : formatGameScore(point.scoreAfter),
+        lastPointLine:
+          point.winnerGestureId === MANUAL_GAMES_GESTURE_ID
+            ? undefined
+            : point.scoreBefore
+              ? formatGameScore(point.scoreBefore)
+              : formatGameScore(point.scoreAfter),
       })
     }
     prevA = gamesA

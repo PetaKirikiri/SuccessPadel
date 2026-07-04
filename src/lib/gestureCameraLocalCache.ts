@@ -1,4 +1,5 @@
 import type { MatchGestureLog } from './matchLogServer'
+import { gamesManualOverrideAt } from './gestureCameraScore'
 
 const KEY_PREFIX = 'sp-gesture-cam-log:'
 
@@ -53,6 +54,11 @@ export function shouldPreferLocalGestureLog(
 ): boolean {
   if (!local) return false
   if (!remote) return true
+  const remoteManual = gamesManualOverrideAt(remote)
+  if (remoteManual) {
+    const localManual = gamesManualOverrideAt(local)
+    if (!localManual || Date.parse(remoteManual) > Date.parse(localManual)) return false
+  }
   if (local.pointEvents.length > remote.pointEvents.length) return true
   return newerGestureCameraLog(local, remote) === local
 }
@@ -64,6 +70,13 @@ export function displayGestureCameraLog(
 ): MatchGestureLog | null {
   if (!a) return b
   if (!b) return a
+  const aManual = gamesManualOverrideAt(a)
+  const bManual = gamesManualOverrideAt(b)
+  if (aManual && !bManual) return a
+  if (bManual && !aManual) return b
+  if (aManual && bManual) {
+    return Date.parse(aManual) >= Date.parse(bManual) ? a : b
+  }
   if (b.pointEvents.length !== a.pointEvents.length) {
     return b.pointEvents.length > a.pointEvents.length ? b : a
   }

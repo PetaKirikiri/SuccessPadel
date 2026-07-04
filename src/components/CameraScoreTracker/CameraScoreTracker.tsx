@@ -16,6 +16,7 @@ import { formatGameScore, formatTennisPoint } from '../../lib/tennisScore'
 import { cameraScoreTrackerRootClass } from './CameraScoreTracker.styles'
 
 type HoldFinger = 'team1' | 'team2' | 'undo'
+type TrackerSelectOption = { value: string; label: string }
 
 function holdStyle(progress: number): CSSProperties {
   return { '--hold-progress': String(progress) } as CSSProperties
@@ -163,6 +164,76 @@ function EditableGames({
   )
 }
 
+function GestureScoreCourtNavigator({
+  gameLabel,
+  courtLabel,
+  gameOptions,
+  selectedGame,
+  onGameChange,
+  courtOptions,
+  selectedCourt,
+  onCourtChange,
+  timerLabel,
+  timerValue,
+  timerTimeLabel,
+}: {
+  gameLabel?: string
+  courtLabel?: string
+  gameOptions: TrackerSelectOption[]
+  selectedGame?: string
+  onGameChange?: (value: string) => void
+  courtOptions: TrackerSelectOption[]
+  selectedCourt?: string
+  onCourtChange?: (value: string) => void
+  timerLabel?: string
+  timerValue?: string | null
+  timerTimeLabel?: string
+}) {
+  return (
+    <section className="gesture-score-court__navigator" aria-label="Court and game controls">
+      <div className="gesture-score-court__navigator-controls">
+        <label className="gesture-score-court__navigator-field">
+          <span className="gesture-score-court__navigator-caption">Game</span>
+          <select
+            className="gesture-score-court__navigator-button"
+            value={selectedGame ?? ''}
+            onChange={(event) => onGameChange?.(event.target.value)}
+            aria-label={gameLabel ?? 'Game'}
+          >
+            {gameOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="gesture-score-court__navigator-field">
+          <span className="gesture-score-court__navigator-caption">Court</span>
+          <select
+            className="gesture-score-court__navigator-button"
+            value={selectedCourt ?? ''}
+            onChange={(event) => onCourtChange?.(event.target.value)}
+            aria-label={courtLabel ?? 'Court'}
+          >
+            {courtOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div className="gesture-score-court__navigator-timer" aria-live="polite">
+        <span className="gesture-score-court__navigator-timer-label">{timerLabel}</span>
+        <span className="gesture-score-court__navigator-timer-value">{timerValue ?? '--:--'}</span>
+        {timerTimeLabel ? (
+          <span className="gesture-score-court__navigator-timer-time">{timerTimeLabel}</span>
+        ) : null}
+      </div>
+    </section>
+  )
+}
+
 export type CameraScoreTrackerHandle = {
   setHold: (ui: HoldUi) => void
 }
@@ -190,7 +261,19 @@ export type CameraScoreTrackerProps = {
   cameraStarting?: boolean
   cameraError?: string | null
   cameraStatus?: 'idle' | 'loading' | 'running' | 'unsupported' | 'error'
+  gameLabel?: string
+  courtLabel?: string
+  gameOptions?: TrackerSelectOption[]
+  selectedGame?: string
+  onGameChange?: (value: string) => void
+  courtOptions?: TrackerSelectOption[]
+  selectedCourt?: string
+  onCourtChange?: (value: string) => void
+  timerLabel?: string
+  timerValue?: string | null
+  timerTimeLabel?: string
   onStartCamera?: () => void
+  onStopCamera?: () => void
   onGamesLeftChange: (games: number) => void
   onGamesRightChange: (games: number) => void
   onTeam1: () => void
@@ -221,7 +304,19 @@ export const CameraScoreTracker = forwardRef<CameraScoreTrackerHandle, CameraSco
       cameraStarting = false,
       cameraError = null,
       cameraStatus = 'idle',
+      gameLabel,
+      courtLabel,
+      gameOptions = [],
+      selectedGame,
+      onGameChange,
+      courtOptions = [],
+      selectedCourt,
+      onCourtChange,
+      timerLabel,
+      timerValue,
+      timerTimeLabel,
       onStartCamera,
+      onStopCamera,
       onGamesLeftChange,
       onGamesRightChange,
       onTeam1,
@@ -318,12 +413,37 @@ export const CameraScoreTracker = forwardRef<CameraScoreTrackerHandle, CameraSco
         {preview ? (
           <p className="gesture-score-court__detect-banner">1 / 2 / 3 — on when camera sees that many fingers</p>
         ) : null}
+        <GestureScoreCourtNavigator
+          gameLabel={gameLabel}
+          courtLabel={courtLabel}
+          gameOptions={gameOptions}
+          selectedGame={selectedGame}
+          onGameChange={onGameChange}
+          courtOptions={courtOptions}
+          selectedCourt={selectedCourt}
+          onCourtChange={onCourtChange}
+          timerLabel={timerLabel}
+          timerValue={timerValue}
+          timerTimeLabel={timerTimeLabel}
+        />
         <section className="gesture-score-court__top" aria-label="Live score">
           <div className="gesture-score-court__team-header gesture-score-court__team-header--left">
             {team1Header}
           </div>
 
           <div className="gesture-score-court__top-center">
+            {cameraPreview ? (
+              <button
+                type="button"
+                className="gesture-score-court__camera-wrap"
+                aria-label="Stop camera"
+                onClick={() => {
+                  if (cameraStatus === 'running' || cameraStatus === 'loading') onStopCamera?.()
+                }}
+              >
+                {cameraPreview}
+              </button>
+            ) : null}
             {showStartCamera ? (
               <button
                 type="button"
@@ -336,9 +456,6 @@ export const CameraScoreTracker = forwardRef<CameraScoreTrackerHandle, CameraSco
               >
                 {cameraStarting ? 'Starting camera…' : 'Start camera'}
               </button>
-            ) : null}
-            {cameraPreview ? (
-              <div className="gesture-score-court__camera-wrap">{cameraPreview}</div>
             ) : null}
             {centerBadges}
           </div>

@@ -11,6 +11,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { useLineClientProfile } from '../../hooks/useLineClientProfile'
 import { useFriendlyGame } from '../../hooks/useFriendlyGame'
 import { useFriendlyLiveCourtScores } from '../../hooks/useFriendlyLiveCourtScores'
+import { agentDebugIngest } from '../../lib/debug/devDebug'
 import { useCourtEphemeralScores } from '../../hooks/useCourtEphemeralScores'
 import { useLatchedLiveCourtDisplay } from '../../hooks/useLatchedLiveCourtDisplay'
 import { useMatchGestureLog } from '../../hooks/useMatchGestureLog'
@@ -122,7 +123,7 @@ export function GameCardPlaySession() {
 
   const scoreUnit = useMemo(() => americanoScoringUnit(previewSession), [previewSession])
 
-  const receiverPollMs = 2000
+  const receiverPollMs = 0
 
   const courtSetupKeys = useMemo(
     () =>
@@ -139,6 +140,7 @@ export function GameCardPlaySession() {
     feeds: liveCourtFeeds,
     logs: matchLogs,
     refresh: refreshLiveScores,
+    applyGestureLog,
   } = useFriendlyLiveCourtScores(id, scoreUnit, receiverPollMs, courtSetupKeys)
 
   const ephemeralScores = useCourtEphemeralScores(courtSetupKeys)
@@ -236,6 +238,38 @@ export function GameCardPlaySession() {
       }
     },
     [game, scoreUnit],
+  )
+
+  const handleActivePanel = useCallback(
+    (panel: 'game' | 'leaderboard') => {
+      if (panel === 'leaderboard' && document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur()
+      }
+      setViewTab(panel === 'game' ? 'games' : 'leaderboard')
+    },
+    [],
+  )
+
+  const handleGestureGamesSynced = useCallback(
+    (log: import('../../lib/matchLogServer').MatchGestureLog) => {
+      // #region agent log
+      agentDebugIngest(
+        'GameCardPlaySession.tsx:handleGestureGamesSynced',
+        'applying log to friendly standings',
+        {
+          courtSetupKey: log.courtSetupKey,
+          finalScore: log.finalScore,
+          scoreUnit,
+          rosterLen: log.roster.length,
+          matchLogsBefore: matchLogs.length,
+        },
+        'E',
+        '5d6061',
+      )
+      // #endregion
+      applyGestureLog(log)
+    },
+    [applyGestureLog, matchLogs.length, scoreUnit],
   )
 
   const handleScoresSaved = useCallback(async () => {
@@ -353,6 +387,7 @@ export function GameCardPlaySession() {
           currentUserAvatarUrl={headerAvatar}
           liveCourtScores={mergedLiveCourtScores}
           liveCourtFeeds={mergedLiveCourtFeeds}
+          onGestureGamesSynced={handleGestureGamesSynced}
           onSubmitFriendlyScores={handleSubmitFriendlyScores}
           scoreSubmitEnabled={scoreSubmitEnabled}
           onFriendlyScoresSaved={handleScoresSaved}
@@ -361,7 +396,7 @@ export function GameCardPlaySession() {
           onBack={() => navigate('/friendly')}
           leaderboardBody={!isTvLayout ? leaderboardStandard : undefined}
           activePanel={viewTab === 'games' ? 'game' : 'leaderboard'}
-          onActivePanel={(panel) => setViewTab(panel === 'game' ? 'games' : 'leaderboard')}
+          onActivePanel={handleActivePanel}
         />
       {!isTvLayout && actionCard ? <div className="shrink-0 pt-2">{actionCard}</div> : null}
     </div>

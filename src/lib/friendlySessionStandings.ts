@@ -6,6 +6,7 @@ import {
   type TeamGame,
 } from './competitionAchievements'
 import type { AmericanoScoringUnit } from './competitionPresets'
+import { americanoCourtTotals } from './friendlyManualScore'
 import {
   friendlyStartsAtIso,
   type FriendlyOrganizedConfig,
@@ -57,8 +58,7 @@ function teamScores(
 ): [number, number] | null {
   const score = log.finalScore ?? log.pointEvents[log.pointEvents.length - 1]?.scoreAfter
   if (!score) return null
-  if (scoreUnit === 'points') return [score.pointsA ?? 0, score.pointsB ?? 0]
-  return [score.gamesA ?? 0, score.gamesB ?? 0]
+  return americanoCourtTotals(score, scoreUnit)
 }
 
 function latestLogsByCourt(logs: MatchGestureLog[]): MatchGestureLog[] {
