@@ -138,7 +138,14 @@ export function GestureScoreCourtPage() {
   const competitionCourtId = friendlyRoute ? '' : activeCourtValue
 
   const { game: friendlyGame, loading: friendlyLoading } = useFriendlyGame(friendlyRoute ? id : undefined)
-  const { session, rounds, roster, clubCourts, courtMatches } = usePublicCompetition(
+  const {
+    session,
+    rounds,
+    roster,
+    clubCourts,
+    courtMatches,
+    loading: competitionLoading,
+  } = usePublicCompetition(
     friendlyRoute ? undefined : id,
   )
   const { columns, liveCourtsByGame, courtIdByLabel } = useCompetitionBoard(
@@ -469,7 +476,8 @@ export function GestureScoreCourtPage() {
 
   const waitingForFriendlySchedule =
     friendlyRoute && Boolean(friendlyGame && courtLabel && courtNames.length === 0 && !courtMatch)
-  const waitingForNavigatorSelection = scheduleGames.length > 0 && !activeCourtValue
+  const waitingForNavigatorSelection =
+    !activeCourtValue && (friendlyLoading || (!friendlyRoute && competitionLoading) || scheduleGames.length > 0)
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const engineRef = useRef<GestureCameraEngine | null>(null)
@@ -757,6 +765,7 @@ export function GestureScoreCourtPage() {
   const pageLoading =
     (needsAuth && (authLoading || sessionSyncing)) ||
     friendlyLoading ||
+    (!friendlyRoute && competitionLoading) ||
     waitingForFriendlySchedule ||
     waitingForNavigatorSelection
   const scorerReady = Boolean(courtSetupKey && canOpenGestureScore && cameraCtx)
