@@ -37,6 +37,7 @@ import { competitionCourtSetupKey } from '../../lib/gestureCameraScore'
 import { agentDebugIngest } from '../../lib/debug/devDebug'
 import { americanoCourtTotals } from '../../lib/friendlyManualScore'
 import { ensureCompetitionRoundId } from '../../lib/competitionRoundResolve'
+import type { TennisScore } from '../../lib/tennisScore'
 import {
   computeManualCourtStandings,
   manualCourtScoreKey,
@@ -79,6 +80,44 @@ function gameHasSubmittedScores({
     const score = matchForCourt(roundId, courtId)
     return score?.teamAPoints != null && score?.teamBPoints != null
   })
+}
+
+function scoreTotalsForUnit(score: TennisScore, scoreUnit: string): [number, number] {
+  if (scoreUnit === 'points') return [score.pointsA ?? 0, score.pointsB ?? 0]
+  return [score.gamesA ?? 0, score.gamesB ?? 0]
+}
+
+function ephemeralScoreToCourtScore(
+  sourceKey: string,
+  score: TennisScore,
+  {
+    competitionId,
+    courtIdByLabel,
+    scoreUnit,
+  }: {
+    competitionId?: string
+    courtIdByLabel: Map<string, string>
+    scoreUnit: string
+  },
+): ManualCourtScore | null {
+  const keyed = sourceKey.match(/^(\d+):(.+)$/)
+  if (keyed) {
+    const gameNumber = Number(keyed[1])
+    const courtKey = keyed[2]!
+    const courtId = courtIdByLabel.get(courtKey) ?? courtKey
+    const [teamA, teamB] = scoreTotalsForUnit(score, scoreUnit)
+    return Number.isFinite(gameNumber) ? { gameNumber, courtId, teamA, teamB } : null
+  }
+
+  if (!competitionId || !sourceKey.startsWith(`${competitionId}-`)) return null
+  const rest = sourceKey.slice(competitionId.length + 1)
+  const splitAt = rest.indexOf('-')
+  if (splitAt <= 0) return null
+  const gameNumber = Number(rest.slice(0, splitAt))
+  const courtId = rest.slice(splitAt + 1)
+  if (!Number.isFinite(gameNumber) || !courtId) return null
+  const [teamA, teamB] = scoreTotalsForUnit(score, scoreUnit)
+  return { gameNumber, courtId, teamA, teamB }
 }
 
 export function GameCardPlayEvent() {
@@ -247,8 +286,23 @@ export function GameCardPlayEvent() {
       })
     }
 
-    return new Map([...dbCourtScores, ...gestureCourtScores, ...manualCourtScores])
-  }, [courtMatches, gestureLogs, manualCourtScores, rounds, scoreUnit])
+    const ephemeralCourtScores = new Map<string, ManualCourtScore>()
+    for (const [sourceKey, score] of ephemeralScores) {
+      const courtScore = ephemeralScoreToCourtScore(sourceKey, score, {
+        competitionId: id,
+        courtIdByLabel,
+        scoreUnit,
+      })
+      if (!courtScore) continue
+      if (courtScore.teamA === 0 && courtScore.teamB === 0) continue
+      ephemeralCourtScores.set(
+        manualCourtScoreKey(courtScore.gameNumber, courtScore.courtId),
+        courtScore,
+      )
+    }
+
+    return new Map([...dbCourtScores, ...gestureCourtScores, ...ephemeralCourtScores, ...manualCourtScores])
+  }, [courtIdByLabel, courtMatches, ephemeralScores, gestureLogs, id, manualCourtScores, rounds, scoreUnit])
 
   const effectiveCourtMatches = useMemo(() => {
     if (liveCourtScoreOverrides.size === 0) return courtMatches
