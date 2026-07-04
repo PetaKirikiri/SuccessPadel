@@ -238,6 +238,10 @@ function GestureScoreNavigatorMenu({
           {options.map((option) => {
             const statusLabel = optionStatusLabel(option.status)
             const selectedOption = option.value === selected?.value
+            const chooseOption = () => {
+              setOpen(false)
+              if (option.value !== selectedValue) onChange?.(option.value)
+            }
             return (
               <button
                 key={option.value}
@@ -247,10 +251,11 @@ function GestureScoreNavigatorMenu({
                 aria-selected={selectedOption}
                 data-selected={selectedOption || undefined}
                 data-status={option.status}
-                onClick={() => {
-                  setOpen(false)
-                  if (option.value !== selectedValue) onChange?.(option.value)
+                onPointerDown={(event) => {
+                  event.preventDefault()
+                  chooseOption()
                 }}
+                onClick={chooseOption}
               >
                 <span className="gesture-score-court__navigator-option-dot" aria-hidden />
                 <span className="gesture-score-court__navigator-option-label">

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabaseClient'
 
 type GestureScorerPresencePayload = {
@@ -28,9 +29,12 @@ export function useGestureScorerPresence(
 ): Map<string, number> {
   const [counts, setCounts] = useState<Map<string, number>>(() => new Map())
   const clientKey = useMemo(() => scorerClientKey(), [])
+  const channelRef = useRef<RealtimeChannel | null>(null)
+  const subscribedRef = useRef(false)
+  const currentPresenceRef = useRef<GestureScorerPresencePayload | null>(null)
 
   useEffect(() => {
-    if (!scopeKey || !courtSetupKey) {
+    if (!scopeKey) {
       setCounts(new Map())
       return
     }
@@ -38,6 +42,7 @@ export function useGestureScorerPresence(
     const channel = supabase.channel(`gesture-scorers-${scopeKey}`, {
       config: { presence: { key: clientKey } },
     })
+    channelRef.current = channel
 
     const readPresence = () => {
       const state = channel.presenceState() as Record<string, GestureScorerPresencePayload[]>
@@ -53,19 +58,32 @@ export function useGestureScorerPresence(
 
     channel.on('presence', { event: 'sync' }, readPresence)
     channel.subscribe((status) => {
+      subscribedRef.current = status === 'SUBSCRIBED'
       if (status !== 'SUBSCRIBED') return
-      void channel.track({
-        courtSetupKey,
-        userId: userId ?? null,
-        joinedAt: Date.now(),
-      } satisfies GestureScorerPresencePayload)
+      readPresence()
+      if (currentPresenceRef.current) void channel.track(currentPresenceRef.current)
     })
 
     return () => {
+      if (channelRef.current === channel) channelRef.current = null
+      subscribedRef.current = false
       void channel.untrack()
       void supabase.removeChannel(channel)
     }
-  }, [clientKey, courtSetupKey, scopeKey, userId])
+  }, [clientKey, scopeKey])
+
+  useEffect(() => {
+    if (!scopeKey || !courtSetupKey) return
+    const payload = {
+      courtSetupKey,
+      userId: userId ?? null,
+      joinedAt: Date.now(),
+    } satisfies GestureScorerPresencePayload
+    currentPresenceRef.current = payload
+    const channel = channelRef.current
+    if (!channel || !subscribedRef.current) return
+    void channel.track(payload)
+  }, [courtSetupKey, scopeKey, userId])
 
   return counts
 }
