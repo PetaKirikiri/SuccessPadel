@@ -122,7 +122,6 @@ export function mergeEphemeralLiveCourtScores(
   const map = new Map(scores)
   for (const [setupKey, score] of ephemeralScores) {
     for (const courtKey of liveCourtScoreKeysForEphemeralSource(setupKey, courtIdToLabel)) {
-      if (map.get(courtKey)?.gamesManualOverrideAt) continue
       map.set(courtKey, manualScoreStrings(score, scoreUnit))
     }
   }
