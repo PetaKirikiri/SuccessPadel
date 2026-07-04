@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { Session } from '@supabase/supabase-js'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   clubTimePartsFromDate,
@@ -146,10 +147,39 @@ function endIsoForWindow(day: string, startHour: number, startMinute: number, en
   return end.toISOString()
 }
 
+async function verifyAdminSession(
+  currentSession: Session | null,
+  restoreSession: () => Promise<Session | null>,
+): Promise<{ session: Session | null; error: string | null }> {
+  const live = currentSession?.user ? currentSession : await restoreSession()
+  if (!live?.user) {
+    return {
+      session: null,
+      error: 'Admin session expired. Reopen Sign In, then try saving again.',
+    }
+  }
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', live.user.id)
+    .maybeSingle()
+
+  if (error) return { session: live, error: error.message }
+  if (!data?.is_admin) {
+    return {
+      session: live,
+      error: 'This browser is not signed in as a database admin. Sign out and sign in with the admin LINE account.',
+    }
+  }
+
+  return { session: live, error: null }
+}
+
 export function CompetitionForm() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { session, restoreSession } = useAuth()
   const { t } = useTranslation()
   const [playerMode, setPlayerMode] = useState<CompetitionPlayerMode>('singles')
   const [createLeague, setCreateLeague] = useState(false)
@@ -554,6 +584,13 @@ export function CompetitionForm() {
     setError(null)
     setSavedMessage(null)
 
+    const admin = await verifyAdminSession(session, restoreSession)
+    if (admin.error || !admin.session?.user) {
+      setBusy(false)
+      setError(admin.error ?? 'Admin session expired. Reopen Sign In, then try saving again.')
+      return
+    }
+
     const finalTitle = title.trim() || autoTitle
     const targetPlayers = playersFromCourtCount(courtCount)
     const baseConfig = competitionScoringConfig(playerMode, { schedule: competitionSchedule })
@@ -577,7 +614,7 @@ export function CompetitionForm() {
         p_slots: rosterPayload,
         p_pairs: [],
         p_scoring_config: baseConfig,
-        p_created_by: user?.id ?? null,
+        p_created_by: admin.session.user.id,
         p_target_players: targetPlayers,
       })
       if (leagueErr || !leagueResult) {
@@ -657,7 +694,7 @@ export function CompetitionForm() {
         : {}),
       game_kind: 'competition' as const,
       visibility: 'open' as const,
-      created_by: user?.id ?? null,
+      created_by: admin.session.user.id,
       ...lockedFields,
     }
     const payload = id ? sessionFields : { ...sessionFields, status: 'open' as const }
