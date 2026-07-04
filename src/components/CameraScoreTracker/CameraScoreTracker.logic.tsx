@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { useCompetitionBoard } from '../../hooks/useCompetitionBoard'
 import { useCourtLive } from '../../hooks/useCourtLive'
 import { useFriendlyGame } from '../../hooks/useFriendlyGame'
+import { useGestureScorerPresence } from '../../hooks/useGestureScorerPresence'
 import { usePublicCompetition } from '../../hooks/usePublicCompetition'
 import { useSetupCourts } from '../../hooks/useSetupCourts'
 import { pivotScheduleByCourt, pivotScheduleByGame } from '../../lib/competitionCourtBoard'
@@ -65,7 +66,12 @@ const EMPTY_HOLD_UI: HoldUi = {
 type Status = 'idle' | 'loading' | 'running' | 'unsupported' | 'error'
 type CountdownState = 'starts' | 'playing' | 'break' | 'finished' | 'scheduled'
 type GameOption = { value: string; label: string }
-type CourtOption = { value: string; label: string }
+type CourtOption = {
+  value: string
+  label: string
+  courtSetupKey?: string
+  status?: 'available' | 'occupied' | 'mine'
+}
 
 function formatCountdown(ms: number): string {
   if (ms <= 0) return '0:00'
@@ -153,6 +159,9 @@ export function GestureScoreCourtPage() {
     }
     return undefined
   }, [competitionCourtId, courtLabel, friendlyRoute, gameNum, id])
+  const scorerUserId = needsAuth ? (authSession?.user?.id ?? user?.id ?? null) : null
+  const presenceScopeKey = id ? `${friendlyRoute ? 'friendly' : 'competition'}:${id}` : undefined
+  const scorerPresence = useGestureScorerPresence(presenceScopeKey, courtSetupKey, scorerUserId)
 
   const competitionGames = useMemo(() => pivotScheduleByGame(columns), [columns])
   const competitionRoundTimesByGameMap = useMemo(
@@ -266,35 +275,65 @@ export function GestureScoreCourtPage() {
     [gameNum, scheduleGames],
   )
   const selectedCourtValue = friendlyRoute ? courtLabel : competitionCourtId
+  const courtStatus = useCallback(
+    (optionCourtSetupKey: string | undefined): CourtOption['status'] => {
+      if (!optionCourtSetupKey) return undefined
+      if (optionCourtSetupKey === courtSetupKey) return 'mine'
+      return (scorerPresence.get(optionCourtSetupKey) ?? 0) > 0 ? 'occupied' : 'available'
+    },
+    [courtSetupKey, scorerPresence],
+  )
   const courtOptions: CourtOption[] = useMemo(() => {
     const fallback = selectedCourtValue
-      ? [{ value: selectedCourtValue, label: resolvedCourtLabel || selectedCourtValue }]
+      ? [{
+          value: selectedCourtValue,
+          label: resolvedCourtLabel || selectedCourtValue,
+          courtSetupKey,
+          status: courtStatus(courtSetupKey),
+        }]
       : []
     if (!selectedGame) return fallback
     if (friendlyRoute) {
       const options = selectedGame.courts.map((court) => ({
         value: court.courtLabel,
         label: court.courtLabel,
+        courtSetupKey: id
+          ? friendlyGestureCourtSetupKey(id, selectedGame.gameNumber, court.courtLabel)
+          : undefined,
       }))
-      return options.some((option) => option.value === selectedCourtValue)
-        ? options
-        : [...fallback, ...options]
+      const withStatus = options.map((option) => ({
+        ...option,
+        status: courtStatus(option.courtSetupKey),
+      }))
+      return withStatus.some((option) => option.value === selectedCourtValue)
+        ? withStatus
+        : [...fallback, ...withStatus]
     }
     const liveCourts = liveCourtsByGame.get(selectedGame.gameNumber) ?? []
-    const options = selectedGame.courts
-      .map((court) => {
-        const live = liveCourts.find((row) => row.courtName === court.courtLabel)
-        const value = live?.courtId ?? courtIdByLabel.get(court.courtLabel)
-        if (!value) return null
-        return { value, label: court.courtLabel }
+    const options: CourtOption[] = []
+    for (const court of selectedGame.courts) {
+      const live = liveCourts.find((row) => row.courtName === court.courtLabel)
+      const value = live?.courtId ?? courtIdByLabel.get(court.courtLabel)
+      if (!value) continue
+      const optionCourtSetupKey = id
+        ? competitionCourtSetupKey(id, selectedGame.gameNumber, value)
+        : undefined
+      options.push({
+        value,
+        label: court.courtLabel,
+        courtSetupKey: optionCourtSetupKey,
+        status: courtStatus(optionCourtSetupKey),
       })
-      .filter((option): option is CourtOption => option != null)
+    }
     return options.some((option) => option.value === selectedCourtValue)
       ? options
       : [...fallback, ...options]
   }, [
+    courtSetupKey,
+    courtStatus,
     courtIdByLabel,
     friendlyRoute,
+    id,
     liveCourtsByGame,
     resolvedCourtLabel,
     selectedCourtValue,
@@ -366,8 +405,6 @@ export function GestureScoreCourtPage() {
       ),
     [authSession?.user?.id, courtMatch, user?.id],
   )
-
-  const scorerUserId = needsAuth ? (authSession?.user?.id ?? user?.id ?? null) : null
 
   const scoreUnit = useMemo(() => {
     if (friendlyRoute && friendlyGame) {

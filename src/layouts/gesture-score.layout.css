@@ -213,7 +213,7 @@ html[data-gesture-ui='court'] .gesture-score-court__navigator-controls {
   align-items: stretch;
   justify-content: center;
   gap: 0;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid rgb(255 255 255 / 0.12);
   border-radius: 0.85rem;
   background: rgb(6 25 45 / 0.9);
@@ -221,6 +221,7 @@ html[data-gesture-ui='court'] .gesture-score-court__navigator-controls {
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__navigator-field {
+  position: relative;
   display: flex;
   min-width: 0;
   flex-direction: column;
@@ -236,7 +237,18 @@ html[data-gesture-ui='court'] .gesture-score-court__navigator-caption {
   display: none;
 }
 
+html[data-gesture-ui='court'] .gesture-score-court__navigator-menu {
+  position: relative;
+  min-width: 0;
+}
+
 html[data-gesture-ui='court'] .gesture-score-court__navigator-button {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr);
+  align-items: center;
+  column-gap: 0.4rem;
   min-height: 3.45rem;
   width: 100%;
   border: 0;
@@ -251,6 +263,122 @@ html[data-gesture-ui='court'] .gesture-score-court__navigator-button {
   text-transform: none;
   padding: 0.5rem 0.8rem;
   text-align: center;
+  appearance: none;
+  cursor: pointer;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__navigator-button[data-status='available'],
+html[data-gesture-ui='court'] .gesture-score-court__navigator-option[data-status='available'] {
+  --gesture-score-court-status: #34d399;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__navigator-button[data-status='occupied'],
+html[data-gesture-ui='court'] .gesture-score-court__navigator-option[data-status='occupied'] {
+  --gesture-score-court-status: #fb7185;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__navigator-button[data-status='mine'],
+html[data-gesture-ui='court'] .gesture-score-court__navigator-option[data-status='mine'] {
+  --gesture-score-court-status: #7dd3fc;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__navigator-button-text {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__navigator-button-status {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  min-width: 0;
+  margin-top: -0.2rem;
+  color: var(--gesture-score-court-status, rgb(255 255 255 / 0.46));
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__navigator-button-caret {
+  width: 0.48rem;
+  height: 0.48rem;
+  border-right: 0.16rem solid currentColor;
+  border-bottom: 0.16rem solid currentColor;
+  opacity: 0.78;
+  transform: translateY(-0.15rem) rotate(45deg);
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__navigator-menu[data-open='true'] .gesture-score-court__navigator-button-caret {
+  transform: translateY(0.12rem) rotate(225deg);
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__navigator-options {
+  position: absolute;
+  top: calc(100% + 0.32rem);
+  left: 0.35rem;
+  z-index: 45;
+  display: grid;
+  width: calc(100% - 0.7rem);
+  max-height: min(45vh, 18rem);
+  gap: 0.18rem;
+  overflow-y: auto;
+  padding: 0.3rem;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 0.65rem;
+  background: rgb(6 25 45 / 0.98);
+  box-shadow: 0 22px 48px -24px rgb(0 0 0 / 0.9);
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__navigator-option {
+  display: grid;
+  min-height: 2.45rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 0.45rem;
+  padding: 0.32rem 0.45rem;
+  background: rgb(17 53 92 / 0.72);
+  color: #f8fafc;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-align: left;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__navigator-option[data-selected='true'] {
+  border-color: rgb(125 211 252 / 0.6);
+  background: rgb(14 116 144 / 0.6);
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__navigator-option-dot {
+  width: 0.58rem;
+  height: 0.58rem;
+  border-radius: 999px;
+  background: var(--gesture-score-court-status, rgb(255 255 255 / 0.42));
+  box-shadow: 0 0 0 0.16rem rgb(255 255 255 / 0.06);
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__navigator-option-label,
+html[data-gesture-ui='court'] .gesture-score-court__navigator-option-status {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__navigator-option-status {
+  color: var(--gesture-score-court-status, rgb(255 255 255 / 0.48));
+  font-size: 0.55rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__navigator-field:last-child .gesture-score-court__navigator-button {
@@ -1025,6 +1153,38 @@ html[data-viewport='tv'][data-gesture-ui='court'] .gesture-score-court__finger-i
     min-height: clamp(2.05rem, 7.2vh, 2.65rem);
     padding: 0.18rem 0.45rem;
     font-size: clamp(0.92rem, 3vh, 1.08rem);
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__navigator-button-status {
+    display: none;
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__navigator-button-caret {
+    width: 0.36rem;
+    height: 0.36rem;
+    border-right-width: 0.12rem;
+    border-bottom-width: 0.12rem;
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__navigator-options {
+    top: calc(100% + 0.22rem);
+    left: 0.22rem;
+    width: calc(100% - 0.44rem);
+    max-height: min(52vh, 14rem);
+    padding: 0.22rem;
+    border-radius: 0.48rem;
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__navigator-option {
+    min-height: 2.12rem;
+    gap: 0.34rem;
+    padding: 0.24rem 0.35rem;
+    border-radius: 0.36rem;
+    font-size: clamp(0.78rem, 2.45vh, 0.95rem);
+  }
+
+  html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__navigator-option-status {
+    font-size: clamp(0.46rem, 1.35vh, 0.54rem);
   }
 
   html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__navigator-timer {

@@ -3,6 +3,7 @@ import {
   useEffect,
   useImperativeHandle,
   useMemo,
+  useRef,
   useState,
   type CSSProperties,
   type ReactNode,
@@ -16,7 +17,11 @@ import { formatGameScore, formatTennisPoint } from '../../lib/tennisScore'
 import { cameraScoreTrackerRootClass } from './CameraScoreTracker.styles'
 
 type HoldFinger = 'team1' | 'team2' | 'undo'
-type TrackerSelectOption = { value: string; label: string }
+type TrackerSelectOption = {
+  value: string
+  label: string
+  status?: 'available' | 'occupied' | 'mine'
+}
 
 function holdStyle(progress: number): CSSProperties {
   return { '--hold-progress': String(progress) } as CSSProperties
@@ -164,6 +169,107 @@ function EditableGames({
   )
 }
 
+function optionStatusLabel(status: TrackerSelectOption['status']): string | null {
+  if (status === 'available') return 'Available'
+  if (status === 'occupied') return 'In use'
+  if (status === 'mine') return 'Selected'
+  return null
+}
+
+function GestureScoreNavigatorMenu({
+  label,
+  options,
+  selectedValue,
+  onChange,
+}: {
+  label: string
+  options: TrackerSelectOption[]
+  selectedValue?: string
+  onChange?: (value: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const selected = options.find((option) => option.value === selectedValue) ?? options[0]
+  const selectedStatus = optionStatusLabel(selected?.status)
+
+  useEffect(() => {
+    if (!open) return
+    const onPointerDown = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setOpen(false)
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [open])
+
+  return (
+    <div
+      ref={menuRef}
+      className="gesture-score-court__navigator-menu"
+      data-open={open || undefined}
+    >
+      <button
+        type="button"
+        className="gesture-score-court__navigator-button"
+        aria-label={label}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        data-status={selected?.status}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <span className="gesture-score-court__navigator-button-text">
+          {selected?.label ?? label}
+        </span>
+        {selectedStatus ? (
+          <span className="gesture-score-court__navigator-button-status">
+            {selectedStatus}
+          </span>
+        ) : null}
+        <span className="gesture-score-court__navigator-button-caret" aria-hidden />
+      </button>
+      {open ? (
+        <div className="gesture-score-court__navigator-options" role="listbox" aria-label={label}>
+          {options.map((option) => {
+            const statusLabel = optionStatusLabel(option.status)
+            const selectedOption = option.value === selected?.value
+            return (
+              <button
+                key={option.value}
+                type="button"
+                className="gesture-score-court__navigator-option"
+                role="option"
+                aria-selected={selectedOption}
+                data-selected={selectedOption || undefined}
+                data-status={option.status}
+                onClick={() => {
+                  setOpen(false)
+                  if (option.value !== selectedValue) onChange?.(option.value)
+                }}
+              >
+                <span className="gesture-score-court__navigator-option-dot" aria-hidden />
+                <span className="gesture-score-court__navigator-option-label">
+                  {option.label}
+                </span>
+                {statusLabel ? (
+                  <span className="gesture-score-court__navigator-option-status">
+                    {statusLabel}
+                  </span>
+                ) : null}
+              </button>
+            )
+          })}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 function GestureScoreCourtNavigator({
   gameLabel,
   courtLabel,
@@ -192,36 +298,24 @@ function GestureScoreCourtNavigator({
   return (
     <section className="gesture-score-court__navigator" aria-label="Court and game controls">
       <div className="gesture-score-court__navigator-controls">
-        <label className="gesture-score-court__navigator-field">
+        <div className="gesture-score-court__navigator-field">
           <span className="gesture-score-court__navigator-caption">Game</span>
-          <select
-            className="gesture-score-court__navigator-button"
-            value={selectedGame ?? ''}
-            onChange={(event) => onGameChange?.(event.target.value)}
-            aria-label={gameLabel ?? 'Game'}
-          >
-            {gameOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="gesture-score-court__navigator-field">
+          <GestureScoreNavigatorMenu
+            label={gameLabel ?? 'Game'}
+            options={gameOptions}
+            selectedValue={selectedGame}
+            onChange={onGameChange}
+          />
+        </div>
+        <div className="gesture-score-court__navigator-field">
           <span className="gesture-score-court__navigator-caption">Court</span>
-          <select
-            className="gesture-score-court__navigator-button"
-            value={selectedCourt ?? ''}
-            onChange={(event) => onCourtChange?.(event.target.value)}
-            aria-label={courtLabel ?? 'Court'}
-          >
-            {courtOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+          <GestureScoreNavigatorMenu
+            label={courtLabel ?? 'Court'}
+            options={courtOptions}
+            selectedValue={selectedCourt}
+            onChange={onCourtChange}
+          />
+        </div>
       </div>
       <div className="gesture-score-court__navigator-timer" aria-live="polite">
         <span className="gesture-score-court__navigator-timer-label">{timerLabel}</span>
