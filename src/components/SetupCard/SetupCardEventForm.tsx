@@ -90,6 +90,13 @@ function rosterIdsInOrder(rows: CompetitionPlayer[]): string[] {
   return sortRosterByRank(rows).map((row) => row.id)
 }
 
+function profileDisplayName(
+  profile: { display_name?: string | null } | { display_name?: string | null }[] | null | undefined,
+): string | null {
+  const row = Array.isArray(profile) ? profile[0] : profile
+  return row?.display_name?.trim() || null
+}
+
 function parseTimeInput(value: string, fallbackHour: number, fallbackMinute: number) {
   const [hourRaw, minuteRaw] = value.split(':')
   const hour = Number(hourRaw)
@@ -364,14 +371,15 @@ export function CompetitionForm() {
       .from('seasons')
       .select('id')
       .eq('is_active', true)
-      .maybeSingle()
+      .order('created_at', { ascending: false })
+      .limit(1)
       .then(({ data, error: seasonQueryError }) => {
         if (seasonQueryError) {
           setSeasonError(seasonQueryError.message)
-        } else if (!data?.id) {
+        } else if (!data?.[0]?.id) {
           setSeasonError('No active season.')
         } else {
-          setSeasonId(data.id)
+          setSeasonId(data[0].id)
         }
         setSeasonLoading(false)
       })
@@ -385,7 +393,7 @@ export function CompetitionForm() {
         .from('game_sessions')
         .select('*, scoring_config')
         .eq('id', id)
-        .single()
+        .maybeSingle()
 
       if (sessionErr || !data) {
         setRosterHydrated(true)
@@ -457,11 +465,11 @@ export function CompetitionForm() {
           rank_order: number | null
           profile_id: string | null
           padel_player_id: string | null
-          profiles: { display_name: string } | null
+          profiles: { display_name: string } | { display_name: string }[] | null
         }
         const idx = r.rank_order ?? 0
         if (idx >= 0 && idx < nextNames.length) {
-          nextNames[idx] = r.profiles?.display_name ?? r.guest_name ?? ''
+          nextNames[idx] = profileDisplayName(r.profiles) ?? r.guest_name ?? ''
           nextIds[idx] = r.profile_id
           nextPadelIds[idx] = r.padel_player_id
           if (r.padel_player_id) padelIdsOnRoster.add(r.padel_player_id)
@@ -666,13 +674,14 @@ export function CompetitionForm() {
         .from('game_sessions')
         .insert(payload)
         .select('id')
-        .single()
-      if (err || !data) {
+        .limit(1)
+      const createdId = data?.[0]?.id
+      if (err || !createdId) {
         setBusy(false)
         setError(err?.message ?? 'Could not create competition')
         return
       }
-      sessionId = data.id
+      sessionId = createdId
     }
 
     const pairSlotPayload = isDuos ? duoTeamsToPairSlotPayload(duoTeams) : null
