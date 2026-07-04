@@ -521,7 +521,7 @@ function CourtScoreInput({
       pattern="[0-9]*"
       value={value}
       placeholder="0"
-      disabled={disabled || finished || !onChange}
+      disabled={disabled || !onChange}
       onClick={stopCardNav}
       onKeyDown={(event) => {
         stopCardNav(event)

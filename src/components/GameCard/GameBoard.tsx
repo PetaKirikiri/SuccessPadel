@@ -1,10 +1,9 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { type LiveCourtGamesScore, type LiveCourtPointFeed } from '../../lib/liveCourtScore'
 import { useTranslation } from '../../hooks/useTranslation'
 import type { TranslateFn } from '../../i18n'
 import type { AmericanoScoringUnit } from '../../lib/competitionPresets'
 import { formatGameTimeLabel, pivotScheduleByGame, type CourtColumn } from '../../lib/competitionCourtBoard'
-import { isScoringTimeUnlocked } from '../../lib/competitionScoringUnlock'
 import { playTwoMinuteAlarm, TWO_MINUTES_MS } from '../../lib/gameCountdownAlarm'
 import { RANKED_GAME_MINUTES } from '../../lib/rankedSchedule'
 import {
@@ -292,13 +291,11 @@ export function GameBoard({
   }, [columns, roundTimesByGame])
   const [tick, setTick] = useState(() => Date.now())
   const [collapsedGames, setCollapsedGames] = useState<Record<number, boolean>>({})
-  const collapseSeedKeyRef = useRef<string | null>(null)
   const sessionId = friendlySessionId ?? competitionId
   const liveCourtEnabled = Boolean(sessionId && !(friendly && onSubmitFriendlyScores))
   const gestureScoreEnabled = Boolean(sessionId && (friendly || competitionId))
   const manualScoreEnabled = Boolean(friendly && onSubmitFriendlyScores && sessionId)
   const friendlyManualScoring = Boolean(friendly && sessionId && mode === 'preview')
-  const scoringTimeUnlocked = isScoringTimeUnlocked()
   const courtScoreMax = courtGameScoreMax(scoreUnit === 'games' ? playTo : undefined)
   const courtPlayTo = scoreUnit === 'games' ? playTo : undefined
 
@@ -376,20 +373,6 @@ export function GameBoard({
     roundTimesByGame,
     roundStatusByGame,
   ])
-
-  useLayoutEffect(() => {
-    if (scoringTimeUnlocked || !sessionId || orderedGames.length === 0) return
-    if (collapseSeedKeyRef.current === sessionId) return
-    collapseSeedKeyRef.current = sessionId
-
-    setCollapsedGames((prev) => {
-      const next: Record<number, boolean> = { ...prev }
-      for (const game of orderedGames) {
-        if (finishedByGame.get(game.gameNumber)) next[game.gameNumber] = true
-      }
-      return next
-    })
-  }, [sessionId, orderedGames, finishedByGame, scoringTimeUnlocked])
 
   const gameNumbers = useMemo(
     () => orderedGames.map((game) => game.gameNumber),
