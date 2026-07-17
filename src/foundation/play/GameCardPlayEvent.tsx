@@ -306,6 +306,15 @@ export function GameCardPlayEvent() {
     [effectiveCourtMatches, leaderboard, roster, rounds],
   )
 
+  const savedPlayerStandings = useMemo(
+    () =>
+      enrichStandingsWithAvatars(
+        computeAmericanoStandings(roster, rounds, courtMatches),
+        leaderboard,
+      ),
+    [courtMatches, leaderboard, roster, rounds],
+  )
+
   const effectiveDuoStandings = useMemo(
     () =>
       isDuo && teams.length >= 2
@@ -336,6 +345,9 @@ export function GameCardPlayEvent() {
   )
 
   const liveStandings = useMemo(() => {
+    if (!isDuo && courtMatches.length > 0 && savedPlayerStandings.length > 0) {
+      return savedPlayerStandings
+    }
     if (manualStandings.length > 0) {
       return enrichStandingsWithAvatars(manualStandings, leaderboard)
     }
@@ -349,11 +361,13 @@ export function GameCardPlayEvent() {
   }, [
     effectiveDuoStandings,
     effectivePlayerStandings,
+    courtMatches.length,
     gestureStandings,
     isDuo,
     leaderboard,
     manualStandings,
     rounds,
+    savedPlayerStandings,
     teams,
   ])
 

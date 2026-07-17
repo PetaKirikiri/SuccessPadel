@@ -316,7 +316,7 @@ export function competitionSqlSchedule(
   }
 
   const usedMinutes = totalScheduleMinutes(totalGames, gameMinutes, breakMinutes)
-  const sqlBudget = durationMinutes > 0 ? Math.max(1, Math.floor(durationMinutes) - 1) : 0
+  const sqlBudget = durationMinutes > 0 ? Math.max(1, Math.floor(durationMinutes)) : 0
   const fits = sqlBudget > 0 && usedMinutes <= sqlBudget
   return { totalGames, gameMinutes, breakMinutes, durationMinutes, usedMinutes, fits }
 }
@@ -335,7 +335,7 @@ export function fitCompetitionScheduleToSession(
 
   const { breakMinutes, durationMinutes } = current
   const requestedGames = current.totalGames
-  const budgetMinutes = Math.max(1, Math.floor(durationMinutes) - 1)
+  const budgetMinutes = Math.max(1, Math.floor(durationMinutes))
 
   const fittedMinutes = gameDurationForEvent(budgetMinutes, requestedGames, breakMinutes)
   const fittedUsed = totalScheduleMinutes(requestedGames, fittedMinutes, breakMinutes)

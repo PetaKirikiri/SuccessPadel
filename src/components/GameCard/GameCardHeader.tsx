@@ -302,7 +302,7 @@ export function GameCardHeader({
                   {t('competition.done')}
                 </span>
               ) : null}
-              {timeLabel && !countdown ? (
+              {timeLabel ? (
                 <span
                   className={`text-[11px] tabular-nums md:text-sm ${
                     finished ? 'text-brand-muted' : 'text-[#7dd3fc]/70'
@@ -360,7 +360,7 @@ export function GameCardHeader({
                 {t('competition.done')}
               </span>
             ) : null}
-            {timeLabel && !countdown ? (
+            {timeLabel ? (
               <span
                 className={`mt-0.5 block text-[11px] tabular-nums md:text-sm ${
                   finished ? 'text-brand-muted' : 'text-white/75 dark:text-brand-muted'
