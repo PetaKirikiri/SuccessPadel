@@ -184,7 +184,21 @@ export function computeManualCourtStandings(params: {
       member_profile_id: string | null
       avatar_url: string | null
     }
-  >()
+  >(
+    roster.map((row) => [
+      row.id,
+      {
+        points: 0,
+        games: 0,
+        wins: 0,
+        losses: 0,
+        draws: 0,
+        display_name: rosterDisplayName(row),
+        member_profile_id: row.profile_id,
+        avatar_url: row.profiles?.avatar_url ?? null,
+      },
+    ]),
+  )
 
   for (const score of scores.values()) {
     const sides = sidesByKey.get(manualCourtScoreKey(score.gameNumber, score.courtId))
