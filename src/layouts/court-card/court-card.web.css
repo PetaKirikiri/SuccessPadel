@@ -108,11 +108,23 @@ html[data-viewport='web'] .game-card-court-score-button--active {
   border-color: rgb(var(--brand-primary)); background: rgb(var(--brand-primary)); color: white;
   box-shadow: 0 0 0 3px rgb(var(--brand-accent) / 0.3); transform: scale(1.08);
 }
+html[data-viewport='web'] .game-card-court-score-button--muted {
+  opacity: 0.3; filter: saturate(0.35); transform: scale(0.92);
+}
+html[data-viewport='web'] .game-card-court-score-button__changing {
+  font-family: system-ui, sans-serif; font-size: 0.65rem; font-weight: 900;
+  line-height: 1; letter-spacing: 0.09em; text-transform: uppercase;
+}
+html[data-viewport='web'] .game-card-court-score-button__value { line-height: 0.9; }
 html[data-viewport='web'] .game-card-court-score-picker {
-  display: flex; align-items: center; justify-content: center; gap: 0.25rem; width: 100%;
+  display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0.4rem; width: 100%;
 }
 html[data-viewport='web'] .game-card-court-score-picker__option {
-  width: 3rem; height: 3rem; padding: 0; border-width: 2px;
+  width: 100%; min-width: 0; height: 3.25rem; padding: 0; border-width: 2px;
   border-color: rgb(var(--brand-primary) / 0.42);
   background: rgb(var(--brand-surface)); color: rgb(var(--brand-primary)); font-size: 1.3rem;
+}
+html[data-viewport='web'] .game-card-court-score-picker__option--selected {
+  border-color: rgb(var(--brand-primary)); background: rgb(var(--brand-primary)); color: white;
+  font-size: 1.65rem; box-shadow: 0 0 0 3px rgb(var(--brand-accent) / 0.35); transform: scale(1.08);
 }

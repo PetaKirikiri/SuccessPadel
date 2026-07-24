@@ -503,6 +503,7 @@ function CourtScoreButton({
   disabled,
   finished,
   active,
+  muted,
   ariaLabel,
 }: {
   value: string
@@ -510,6 +511,7 @@ function CourtScoreButton({
   disabled?: boolean
   finished?: boolean
   active?: boolean
+  muted?: boolean
   ariaLabel: string
 }) {
   return (
@@ -522,11 +524,12 @@ function CourtScoreButton({
         stopCardNav(event)
         onOpen?.()
       }}
-      className={`game-card-court-score-button${finished ? ' game-card-court-score-button--finished' : ''}${active ? ' game-card-court-score-button--active' : ''}`}
+      className={`game-card-court-score-button${finished ? ' game-card-court-score-button--finished' : ''}${active ? ' game-card-court-score-button--active' : ''}${muted ? ' game-card-court-score-button--muted' : ''}`}
       aria-label={ariaLabel}
       aria-expanded={active}
     >
-      {value || '0'}
+      {active ? <span className="game-card-court-score-button__changing">Changing</span> : null}
+      <span className="game-card-court-score-button__value">{value || '0'}</span>
     </button>
   )
 }
@@ -578,23 +581,28 @@ function CourtScores({
     <div className="game-card-court-score-stack game-card-court-scores flex flex-col items-center gap-1">
       {pickerSide ? (
         <div className="game-card-court-score-picker" role="listbox" aria-label="Select score">
-          {Array.from({ length: 7 }, (_, score) => (
-            <button
-              key={score}
-              type="button"
-              className="game-card-court-score-picker__option"
-              onClick={(event) => {
-                stopCardNav(event)
-                const value = String(score)
-                if (pickerSide === 'a') onScoreA?.(value)
-                else onScoreB?.(value)
-                setPickerSide(null)
-                onGamesCommit?.()
-              }}
-            >
-              {score}
-            </button>
-          ))}
+          {Array.from({ length: 7 }, (_, score) => {
+            const value = String(score)
+            const selected = value === (pickerSide === 'a' ? gamesA : gamesB)
+            return (
+              <button
+                key={score}
+                type="button"
+                role="option"
+                aria-selected={selected}
+                className={`game-card-court-score-picker__option${selected ? ' game-card-court-score-picker__option--selected' : ''}`}
+                onClick={(event) => {
+                  stopCardNav(event)
+                  if (pickerSide === 'a') onScoreA?.(value)
+                  else onScoreB?.(value)
+                  setPickerSide(null)
+                  onGamesCommit?.()
+                }}
+              >
+                {score}
+              </button>
+            )
+          })}
         </div>
       ) : null}
       <div className="game-card-court-score-row flex items-stretch justify-center gap-2">
@@ -630,6 +638,7 @@ function CourtScores({
                 disabled={disabled}
                 finished={finished}
                 active={pickerSide === 'a'}
+                muted={pickerSide !== null && pickerSide !== 'a'}
                 ariaLabel={t('aria.teamAScore', { unit: fieldLabel })}
               />
             </div>
@@ -641,6 +650,7 @@ function CourtScores({
                 disabled={disabled}
                 finished={finished}
                 active={pickerSide === 'b'}
+                muted={pickerSide !== null && pickerSide !== 'b'}
                 ariaLabel={t('aria.teamBScore', { unit: fieldLabel })}
               />
             </div>
