@@ -502,16 +502,12 @@ function CourtScoreButton({
   onOpen,
   disabled,
   finished,
-  active,
-  muted,
   ariaLabel,
 }: {
   value: string
   onOpen?: () => void
   disabled?: boolean
   finished?: boolean
-  active?: boolean
-  muted?: boolean
   ariaLabel: string
 }) {
   return (
@@ -524,11 +520,9 @@ function CourtScoreButton({
         stopCardNav(event)
         onOpen?.()
       }}
-      className={`game-card-court-score-button${finished ? ' game-card-court-score-button--finished' : ''}${active ? ' game-card-court-score-button--active' : ''}${muted ? ' game-card-court-score-button--muted' : ''}`}
+      className={`game-card-court-score-button${finished ? ' game-card-court-score-button--finished' : ''}`}
       aria-label={ariaLabel}
-      aria-expanded={active}
     >
-      {active ? <span className="game-card-court-score-button__changing">Changing</span> : null}
       <span className="game-card-court-score-button__value">{value || '0'}</span>
     </button>
   )
@@ -603,7 +597,7 @@ function CourtScores({
   return (
     <div
       ref={scoreControlRef}
-      className="game-card-court-score-stack game-card-court-scores flex flex-col items-center gap-1"
+      className={`game-card-court-score-stack game-card-court-scores flex flex-col items-center gap-1${pickerSide ? ' game-card-court-score-stack--editing' : ''}`}
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) changePickerSide(null)
       }}
@@ -675,8 +669,6 @@ function CourtScores({
                 onOpen={onScoreA ? () => changePickerSide('a') : undefined}
                 disabled={disabled}
                 finished={finished}
-                active={pickerSide === 'a'}
-                muted={pickerSide !== null && pickerSide !== 'a'}
                 ariaLabel={t('aria.teamAScore', { unit: fieldLabel })}
               />
             </div>
@@ -687,8 +679,6 @@ function CourtScores({
                 onOpen={onScoreB ? () => changePickerSide('b') : undefined}
                 disabled={disabled}
                 finished={finished}
-                active={pickerSide === 'b'}
-                muted={pickerSide !== null && pickerSide !== 'b'}
                 ariaLabel={t('aria.teamBScore', { unit: fieldLabel })}
               />
             </div>
