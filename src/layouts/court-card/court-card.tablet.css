@@ -97,8 +97,9 @@ html[data-viewport='tablet'] .game-card-court-score-picker__option {
   font-weight: 800; font-variant-numeric: tabular-nums;
 }
 html[data-viewport='tablet'] .game-card-court-score-button {
-  width: 3.25rem; min-height: 2.35rem; padding: 0.25rem 0.5rem;
-  font-family: Georgia, 'Times New Roman', serif; font-size: 1.25rem; line-height: 1;
+  width: 4.75rem; min-height: 3.75rem; padding: 0.4rem 0.75rem; border-width: 2px;
+  font-family: Georgia, 'Times New Roman', serif; font-size: 2.35rem; line-height: 1;
+  box-shadow: 0 0.35rem 0.85rem rgb(var(--brand-primary) / 0.16);
 }
 html[data-viewport='tablet'] .game-card-court-score-button--finished {
   border-color: rgb(var(--brand-border) / 0.4); color: rgb(var(--brand-muted));
@@ -111,6 +112,7 @@ html[data-viewport='tablet'] .game-card-court-score-picker {
   display: flex; align-items: center; justify-content: center; gap: 0.25rem; width: 100%;
 }
 html[data-viewport='tablet'] .game-card-court-score-picker__option {
-  width: 2rem; height: 2rem; padding: 0; border-color: rgb(var(--brand-primary) / 0.42);
-  background: rgb(var(--brand-surface)); color: rgb(var(--brand-primary)); font-size: 0.9rem;
+  width: 2.75rem; height: 2.75rem; padding: 0; border-width: 2px;
+  border-color: rgb(var(--brand-primary) / 0.42);
+  background: rgb(var(--brand-surface)); color: rgb(var(--brand-primary)); font-size: 1.2rem;
 }

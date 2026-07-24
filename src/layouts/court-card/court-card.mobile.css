@@ -139,12 +139,14 @@ html[data-viewport='mobile'] .game-card-court-score-picker__option {
 }
 
 html[data-viewport='mobile'] .game-card-court-score-button {
-  width: 3.25rem;
-  min-height: 2.35rem;
-  padding: 0.25rem 0.5rem;
+  width: 4.25rem;
+  min-height: 3.5rem;
+  padding: 0.35rem 0.65rem;
+  border-width: 2px;
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: 1.25rem;
+  font-size: 2.15rem;
   line-height: 1;
+  box-shadow: 0 0.3rem 0.75rem rgb(var(--brand-primary) / 0.16);
 }
 
 html[data-viewport='mobile'] .game-card-court-score-button--finished {
@@ -169,11 +171,12 @@ html[data-viewport='mobile'] .game-card-court-score-picker {
 }
 
 html[data-viewport='mobile'] .game-card-court-score-picker__option {
-  width: 2rem;
-  height: 2rem;
+  width: 2.35rem;
+  height: 2.5rem;
   padding: 0;
+  border-width: 2px;
   border-color: rgb(var(--brand-primary) / 0.42);
   background: rgb(var(--brand-surface));
   color: rgb(var(--brand-primary));
-  font-size: 0.9rem;
+  font-size: 1.1rem;
 }
