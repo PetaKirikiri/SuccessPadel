@@ -138,6 +138,9 @@ export function GameCardCourts({
   const courtCount = courtScoreRows.length
   const gamesDraftRef = useRef<Map<string, { a: string; b: string }>>(new Map())
   const gamesDirtyRef = useRef<Set<string>>(new Set())
+  const [gamesDrafts, setGamesDrafts] = useState<Map<string, { a: string; b: string }>>(
+    () => new Map(),
+  )
   const pointsSyncTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
   const [pointBackups, setPointBackups] = useState<Record<string, { a: string; b: string }>>({})
   const [pointBackupDirty, setPointBackupDirty] = useState<Set<string>>(() => new Set())
@@ -284,6 +287,23 @@ export function GameCardCourts({
 
         const backupKey = row.courtKey ?? liveCourtScoreKey(game.gameNumber, row.courtLabel)
         const gamesDraftKey = backupKey
+        const visibleGamesDraft = gamesDrafts.get(gamesDraftKey)
+        if (visibleGamesDraft) {
+          scoreA = visibleGamesDraft.a
+          scoreB = visibleGamesDraft.b
+        }
+        const clearGamesDraftIfSaved = (savedA: string, savedB: string) => {
+          const current = gamesDraftRef.current.get(gamesDraftKey)
+          if (!current || current.a !== savedA || current.b !== savedB) return
+          gamesDraftRef.current.delete(gamesDraftKey)
+          gamesDirtyRef.current.delete(gamesDraftKey)
+          setGamesDrafts((prev) => {
+            if (!prev.has(gamesDraftKey)) return prev
+            const next = new Map(prev)
+            next.delete(gamesDraftKey)
+            return next
+          })
+        }
         const backupDirty = pointBackupDirty.has(backupKey)
         const backupPointA = backupDirty
           ? pointBackups[backupKey]?.a ?? pointScores?.scoreA ?? '0'
@@ -335,8 +355,7 @@ export function GameCardCourts({
             if (error) return
             if (log) onGestureGamesSynced?.(log)
             if (saved) {
-              gamesDraftRef.current.delete(gamesDraftKey)
-              gamesDirtyRef.current.delete(gamesDraftKey)
+              clearGamesDraftIfSaved(gamesA, gamesB)
             }
           })()
         }
@@ -371,8 +390,7 @@ export function GameCardCourts({
               row.courtLabel,
             )
               .then(() => {
-                gamesDirtyRef.current.delete(draftKey)
-                gamesDraftRef.current.delete(draftKey)
+                clearGamesDraftIfSaved(gamesA, gamesB)
               })
               .catch((err: unknown) => {
                 // #region agent log
@@ -390,8 +408,7 @@ export function GameCardCourts({
             commitGestureGamesSync(gamesA, gamesB)
           } else if (submitCourt && row.courtKey) {
             void submitCourt(row.courtKey).then(() => {
-              gamesDirtyRef.current.delete(draftKey)
-              gamesDraftRef.current.delete(draftKey)
+              clearGamesDraftIfSaved(gamesA, gamesB)
             })
           }
         }
@@ -428,13 +445,17 @@ export function GameCardCourts({
           gamesDirtyRef.current.add(gamesDraftKey)
           if (row.courtKey) setDraft(row.courtKey, 'teamA', value)
           const cur = gamesDraftRef.current.get(gamesDraftKey) ?? { a: scoreA ?? '0', b: scoreB ?? '0' }
-          gamesDraftRef.current.set(gamesDraftKey, { ...cur, a: value })
+          const next = { ...cur, a: value }
+          gamesDraftRef.current.set(gamesDraftKey, next)
+          setGamesDrafts((prev) => new Map(prev).set(gamesDraftKey, next))
         }
         const onGamesB = (value: string) => {
           gamesDirtyRef.current.add(gamesDraftKey)
           if (row.courtKey) setDraft(row.courtKey, 'teamB', value)
           const cur = gamesDraftRef.current.get(gamesDraftKey) ?? { a: scoreA ?? '0', b: scoreB ?? '0' }
-          gamesDraftRef.current.set(gamesDraftKey, { ...cur, b: value })
+          const next = { ...cur, b: value }
+          gamesDraftRef.current.set(gamesDraftKey, next)
+          setGamesDrafts((prev) => new Map(prev).set(gamesDraftKey, next))
         }
 
         const onBackupPointA = (value: string) => {
