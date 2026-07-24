@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { flushSync } from 'react-dom'
 import { Link, useNavigate } from 'react-router-dom'
 import { ChevronsUpDown } from 'lucide-react'
 import { displayCourtLabel } from '../../lib/courtDisplay'
@@ -557,6 +558,7 @@ function CourtScores({
 }) {
   const [pickerSide, setPickerSide] = useState<'a' | 'b' | null>(null)
   const scoreControlRef = useRef<HTMLDivElement>(null)
+  const reopenBlockedUntilRef = useRef(0)
   const fieldLabel = scoreFieldLabel(scoreUnit, t)
   const gamesA = scoreA ?? '0'
   const gamesB = scoreB ?? '0'
@@ -576,6 +578,10 @@ function CourtScores({
   const changePickerSide = (side: 'a' | 'b' | null) => {
     setPickerSide(side)
     onEditingSideChange?.(side)
+  }
+  const openPicker = (side: 'a' | 'b') => {
+    if (Date.now() < reopenBlockedUntilRef.current) return
+    changePickerSide(side)
   }
 
   useEffect(() => {
@@ -621,10 +627,13 @@ function CourtScores({
                 className={`game-card-court-score-picker__option${selected ? ' game-card-court-score-picker__option--selected' : ''}`}
                 onClick={(event) => {
                   stopCardNav(event)
-                  if (pickerSide === 'a') onScoreA?.(value)
-                  else onScoreB?.(value)
+                  reopenBlockedUntilRef.current = Date.now() + 600
+                  flushSync(() => {
+                    if (pickerSide === 'a') onScoreA?.(value)
+                    else onScoreB?.(value)
+                  })
                   changePickerSide(null)
-                  onGamesCommit?.()
+                  requestAnimationFrame(() => onGamesCommit?.())
                 }}
               >
                 {score}
@@ -663,7 +672,7 @@ function CourtScores({
             <div className="flex items-center justify-center tabular-nums">
               <CourtScoreButton
                 value={gamesA}
-                onOpen={onScoreA ? () => changePickerSide('a') : undefined}
+                onOpen={onScoreA ? () => openPicker('a') : undefined}
                 disabled={disabled}
                 finished={finished}
                 ariaLabel={t('aria.teamAScore', { unit: fieldLabel })}
@@ -673,7 +682,7 @@ function CourtScores({
             <div className="flex items-center justify-center tabular-nums">
               <CourtScoreButton
                 value={gamesB}
-                onOpen={onScoreB ? () => changePickerSide('b') : undefined}
+                onOpen={onScoreB ? () => openPicker('b') : undefined}
                 disabled={disabled}
                 finished={finished}
                 ariaLabel={t('aria.teamBScore', { unit: fieldLabel })}
