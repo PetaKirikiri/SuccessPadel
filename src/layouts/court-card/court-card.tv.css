@@ -92,45 +92,41 @@
 }
 html[data-viewport='tv'] .game-card-court-score-button,
 html[data-viewport='tv'] .game-card-court-score-picker__option {
-  display: grid; place-items: center; border: 1px solid rgb(var(--brand-accent) / 0.5);
-  border-radius: 0.5rem; background: rgb(var(--brand-bg-alt)); color: rgb(var(--brand-accent));
+  display: grid; place-items: center; border: 1px solid color-mix(in srgb, var(--color-brand-accent) 50%, transparent);
+  border-radius: 0.5rem; background: var(--color-brand-bg-alt); color: var(--color-brand-accent);
   font-weight: 800; font-variant-numeric: tabular-nums;
 }
 html[data-viewport='tv'] .game-card-court-score-button {
   width: 6rem; min-height: 4.75rem; padding: 0.5rem 1rem; border-width: 3px;
   font-family: Georgia, 'Times New Roman', serif; font-size: 3rem; line-height: 1;
-  box-shadow: 0 0.5rem 1.1rem rgb(var(--brand-primary) / 0.18);
+  box-shadow: 0 0.5rem 1.1rem color-mix(in srgb, var(--color-brand-primary) 18%, transparent);
 }
 html[data-viewport='tv'] .game-card-court-score-button--finished {
-  border-color: rgb(var(--brand-border) / 0.4); color: rgb(var(--brand-muted));
+  border-color: color-mix(in srgb, var(--color-brand-border) 40%, transparent); color: var(--color-brand-muted);
 }
 html[data-viewport='tv'] .game-card-court-score-button__value { line-height: 0.9; }
 html[data-viewport='tv'] .game-card-court-score-picker {
   position: static !important;
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: auto 1fr;
+  grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: 1fr;
   align-items: stretch; gap: 0.5rem; width: 100%; height: 4.75rem;
   box-sizing: border-box; padding: 0.2rem;
-  border-radius: 0.75rem; background: rgb(var(--brand-surface) / 0.98);
-  box-shadow: 0 0.5rem 1.2rem rgb(var(--brand-primary) / 0.24);
+  border-radius: 0.75rem; background: var(--color-brand-surface);
+  box-shadow: 0 0.5rem 1.2rem color-mix(in srgb, var(--color-brand-primary) 24%, transparent);
 }
 html[data-viewport='tv'] .game-card-court-score-stack { position: relative; }
 html[data-viewport='tv'] .game-card-court-score-stack--editing .game-card-court-score-row {
   display: none !important;
 }
 html[data-viewport='tv'] .game-card-court-player__name--score-editing {
-  color: rgb(var(--brand-accent)) !important;
-}
-html[data-viewport='tv'] .game-card-court-score-picker__target {
-  grid-column: 1 / -1; color: rgb(var(--brand-primary)); font-size: 0.85rem; font-weight: 900;
-  line-height: 1; letter-spacing: 0.08em; text-align: center; text-transform: uppercase;
+  color: var(--color-brand-accent-light) !important;
 }
 html[data-viewport='tv'] .game-card-court-score-picker__option {
   width: 100%; min-width: 0; height: auto; min-height: 3.1rem; padding: 0; border-width: 2px;
-  border-color: rgb(var(--brand-primary) / 0.42);
-  background: rgb(var(--brand-surface)); color: rgb(var(--brand-primary)); font-size: 1.5rem;
+  border-color: transparent;
+  background: transparent; color: var(--color-brand-text); font-size: 1.5rem;
 }
 html[data-viewport='tv'] .game-card-court-score-picker__option--selected {
-  border-color: rgb(var(--brand-primary)); background: rgb(var(--brand-primary)); color: white;
-  font-size: 1.9rem; box-shadow: 0 0 0 4px rgb(var(--brand-accent) / 0.35); transform: scale(1.08);
+  border-color: transparent; background: transparent; color: var(--color-brand-accent-light);
+  font-size: 1.5rem; box-shadow: none; transform: none;
 }

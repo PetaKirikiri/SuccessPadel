@@ -608,9 +608,6 @@ function CourtScores({
           role="listbox"
           aria-label="Select score"
         >
-          <span className="game-card-court-score-picker__target">
-            Changing {pickerSide === 'a' ? gamesA : gamesB}
-          </span>
           {Array.from({ length: 7 }, (_, score) => {
             const value = String(score)
             const selected = value === (pickerSide === 'a' ? gamesA : gamesB)
