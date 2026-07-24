@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ChevronsUpDown } from 'lucide-react'
 import { displayCourtLabel } from '../../lib/courtDisplay'
@@ -560,6 +560,7 @@ function CourtScores({
   t: TranslateFn
 }) {
   const [pickerSide, setPickerSide] = useState<'a' | 'b' | null>(null)
+  const scoreControlRef = useRef<HTMLDivElement>(null)
   const fieldLabel = scoreFieldLabel(scoreUnit, t)
   const gamesA = scoreA ?? '0'
   const gamesB = scoreB ?? '0'
@@ -577,8 +578,30 @@ function CourtScores({
     compact ? 'w-px self-stretch' : 'h-full min-h-[2rem] w-px'
   }`
 
+  useEffect(() => {
+    if (!pickerSide) return
+    const closeWhenOutside = (event: PointerEvent) => {
+      if (!scoreControlRef.current?.contains(event.target as Node)) setPickerSide(null)
+    }
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setPickerSide(null)
+    }
+    document.addEventListener('pointerdown', closeWhenOutside)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('pointerdown', closeWhenOutside)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [pickerSide])
+
   return (
-    <div className="game-card-court-score-stack game-card-court-scores flex flex-col items-center gap-1">
+    <div
+      ref={scoreControlRef}
+      className="game-card-court-score-stack game-card-court-scores flex flex-col items-center gap-1"
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPickerSide(null)
+      }}
+    >
       {onScoreA || onScoreB ? (
         <div
           className={`game-card-court-score-picker${pickerSide ? '' : ' game-card-court-score-picker--reserved'}`}
