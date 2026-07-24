@@ -119,6 +119,9 @@ html[data-viewport='tablet'] .game-card-court-score-button__value { line-height:
 html[data-viewport='tablet'] .game-card-court-score-picker {
   display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0.35rem; width: 100%;
 }
+html[data-viewport='tablet'] .game-card-court-score-picker--reserved {
+  visibility: hidden; pointer-events: none;
+}
 html[data-viewport='tablet'] .game-card-court-score-picker__option {
   width: 100%; min-width: 0; height: 3rem; padding: 0; border-width: 2px;
   border-color: rgb(var(--brand-primary) / 0.42);

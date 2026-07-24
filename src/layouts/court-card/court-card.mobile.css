@@ -188,6 +188,11 @@ html[data-viewport='mobile'] .game-card-court-score-picker {
   width: 100%;
 }
 
+html[data-viewport='mobile'] .game-card-court-score-picker--reserved {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 html[data-viewport='mobile'] .game-card-court-score-picker__option {
   width: 100%;
   min-width: 0;
