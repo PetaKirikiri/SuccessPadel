@@ -202,7 +202,11 @@ const PlayerSlotCombobox = memo(function PlayerSlotCombobox({
         onClick={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
         onChange={(e) => {
-          setText(e.target.value)
+          const nextText = e.target.value
+          setText(nextText)
+          // Keep the parent roster current while typing. Actions such as
+          // auto-rank must not depend on a separate blur to see the last name.
+          onPick(nextText, null, null)
           setOpen(true)
         }}
         onFocus={() => setOpen(true)}

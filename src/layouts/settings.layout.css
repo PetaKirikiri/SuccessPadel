@@ -116,6 +116,27 @@ html[data-viewport='web'] .settings-card {
   line-height: 1;
 }
 
+.settings-card .setup-auto-rank {
+  display: grid;
+}
+
+.settings-card .setup-auto-rank__button {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 2.5rem;
+  border: 1px solid rgb(var(--brand-border));
+  border-radius: 0.75rem;
+  background: rgb(var(--brand-surface));
+  color: rgb(var(--brand-accent));
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.settings-card .setup-auto-rank__button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 html[data-viewport='mobile'][data-orientation='landscape'] .settings-card .setup-duo-team-slots,
 html[data-viewport='tablet'] .settings-card .setup-duo-team-slots,
 html[data-viewport='web'] .settings-card .setup-duo-team-slots,

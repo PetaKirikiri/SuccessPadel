@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
@@ -9,6 +9,7 @@ import {
 } from '../../lib/courtSchedule'
 import { useAuth } from '../../hooks/useAuth'
 import { useCompetitionFormDraft } from '../../hooks/useCompetitionFormDraft'
+import { clearCompetitionHubCache } from '../../hooks/useCompetitionHubRows'
 import {
   type CompetitionFormDraft,
   type CompetitionPlayerMode,
@@ -66,6 +67,7 @@ import {
   saveScheduleForSession,
 } from '../../lib/persistCompetitionSchedule'
 import type { Profile, ScoringConfig } from '../../lib/types'
+import { fetchCompetitionAutoRank } from '../../lib/competitionAutoRank'
 
 function bangkokDateFromIso(iso: string): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date(iso))
@@ -196,8 +198,8 @@ export function CompetitionForm() {
   const [seasonLoading, setSeasonLoading] = useState(true)
   const [seasonError, setSeasonError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [autoRankBusy, setAutoRankBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [savedMessage, setSavedMessage] = useState<string | null>(null)
   const [playerSlots, setPlayerSlots] = useState<string[]>(() =>
     Array(playersFromCourtCount(DEFAULT_SINGLES_COURT_COUNT)).fill(''),
   )
@@ -223,10 +225,17 @@ export function CompetitionForm() {
   const [competitionStarted, setCompetitionStarted] = useState(false)
   const [rosterHydrated, setRosterHydrated] = useState(!id)
   const [isLeagueWeek, setIsLeagueWeek] = useState(false)
+  const playerSlotsRef = useRef(playerSlots)
+  const profileIdsRef = useRef(profileIds)
+  const padelPlayerIdsRef = useRef(padelPlayerIds)
+  const duoTeamsRef = useRef(duoTeams)
+  playerSlotsRef.current = playerSlots
+  profileIdsRef.current = profileIds
+  padelPlayerIdsRef.current = padelPlayerIds
+  duoTeamsRef.current = duoTeams
 
   const isDuos = playerMode === 'duos'
   const showDateFields = !createLeague || Boolean(id)
-
   const draftScope = id ?? 'new'
 
   const applyCourtCount = useCallback((courts: CourtCount) => {
@@ -593,7 +602,6 @@ export function CompetitionForm() {
 
     setBusy(true)
     setError(null)
-    setSavedMessage(null)
 
     const admin = await verifyAdminSession(session, restoreSession)
     if (admin.error || !admin.session?.user) {
@@ -686,6 +694,7 @@ export function CompetitionForm() {
       }
 
       clearDraft()
+      clearCompetitionHubCache()
       setBusy(false)
       storeCompetitiveGenderFilter(gender)
       navigate('/competitive')
@@ -819,11 +828,12 @@ export function CompetitionForm() {
     }
 
     clearDraft()
+    clearCompetitionHubCache()
 
     if (id) {
       setBusy(false)
       storeCompetitiveGenderFilter(gender)
-      setSavedMessage('Saved')
+      window.location.assign(`/competitions/${sessionId}`)
       return
     }
 
@@ -834,6 +844,84 @@ export function CompetitionForm() {
     setBusy(false)
     storeCompetitiveGenderFilter(gender)
     navigate(`/competitions/${sessionId}`)
+  }
+
+  const autoRankRoster = async () => {
+    await flushPendingInputs()
+    setAutoRankBusy(true)
+    setError(null)
+
+    const admin = await verifyAdminSession(session, restoreSession)
+    if (admin.error || !admin.session?.user) {
+      setAutoRankBusy(false)
+      setError(admin.error ?? 'Admin session expired. Reopen Sign In, then try ranking again.')
+      return
+    }
+
+    const currentTeams = duoTeamsRef.current
+    const currentNames = isDuos
+      ? currentTeams.flatMap((team) => team.names)
+      : playerSlotsRef.current.slice(0, slotCount)
+    const currentProfileIds = isDuos
+      ? currentTeams.flatMap((team) => team.profileIds)
+      : profileIdsRef.current.slice(0, slotCount)
+    const currentPadelIds = isDuos
+      ? currentTeams.flatMap((team) => team.padelPlayerIds)
+      : padelPlayerIdsRef.current.slice(0, slotCount)
+
+    if (
+      currentNames.length !== slotCount ||
+      currentNames.some((name) => !name.trim())
+    ) {
+      setAutoRankBusy(false)
+      setError('Enter every player before auto-ranking.')
+      return
+    }
+
+    const result = await fetchCompetitionAutoRank(
+      currentNames.map((_, slotIndex) => ({
+        slotIndex,
+        profileId: currentProfileIds[slotIndex] ?? null,
+        padelPlayerId: currentPadelIds[slotIndex] ?? null,
+      })),
+      gender,
+    )
+    if (result.error || result.rows.length !== slotCount) {
+      setAutoRankBusy(false)
+      setError(result.error ?? 'Could not rank the complete roster.')
+      return
+    }
+
+    if (isDuos) {
+      const rankBySlot = new Map(result.rows.map((row, index) => [row.slot_index, { ...row, randomOrder: index }]))
+      const rankedTeams = currentTeams
+        .map((team, teamIndex) => {
+          const a = rankBySlot.get(teamIndex * 2)
+          const b = rankBySlot.get(teamIndex * 2 + 1)
+          return {
+            team,
+            history: (a?.competitions ?? 0) + (b?.competitions ?? 0),
+            points: (a?.ranking_points ?? 0) + (b?.ranking_points ?? 0),
+            randomOrder: Math.min(a?.randomOrder ?? 0, b?.randomOrder ?? 0),
+          }
+        })
+        .sort(
+          (a, b) =>
+            Number(b.history > 0) - Number(a.history > 0) ||
+            b.points - a.points ||
+            a.randomOrder - b.randomOrder,
+        )
+        .map((entry) => entry.team)
+      setDuoTeams(rankedTeams)
+    } else {
+      const order = result.rows.map((row) => row.slot_index)
+      setPlayerSlots(order.map((index) => currentNames[index] ?? ''))
+      setProfileIds(order.map((index) => currentProfileIds[index] ?? null))
+      setPadelPlayerIds(order.map((index) => currentPadelIds[index] ?? null))
+    }
+
+    setPreviewSeed((seed) => seed + 1)
+    setAutoRankBusy(false)
   }
 
   const saveDisabled =
@@ -976,6 +1064,17 @@ export function CompetitionForm() {
           />
         )}
 
+        <div className="setup-auto-rank">
+          <button
+            type="button"
+            className="setup-auto-rank__button"
+            disabled={busy || autoRankBusy}
+            onClick={() => void autoRankRoster()}
+          >
+            {autoRankBusy ? 'Ranking…' : 'Auto-rank roster'}
+          </button>
+        </div>
+
         {isDuos && filledDuoCount > 0 && !canBuildDuoSchedule ? (
           <p className="text-xs text-brand-muted">{t('competition.duoTeamsIncomplete')}</p>
         ) : null}
@@ -1010,10 +1109,6 @@ export function CompetitionForm() {
         {(seasonError || error) && (
           <p className="text-sm text-red-600">{error ?? seasonError}</p>
         )}
-        {savedMessage ? (
-          <p className="text-sm font-semibold text-brand-accent">{savedMessage}</p>
-        ) : null}
-
         <button
           type="submit"
           disabled={saveDisabled}

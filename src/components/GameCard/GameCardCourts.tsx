@@ -484,7 +484,9 @@ export function GameCardCourts({
               scoreMax={courtScoreMax}
               disabled={!gamesEditable}
               livePointScores={
-                showGesturePoints ? (pointScores ?? { scoreA: '0', scoreB: '0' }) : undefined
+                friendly && showGesturePoints
+                  ? (pointScores ?? { scoreA: '0', scoreB: '0' })
+                  : undefined
               }
               backupPointA={showGesturePoints ? backupPointA : undefined}
               backupPointB={showGesturePoints ? backupPointB : undefined}

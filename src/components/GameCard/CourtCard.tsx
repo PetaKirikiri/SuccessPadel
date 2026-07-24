@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ChevronsUpDown } from 'lucide-react'
 import { displayCourtLabel } from '../../lib/courtDisplay'
@@ -497,49 +497,37 @@ export function CourtTvScorePanel({
   )
 }
 
-function CourtScoreInput({
+function CourtScoreButton({
   value,
-  onChange,
-  onCommit,
+  onOpen,
   disabled,
   finished,
+  active,
   ariaLabel,
-  className = '',
 }: {
   value: string
-  onChange?: (v: string) => void
-  onCommit?: () => void
+  onOpen?: () => void
   disabled?: boolean
   finished?: boolean
+  active?: boolean
   ariaLabel: string
-  className?: string
 }) {
   return (
-    <input
-      type="text"
-      inputMode="numeric"
-      pattern="[0-9]*"
-      value={value}
-      placeholder="0"
-      disabled={disabled || !onChange}
-      onClick={stopCardNav}
-      onKeyDown={(event) => {
+    <button
+      type="button"
+      disabled={disabled || !onOpen}
+      onPointerDown={stopCardNav}
+      onKeyDown={stopCardNav}
+      onClick={(event) => {
         stopCardNav(event)
-        if (event.key === 'Enter') {
-          event.preventDefault()
-          event.currentTarget.blur()
-        }
+        onOpen?.()
       }}
-      onChange={(event) => onChange?.(scoreDigitsOnly(event.target.value))}
-      onBlur={() => onCommit?.()}
-      onFocus={(event) => event.currentTarget.select()}
-      className={`game-card-court-score-input tv-score-input w-[3.25rem] rounded-lg border px-2 py-1 text-center font-display font-extrabold tabular-nums outline-none ${className} ${
-        finished
-          ? 'border-brand-border/40 bg-brand-bg-alt text-brand-muted'
-          : 'border-brand-accent/50 bg-brand-bg-alt text-brand-accent focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20'
-      } disabled:opacity-70`}
+      className={`game-card-court-score-button${finished ? ' game-card-court-score-button--finished' : ''}${active ? ' game-card-court-score-button--active' : ''}`}
       aria-label={ariaLabel}
-    />
+      aria-expanded={active}
+    >
+      {value || '0'}
+    </button>
   )
 }
 
@@ -568,13 +556,13 @@ function CourtScores({
   livePointScores?: { scoreA: string; scoreB: string }
   t: TranslateFn
 }) {
+  const [pickerSide, setPickerSide] = useState<'a' | 'b' | null>(null)
   const fieldLabel = scoreFieldLabel(scoreUnit, t)
   const gamesA = scoreA ?? '0'
   const gamesB = scoreB ?? '0'
   const pointsClass = compact
     ? 'tv-score-readout rounded-xl border-2 border-brand-primary/55 bg-brand-bg-alt px-3 py-1.5 text-4xl leading-none text-brand-primary shadow-md dark:border-brand-accent/60 dark:bg-white/10 dark:text-brand-accent-light md:text-5xl'
     : 'rounded-lg border border-brand-primary/45 bg-brand-bg-alt px-2.5 py-1 text-3xl leading-none text-brand-primary shadow-sm dark:border-brand-accent/50 dark:bg-white/10 dark:text-brand-accent-light md:text-4xl'
-  const gamesInputClass = compact ? '' : 'text-lg md:text-xl'
   const dividerClass = `game-card-court-score-divider bg-brand-border/50 ${
     compact ? 'w-px self-stretch' : 'h-full min-h-[2.25rem] w-px'
   }`
@@ -588,6 +576,27 @@ function CourtScores({
 
   return (
     <div className="game-card-court-score-stack game-card-court-scores flex flex-col items-center gap-1">
+      {pickerSide ? (
+        <div className="game-card-court-score-picker" role="listbox" aria-label="Select score">
+          {Array.from({ length: 7 }, (_, score) => (
+            <button
+              key={score}
+              type="button"
+              className="game-card-court-score-picker__option"
+              onClick={(event) => {
+                stopCardNav(event)
+                const value = String(score)
+                if (pickerSide === 'a') onScoreA?.(value)
+                else onScoreB?.(value)
+                setPickerSide(null)
+                onGamesCommit?.()
+              }}
+            >
+              {score}
+            </button>
+          ))}
+        </div>
+      ) : null}
       <div className="game-card-court-score-row flex items-stretch justify-center gap-2">
         {livePointScores ? (
           <section
@@ -615,26 +624,24 @@ function CourtScores({
         <section className="game-card-court-score-section game-card-court-score-section--games" aria-label="Games">
           <div className={scorePairClass}>
             <div className="flex items-center justify-center tabular-nums">
-              <CourtScoreInput
+              <CourtScoreButton
                 value={gamesA}
-                onChange={onScoreA}
-                onCommit={onGamesCommit}
+                onOpen={onScoreA ? () => setPickerSide('a') : undefined}
                 disabled={disabled}
                 finished={finished}
+                active={pickerSide === 'a'}
                 ariaLabel={t('aria.teamAScore', { unit: fieldLabel })}
-                className={gamesInputClass}
               />
             </div>
             <span className={dividerClass} aria-hidden="true" />
             <div className="flex items-center justify-center tabular-nums">
-              <CourtScoreInput
+              <CourtScoreButton
                 value={gamesB}
-                onChange={onScoreB}
-                onCommit={onGamesCommit}
+                onOpen={onScoreB ? () => setPickerSide('b') : undefined}
                 disabled={disabled}
                 finished={finished}
+                active={pickerSide === 'b'}
                 ariaLabel={t('aria.teamBScore', { unit: fieldLabel })}
-                className={gamesInputClass}
               />
             </div>
           </div>

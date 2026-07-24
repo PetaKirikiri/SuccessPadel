@@ -97,6 +97,7 @@ export function GameCardPlayEvent() {
     searchParams.get('view') === 'leaderboard' ? 'leaderboard' : 'games',
   )
   const autoStartAttemptedRef = useRef<string | null>(null)
+  const competitionScoreSaveQueueRef = useRef(new Map<string, Promise<void>>())
   const [, setTvGameNumber] = useState<number | undefined>(undefined)
   const [manualCourtScores, setManualCourtScores] = useState<Map<string, ManualCourtScore>>(
     () => new Map(),
@@ -390,31 +391,44 @@ export function GameCardPlayEvent() {
   const handleSubmitScores = useCallback(
     async (entries: CourtScoreSubmit[], label?: string) => {
       for (const entry of entries) {
-        const winTeam = entry.teamA >= entry.teamB ? 'a' : 'b'
-        const { error: err } = await supabase.rpc('record_competition_match', {
-          p_round_id: entry.roundId,
-          p_court_id: entry.courtId,
-          p_score_summary: `${entry.teamA}-${entry.teamB}`,
-          p_winner_team: winTeam,
-          p_margin_bonus: false,
-          p_team_a_points: entry.teamA,
-          p_team_b_points: entry.teamB,
+        const saveKey = `${entry.roundId}:${entry.courtId}`
+        const priorSave =
+          competitionScoreSaveQueueRef.current.get(saveKey) ?? Promise.resolve()
+        const save = priorSave.catch(() => undefined).then(async () => {
+          const winTeam = entry.teamA >= entry.teamB ? 'a' : 'b'
+          const { error: err } = await supabase.rpc('record_competition_match', {
+            p_round_id: entry.roundId,
+            p_court_id: entry.courtId,
+            p_score_summary: `${entry.teamA}-${entry.teamB}`,
+            p_winner_team: winTeam,
+            p_margin_bonus: false,
+            p_team_a_points: entry.teamA,
+            p_team_b_points: entry.teamB,
+          })
+          // #region agent log
+          agentDebugIngest(
+            'LB',
+            err
+              ? `③ RPC failed — ${err.message}`
+              : `③ RPC saved ${entry.teamA}-${entry.teamB}${label ? ` (${label})` : ''}`,
+            { roundId: entry.roundId, courtId: entry.courtId },
+            'LB',
+            '5d6061',
+          )
+          // #endregion
+          if (err) throw new Error(err.message)
+          applyMatchScore(entry.roundId, entry.courtId, `${entry.teamA}-${entry.teamB}`)
+          await refresh(true)
         })
-        // #region agent log
-        agentDebugIngest(
-          'LB',
-          err
-            ? `③ RPC failed — ${err.message}`
-            : `③ RPC saved ${entry.teamA}-${entry.teamB}${label ? ` (${label})` : ''}`,
-          { roundId: entry.roundId, courtId: entry.courtId },
-          'LB',
-          '5d6061',
-        )
-        // #endregion
-        if (err) throw new Error(err.message)
-        applyMatchScore(entry.roundId, entry.courtId, `${entry.teamA}-${entry.teamB}`)
+        competitionScoreSaveQueueRef.current.set(saveKey, save)
+        try {
+          await save
+        } finally {
+          if (competitionScoreSaveQueueRef.current.get(saveKey) === save) {
+            competitionScoreSaveQueueRef.current.delete(saveKey)
+          }
+        }
       }
-      await refresh(true)
     },
     [applyMatchScore, refresh],
   )
