@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { flushSync } from 'react-dom'
 import { Link, useNavigate } from 'react-router-dom'
 import { ChevronsUpDown } from 'lucide-react'
 import { displayCourtLabel } from '../../lib/courtDisplay'
@@ -558,7 +557,6 @@ function CourtScores({
 }) {
   const [pickerSide, setPickerSide] = useState<'a' | 'b' | null>(null)
   const scoreControlRef = useRef<HTMLDivElement>(null)
-  const reopenBlockedUntilRef = useRef(0)
   const fieldLabel = scoreFieldLabel(scoreUnit, t)
   const gamesA = scoreA ?? '0'
   const gamesB = scoreB ?? '0'
@@ -580,7 +578,6 @@ function CourtScores({
     onEditingSideChange?.(side)
   }
   const openPicker = (side: 'a' | 'b') => {
-    if (Date.now() < reopenBlockedUntilRef.current) return
     changePickerSide(side)
   }
 
@@ -627,13 +624,10 @@ function CourtScores({
                 className={`game-card-court-score-picker__option${selected ? ' game-card-court-score-picker__option--selected' : ''}`}
                 onClick={(event) => {
                   stopCardNav(event)
-                  reopenBlockedUntilRef.current = Date.now() + 600
-                  flushSync(() => {
-                    if (pickerSide === 'a') onScoreA?.(value)
-                    else onScoreB?.(value)
-                  })
+                  if (pickerSide === 'a') onScoreA?.(value)
+                  else onScoreB?.(value)
                   changePickerSide(null)
-                  requestAnimationFrame(() => onGamesCommit?.())
+                  onGamesCommit?.()
                 }}
               >
                 {score}
