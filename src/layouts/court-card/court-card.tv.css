@@ -92,14 +92,14 @@
 }
 html[data-viewport='tv'] .game-card-court-score-button,
 html[data-viewport='tv'] .game-card-court-score-picker__option {
-  display: grid; place-items: center; border: 1px solid color-mix(in srgb, var(--color-brand-accent) 50%, transparent);
-  border-radius: 0.5rem; background: var(--color-brand-bg-alt); color: var(--color-brand-accent);
+  display: grid; place-items: center; border: 1px solid transparent;
+  border-radius: 0.5rem; background: transparent; color: var(--color-brand-text);
   font-weight: 800; font-variant-numeric: tabular-nums;
 }
 html[data-viewport='tv'] .game-card-court-score-button {
   width: 6rem; min-height: 4.75rem; padding: 0.5rem 1rem; border-width: 3px;
   font-family: Georgia, 'Times New Roman', serif; font-size: 3rem; line-height: 1;
-  box-shadow: 0 0.5rem 1.1rem color-mix(in srgb, var(--color-brand-primary) 18%, transparent);
+  box-shadow: none;
 }
 html[data-viewport='tv'] .game-card-court-score-button--finished {
   border-color: color-mix(in srgb, var(--color-brand-border) 40%, transparent); color: var(--color-brand-muted);

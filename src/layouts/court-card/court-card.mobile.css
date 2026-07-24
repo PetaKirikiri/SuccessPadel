@@ -131,10 +131,10 @@ html[data-viewport='mobile'] .game-card-court-score-button,
 html[data-viewport='mobile'] .game-card-court-score-picker__option {
   display: grid;
   place-items: center;
-  border: 1px solid color-mix(in srgb, var(--color-brand-accent) 50%, transparent);
+  border: 1px solid transparent;
   border-radius: 0.5rem;
-  background: var(--color-brand-bg-alt);
-  color: var(--color-brand-accent);
+  background: transparent;
+  color: var(--color-brand-text);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
@@ -147,7 +147,7 @@ html[data-viewport='mobile'] .game-card-court-score-button {
   font-family: Georgia, 'Times New Roman', serif;
   font-size: 2.15rem;
   line-height: 1;
-  box-shadow: 0 0.3rem 0.75rem color-mix(in srgb, var(--color-brand-primary) 16%, transparent);
+  box-shadow: none;
 }
 
 html[data-viewport='mobile'] .game-card-court-score-button--finished {
