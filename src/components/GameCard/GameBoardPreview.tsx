@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import type { GameRound } from '../../lib/americanoSchedule'
-import { breakMinutesFromConfig, competitionRoundTimesByGame, gameSlotOptsFromSchedule, gameSlotTimes, eventDurationMinutes } from '../../lib/competitionLayout'
+import { competitionRoundTimesByGame, gameSlotOptsFromSchedule, gameSlotTimes, eventDurationMinutes } from '../../lib/competitionLayout'
 import { americanoScoringUnit } from '../../lib/competitionPresets'
 import { pivotScheduleByCourt } from '../../lib/competitionCourtBoard'
 import type { LiveCourtGamesScore, LiveCourtPointFeed } from '../../lib/liveCourtScore'
@@ -68,7 +68,7 @@ export function GameBoardPreview({
   onActivePanel,
 }: Props) {
   const scoreUnit = americanoScoringUnit(session)
-  const breakMinutes = breakMinutesFromConfig(session.scoring_config)
+  const breakMinutes = session.scoring_config.break_minutes ?? 4
 
   const columns = useMemo(
     () => pivotScheduleByCourt(games, eventStartsAt, gameMinutes, breakMinutes),

@@ -372,8 +372,13 @@ export function GameCardPlayEvent() {
   ])
 
   const roundTimesByGame = useMemo(
-    () => competitionRoundTimesByGame(session, Math.max(rounds.length, schedule.totalGames)),
-    [session, rounds.length, schedule.totalGames],
+    () =>
+      competitionRoundTimesByGame(
+        session,
+        Math.max(rounds.length, schedule.totalGames),
+        rounds,
+      ),
+    [session, rounds, schedule.totalGames],
   )
 
   const roundStatusByGame = useMemo(() => {

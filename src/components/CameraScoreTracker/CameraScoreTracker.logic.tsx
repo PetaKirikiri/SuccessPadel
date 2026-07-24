@@ -44,7 +44,6 @@ import {
 import { CameraScoreTrackerShell } from './'
 import { CameraScoreTracker, type CameraScoreTrackerHandle } from './'
 import {
-  breakMinutesFromConfig,
   competitionRoundTimesByGame,
   isGameSlotInBreakAfter,
   isGameSlotLive,
@@ -178,7 +177,11 @@ export function GestureScoreCourtPage() {
     () =>
       friendlyRoute
         ? new Map<number, { startsAt: number; endsAt: number }>()
-        : competitionRoundTimesByGame(session, Math.max(rounds.length, competitionGames.length)),
+        : competitionRoundTimesByGame(
+            session,
+            Math.max(rounds.length, competitionGames.length),
+            rounds,
+          ),
     [competitionGames.length, friendlyRoute, rounds.length, session],
   )
 
@@ -196,9 +199,8 @@ export function GestureScoreCourtPage() {
       day: config.day || formatDateInput(new Date()),
     }
     const previewGames = friendlyPreviewGames(friendlyGame, courtNames, friendlyGame.profileAvatars)
-    const sessionConfig = friendlyOrganizedSession(organizedConfig)
     const startsAtIso = friendlyStartsAtIso(organizedConfig)
-    const breakMinutes = breakMinutesFromConfig(sessionConfig.scoring_config)
+    const breakMinutes = organizedConfig.breakMinutes
     const cols = pivotScheduleByCourt(
       previewGames,
       startsAtIso,

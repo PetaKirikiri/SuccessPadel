@@ -1,6 +1,6 @@
 import type { Session } from '@supabase/supabase-js'
-import { readCachedProfile } from './cachedProfile'
-import { AUTH_STORAGE_KEY, hasPersistedAuthRecord } from './authStorage'
+import { clearCachedProfile, readCachedProfile } from './cachedProfile'
+import { AUTH_STORAGE_KEY, authStorage, hasPersistedAuthRecord } from './authStorage'
 import { supabase } from '../supabaseClient'
 
 export { AUTH_STORAGE_KEY }
@@ -107,6 +107,13 @@ export function clearBrowserSessionBackup(): void {
   }
 }
 
+/** Remove every local identity hint after Supabase rejects a refresh token. */
+export function clearLocalAuthState(): void {
+  authStorage.removeItem(AUTH_STORAGE_KEY)
+  clearBrowserSessionBackup()
+  clearCachedProfile()
+}
+
 function sessionExpiresSoon(session: Session, skewMs = 60_000): boolean {
   const expiresAt = session.expires_at
   if (!expiresAt) return false
@@ -115,7 +122,11 @@ function sessionExpiresSoon(session: Session, skewMs = 60_000): boolean {
 
 async function refreshPersistedSession(): Promise<Session | null> {
   const { data, error } = await supabase.auth.refreshSession()
-  if (error || !data.session?.user) return null
+  if (error || !data.session?.user) {
+    const status = authErrorStatus(error)
+    if (status === 400 || status === 401) clearLocalAuthState()
+    return null
+  }
   rememberBrowserSession(data.session)
   return data.session
 }
@@ -129,7 +140,7 @@ async function restoreBrowserSessionBackup(): Promise<Session | null> {
   if (refreshed.session) return refreshed.session
 
   if (refreshed.status === 400 || refreshed.status === 401) {
-    clearBrowserSessionBackup()
+    clearLocalAuthState()
     blockBackupRestore(backup.refreshToken, 5 * 60_000)
     return null
   }
@@ -183,6 +194,7 @@ export async function ensureWritableSession(): Promise<Session | null> {
     if (sessionExpiresSoon(current.session)) {
       const refreshed = await refreshPersistedSession()
       if (refreshed?.access_token) return refreshed
+      if (!hasCachedAuthStorage()) return null
     }
     rememberBrowserSession(current.session)
     return current.session
@@ -221,7 +233,9 @@ export async function keepSessionAlive(): Promise<Session | null> {
   const session = data.session
   if (!session?.user) return tryRestoreCachedSession()
   if (sessionExpiresSoon(session, 5 * 60_000)) {
-    return (await refreshPersistedSession()) ?? session
+    const refreshed = await refreshPersistedSession()
+    if (refreshed) return refreshed
+    return hasCachedAuthStorage() ? session : null
   }
   rememberBrowserSession(session)
   return session

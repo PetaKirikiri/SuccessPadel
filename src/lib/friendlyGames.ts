@@ -9,14 +9,13 @@ import {
 } from './competitionPresets'
 import {
   americanoRoundsForFullRotation,
-  breakMinutesFromConfig,
   courtsNeeded,
   eventDurationMinutes,
   gameSlotOptsFromSchedule,
   gameSlotTimes,
   isValidCourtLayout,
-  totalScheduleMinutes,
 } from './competitionLayout'
+import { totalScheduleMinutes } from './competitionScheduleLayout'
 import { pivotScheduleByCourt } from './competitionCourtBoard'
 import type { QuadrantPlayers } from './gesturePadPlayers'
 import { quadrantPlayersForCourt } from './gesturePadPlayers'
@@ -344,8 +343,7 @@ export function friendlyGameSlotMillis(
   }
   const startsAtIso = friendlyStartsAtIso(organized)
   if (!startsAtIso) return null
-  const session = friendlyOrganizedSession(organized)
-  const breakMinutes = breakMinutesFromConfig(session.scoring_config)
+  const breakMinutes = organized.breakMinutes
   const endsAtIso = friendlyEndsAtIso(organized)
   const slotOpts = endsAtIso
     ? gameSlotOptsFromSchedule({
@@ -542,11 +540,12 @@ export function friendlyOrganizedSession(
         target: config.americanoScoring === 'open' ? undefined : config.americanoScoring,
         unit: config.americanoScoring === 'open' ? 'open' : 'games',
       }),
-      scoring_config: buildAmericanoScoringConfig(config.americanoScoring, {
-        games: config.gameCount,
-        breakMinutes: config.breakMinutes,
-        gameMinutes: config.gameMinutes,
-      }),
+      scoring_config: {
+        ...buildAmericanoScoringConfig(config.americanoScoring),
+        americano_games: config.gameCount,
+        break_minutes: config.breakMinutes,
+        game_minutes: config.gameMinutes,
+      },
     }
   }
   return {

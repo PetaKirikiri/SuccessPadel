@@ -1,19 +1,15 @@
 import { useEffect, useMemo, useState, type ChangeEvent } from 'react'
-import { COMPETITION_SCHEDULE } from '../../lib/competitionScheduleLayout'
-import { GAME_SETUP_MIN_BREAK_MINUTES } from '../../lib/gameSchedule'
+import {
+  COMPETITION_SCHEDULE,
+  COMPETITION_SCHEDULE_LIMITS,
+  totalScheduleMinutes,
+} from '../../lib/competitionScheduleLayout'
 
 export type GameScheduleSetupValues = {
   gameCount: number
   gameMinutes: number
   breakMinutes: number
 }
-
-const MIN_GAMES = 1
-const MAX_GAMES = 20
-const MIN_GAME_MINUTES = 5
-const MAX_GAME_MINUTES = 60
-export const MIN_BREAK_MINUTES = GAME_SETUP_MIN_BREAK_MINUTES
-const MAX_BREAK_MINUTES = 30
 
 function clampInt(raw: string, min: number, max: number, fallback: number): number {
   const n = parseInt(raw, 10)
@@ -83,7 +79,7 @@ export function gameScheduleTotals({ gameCount, gameMinutes, breakMinutes }: Gam
   const restCount = Math.max(0, gameCount - 1)
   const gameTime = gameCount * gameMinutes
   const restTime = restCount * breakMinutes
-  const playMinutes = gameTime + restTime
+  const playMinutes = totalScheduleMinutes(gameCount, gameMinutes, breakMinutes)
   return {
     restCount,
     gameTime,
@@ -187,25 +183,25 @@ export function GameScheduleSetup({
         <ScheduleNumberInput
           label="Games"
           value={value.gameCount}
-          min={MIN_GAMES}
-          max={MAX_GAMES}
-          fallback={7}
+          min={COMPETITION_SCHEDULE_LIMITS.minGames}
+          max={COMPETITION_SCHEDULE_LIMITS.maxGames}
+          fallback={COMPETITION_SCHEDULE.games}
           onCommit={(gameCount) => onChange({ gameCount })}
         />
         <ScheduleNumberInput
           label="Game min"
           value={value.gameMinutes}
-          min={MIN_GAME_MINUTES}
-          max={MAX_GAME_MINUTES}
-          fallback={14}
+          min={COMPETITION_SCHEDULE_LIMITS.minGameMinutes}
+          max={COMPETITION_SCHEDULE_LIMITS.maxGameMinutes}
+          fallback={COMPETITION_SCHEDULE.gameMinutes}
           onCommit={(gameMinutes) => onChange({ gameMinutes })}
         />
         <ScheduleNumberInput
           label="Rest min"
           value={value.breakMinutes}
-          min={MIN_BREAK_MINUTES}
-          max={MAX_BREAK_MINUTES}
-          fallback={MIN_BREAK_MINUTES}
+          min={COMPETITION_SCHEDULE_LIMITS.minBreakMinutes}
+          max={COMPETITION_SCHEDULE_LIMITS.maxBreakMinutes}
+          fallback={COMPETITION_SCHEDULE.breakMinutes}
           onCommit={(breakMinutes) => onChange({ breakMinutes })}
         />
       </div>

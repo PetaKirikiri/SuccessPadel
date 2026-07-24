@@ -27,9 +27,6 @@ const app = await load('src/App.tsx')
 if (presets.SINGLES_COMPETITION?.gameCount !== schedule.COMPETITION_SCHEDULE.games) {
   throw new Error('SINGLES_COMPETITION.gameCount not initialized — formatPresets/rankedSchedule cycle?')
 }
-if (ranked.RANKED_AMERICANO_GAMES !== schedule.COMPETITION_SCHEDULE.games) {
-  throw new Error('RANKED_AMERICANO_GAMES not initialized')
-}
 if (!app.default) {
   throw new Error('App default export missing')
 }

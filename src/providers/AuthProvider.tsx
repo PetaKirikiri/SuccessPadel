@@ -8,17 +8,16 @@ import {
   type ReactNode,
 } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
-import { readBootAuthUser, readBootProfile } from '../lib/auth/bootUser'
 import {
   AUTH_STORAGE_KEY,
-  clearBrowserSessionBackup,
+  clearLocalAuthState,
   ensureWritableSession,
   keepSessionAlive,
   readStoredAuthUserId,
   rememberBrowserSession,
   tryRestoreCachedSession,
 } from '../lib/auth/cachedSession'
-import { clearCachedProfile, readCachedProfile, rememberCachedProfile } from '../lib/auth/cachedProfile'
+import { readCachedProfile, rememberCachedProfile } from '../lib/auth/cachedProfile'
 import { lineHandshakeDebug } from '../lib/debug/lineHandshakeDebug'
 import { installLoginWithAppLifecycleDebug } from '../lib/debug/loginWithAppDebug'
 import { syncProfileForUser } from '../lib/authProfile'
@@ -42,9 +41,16 @@ const SESSION_KEEPALIVE_MS = 4 * 60_000
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
-  const [user, setUser] = useState<User | null>(() => readBootAuthUser())
-  const [profile, setProfile] = useState<Profile | null>(() => readBootProfile())
+  const [user, setUser] = useState<User | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+
+  const dropLocalIdentity = useCallback(() => {
+    clearLocalAuthState()
+    setSession(null)
+    setUser(null)
+    setProfile(null)
+  }, [])
 
   const loadProfile = useCallback(async (authUser: User): Promise<Profile | null> => {
     const next = await syncProfileForUser(authUser)
@@ -103,16 +109,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const storedId = readStoredAuthUserId()
       if (storedId) {
         const cached = readCachedProfile(storedId)
-        if (cached) setProfile((prev) => prev ?? cached)
-        setUser((prev) => prev ?? readBootAuthUser())
         const late = await keepSessionAlive()
         if (late?.user) {
           setSession(late)
           setUser(late.user)
           rememberBrowserSession(late)
+          if (cached) setProfile(cached)
           await loadProfile(late.user)
+          return
         }
       }
+
+      setSession(null)
+      setUser(null)
+      setProfile(null)
     },
     [loadProfile],
   )
@@ -132,8 +142,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await applySession(data.session)
       return data.session
     }
+    dropLocalIdentity()
     return null
-  }, [applySession])
+  }, [applySession, dropLocalIdentity])
 
   useEffect(() => {
     const onProfileSynced = () => {
@@ -193,7 +204,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (event === 'SIGNED_OUT') {
         void tryRestoreCachedSession().then((restored) => {
           if (!active) return
-          if (restored?.user) void applySession(restored)
+          if (restored?.user) {
+            void applySession(restored)
+          } else {
+            dropLocalIdentity()
+          }
         })
         return
       }
@@ -214,8 +229,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const refreshOnFocus = () => {
       void keepSessionAlive().then((restored) => {
-        if (!active || !restored) return
-        void applySession(restored)
+        if (!active) return
+        if (restored) {
+          void applySession(restored)
+        } else {
+          dropLocalIdentity()
+        }
       })
     }
     const onVisibility = () => {
@@ -227,7 +246,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const keepAliveTimer = window.setInterval(() => {
       if (document.visibilityState !== 'visible') return
       void keepSessionAlive().then((restored) => {
-        if (!active || !restored) return
+        if (!active) return
+        if (!restored) {
+          dropLocalIdentity()
+          return
+        }
         setSession(restored)
         setUser(restored.user)
         rememberBrowserSession(restored)
@@ -242,20 +265,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       document.removeEventListener('visibilitychange', onVisibility)
       window.clearInterval(keepAliveTimer)
     }
-  }, [applySession])
+  }, [applySession, dropLocalIdentity])
 
   const restoreSession = useCallback(async () => {
     return pullLiveSession()
   }, [pullLiveSession])
 
   const signOut = useCallback(async () => {
-    clearBrowserSessionBackup()
-    clearCachedProfile()
-    setSession(null)
-    setUser(null)
-    setProfile(null)
+    dropLocalIdentity()
     await supabase.auth.signOut()
-  }, [])
+  }, [dropLocalIdentity])
 
   const refreshProfile = useCallback(async () => {
     if (user) await loadProfile(user)

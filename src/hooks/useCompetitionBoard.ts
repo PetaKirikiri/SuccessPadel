@@ -18,7 +18,6 @@ import {
 import {
   gamesFromStoredSchedule,
   planRankedSchedule,
-  RANKED_GAME_MINUTES,
   scheduleSeedFromSession,
   sortRosterByRank,
   storedScheduleFromConfig,
@@ -27,7 +26,7 @@ import {
   courtPlayerFromRoster,
 } from '../lib/rankedSchedule'
 import { buildDuoStoredSchedule } from '../lib/duoRoundRobinSchedule'
-import { DUO_GAME_COUNT } from '../lib/competitionFormatPresets'
+import { COMPETITION_SCHEDULE } from '../lib/competitionScheduleLayout'
 import { courtPlayerFromProfile } from '../lib/courtPlayerFromProfile'
 import type { CourtPlayer, GameRound } from '../lib/americanoSchedule'
 import type { PlaySide } from '../lib/types'
@@ -247,7 +246,7 @@ export function useCompetitionBoard(
     if (isDuo && teams.length >= 2) {
       const duoSchedule = buildDuoStoredSchedule(
         teams.map((t) => ({ label: t.label, rosterIds: t.roster_ids })),
-        totalGames || DUO_GAME_COUNT,
+        totalGames || COMPETITION_SCHEDULE.games,
         scheduleSeed,
       )
       plannedGames = gamesFromStoredSchedule(paddedRoster, duoSchedule, courtNames, rosterNameById, roster)
@@ -292,7 +291,7 @@ export function useCompetitionBoard(
     return pivotScheduleByCourt(
       americanoGames,
       competitionPlayStartIso(session),
-      gameMinutes || RANKED_GAME_MINUTES,
+      gameMinutes,
       scheduledBreakMinutes,
       session?.ends_at ?? undefined,
       gameSlotOptsFromSchedule({ eventMinutes, totalGames }),

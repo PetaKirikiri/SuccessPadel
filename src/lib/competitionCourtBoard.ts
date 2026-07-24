@@ -1,5 +1,6 @@
 import type { CourtPlayer, GameRound } from './americanoSchedule'
-import { COMPETITION_BREAK_MINUTES, gameSlotTimes, type GameSlotOpts } from './competitionLayout'
+import { gameSlotTimes, type GameSlotOpts } from './competitionLayout'
+import { COMPETITION_SCHEDULE } from './competitionScheduleLayout'
 import { formatClubTime } from './courtSchedule'
 
 export type CourtGameCell = {
@@ -77,7 +78,7 @@ export function pivotScheduleByCourt(
   games: GameRound[],
   eventStartsAt: string | undefined,
   gameMinutes: number,
-  breakMinutes = COMPETITION_BREAK_MINUTES,
+  breakMinutes: number = COMPETITION_SCHEDULE.breakMinutes,
   eventEndsAt?: string,
   slotOpts?: GameSlotOpts,
 ): CourtColumn[] {

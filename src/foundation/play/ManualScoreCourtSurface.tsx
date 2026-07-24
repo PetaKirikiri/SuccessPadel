@@ -6,7 +6,6 @@ import { useFriendlyGame } from '../../hooks/useFriendlyGame'
 import { useMatchGestureLog } from '../../hooks/useMatchGestureLog'
 import { useSetupCourts } from '../../hooks/useSetupCourts'
 import { useTranslation } from '../../hooks/useTranslation'
-import { breakMinutesFromConfig } from '../../lib/competitionLayout'
 import { pivotScheduleByCourt, pivotScheduleByGame } from '../../lib/competitionCourtBoard'
 import {
   courtGameScoreMax,
@@ -50,9 +49,8 @@ export function ManualScoreCourtPage() {
       day: config.day || formatDateInput(new Date()),
     }
     const previewGames = friendlyPreviewGames(game, courtNames, game.profileAvatars)
-    const session = friendlyOrganizedSession(organizedConfig)
     const startsAtIso = friendlyStartsAtIso(organizedConfig)
-    const breakMinutes = breakMinutesFromConfig(session.scoring_config)
+    const breakMinutes = organizedConfig.breakMinutes
     const columns = pivotScheduleByCourt(
       previewGames,
       startsAtIso,

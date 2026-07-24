@@ -56,8 +56,11 @@ export type ScoringConfig = {
   margin_bonus_cap?: number
   americano_target?: number
   americano_unit?: 'points' | 'sets' | 'games' | 'open'
+  /** Friendly organized-game compatibility only. Competitions use GameSession schedule columns. */
   americano_games?: number
+  /** Friendly organized-game compatibility only. */
   break_minutes?: number
+  /** Friendly organized-game compatibility only. */
   game_minutes?: number
   competition_player_mode?: 'singles' | 'duos'
   league_id?: string
@@ -88,6 +91,9 @@ export type GameSession = {
   partnership_mode: PartnershipMode
   scoring_preset: ScoringPreset
   scoring_config: ScoringConfig
+  schedule_game_count: number | null
+  schedule_game_minutes: number | null
+  schedule_break_minutes: number | null
   who_can_log_matches: WhoCanLog
   margin_bonus_enabled: boolean
   max_players: number | null

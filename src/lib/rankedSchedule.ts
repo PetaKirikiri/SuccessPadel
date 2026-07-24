@@ -6,7 +6,7 @@ import type { CourtPlayer, GameRound } from './americanoSchedule'
 import { solveBalancedSchedule, type RoundAssignment } from './balancedSchedule'
 import { courtsNeeded } from './competitionLayout'
 import { DUO_PLAYER_COUNT, SINGLES_COMPETITION } from './competitionFormatPresets'
-import { RANKED_AMERICANO_GAMES } from './competitionScheduleConstants'
+import { COMPETITION_SCHEDULE } from './competitionScheduleLayout'
 import type { GameSession } from './types'
 
 export const OPEN_SLOT_NAME = 'Open'
@@ -92,8 +92,6 @@ export function targetPlayerCount(
 
 /** Bump when schedule logic changes — logged for debug. */
 export const RANKED_SCHEDULE_VERSION = 10
-
-export { RANKED_AMERICANO_GAMES, RANKED_GAME_MINUTES } from './competitionScheduleConstants'
 
 export type StoredScheduleMatch = {
   court: number
@@ -283,7 +281,7 @@ export function gamesFromStoredSchedule(
 export function planRankedSchedule(
   roster: CompetitionPlayer[],
   courtNames: string[],
-  totalGames = RANKED_AMERICANO_GAMES,
+  totalGames: number = COMPETITION_SCHEDULE.games,
   scheduleSeed = 0,
   slotCount?: number,
   rosterNameById?: Map<string, string>,

@@ -26,11 +26,25 @@
 
 **Symptom:** Blank page, no React render — often after invite-card / schedule edits.
 
-**Root cause:** Circular imports between `competitionFormatPresets.ts` ↔ `rankedSchedule.ts` (or `lib/` importing `components/`). Constants like `RANKED_AMERICANO_GAMES` live in `src/lib/competitionScheduleConstants.ts` — never import `rankedSchedule` from `competitionFormatPresets`.
+**Root cause:** Circular imports between `competitionFormatPresets.ts` ↔ `rankedSchedule.ts` (or `lib/` importing `components/`). Competition timing constants live in `src/lib/competitionScheduleLayout.ts` — never import `rankedSchedule` from `competitionFormatPresets`.
 
 **Before shipping schedule/competition changes:** `npm run check:cycles` (also run after touching `persistCompetitionSchedule`, `DuoTeamSlots`, invite roster).
 
 **Never:** import React components from `src/lib/` — use `src/lib/competitionDuoTeams.ts` for shared duo helpers.
+
+## Competition schedule authority
+
+Competition timing has one contract: [`src/lib/competitionScheduleLayout.ts`](src/lib/competitionScheduleLayout.ts).
+
+- Defaults are `6` games, `15` minutes per game, and `4` minutes between games: `6 × 15 + 5 × 4 = 110` minutes.
+- Setup must persist all three fields in `game_sessions.scoring_config`: `americano_games`, `game_minutes`, and `break_minutes`.
+- TypeScript reads those fields only through `competitionScheduleFromConfig()`. Do not read them directly in components, hooks, or other libraries.
+- `start_competition` validates and consumes the persisted fields. SQL must not invent fallback game or break durations.
+- Never silently shorten games or reduce the game count to make a schedule fit. Reject the save/start and return the user to competition setup.
+- Before rounds exist, previews derive timestamps from the persisted schedule. After rounds exist, `competition_rounds.starts_at` / `ends_at` are authoritative for live Game Card and camera timers.
+- Historical explicit schedules remain historical truth; defaults are only for new or missing legacy schedules.
+
+After any competition timing change, run `npm run check:schedule`, `npm run check:cycles`, and `npm run build`.
 
 ## Game card (viewport sizes)
 

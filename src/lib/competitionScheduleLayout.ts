@@ -1,11 +1,25 @@
-import type { ScoringConfig } from './types'
+import type { GameSession } from './types'
 
-/** One schedule layout for every competition — duos, singles, all divisions. */
+/**
+ * Competition timing contract.
+ *
+ * Defaults are creation values only. Persisted game_sessions schedule columns are
+ * the sole authority consumed by setup, SQL rounds, Game Card, and camera.
+ */
 export const COMPETITION_SCHEDULE = {
   games: 6,
   gameMinutes: 15,
   breakMinutes: 4,
   leadInMinutes: 0,
+} as const
+
+export const COMPETITION_SCHEDULE_LIMITS = {
+  minGames: 1,
+  maxGames: 20,
+  minGameMinutes: 5,
+  maxGameMinutes: 60,
+  minBreakMinutes: 0,
+  maxBreakMinutes: 30,
 } as const
 
 export type CompetitionScheduleValues = {
@@ -14,42 +28,77 @@ export type CompetitionScheduleValues = {
   breakMinutes: number
 }
 
+function validInteger(value: unknown, min: number, max: number): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= min && value <= max
+}
+
+export function totalScheduleMinutes(
+  games: number,
+  gameMinutes: number,
+  breakMinutes: number,
+): number {
+  if (games <= 0 || gameMinutes <= 0) return 0
+  return games * gameMinutes + Math.max(0, games - 1) * breakMinutes
+}
+
 export function competitionPlayBlockMinutes(): number {
   const { games, gameMinutes, breakMinutes } = COMPETITION_SCHEDULE
-  return games * gameMinutes + Math.max(0, games - 1) * breakMinutes
+  return totalScheduleMinutes(games, gameMinutes, breakMinutes)
 }
 
 export function competitionCanonicalEventMinutes(): number {
   return COMPETITION_SCHEDULE.leadInMinutes + competitionPlayBlockMinutes()
 }
 
-export function scoringConfigHasCanonicalSchedule(
-  config: ScoringConfig | null | undefined,
+type CompetitionScheduleFields = Pick<
+  GameSession,
+  'schedule_game_count' | 'schedule_game_minutes' | 'schedule_break_minutes'
+>
+
+export function sessionHasExplicitCompetitionSchedule(
+  session: Partial<CompetitionScheduleFields> | null | undefined,
 ): boolean {
-  if (!config) return false
+  if (!session) return false
+  const limits = COMPETITION_SCHEDULE_LIMITS
   return (
-    config.americano_games === COMPETITION_SCHEDULE.games &&
-    config.break_minutes === COMPETITION_SCHEDULE.breakMinutes &&
-    config.game_minutes === COMPETITION_SCHEDULE.gameMinutes
+    validInteger(session.schedule_game_count, limits.minGames, limits.maxGames) &&
+    validInteger(session.schedule_game_minutes, limits.minGameMinutes, limits.maxGameMinutes) &&
+    validInteger(session.schedule_break_minutes, limits.minBreakMinutes, limits.maxBreakMinutes)
   )
 }
 
-/** Keep scoring_config in sync with the canonical layout (DB source for play SQL). */
-export function mergeScheduleIntoScoringConfig(
-  config: ScoringConfig | null | undefined,
-  schedule?: CompetitionScheduleValues,
-): ScoringConfig {
-  const source = config ?? {}
+/** Resolve persisted session fields. Defaults only support unsaved form previews. */
+export function competitionScheduleFromSession(
+  session: Partial<CompetitionScheduleFields> | null | undefined,
+): CompetitionScheduleValues {
+  const limits = COMPETITION_SCHEDULE_LIMITS
   return {
-    ...source,
-    americano_games:
-      schedule?.games ??
-      (typeof source.americano_games === 'number' ? source.americano_games : COMPETITION_SCHEDULE.games),
-    break_minutes:
-      schedule?.breakMinutes ??
-      (typeof source.break_minutes === 'number' ? source.break_minutes : COMPETITION_SCHEDULE.breakMinutes),
-    game_minutes:
-      schedule?.gameMinutes ??
-      (typeof source.game_minutes === 'number' ? source.game_minutes : COMPETITION_SCHEDULE.gameMinutes),
+    games: validInteger(session?.schedule_game_count, limits.minGames, limits.maxGames)
+      ? session.schedule_game_count
+      : COMPETITION_SCHEDULE.games,
+    gameMinutes: validInteger(
+      session?.schedule_game_minutes,
+      limits.minGameMinutes,
+      limits.maxGameMinutes,
+    )
+      ? session.schedule_game_minutes
+      : COMPETITION_SCHEDULE.gameMinutes,
+    breakMinutes: validInteger(
+      session?.schedule_break_minutes,
+      limits.minBreakMinutes,
+      limits.maxBreakMinutes,
+    )
+      ? session.schedule_break_minutes
+      : COMPETITION_SCHEDULE.breakMinutes,
+  }
+}
+
+export function competitionScheduleFields(
+  schedule: CompetitionScheduleValues = COMPETITION_SCHEDULE,
+) {
+  return {
+    schedule_game_count: schedule.games,
+    schedule_game_minutes: schedule.gameMinutes,
+    schedule_break_minutes: schedule.breakMinutes,
   }
 }

@@ -60,7 +60,7 @@ import {
   type CompetitionPlayStartMinute,
   type CourtCount,
 } from '../../lib/competitionLayout'
-import { GAME_SETUP_MIN_BREAK_MINUTES } from '../../lib/gameSchedule'
+import { totalScheduleMinutes } from '../../lib/competitionScheduleLayout'
 import { supabase } from '../../lib/supabaseClient'
 import {
   saveScheduleForSession,
@@ -217,7 +217,7 @@ export function CompetitionForm() {
   const [scheduleSetup, setScheduleSetup] = useState<GameScheduleSetupValues>(() => ({
     gameCount: SINGLES_COMPETITION.gameCount,
     gameMinutes: SINGLES_COMPETITION.gameMinutes,
-    breakMinutes: Math.max(GAME_SETUP_MIN_BREAK_MINUTES, SINGLES_COMPETITION.breakMinutes),
+    breakMinutes: SINGLES_COMPETITION.breakMinutes,
   }))
   const [slotCount, setSlotCount] = useState(playersFromCourtCount(DEFAULT_SINGLES_COURT_COUNT))
   const [competitionStarted, setCompetitionStarted] = useState(false)
@@ -272,7 +272,7 @@ export function CompetitionForm() {
     setScheduleSetup({
       gameCount: draft.gameCount,
       gameMinutes: draft.gameMinutes,
-      breakMinutes: Math.max(GAME_SETUP_MIN_BREAK_MINUTES, draft.breakMinutes),
+      breakMinutes: draft.breakMinutes,
     })
     const players = playersFromCourtCount(draft.courtCount)
     const teams = teamsFromCourtCount(draft.courtCount)
@@ -298,7 +298,7 @@ export function CompetitionForm() {
       courtCount,
       gameCount: scheduleSetup.gameCount,
       gameMinutes: scheduleSetup.gameMinutes,
-      breakMinutes: Math.max(GAME_SETUP_MIN_BREAK_MINUTES, scheduleSetup.breakMinutes),
+      breakMinutes: scheduleSetup.breakMinutes,
       createLeague,
       day,
       startHour,
@@ -357,7 +357,7 @@ export function CompetitionForm() {
     () => ({
       games: scheduleSetup.gameCount,
       gameMinutes: scheduleSetup.gameMinutes,
-      breakMinutes: Math.max(GAME_SETUP_MIN_BREAK_MINUTES, scheduleSetup.breakMinutes),
+      breakMinutes: scheduleSetup.breakMinutes,
     }),
     [scheduleSetup],
   )
@@ -481,7 +481,7 @@ export function CompetitionForm() {
       setScheduleSetup({
         gameCount: schedule.totalGames,
         gameMinutes: schedule.gameMinutes,
-        breakMinutes: Math.max(GAME_SETUP_MIN_BREAK_MINUTES, schedule.breakMinutes),
+        breakMinutes: schedule.breakMinutes,
       })
       if (session.starts_at) {
         setDay(bangkokDateFromIso(session.starts_at))
@@ -579,6 +579,17 @@ export function CompetitionForm() {
       setError('No active season.')
       return
     }
+    const scheduledMinutes = totalScheduleMinutes(
+      scheduleSetup.gameCount,
+      scheduleSetup.gameMinutes,
+      scheduleSetup.breakMinutes,
+    )
+    if (showDateFields && scheduledMinutes > windowMinutes) {
+      setError(
+        `Schedule needs ${scheduledMinutes} minutes but the selected window has ${windowMinutes}.`,
+      )
+      return
+    }
 
     setBusy(true)
     setError(null)
@@ -593,7 +604,7 @@ export function CompetitionForm() {
 
     const finalTitle = title.trim() || autoTitle
     const targetPlayers = playersFromCourtCount(courtCount)
-    const baseConfig = competitionScoringConfig(playerMode, { schedule: competitionSchedule })
+    const baseConfig = competitionScoringConfig(playerMode)
     const lockedFields = competitionSessionFields(playerMode, {
       skillLevel,
       gender,
@@ -616,6 +627,9 @@ export function CompetitionForm() {
         p_scoring_config: baseConfig,
         p_created_by: admin.session.user.id,
         p_target_players: targetPlayers,
+        p_schedule_game_count: competitionSchedule.games,
+        p_schedule_game_minutes: competitionSchedule.gameMinutes,
+        p_schedule_break_minutes: competitionSchedule.breakMinutes,
       })
       if (leagueErr || !leagueResult) {
         setBusy(false)
@@ -870,7 +884,7 @@ export function CompetitionForm() {
             value: {
               gameCount: scheduleSetup.gameCount,
               gameMinutes: scheduleSetup.gameMinutes,
-              breakMinutes: Math.max(GAME_SETUP_MIN_BREAK_MINUTES, scheduleSetup.breakMinutes),
+              breakMinutes: scheduleSetup.breakMinutes,
             },
             dateValue: showDateFields ? day : undefined,
             onDateChange: showDateFields ? setDay : undefined,
@@ -891,10 +905,7 @@ export function CompetitionForm() {
               setScheduleSetup((prev) => ({
                 ...prev,
                 ...patch,
-                breakMinutes: Math.max(
-                  GAME_SETUP_MIN_BREAK_MINUTES,
-                  patch.breakMinutes ?? prev.breakMinutes,
-                ),
+                breakMinutes: patch.breakMinutes ?? prev.breakMinutes,
               }))
             },
           }}

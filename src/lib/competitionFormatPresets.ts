@@ -6,7 +6,6 @@ import {
   type Gender,
   type SkillLevel,
 } from './competitionPresets'
-import { DEFAULT_COMPETITION_EVENT_MINUTES } from './competitionScheduleConstants'
 import {
   courtCountFromPlayers,
   playersFromCourtCount,
@@ -14,8 +13,8 @@ import {
 } from './competitionLayout'
 import {
   COMPETITION_SCHEDULE,
+  competitionScheduleFields,
   type CompetitionScheduleValues,
-  mergeScheduleIntoScoringConfig,
 } from './competitionScheduleLayout'
 import { OPEN_SLOT_NAME, pickRosterIdForRank } from './rankedSchedule'
 import type { CompetitionPlayer } from '../hooks/useCompetitions'
@@ -34,9 +33,6 @@ export type CompetitionTeamConfig = {
 export const DUO_TEAM_COUNT = 6
 export const DUO_PLAYER_COUNT = 12
 export const DUO_COURT_COUNT = 3
-export const DUO_GAME_COUNT = COMPETITION_SCHEDULE.games
-export const DUO_GAME_MINUTES = COMPETITION_SCHEDULE.gameMinutes
-export const DUO_BREAK_MINUTES = COMPETITION_SCHEDULE.breakMinutes
 export const DUO_LEAGUE_WEEKS = 6
 
 export const SINGLES_COMPETITION = {
@@ -155,20 +151,6 @@ export function presetRuleChips(
   return chips
 }
 
-export function fittedAmericanoSchedule(
-  _mode: CompetitionPlayerMode,
-  gameCount?: number,
-  eventMinutes = DEFAULT_COMPETITION_EVENT_MINUTES,
-) {
-  const games = gameCount ?? COMPETITION_SCHEDULE.games
-  return {
-    games,
-    gameMinutes: COMPETITION_SCHEDULE.gameMinutes,
-    breakMinutes: COMPETITION_SCHEDULE.breakMinutes,
-    eventMinutes,
-  }
-}
-
 export function competitionEventMinutes(
   schedule: CompetitionScheduleValues = COMPETITION_SCHEDULE,
 ): number {
@@ -184,22 +166,16 @@ export function competitionScoringConfig(
     teams?: CompetitionTeamConfig[]
     leagueId?: string
     leagueWeek?: number
-    schedule?: CompetitionScheduleValues
   },
 ): ScoringConfig {
   const preset = competitionFormatPreset(mode)
-  const schedule = extra?.schedule ?? COMPETITION_SCHEDULE
-  return mergeScheduleIntoScoringConfig({
-    ...buildAmericanoScoringConfig(preset.americanoTarget, {
-      games: schedule.games,
-      breakMinutes: schedule.breakMinutes,
-      gameMinutes: schedule.gameMinutes,
-    }),
+  return {
+    ...buildAmericanoScoringConfig(preset.americanoTarget),
     competition_player_mode: mode,
     ...(extra?.teams ? { teams: extra.teams } : {}),
     ...(extra?.leagueId ? { league_id: extra.leagueId } : {}),
     ...(extra?.leagueWeek ? { league_week: extra.leagueWeek } : {}),
-  }, schedule)
+  }
 }
 
 export function competitionSessionFields(
@@ -213,7 +189,7 @@ export function competitionSessionFields(
 ) {
   const preset = competitionFormatPreset(mode)
   const schedule = opts.schedule ?? COMPETITION_SCHEDULE
-  const scoring_config = competitionScoringConfig(mode, { schedule })
+  const scoring_config = competitionScoringConfig(mode)
   const rules =
     mode === 'duos'
       ? `Duos · ${preset.americanoTarget} games · fixed pairs · ${schedule.games} rounds`
@@ -233,6 +209,7 @@ export function competitionSessionFields(
       mode === 'duos' ? ('fixed_pairs' as const) : rulesToPartnershipMode('americano', null),
     scoring_preset: 'standard' as const,
     scoring_config,
+    ...competitionScheduleFields(schedule),
     who_can_log_matches: 'roster_members' as const,
     margin_bonus_enabled: true,
   }

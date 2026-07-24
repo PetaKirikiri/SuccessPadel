@@ -1,9 +1,5 @@
 import type { CompetitionPlayer, CompetitionSessionPair } from '../hooks/useCompetitions'
-import {
-  competitionSqlSchedule,
-  fitCompetitionScheduleToSession,
-  mergeScheduleIntoScoringConfig,
-} from './competitionLayout'
+import { resolveCompetitionSchedule } from './competitionLayout'
 import { ensureCompetitionScheduleSaved } from './persistCompetitionSchedule'
 import { supabase } from './supabaseClient'
 import type { GameSession } from './types'
@@ -46,28 +42,6 @@ function mergeCompetitionSession(
   }
 }
 
-async function saveFittedSchedule(
-  sessionId: string,
-  session: GameSession,
-  fitted: ReturnType<typeof fitCompetitionScheduleToSession>,
-): Promise<{ session: GameSession; error?: string }> {
-  let nextConfig = mergeScheduleIntoScoringConfig(session.scoring_config, {
-    games: fitted.totalGames,
-    gameMinutes: fitted.gameMinutes,
-    breakMinutes: fitted.breakMinutes,
-  })
-  if (fitted.gameCountChanged) {
-    const { schedule: _removed, schedule_version: _ver, ...rest } = nextConfig
-    nextConfig = rest
-  }
-  const { error: cfgErr } = await supabase.rpc('save_competition_scoring_config', {
-    p_session_id: sessionId,
-    p_scoring_config: nextConfig,
-  })
-  if (cfgErr) return { session, error: cfgErr.message }
-  return { session: { ...session, scoring_config: nextConfig } }
-}
-
 /** Resolve round id; start competition when still open and rounds missing. */
 export async function ensureCompetitionRoundId(
   sessionId: string,
@@ -107,96 +81,40 @@ export async function ensureCompetitionRoundId(
     return { error: 'Competition rounds not ready' }
   }
 
-  const beforeSql = competitionSqlSchedule(mergedSession)
+  const schedule = resolveCompetitionSchedule(mergedSession)
   // #region agent log
   agentDebugIngest(
     'LB',
     '② schedule check',
     {
       gameNumber,
-      durationMin: beforeSql.durationMinutes,
-      usedMin: beforeSql.usedMinutes,
-      fits: beforeSql.fits,
-      games: beforeSql.totalGames,
-      gameMin: beforeSql.gameMinutes,
-      breakMin: beforeSql.breakMinutes,
+      durationMin: schedule.eventMinutes,
+      usedMin: schedule.usedMinutes,
+      fits: schedule.fits,
+      games: schedule.totalGames,
+      gameMin: schedule.gameMinutes,
+      breakMin: schedule.breakMinutes,
     },
     'LB',
     '5d6061',
   )
   // #endregion
 
-  let sessionForStart = mergedSession
-  if (!beforeSql.fits) {
-    const fitted = fitCompetitionScheduleToSession(mergedSession)
-    if (!fitted.fits) {
-      // #region agent log
-      agentDebugIngest(
-        'LB',
-        '② round failed — schedule cannot fit window',
-        {
-          gameNumber,
-          durationMin: fitted.durationMinutes,
-          usedMin: fitted.usedMinutes,
-        },
-        'LB',
-        '5d6061',
-      )
-      // #endregion
-      return { error: 'Schedule exceeds session time' }
-    }
-    const saved = await saveFittedSchedule(sessionId, mergedSession, fitted)
-    if (saved.error) return { error: saved.error }
-    sessionForStart = saved.session
-    // #region agent log
-    agentDebugIngest(
-      'LB',
-      `② schedule fitted → ${fitted.totalGames}×${fitted.gameMinutes}min`,
-      {
-        gameNumber,
-        durationMin: fitted.durationMinutes,
-        usedMin: fitted.usedMinutes,
-        gameCountChanged: fitted.gameCountChanged,
-      },
-      'LB',
-      '5d6061',
-    )
-    // #endregion
+  if (!schedule.fits) {
+    return { error: 'Schedule exceeds session time. Update it in competition setup.' }
   }
 
   const scheduleErr = await ensureCompetitionScheduleSaved(
     sessionId,
-    sessionForStart,
+    mergedSession,
     opts.roster,
     opts.sessionPairs ?? [],
   )
   if (scheduleErr) return { error: scheduleErr }
 
-  let { error: startErr } = await supabase.rpc('start_competition', {
+  const { error: startErr } = await supabase.rpc('start_competition', {
     p_session_id: sessionId,
   })
-
-  if (startErr?.message?.includes('Schedule exceeds session time')) {
-    const retryFit = fitCompetitionScheduleToSession(sessionForStart)
-    if (retryFit.fits) {
-      const saved = await saveFittedSchedule(sessionId, sessionForStart, retryFit)
-      if (!saved.error) {
-        sessionForStart = saved.session
-        // #region agent log
-        agentDebugIngest(
-          'LB',
-          `② schedule retry → ${retryFit.totalGames}×${retryFit.gameMinutes}min`,
-          { gameNumber, usedMin: retryFit.usedMinutes },
-          'LB',
-          '5d6061',
-        )
-        // #endregion
-        ;({ error: startErr } = await supabase.rpc('start_competition', {
-          p_session_id: sessionId,
-        }))
-      }
-    }
-  }
 
   if (startErr) {
     // #region agent log

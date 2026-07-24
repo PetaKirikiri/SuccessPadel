@@ -9,13 +9,25 @@ import {
 import type { GameSession, ScoringConfig } from './types'
 import {
   COMPETITION_SCHEDULE,
+  competitionScheduleFromSession,
   competitionCanonicalEventMinutes,
+  totalScheduleMinutes,
 } from './competitionScheduleLayout'
 
 export const PLAYERS_PER_COURT = 4
 export const TEAMS_PER_COURT = 2
 export const COURT_COUNT_OPTIONS = [1, 2, 3, 4] as const
 export type CourtCount = (typeof COURT_COUNT_OPTIONS)[number]
+type CompetitionScheduleSession = Pick<
+  GameSession,
+  'starts_at' | 'ends_at' | 'scoring_config' | 'target_players' | 'max_players'
+> &
+  Partial<
+    Pick<
+      GameSession,
+      'schedule_game_count' | 'schedule_game_minutes' | 'schedule_break_minutes'
+    >
+  >
 
 export function playersFromCourtCount(courts: number): number {
   return Math.max(1, Math.min(4, courts)) * PLAYERS_PER_COURT
@@ -43,15 +55,6 @@ export function courtCountFromPlayers(players: number): CourtCount {
 
 export const DEFAULT_SINGLES_COURT_COUNT: CourtCount = 4
 export const DEFAULT_DUO_COURT_COUNT: CourtCount = 3
-export const DEFAULT_AMERICANO_GAMES = 6
-export const AMERICANO_GAME_COUNTS = [5, 6, 7, 8, 9, 10, 11] as const
-export const BREAK_MINUTE_OPTIONS = [2, 3, 4, 5] as const
-export const DEFAULT_BREAK_MINUTES = 4
-export const DEFAULT_GAME_MINUTES = 15
-/** Historical default for legacy sessions that do not have an explicit end window. */
-export const AMERICANO_SCHEDULE_LEAD_IN_MINUTES = 10
-export const COMPETITION_BREAK_MINUTES = DEFAULT_BREAK_MINUTES
-
 export type CompetitionPlayStartMinute = number
 
 export type CompetitionStartSlot = {
@@ -107,16 +110,12 @@ export function competitionStartsAtAnchorIso(
 
 export function competitionPlayStartFromAnchorIso(
   iso: string,
-  _leadInMinutes = AMERICANO_SCHEDULE_LEAD_IN_MINUTES,
 ): Date {
   return new Date(iso)
 }
 
 export function competitionPlayStartFromSession(
-  session: Pick<
-    GameSession,
-    'starts_at' | 'ends_at' | 'scoring_config' | 'target_players' | 'max_players'
-  >,
+  session: CompetitionScheduleSession,
 ): Date {
   const playStartsAt = resolveCompetitionSchedule(session).playStartsAt
   return playStartsAt ?? new Date()
@@ -124,10 +123,7 @@ export function competitionPlayStartFromSession(
 
 /** ISO timestamp for first game slot — matches invite card playStartsAt, not raw anchor. */
 export function competitionPlayStartIso(
-  session: Pick<
-    GameSession,
-    'starts_at' | 'ends_at' | 'scoring_config' | 'target_players' | 'max_players'
-  > | null,
+  session: CompetitionScheduleSession | null,
 ): string | undefined {
   if (!session?.starts_at) return undefined
   const { playStartsAt } = resolveCompetitionSchedule(session)
@@ -158,16 +154,14 @@ export function eventMinutesForSession(
 
 /** Single source of truth — invite badges, play times, and boards all use this. */
 export function resolveCompetitionSchedule(
-  session: Pick<
-    GameSession,
-    'starts_at' | 'ends_at' | 'scoring_config' | 'target_players' | 'max_players'
-  > | null,
+  session: CompetitionScheduleSession | null,
 ): ResolvedCompetitionSchedule {
   const eventMinutes =
     eventMinutesForSession(session) || competitionCanonicalEventMinutes()
-  const totalGames = americanoGamesFromConfig(session?.scoring_config)
-  const breakMinutes = breakMinutesFromConfig(session?.scoring_config)
-  const gameMinutes = gameMinutesFromConfig(session?.scoring_config, 0, totalGames, breakMinutes)
+  const persisted = competitionScheduleFromSession(session)
+  const totalGames = persisted.games
+  const breakMinutes = persisted.breakMinutes
+  const gameMinutes = persisted.gameMinutes
 
   const anchorStartsAt = session?.starts_at ? new Date(session.starts_at) : null
 
@@ -214,225 +208,8 @@ export function resolveCompetitionSchedule(
   }
 }
 
-export type ScheduleSlot = {
-  gameNumber: number
-  startsAt: Date
-  endsAt: Date
-  breakMinutesAfter: number
-}
-
-export type SchedulePlan = {
-  slots: ScheduleSlot[]
-  usedMinutes: number
-  bufferMinutes: number
-  fits: boolean
-  finishAt: Date | null
-}
-
-export function americanoGamesFromConfig(config: ScoringConfig | null | undefined): number {
-  const n = config?.americano_games
-  if (typeof n === 'number' && n >= 4 && n <= 16) return Math.floor(n)
-  return COMPETITION_SCHEDULE.games
-}
-
-export function breakMinutesFromConfig(config: ScoringConfig | null | undefined): number {
-  const n = config?.break_minutes
-  if (typeof n === 'number' && n >= 0 && n <= 15) return Math.floor(n)
-  return COMPETITION_SCHEDULE.breakMinutes
-}
-
-export function gameMinutesFromConfig(
-  config: ScoringConfig | null | undefined,
-  eventMinutes = 0,
-  totalGames: number = COMPETITION_SCHEDULE.games,
-  breakMinutes: number = COMPETITION_SCHEDULE.breakMinutes,
-): number {
-  const stored = config?.game_minutes
-  if (typeof stored === 'number' && stored >= 1 && stored <= 60) return Math.floor(stored)
-  if (eventMinutes > 0 && totalGames > 0) {
-    return gameDurationForEvent(eventMinutes, totalGames, breakMinutes)
-  }
-  return COMPETITION_SCHEDULE.gameMinutes
-}
-
-export { mergeScheduleIntoScoringConfig, scoringConfigHasCanonicalSchedule } from './competitionScheduleLayout'
-
-export function totalScheduleMinutes(
-  totalGames: number,
-  gameMinutes: number,
-  breakMinutes: number,
-): number {
-  if (totalGames <= 0 || gameMinutes <= 0) return 0
-  return totalGames * gameMinutes + Math.max(0, totalGames - 1) * breakMinutes
-}
-
-export type FittedCompetitionSchedule = {
-  totalGames: number
-  gameMinutes: number
-  breakMinutes: number
-  durationMinutes: number
-  usedMinutes: number
-  fits: boolean
-  changed: boolean
-  gameCountChanged: boolean
-}
-
-type SessionForSqlSchedule = Pick<
-  GameSession,
-  'starts_at' | 'ends_at' | 'scoring_config' | 'partnership_mode' | 'rules'
->
-
-/** Mirror start_competition schedule validation (SQL defaults: break=3, games=7). */
-export function competitionSqlSchedule(
-  session: SessionForSqlSchedule,
-): Omit<FittedCompetitionSchedule, 'changed' | 'gameCountChanged'> {
-  const durationMinutes =
-    session.starts_at && session.ends_at
-      ? eventDurationMinutes(session.starts_at, session.ends_at)
-      : 0
-
-  const playerMode = session.scoring_config?.competition_player_mode ?? 'singles'
-  const isScored =
-    playerMode === 'duos' ||
-    session.partnership_mode === 'americano' ||
-    (session.rules ?? '').toLowerCase().includes('americano')
-
-  const breakMinutes = Math.max(0, Number(session.scoring_config?.break_minutes) || 3)
-  let totalGames = Math.max(1, Number(session.scoring_config?.americano_games) || 7)
-  let gameMinutes = Number(session.scoring_config?.game_minutes) || 0
-
-  if (!isScored) {
-    gameMinutes = 15
-    const slotMin = gameMinutes + breakMinutes
-    totalGames =
-      durationMinutes > 0 && slotMin > 0
-        ? Math.max(1, Math.floor((durationMinutes + breakMinutes) / slotMin))
-        : totalGames
-  } else if (gameMinutes < 1) {
-    gameMinutes =
-      durationMinutes > 0 && totalGames > 0
-        ? Math.max(1, Math.floor(durationMinutes / totalGames - breakMinutes))
-        : 1
-  }
-
-  const usedMinutes = totalScheduleMinutes(totalGames, gameMinutes, breakMinutes)
-  const sqlBudget = durationMinutes > 0 ? Math.max(1, Math.floor(durationMinutes)) : 0
-  const fits = sqlBudget > 0 && usedMinutes <= sqlBudget
-  return { totalGames, gameMinutes, breakMinutes, durationMinutes, usedMinutes, fits }
-}
-
-/** Shrink game length (then round count) so start_competition passes session-time validation. */
-export function fitCompetitionScheduleToSession(
-  session: SessionForSqlSchedule,
-): FittedCompetitionSchedule {
-  const current = competitionSqlSchedule(session)
-  if (current.fits) {
-    return { ...current, changed: false, gameCountChanged: false }
-  }
-  if (current.durationMinutes <= 0) {
-    return { ...current, changed: false, gameCountChanged: false, fits: false }
-  }
-
-  const { breakMinutes, durationMinutes } = current
-  const requestedGames = current.totalGames
-  const budgetMinutes = Math.max(1, Math.floor(durationMinutes))
-
-  const fittedMinutes = gameDurationForEvent(budgetMinutes, requestedGames, breakMinutes)
-  const fittedUsed = totalScheduleMinutes(requestedGames, fittedMinutes, breakMinutes)
-  if (fittedUsed <= budgetMinutes) {
-    return {
-      totalGames: requestedGames,
-      gameMinutes: fittedMinutes,
-      breakMinutes,
-      durationMinutes,
-      usedMinutes: fittedUsed,
-      fits: true,
-      changed:
-        fittedMinutes !== current.gameMinutes || fittedUsed !== current.usedMinutes,
-      gameCountChanged: false,
-    }
-  }
-
-  for (let games = requestedGames - 1; games >= 1; games -= 1) {
-    const gm = gameDurationForEvent(budgetMinutes, games, breakMinutes)
-    const used = totalScheduleMinutes(games, gm, breakMinutes)
-    if (used <= budgetMinutes) {
-      return {
-        totalGames: games,
-        gameMinutes: gm,
-        breakMinutes,
-        durationMinutes,
-        usedMinutes: used,
-        fits: true,
-        changed: true,
-        gameCountChanged: games !== requestedGames,
-      }
-    }
-  }
-
-  return { ...current, changed: false, gameCountChanged: false, fits: false }
-}
-
-export function americanoScheduleUsedMinutes(
-  totalGames: number,
-  gameMinutes: number,
-  breakMinutes: number,
-  eventMinutes?: number,
-): number {
-  const playBlock = totalScheduleMinutes(totalGames, gameMinutes, breakMinutes)
-  const leadIn =
-    eventMinutes != null && eventMinutes > 0
-      ? scheduleLeadInMinutes(eventMinutes, totalGames, gameMinutes, breakMinutes)
-      : COMPETITION_SCHEDULE.leadInMinutes
-  return leadIn + playBlock
-}
-
-export function planAmericanoSchedule(
-  eventStartsAt: string,
-  totalGames: number,
-  gameMinutes: number,
-  breakMinutes: number,
-  eventMinutes: number,
-): SchedulePlan {
-  const leadInMinutes = scheduleLeadInMinutes(eventMinutes, totalGames, gameMinutes, breakMinutes)
-  const playBlock = totalScheduleMinutes(totalGames, gameMinutes, breakMinutes)
-  const usedMinutes = leadInMinutes + playBlock
-  const fits = usedMinutes <= eventMinutes
-  const slots: ScheduleSlot[] = []
-  const eventStart = new Date(eventStartsAt)
-  const slotOpts = { eventMinutes, totalGames }
-
-  for (let g = 1; g <= totalGames; g++) {
-    const { startsAt, endsAt } = gameSlotTimes(
-      eventStartsAt,
-      g,
-      gameMinutes,
-      breakMinutes,
-      slotOpts,
-    )
-    slots.push({
-      gameNumber: g,
-      startsAt,
-      endsAt,
-      breakMinutesAfter: g < totalGames ? breakMinutes : 0,
-    })
-  }
-
-  const last = slots[slots.length - 1]
-  return {
-    slots,
-    usedMinutes,
-    bufferMinutes: Math.max(0, eventMinutes - usedMinutes),
-    fits,
-    finishAt: last?.endsAt ?? eventStart,
-  }
-}
-
 export function americanoScheduleFromSession(
-  session: Pick<
-    GameSession,
-    'starts_at' | 'ends_at' | 'scoring_config' | 'target_players' | 'max_players'
-  > | null,
+  session: CompetitionScheduleSession | null,
 ): {
   totalGames: number
   breakMinutes: number
@@ -470,17 +247,6 @@ export function eventDurationMinutes(startsAt: string, endsAt: string): number {
   return Math.max(0, (new Date(endsAt).getTime() - new Date(startsAt).getTime()) / 60000)
 }
 
-export function gameDurationForEvent(
-  eventMinutes: number,
-  totalGames: number,
-  breakMinutes = COMPETITION_BREAK_MINUTES,
-): number {
-  if (totalGames <= 0 || eventMinutes <= 0) return 0
-  const playMinutes = Math.max(0, eventMinutes)
-  const breakTotal = Math.max(0, totalGames - 1) * breakMinutes
-  return Math.max(1, Math.floor((playMinutes - breakTotal) / totalGames))
-}
-
 export function scheduleLeadInMinutes(
   _eventMinutes: number,
   _totalGames: number,
@@ -488,15 +254,6 @@ export function scheduleLeadInMinutes(
   _breakMinutes: number,
 ): number {
   return 0
-}
-
-export function resolvedGameMinutes(
-  config: ScoringConfig | null | undefined,
-  eventMinutes: number,
-  totalGames: number,
-  breakMinutes: number,
-): number {
-  return gameMinutesFromConfig(config, eventMinutes, totalGames, breakMinutes)
 }
 
 export type GameSlotOpts = {
@@ -522,7 +279,7 @@ export function gameSlotTimes(
   eventStartsAt: string,
   gameNumber: number,
   gameMinutes: number,
-  breakMinutes = COMPETITION_BREAK_MINUTES,
+  breakMinutes: number = COMPETITION_SCHEDULE.breakMinutes,
   _opts?: GameSlotOpts,
 ): { startsAt: Date; endsAt: Date } {
   const offsetMin = (gameNumber - 1) * (gameMinutes + breakMinutes)
@@ -533,19 +290,29 @@ export function gameSlotTimes(
 
 /** Display + countdown times — always from canonical schedule, not DB round rows. */
 export function competitionRoundTimesByGame(
-  session: Pick<
-    GameSession,
-    'starts_at' | 'ends_at' | 'scoring_config' | 'target_players' | 'max_players'
-  > | null,
+  session: CompetitionScheduleSession | null,
   gameCount?: number,
+  savedRounds: readonly {
+    round_number: number
+    starts_at: string
+    ends_at: string
+  }[] = [],
 ): Map<number, { startsAt: number; endsAt: number }> {
   const map = new Map<number, { startsAt: number; endsAt: number }>()
+  for (const round of savedRounds) {
+    const startsAt = new Date(round.starts_at).getTime()
+    const endsAt = new Date(round.ends_at).getTime()
+    if (Number.isFinite(startsAt) && Number.isFinite(endsAt) && endsAt > startsAt) {
+      map.set(round.round_number, { startsAt, endsAt })
+    }
+  }
   const playStartIso = competitionPlayStartIso(session)
   if (!playStartIso) return map
   const schedule = resolveCompetitionSchedule(session)
   const count = gameCount ?? schedule.totalGames
   const slotOpts = gameSlotOptsFromSchedule(schedule)
   for (let g = 1; g <= count; g++) {
+    if (map.has(g)) continue
     const slot = gameSlotTimes(
       playStartIso,
       g,
@@ -614,17 +381,6 @@ export function competitionFocusGameNumber(
   }
 
   return dbActive ?? sorted[sorted.length - 1]
-}
-
-export function eventScheduleSummary(
-  startsAt: string,
-  endsAt: string,
-  totalGames: number,
-  breakMinutes = COMPETITION_BREAK_MINUTES,
-): string {
-  const eventMinutes = Math.round(eventDurationMinutes(startsAt, endsAt))
-  const gameMinutes = gameDurationForEvent(eventMinutes, totalGames, breakMinutes)
-  return `${totalGames} games · ${gameMinutes} min each + ${breakMinutes} min break (${eventMinutes} min event)`
 }
 
 export type CourtLayoutSlot = {

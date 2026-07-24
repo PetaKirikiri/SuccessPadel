@@ -10,6 +10,7 @@
     "dev:tunnel": "npx cloudflared tunnel --url http://localhost:5173",
     "build": "tsc -b && vite build",
     "check:cycles": "npx vite-node scripts/check-cycles.mts",
+    "check:schedule": "npx vite-node scripts/check-competition-schedule.mts",
     "check:layouts": "npx vite-node scripts/check-layouts.mts",
     "audit:tsx-css": "npx vite-node scripts/audit-tsx-css.mts",
     "check:tsx-css": "npx vite-node scripts/audit-tsx-css.mts --strict",

@@ -5,7 +5,6 @@ import type { TranslateFn } from '../../i18n'
 import type { AmericanoScoringUnit } from '../../lib/competitionPresets'
 import { formatGameTimeLabel, pivotScheduleByGame, type CourtColumn } from '../../lib/competitionCourtBoard'
 import { playTwoMinuteAlarm, TWO_MINUTES_MS } from '../../lib/gameCountdownAlarm'
-import { RANKED_GAME_MINUTES } from '../../lib/rankedSchedule'
 import {
   competitionFocusGameNumber,
   isGameSlotInBreakAfter,
@@ -52,7 +51,7 @@ type Props = {
   onSubmitFriendlyScores?: (entries: FriendlyCourtScoreSubmit[]) => Promise<void>
   onSaved?: () => void | Promise<void>
   now?: number
-  gameMinutes?: number
+  gameMinutes: number
   roundTimesByGame?: Map<number, { startsAt: number; endsAt: number }>
   roundStatusByGame?: Map<number, 'pending' | 'active' | 'complete'>
   currentUserId?: string | null
@@ -248,7 +247,7 @@ export function GameBoard({
   onSubmitFriendlyScores,
   onSaved,
   now,
-  gameMinutes = RANKED_GAME_MINUTES,
+  gameMinutes,
   roundTimesByGame,
   roundStatusByGame,
   currentUserId,
