@@ -545,6 +545,7 @@ function CourtScores({
   finished,
   compact,
   livePointScores,
+  onEditingSideChange,
   t,
 }: {
   scoreUnit: AmericanoScoringUnit
@@ -557,6 +558,7 @@ function CourtScores({
   finished?: boolean
   compact?: boolean
   livePointScores?: { scoreA: string; scoreB: string }
+  onEditingSideChange?: (side: 'a' | 'b' | null) => void
   t: TranslateFn
 }) {
   const [pickerSide, setPickerSide] = useState<'a' | 'b' | null>(null)
@@ -577,14 +579,18 @@ function CourtScores({
   const rowDividerClass = `game-card-court-score-row-divider bg-brand-border/50 ${
     compact ? 'w-px self-stretch' : 'h-full min-h-[2rem] w-px'
   }`
+  const changePickerSide = (side: 'a' | 'b' | null) => {
+    setPickerSide(side)
+    onEditingSideChange?.(side)
+  }
 
   useEffect(() => {
     if (!pickerSide) return
     const closeWhenOutside = (event: PointerEvent) => {
-      if (!scoreControlRef.current?.contains(event.target as Node)) setPickerSide(null)
+      if (!scoreControlRef.current?.contains(event.target as Node)) changePickerSide(null)
     }
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setPickerSide(null)
+      if (event.key === 'Escape') changePickerSide(null)
     }
     document.addEventListener('pointerdown', closeWhenOutside)
     document.addEventListener('keydown', closeOnEscape)
@@ -599,7 +605,7 @@ function CourtScores({
       ref={scoreControlRef}
       className="game-card-court-score-stack game-card-court-scores flex flex-col items-center gap-1"
       onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPickerSide(null)
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) changePickerSide(null)
       }}
     >
       {pickerSide ? (
@@ -626,7 +632,7 @@ function CourtScores({
                   stopCardNav(event)
                   if (pickerSide === 'a') onScoreA?.(value)
                   else onScoreB?.(value)
-                  setPickerSide(null)
+                  changePickerSide(null)
                   onGamesCommit?.()
                 }}
               >
@@ -636,6 +642,7 @@ function CourtScores({
           })}
         </div>
       ) : null}
+      {!pickerSide ? (
       <div className="game-card-court-score-row flex items-stretch justify-center gap-2">
         {livePointScores ? (
           <section
@@ -665,7 +672,7 @@ function CourtScores({
             <div className="flex items-center justify-center tabular-nums">
               <CourtScoreButton
                 value={gamesA}
-                onOpen={onScoreA ? () => setPickerSide('a') : undefined}
+                onOpen={onScoreA ? () => changePickerSide('a') : undefined}
                 disabled={disabled}
                 finished={finished}
                 active={pickerSide === 'a'}
@@ -677,7 +684,7 @@ function CourtScores({
             <div className="flex items-center justify-center tabular-nums">
               <CourtScoreButton
                 value={gamesB}
-                onOpen={onScoreB ? () => setPickerSide('b') : undefined}
+                onOpen={onScoreB ? () => changePickerSide('b') : undefined}
                 disabled={disabled}
                 finished={finished}
                 active={pickerSide === 'b'}
@@ -688,6 +695,7 @@ function CourtScores({
           </div>
         </section>
       </div>
+      ) : null}
     </div>
   )
 }
@@ -755,6 +763,7 @@ export function CourtMatchCell({
   colorNamesByGender?: boolean
   t: TranslateFn
 }) {
+  const [editingScoreSide, setEditingScoreSide] = useState<'a' | 'b' | null>(null)
   const fallbackNames = compactDisplayNames([
     teamA[0] ?? '',
     teamA[1] ?? '',
@@ -817,12 +826,17 @@ export function CourtMatchCell({
       compact ? 'min-h-16 gap-3 py-1.5' : 'min-h-11 gap-1.5 py-0.5'
     } ${finished ? 'px-0 text-brand-muted' : 'px-0 text-brand-text'}`
 
-  const nameClass = (player: CourtPlayer) => {
+  const nameClass = (player: CourtPlayer, align: 'left' | 'right') => {
     const genderColor =
       colorNamesByGender && player.gender ? GENDER_CHIP_COLORS[player.gender] : 'text-brand-text'
+    const editingClass =
+      (editingScoreSide === 'a' && align === 'left') ||
+      (editingScoreSide === 'b' && align === 'right')
+        ? ' game-card-court-player__name--score-editing'
+        : ''
     return compact
-      ? `game-card-court-player__name truncate font-extrabold leading-tight ${genderColor}`
-      : `truncate text-lg font-semibold leading-tight ${genderColor} md:text-xl`
+      ? `game-card-court-player__name truncate font-extrabold leading-tight ${genderColor}${editingClass}`
+      : `truncate text-lg font-semibold leading-tight ${genderColor} md:text-xl${editingClass}`
   }
   const avatarClass = compact
     ? 'game-card-court-player__avatar shrink-0 rounded-full object-cover ring-2 ring-brand-border/60'
@@ -837,7 +851,7 @@ export function CourtMatchCell({
         displayName={displayName}
         profileId={player.id}
         padelPlayerId={player.padelPlayerId}
-        className={nameClass(player)}
+        className={nameClass(player, align)}
       />
     )
     const avatarEl = (
@@ -931,6 +945,7 @@ export function CourtMatchCell({
       finished={finished}
       compact={compact}
       livePointScores={livePointScores}
+      onEditingSideChange={setEditingScoreSide}
       t={t}
     />
   ) : null

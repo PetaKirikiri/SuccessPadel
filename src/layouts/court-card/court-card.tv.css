@@ -117,13 +117,18 @@ html[data-viewport='tv'] .game-card-court-score-button__changing {
 }
 html[data-viewport='tv'] .game-card-court-score-button__value { line-height: 0.9; }
 html[data-viewport='tv'] .game-card-court-score-picker {
-  position: absolute; inset: 0; z-index: 20; display: grid;
+  display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: auto 1fr;
-  align-items: stretch; gap: 0.5rem; width: 100%; padding: 0.2rem;
+  align-items: stretch; gap: 0.5rem; width: 100%; height: 4.75rem;
+  box-sizing: border-box; padding: 0.2rem;
   border-radius: 0.75rem; background: rgb(var(--brand-surface) / 0.98);
   box-shadow: 0 0.5rem 1.2rem rgb(var(--brand-primary) / 0.24);
 }
 html[data-viewport='tv'] .game-card-court-score-stack { position: relative; }
+html[data-viewport='tv'] .game-card-court-player__name--score-editing {
+  padding-inline: 0.4rem; border-radius: 0.45rem; background: rgb(var(--brand-accent) / 0.3);
+  color: rgb(var(--brand-primary)) !important; box-shadow: inset 0 -3px 0 rgb(var(--brand-accent));
+}
 html[data-viewport='tv'] .game-card-court-score-picker__target {
   grid-column: 1 / -1; color: rgb(var(--brand-primary)); font-size: 0.85rem; font-weight: 900;
   line-height: 1; letter-spacing: 0.08em; text-align: center; text-transform: uppercase;
