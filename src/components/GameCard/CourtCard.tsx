@@ -602,28 +602,28 @@ function CourtScores({
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPickerSide(null)
       }}
     >
-      {onScoreA || onScoreB ? (
+      {pickerSide ? (
         <div
-          className={`game-card-court-score-picker${pickerSide ? '' : ' game-card-court-score-picker--reserved'}`}
-          role={pickerSide ? 'listbox' : undefined}
-          aria-label={pickerSide ? 'Select score' : undefined}
-          aria-hidden={pickerSide ? undefined : true}
+          className="game-card-court-score-picker"
+          role="listbox"
+          aria-label="Select score"
         >
+          <span className="game-card-court-score-picker__target">
+            Changing {pickerSide === 'a' ? gamesA : gamesB}
+          </span>
           {Array.from({ length: 7 }, (_, score) => {
             const value = String(score)
-            const selected =
-              pickerSide !== null && value === (pickerSide === 'a' ? gamesA : gamesB)
+            const selected = value === (pickerSide === 'a' ? gamesA : gamesB)
             return (
               <button
                 key={score}
                 type="button"
                 role="option"
-                tabIndex={pickerSide ? 0 : -1}
+                tabIndex={0}
                 aria-selected={selected}
                 className={`game-card-court-score-picker__option${selected ? ' game-card-court-score-picker__option--selected' : ''}`}
                 onClick={(event) => {
                   stopCardNav(event)
-                  if (!pickerSide) return
                   if (pickerSide === 'a') onScoreA?.(value)
                   else onScoreB?.(value)
                   setPickerSide(null)
