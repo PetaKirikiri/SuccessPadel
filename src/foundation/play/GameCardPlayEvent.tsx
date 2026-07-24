@@ -337,14 +337,17 @@ export function GameCardPlayEvent() {
   )
 
   const liveStandings = useMemo(() => {
+    if (manualStandings.length > 0) {
+      return enrichStandingsWithAvatars(manualStandings, leaderboard)
+    }
     if (isDuo && teams.length >= 2 && effectiveDuoStandings.length > 0) {
       return effectiveDuoStandings
     }
     if (!isDuo && effectivePlayerStandings.length > 0) {
       return effectivePlayerStandings
     }
-    if (manualStandings.length > 0) {
-      return enrichStandingsWithAvatars(manualStandings, leaderboard)
+    if (leaderboard.length > 0) {
+      return leaderboard
     }
     return enrichStandingsWithAvatars(gestureStandings, leaderboard)
   }, [
