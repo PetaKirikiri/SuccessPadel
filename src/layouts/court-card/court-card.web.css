@@ -25,13 +25,30 @@
   }
 
   html[data-viewport='web'] .game-card-court-team-label {
-    display: -webkit-box;
-    overflow: hidden;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    white-space: normal;
-    font-size: clamp(0.72rem, calc(var(--court-ui-scale, 1) * 0.34rem + 3cqh), 2rem);
-    line-height: 1.05;
+    display: none;
+  }
+
+  html[data-viewport='web'] .game-card-court-match--sides:has(.game-card-court-team-label-slot) {
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+  }
+
+  html[data-viewport='web'] .game-card-court-match--sides
+    > .game-card-court-match__side:has(.game-card-court-team-label-slot) {
+    display: none;
+  }
+
+  html[data-viewport='web'] .game-card-court-match--sides
+    > .game-card-court-match__side:nth-of-type(3),
+  html[data-viewport='web'] .game-card-court-match--sides
+    > .game-card-court-match__side:nth-of-type(4) {
+    grid-row: 1;
+  }
+
+  html[data-viewport='web'] .game-card-court-match--sides
+    > .game-card-court-match__side:nth-of-type(5),
+  html[data-viewport='web'] .game-card-court-match--sides
+    > .game-card-court-match__side:nth-of-type(6) {
+    grid-row: 2;
   }
 
   html[data-viewport='web'] .game-card-court-player__name {

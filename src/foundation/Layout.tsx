@@ -12,9 +12,12 @@ export function Layout() {
   const onPlayerProfile = loc.pathname.startsWith('/players/')
   const isGamesHub = loc.pathname === '/friendly' || loc.pathname === '/competitive'
   const isPlaySession = isPlaySessionPath(loc.pathname)
+  const isCompetitionSetup =
+    loc.pathname === '/competitions/new' ||
+    /^\/competitions\/[^/]+\/edit$/.test(loc.pathname)
   const isGestureRoute = isGesturePadRoute(loc.pathname)
   const showBottomNav = hasAppBottomNav(loc.pathname)
-  const needsFillViewport = isGamesHub || isPlaySession
+  const needsFillViewport = isGamesHub || isPlaySession || isCompetitionSetup
 
   if (isGestureRoute) {
     return <Outlet />

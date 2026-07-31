@@ -943,7 +943,7 @@ export function CompetitionForm() {
 
   return (
     <form
-      className="w-full space-y-3 pb-[calc(var(--app-shell-dock-height)+2rem)]"
+      className="competition-setup-form w-full space-y-3 pb-[calc(var(--app-shell-dock-height)+2rem)]"
       onSubmit={(e) => {
         e.preventDefault()
         void save()
@@ -1112,7 +1112,7 @@ export function CompetitionForm() {
         <button
           type="submit"
           disabled={saveDisabled}
-          className="brand-btn w-full py-2.5 text-sm font-semibold disabled:opacity-50"
+          className="competition-setup-submit brand-btn w-full py-2.5 text-sm font-semibold disabled:opacity-50"
         >
           {busy
             ? 'Saving…'

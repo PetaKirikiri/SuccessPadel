@@ -5,8 +5,35 @@
   min-width: 0;
 }
 
+.competition-setup-form {
+  min-height: 0;
+  flex: 1 1 0%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
 html[data-viewport='mobile'] .settings-card {
   padding: 1rem;
+}
+
+html[data-viewport='mobile'] .shell-main:has(.competition-setup-form) {
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+html[data-viewport='mobile'] .competition-setup-submit {
+  position: fixed;
+  z-index: 40;
+  right: max(0.75rem, env(safe-area-inset-right, 0px));
+  bottom: calc(var(--app-shell-dock-height) + 0.5rem);
+  left: max(0.75rem, env(safe-area-inset-left, 0px));
+  width: auto;
 }
 
 html[data-viewport='web'] .settings-card {
