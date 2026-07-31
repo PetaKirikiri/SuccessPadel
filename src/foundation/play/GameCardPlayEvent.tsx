@@ -97,6 +97,7 @@ export function GameCardPlayEvent() {
     searchParams.get('view') === 'leaderboard' ? 'leaderboard' : 'games',
   )
   const autoStartAttemptedRef = useRef<string | null>(null)
+  const scheduleMigrationAttemptedRef = useRef<string | null>(null)
   const competitionScoreSaveQueueRef = useRef(new Map<string, Promise<void>>())
   const [, setTvGameNumber] = useState<number | undefined>(undefined)
   const [manualCourtScores, setManualCourtScores] = useState<Map<string, ManualCourtScore>>(
@@ -557,6 +558,41 @@ export function GameCardPlayEvent() {
       if (!startErr) void refresh(true)
     })()
   }, [isAdmin, id, session, roster, sessionPairs, started, loading, refresh])
+
+  useEffect(() => {
+    if (!isAdmin || !id || !session || !started || !isDuo || loading) return
+    const storedVersion = Number(session.scoring_config?.schedule_version ?? 0)
+
+    const hasRecordedResults =
+      rounds.some((round) => round.status === 'complete') ||
+      courtMatches.some((match) => Boolean(match.score_summary?.trim()))
+    if (hasRecordedResults) return
+
+    const migrationKey = `${id}:${storedVersion}`
+    if (scheduleMigrationAttemptedRef.current === migrationKey) return
+    scheduleMigrationAttemptedRef.current = migrationKey
+
+    void (async () => {
+      const scheduleErr = await ensureCompetitionScheduleSaved(id, session, roster, sessionPairs)
+      if (scheduleErr) return
+      const { error: rebuildErr } = await supabase.rpc('rebuild_competition_schedule', {
+        p_session_id: id,
+      })
+      if (!rebuildErr) await refresh(true)
+    })()
+  }, [
+    courtMatches,
+    id,
+    isAdmin,
+    isDuo,
+    loading,
+    refresh,
+    roster,
+    rounds,
+    session,
+    sessionPairs,
+    started,
+  ])
 
   const standings = liveStandings
   const complete = isCompetitionComplete(session, rounds, courtMatches)

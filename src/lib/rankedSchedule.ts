@@ -91,7 +91,7 @@ export function targetPlayerCount(
 }
 
 /** Bump when schedule logic changes — logged for debug. */
-export const RANKED_SCHEDULE_VERSION = 10
+export const RANKED_SCHEDULE_VERSION = 11
 
 export type StoredScheduleMatch = {
   court: number

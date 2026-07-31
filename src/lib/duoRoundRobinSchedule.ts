@@ -25,7 +25,10 @@ export function duoRoundRobinRounds(teamCount: number): number[][][] {
     rounds.push(round)
     rotating = [rotating[rotating.length - 1], ...rotating.slice(0, -1)]
   }
-  return rounds
+  // Seeded teams should meet their nearest-ranked opponents first. For the
+  // default six-round, eight-team format this gives Team 1 opponents 2–7 and
+  // deliberately leaves out the widest mismatch, Team 1 vs Team 8.
+  return rounds.reverse()
 }
 
 function rematchRound(priorRounds: number[][][], teamCount: number, seed: number): number[][] {

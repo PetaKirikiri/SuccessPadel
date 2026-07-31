@@ -36,6 +36,8 @@ async function sourceFiles(dir: string): Promise<string[]> {
 
 const schedule = await load(centralFile)
 const layout = await load('src/lib/competitionLayout.ts')
+const duoSchedule = await load('src/lib/duoRoundRobinSchedule.ts')
+const rankedSchedule = await load('src/lib/rankedSchedule.ts')
 const defaults = schedule.COMPETITION_SCHEDULE
 const expectedMinutes = 6 * 15 + 5 * 4
 
@@ -46,6 +48,21 @@ if (
   schedule.totalScheduleMinutes(6, 15, 4) !== expectedMinutes
 ) {
   throw new Error('Competition schedule contract must remain 6×15 min + 5×4 min = 110 min')
+}
+
+const duoRounds = duoSchedule.duoRoundRobinRounds(8) as number[][][]
+const teamOneOpponents = duoRounds.slice(0, 6).map((round) => {
+  const match = round.find(([a, b]) => a === 0 || b === 0)
+  if (!match) throw new Error('Every duo round must include Team 1')
+  return (match[0] === 0 ? match[1] : match[0]) + 1
+})
+if (teamOneOpponents.join(',') !== '2,3,4,5,6,7') {
+  throw new Error(
+    `Six-round duo schedule must give Team 1 opponents 2–7, got ${teamOneOpponents.join(',')}`,
+  )
+}
+if (rankedSchedule.RANKED_SCHEDULE_VERSION < 11) {
+  throw new Error('Reversed duo round order requires schedule version 11 or newer')
 }
 
 const canonicalSession = {

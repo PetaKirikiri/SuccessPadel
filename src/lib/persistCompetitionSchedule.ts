@@ -83,14 +83,15 @@ export async function ensureCompetitionScheduleSaved(
     return 'Competition schedule is missing. Save competition setup again.'
   }
 
-  const stored = storedScheduleFromConfig(session.scoring_config)
-  if (stored.length > 0) return null
-
-  const seed = scheduleSeedFromSession(session.scoring_config)
   const ranked = sortRosterByRank(roster)
   const { totalGames } = americanoScheduleFromSession(session)
   const baseConfig = session.scoring_config ?? {}
   const isDuo = isDuoCompetition(session)
+  const stored = storedScheduleFromConfig(session.scoring_config)
+  const storedVersion = Number(session.scoring_config?.schedule_version ?? 0)
+  if (stored.length > 0 && (!isDuo || storedVersion >= RANKED_SCHEDULE_VERSION)) return null
+
+  const seed = scheduleSeedFromSession(session.scoring_config)
   const slotCount = targetPlayerCount(session, ranked.length, isDuo)
 
   if (slotCount < 4 || slotCount % 4 !== 0) {
