@@ -107,6 +107,7 @@ export type GameCardProps = {
   canEdit?: boolean
   tvNav?: TvGameNav
   onBack?: () => void
+  editHref?: string
   viewAlongUrl?: string | null
   leaderboardBody?: ReactNode
   activePanel?: GameCardPanel

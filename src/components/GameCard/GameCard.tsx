@@ -109,6 +109,7 @@ export function GameCard(props: GameCardInputProps) {
     canEdit = false,
     tvNav,
     onBack,
+    editHref,
     viewAlongUrl,
     leaderboardBody,
     activePanel = 'game',
@@ -188,6 +189,7 @@ export function GameCard(props: GameCardInputProps) {
       size={size}
       tvNav={tvNav}
       onBack={onBack}
+      editHref={editHref}
       viewAlongUrl={viewAlongUrl}
       gestureScoreHref={gestureScoreHref}
       onLeaderboardToggle={

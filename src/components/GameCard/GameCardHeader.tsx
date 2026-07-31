@@ -1,6 +1,6 @@
 import QRCode from 'qrcode'
 import { useEffect, useState } from 'react'
-import { CircleDot } from 'lucide-react'
+import { CircleDot, Pencil } from 'lucide-react'
 import type { TranslateFn } from '../../i18n'
 import type { GameCardSize } from '../../lib/viewBreakpoints'
 import { useTranslation } from '../../hooks/useTranslation'
@@ -148,6 +148,28 @@ function GameCardGestureScoreButton({
   )
 }
 
+function GameCardEditButton({
+  href,
+  ariaLabel,
+  finished = false,
+}: {
+  href: string
+  ariaLabel: string
+  finished?: boolean
+}) {
+  return (
+    <a
+      href={href}
+      onClick={(e) => e.stopPropagation()}
+      aria-label={ariaLabel}
+      className="game-card-header-score-btn"
+      data-finished={finished || undefined}
+    >
+      <Pencil className="game-card-header-score-icon" aria-hidden />
+    </a>
+  )
+}
+
 function GameCardGameNavButton({
   direction,
   onClick,
@@ -193,6 +215,7 @@ export function GameCardHeader({
   size,
   tvNav,
   onBack,
+  editHref,
   viewAlongUrl,
   gestureScoreHref,
   onLeaderboardToggle,
@@ -210,6 +233,7 @@ export function GameCardHeader({
   size: GameCardSize
   tvNav?: TvGameNav
   onBack?: () => void
+  editHref?: string
   viewAlongUrl?: string | null
   gestureScoreHref?: string
   onLeaderboardToggle?: () => void
@@ -323,6 +347,13 @@ export function GameCardHeader({
                 finished={finished}
               />
             ) : null}
+            {editHref ? (
+              <GameCardEditButton
+                href={editHref}
+                ariaLabel={t('competition.edit')}
+                finished={finished}
+              />
+            ) : null}
             {onLeaderboardToggle ? (
               <GameCardLeaderboardButton
                 active={leaderboardActive}
@@ -401,6 +432,13 @@ export function GameCardHeader({
           <GameCardGestureScoreButton
             href={gestureScoreHref}
             ariaLabel="Open gesture score tracker"
+            finished={finished}
+          />
+        ) : null}
+        {editHref ? (
+          <GameCardEditButton
+            href={editHref}
+            ariaLabel={t('competition.edit')}
             finished={finished}
           />
         ) : null}

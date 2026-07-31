@@ -253,7 +253,7 @@ export function GameBoard({
   currentUserId,
   currentUserDisplayName,
   currentUserAvatarUrl,
-  isAdmin: _isAdmin = false,
+  isAdmin = false,
   liveCourtScores,
   liveCourtFeeds,
   onGestureGamesSynced,
@@ -497,6 +497,7 @@ export function GameBoard({
         canEdit={canEditCourtCardScores}
         tvNav={tvNav}
         onBack={onTvBack}
+        editHref={isAdmin && competitionId ? `/competitions/${competitionId}/edit` : undefined}
         viewAlongUrl={viewAlongUrl}
         leaderboardBody={leaderboardBody}
         activePanel={activePanel}
