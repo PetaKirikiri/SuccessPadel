@@ -39,15 +39,15 @@ const layout = await load('src/lib/competitionLayout.ts')
 const duoSchedule = await load('src/lib/duoRoundRobinSchedule.ts')
 const rankedSchedule = await load('src/lib/rankedSchedule.ts')
 const defaults = schedule.COMPETITION_SCHEDULE
-const expectedMinutes = 6 * 15 + 5 * 4
+const expectedMinutes = 6 * 14 + 5 * 4
 
 if (
   defaults.games !== 6 ||
-  defaults.gameMinutes !== 15 ||
+  defaults.gameMinutes !== 14 ||
   defaults.breakMinutes !== 4 ||
-  schedule.totalScheduleMinutes(6, 15, 4) !== expectedMinutes
+  schedule.totalScheduleMinutes(6, 14, 4) !== expectedMinutes
 ) {
-  throw new Error('Competition schedule contract must remain 6×15 min + 5×4 min = 110 min')
+  throw new Error('Competition schedule contract must remain 6×14 min + 5×4 min = 104 min')
 }
 
 const duoRounds = duoSchedule.duoRoundRobinRounds(8) as number[][][]
@@ -70,7 +70,7 @@ const canonicalSession = {
   ends_at: '2026-07-24T13:00:00.000Z',
   scoring_config: {},
   schedule_game_count: 6,
-  schedule_game_minutes: 15,
+  schedule_game_minutes: 14,
   schedule_break_minutes: 4,
   target_players: 16,
   max_players: 16,
@@ -78,9 +78,9 @@ const canonicalSession = {
 const planned = layout.competitionRoundTimesByGame(canonicalSession, 6)
 if (
   planned.get(1)?.startsAt !== Date.parse('2026-07-24T11:10:00.000Z') ||
-  planned.get(6)?.endsAt !== Date.parse('2026-07-24T13:00:00.000Z')
+  planned.get(6)?.endsAt !== Date.parse('2026-07-24T12:54:00.000Z')
 ) {
-  throw new Error('Canonical 18:10–20:00 schedule does not finish exactly at 20:00')
+  throw new Error('Canonical six-round schedule must run 18:10–19:54')
 }
 
 const savedRounds = [

@@ -12,6 +12,7 @@ export type TvGameNav = {
 type Props = {
   gameNumbers: number[]
   activeGameNumber?: number
+  autoFollowActiveGame?: boolean
   renderGame: (gameNumber: number, nav: TvGameNav) => ReactNode
   onGameChange?: (gameNumber: number) => void
   className?: string
@@ -23,12 +24,12 @@ const SWIPE_THRESHOLD_PX = 48
 export function TvGameCarousel({
   gameNumbers,
   activeGameNumber,
+  autoFollowActiveGame = false,
   renderGame,
   onGameChange,
   className = '',
 }: Props) {
   const [index, setIndex] = useState(0)
-  const userNavigatedRef = useRef(false)
   const initializedRef = useRef(false)
   const touchStartXRef = useRef<number | null>(null)
 
@@ -36,25 +37,19 @@ export function TvGameCarousel({
     if (activeGameNumber == null || gameNumbers.length === 0) return
     const activeIdx = gameNumbers.indexOf(activeGameNumber)
     if (activeIdx < 0) return
-
     if (!initializedRef.current) {
       setIndex(activeIdx)
       initializedRef.current = true
       return
     }
-
-    if (!userNavigatedRef.current) {
-      setIndex(activeIdx)
-    }
-  }, [activeGameNumber, gameNumbers.length])
+    if (autoFollowActiveGame) setIndex(activeIdx)
+  }, [activeGameNumber, autoFollowActiveGame, gameNumbers.length])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft') {
-        userNavigatedRef.current = true
         setIndex((i) => Math.max(0, i - 1))
       } else if (e.key === 'ArrowRight') {
-        userNavigatedRef.current = true
         setIndex((i) => Math.min(gameNumbers.length - 1, i + 1))
       }
     }
@@ -67,11 +62,9 @@ export function TvGameCarousel({
   const atEnd = index >= gameNumbers.length - 1
   const nav: TvGameNav = {
     onPrev: () => {
-      userNavigatedRef.current = true
       setIndex((i) => Math.max(0, i - 1))
     },
     onNext: () => {
-      userNavigatedRef.current = true
       setIndex((i) => Math.min(gameNumbers.length - 1, i + 1))
     },
     atStart,
@@ -96,7 +89,6 @@ export function TvGameCarousel({
     if (endX == null) return
     const delta = endX - startX
     if (Math.abs(delta) < SWIPE_THRESHOLD_PX) return
-    userNavigatedRef.current = true
     if (delta < 0) nav.onNext()
     else nav.onPrev()
   }

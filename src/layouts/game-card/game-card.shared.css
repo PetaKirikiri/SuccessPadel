@@ -45,3 +45,22 @@
   height: 1rem;
   stroke-width: 3;
 }
+
+.game-card-header-timer {
+  --game-card-timer-color: #ef4444;
+  --game-card-timer-label-color: #fecaca;
+}
+
+.game-card-header-timer[data-live='true'] {
+  --game-card-timer-color: #22c55e;
+  --game-card-timer-label-color: #bbf7d0;
+}
+
+.game-card-header-timer__label {
+  color: var(--game-card-timer-label-color);
+}
+
+.game-card-header-timer__value {
+  color: var(--game-card-timer-color);
+  text-shadow: 0 1px 8px rgb(0 0 0 / 0.2);
+}

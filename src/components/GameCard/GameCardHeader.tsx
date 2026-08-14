@@ -257,18 +257,22 @@ export function GameCardHeader({
   }`
 
   const countdownBlock = countdown ? (
-    <div className={`shrink-0 text-right ${tv ? 'px-3 py-1' : ''}`} aria-live="polite">
+    <div
+      className={`game-card-header-timer shrink-0 text-right ${tv ? 'px-3 py-1' : ''}`}
+      data-live={isLiveNow ? 'true' : 'false'}
+      aria-live="polite"
+    >
       <p
-        className={`font-semibold uppercase tracking-wide ${
+        className={`game-card-header-timer__label font-semibold uppercase tracking-wide ${
           tv ? 'text-sm' : 'text-[10px] md:text-xs'
-        } ${finished ? 'text-brand-muted' : 'text-white/80 dark:text-brand-muted'}`}
+        }`}
       >
         {countdownLabelText}
       </p>
       <p
-        className={`font-display font-bold leading-none tabular-nums ${
+        className={`game-card-header-timer__value font-display font-bold leading-none tabular-nums ${
           tv ? 'text-4xl md:text-5xl' : size === 'web' ? 'text-2xl lg:text-3xl' : 'text-2xl md:text-3xl'
-        } ${finished ? 'text-brand-muted' : 'text-[#7dd3fc]'}`}
+        }`}
       >
         {countdown}
       </p>
@@ -411,18 +415,18 @@ export function GameCardHeader({
         </p>
         <div className="flex min-w-0 items-center justify-end gap-2">
         {countdown && !tv ? (
-          <div className="shrink-0 text-right" aria-live="polite">
+          <div
+            className="game-card-header-timer shrink-0 text-right"
+            data-live={isLiveNow ? 'true' : 'false'}
+            aria-live="polite"
+          >
             <p
-              className={`text-[10px] font-semibold uppercase tracking-wide md:text-xs ${
-                finished ? 'text-brand-muted' : 'text-white/65 dark:text-brand-muted'
-              }`}
+              className="game-card-header-timer__label text-[10px] font-semibold uppercase tracking-wide md:text-xs"
             >
               {countdownLabelText}
             </p>
             <p
-              className={`font-display text-2xl font-bold leading-none tabular-nums md:text-3xl ${
-                finished ? 'text-brand-primary dark:text-brand-text' : 'text-brand-bg-alt dark:text-brand-text'
-              }`}
+              className="game-card-header-timer__value font-display text-2xl font-bold leading-none tabular-nums md:text-3xl"
             >
               {countdown}
             </p>

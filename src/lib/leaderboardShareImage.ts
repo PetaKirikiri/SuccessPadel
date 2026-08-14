@@ -119,7 +119,7 @@ function captureOptions(stripRemoteImages: boolean) {
     cacheBust: true,
     skipFonts: true,
     pixelRatio: 2,
-    backgroundColor: '#fdfaf5',
+    backgroundColor: '#071d34',
     filter: (el: HTMLElement) => {
       if (el.tagName !== 'IMG') return true
       if (stripRemoteImages) return false

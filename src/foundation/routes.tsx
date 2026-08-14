@@ -20,6 +20,7 @@ import { ProfileRedirect } from './profile/ProfileRedirect'
 import { ResetPassword } from './ResetPassword'
 import { MembersPage } from './MembersPage'
 import { CameraScoreTrackerShell } from '../components/CameraScoreTracker'
+import { OfflineSoloCompetition } from '../surfaces/offline-competition/OfflineSoloCompetition'
 
 function GestureScoreCourtLoading() {
   return <CameraScoreTrackerShell>{null}</CameraScoreTrackerShell>
@@ -83,6 +84,7 @@ function FriendlySessionEditRoute() {
 function MainAppRoutes() {
   return (
     <Routes>
+      <Route path="/offline-tonight" element={<OfflineSoloCompetition />} />
       <Route path="/login/login" element={<Navigate to="/login" replace />} />
       <Route path="/link" element={null} />
       <Route

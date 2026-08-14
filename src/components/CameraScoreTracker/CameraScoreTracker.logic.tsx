@@ -56,6 +56,7 @@ import {
   shouldPreferLocalGestureLog,
   writeLocalGestureCameraLog,
 } from '../../lib/gestureCameraLocalCache'
+import { useTennisBallDebugOverlay } from '../../lib/gestureTennisBallDebug'
 
 const EMPTY_HOLD_UI: HoldUi = {
   activeHold: null,
@@ -124,6 +125,8 @@ export function GestureScoreCourtPage() {
   const [searchParams] = useSearchParams()
   const detectPreview =
     searchParams.get('gestureDetect') === '1' || searchParams.get('detect') === '1'
+  const ballDebug =
+    searchParams.get('ballDebug') === '1' || searchParams.get('tennisBallDebug') === '1'
   const friendlyRoute = location.pathname.includes('/friendly/')
   const { id, gameNumber, courtId, courtSlug } = useParams()
   const { user, session: authSession, loading: authLoading, restoreSession } = useAuth()
@@ -182,7 +185,7 @@ export function GestureScoreCourtPage() {
             Math.max(rounds.length, competitionGames.length),
             rounds,
           ),
-    [competitionGames.length, friendlyRoute, rounds.length, session],
+    [competitionGames.length, friendlyRoute, rounds, session],
   )
 
   const friendlySchedule = useMemo(() => {
@@ -519,6 +522,7 @@ export function GestureScoreCourtPage() {
     !activeCourtValue && (friendlyLoading || (!friendlyRoute && competitionLoading) || scheduleGames.length > 0)
 
   const videoRef = useRef<HTMLVideoElement>(null)
+  const ballOverlayRef = useRef<HTMLCanvasElement>(null)
   const engineRef = useRef<GestureCameraEngine | null>(null)
   const trackerRef = useRef<CameraScoreTrackerHandle>(null)
   const saveChainRef = useRef<Promise<void>>(Promise.resolve())
@@ -805,6 +809,12 @@ export function GestureScoreCourtPage() {
     setCameraError(null)
   }, [])
 
+  useTennisBallDebugOverlay(
+    videoRef,
+    ballOverlayRef,
+    ballDebug && (status === 'running' || status === 'loading'),
+  )
+
   const showStartCamera =
     status === 'idle' || status === 'loading' || status === 'error' || status === 'unsupported'
 
@@ -900,17 +910,32 @@ export function GestureScoreCourtPage() {
           onStartCamera={startCamera}
           onStopCamera={stopCamera}
           cameraPreview={
-            <video
-              ref={videoRef}
-              muted
-              playsInline
-              className={`gesture-score-court__camera-preview${
+            <span
+              className={`gesture-score-court__camera-preview-frame${
                 status === 'running' || status === 'loading'
                   ? ''
-                  : ' gesture-score-court__camera-preview--hidden'
+                  : ' gesture-score-court__camera-preview-frame--hidden'
               }`}
-              aria-label="Camera preview"
-            />
+            >
+              <video
+                ref={videoRef}
+                muted
+                playsInline
+                className={`gesture-score-court__camera-preview${
+                  status === 'running' || status === 'loading'
+                    ? ''
+                    : ' gesture-score-court__camera-preview--hidden'
+                }`}
+                aria-label="Camera preview"
+              />
+              {ballDebug ? (
+                <canvas
+                  ref={ballOverlayRef}
+                  className="gesture-score-court__ball-debug-overlay"
+                  aria-hidden
+                />
+              ) : null}
+            </span>
           }
           pointLeft={pointsA}
           pointRight={pointsB}

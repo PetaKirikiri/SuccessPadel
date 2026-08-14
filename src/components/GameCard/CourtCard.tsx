@@ -514,7 +514,10 @@ function CourtScoreButton({
     <button
       type="button"
       disabled={disabled || !onOpen}
-      onPointerDown={stopCardNav}
+      onPointerDown={(event) => {
+        stopCardNav(event)
+        onOpen?.()
+      }}
       onKeyDown={stopCardNav}
       onClick={(event) => {
         stopCardNav(event)

@@ -79,6 +79,7 @@ type Props = {
     teamBPlayers?: CourtPlayer[],
   ) => { teamALabel?: string; teamBLabel?: string }
   tvCarousel?: boolean
+  autoFollowActiveGame?: boolean
   viewAlongUrl?: string | null
   scoreSubmitEnabled?: boolean
   onTvGameChange?: (gameNumber: number) => void
@@ -264,6 +265,7 @@ export function GameBoard({
   roster,
   rosterNameById,
   tvCarousel = false,
+  autoFollowActiveGame = false,
   viewAlongUrl = null,
   scoreSubmitEnabled = true,
   onTvGameChange,
@@ -514,6 +516,7 @@ export function GameBoard({
         <TvGameCarousel
           gameNumbers={gameNumbers}
           activeGameNumber={focusGameNumber}
+          autoFollowActiveGame={autoFollowActiveGame}
           renderGame={(gameNumber, nav) => {
             const game = gameByNumber.get(gameNumber)
             return game ? renderGameCard(game, nav) : null

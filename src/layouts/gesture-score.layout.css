@@ -37,6 +37,53 @@ html[data-gesture-ui='court'] .gesture-score-court__top-center .gesture-score-co
   pointer-events: none;
 }
 
+html[data-gesture-ui='court'] .gesture-score-court__top-center .gesture-score-court__camera-preview-frame {
+  position: relative;
+  order: 0;
+  display: block;
+  align-self: center;
+  flex-shrink: 0;
+  width: min(100%, 15rem);
+  aspect-ratio: 16 / 10;
+  margin-inline: auto;
+  overflow: hidden;
+  border-radius: 0.75rem;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__top-center .gesture-score-court__camera-preview-frame--hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__top-center .gesture-score-court__camera-preview-frame .gesture-score-court__camera-preview {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+html[data-gesture-ui='court'] .gesture-score-court__ball-debug-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+  pointer-events: none;
+}
+
 html[data-gesture-ui='court'] .gesture-score-court__top-center .gesture-score-court__camera-preview--hidden {
   position: absolute;
   width: 1px;
@@ -89,6 +136,10 @@ html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__top-
   aspect-ratio: 16 / 10;
   order: 0;
   margin-inline: auto;
+}
+
+html[data-viewport='mobile'][data-gesture-ui='court'] .gesture-score-court__top-center .gesture-score-court__camera-preview-frame {
+  width: min(100%, 14rem);
 }
 
 
@@ -180,6 +231,12 @@ html[data-viewport='tv'][data-gesture-ui='court'] .gesture-score-court__top-cent
   height: auto;
   aspect-ratio: 16 / 10;
   margin-inline: auto;
+}
+
+html[data-viewport='tablet'][data-gesture-ui='court'] .gesture-score-court__top-center .gesture-score-court__camera-preview-frame,
+html[data-viewport='web'][data-gesture-ui='court'] .gesture-score-court__top-center .gesture-score-court__camera-preview-frame,
+html[data-viewport='tv'][data-gesture-ui='court'] .gesture-score-court__top-center .gesture-score-court__camera-preview-frame {
+  width: min(100%, 17rem);
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__main {
@@ -681,6 +738,7 @@ html[data-gesture-ui='court'] .gesture-score-court__top-center .gesture-score-co
 }
 
 html[data-gesture-ui='court'] .gesture-score-court__top-center .gesture-score-court__camera-preview,
+html[data-gesture-ui='court'] .gesture-score-court__top-center .gesture-score-court__camera-preview-frame,
 html[data-gesture-ui='court'] .gesture-score-court__top-center .gesture-score-court__start-camera {
   order: 0;
 }

@@ -1,4 +1,3 @@
-import manifest from '../../../public/pixel-avatar/showdown/manifest.json'
 import type { GameCharacterFranchise, ShowdownPose } from './catalogTypes'
 
 export type { GameCharacterFranchise, ShowdownPose } from './catalogTypes'
@@ -11,6 +10,14 @@ export type GameCharacterCatalogEntry = {
 }
 
 const SD = '/pixel-avatar/showdown'
+
+const SHOWDOWN_READY: Array<{ franchise: GameCharacterFranchise; id: string }> = [
+  { franchise: 'street-fighter', id: 'cammy' },
+  { franchise: 'street-fighter', id: 'chun-li' },
+  { franchise: 'street-fighter', id: 'guile' },
+  { franchise: 'street-fighter', id: 'ken' },
+  { franchise: 'street-fighter', id: 'ryu' },
+]
 
 export const SHOWDOWN_FRANCHISE_LABELS: Record<GameCharacterFranchise, string> = {
   'street-fighter': 'Street Fighter',
@@ -69,10 +76,9 @@ function posesFor(franchise: GameCharacterFranchise, id: string): Record<Showdow
 }
 
 function buildCatalog(): GameCharacterCatalogEntry[] {
-  return manifest.ready.map(({ franchise, id }) => {
-    const franchiseKey = franchise as GameCharacterFranchise
-    const label = CHARACTER_LABELS[franchiseKey]?.[id] ?? id
-    return { id, label, franchise: franchiseKey, poses: posesFor(franchiseKey, id) }
+  return SHOWDOWN_READY.map(({ franchise, id }) => {
+    const label = CHARACTER_LABELS[franchise]?.[id] ?? id
+    return { id, label, franchise, poses: posesFor(franchise, id) }
   })
 }
 

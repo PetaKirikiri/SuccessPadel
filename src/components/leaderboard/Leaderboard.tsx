@@ -355,7 +355,6 @@ export function Leaderboard({
       const source = activeEntries[i]!
       const badges = badgesFor(source)
       return {
-        rank: standingsDisplayRank(activeEntries, i),
         name: entry.display_name,
         points: entry.total_points,
         avatarUrl: entry.avatar_url,

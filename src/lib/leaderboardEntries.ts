@@ -56,6 +56,14 @@ function nameTokens(fullName: string): { first: string } {
   const trimmed = fullName.trim()
   if (isNumberedPlayerLabel(trimmed)) return { first: trimmed }
   const tokens = trimmed.split(/\s+/).filter(Boolean)
+  // A one-letter first token is an initial, not a usable first name. Keep the
+  // supplied roster label (for example "G Federle") intact in compact views.
+  if (
+    tokens.length > 1 &&
+    (tokens[0]?.length === 1 || (tokens.length === 2 && tokens[1]?.length === 1))
+  ) {
+    return { first: trimmed }
+  }
   const first = tokens[0] ?? 'Player'
   return { first }
 }

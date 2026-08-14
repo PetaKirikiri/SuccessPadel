@@ -8,7 +8,7 @@ import type { GameSession } from './types'
  */
 export const COMPETITION_SCHEDULE = {
   games: 6,
-  gameMinutes: 15,
+  gameMinutes: 14,
   breakMinutes: 4,
   leadInMinutes: 0,
 } as const

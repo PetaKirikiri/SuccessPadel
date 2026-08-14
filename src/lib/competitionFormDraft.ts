@@ -61,6 +61,19 @@ export function competitionDraftKey(scope: 'new' | string): string {
   return `${STORAGE_PREFIX}${scope}`
 }
 
+function normalizeDraftDate(
+  scope: 'new' | string,
+  draft: CompetitionFormDraft,
+): CompetitionFormDraft {
+  if (scope !== 'new') return draft
+
+  const today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Bangkok',
+  }).format(new Date())
+
+  return draft.day < today ? { ...draft, day: today } : draft
+}
+
 export function loadCompetitionFormDraft(scope: 'new' | string): CompetitionFormDraft | null {
   try {
     const raw = localStorage.getItem(competitionDraftKey(scope))
@@ -68,20 +81,27 @@ export function loadCompetitionFormDraft(scope: 'new' | string): CompetitionForm
     const parsed = JSON.parse(raw) as CompetitionFormDraft | LegacyDraftV8 | LegacyDraftV7 | LegacyDraftV6
     if (parsed?.v === 9) {
       const oldDefaultSchedule =
-        scope === 'new' &&
-        parsed.gameCount === 7 &&
-        parsed.gameMinutes === 14 &&
-        parsed.breakMinutes === 3
-      return {
+        scope === 'new' && (
+          (
+            parsed.gameCount === 7 &&
+            parsed.gameMinutes === 14 &&
+            parsed.breakMinutes === 3
+          ) || (
+            parsed.gameCount === 6 &&
+            parsed.gameMinutes === 15 &&
+            parsed.breakMinutes === 4
+          )
+        )
+      return normalizeDraftDate(scope, {
         ...parsed,
         gameCount: oldDefaultSchedule ? COMPETITION_SCHEDULE.games : parsed.gameCount,
         gameMinutes: oldDefaultSchedule ? COMPETITION_SCHEDULE.gameMinutes : parsed.gameMinutes,
         breakMinutes: oldDefaultSchedule ? COMPETITION_SCHEDULE.breakMinutes : parsed.breakMinutes,
         startMinute:
-          scope === 'new' && oldDefaultSchedule && parsed.startMinute === 0
+          oldDefaultSchedule && parsed.startMinute === 0
             ? 10
             : parsed.startMinute,
-      }
+      })
     }
     if (parsed?.v === 8) {
       const oldDefaultSchedule =
@@ -89,7 +109,7 @@ export function loadCompetitionFormDraft(scope: 'new' | string): CompetitionForm
         parsed.gameCount === 7 &&
         parsed.gameMinutes === 14 &&
         parsed.breakMinutes === 3
-      return {
+      return normalizeDraftDate(scope, {
         ...parsed,
         v: 9,
         gameCount: oldDefaultSchedule ? COMPETITION_SCHEDULE.games : parsed.gameCount,
@@ -99,10 +119,10 @@ export function loadCompetitionFormDraft(scope: 'new' | string): CompetitionForm
           oldDefaultSchedule && parsed.startMinute === 0 ? 10 : parsed.startMinute,
         endHour: 20,
         endMinute: 0,
-      }
+      })
     }
     if (parsed?.v === 7) {
-      return {
+      return normalizeDraftDate(scope, {
         ...parsed,
         v: 9,
         gameCount: COMPETITION_SCHEDULE.games,
@@ -111,10 +131,10 @@ export function loadCompetitionFormDraft(scope: 'new' | string): CompetitionForm
         startMinute: parsed.startMinute === 0 ? 10 : parsed.startMinute,
         endHour: 20,
         endMinute: 0,
-      }
+      })
     }
     if (parsed?.v === 6) {
-      return {
+      return normalizeDraftDate(scope, {
         ...parsed,
         v: 9,
         courtCount: courtCountFromLegacyDraft(parsed),
@@ -124,7 +144,7 @@ export function loadCompetitionFormDraft(scope: 'new' | string): CompetitionForm
         startMinute: parsed.startMinute === 0 ? 10 : parsed.startMinute,
         endHour: 20,
         endMinute: 0,
-      }
+      })
     }
     return null
   } catch {

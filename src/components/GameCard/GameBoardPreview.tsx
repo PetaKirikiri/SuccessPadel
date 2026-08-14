@@ -34,6 +34,7 @@ type Props = {
   onSubmitFriendlyScores?: (entries: FriendlyCourtScoreSubmit[]) => Promise<void>
   onFriendlyScoresSaved?: () => void
   gameCarousel?: boolean
+  autoFollowActiveGame?: boolean
   currentUserDisplayName?: string | null
   onBack?: () => void
   viewAlongUrl?: string | null
@@ -59,6 +60,7 @@ export function GameBoardPreview({
   onSubmitFriendlyScores,
   onFriendlyScoresSaved,
   gameCarousel = false,
+  autoFollowActiveGame = false,
   currentUserDisplayName,
   onBack,
   viewAlongUrl = null,
@@ -127,6 +129,7 @@ export function GameBoardPreview({
       onSubmitFriendlyScores={onSubmitFriendlyScores}
       onSaved={onFriendlyScoresSaved}
       tvCarousel={gameCarousel}
+      autoFollowActiveGame={autoFollowActiveGame}
       viewAlongUrl={viewAlongUrl}
       scoreSubmitEnabled={scoreSubmitEnabled}
       onTvBack={onBack}

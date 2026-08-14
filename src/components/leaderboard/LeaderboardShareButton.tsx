@@ -7,7 +7,6 @@ import { shareSiteOrigin } from '../../lib/siteUrl'
 import { IconShare } from '../../shared/Button/ButtonIcons'
 
 export type LeaderboardShareRow = {
-  rank: number
   name: string
   points: number
   avatarUrl?: string | null
@@ -41,99 +40,82 @@ function LeaderboardShareCard({
   return (
     <div
       ref={cardRef}
-      className="leaderboard-share-card w-[640px] overflow-hidden rounded-3xl border border-[rgb(125_211_252_/_0.24)] bg-[#061d36] text-[#f8fafc] shadow-xl"
-      style={{ fontFamily: 'Roboto, ui-sans-serif, system-ui, sans-serif' }}
+      className="leaderboard-share-card"
     >
-      <div className="bg-[#0b2a4a] px-6 py-5 text-white">
-        <div className="flex items-center gap-4">
+      <div className="leaderboard-share-card__header">
+        <div className="leaderboard-share-card__header-content">
           <img
             src="/brand/logo-padel.webp"
             alt=""
             width={52}
             height={52}
-            className="h-[52px] w-[52px] rounded-xl bg-white/10 object-contain p-1"
+            className="leaderboard-share-card__logo"
           />
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70">
+          <div className="leaderboard-share-card__heading">
+            <p className="leaderboard-share-card__eyebrow">
               Success Padel
             </p>
-            <h1
-              className="truncate font-bold leading-tight text-white"
-              style={{ fontFamily: 'Roboto Slab, ui-serif, Georgia, serif', fontSize: '1.35rem' }}
-            >
-              {title}
-            </h1>
+            <h1 className="leaderboard-share-card__title">{title}</h1>
           </div>
         </div>
       </div>
 
-      <div className="px-6 pb-5 pt-4">
-        <p
-          className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#d8eeff]"
-          style={{ fontFamily: 'Roboto Slab, ui-serif, Georgia, serif' }}
-        >
-          {t('leaderboard.standings')}
-        </p>
+      <div className="leaderboard-share-card__body">
+        <p className="leaderboard-share-card__section-title">{t('leaderboard.standings')}</p>
 
-        <div className="grid grid-cols-[2rem_2.5rem_minmax(0,1fr)_4.5rem_3rem] items-center gap-x-2 border-b border-[rgb(125_211_252_/_0.24)] pb-2 text-[10px] font-semibold uppercase tracking-wide text-[#d8eeff]">
-          <span className="text-center">#</span>
+        <div className="leaderboard-share-card__columns">
+          <span className="leaderboard-share-card__rank-heading">#</span>
           <span aria-hidden />
           <span>{playerColumnLabel}</span>
           <span aria-hidden />
-          <span className="text-right">{scoreUnit}</span>
+          <span className="leaderboard-share-card__score-heading">{scoreUnit}</span>
         </div>
 
-        <ol className="m-0 list-none p-0">
-          {rows.map((row) => (
+        <ol className="leaderboard-share-card__list">
+          {rows.map((row, index) => {
+            const position = index + 1
+            return (
             <li
-              key={`${row.rank}-${row.name}`}
-              className={`grid grid-cols-[2rem_2.5rem_minmax(0,1fr)_4.5rem_3rem] items-center gap-x-2 border-b border-[rgb(125_211_252_/_0.24)]/80 py-2.5 last:border-0 ${
-                row.rank <= 3 ? 'bg-[#11355c]/70' : ''
-              }`}
+              key={`${position}-${row.name}`}
+              className={`leaderboard-share-card__row leaderboard-share-card__row--position-${Math.min(position, 4)}`}
             >
-              <span
-                className={`text-center text-sm font-bold ${
-                  row.rank <= 3 ? 'text-[#efff3d]' : 'text-[#d8eeff]'
-                }`}
-                style={{ fontFamily: 'Roboto Slab, ui-serif, Georgia, serif' }}
-              >
-                {row.rank}
-              </span>
+              <span className="leaderboard-share-card__rank">{position}</span>
               {row.avatarUrl ? (
                 <img
                   src={row.avatarUrl}
                   alt=""
-                  className="h-10 w-10 rounded-full object-cover ring-1 ring-[rgb(125_211_252_/_0.24)]"
+                  className="leaderboard-share-card__avatar"
                 />
               ) : (
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#11355c] text-sm font-semibold text-[#7dd3fc] ring-1 ring-[rgb(125_211_252_/_0.24)]">
+                <span className="leaderboard-share-card__avatar-fallback">
                   {playerInitial(row.name)}
                 </span>
               )}
-              <span className="truncate text-base font-medium text-[#f8fafc]">{row.name}</span>
-              <span className="flex items-center justify-center gap-0.5">
+              <span className="leaderboard-share-card__player-name">{row.name}</span>
+              <span className="leaderboard-share-card__badges">
                 {row.badges.slice(0, 2).map((badge) => {
                   const image = ACHIEVEMENT_IMAGE[badge.iconKey]
                   return image ? (
-                    <img key={badge.iconKey} src={image} alt="" className="h-7 w-7 object-contain" />
+                    <img
+                      key={badge.iconKey}
+                      src={image}
+                      alt=""
+                      className="leaderboard-share-card__badge-image"
+                    />
                   ) : (
-                    <span key={badge.iconKey} className="text-lg leading-none" aria-hidden>
+                    <span key={badge.iconKey} className="leaderboard-share-card__badge-emoji" aria-hidden>
                       {badge.emoji}
                     </span>
                   )
                 })}
               </span>
-              <span
-                className="text-right text-lg font-bold tabular-nums text-[#efff3d]"
-                style={{ fontFamily: 'Roboto Slab, ui-serif, Georgia, serif' }}
-              >
-                {row.points}
-              </span>
+              <span className="leaderboard-share-card__score">{row.points}</span>
             </li>
-          ))}
+            )
+          })}
         </ol>
 
-        <p className="mt-4 text-center text-[11px] font-medium text-[#d8eeff]">{site}</p>
+        <p className="leaderboard-share-card__footer">{site}</p>
       </div>
     </div>
   )

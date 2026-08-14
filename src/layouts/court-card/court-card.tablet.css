@@ -106,10 +106,14 @@ html[data-viewport='tablet'] .game-card-court-score-button--finished {
 }
 html[data-viewport='tablet'] .game-card-court-score-button__value { line-height: 0.9; }
 html[data-viewport='tablet'] .game-card-court-score-picker {
-  position: static !important;
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: 1fr;
-  align-items: stretch; gap: 0.35rem; width: 100%; height: 3.75rem;
+  align-items: stretch; gap: 0.35rem; width: min(92cqw, 40rem); height: 3.75rem;
   box-sizing: border-box; padding: 0.15rem;
   border-radius: 0.65rem; background: var(--color-brand-surface);
   box-shadow: 0 0.4rem 1rem color-mix(in srgb, var(--color-brand-primary) 22%, transparent);
@@ -118,13 +122,27 @@ html[data-viewport='tablet'] .game-card-court-score-stack { position: relative; 
 html[data-viewport='tablet'] .game-card-court-score-stack--editing .game-card-court-score-row {
   display: none !important;
 }
+html[data-viewport='tablet'] .game-card-court-match-scores {
+  width: 100%;
+}
+html[data-viewport='tablet'] .game-card-court-score-stack--editing {
+  width: 100%;
+  min-height: 3.75rem;
+}
 html[data-viewport='tablet'] .game-card-court-player__name--score-editing {
   color: var(--color-brand-accent-light) !important;
 }
 html[data-viewport='tablet'] .game-card-court-score-picker__option {
   width: 100%; min-width: 0; height: auto; min-height: 2.5rem; padding: 0; border-width: 2px;
   border-color: transparent;
-  background: transparent; color: var(--color-brand-text); font-size: 1.2rem;
+  background: transparent; color: var(--color-brand-text); font-size: 1.2rem; cursor: pointer;
+}
+html[data-viewport='tablet'] .game-card-court-score-picker__option:hover,
+html[data-viewport='tablet'] .game-card-court-score-picker__option:focus-visible {
+  border-color: color-mix(in srgb, var(--color-brand-accent-light) 65%, transparent);
+  background: color-mix(in srgb, var(--color-brand-accent-light) 18%, transparent);
+  color: var(--color-brand-accent-light);
+  outline: none;
 }
 html[data-viewport='tablet'] .game-card-court-score-picker__option--selected {
   border-color: transparent; background: transparent; color: var(--color-brand-accent-light);
