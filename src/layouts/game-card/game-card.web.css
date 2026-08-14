@@ -66,6 +66,12 @@ html[data-viewport='web'] .tv-play-standings-body {
   overflow: hidden;
 }
 
+html[data-viewport='web'] .tv-play-standings ol > li {
+  min-height: 4.25rem;
+  max-height: 5rem;
+  flex: 0 1 5rem;
+}
+
 html[data-viewport='web'] .game-card-courts-body {
   display: flex;
   min-height: 0;
