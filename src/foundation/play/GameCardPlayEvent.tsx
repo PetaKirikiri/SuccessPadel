@@ -8,6 +8,7 @@ import { PlayTvView } from './PlayTvView'
 import type { PlayViewTab } from '../../foundation/play/PlayViewTabs'
 import { useAuth } from '../../hooks/useAuth'
 import { useIsTvLayout } from '../../hooks/useIsTvLayout'
+import { useViewportBucket } from '../../hooks/useGameCardSize'
 import { useCompetitionLiveCourtScores } from '../../hooks/useCompetitionLiveCourtScores'
 import { useCourtEphemeralScores } from '../../hooks/useCourtEphemeralScores'
 import { useLatchedLiveCourtDisplay } from '../../hooks/useLatchedLiveCourtDisplay'
@@ -93,6 +94,8 @@ export function GameCardPlayEvent() {
   const headerAvatar = profile?.avatar_url ?? lineClient.pictureUrl ?? null
   const isAdmin = Boolean(user && profile?.is_admin)
   const isTvLayout = useIsTvLayout()
+  const viewport = useViewportBucket()
+  const hasSideLeaderboard = isTvLayout || viewport === 'web'
   const [tab, setTab] = useState<PlayTab>(() =>
     searchParams.get('view') === 'leaderboard' ? 'leaderboard' : 'games',
   )
@@ -682,7 +685,7 @@ export function GameCardPlayEvent() {
         viewAlongUrl={isTvLayout ? viewAlongUrl : null}
         onTvGameChange={setTvGameNumber}
         onTvBack={() => navigate('/competitions')}
-        leaderboardBody={!isTvLayout ? leaderboardStandard : undefined}
+        leaderboardBody={!hasSideLeaderboard ? leaderboardStandard : undefined}
         activePanel={tab === 'games' ? 'game' : 'leaderboard'}
         onActivePanel={handleActivePanel}
         />
@@ -714,8 +717,8 @@ export function GameCardPlayEvent() {
   }
 
   return (
-    <div className={`play-session-root flex min-h-0 flex-1 flex-col overflow-hidden${isTvLayout ? ' game-bg' : ''}`}>
-      {isTvLayout ? (
+    <div className={`play-session-root flex min-h-0 flex-1 flex-col overflow-hidden${hasSideLeaderboard ? ' game-bg' : ''}`}>
+      {hasSideLeaderboard ? (
         <div className="tv-play-view flex min-h-0 flex-1 flex-col overflow-hidden">
           <PlayTvView
             {...sharedViewProps}
