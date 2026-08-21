@@ -1,10 +1,10 @@
 /* Mobile court card layout lock. */
 
-html[data-viewport='mobile'] .offline-spirit-animal-mode .game-card-court-match--sides {
+html[data-viewport='mobile'] .game-card-court-match--sides:has(.game-card-court-team-emblem) {
   position: relative;
 }
 
-html[data-viewport='mobile'] .offline-spirit-animal-mode .game-card-court-team-emblem {
+html[data-viewport='mobile'] .game-card-court-team-emblem {
   position: absolute;
   z-index: 1;
   top: 50%;
@@ -15,11 +15,11 @@ html[data-viewport='mobile'] .offline-spirit-animal-mode .game-card-court-team-e
   pointer-events: none;
 }
 
-html[data-viewport='mobile'] .offline-spirit-animal-mode .game-card-court-team-emblem--left {
+html[data-viewport='mobile'] .game-card-court-team-emblem--left {
   left: calc(50% - clamp(2.75rem, 15cqw, 4.5rem));
 }
 
-html[data-viewport='mobile'] .offline-spirit-animal-mode .game-card-court-team-emblem--right {
+html[data-viewport='mobile'] .game-card-court-team-emblem--right {
   left: calc(50% + clamp(2.75rem, 15cqw, 4.5rem));
 }
 
