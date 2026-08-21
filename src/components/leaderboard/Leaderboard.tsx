@@ -23,6 +23,7 @@ import { isDuoLeaderboardEntry } from '../../lib/leaderboardFilters'
 import type { LeaderboardEntry } from '../../lib/leaderboardTypes'
 import { openPlayerProfile } from '../../lib/openPlayerProfile'
 import { LeaderboardShareButton, type LeaderboardShareRow } from './LeaderboardShareButton'
+import { spiritAnimalForTeam } from '../../lib/spiritAnimals'
 
 type Props = {
   entries: LeaderboardEntry[]
@@ -40,6 +41,8 @@ type Props = {
   embedded?: boolean
   shareTitle?: string | null
   simpleTeamRows?: boolean
+  highlightedEntryIds?: ReadonlySet<string>
+  onToggleEntryHighlight?: (entryId: string) => void
 }
 
 type AchievementInfo = { iconKey: string; emoji: string; labelKey: string }
@@ -182,16 +185,16 @@ function TeamPlayersInline({ entry }: { entry: LeaderboardEntry }) {
   if (players.length === 0) return null
 
   return (
-    <span className="mt-1 grid min-w-0 gap-1">
+    <span className="leaderboard-team-players mt-1 grid min-w-0 gap-1">
       {players.map((player) => (
-        <span key={player.name} className="grid min-w-0 grid-cols-[1.75rem_minmax(0,1fr)] items-center gap-1.5">
+        <span key={player.name} className="leaderboard-team-player grid min-w-0 grid-cols-[1.75rem_minmax(0,1fr)] items-center gap-1.5">
           <PlayerAvatar
             displayName={player.name}
             avatarUrl={player.avatarUrl}
             imgClassName="h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-brand-border/60"
             pixelated={player.avatarUrl?.includes('/pixel.png') ?? false}
           />
-          <span className="min-w-0 truncate text-sm font-semibold leading-tight text-brand-text/90">
+          <span className="leaderboard-team-player__name min-w-0 truncate text-sm font-semibold leading-tight text-brand-text/90">
             {player.name}
           </span>
         </span>
@@ -209,6 +212,8 @@ function LeaderboardRow({
   compact = false,
   simpleTeamRow = false,
   onOpenProfile,
+  highlighted = false,
+  onToggleHighlight,
   onSelectAchievement,
   t,
 }: {
@@ -220,16 +225,28 @@ function LeaderboardRow({
   compact?: boolean
   simpleTeamRow?: boolean
   onOpenProfile?: () => void | Promise<void>
+  highlighted?: boolean
+  onToggleHighlight?: () => void
   onSelectAchievement: (info: AchievementInfo) => void
   t: TranslateFn
 }) {
   const record = entryRecord(entry)
+  const spiritAnimalUrl = spiritAnimalForTeam(entry.player_a_name, entry.player_b_name)
 
   return (
     <li
       onClick={() => {
-        if (onOpenProfile) void onOpenProfile()
+        if (onToggleHighlight) onToggleHighlight()
+        else if (onOpenProfile) void onOpenProfile()
       }}
+      onKeyDown={(event) => {
+        if (!onToggleHighlight || (event.key !== 'Enter' && event.key !== ' ')) return
+        event.preventDefault()
+        onToggleHighlight()
+      }}
+      role={onToggleHighlight ? 'button' : undefined}
+      tabIndex={onToggleHighlight ? 0 : undefined}
+      aria-pressed={onToggleHighlight ? highlighted : undefined}
       className={`${
         compact && simpleTeamRow
           ? COMPACT_TEAM_ROW_GRID
@@ -242,7 +259,9 @@ function LeaderboardRow({
             : ROW_GRID_NO_BADGES
       } min-h-0 border-b border-brand-border/60 transition last:border-0 ${
         compact ? 'flex-1' : 'py-2.5 md:py-3.5'
-      } ${onOpenProfile ? 'cursor-pointer hover:bg-brand-bg-alt/60' : ''} ${isMe ? 'bg-brand-bg-alt' : ''}`}
+      } ${onOpenProfile || onToggleHighlight ? 'cursor-pointer hover:bg-brand-bg-alt/60' : ''} ${isMe ? 'bg-brand-bg-alt' : ''}${
+        highlighted ? ' leaderboard-row--arrived' : ''
+      }`}
     >
       <span
         className={`text-center font-display text-sm font-semibold ${
@@ -262,11 +281,16 @@ function LeaderboardRow({
         />
       ) : null}
       {simpleTeamRow ? (
-        <span className="min-w-0">
-          <span className="block whitespace-normal break-words font-display text-lg font-bold leading-tight text-brand-primary">
-            {entry.display_name}
-          </span>
+        <span className="leaderboard-team-simple min-w-0">
           <TeamPlayersInline entry={entry} />
+          {spiritAnimalUrl ? (
+            <img
+              src={spiritAnimalUrl}
+              alt=""
+              aria-hidden
+              className="leaderboard-team-spirit-animal"
+            />
+          ) : null}
         </span>
       ) : (
         <span className="min-w-0 truncate text-sm font-medium text-brand-text md:text-base">
@@ -310,6 +334,8 @@ export function Leaderboard({
   embedded = false,
   shareTitle = null,
   simpleTeamRows = false,
+  highlightedEntryIds,
+  onToggleEntryHighlight,
 }: Props) {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -438,9 +464,13 @@ export function Leaderboard({
               showBadges={effectiveShowAchievements}
               compact={compact}
               simpleTeamRow={simpleTeamRows && isDuoLeaderboardEntry(source.profile_id)}
+              highlighted={highlightedEntryIds?.has(source.profile_id) ?? false}
+              onToggleHighlight={
+                onToggleEntryHighlight ? () => onToggleEntryHighlight(source.profile_id) : undefined
+              }
               onSelectAchievement={setInfo}
               onOpenProfile={
-                isDuoLeaderboardEntry(source.profile_id)
+                onToggleEntryHighlight || isDuoLeaderboardEntry(source.profile_id)
                   ? undefined
                   : () => {
                       void openPlayerProfile(navigate, {

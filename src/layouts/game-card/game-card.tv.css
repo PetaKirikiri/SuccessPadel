@@ -17,6 +17,37 @@ html[data-viewport='tv'] .game-card-fill > :first-child {
   flex-shrink: 0;
 }
 
+html[data-viewport='tv'] .tv-play-view .game-card-tv-header-panel {
+  min-height: 5.5rem;
+  padding: 0.4rem 1.25rem;
+}
+
+html[data-viewport='tv'] .tv-play-view .game-card-tv-header-center > div {
+  gap: 0.1rem;
+}
+
+html[data-viewport='tv'] .tv-play-view .game-card-tv-header-time {
+  font-size: clamp(0.75rem, 1vw, 1rem);
+  line-height: 1;
+}
+
+html[data-viewport='tv'] .tv-play-view .game-card-tv-header-actions {
+  align-items: flex-start;
+  padding: 0.5rem 1rem 0 0;
+}
+
+html[data-viewport='tv'] .tv-play-view .game-card-tv-header-actions .game-card-header-timer {
+  padding: 0;
+}
+
+html[data-viewport='tv'] .tv-play-view .game-card-tv-header-actions .game-card-header-timer__label {
+  font-size: 0.75rem;
+}
+
+html[data-viewport='tv'] .tv-play-view .game-card-tv-header-actions .game-card-header-timer__value {
+  font-size: 2.75rem;
+}
+
 html[data-viewport='tv'] .game-card-courts-body {
   display: flex;
   min-height: 0;

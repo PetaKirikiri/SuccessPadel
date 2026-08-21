@@ -34,6 +34,7 @@ import type { LiveCourtGamesScore, LiveCourtPointFeed } from '../../lib/liveCour
 import { agentDebugIngest } from '../../lib/debug/devDebug'
 import type { LeaderboardEntry } from '../../lib/leaderboardTypes'
 import type { CourtPlayer } from '../../lib/americanoSchedule'
+import { spiritAnimalForTeam } from '../../lib/spiritAnimals'
 import {
   resolveCourtPlayerDisplayName,
   rosterEntryGender,
@@ -169,16 +170,24 @@ export function GameCardCourts({
     names: string[],
     players: CourtPlayer[] | undefined,
   ): { names: string[]; players: CourtPlayer[] | undefined } => {
-    if (!roster?.length) return { names, players }
-    const enrichedPlayers = players?.map((player, index) =>
-      enrichCourtPlayer(player, names[index] ?? ''),
-    ).filter((player): player is CourtPlayer => Boolean(player))
+    const enrichedPlayers = roster?.length
+      ? players
+          ?.map((player, index) => enrichCourtPlayer(player, names[index] ?? ''))
+          .filter((player): player is CourtPlayer => Boolean(player))
+      : players
+    const resolvedNames = [
+      enrichedPlayers?.[0]?.name ?? names[0] ?? '',
+      enrichedPlayers?.[1]?.name ?? names[1] ?? '',
+    ]
+    const teamEmblemUrl = spiritAnimalForTeam(resolvedNames[0], resolvedNames[1])
     return {
-      names: [
-        enrichedPlayers?.[0]?.name ?? names[0] ?? '',
-        enrichedPlayers?.[1]?.name ?? names[1] ?? '',
-      ],
-      players: enrichedPlayers,
+      names: resolvedNames,
+      players: teamEmblemUrl
+        ? enrichedPlayers?.map((player) => ({
+            ...player,
+            teamEmblemUrl: player.teamEmblemUrl ?? teamEmblemUrl,
+          }))
+        : enrichedPlayers,
     }
   }
 

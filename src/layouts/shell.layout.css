@@ -23,3 +23,8 @@ html[data-viewport='mobile'] .shell-main--profile {
   flex-shrink: 0;
   width: 100%;
 }
+
+html[data-tv-kiosk] .shell-main--play + .shell-dock,
+.shell-main--play:has(.tv-play-view) + .shell-dock {
+  display: none;
+}

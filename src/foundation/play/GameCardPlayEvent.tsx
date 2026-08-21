@@ -681,7 +681,6 @@ export function GameCardPlayEvent() {
         roster={roster}
         rosterNameById={rosterNameById}
         tvCarousel={columns.length > 0}
-        autoFollowActiveGame={isTvLayout}
         viewAlongUrl={isTvLayout ? viewAlongUrl : null}
         onTvGameChange={setTvGameNumber}
         onTvBack={() => navigate('/competitions')}

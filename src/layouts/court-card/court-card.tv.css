@@ -1,5 +1,28 @@
 /* TV court card layout lock. */
 
+html[data-viewport='tv'] .tv-play-view .game-card-court-match--sides:has(.game-card-court-team-emblem) {
+  position: relative;
+}
+
+html[data-viewport='tv'] .tv-play-view .game-card-court-team-emblem {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  width: clamp(7.25rem, min(16cqw, 25cqh), 10rem);
+  max-height: 56%;
+  transform: translate(-50%, -50%);
+  object-fit: contain;
+  pointer-events: none;
+}
+
+html[data-viewport='tv'] .tv-play-view .game-card-court-team-emblem--left {
+  left: 39%;
+}
+
+html[data-viewport='tv'] .tv-play-view .game-card-court-team-emblem--right {
+  left: 61%;
+}
+
 @media (orientation: landscape) {
   html[data-viewport='tv'] .game-card-court-card {
     display: flex;
@@ -164,4 +187,27 @@ html[data-viewport='tv'] .game-card-court-score-picker__option:focus-visible {
 html[data-viewport='tv'] .game-card-court-score-picker__option--selected {
   border-color: transparent; background: transparent; color: var(--color-brand-accent-light);
   font-size: 1.5rem; box-shadow: none; transform: none;
+}
+
+html[data-viewport='tv'] .tv-play-view .game-card-court-score-button {
+  width: clamp(4rem, 10cqw, 4.75rem);
+  min-height: clamp(3rem, 16cqh, 3.5rem);
+  padding: 0.25rem 0.55rem;
+  border-width: 2px;
+  font-size: clamp(1.9rem, 9cqh, 2.25rem);
+}
+
+html[data-viewport='tv'] .tv-play-view .game-card-court-score-picker,
+html[data-viewport='tv'] .tv-play-view .game-card-court-score-stack--editing {
+  height: 3.5rem;
+  min-height: 3.5rem;
+}
+
+html[data-viewport='tv'] .tv-play-view .game-card-court-player__name {
+  font-size: clamp(1rem, calc(0.35rem + 4.5cqh), 1.7rem);
+}
+
+html[data-viewport='tv'] .tv-play-view .game-card-court-player__avatar {
+  width: clamp(2.5rem, calc(0.5rem + 13cqh), 3.75rem);
+  height: clamp(2.5rem, calc(0.5rem + 13cqh), 3.75rem);
 }

@@ -58,7 +58,7 @@ export function courtsBodyClass(size: GameCardSize, finished: boolean): string {
 
 export function courtCompactForSize(size: GameCardSize, landscape = false): boolean {
   if (isTvSize(size)) return true
-  return landscape && (size === 'tablet' || size === 'web')
+  return landscape
 }
 
 export function headerPadForSize(size: GameCardSize): string {

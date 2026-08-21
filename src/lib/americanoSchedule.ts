@@ -31,6 +31,8 @@ export type CourtPlayer = {
   padelPlayerId?: string | null
   name: string
   avatarUrl: string | null
+  /** Optional team emblem shown between fixed-duo player rows. */
+  teamEmblemUrl?: string | null
   /** Showdown character id for match-card poses */
   gameCharacterId?: string | null
   preferredSide?: PlaySide | null

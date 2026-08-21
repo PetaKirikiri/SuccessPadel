@@ -1,5 +1,51 @@
 /* Web court card layout lock. */
 
+html[data-viewport='web'] .offline-spirit-animal-mode .game-card-court-match--sides {
+  position: relative;
+}
+
+html[data-viewport='web'] .offline-spirit-animal-mode .game-card-court-team-emblem {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  width: clamp(7rem, min(18cqw, 28cqh), 10rem);
+  max-height: 58%;
+  transform: translate(-50%, -50%);
+  object-fit: contain;
+  pointer-events: none;
+}
+
+html[data-viewport='web'] .offline-spirit-animal-mode .game-card-court-team-emblem--left {
+  left: calc(50% - clamp(7rem, 16cqw, 11rem));
+}
+
+html[data-viewport='web'] .offline-spirit-animal-mode .game-card-court-team-emblem--right {
+  left: calc(50% + clamp(7rem, 16cqw, 11rem));
+}
+
+html[data-viewport='web'] .tv-play-view .game-card-court-match--sides:has(.game-card-court-team-emblem) {
+  position: relative;
+}
+
+html[data-viewport='web'] .tv-play-view .game-card-court-team-emblem {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  width: clamp(7.25rem, min(16cqw, 25cqh), 10rem);
+  max-height: 56%;
+  transform: translate(-50%, -50%);
+  object-fit: contain;
+  pointer-events: none;
+}
+
+html[data-viewport='web'] .tv-play-view .game-card-court-team-emblem--left {
+  left: 39%;
+}
+
+html[data-viewport='web'] .tv-play-view .game-card-court-team-emblem--right {
+  left: 61%;
+}
+
 @media (orientation: landscape) {
   html[data-viewport='web'] .game-card-court-card {
     display: flex;
@@ -164,4 +210,27 @@ html[data-viewport='web'] .game-card-court-score-picker__option:focus-visible {
 html[data-viewport='web'] .game-card-court-score-picker__option--selected {
   border-color: transparent; background: transparent; color: var(--color-brand-accent-light);
   font-size: 1.3rem; box-shadow: none; transform: none;
+}
+
+html[data-viewport='web'] .tv-play-view .game-card-court-score-button {
+  width: clamp(3.75rem, 10cqw, 4.25rem);
+  min-height: clamp(2.75rem, 16cqh, 3.25rem);
+  padding: 0.25rem 0.5rem;
+  border-width: 2px;
+  font-size: clamp(1.8rem, 9cqh, 2.15rem);
+}
+
+html[data-viewport='web'] .tv-play-view .game-card-court-score-picker,
+html[data-viewport='web'] .tv-play-view .game-card-court-score-stack--editing {
+  height: 3.25rem;
+  min-height: 3.25rem;
+}
+
+html[data-viewport='web'] .tv-play-view .game-card-court-player__name {
+  font-size: clamp(0.95rem, calc(0.35rem + 4.5cqh), 1.7rem);
+}
+
+html[data-viewport='web'] .tv-play-view .game-card-court-player__avatar {
+  width: clamp(2.35rem, calc(0.5rem + 13cqh), 3.75rem);
+  height: clamp(2.35rem, calc(0.5rem + 13cqh), 3.75rem);
 }

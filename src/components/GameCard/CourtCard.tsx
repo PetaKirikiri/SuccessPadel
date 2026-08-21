@@ -920,6 +920,22 @@ export function CourtMatchCell({
       <div className={`${sideCellClass('right')} ${showTeamLabels ? 'row-start-3' : 'row-start-2'} self-center`}>
         {playerEl(teamBPlayerList[1]!, 'right')}
       </div>
+      {teamAPlayerList[0]?.teamEmblemUrl ? (
+        <img
+          className="game-card-court-team-emblem game-card-court-team-emblem--left"
+          src={teamAPlayerList[0].teamEmblemUrl}
+          alt={`${teamAPlayerList[0].name} and ${teamAPlayerList[1]?.name ?? ''} team animal`}
+          draggable={false}
+        />
+      ) : null}
+      {teamBPlayerList[0]?.teamEmblemUrl ? (
+        <img
+          className="game-card-court-team-emblem game-card-court-team-emblem--right"
+          src={teamBPlayerList[0].teamEmblemUrl}
+          alt={`${teamBPlayerList[0].name} and ${teamBPlayerList[1]?.name ?? ''} team animal`}
+          draggable={false}
+        />
+      ) : null}
     </>
   )
   const sidesGridClass = `game-card-court-match tv-court-match-grid grid min-h-0 w-full flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-stretch gap-y-2.5 game-card-court-match--sides${

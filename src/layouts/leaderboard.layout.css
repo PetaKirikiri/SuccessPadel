@@ -5,6 +5,35 @@
   min-width: 0;
 }
 
+.leaderboard-row--arrived,
+.leaderboard-row--arrived:hover {
+  background: rgb(22 101 52 / 0.82);
+}
+
+.leaderboard-team-spirit-animal {
+  width: clamp(2rem, 2.8vw, 3.4rem);
+  height: clamp(2rem, 2.8vw, 3.4rem);
+  object-fit: contain;
+}
+
+.leaderboard-team-simple {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: clamp(0.25rem, 0.55vw, 0.75rem);
+}
+
+.leaderboard-team-simple .leaderboard-team-players {
+  margin-top: 0;
+}
+
+html .tv-play-view .tv-play-standings ol > li {
+  min-height: 0;
+  max-height: none;
+  flex: 1 1 0;
+}
+
 html[data-viewport='mobile'] .leaderboard-surface {
   padding-left: 0.75rem;
   padding-right: 0.75rem;

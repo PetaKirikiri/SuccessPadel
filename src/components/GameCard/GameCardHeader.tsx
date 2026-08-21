@@ -283,7 +283,7 @@ export function GameCardHeader({
     return (
       <div className={headerShellClass}>
         <div
-          className={`relative min-w-0 w-full flex-1 ${headerCarouselMinHeightForSize(size)} ${headerPad}`}
+          className={`game-card-tv-header-panel relative min-w-0 w-full flex-1 ${headerCarouselMinHeightForSize(size)} ${headerPad}`}
         >
           <div className="absolute inset-y-0 left-0 z-10 flex items-center">
             {onBack ? (
@@ -291,9 +291,18 @@ export function GameCardHeader({
             ) : null}
           </div>
 
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div className="game-card-tv-header-center pointer-events-none absolute inset-0 flex items-center justify-center">
             <div className="pointer-events-auto flex flex-col items-center gap-0.5">
-              <div className="flex items-center gap-2 md:gap-3">
+              {timeLabel ? (
+                <span
+                  className={`game-card-tv-header-time text-[11px] tabular-nums md:text-sm ${
+                    finished ? 'text-brand-muted' : 'text-[#7dd3fc]/70'
+                  }`}
+                >
+                  {timeLabel}
+                </span>
+              ) : null}
+              <div className="game-card-tv-header-title-row flex items-center gap-2 md:gap-3">
                 <GameCardGameNavButton
                   direction="prev"
                   onClick={tvNav.onPrev}
@@ -316,33 +325,10 @@ export function GameCardHeader({
                   finished={finished}
                 />
               </div>
-              {showLiveBadge ? (
-                <span
-                  className={`text-xs font-semibold md:text-sm ${
-                    finished ? 'text-brand-muted' : 'text-[#7dd3fc]/80'
-                  }`}
-                >
-                  {t('competition.live')}
-                </span>
-              ) : finished ? (
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-brand-muted md:text-sm">
-                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand-muted/55" aria-hidden />
-                  {t('competition.done')}
-                </span>
-              ) : null}
-              {timeLabel ? (
-                <span
-                  className={`text-[11px] tabular-nums md:text-sm ${
-                    finished ? 'text-brand-muted' : 'text-[#7dd3fc]/70'
-                  }`}
-                >
-                  {timeLabel}
-                </span>
-              ) : null}
             </div>
           </div>
 
-          <div className="absolute inset-y-0 right-0 z-10 flex items-center justify-end gap-2">
+          <div className="game-card-tv-header-actions absolute inset-y-0 right-0 z-10 flex items-center justify-end gap-2">
             {countdownBlock}
             {gestureScoreHref ? (
               <GameCardGestureScoreButton

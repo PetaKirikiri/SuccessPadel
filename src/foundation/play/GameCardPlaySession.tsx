@@ -394,7 +394,6 @@ export function GameCardPlaySession() {
           scoreSubmitEnabled={scoreSubmitEnabled}
           onFriendlyScoresSaved={handleScoresSaved}
           gameCarousel
-          autoFollowActiveGame={isTvLayout}
           currentUserDisplayName={playerDisplayName}
           onBack={() => navigate('/friendly')}
           leaderboardBody={!isTvLayout ? leaderboardStandard : undefined}
