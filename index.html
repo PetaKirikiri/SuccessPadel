@@ -51,6 +51,11 @@
         color: #3a3a3a;
         background: #fdfaf5;
       }
+      html.dark,
+      html.dark body {
+        color: #f5f8fb;
+        background: #0b2a4a;
+      }
       #root {
         width: 100%;
         min-height: 100vh;
@@ -78,6 +83,13 @@
         font-weight: 700;
         color: #602d24;
       }
+      html.dark #sp-legacy-notice {
+        color: #f5f8fb;
+        background: #0b2a4a;
+      }
+      html.dark #sp-legacy-notice h1 {
+        color: #7dd3fc;
+      }
       #sp-legacy-notice p {
         margin: 0 0 0.75rem;
         font-size: 1rem;
@@ -97,7 +109,7 @@
     <script>
       ;(function () {
         try {
-          if (localStorage.getItem('sp-theme') === 'dark') {
+          if (localStorage.getItem('sp-theme') !== 'light') {
             document.documentElement.classList.add('dark')
           }
         } catch (e) {}
@@ -168,7 +180,7 @@
         window.addEventListener('orientationchange', lockWidth)
       })()
     </script>
-    <meta name="theme-color" content="#FDFAF5" />
+    <meta name="theme-color" content="#0b2a4a" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Success Padel</title>
   </head>

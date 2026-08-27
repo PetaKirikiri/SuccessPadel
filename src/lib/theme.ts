@@ -9,7 +9,7 @@ export function readStoredTheme(): AppTheme {
   } catch {
     /* ignore */
   }
-  return 'light'
+  return 'dark'
 }
 
 export function writeStoredTheme(theme: AppTheme): void {
