@@ -89,6 +89,7 @@ export function GameCard(props: GameCardInputProps) {
     isCurrentGame,
     countdown,
     countdownLabelText,
+    systemTimeLabel,
     collapsed,
     onToggleCollapsed,
     currentUserId,
@@ -183,6 +184,7 @@ export function GameCard(props: GameCardInputProps) {
       timeLabel={displayTimeLabel}
       countdown={countdown}
       countdownLabelText={countdownLabelText}
+      systemTimeLabel={systemTimeLabel}
       finished={finished}
       collapsed={collapsed}
       onToggleCollapsed={onToggleCollapsed}

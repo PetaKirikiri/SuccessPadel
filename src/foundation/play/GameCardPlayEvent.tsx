@@ -106,6 +106,30 @@ export function GameCardPlayEvent() {
   const [manualCourtScores, setManualCourtScores] = useState<Map<string, ManualCourtScore>>(
     () => new Map(),
   )
+  const arrivalsStorageKey = id ? `success-padel:competition:${id}:arrivals` : null
+  const [arrivedPlayerIds, setArrivedPlayerIds] = useState<Set<string>>(() => {
+    if (!id) return new Set()
+    try {
+      const raw = window.localStorage.getItem(`success-padel:competition:${id}:arrivals`)
+      return new Set(raw ? JSON.parse(raw) as string[] : [])
+    } catch {
+      return new Set()
+    }
+  })
+
+  useEffect(() => {
+    if (!arrivalsStorageKey) return
+    window.localStorage.setItem(arrivalsStorageKey, JSON.stringify([...arrivedPlayerIds]))
+  }, [arrivalsStorageKey, arrivedPlayerIds])
+
+  const togglePlayerArrival = useCallback((playerId: string) => {
+    setArrivedPlayerIds((current) => {
+      const next = new Set(current)
+      if (next.has(playerId)) next.delete(playerId)
+      else next.add(playerId)
+      return next
+    })
+  }, [])
 
   const {
     session,
@@ -622,6 +646,8 @@ export function GameCardPlayEvent() {
         showAchievements={Boolean(achievements)}
         flushBottom
         shareTitle={session?.title ?? null}
+        highlightedEntryIds={arrivedPlayerIds}
+        onToggleEntryHighlight={togglePlayerArrival}
       />
     ) : (
       <p className="game-card px-3 py-6 text-center text-sm text-brand-muted">
@@ -641,6 +667,8 @@ export function GameCardPlayEvent() {
         compact
         embedded
         simpleTeamRows={isDuo}
+        highlightedEntryIds={arrivedPlayerIds}
+        onToggleEntryHighlight={togglePlayerArrival}
       />
     ) : (
       <p className="px-3 py-6 text-center text-sm text-brand-muted">{t('leaderboard.standings')}</p>

@@ -209,6 +209,7 @@ export function GameCardHeader({
   timeLabel,
   countdown,
   countdownLabelText,
+  systemTimeLabel,
   finished,
   collapsed,
   onToggleCollapsed,
@@ -227,6 +228,7 @@ export function GameCardHeader({
   timeLabel?: string
   countdown?: string | null
   countdownLabelText: string
+  systemTimeLabel: string
   finished: boolean
   collapsed: boolean
   onToggleCollapsed: () => void
@@ -276,6 +278,15 @@ export function GameCardHeader({
       >
         {countdown}
       </p>
+    </div>
+  ) : null
+
+  const systemClockBlock = countdown ? (
+    <div className="game-card-header-system-clock" aria-label={`Current system time ${systemTimeLabel}`}>
+      <p className="game-card-header-system-clock__label">CURRENT TIME</p>
+      <time className="game-card-header-system-clock__value" dateTime={systemTimeLabel}>
+        {systemTimeLabel}
+      </time>
     </div>
   ) : null
 
@@ -329,6 +340,7 @@ export function GameCardHeader({
           </div>
 
           <div className="game-card-tv-header-actions absolute inset-y-0 right-0 z-10 flex items-center justify-end gap-2">
+            {systemClockBlock}
             {countdownBlock}
             {gestureScoreHref ? (
               <GameCardGestureScoreButton
@@ -400,46 +412,47 @@ export function GameCardHeader({
           {t('competition.game', { number: gameNumber })}
         </p>
         <div className="flex min-w-0 items-center justify-end gap-2">
-        {countdown && !tv ? (
-          <div
-            className="game-card-header-timer shrink-0 text-right"
-            data-live={isLiveNow ? 'true' : 'false'}
-            aria-live="polite"
-          >
-            <p
-              className="game-card-header-timer__label text-[10px] font-semibold uppercase tracking-wide md:text-xs"
+          {systemClockBlock}
+          {countdown && !tv ? (
+            <div
+              className="game-card-header-timer shrink-0 text-right"
+              data-live={isLiveNow ? 'true' : 'false'}
+              aria-live="polite"
             >
-              {countdownLabelText}
-            </p>
-            <p
-              className="game-card-header-timer__value font-display text-2xl font-bold leading-none tabular-nums md:text-3xl"
-            >
-              {countdown}
-            </p>
-          </div>
-        ) : null}
-        {gestureScoreHref ? (
-          <GameCardGestureScoreButton
-            href={gestureScoreHref}
-            ariaLabel="Open gesture score tracker"
-            finished={finished}
-          />
-        ) : null}
-        {editHref ? (
-          <GameCardEditButton
-            href={editHref}
-            ariaLabel={t('competition.edit')}
-            finished={finished}
-          />
-        ) : null}
-        {onLeaderboardToggle ? (
-          <GameCardLeaderboardButton
-            active={leaderboardActive}
-            onClick={onLeaderboardToggle}
-            ariaLabel={t('competition.leaderboard')}
-            finished={finished}
-          />
-        ) : null}
+              <p
+                className="game-card-header-timer__label text-[10px] font-semibold uppercase tracking-wide md:text-xs"
+              >
+                {countdownLabelText}
+              </p>
+              <p
+                className="game-card-header-timer__value font-display text-2xl font-bold leading-none tabular-nums md:text-3xl"
+              >
+                {countdown}
+              </p>
+            </div>
+          ) : null}
+          {gestureScoreHref ? (
+            <GameCardGestureScoreButton
+              href={gestureScoreHref}
+              ariaLabel="Open gesture score tracker"
+              finished={finished}
+            />
+          ) : null}
+          {editHref ? (
+            <GameCardEditButton
+              href={editHref}
+              ariaLabel={t('competition.edit')}
+              finished={finished}
+            />
+          ) : null}
+          {onLeaderboardToggle ? (
+            <GameCardLeaderboardButton
+              active={leaderboardActive}
+              onClick={onLeaderboardToggle}
+              ariaLabel={t('competition.leaderboard')}
+              finished={finished}
+            />
+          ) : null}
         </div>
       </div>
       {!hideCollapse ? (
