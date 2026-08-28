@@ -94,6 +94,48 @@ export function usePublicCompetition(sessionId: string | undefined, options?: Op
     return () => clearInterval(poll)
   }, [pollMs, sessionId, refresh])
 
+  useEffect(() => {
+    if (!sessionId) return
+
+    const channel = supabase
+      .channel(`public-competition-${sessionId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'competition_rounds',
+          filter: `session_id=eq.${sessionId}`,
+        },
+        () => void refresh(true),
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'matches',
+          filter: `session_id=eq.${sessionId}`,
+        },
+        () => void refresh(true),
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'game_sessions',
+          filter: `id=eq.${sessionId}`,
+        },
+        () => void refresh(true),
+      )
+      .subscribe()
+
+    return () => {
+      void supabase.removeChannel(channel)
+    }
+  }, [sessionId, refresh])
+
   const activeRound = rounds.find((r) => r.status === 'active') ?? null
 
   return {
