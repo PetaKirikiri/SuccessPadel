@@ -11,7 +11,7 @@ export const TEAM_FRUIT_IDENTITIES = [
   { imageUrl: '/fruit-learning/pineapple.png', thai: 'สับปะรด', phonetic: 'sap-pa-rot', english: 'Pineapple' },
   { imageUrl: '/fruit-learning/coconut.png', thai: 'มะพร้าว', phonetic: 'ma-phrao', english: 'Coconut' },
   { imageUrl: '/fruit-learning/banana.png', thai: 'กล้วย', phonetic: 'gluay', english: 'Banana' },
-  { imageUrl: '/fruit-learning/strawberry.png', thai: 'สตรอว์เบอร์รี', phonetic: 'sa-traw-ber-ree', english: 'Strawberry' },
+  { imageUrl: '/fruit-learning/longan.png', thai: 'ลำไย', phonetic: 'lam-yai', english: 'Longan' },
   { imageUrl: '/fruit-learning/dragon-fruit.png', thai: 'แก้วมังกร', phonetic: 'gaew mang-gorn', english: 'Dragon fruit' },
   { imageUrl: '/fruit-learning/mangosteen.png', thai: 'มังคุด', phonetic: 'mang-kut', english: 'Mangosteen' },
 ] as const satisfies readonly TeamLearningIdentity[]
