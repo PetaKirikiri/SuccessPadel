@@ -16,6 +16,7 @@ import {
   type FingerAction,
   type HoldUi,
 } from '../../lib/gestureFingerDetect'
+import { hasPendingGestureScoreCameraRequest } from '../../lib/gestureScoreCamera'
 import {
   competitionCourtSetupKey,
   ensureGestureCameraSession,
@@ -854,6 +855,9 @@ export function GestureScoreCourtPage() {
         },
       })
       engineRef.current = engine
+      if (hasPendingGestureScoreCameraRequest()) {
+        void engine.start()
+      }
     }
 
     mountEngine()

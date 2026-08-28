@@ -33,6 +33,10 @@ export function takeGestureScoreCameraRequest(): Promise<MediaStream> | null {
   return request
 }
 
+export function hasPendingGestureScoreCameraRequest(): boolean {
+  return pendingCameraRequest !== null
+}
+
 export function clearGestureScoreCameraCache(): void {
   pendingCameraRequest = null
 }

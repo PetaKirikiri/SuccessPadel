@@ -335,7 +335,12 @@ export class GestureCameraEngine {
     const runId = ++this.runId
     try {
       this.config.onStatus?.('loading')
-      const stream = await (takeGestureScoreCameraRequest() ?? requestGestureScoreCamera())
+      let stream = await (takeGestureScoreCameraRequest() ?? requestGestureScoreCamera())
+      if (!stream.getVideoTracks().some((track) => track.readyState === 'live')) {
+        stream.getTracks().forEach((track) => track.stop())
+        clearGestureScoreCameraCache()
+        stream = await requestGestureScoreCamera()
+      }
       if (this.runId !== runId) {
         stream.getTracks().forEach((track) => track.stop())
         return
