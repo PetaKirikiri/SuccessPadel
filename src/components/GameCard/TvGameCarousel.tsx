@@ -13,6 +13,7 @@ type Props = {
   gameNumbers: number[]
   activeGameNumber?: number
   autoFollowActiveGame?: boolean
+  persistenceKey?: string
   renderGame: (gameNumber: number, nav: TvGameNav) => ReactNode
   onGameChange?: (gameNumber: number) => void
   className?: string
@@ -25,25 +26,31 @@ export function TvGameCarousel({
   gameNumbers,
   activeGameNumber,
   autoFollowActiveGame = false,
+  persistenceKey,
   renderGame,
   onGameChange,
   className = '',
 }: Props) {
   const [index, setIndex] = useState(0)
   const initializedRef = useRef(false)
+  const skipFirstPersistenceWriteRef = useRef(true)
   const touchStartXRef = useRef<number | null>(null)
 
   useEffect(() => {
-    if (activeGameNumber == null || gameNumbers.length === 0) return
-    const activeIdx = gameNumbers.indexOf(activeGameNumber)
-    if (activeIdx < 0) return
+    if (gameNumbers.length === 0) return
     if (!initializedRef.current) {
-      setIndex(activeIdx)
+      const persistedGameNumber = persistenceKey
+        ? Number(window.localStorage.getItem(persistenceKey))
+        : Number.NaN
+      const persistedIdx = gameNumbers.indexOf(persistedGameNumber)
+      const activeIdx = activeGameNumber == null ? -1 : gameNumbers.indexOf(activeGameNumber)
+      setIndex(persistedIdx >= 0 ? persistedIdx : Math.max(0, activeIdx))
       initializedRef.current = true
       return
     }
-    if (autoFollowActiveGame) setIndex(activeIdx)
-  }, [activeGameNumber, autoFollowActiveGame, gameNumbers.length])
+    const activeIdx = activeGameNumber == null ? -1 : gameNumbers.indexOf(activeGameNumber)
+    if (autoFollowActiveGame && activeIdx >= 0) setIndex(activeIdx)
+  }, [activeGameNumber, autoFollowActiveGame, gameNumbers, persistenceKey])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -72,8 +79,14 @@ export function TvGameCarousel({
   }
 
   useEffect(() => {
-    if (current != null) onGameChange?.(current)
-  }, [current, onGameChange])
+    if (current == null) return
+    if (skipFirstPersistenceWriteRef.current) {
+      skipFirstPersistenceWriteRef.current = false
+      return
+    }
+    if (persistenceKey) window.localStorage.setItem(persistenceKey, String(current))
+    onGameChange?.(current)
+  }, [current, onGameChange, persistenceKey])
 
   if (gameNumbers.length === 0) return null
 

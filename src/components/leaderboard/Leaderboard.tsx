@@ -232,7 +232,11 @@ function LeaderboardRow({
   t: TranslateFn
 }) {
   const record = entryRecord(entry)
-  const learningIdentity = learningIdentityForTeam(entry.player_a_name, entry.player_b_name)
+  const learningIdentity = learningIdentityForTeam(
+    entry.player_a_name,
+    entry.player_b_name,
+    [entry.player_a_id, entry.player_b_id],
+  )
 
   return (
     <li

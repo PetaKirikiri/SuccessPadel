@@ -517,6 +517,13 @@ export function GameBoard({
           gameNumbers={gameNumbers}
           activeGameNumber={focusGameNumber}
           autoFollowActiveGame={autoFollowActiveGame}
+          persistenceKey={
+            competitionId
+              ? `successpadel:competition:${competitionId}:selected-game`
+              : sessionId
+                ? `successpadel:session:${sessionId}:selected-game`
+                : undefined
+          }
           renderGame={(gameNumber, nav) => {
             const game = gameByNumber.get(gameNumber)
             return game ? renderGameCard(game, nav) : null

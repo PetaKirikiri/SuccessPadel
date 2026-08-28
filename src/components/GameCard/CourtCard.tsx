@@ -898,8 +898,16 @@ export function CourtMatchCell({
       side === 'right' ? 'justify-self-end' : 'justify-self-start'
     }`
   const labelSlotClass = 'game-card-court-team-label-slot min-h-12'
-  const teamAIdentity = learningIdentityForTeam(teamAPlayerList[0]?.name, teamAPlayerList[1]?.name)
-  const teamBIdentity = learningIdentityForTeam(teamBPlayerList[0]?.name, teamBPlayerList[1]?.name)
+  const teamAIdentity = learningIdentityForTeam(
+    teamAPlayerList[0]?.name,
+    teamAPlayerList[1]?.name,
+    teamAPlayerList.flatMap((player) => [player.id, player.rosterId, player.padelPlayerId]),
+  )
+  const teamBIdentity = learningIdentityForTeam(
+    teamBPlayerList[0]?.name,
+    teamBPlayerList[1]?.name,
+    teamBPlayerList.flatMap((player) => [player.id, player.rosterId, player.padelPlayerId]),
+  )
   const duoAlignedSides = (
     <>
       {showTeamLabels ? (

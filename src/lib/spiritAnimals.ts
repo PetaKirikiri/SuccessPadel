@@ -52,11 +52,21 @@ const LEARNING_IDENTITY_BY_TEAM = new Map<string, TeamLearningIdentity>([
   [teamKey('Fed G', 'Tak'), TEAM_FRUIT_IDENTITIES[7]],
 ])
 
+const MEHDI_TEAM_IDS = new Set([
+  '6e0db57c-e5e4-4eb3-ac89-b59ef0ae7af6', // padel_players.id
+  '0727ba83-bed7-41c4-a16b-7568f67215e4', // preserved session_players.id
+])
+
 export function learningIdentityForTeam(
   playerA: string | null | undefined,
   playerB: string | null | undefined,
+  playerIds: readonly (string | null | undefined)[] = [],
 ): TeamLearningIdentity | null {
   if (!playerA?.trim() || !playerB?.trim()) return null
+  const names = new Set([canonicalTeamName(playerA), canonicalTeamName(playerB)])
+  if (names.has('fabrice') && playerIds.some((id) => id && MEHDI_TEAM_IDS.has(id))) {
+    return TEAM_FRUIT_IDENTITIES[4]
+  }
   return LEARNING_IDENTITY_BY_TEAM.get(teamKey(playerA, playerB)) ?? null
 }
 
