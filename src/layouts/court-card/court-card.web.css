@@ -6,9 +6,9 @@ html[data-viewport='web'] .team-learning-badge--left { left: 40%; }
 html[data-viewport='web'] .team-learning-badge--right { left: 60%; }
 html[data-viewport='web'] .team-learning-badge--court .team-learning-badge__image { width: clamp(3.75rem, min(10cqw, 16cqh), 5.5rem); height: clamp(3.75rem, min(10cqw, 16cqh), 5.5rem); object-fit: contain; }
 html[data-viewport='web'] .team-learning-badge__copy { display: grid; justify-items: center; line-height: 1.04; }
-html[data-viewport='web'] .team-learning-badge__thai { color: #fff; font-size: clamp(0.8rem, 2.8cqh, 1.05rem); font-weight: 800; }
-html[data-viewport='web'] .team-learning-badge__phonetic { color: #7dd3fc; font-size: clamp(0.58rem, 1.9cqh, 0.76rem); font-weight: 700; }
-html[data-viewport='web'] .team-learning-badge__english { color: rgb(255 255 255 / 0.72); font-size: clamp(0.55rem, 1.7cqh, 0.7rem); font-weight: 650; }
+html[data-viewport='web'] .team-learning-badge__thai { color: #fff; font-size: clamp(0.9rem, 3.1cqh, 1.18rem); font-weight: 800; }
+html[data-viewport='web'] .team-learning-badge__phonetic { color: #7dd3fc; font-size: clamp(0.66rem, 2.15cqh, 0.86rem); font-weight: 700; }
+html[data-viewport='web'] .team-learning-badge__english { color: rgb(255 255 255 / 0.72); font-size: clamp(0.62rem, 1.95cqh, 0.8rem); font-weight: 650; }
 
 html[data-viewport='web'] .offline-spirit-animal-mode .game-card-court-match--sides {
   position: relative;

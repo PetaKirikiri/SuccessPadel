@@ -6,31 +6,25 @@ export type TeamLearningIdentity = {
 }
 
 export const TEAM_FRUIT_IDENTITIES = [
-  { imageUrl: '/fruit-learning/mango.png', thai: 'มะม่วง', phonetic: 'má-mûang', english: 'Mango' },
-  { imageUrl: '/fruit-learning/watermelon.png', thai: 'แตงโม', phonetic: 'dtaeng-moh', english: 'Watermelon' },
-  { imageUrl: '/fruit-learning/pineapple.png', thai: 'สับปะรด', phonetic: 'sàp-bpà-rót', english: 'Pineapple' },
-  { imageUrl: '/fruit-learning/coconut.png', thai: 'มะพร้าว', phonetic: 'má-práao', english: 'Coconut' },
-  { imageUrl: '/fruit-learning/banana.png', thai: 'กล้วย', phonetic: 'glûay', english: 'Banana' },
-  { imageUrl: '/fruit-learning/strawberry.png', thai: 'สตรอว์เบอร์รี', phonetic: 'sà-dtrɔɔ-bəə-rîi', english: 'Strawberry' },
-  { imageUrl: '/fruit-learning/dragon-fruit.png', thai: 'แก้วมังกร', phonetic: 'gâew mang-gawn', english: 'Dragon fruit' },
-  { imageUrl: '/fruit-learning/mangosteen.png', thai: 'มังคุด', phonetic: 'mang-kút', english: 'Mangosteen' },
+  { imageUrl: '/fruit-learning/mango.png', thai: 'มะม่วง', phonetic: 'ma-muang', english: 'Mango' },
+  { imageUrl: '/fruit-learning/watermelon.png', thai: 'แตงโม', phonetic: 'taeng-mo', english: 'Watermelon' },
+  { imageUrl: '/fruit-learning/pineapple.png', thai: 'สับปะรด', phonetic: 'sap-pa-rot', english: 'Pineapple' },
+  { imageUrl: '/fruit-learning/coconut.png', thai: 'มะพร้าว', phonetic: 'ma-phrao', english: 'Coconut' },
+  { imageUrl: '/fruit-learning/banana.png', thai: 'กล้วย', phonetic: 'gluay', english: 'Banana' },
+  { imageUrl: '/fruit-learning/strawberry.png', thai: 'สตรอว์เบอร์รี', phonetic: 'sa-traw-ber-ree', english: 'Strawberry' },
+  { imageUrl: '/fruit-learning/dragon-fruit.png', thai: 'แก้วมังกร', phonetic: 'gaew mang-gorn', english: 'Dragon fruit' },
+  { imageUrl: '/fruit-learning/mangosteen.png', thai: 'มังคุด', phonetic: 'mang-kut', english: 'Mangosteen' },
 ] as const satisfies readonly TeamLearningIdentity[]
 
 /** Legacy offline roster assignment reads image URLs from this symbol. */
 export const TEAM_SPIRIT_ANIMAL_ASSETS = TEAM_FRUIT_IDENTITIES.map((identity) => identity.imageUrl)
-
-const DAVID_ARZINA_SPIRIT_IDENTITY: TeamLearningIdentity = {
-  imageUrl: '/spirit-animals/rabbit.png?v=normalized-1',
-  thai: 'กระต่าย',
-  phonetic: 'grà-dtàai',
-  english: 'Rabbit',
-}
 
 function canonicalTeamName(name: string): string {
   const normalized = name.trim().toLocaleLowerCase().replace(/[’']/g, '')
   if (normalized === 'pnee' || normalized === 'nee') return 'nee'
   if (normalized === 'paipai' || normalized === 'pai pai' || normalized === 'pai') return 'pai'
   if (normalized === 'mike d') return 'mike'
+  if (normalized === 'david moore') return 'david'
   if (normalized === 'peter samui') return 'peter p'
   if (normalized === 'tak kanyanee') return 'tak'
   return normalized
@@ -42,9 +36,10 @@ function teamKey(playerA: string, playerB: string): string {
 
 const LEARNING_IDENTITY_BY_TEAM = new Map<string, TeamLearningIdentity>([
   [teamKey('Dave', 'Mike'), TEAM_FRUIT_IDENTITIES[0]],
-  [teamKey('David', 'Arzina'), DAVID_ARZINA_SPIRIT_IDENTITY],
+  [teamKey('David', 'Arzina'), TEAM_FRUIT_IDENTITIES[1]],
   [teamKey('Will', 'Curtis'), TEAM_FRUIT_IDENTITIES[2]],
   [teamKey('Vinny', 'Matt'), TEAM_FRUIT_IDENTITIES[3]],
+  [teamKey('Richy', 'Matt'), TEAM_FRUIT_IDENTITIES[3]],
   [teamKey('Fabrice', 'Hocine'), TEAM_FRUIT_IDENTITIES[4]],
   [teamKey('Stephen', 'Lauren'), TEAM_FRUIT_IDENTITIES[5]],
   [teamKey('Nee', 'Kitt'), TEAM_FRUIT_IDENTITIES[6]],
