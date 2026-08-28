@@ -34,6 +34,14 @@ const SPIRIT_ANIMAL_BY_TEAM = new Map<string, string>([
   [teamKey('Phil', 'Jacky'), TEAM_SPIRIT_ANIMAL_ASSETS[5]],
   [teamKey('Rutger', 'Marilyn'), TEAM_SPIRIT_ANIMAL_ASSETS[6]],
   [teamKey('Fed G', 'Tak'), TEAM_SPIRIT_ANIMAL_ASSETS[7]],
+
+  // Friday 28 Aug fixed pairs. Existing team identities stay unchanged;
+  // every new team receives one distinct animal from the same eight-animal set.
+  [teamKey('Will', 'Curtis'), TEAM_SPIRIT_ANIMAL_ASSETS[7]],
+  [teamKey('Vinny', 'Matt'), TEAM_SPIRIT_ANIMAL_ASSETS[6]],
+  [teamKey('Fabrice', 'Hocine'), TEAM_SPIRIT_ANIMAL_ASSETS[4]],
+  [teamKey('Nee', 'Kitt'), TEAM_SPIRIT_ANIMAL_ASSETS[2]],
+  [teamKey('P’Thida', 'Jeff'), TEAM_SPIRIT_ANIMAL_ASSETS[5]],
 ])
 
 export function spiritAnimalForTeam(
