@@ -51,6 +51,10 @@ html[data-viewport='web'] .leaderboard-surface {
   padding-right: 1rem;
 }
 
+html[data-viewport='tv'] .leaderboard-team-simple .team-learning-badge--leaderboard {
+  transform: translateX(-1rem);
+}
+
 /* Fixed-size leaderboard artwork used by html-to-image. Keep every color explicit so
    the exported PNG is independent from the active app theme. */
 .leaderboard-share-card {
