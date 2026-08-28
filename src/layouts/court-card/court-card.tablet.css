@@ -1,5 +1,15 @@
 /* Tablet court card layout lock. */
 
+html[data-viewport='tablet'] .game-card-court-match--sides:has(.team-learning-badge) { position: relative; min-height: 10rem; }
+html[data-viewport='tablet'] .team-learning-badge--court { position: absolute; z-index: 1; top: 50%; display: grid; width: 6.5rem; justify-items: center; gap: 0.15rem; margin: 0; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
+html[data-viewport='tablet'] .team-learning-badge--left { left: 39%; }
+html[data-viewport='tablet'] .team-learning-badge--right { left: 61%; }
+html[data-viewport='tablet'] .team-learning-badge--court .team-learning-badge__image { width: 4.5rem; height: 4.5rem; object-fit: contain; }
+html[data-viewport='tablet'] .team-learning-badge__copy { display: grid; justify-items: center; line-height: 1.05; }
+html[data-viewport='tablet'] .team-learning-badge__thai { color: #fff; font-size: 1rem; font-weight: 800; }
+html[data-viewport='tablet'] .team-learning-badge__phonetic { color: #7dd3fc; font-size: 0.72rem; font-weight: 700; }
+html[data-viewport='tablet'] .team-learning-badge__english { color: rgb(255 255 255 / 0.72); font-size: 0.68rem; font-weight: 650; }
+
 html[data-viewport='tablet'] .game-card-court-match--sides:has(.game-card-court-team-emblem) {
   position: relative;
 }

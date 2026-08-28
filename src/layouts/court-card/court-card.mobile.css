@@ -1,5 +1,15 @@
 /* Mobile court card layout lock. */
 
+html[data-viewport='mobile'] .game-card-court-match--sides:has(.team-learning-badge) { position: relative; min-height: 9.5rem; }
+html[data-viewport='mobile'] .team-learning-badge--court { position: absolute; z-index: 1; top: 50%; display: grid; width: clamp(4.5rem, 22cqw, 5.75rem); justify-items: center; gap: 0.12rem; margin: 0; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
+html[data-viewport='mobile'] .team-learning-badge--left { left: 39%; }
+html[data-viewport='mobile'] .team-learning-badge--right { left: 61%; }
+html[data-viewport='mobile'] .team-learning-badge--court .team-learning-badge__image { width: clamp(3rem, 15cqw, 4rem); height: clamp(3rem, 15cqw, 4rem); object-fit: contain; }
+html[data-viewport='mobile'] .team-learning-badge__copy { display: grid; justify-items: center; line-height: 1.05; }
+html[data-viewport='mobile'] .team-learning-badge__thai { color: #fff; font-size: clamp(0.7rem, 3.4cqw, 0.9rem); font-weight: 800; }
+html[data-viewport='mobile'] .team-learning-badge__phonetic { color: #7dd3fc; font-size: clamp(0.52rem, 2.4cqw, 0.66rem); font-weight: 700; }
+html[data-viewport='mobile'] .team-learning-badge__english { color: rgb(255 255 255 / 0.72); font-size: clamp(0.48rem, 2.2cqw, 0.62rem); font-weight: 650; }
+
 html[data-viewport='mobile'] .game-card-court-match--sides:has(.game-card-court-team-emblem) {
   position: relative;
 }

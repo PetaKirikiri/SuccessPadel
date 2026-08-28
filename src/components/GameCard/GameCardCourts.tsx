@@ -18,6 +18,7 @@ import type { GameCardSize } from '../../lib/viewBreakpoints'
 import {
   CourtCard,
   CourtMatchCell,
+  courtGestureScoreHref,
   courtLiveHref,
   courtManualScoreHref,
 } from './CourtCard'
@@ -271,6 +272,18 @@ export function GameCardCourts({
         }
         const courtFinished =
           finished || Boolean(feed && feed.live === false && (feed.points.length > 0 || trackingLive))
+        const gestureHref = courtGestureScoreHref({
+          gestureScoreEnabled,
+          friendly,
+          sessionId,
+          competitionId,
+          gameNumber: game.gameNumber,
+          courtLabel: row.courtLabel,
+          courtId,
+          currentUserId,
+          court: liveCourt ?? court,
+          finished: courtFinished,
+        })
         const scoringLive = trackingLive && !courtFinished
         const showGesturePoints = gestureCourt
         const gestureScoring = showGesturePoints || Boolean(feed || trackingLive || liveScore)
@@ -491,7 +504,7 @@ export function GameCardCourts({
             court={liveCourt ?? court}
             finished={courtFinished}
             href={href}
-            gestureScoreHref={undefined}
+            gestureScoreHref={gestureHref}
             gestureScoreLive={feed?.live}
             manualScoreHref={manualHref}
             size={size}

@@ -16,6 +16,8 @@ import { PlayerNameLink } from '../../shared/ProfilePhoto/PlayerNameLink'
 import { debugSessionLog } from '../../lib/debug/devDebug'
 import { GENDER_CHIP_COLORS } from '../../foundation/profile/profileFormUi'
 import type { LiveCourt, ScoringGameCourt } from './gameBoardTypes'
+import { learningIdentityForTeam } from '../../lib/spiritAnimals'
+import { TeamLearningBadge } from '../TeamLearningBadge'
 
 export function stopCardNav(e: { stopPropagation: () => void }) {
   e.stopPropagation()
@@ -896,6 +898,8 @@ export function CourtMatchCell({
       side === 'right' ? 'justify-self-end' : 'justify-self-start'
     }`
   const labelSlotClass = 'game-card-court-team-label-slot min-h-12'
+  const teamAIdentity = learningIdentityForTeam(teamAPlayerList[0]?.name, teamAPlayerList[1]?.name)
+  const teamBIdentity = learningIdentityForTeam(teamBPlayerList[0]?.name, teamBPlayerList[1]?.name)
   const duoAlignedSides = (
     <>
       {showTeamLabels ? (
@@ -920,21 +924,11 @@ export function CourtMatchCell({
       <div className={`${sideCellClass('right')} ${showTeamLabels ? 'row-start-3' : 'row-start-2'} self-center`}>
         {playerEl(teamBPlayerList[1]!, 'right')}
       </div>
-      {teamAPlayerList[0]?.teamEmblemUrl ? (
-        <img
-          className="game-card-court-team-emblem game-card-court-team-emblem--left"
-          src={teamAPlayerList[0].teamEmblemUrl}
-          alt={`${teamAPlayerList[0].name} and ${teamAPlayerList[1]?.name ?? ''} team animal`}
-          draggable={false}
-        />
+      {teamAIdentity ? (
+        <TeamLearningBadge identity={teamAIdentity} side="left" />
       ) : null}
-      {teamBPlayerList[0]?.teamEmblemUrl ? (
-        <img
-          className="game-card-court-team-emblem game-card-court-team-emblem--right"
-          src={teamBPlayerList[0].teamEmblemUrl}
-          alt={`${teamBPlayerList[0].name} and ${teamBPlayerList[1]?.name ?? ''} team animal`}
-          draggable={false}
-        />
+      {teamBIdentity ? (
+        <TeamLearningBadge identity={teamBIdentity} side="right" />
       ) : null}
     </>
   )

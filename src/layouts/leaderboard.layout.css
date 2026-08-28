@@ -28,6 +28,13 @@
   margin-top: 0;
 }
 
+.team-learning-badge--leaderboard { display: grid; width: clamp(3.2rem, 3.8vw, 4.8rem); justify-items: center; gap: 0.05rem; margin: 0; text-align: center; }
+.team-learning-badge--leaderboard .team-learning-badge__image { width: clamp(2.1rem, 2.7vw, 3.3rem); height: clamp(2.1rem, 2.7vw, 3.3rem); object-fit: contain; }
+.team-learning-badge--leaderboard .team-learning-badge__copy { display: grid; justify-items: center; line-height: 1; }
+.team-learning-badge--leaderboard .team-learning-badge__thai { color: #fff; font-size: clamp(0.58rem, 0.72vw, 0.78rem); font-weight: 800; }
+.team-learning-badge--leaderboard .team-learning-badge__phonetic { color: #7dd3fc; font-size: clamp(0.44rem, 0.52vw, 0.58rem); font-weight: 700; }
+.team-learning-badge--leaderboard .team-learning-badge__english { color: rgb(255 255 255 / 0.7); font-size: clamp(0.42rem, 0.48vw, 0.54rem); font-weight: 650; }
+
 html .tv-play-view .tv-play-standings ol > li {
   min-height: 0;
   max-height: none;

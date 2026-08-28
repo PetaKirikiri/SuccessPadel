@@ -23,7 +23,8 @@ import { isDuoLeaderboardEntry } from '../../lib/leaderboardFilters'
 import type { LeaderboardEntry } from '../../lib/leaderboardTypes'
 import { openPlayerProfile } from '../../lib/openPlayerProfile'
 import { LeaderboardShareButton, type LeaderboardShareRow } from './LeaderboardShareButton'
-import { spiritAnimalForTeam } from '../../lib/spiritAnimals'
+import { learningIdentityForTeam } from '../../lib/spiritAnimals'
+import { TeamLearningBadge } from '../TeamLearningBadge'
 
 type Props = {
   entries: LeaderboardEntry[]
@@ -231,7 +232,7 @@ function LeaderboardRow({
   t: TranslateFn
 }) {
   const record = entryRecord(entry)
-  const spiritAnimalUrl = spiritAnimalForTeam(entry.player_a_name, entry.player_b_name)
+  const learningIdentity = learningIdentityForTeam(entry.player_a_name, entry.player_b_name)
 
   return (
     <li
@@ -283,13 +284,8 @@ function LeaderboardRow({
       {simpleTeamRow ? (
         <span className="leaderboard-team-simple min-w-0">
           <TeamPlayersInline entry={entry} />
-          {spiritAnimalUrl ? (
-            <img
-              src={spiritAnimalUrl}
-              alt=""
-              aria-hidden
-              className="leaderboard-team-spirit-animal"
-            />
+          {learningIdentity ? (
+            <TeamLearningBadge identity={learningIdentity} variant="leaderboard" />
           ) : null}
         </span>
       ) : (
