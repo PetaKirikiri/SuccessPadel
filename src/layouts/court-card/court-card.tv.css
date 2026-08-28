@@ -1,14 +1,14 @@
 /* TV court card layout lock. */
 
 html[data-viewport='tv'] .game-card-court-match--sides:has(.team-learning-badge) { position: relative; min-height: 0; }
-html[data-viewport='tv'] .team-learning-badge--court { position: absolute; z-index: 1; top: 50%; display: grid; width: clamp(6rem, 12cqw, 8rem); justify-items: center; gap: 0.14rem; margin: 0; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
+html[data-viewport='tv'] .team-learning-badge--court { position: absolute; z-index: 1; top: 50%; display: grid; width: clamp(8rem, 15cqw, 10rem); justify-items: center; gap: 0.14rem; margin: 0; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
 html[data-viewport='tv'] .team-learning-badge--left { left: 40%; }
 html[data-viewport='tv'] .team-learning-badge--right { left: 60%; }
 html[data-viewport='tv'] .team-learning-badge--court .team-learning-badge__image { width: clamp(4.25rem, min(10cqw, 17cqh), 6rem); height: clamp(4.25rem, min(10cqw, 17cqh), 6rem); object-fit: contain; }
-html[data-viewport='tv'] .team-learning-badge__copy { display: grid; justify-items: center; line-height: 1.04; }
-html[data-viewport='tv'] .team-learning-badge__thai { color: #fff; font-size: clamp(1.1rem, 3.5cqh, 1.4rem); font-weight: 800; }
-html[data-viewport='tv'] .team-learning-badge__phonetic { color: #7dd3fc; font-size: clamp(0.78rem, 2.4cqh, 1rem); font-weight: 700; }
-html[data-viewport='tv'] .team-learning-badge__english { color: rgb(255 255 255 / 0.72); font-size: clamp(0.72rem, 2.1cqh, 0.9rem); font-weight: 650; }
+html[data-viewport='tv'] .team-learning-badge__copy { display: grid; justify-items: center; line-height: 1.08; white-space: nowrap; }
+html[data-viewport='tv'] .team-learning-badge__thai { color: #fff; font-size: clamp(1.45rem, 4.5cqh, 1.8rem); font-weight: 800; }
+html[data-viewport='tv'] .team-learning-badge__phonetic { color: #7dd3fc; font-size: clamp(1rem, 3.1cqh, 1.25rem); font-weight: 700; }
+html[data-viewport='tv'] .team-learning-badge__english { color: rgb(255 255 255 / 0.72); font-size: clamp(0.92rem, 2.8cqh, 1.12rem); font-weight: 650; }
 
 html[data-viewport='tv'] .tv-play-view .game-card-court-match--sides:has(.game-card-court-team-emblem) {
   position: relative;

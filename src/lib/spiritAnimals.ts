@@ -41,6 +41,7 @@ const LEARNING_IDENTITY_BY_TEAM = new Map<string, TeamLearningIdentity>([
   [teamKey('Vinny', 'Matt'), TEAM_FRUIT_IDENTITIES[3]],
   [teamKey('Richy', 'Matt'), TEAM_FRUIT_IDENTITIES[3]],
   [teamKey('Fabrice', 'Hocine'), TEAM_FRUIT_IDENTITIES[4]],
+  [teamKey('Fabrice', 'Mehdi'), TEAM_FRUIT_IDENTITIES[4]],
   [teamKey('Stephen', 'Lauren'), TEAM_FRUIT_IDENTITIES[5]],
   [teamKey('Nee', 'Kitt'), TEAM_FRUIT_IDENTITIES[6]],
   [teamKey('P’Thida', 'Jeff'), TEAM_FRUIT_IDENTITIES[7]],
