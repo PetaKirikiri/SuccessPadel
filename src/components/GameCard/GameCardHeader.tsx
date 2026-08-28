@@ -209,7 +209,6 @@ export function GameCardHeader({
   timeLabel,
   countdown,
   countdownLabelText,
-  systemTimeLabel,
   finished,
   collapsed,
   onToggleCollapsed,
@@ -228,7 +227,6 @@ export function GameCardHeader({
   timeLabel?: string
   countdown?: string | null
   countdownLabelText: string
-  systemTimeLabel: string
   finished: boolean
   collapsed: boolean
   onToggleCollapsed: () => void
@@ -281,22 +279,13 @@ export function GameCardHeader({
     </div>
   ) : null
 
-  const systemClockBlock = countdown ? (
-    <div className="game-card-header-system-clock" aria-label={`Current system time ${systemTimeLabel}`}>
-      <p className="game-card-header-system-clock__label">CURRENT TIME</p>
-      <time className="game-card-header-system-clock__value" dateTime={systemTimeLabel}>
-        {systemTimeLabel}
-      </time>
-    </div>
-  ) : null
-
   if (tvNav) {
     return (
       <div className={headerShellClass}>
         <div
           className={`game-card-tv-header-panel relative min-w-0 w-full flex-1 ${headerCarouselMinHeightForSize(size)} ${headerPad}`}
         >
-          <div className="absolute inset-y-0 left-0 z-10 flex items-center">
+          <div className="game-card-tv-header-back absolute inset-y-0 left-0 z-10 flex items-center">
             {onBack ? (
               <GameCardBackButton onClick={onBack} ariaLabel={t('aria.back')} finished={finished} />
             ) : null}
@@ -340,7 +329,6 @@ export function GameCardHeader({
           </div>
 
           <div className="game-card-tv-header-actions absolute inset-y-0 right-0 z-10 flex items-center justify-end gap-2">
-            {systemClockBlock}
             {countdownBlock}
             {gestureScoreHref ? (
               <GameCardGestureScoreButton
@@ -412,7 +400,6 @@ export function GameCardHeader({
           {t('competition.game', { number: gameNumber })}
         </p>
         <div className="flex min-w-0 items-center justify-end gap-2">
-          {systemClockBlock}
           {countdown && !tv ? (
             <div
               className="game-card-header-timer shrink-0 text-right"

@@ -23,13 +23,6 @@ import { GameCard, courtIdForLabel, type GameCardPanel, type GameCardSession, ty
 
 export type { FriendlyCourtScoreSubmit }
 
-const SYSTEM_TIME_FORMATTER = new Intl.DateTimeFormat('en-GB', {
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit',
-  hour12: false,
-})
-
 type Props = {
   competitionId?: string
   friendlySessionId?: string
@@ -470,8 +463,6 @@ export function GameBoard({
       }
     }
 
-    const systemTimeLabel = SYSTEM_TIME_FORMATTER.format(new Date(clock))
-
     return (
       <GameCard
         key={game.gameNumber}
@@ -484,7 +475,6 @@ export function GameBoard({
         isCurrentGame={isCurrentGame}
         countdown={countdown}
         countdownLabelText={countdownLabel(state, t)}
-        systemTimeLabel={systemTimeLabel}
         collapsed={collapsed}
         onToggleCollapsed={() => toggleCollapsed(game.gameNumber)}
         currentUserId={currentUserId}

@@ -16,11 +16,11 @@ html[data-viewport='mobile'] .game-card-court-team-emblem {
 }
 
 html[data-viewport='mobile'] .game-card-court-team-emblem--left {
-  left: calc(50% - clamp(2.75rem, 15cqw, 4.5rem));
+  left: calc(50% - clamp(1.75rem, 9cqw, 2.75rem));
 }
 
 html[data-viewport='mobile'] .game-card-court-team-emblem--right {
-  left: calc(50% + clamp(2.75rem, 15cqw, 4.5rem));
+  left: calc(50% + clamp(1.75rem, 9cqw, 2.75rem));
 }
 
 html[data-viewport='mobile'] .game-card-court-shell {
@@ -139,14 +139,32 @@ html[data-viewport='mobile'] .game-card-court-match--score-first .game-card-cour
   }
 }
 
-html[data-viewport='mobile'] .game-card-court-team-label {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  white-space: normal;
-  font-size: 0.78rem;
-  line-height: 1.05;
+html[data-viewport='mobile'] .game-card-court-match--sides:has(.game-card-court-team-label-slot) {
+  grid-template-rows: repeat(2, minmax(0, auto));
+}
+
+html[data-viewport='mobile']
+  .game-card-court-match--sides
+  > .game-card-court-match__side:has(.game-card-court-team-label-slot) {
+  display: none;
+}
+
+html[data-viewport='mobile']
+  .game-card-court-match--sides:has(.game-card-court-team-label-slot)
+  > .game-card-court-match__side:nth-child(3),
+html[data-viewport='mobile']
+  .game-card-court-match--sides:has(.game-card-court-team-label-slot)
+  > .game-card-court-match__side:nth-child(4) {
+  grid-row-start: 1;
+}
+
+html[data-viewport='mobile']
+  .game-card-court-match--sides:has(.game-card-court-team-label-slot)
+  > .game-card-court-match__side:nth-child(5),
+html[data-viewport='mobile']
+  .game-card-court-match--sides:has(.game-card-court-team-label-slot)
+  > .game-card-court-match__side:nth-child(6) {
+  grid-row-start: 2;
 }
 
 html[data-viewport='mobile'] .game-card-court-player__name {

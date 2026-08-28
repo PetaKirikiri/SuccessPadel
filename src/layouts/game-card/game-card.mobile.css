@@ -27,6 +27,10 @@ html[data-viewport='mobile'] .shell-main--play {
   -webkit-overflow-scrolling: touch;
 }
 
+html[data-viewport='mobile'] .shell-main--play + .shell-dock {
+  display: none;
+}
+
 html[data-viewport='mobile'] .shell-main--play > *,
 html[data-viewport='mobile'] .shell-main--play > * > *,
 html[data-viewport='mobile'] .shell-main--play .play-session-root {
@@ -53,4 +57,58 @@ html[data-viewport='mobile'] .game-card-surface,
 html[data-viewport='mobile'] .game-card-shell {
   width: 100%;
   max-width: 100%;
+}
+
+/* Phone header: game navigation in the centre, countdown and standings at right. */
+html[data-viewport='mobile'] .game-card-tv-header-panel {
+  min-height: 7rem;
+  padding: 0.75rem 0.6rem;
+}
+
+html[data-viewport='mobile'] .game-card-tv-header-back,
+html[data-viewport='mobile'] .game-card-tv-header-actions > .game-card-header-score-btn {
+  display: none;
+}
+
+html[data-viewport='mobile'] .game-card-tv-header-center {
+  right: 7.25rem;
+}
+
+html[data-viewport='mobile'] .game-card-tv-header-title-row {
+  gap: 0.65rem;
+}
+
+html[data-viewport='mobile'] .game-card-header-nav-btn {
+  width: 3rem;
+  height: 3rem;
+  font-size: 2rem;
+}
+
+html[data-viewport='mobile'] .game-card-tv-header-actions {
+  width: 7.15rem;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+html[data-viewport='mobile'] .game-card-tv-header-actions .game-card-header-timer {
+  padding: 0;
+}
+
+html[data-viewport='mobile'] .game-card-tv-header-actions .game-card-header-timer__label {
+  max-width: 7rem;
+  font-size: 0.6rem;
+  line-height: 1.05;
+  white-space: nowrap;
+}
+
+html[data-viewport='mobile'] .game-card-tv-header-actions .game-card-header-timer__value {
+  margin-top: 0.15rem;
+  font-size: 1.85rem;
+}
+
+html[data-viewport='mobile'] .game-card-tv-header-actions button[aria-label] {
+  width: 2.75rem;
+  height: 2.75rem;
 }

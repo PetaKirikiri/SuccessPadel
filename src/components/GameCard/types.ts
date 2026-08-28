@@ -80,7 +80,6 @@ export type GameCardProps = {
   isCurrentGame: boolean
   countdown?: string | null
   countdownLabelText: string
-  systemTimeLabel: string
   collapsed: boolean
   onToggleCollapsed: () => void
   currentUserId?: string | null
