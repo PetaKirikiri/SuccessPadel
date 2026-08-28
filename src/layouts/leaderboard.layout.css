@@ -51,8 +51,31 @@ html[data-viewport='web'] .leaderboard-surface {
   padding-right: 1rem;
 }
 
+html[data-viewport='tv'] .tv-play-standings ol > li:has(.leaderboard-team-simple) {
+  grid-template-columns: 1.35rem minmax(0, 1fr) minmax(6.5rem, 8rem) 4.25rem;
+}
+
+html[data-viewport='tv'] .leaderboard-team-simple {
+  display: contents;
+}
+
+html[data-viewport='tv'] .leaderboard-team-simple .leaderboard-team-players {
+  min-width: 0;
+  overflow: hidden;
+}
+
 html[data-viewport='tv'] .leaderboard-team-simple .team-learning-badge--leaderboard {
-  transform: translateX(-1rem);
+  width: 100%;
+  min-width: 0;
+  max-width: 8rem;
+  overflow: hidden;
+}
+
+html[data-viewport='tv'] .team-learning-badge--leaderboard .team-learning-badge__copy,
+html[data-viewport='tv'] .team-learning-badge--leaderboard .team-learning-badge__copy > span {
+  width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 /* Fixed-size leaderboard artwork used by html-to-image. Keep every color explicit so
