@@ -235,7 +235,7 @@ function LeaderboardRow({
   const learningIdentity = learningIdentityForTeam(
     entry.player_a_name,
     entry.player_b_name,
-    [entry.player_a_id, entry.player_b_id],
+    [entry.player_a_id, entry.player_b_id, ...entry.profile_id.split(':').slice(1)],
   )
 
   return (
