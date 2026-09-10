@@ -244,3 +244,31 @@ html[data-viewport='web'] .tv-play-view .game-card-court-player__avatar {
   width: clamp(2.35rem, calc(0.5rem + 13cqh), 3.75rem);
   height: clamp(2.35rem, calc(0.5rem + 13cqh), 3.75rem);
 }
+
+/* Each slot keeps its image and three language lines together. */
+html[data-viewport='web'] .court-slot-learning-item {
+  display: grid;
+  justify-items: center;
+  gap: 0.1rem;
+  min-width: 0;
+}
+html[data-viewport='web'] .court-slot-learning-copy {
+  display: grid;
+  justify-items: center;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+html[data-viewport='web'] .team-learning-badge--slots {
+  gap: 0.45rem;
+}
+html[data-viewport='web'] .team-learning-badge--slots .team-learning-badge__image {
+  width: clamp(2.5rem, 10cqh, 4rem);
+  height: clamp(2.5rem, 10cqh, 4rem);
+}
+html[data-viewport='web'] .court-slot-learning-copy .team-learning-badge__thai {
+  font-size: clamp(0.8rem, 2.8cqh, 1.1rem);
+}
+html[data-viewport='web'] .court-slot-learning-copy .team-learning-badge__phonetic,
+html[data-viewport='web'] .court-slot-learning-copy .team-learning-badge__english {
+  font-size: clamp(0.65rem, 2.1cqh, 0.85rem);
+}

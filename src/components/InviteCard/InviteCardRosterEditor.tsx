@@ -8,8 +8,6 @@ import { duoTeamDraftsFromRow, competitionRosterSlots } from '../../lib/competit
 import { isDuoCompetition } from '../../lib/competitionFormatPresets'
 import {
   clearInviteRosterDraft,
-  loadInviteRosterDraft,
-  saveInviteRosterDraft,
 } from '../../lib/competitionInviteRosterDraft'
 import {
   saveCompetitionInviteDuoRoster,
@@ -24,7 +22,6 @@ type Props = {
   onSaved?: () => void
 }
 
-const CACHE_MS = 250
 const FLUSH_MS = 600
 
 function padArray<T>(values: T[], count: number, fill: T): T[] {
@@ -153,32 +150,19 @@ export function InviteCardRosterEditor({ row, onSaved }: Props) {
 
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [padelPlayers, setPadelPlayers] = useState<PadelPlayerOption[]>([])
-  const [duoTeams, setDuoTeams] = useState<DuoTeamDraft[]>(() => {
-    const cached = loadInviteRosterDraft(sessionId)
-    if (cached?.isDuos && cached.duoTeams) return cached.duoTeams
-    return duoTeamDraftsFromRow(row)
-  })
-  const [playerSlots, setPlayerSlots] = useState<string[]>(() => {
-    const cached = loadInviteRosterDraft(sessionId)
-    if (cached && !cached.isDuos && cached.playerSlots) return cached.playerSlots
-    return singlesFromRow(row).names
-  })
-  const [profileIds, setProfileIds] = useState<(string | null)[]>(() => {
-    const cached = loadInviteRosterDraft(sessionId)
-    if (cached && !cached.isDuos && cached.profileIds) return cached.profileIds
-    return singlesFromRow(row).profileIds
-  })
-  const [padelPlayerIds, setPadelPlayerIds] = useState<(string | null)[]>(() => {
-    const cached = loadInviteRosterDraft(sessionId)
-    if (cached && !cached.isDuos && cached.padelPlayerIds) return cached.padelPlayerIds
-    return singlesFromRow(row).padelPlayerIds
-  })
+  const [duoTeams, setDuoTeams] = useState<DuoTeamDraft[]>(() => duoTeamDraftsFromRow(row))
+  const [playerSlots, setPlayerSlots] = useState<string[]>(() => singlesFromRow(row).names)
+  const [profileIds, setProfileIds] = useState<(string | null)[]>(() =>
+    singlesFromRow(row).profileIds,
+  )
+  const [padelPlayerIds, setPadelPlayerIds] = useState<(string | null)[]>(() =>
+    singlesFromRow(row).padelPlayerIds,
+  )
   const [slotCount] = useState(() => singlesFromRow(row).slotCount)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const dirtyRef = useRef(Boolean(loadInviteRosterDraft(sessionId)))
-  const cacheTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const dirtyRef = useRef(false)
   const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const flushingRef = useRef(false)
   const snapshotRef = useRef({
@@ -231,19 +215,7 @@ export function InviteCardRosterEditor({ row, onSaved }: Props) {
 
   useEffect(() => {
     dirtyRef.current = false
-    const cached = loadInviteRosterDraft(sessionId)
-    if (cached?.isDuos && cached.duoTeams) {
-      setDuoTeams(cached.duoTeams)
-      dirtyRef.current = true
-      return
-    }
-    if (cached && !cached.isDuos && cached.playerSlots) {
-      setPlayerSlots(cached.playerSlots)
-      setProfileIds(padArray(cached.profileIds ?? [], cached.playerSlots.length, null))
-      setPadelPlayerIds(padArray(cached.padelPlayerIds ?? [], cached.playerSlots.length, null))
-      dirtyRef.current = true
-      return
-    }
+    clearInviteRosterDraft(sessionId)
     const next = draftFromRow(rowRef.current, isDuos)
     if (next.isDuos) setDuoTeams(next.duoTeams)
     else {
@@ -264,23 +236,6 @@ export function InviteCardRosterEditor({ row, onSaved }: Props) {
       setPadelPlayerIds(padArray(next.padelPlayerIds, next.slotCount, null))
     }
   }, [row, isDuos])
-
-  const persistCache = useCallback(() => {
-    if (cacheTimer.current) clearTimeout(cacheTimer.current)
-    cacheTimer.current = setTimeout(() => {
-      const snap = snapshotRef.current
-      if (snap.isDuos) {
-        saveInviteRosterDraft(sessionId, { isDuos: true, duoTeams: snap.duoTeams })
-      } else {
-        saveInviteRosterDraft(sessionId, {
-          isDuos: false,
-          playerSlots: snap.playerSlots,
-          profileIds: snap.profileIds,
-          padelPlayerIds: snap.padelPlayerIds,
-        })
-      }
-    }, CACHE_MS)
-  }, [sessionId])
 
   const flushToDb = useCallback(async () => {
     if (!dirtyRef.current || flushingRef.current) return false
@@ -310,16 +265,14 @@ export function InviteCardRosterEditor({ row, onSaved }: Props) {
 
   const noteEdit = useCallback(() => {
     dirtyRef.current = true
-    persistCache()
     if (flushTimer.current) clearTimeout(flushTimer.current)
     flushTimer.current = setTimeout(() => {
       void flushToDb()
     }, FLUSH_MS)
-  }, [persistCache, flushToDb])
+  }, [flushToDb])
 
   useEffect(() => {
     return () => {
-      if (cacheTimer.current) clearTimeout(cacheTimer.current)
       if (flushTimer.current) clearTimeout(flushTimer.current)
     }
   }, [])
@@ -334,6 +287,15 @@ export function InviteCardRosterEditor({ row, onSaved }: Props) {
 
   const handleSinglesChange = useCallback(
     (names: string[], ids: (string | null)[], padelIds: (string | null)[]) => {
+      const current = snapshotRef.current
+      if (
+        !current.isDuos &&
+        names.every((name, index) => name === current.playerSlots[index]) &&
+        ids.every((id, index) => id === current.profileIds[index]) &&
+        padelIds.every((id, index) => id === current.padelPlayerIds[index])
+      ) {
+        return
+      }
       setPlayerSlots(names)
       setProfileIds(ids)
       setPadelPlayerIds(padelIds)

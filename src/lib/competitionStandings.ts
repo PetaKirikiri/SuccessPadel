@@ -3,6 +3,30 @@ import { normalizeLeaderboardEntries } from './leaderboardEntries'
 import { rosterDisplayName, type CompetitionPlayer } from '../hooks/useCompetitions'
 import type { CompetitionRound, CourtMatch } from '../hooks/useCompetitionRun'
 
+/** Keep official results intact, including players who have no result yet. */
+export function completeCompetitionLeaderboard(
+  roster: CompetitionPlayer[],
+  saved: LeaderboardEntry[],
+): LeaderboardEntry[] {
+  const identities = (entry: LeaderboardEntry) =>
+    [entry.profile_id, entry.member_profile_id, entry.padel_player_id, entry.roster_entry_id]
+      .filter((id): id is string => Boolean(id))
+  const rosterEntries = computeAmericanoStandings(roster, [], [])
+  const rosterIdentities = new Set(rosterEntries.flatMap(identities))
+  // A replaced player may have an old zero-score placeholder result. Do not
+  // display that placeholder as an extra entrant; retain real earned points.
+  const activeSaved = saved.filter((entry) => entry.total_points > 0 ||
+    identities(entry).some((id) => rosterIdentities.has(id)))
+  const known = new Set(activeSaved.flatMap(identities))
+  const missing = rosterEntries.filter(
+    (entry) => !identities(entry).some((id) => known.has(id)),
+  )
+  return [...activeSaved, ...missing].sort(
+    (a, b) => b.total_points - a.total_points || b.games - a.games ||
+      a.display_name.localeCompare(b.display_name),
+  )
+}
+
 export function computeAmericanoStandings(
   roster: CompetitionPlayer[],
   rounds: CompetitionRound[],
@@ -44,6 +68,7 @@ export function computeAmericanoStandings(
         const scored = totals.get(key)
         return {
           profile_id: key,
+          roster_entry_id: sp.id,
           padel_player_id: sp.padel_player_id,
           member_profile_id: sp.profile_id,
           is_guest: !sp.profile_id,

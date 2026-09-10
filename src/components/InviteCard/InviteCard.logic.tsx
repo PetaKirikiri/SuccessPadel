@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { GameBoardPreview } from '../../components/GameCard/GameBoardPreview'
 import { InviteCard } from './InviteCard'
 import { useTranslation } from '../../hooks/useTranslation'
@@ -16,6 +17,7 @@ import {
   isOrganizedFriendly,
 } from '../../lib/friendlyGames'
 import { inviteCardData, type SessionSource } from '../../lib/sessionDisplay'
+import { useViewport } from '../../contexts/ViewportContext'
 import { useLocale } from '../../providers/LocaleProvider'
 import { supabase } from '../../lib/supabaseClient'
 import { InviteCardRosterEditor } from './InviteCardRosterEditor'
@@ -49,7 +51,10 @@ type Props = CompetitionProps | FriendlyProps
 export function InviteGameCard(props: Props) {
   const { t } = useTranslation()
   const { locale } = useLocale()
+  const { bucket } = useViewport()
+  const showPregameOverview = bucket === 'web' || bucket === 'tv'
   const [busy, setBusy] = useState(false)
+  const [pregameView, setPregameView] = useState<'players' | 'rules'>('players')
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const row = props.kind === 'competition' ? props.row : undefined
@@ -144,17 +149,32 @@ export function InviteGameCard(props: Props) {
       qrAriaLabel={t('leaderboard.viewAlongHint')}
       headerAction={
         row ? (
+          <div className="invite-game-card__header-links" aria-label="Competition navigation">
+          {!showPregameOverview && <>
+          <a href={`#players-${row.id}`} role="button" aria-pressed={pregameView === 'players'}
+            aria-controls={`players-${row.id}`}
+            onKeyDown={(event) => { if (event.key === ' ') { event.preventDefault(); setPregameView('players') } }}
+            onClick={(event) => { event.preventDefault(); event.stopPropagation(); setPregameView('players') }}>
+            Players
+          </a>
           <a
             className="invite-game-card__rules-jump"
             href={`#tonights-rules-${row.id}`}
+            role="button"
+            aria-pressed={pregameView === 'rules'}
+            aria-controls={`tonights-rules-${row.id}`}
+            onKeyDown={(event) => { if (event.key === ' ') { event.preventDefault(); setPregameView('rules') } }}
             onClick={(event) => {
               event.preventDefault()
               event.stopPropagation()
-              document.getElementById(`tonights-rules-${row.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              setPregameView('rules')
             }}
           >
-            Tonight&apos;s Rules
+            Rules
           </a>
+          </>}
+          <Link className="invite-game-card__matches-link" to={detailTo}>Matches</Link>
+          </div>
         ) : undefined
       }
       canEdit={
@@ -171,10 +191,17 @@ export function InviteGameCard(props: Props) {
       }
       editAriaLabel={props.kind === 'competition' ? t('competition.edit') : t('friendly.edit')}
       rosterSection={
-        props.kind === 'competition' && canEditRoster ? (
+        props.kind === 'competition' && showPregameOverview ? (
+          <CompetitionPregamePanel
+            row={props.row}
+            view="overview"
+            canReorder={canEditSetup}
+            rosterContent={canEditRoster ? <InviteCardRosterEditor row={props.row} onSaved={props.onRefresh} /> : undefined}
+          />
+        ) : props.kind === 'competition' && canEditRoster && pregameView === 'players' ? (
           <InviteCardRosterEditor row={props.row} onSaved={props.onRefresh} />
         ) : props.kind === 'competition' ? (
-          <CompetitionPregamePanel row={props.row} />
+          <CompetitionPregamePanel row={props.row} view={pregameView} canReorder={canEditSetup} />
         ) : undefined
       }
       canDelete={

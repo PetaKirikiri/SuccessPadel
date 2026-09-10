@@ -67,7 +67,7 @@ export function InviteCardHeaderTitle({
         />
 
         <div className="invite-game-card__title-slot">
-          <Link
+          {detailTo ? <Link
             to={detailTo}
             className="invite-game-card__title-link touch-manipulation transition active:opacity-80"
             onClick={(event) => event.stopPropagation()}
@@ -76,7 +76,11 @@ export function InviteCardHeaderTitle({
             <p className="invite-game-card__schedule-date">{dateLine}</p>
             {timeLine ? <p className="invite-game-card__schedule-time">{timeLine}</p> : null}
             <p className="invite-game-card__level">{titleLine}</p>
-          </Link>
+          </Link> : <div className="invite-game-card__title-link">
+            <p className="invite-game-card__schedule-date">{dateLine}</p>
+            {timeLine ? <p className="invite-game-card__schedule-time">{timeLine}</p> : null}
+            <p className="invite-game-card__level">{titleLine}</p>
+          </div>}
         </div>
 
         <InviteCarouselHeaderNavButton

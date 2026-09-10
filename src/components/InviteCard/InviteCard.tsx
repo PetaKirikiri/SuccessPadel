@@ -70,7 +70,10 @@ function cleanInviteTitle(title: string, dateLine: string, timeLine: string): st
     })
     .join(' · ')
 
-  return cleaned || title
+  const displayTitle = cleaned || title
+  return /^superhero americano match\s*!*$/i.test(displayTitle)
+    ? 'Superhero Americano'
+    : displayTitle
 }
 
 export function InviteCard({
@@ -99,6 +102,7 @@ export function InviteCard({
   sessionKind,
 }: InviteCardProps) {
   const navigate = useNavigate()
+  const cardDetailTo = sessionKind === 'competition' ? '' : detailTo
   const showAdminActions = (canEdit && editTo) || (canDelete && onDelete)
 
   const openDetail = () => {
@@ -106,12 +110,12 @@ export function InviteCard({
   }
 
   const handleCardClick = (event: MouseEvent<HTMLElement>) => {
-    if (!detailTo || isInteractiveCardTarget(event.target, event.currentTarget)) return
+    if (!cardDetailTo || isInteractiveCardTarget(event.target, event.currentTarget)) return
     openDetail()
   }
 
   const handleCardKeyDown = (event: KeyboardEvent<HTMLElement>) => {
-    if (!detailTo || isInteractiveCardTarget(event.target, event.currentTarget)) return
+    if (!cardDetailTo || isInteractiveCardTarget(event.target, event.currentTarget)) return
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
       openDetail()
@@ -157,7 +161,7 @@ export function InviteCard({
   const headerContent = (
     <header className="invite-game-card__header">
       <InviteCardHeaderTitle
-        detailTo={detailTo}
+        detailTo={cardDetailTo}
         dateLine={dateCompact}
         timeLine={timeLine}
         titleLine={cleanTitle}
@@ -192,12 +196,12 @@ export function InviteCard({
   return (
     <article
       className={`${inviteCardRootClass} ${
-        detailTo ? 'cursor-pointer' : ''
+        cardDetailTo ? 'cursor-pointer' : ''
       } ${className}`}
       data-kind={sessionKind}
-      role={detailTo ? 'link' : undefined}
-      tabIndex={detailTo ? 0 : undefined}
-      aria-label={detailTo ? `${title}, ${dateLine}` : undefined}
+      role={cardDetailTo ? 'link' : undefined}
+      tabIndex={cardDetailTo ? 0 : undefined}
+      aria-label={cardDetailTo ? `${title}, ${dateLine}` : undefined}
       onClick={handleCardClick}
       onKeyDown={handleCardKeyDown}
     >

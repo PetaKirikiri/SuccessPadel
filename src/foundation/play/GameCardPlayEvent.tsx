@@ -22,7 +22,7 @@ import {
 } from '../../lib/competitionAchievements'
 import { americanoScheduleFromSession, competitionRoundTimesByGame } from '../../lib/competitionLayout'
 import type { CourtScoreSubmit } from '../../lib/competitionScoreInput'
-import { computeAmericanoStandings } from '../../lib/competitionStandings'
+import { completeCompetitionLeaderboard, computeAmericanoStandings } from '../../lib/competitionStandings'
 import { computeDuoStandings } from '../../lib/computeDuoStandings'
 import { computeFriendlySessionStandings } from '../../lib/friendlySessionStandings'
 import { duoLabelsForMatch } from '../../lib/competitionFormatPresets'
@@ -365,8 +365,11 @@ export function GameCardPlayEvent() {
   )
 
   const liveStandings = useMemo(() => {
-    if (manualStandings.length > 0) {
-      return enrichStandingsWithAvatars(manualStandings, leaderboard)
+    // Persisted match_players are the scoring authority. Recomputing against the
+    // current round roster can attribute historical scores to the wrong player
+    // after an explicit roster substitution, even though the saved match is intact.
+    if (leaderboard.length > 0) {
+      return isDuo ? leaderboard : completeCompetitionLeaderboard(roster, leaderboard)
     }
     if (isDuo && teams.length >= 2 && effectiveDuoStandings.length > 0) {
       return effectiveDuoStandings
@@ -374,8 +377,8 @@ export function GameCardPlayEvent() {
     if (!isDuo && effectivePlayerStandings.length > 0) {
       return effectivePlayerStandings
     }
-    if (leaderboard.length > 0) {
-      return leaderboard
+    if (manualStandings.length > 0) {
+      return enrichStandingsWithAvatars(manualStandings, leaderboard)
     }
     return enrichStandingsWithAvatars(gestureStandings, leaderboard)
   }, [
@@ -385,6 +388,7 @@ export function GameCardPlayEvent() {
     isDuo,
     leaderboard,
     manualStandings,
+    roster,
     rounds,
     teams,
   ])

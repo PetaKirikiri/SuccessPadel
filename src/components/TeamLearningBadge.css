@@ -1,0 +1,48 @@
+/* Intrinsic player badge: fits the existing avatar cell without changing surface layouts. */
+.player-learning-entry {
+  grid-column: 2 / 4;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.player-learning-entry__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.player-learning-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex: 0 0 auto;
+  margin: 0;
+}
+.player-learning-badge__image {
+  width: clamp(1.3rem, 2vw, 2rem);
+  height: clamp(1.3rem, 2vw, 2rem);
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+.player-learning-badge__copy {
+  display: grid;
+  line-height: 1.1;
+  text-align: left;
+  white-space: nowrap;
+}
+.player-learning-badge__thai {
+  color: #fff;
+  font-size: clamp(0.6rem, 0.75vw, 0.85rem);
+  font-weight: 800;
+}
+.player-learning-badge__phonetic {
+  color: #7dd3fc;
+  font-size: clamp(0.45rem, 0.55vw, 0.65rem);
+  font-weight: 700;
+}
+.player-learning-badge__english {
+  color: rgb(255 255 255 / 0.72);
+  font-size: clamp(0.45rem, 0.55vw, 0.65rem);
+  font-weight: 650;
+}

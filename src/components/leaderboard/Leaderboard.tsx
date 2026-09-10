@@ -24,6 +24,7 @@ import type { LeaderboardEntry } from '../../lib/leaderboardTypes'
 import { openPlayerProfile } from '../../lib/openPlayerProfile'
 import { LeaderboardShareButton, type LeaderboardShareRow } from './LeaderboardShareButton'
 import { learningIdentityForTeam } from '../../lib/spiritAnimals'
+import { learningIdentityForSlot } from '../../lib/householdLearning'
 import { TeamLearningBadge } from '../TeamLearningBadge'
 
 type Props = {
@@ -232,6 +233,7 @@ function LeaderboardRow({
   t: TranslateFn
 }) {
   const record = entryRecord(entry)
+  const slotIdentity = learningIdentityForSlot(entry.roster_entry_id)
   const learningIdentity = learningIdentityForTeam(
     entry.player_a_name,
     entry.player_b_name,
@@ -275,7 +277,9 @@ function LeaderboardRow({
       >
         {rank}
       </span>
-      {!simpleTeamRow ? (
+      {!simpleTeamRow && slotIdentity ? (
+        <img className="player-learning-badge__image" src={slotIdentity.imageUrl} alt={slotIdentity.english} draggable={false} />
+      ) : !simpleTeamRow ? (
         <PlayerAvatar
           displayName={entry.display_name}
           avatarUrl={entry.avatar_url}

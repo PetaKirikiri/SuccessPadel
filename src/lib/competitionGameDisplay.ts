@@ -57,21 +57,40 @@ function rosterAvatarUrl(sp: CompetitionPlayer): string | null {
 }
 
 export function competitionRosterSlots(row: CompetitionRow): RosterSlot[] {
-  const players = row.session_players ?? []
-  const slots: RosterSlot[] = players.map((sp) => ({
-    name: rosterDisplayName(sp),
-    profileId: rosterProfileId(sp),
-    padelPlayerId: sp.padel_player_id,
-    avatarUrl: rosterAvatarUrl(sp),
-    vacant: false,
+  const players = [...(row.session_players ?? [])].sort(
+    (a, b) => (a.rank_order ?? Number.MAX_SAFE_INTEGER) - (b.rank_order ?? Number.MAX_SAFE_INTEGER),
+  )
+  const highestSavedRank = players.reduce(
+    (highest, player) => Math.max(highest, player.rank_order ?? -1),
+    -1,
+  )
+  const cap = row.max_players ?? row.target_players ?? 0
+  const slotCount = Math.max(cap, players.length, highestSavedRank + 1)
+  const slots: RosterSlot[] = Array.from({ length: slotCount }, () => ({
+    name: '',
+    profileId: null,
+    padelPlayerId: null,
+    avatarUrl: null,
+    vacant: true,
   }))
 
-  const cap = row.max_players ?? row.target_players
-  if (cap == null || cap <= slots.length) return slots
-
-  for (let i = slots.length; i < cap; i += 1) {
-    slots.push({ name: '', profileId: null, avatarUrl: null, vacant: true })
+  for (const player of players) {
+    const savedRank = player.rank_order
+    const firstVacant = slots.findIndex((slot) => slot.vacant)
+    const index =
+      savedRank != null && savedRank >= 0 && savedRank < slots.length && slots[savedRank]?.vacant
+        ? savedRank
+        : firstVacant
+    if (index < 0) continue
+    slots[index] = {
+      name: rosterDisplayName(player),
+      profileId: rosterProfileId(player),
+      padelPlayerId: player.padel_player_id,
+      avatarUrl: rosterAvatarUrl(player),
+      vacant: false,
+    }
   }
+
   return slots
 }
 

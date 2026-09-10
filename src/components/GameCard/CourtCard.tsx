@@ -18,6 +18,7 @@ import { GENDER_CHIP_COLORS } from '../../foundation/profile/profileFormUi'
 import type { LiveCourt, ScoringGameCourt } from './gameBoardTypes'
 import { learningIdentityForTeam } from '../../lib/spiritAnimals'
 import { TeamLearningBadge } from '../TeamLearningBadge'
+import { learningIdentityForSlot } from '../../lib/householdLearning'
 
 export function stopCardNav(e: { stopPropagation: () => void }) {
   e.stopPropagation()
@@ -861,7 +862,7 @@ export function CourtMatchCell({
     )
 
     return (
-      <p
+      <div
         className={`${playerClass()} ${
           align === 'right' ? 'justify-end text-right' : ''
         }`}
@@ -877,7 +878,7 @@ export function CourtMatchCell({
             {nameEl}
           </>
         )}
-      </p>
+      </div>
     )
   }
 
@@ -898,16 +899,37 @@ export function CourtMatchCell({
       side === 'right' ? 'justify-self-end' : 'justify-self-start'
     }`
   const labelSlotClass = 'game-card-court-team-label-slot min-h-12'
-  const teamAIdentity = learningIdentityForTeam(
+  const teamAIdentity = teamAPlayerList.some((player) => learningIdentityForSlot(player.rosterId)) ? null : learningIdentityForTeam(
     teamAPlayerList[0]?.name,
     teamAPlayerList[1]?.name,
     teamAPlayerList.flatMap((player) => [player.id, player.rosterId, player.padelPlayerId]),
   )
-  const teamBIdentity = learningIdentityForTeam(
+  const teamBIdentity = teamBPlayerList.some((player) => learningIdentityForSlot(player.rosterId)) ? null : learningIdentityForTeam(
     teamBPlayerList[0]?.name,
     teamBPlayerList[1]?.name,
     teamBPlayerList.flatMap((player) => [player.id, player.rosterId, player.padelPlayerId]),
   )
+  const slotIcons = (players: CourtPlayer[], side: 'left' | 'right') => {
+    const slots = players.flatMap((player) => {
+      const identity = learningIdentityForSlot(player.rosterId)
+      return identity ? [{ ...identity, rosterId: player.rosterId }] : []
+    })
+    if (!slots.length) return null
+    return (
+      <figure className={`team-learning-badge team-learning-badge--court team-learning-badge--slots team-learning-badge--${side}`}>
+        {slots.map((identity) => (
+          <span className="court-slot-learning-item" key={identity.rosterId}>
+            <img className="team-learning-badge__image" src={identity.imageUrl} alt={identity.english} draggable={false} />
+            <span className="court-slot-learning-copy">
+              <span className="team-learning-badge__thai" lang="th">{identity.thai}</span>
+              <span className="team-learning-badge__phonetic">{identity.phonetic}</span>
+              <span className="team-learning-badge__english">{identity.english}</span>
+            </span>
+          </span>
+        ))}
+      </figure>
+    )
+  }
   const duoAlignedSides = (
     <>
       {showTeamLabels ? (
@@ -932,6 +954,8 @@ export function CourtMatchCell({
       <div className={`${sideCellClass('right')} ${showTeamLabels ? 'row-start-3' : 'row-start-2'} self-center`}>
         {playerEl(teamBPlayerList[1]!, 'right')}
       </div>
+      {slotIcons(teamAPlayerList, 'left')}
+      {slotIcons(teamBPlayerList, 'right')}
       {teamAIdentity ? (
         <TeamLearningBadge identity={teamAIdentity} side="left" />
       ) : null}

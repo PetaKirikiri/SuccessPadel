@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { CompetitionRow } from '../../hooks/useCompetitions'
 import { rosterDisplayName } from '../../hooks/useCompetitions'
 import { competitionPlayerAvatarUrl } from '../../lib/competitionRosterAvatars'
@@ -7,6 +6,10 @@ import { resolveCompetitionSchedule } from '../../lib/competitionLayout'
 import { competitionPlayerMode } from '../../lib/competitionFormatPresets'
 import { americanoScoreTarget } from '../../lib/competitionPresets'
 import { supabase } from '../../lib/supabaseClient'
+import { rulesCopy, rulesLanguages, type RulesLanguage } from '../../lib/competitionRulesLanguages'
+import { useCompetitionLineupDrag } from '../../hooks/useCompetitionLineupDrag'
+import { useAuth } from '../../hooks/useAuth'
+import { PlayerNameLink } from '../../shared/ProfilePhoto/PlayerNameLink'
 
 type AttendanceStatus = 'pending' | 'confirmed' | 'cancelled'
 type AttendanceRow = {
@@ -16,6 +19,9 @@ type AttendanceRow = {
 
 type Props = {
   row: CompetitionRow
+  view?: 'players' | 'rules' | 'overview'
+  rosterContent?: ReactNode
+  canReorder?: boolean
 }
 
 function playerInitial(name: string): string {
@@ -42,7 +48,14 @@ function writeLocalAttendance(sessionId: string, attendance: Record<string, Atte
   }
 }
 
-export function CompetitionPregamePanel({ row }: Props) {
+export function CompetitionPregamePanel({ row, view = 'players', canReorder = false, rosterContent }: Props) {
+  const { user, profile, loading: authLoading } = useAuth()
+  const [language, setLanguage] = useState<RulesLanguage>(() => {
+    try {
+      const saved = localStorage.getItem('success-padel:rules-language')
+      return rulesLanguages.find((item) => item.id === saved)?.id ?? 'en'
+    } catch { return 'en' }
+  })
   const [attendance, setAttendance] = useState<Record<string, AttendanceStatus>>({})
   const [busyPlayerId, setBusyPlayerId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -52,7 +65,20 @@ export function CompetitionPregamePanel({ row }: Props) {
   )
   const schedule = resolveCompetitionSchedule(row)
   const mode = competitionPlayerMode(row.scoring_config)
+  const recognizedAdmin = !authLoading && Boolean(user?.id && profile?.id === user.id && profile?.is_admin)
+  const reorderEnabled = canReorder && recognizedAdmin && mode !== 'duos'
+  const lineup = useCompetitionLineupDrag(row.id, roster, reorderEnabled && busyPlayerId === null)
   const scoreTarget = americanoScoreTarget(row)
+  const copy = rulesCopy[language]
+  const translate = (text: string) => text
+    .replaceAll('{target}', String(scoreTarget))
+    .replaceAll('{minutes}', String(schedule.gameMinutes))
+    .replaceAll('{rounds}', String(schedule.totalGames))
+  const steps = [...copy.steps.slice(0, 4), mode === 'duos' ? copy.duos : copy.rotation, copy.steps[4]]
+  const chooseLanguage = (next: RulesLanguage) => {
+    setLanguage(next)
+    try { localStorage.setItem('success-padel:rules-language', next) } catch { /* Selection still works without storage. */ }
+  }
 
   useEffect(() => {
     let active = true
@@ -91,47 +117,74 @@ export function CompetitionPregamePanel({ row }: Props) {
 
   const toggleAttendance = async (rosterEntryId: string) => {
     if (busyPlayerId) return
+    const previousStatus = attendance[rosterEntryId] ?? 'pending'
     const nextStatus: AttendanceStatus = attendance[rosterEntryId] === 'confirmed' ? 'pending' : 'confirmed'
     setBusyPlayerId(rosterEntryId)
     setError(null)
     setAttendance((current) => {
       const next = { ...current, [rosterEntryId]: nextStatus }
-      writeLocalAttendance(row.id, next)
       return next
     })
-    const { error: updateError } = await supabase.rpc('set_competition_attendance', {
-      p_session_id: row.id,
-      p_roster_entry_id: rosterEntryId,
-      p_status: nextStatus,
-    })
-    setBusyPlayerId(null)
-    if (updateError) {
-      setError('Confirmed on this device. Shared attendance saving is not connected yet.')
-      return
+    try {
+      const { error: updateError } = await supabase.rpc('set_competition_attendance', {
+        p_session_id: row.id,
+        p_roster_entry_id: rosterEntryId,
+        p_status: nextStatus,
+      })
+      if (updateError) throw updateError
+      setAttendance((current) => {
+        const next = { ...current, [rosterEntryId]: nextStatus }
+        writeLocalAttendance(row.id, next)
+        return next
+      })
+    } catch (cause) {
+      setAttendance((current) => ({ ...current, [rosterEntryId]: previousStatus }))
+      const message = cause && typeof cause === 'object' && 'message' in cause
+        ? String(cause.message) : 'Check your connection and try again.'
+      setError(`Attendance was not saved: ${message}`)
+    } finally {
+      setBusyPlayerId(null)
     }
   }
 
   return (
     <div className="competition-pregame">
-      <section className="competition-pregame__players" aria-label="Player attendance">
-        <ol className="competition-pregame__roster">
-          {roster.map((player, index) => {
+      {view !== 'rules' && <section id={`players-${row.id}`} className="competition-pregame__players" aria-label="Player attendance">
+        {rosterContent ?? <>
+        {reorderEnabled && <p className="competition-pregame__lineup-status" role="status" aria-live="polite">{lineup.message}</p>}
+        <ol className="competition-pregame__roster" aria-busy={lineup.saving}>
+          {lineup.players.map((player, index) => {
             const name = rosterDisplayName(player)
             const avatar = competitionPlayerAvatarUrl(player)
             const status = attendance[player.id] ?? 'pending'
             return (
-              <li className={`competition-pregame__player competition-pregame__player--${status}`} key={player.id}>
+              <li className={`competition-pregame__player competition-pregame__player--${status}`} key={player.id}
+                data-lineup-player={player.id} data-lineup-session={row.id} data-drop-target={lineup.targetId === player.id}
+                data-reorder-enabled={reorderEnabled} data-dragging={lineup.draggingId === player.id}
+                tabIndex={reorderEnabled ? 0 : undefined}
+                aria-label={reorderEnabled ? `${name}, position ${index + 1}. Drag this card or use arrow keys to reorder.` : undefined}
+                onPointerDown={(event) => lineup.pointerDown(event, index)} onPointerMove={lineup.pointerMove}
+                onPointerUp={lineup.pointerUp} onPointerCancel={lineup.cancel}
+                onLostPointerCapture={lineup.cancel} onDragStart={(event) => event.preventDefault()}
+                onKeyDown={(event) => lineup.keyDown(event, index)}>
                 <span className="competition-pregame__rank">{index + 1}</span>
                 {avatar ? (
                   <img className="competition-pregame__avatar" src={avatar} alt="" />
                 ) : (
                   <span className="competition-pregame__avatar competition-pregame__avatar--initial">{playerInitial(name)}</span>
                 )}
-                <span className="competition-pregame__name">{name}</span>
+                <PlayerNameLink
+                  displayName={name}
+                  profileId={player.profile_id ?? player.profiles?.id ?? player.padel_players?.profile_id ?? player.padel_players?.profiles?.id}
+                  padelPlayerId={player.padel_player_id ?? player.padel_players?.id}
+                  competitionId={row.id}
+                  className="competition-pregame__name"
+                  disabled={lineup.saving || lineup.draggingId !== null}
+                />
                 <button
                   type="button"
                   className={`competition-pregame__confirm competition-pregame__confirm--${status}`}
-                  disabled={busyPlayerId !== null}
+                  disabled={busyPlayerId !== null || lineup.saving || lineup.draggingId !== null}
                   aria-pressed={status === 'confirmed'}
                   aria-label={`${name}: ${status === 'confirmed' ? 'confirmed' : 'unconfirmed'}. Change attendance.`}
                   onClick={() => void toggleAttendance(player.id)}
@@ -147,45 +200,33 @@ export function CompetitionPregamePanel({ row }: Props) {
             )
           })}
         </ol>
-        {error ? <p className="competition-pregame__error">{error}</p> : null}
-      </section>
+        {error ? <p className="competition-pregame__error" role="alert">{error}</p> : null}
+        </>}
+      </section>}
 
-      <aside id={`tonights-rules-${row.id}`} className="competition-pregame__rules" aria-label="Tonight's rules">
-        <h3 className="competition-pregame__heading">Tonight's Rules</h3>
+      {view !== 'players' && <aside id={`tonights-rules-${row.id}`} className="competition-pregame__rules" aria-label={copy.title} lang={language} dir={language === 'he' ? 'rtl' : 'ltr'}>
+        <h3 className="competition-pregame__heading">{copy.title}</h3>
+        <div className="competition-pregame__languages" role="group" aria-label="Rules language" dir="ltr">
+          {rulesLanguages.map((item) => (
+            <button type="button" className="competition-pregame__language" key={item.id} lang={item.id}
+              aria-pressed={language === item.id} aria-label={item.name} title={item.name}
+              onClick={() => chooseLanguage(item.id)}>
+              <span aria-hidden="true">{item.flag}</span> {item.name}
+            </button>
+          ))}
+        </div>
         <dl className="competition-pregame__facts">
-          <div><dt>Format</dt><dd>{mode === 'duos' ? 'Fixed-pair Duo Americano' : 'Americano rotation'}</dd></div>
-          <div><dt>Games</dt><dd>{schedule.totalGames}</dd></div>
-          <div><dt>Game time</dt><dd>{schedule.gameMinutes} minutes</dd></div>
-          <div><dt>Break</dt><dd>{schedule.breakMinutes} minutes</dd></div>
+          <div><dt>{copy.facts[0]}</dt><dd>{copy.formats[mode === 'duos' ? 1 : 0]}</dd></div>
+          <div><dt>{copy.facts[1]}</dt><dd>{schedule.totalGames}</dd></div>
+          <div><dt>{copy.facts[2]}</dt><dd>{copy.minutes.replace('{n}', String(schedule.gameMinutes))}</dd></div>
+          <div><dt>{copy.facts[3]}</dt><dd>{copy.minutes.replace('{n}', String(schedule.breakMinutes))}</dd></div>
         </dl>
         <ol className="competition-pregame__steps">
-          <li>
-            <strong>Find your court.</strong>
-            <span>The screen shows your partner, opponents and court for every round.</span>
-          </li>
-          <li>
-            <strong>Play to {scoreTarget} games.</strong>
-            <span>Stop when one team reaches {scoreTarget}, or when the {schedule.gameMinutes}-minute timer ends.</span>
-          </li>
-          <li>
-            <strong>Enter games won.</strong>
-            <span>For example, enter 6–3—not individual points such as 40–30.</span>
-          </li>
-          <li>
-            <strong>Earn your team’s score.</strong>
-            <span>Every player receives the number of games their team won in that round.</span>
-          </li>
-          <li>
-            <strong>{mode === 'duos' ? 'Meet new opponents.' : 'Rotate partners.'}</strong>
-            <span>{mode === 'duos' ? 'Your pair stays together while the opposing pair changes.' : 'Your partner and opponents change each round, so everyone plays with different people.'}</span>
-          </li>
-          <li>
-            <strong>Climb the leaderboard.</strong>
-            <span>Scores from all {schedule.totalGames} rounds are added together. The highest total wins.</span>
-          </li>
+          {steps.map(([heading, body], index) => (
+            <li key={index}><strong>{translate(heading)}</strong><span>{translate(body)}</span></li>
+          ))}
         </ol>
-        <Link className="competition-pregame__enter" to={`/competitions/${row.id}`}>Open competition</Link>
-      </aside>
+      </aside>}
     </div>
   )
 }

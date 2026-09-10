@@ -51,6 +51,23 @@ html[data-viewport='web'] .leaderboard-surface {
   padding-right: 1rem;
 }
 
+html[data-viewport='web'] .tv-play-view .tv-play-standings ol > li,
+html[data-viewport='tv'] .tv-play-view .tv-play-standings ol > li {
+  min-height: 0;
+  max-height: 48px;
+  flex: 1 1 0;
+}
+
+html[data-viewport='web'] .tv-play-standings-body,
+html[data-viewport='tv'] .tv-play-standings-body {
+  overflow-y: auto;
+}
+
+html[data-viewport='web'] .tv-play-standings ol,
+html[data-viewport='tv'] .tv-play-standings ol {
+  flex: 1 1 0;
+}
+
 html[data-viewport='tv'] .tv-play-standings ol > li:has(.leaderboard-team-simple) {
   grid-template-columns: 1.35rem minmax(0, 1fr) minmax(6.5rem, 8rem) 4.25rem;
 }

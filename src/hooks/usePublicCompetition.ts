@@ -77,7 +77,14 @@ export function usePublicCompetition(sessionId: string | undefined, options?: Op
         setSessionPairs((pairsData as CompetitionSessionPair[]) ?? d.session_pairs ?? [])
         setClubCourts(d.courts ?? [])
         setCourtMatches(d.matches ?? [])
-        setLeaderboard(normalizeLeaderboardEntries(d.leaderboard ?? []))
+        setLeaderboard(normalizeLeaderboardEntries((d.leaderboard ?? []).map((entry) => {
+          const slot = enrichedRoster.find((player) =>
+            player.id === entry.profile_id ||
+            (player.profile_id && [entry.profile_id, entry.member_profile_id].includes(player.profile_id)) ||
+            (player.padel_player_id && [entry.profile_id, entry.padel_player_id].includes(player.padel_player_id)),
+          )
+          return { ...entry, roster_entry_id: entry.roster_entry_id ?? slot?.id ?? null }
+        })))
       }
       if (!silent) setLoading(false)
     },

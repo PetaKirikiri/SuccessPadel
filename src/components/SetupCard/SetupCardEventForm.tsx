@@ -624,6 +624,32 @@ export function CompetitionForm() {
       ? duoTeamsToRosterSlots(duoTeams)
       : buildCompetitionRosterSlots(trimmedSlots, profileIds, padelPlayerIds)
 
+    // Existing rounds are the draw authority. Never sync/delete the roster or
+    // invoke the schedule generator when deliberately editing a running event.
+    if (id && competitionStarted) {
+      const { error: editError } = await supabase.rpc('edit_competition_preserving_draw', {
+        p_session_id: id,
+        p_slots: rosterPayload,
+        p_starts_at: startsAtIso,
+        p_ends_at: endsAtIso,
+        p_games: competitionSchedule.games,
+        p_game_minutes: competitionSchedule.gameMinutes,
+        p_break_minutes: competitionSchedule.breakMinutes,
+        p_title: finalTitle,
+      })
+      setBusy(false)
+      if (editError) {
+        setError(editError.code === 'PGRST202'
+          ? 'Safe editing is not installed in the database yet. Nothing was changed.'
+          : editError.message)
+        return
+      }
+      clearDraft()
+      clearCompetitionHubCache()
+      window.location.assign(`/competitions/${id}`)
+      return
+    }
+
     if (isDuos && createLeague && !id) {
       const { data: leagueResult, error: leagueErr } = await supabase.rpc('create_duo_league', {
         p_season_id: seasonId,
@@ -812,17 +838,6 @@ export function CompetitionForm() {
       if (cfgErr) {
         setBusy(false)
         setError(cfgErr)
-        return
-      }
-    }
-
-    if (competitionStarted && canSaveSchedule) {
-      const { error: rebuildErr } = await supabase.rpc('rebuild_competition_schedule', {
-        p_session_id: sessionId,
-      })
-      if (rebuildErr) {
-        setBusy(false)
-        setError(rebuildErr.message)
         return
       }
     }

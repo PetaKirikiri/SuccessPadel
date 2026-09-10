@@ -72,6 +72,28 @@ html[data-viewport='web'] .hub-gender-bar {
   padding-right: 1rem;
 }
 
+html[data-viewport='web'] .shell-main:has(.hub-root),
+html[data-viewport='tv'] .shell-main:has(.hub-root) {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+html[data-viewport='web'] .shell-main:has(.hub-root) > div,
+html[data-viewport='tv'] .shell-main:has(.hub-root) > div,
+html[data-viewport='web'] .hub-root,
+html[data-viewport='tv'] .hub-root,
+html[data-viewport='web'] .hub-list,
+html[data-viewport='tv'] .hub-list,
+html[data-viewport='web'] .hub-gender-shell,
+html[data-viewport='tv'] .hub-gender-shell,
+html[data-viewport='web'] .hub-gender-body,
+html[data-viewport='tv'] .hub-gender-body {
+  height: auto;
+  min-height: 0;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
 html[data-viewport='web'] .hub-list {
   padding-left: 0.75rem;
   padding-right: 0.75rem;

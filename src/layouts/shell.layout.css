@@ -1,4 +1,103 @@
 /* App shell — paper, main slot, bottom dock */
+html[data-viewport='web'] .app-shell-dock .game-tab > span,
+html[data-viewport='tv'] .app-shell-dock .game-tab > span {
+  max-width: 180px;
+  opacity: 1;
+  font-family: sans-serif;
+  font-size: 15px;
+}
+
+html[data-viewport='web'] .shell-dock {
+  padding: 8px 16px max(8px, env(safe-area-inset-bottom, 0px));
+  background: var(--color-brand-bg);
+}
+html[data-viewport='web'] .app-shell-dock {
+  border: 0;
+  background: transparent;
+}
+html[data-viewport='web'] .app-shell-dock > .app-shell-dock-inner {
+  display: flex;
+  width: min(100%, 520px);
+  margin-inline: auto;
+  gap: 8px;
+  padding: 0;
+  background: transparent;
+}
+html[data-viewport='web'] .app-shell-dock > .app-shell-dock-inner > :first-child { display: none; }
+html[data-viewport='web'] .app-shell-dock .game-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: row;
+  gap: 8px;
+  height: 44px;
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid rgb(159 184 205 / 25%);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-brand-muted);
+  font-size: 15px;
+  line-height: 1.2;
+  box-shadow: none;
+}
+html[data-viewport='web'] .app-shell-dock .game-tab-selected,
+html[data-viewport='web'] .app-shell-dock .game-tab-active {
+  background: rgb(77 163 255 / 16%);
+  border-color: rgb(77 163 255 / 55%);
+  color: #fff;
+}
+html[data-viewport='web'] .app-shell-dock .game-tab:hover,
+html[data-viewport='web'] .app-shell-dock .game-tab:focus-visible { background: rgb(77 163 255 / 22%); }
+html[data-viewport='web'] .app-shell-dock .game-tab-icon,
+html[data-viewport='web'] .app-shell-dock .nav-raster-icon { width: 20px; height: 20px; flex-shrink: 0; }
+
+
+html[data-viewport='tv'] .shell-dock {
+  padding: 8px 16px max(8px, env(safe-area-inset-bottom, 0px));
+  background: var(--color-brand-bg);
+}
+html[data-viewport='tv'] .app-shell-dock {
+  border: 0;
+  background: transparent;
+}
+html[data-viewport='tv'] .app-shell-dock > .app-shell-dock-inner {
+  display: flex;
+  width: min(100%, 520px);
+  margin-inline: auto;
+  gap: 8px;
+  padding: 0;
+  background: transparent;
+}
+html[data-viewport='tv'] .app-shell-dock > .app-shell-dock-inner > :first-child { display: none; }
+html[data-viewport='tv'] .app-shell-dock .game-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: row;
+  gap: 8px;
+  height: 44px;
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid rgb(159 184 205 / 25%);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-brand-muted);
+  font-size: 15px;
+  line-height: 1.2;
+  box-shadow: none;
+}
+html[data-viewport='tv'] .app-shell-dock .game-tab-selected,
+html[data-viewport='tv'] .app-shell-dock .game-tab-active {
+  background: rgb(77 163 255 / 16%);
+  border-color: rgb(77 163 255 / 55%);
+  color: #fff;
+}
+html[data-viewport='tv'] .app-shell-dock .game-tab:hover,
+html[data-viewport='tv'] .app-shell-dock .game-tab:focus-visible { background: rgb(77 163 255 / 22%); }
+html[data-viewport='tv'] .app-shell-dock .game-tab-icon,
+html[data-viewport='tv'] .app-shell-dock .nav-raster-icon { width: 20px; height: 20px; flex-shrink: 0; }
+
 
 .shell-paper {
   min-width: 0;
@@ -27,4 +126,38 @@ html[data-viewport='mobile'] .shell-main--profile {
 html[data-tv-kiosk] .shell-main--play + .shell-dock,
 .shell-main--play:has(.tv-play-view) + .shell-dock {
   display: none;
+}
+
+/* Mobile dock: compact two-action bar. Friendly is intentionally hidden for now. */
+html[data-viewport='mobile'] .shell-dock {
+  padding: 0.3rem 0.5rem max(0.35rem, env(safe-area-inset-bottom, 0px));
+  background: color-mix(in srgb, var(--color-brand-bg) 94%, transparent);
+}
+
+html[data-viewport='mobile'] .app-shell-dock {
+  border: 0;
+  background: transparent;
+}
+
+html[data-viewport='mobile'] .app-shell-dock > .app-shell-dock-inner {
+  gap: 0.4rem;
+  padding-bottom: 0;
+}
+
+html[data-viewport='mobile'] .app-shell-dock > .app-shell-dock-inner > :first-child {
+  display: none;
+}
+
+html[data-viewport='mobile'] .app-shell-dock .game-tab {
+  min-height: 2.65rem;
+  border-width: 1px;
+  border-radius: 0.8rem;
+  padding: 0.25rem 0.6rem;
+  box-shadow: none;
+}
+
+html[data-viewport='mobile'] .app-shell-dock .game-tab-icon,
+html[data-viewport='mobile'] .app-shell-dock .nav-raster-icon {
+  width: 1.1rem;
+  height: 1.1rem;
 }

@@ -211,6 +211,7 @@ export function computeManualCourtStandings(params: {
     [...totals.entries()]
       .map(([profile_id, row]) => ({
         profile_id,
+        roster_entry_id: profile_id,
         member_profile_id: row.member_profile_id,
         display_name: row.display_name,
         avatar_url: row.avatar_url,

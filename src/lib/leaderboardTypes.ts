@@ -1,4 +1,5 @@
 export type LeaderboardEntry = {
+  roster_entry_id?: string | null
   profile_id: string
   padel_player_id?: string | null
   member_profile_id?: string | null

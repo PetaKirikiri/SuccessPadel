@@ -1454,3 +1454,832 @@ html[data-viewport='mobile'] .competition-pregame__confirm-knob { position: abso
 html[data-viewport='mobile'] .competition-pregame__confirm--confirmed { background: transparent; border-color: transparent; color: #64e49d; }
 html[data-viewport='mobile'] .competition-pregame__confirm--confirmed .competition-pregame__confirm-track { background: #198d57; }
 html[data-viewport='mobile'] .competition-pregame__confirm--confirmed .competition-pregame__confirm-knob { transform: translateX(1.05rem); }
+
+/* Mobile attendance roster: two compact player cards per row. */
+html[data-viewport='mobile'] .competition-pregame__roster {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin-top: 0;
+}
+
+html[data-viewport='mobile'] .competition-pregame__player {
+  grid-template-columns: 1.1rem 1.8rem minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  gap: 0.25rem 0.35rem;
+  align-content: center;
+  padding: 0.5rem;
+}
+
+html[data-viewport='mobile'] .competition-pregame__avatar {
+  width: 1.8rem;
+  height: 1.8rem;
+}
+
+html[data-viewport='mobile'] .competition-pregame__name {
+  font-size: 0.78rem;
+  line-height: 1.1;
+}
+
+html[data-viewport='mobile'] .competition-pregame__confirm {
+  grid-column: 2 / -1;
+  display: grid;
+  justify-items: start;
+  gap: 0.2rem;
+  min-height: 0;
+}
+
+html[data-viewport='mobile'] .competition-pregame__confirm-label {
+  grid-row: 1;
+  font-size: 0.58rem;
+  line-height: 1;
+}
+
+html[data-viewport='mobile'] .competition-pregame__confirm-track {
+  grid-row: 2;
+  width: 2rem;
+  height: 1.08rem;
+}
+
+html[data-viewport='mobile'] .competition-pregame__confirm-knob {
+  top: 0.12rem;
+  left: 0.12rem;
+  width: 0.84rem;
+  height: 0.84rem;
+}
+
+html[data-viewport='mobile'] .competition-pregame__confirm--confirmed .competition-pregame__confirm-knob {
+  transform: translateX(0.92rem);
+}
+
+/* Balanced mobile attendance cards: one clean frame and centered contents. */
+html[data-viewport='mobile'] .competition-pregame__players {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+html[data-viewport='mobile'] .competition-pregame__roster {
+  gap: 0.4rem;
+}
+
+html[data-viewport='mobile'] .competition-pregame__player {
+  position: relative;
+  grid-template-columns: 1.8rem minmax(0, auto);
+  grid-template-rows: 1.8rem auto;
+  justify-content: center;
+  align-content: center;
+  min-height: 6.25rem;
+  gap: 0.45rem 0.4rem;
+  padding: 0.65rem 0.45rem 0.55rem;
+  text-align: center;
+}
+
+html[data-viewport='mobile'] .competition-pregame__rank {
+  position: absolute;
+  top: 0.55rem;
+  left: 0.55rem;
+  font-size: 0.68rem;
+}
+
+html[data-viewport='mobile'] .competition-pregame__name {
+  max-width: 7rem;
+  overflow: visible;
+  font-size: 0.72rem;
+  line-height: 1.05;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+html[data-viewport='mobile'] .competition-pregame__confirm {
+  grid-column: 1 / -1;
+  justify-items: center;
+  justify-self: center;
+  gap: 0.25rem;
+  padding: 0;
+}
+
+html[data-viewport='mobile'] .competition-pregame__confirm-label {
+  font-size: 0.55rem;
+}
+
+/* Final compact mobile row: rank, player, and toggle all share one line. */
+html[data-viewport='mobile'] .competition-pregame__roster {
+  gap: 0.32rem;
+}
+
+html[data-viewport='mobile'] .competition-pregame__player {
+  position: static;
+  grid-template-columns: 0.8rem 1.65rem minmax(0, 1fr) 1.85rem;
+  grid-template-rows: 1.65rem;
+  justify-content: stretch;
+  align-content: center;
+  align-items: center;
+  min-height: 3.15rem;
+  gap: 0.3rem;
+  padding: 0.45rem;
+  text-align: left;
+}
+
+html[data-viewport='mobile'] .competition-pregame__rank {
+  position: static;
+  font-size: 0.62rem;
+}
+
+html[data-viewport='mobile'] .competition-pregame__avatar {
+  width: 1.65rem;
+  height: 1.65rem;
+}
+
+html[data-viewport='mobile'] .competition-pregame__name {
+  max-width: none;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.68rem;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-viewport='mobile'] .competition-pregame__confirm {
+  grid-column: 4;
+  display: block;
+  justify-self: end;
+  width: 1.85rem;
+  padding: 0;
+}
+
+html[data-viewport='mobile'] .competition-pregame__confirm-label {
+  display: none;
+}
+
+html[data-viewport='mobile'] .competition-pregame__confirm-track {
+  display: block;
+  width: 1.85rem;
+  height: 1rem;
+}
+
+html[data-viewport='mobile'] .competition-pregame__confirm-knob {
+  top: 0.11rem;
+  left: 0.11rem;
+  width: 0.78rem;
+  height: 0.78rem;
+}
+
+html[data-viewport='mobile'] .competition-pregame__confirm--confirmed .competition-pregame__confirm-knob {
+  transform: translateX(0.85rem);
+}
+
+/* Professional compact invite header for the current single mixed programme. */
+html[data-viewport='mobile'] .hub-gender-shell > .invite-card-gender-controls {
+  display: none;
+}
+
+html[data-viewport='mobile'] .invite-game-card__header {
+  min-height: 0;
+  grid-template-areas: "title rules";
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto;
+  align-items: start;
+  gap: 0.65rem;
+  padding: 0.75rem;
+  overflow: visible;
+}
+
+html[data-viewport='mobile'] .invite-game-card__header-title {
+  grid-area: title;
+  display: grid;
+  align-items: start;
+  gap: 0.45rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__title-nav {
+  display: block;
+  width: 100%;
+}
+
+html[data-viewport='mobile'] .invite-carousel-header-nav--ghost {
+  display: none;
+}
+
+html[data-viewport='mobile'] .invite-game-card__title-link {
+  display: grid;
+  width: 100%;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.15rem 0.45rem;
+  text-align: left;
+}
+
+html[data-viewport='mobile'] .invite-game-card__level {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  overflow: visible;
+  font-size: 1rem;
+  font-weight: 850;
+  line-height: 1.08;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+html[data-viewport='mobile'] .invite-game-card__schedule-date,
+html[data-viewport='mobile'] .invite-game-card__schedule-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  grid-row: 2;
+  overflow: visible;
+  color: var(--color-brand-muted);
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+html[data-viewport='mobile'] .invite-game-card__schedule-date {
+  grid-column: 1;
+}
+
+html[data-viewport='mobile'] .invite-game-card__schedule-time {
+  grid-column: 2;
+}
+
+html[data-viewport='mobile'] .invite-game-card__title-admin {
+  justify-content: flex-start;
+  gap: 0.3rem;
+  padding: 0;
+}
+
+html[data-viewport='mobile'] .invite-card-admin-btn {
+  width: 1.65rem;
+  height: 1.65rem;
+  border-width: 1px;
+  border-radius: 0.5rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__rules-jump {
+  grid-area: rules;
+  justify-self: end;
+  width: auto;
+  min-height: 2rem;
+  border-radius: 999px;
+  padding: 0 0.7rem;
+  font-size: 0.68rem;
+  white-space: nowrap;
+}
+
+/* Quiet information card: content first, no decorative chrome. */
+html[data-viewport='mobile'] .invite-game-card__header {
+  anchor-scope: --invite-time;
+  position: relative;
+  min-height: 7.5rem;
+  align-items: start;
+  gap: 0;
+  padding: 0.9rem 0.9rem 0.6rem;
+  overflow: hidden;
+  border: 1px solid rgb(123 163 195 / 0.2);
+  border-radius: 0.85rem;
+  background: color-mix(in srgb, var(--color-brand-bg-alt) 92%, var(--color-brand-bg));
+  box-shadow: none;
+}
+
+html[data-viewport='mobile'] .invite-game-card__header::before {
+  position: absolute;
+  bottom: 0.85rem;
+  left: 0.65rem;
+  width: 3.333rem;
+  height: 5rem;
+  background: url('/brand/superhero-americano-male-v4.png') center bottom / contain no-repeat;
+  clip-path: polygon(40% 7%, 42% 4%, 48% 2%, 58% 1%, 55% 3%, 60% 3%, 62% 7%, 60% 12%, 55% 16%, 52% 17%, 57% 19%, 62% 21%, 68% 27%, 71% 28%, 73% 22%, 68% 18%, 68% 16%, 72% 15%, 75% 16%, 77% 20%, 78% 26%, 79% 30%, 77% 34%, 75% 35%, 75% 39%, 80% 46%, 91% 53%, 96% 59%, 96% 62%, 88% 66%, 87% 61%, 86% 58%, 82% 56%, 77% 52%, 70% 47%, 67% 47%, 71% 59%, 69% 60%, 70% 65%, 73% 72%, 74% 78%, 76% 83%, 78% 84%, 80% 88%, 84% 89%, 89% 91%, 90% 93%, 88% 94%, 81% 95%, 74% 93%, 69% 93%, 65% 92%, 64% 90%, 66% 87%, 67% 85%, 65% 79%, 61% 75%, 60% 70%, 61% 66%, 57% 62%, 53% 55%, 51% 55%, 47% 62%, 43% 63%, 41% 66%, 37% 69%, 35% 74%, 31% 79%, 29% 85%, 30% 89%, 31% 91%, 29% 93%, 26% 94%, 25% 95%, 20% 96%, 14% 96%, 13% 95%, 13% 93%, 17% 90%, 20% 86%, 22% 83%, 23% 78%, 23% 72%, 27% 67%, 31% 63%, 31% 61%, 30% 59%, 28% 63%, 23% 64%, 19% 63%, 15% 60%, 15% 67%, 8% 64%, 4% 61%, 4% 58%, 7% 52%, 14% 44%, 19% 37%, 23% 32%, 23% 30%, 25% 25%, 28% 21%, 33% 18%, 39% 17%, 41% 15%, 40% 12%, 39% 10%);
+  content: "";
+  pointer-events: none;
+}
+
+html[data-viewport='mobile'] .invite-game-card__header::after {
+  position: absolute;
+  right: 0.65rem;
+  bottom: 0.95rem;
+  width: 3.333rem;
+  height: 5rem;
+  background: url('/brand/superhero-americano-female-v4.png') center bottom / contain no-repeat;
+  clip-path: polygon(43% 1%, 61% 1%, 69% 7%, 71% 17%, 67% 20%, 76% 28%, 80% 35%, 89% 43%, 96% 53%, 96% 61%, 87% 62%, 76% 59%, 67% 52%, 68% 62%, 72% 76%, 73% 85%, 78% 91%, 73% 98%, 61% 99%, 55% 96%, 59% 91%, 60% 83%, 56% 78%, 54% 68%, 46% 58%, 35% 68%, 36% 78%, 42% 84%, 39% 90%, 27% 94%, 20% 92%, 21% 88%, 25% 85%, 27% 80%, 25% 70%, 20% 64%, 21% 58%, 29% 49%, 27% 41%, 28% 33%, 21% 36%, 17% 36%, 12% 32%, 11% 28%, 15% 24%, 17% 20%, 12% 14%, 14% 10%, 23% 7%, 30% 7%, 34% 10%, 35% 17%, 29% 21%, 23% 23%, 21% 27%, 24% 28%, 31% 23%, 39% 20%, 40% 17%, 36% 12%, 38% 6%);
+  content: "";
+  pointer-events: none;
+}
+
+html[data-viewport='mobile'] .invite-game-card__header-title {
+  position: static;
+  z-index: 1;
+  width: 100%;
+}
+
+html[data-viewport='mobile'] .invite-game-card__title-nav,
+html[data-viewport='mobile'] .invite-game-card__title-slot {
+  position: static;
+}
+
+html[data-viewport='mobile'] .invite-game-card__title-link {
+  position: absolute;
+  top: 3.1rem;
+  left: 50%;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  justify-content: center;
+  justify-items: center;
+  column-gap: 0.5rem;
+  text-align: center;
+  width: 58%;
+  transform: translateX(-50%);
+}
+
+html[data-viewport='mobile'] .invite-game-card__title-link::before {
+  position: absolute;
+  top: -2.65rem;
+  left: 50%;
+  width: 6.5rem;
+  height: 2.4rem;
+  background: linear-gradient(145deg, #f2f5f8 0%, #aeb9c4 48%, #7e8b98 100%);
+  content: "";
+  opacity: 0.9;
+  pointer-events: none;
+  transform: translateX(-50%);
+  -webkit-mask: url('/brand/success-padel-silver-source.png') center / contain no-repeat;
+  mask: url('/brand/success-padel-silver-source.png') center / contain no-repeat;
+}
+
+html[data-viewport='mobile'] .invite-game-card__level {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  margin: 0;
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.94rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+
+html[data-viewport='mobile'] .invite-game-card__schedule-date,
+html[data-viewport='mobile'] .invite-game-card__schedule-time {
+  grid-row: 2;
+  width: max-content;
+  margin-top: 0.28rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #9fb8cd;
+  padding: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+html[data-viewport='mobile'] .invite-game-card__schedule-date::before,
+html[data-viewport='mobile'] .invite-game-card__schedule-time::before {
+  width: 0.72rem;
+  height: 0.72rem;
+  flex: 0 0 0.72rem;
+  background: currentColor;
+  content: "";
+}
+
+html[data-viewport='mobile'] .invite-game-card__schedule-date::before {
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M8 3v4M16 3v4M3 10h18'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M8 3v4M16 3v4M3 10h18'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+html[data-viewport='mobile'] .invite-game-card__schedule-time::before {
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+html[data-viewport='mobile'] .invite-game-card__schedule-time {
+  justify-self: center;
+  anchor-name: --invite-time;
+}
+
+html[data-viewport='mobile'] .invite-game-card__title-admin {
+  position: absolute;
+  right: 0.7rem;
+  bottom: 0.38rem;
+  left: auto;
+  z-index: 3;
+  gap: 0.1rem;
+}
+
+html[data-viewport='mobile'] .invite-card-admin-btn {
+  width: 1.8rem;
+  height: 1.8rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-brand-muted);
+  padding: 0;
+  font-size: inherit;
+  box-shadow: none;
+}
+
+html[data-viewport='mobile'] .invite-card-admin-btn__icon {
+  display: block;
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__header-links {
+  position: absolute;
+  top: 5.4rem;
+  right: auto;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 0.25rem;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+html[data-viewport='mobile'] .invite-game-card__matches-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 1.8rem;
+  color: var(--color-brand-primary);
+  font-size: 0.56rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+html[data-viewport='mobile'] .invite-game-card__matches-link::before {
+  content: "";
+  width: 0.65rem;
+  height: 0.65rem;
+  flex: 0 0 0.65rem;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='16' rx='1'/%3E%3Cpath d='M12 4v16M3 8h18M3 16h18'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+html[data-viewport='mobile'] .invite-game-card__rules-jump {
+  position: static;
+  display: inline-flex;
+  align-items: center;
+  flex-direction: row;
+  gap: 0.3rem;
+  grid-area: auto;
+  grid-column: auto;
+  grid-row: auto;
+  justify-self: auto;
+  top: 5.65rem;
+  right: 21%;
+  bottom: auto;
+  left: auto;
+  z-index: 3;
+  min-height: 1.8rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-brand-primary);
+  padding: 0;
+  font-size: 0.56rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  box-shadow: none;
+}
+
+html[data-viewport='mobile'] .invite-game-card__rules-jump::before {
+  content: "";
+  width: 0.65rem;
+  height: 0.65rem;
+  flex: 0 0 0.65rem;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='3' width='14' height='18' rx='2'/%3E%3Cpath d='M9 7h6M9 11h6M9 15h4'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+html[data-viewport='mobile'] .invite-game-card__rules-jump::after {
+  content: none;
+  color: currentColor;
+  font-size: 0.9rem;
+  line-height: 0;
+}
+
+html[data-viewport='mobile'] .invite-game-card__header-links > a {
+  justify-content: center;
+  min-width: 4.4rem;
+  min-height: 1.8rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid rgb(159 184 205 / 45%);
+  border-radius: 0.45rem;
+  background: rgb(159 184 205 / 12%);
+  color: #fff;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+html[data-viewport='mobile'] .invite-game-card__header-links > a:hover,
+html[data-viewport='mobile'] .invite-game-card__header-links > a:focus-visible {
+  background: rgb(159 184 205 / 25%);
+  border-color: #9fb8cd;
+}
+html[data-viewport='mobile'] .competition-pregame__languages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-block: 0.7rem 1rem;
+}
+
+html[data-viewport='mobile'] .competition-pregame__language {
+  min-height: 2.75rem;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--color-brand-muted);
+  border-radius: 0.6rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+html[data-viewport='mobile'] .competition-pregame__language[aria-pressed='true'] {
+  background: var(--color-brand-muted);
+  color: var(--color-brand-bg);
+}
+
+html[data-viewport='mobile'] .competition-pregame__rules[dir='rtl'] {
+  text-align: start;
+}
+
+/* A single segmented navigation row, with one content panel below. */
+html[data-viewport='mobile'] .invite-game-card__header-links {
+  top: 5.4rem;
+  width: min(90%, 17rem);
+  gap: 0;
+  padding: 0.15rem;
+  border: 1px solid var(--color-brand-border);
+  border-radius: 0.6rem;
+  background: var(--color-brand-bg);
+}
+html[data-viewport='mobile'] .invite-game-card__header-links > a {
+  position: static;
+  display: inline-flex;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 2rem;
+  padding: 0.3rem;
+  gap: 0.25rem;
+  border: 0;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--color-brand-muted);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  text-transform: none;
+}
+html[data-viewport='mobile'] .invite-game-card__header-links > a[aria-pressed='true'] {
+  background: rgb(159 184 205 / 20%);
+  color: var(--color-brand-ink);
+}
+html[data-viewport='mobile'] .invite-game-card__header:has(.invite-game-card__header-links) {
+  min-height: 8.4rem;
+}
+html[data-viewport='mobile'] .competition-pregame__rules {
+  margin: 0;
+}
+
+html[data-viewport='mobile'] .invite-game-card__header-links > a {
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+html[data-viewport='mobile'] .invite-game-card__header-links > a::before {
+  width: 0.75rem;
+  height: 0.75rem;
+  flex: 0 0 0.75rem;
+}
+html[data-viewport='mobile'] .invite-game-card__header-links > a[aria-controls^='players-']::before {
+  content: "";
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='9' cy='8' r='3'/%3E%3Cpath d='M3 21v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6M21 21v-2a6 6 0 0 0-3-5.2'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+html[data-viewport='mobile'] .competition-pregame__player[data-reorder-enabled='true'] {
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+html[data-viewport='mobile'] .competition-pregame__player[data-dragging='true'] {
+  position: relative;
+  z-index: 20;
+  cursor: grabbing;
+  box-shadow: 0 12px 26px rgb(0 0 0 / 45%);
+  outline: 2px solid var(--color-brand-primary);
+  opacity: 0.96;
+  will-change: transform;
+}
+html[data-viewport='mobile'] .competition-pregame__roster:has([data-dragging='true']) {
+  overflow: visible;
+}
+html[data-viewport='mobile'] .competition-pregame__player[data-drop-target='true'] {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: -2px;
+}
+html[data-viewport='mobile'] .competition-pregame__lineup-help,
+html[data-viewport='mobile'] .competition-pregame__lineup-status {
+  font-size: 0.65rem;
+  line-height: 1.4;
+  margin: 0 0 0.45rem;
+  color: var(--color-brand-muted);
+}
+html[data-viewport='mobile'] .competition-pregame__lineup-status:empty { display: none; }
+
+/* Pregame panels share the available height above the dock. */
+html[data-viewport='mobile'] .shell-main > div:has(.competition-pregame),
+html[data-viewport='mobile'] .hub-root:has(.competition-pregame),
+html[data-viewport='mobile'] .hub-list:has(.competition-pregame),
+html[data-viewport='mobile'] .hub-gender-shell:has(.competition-pregame),
+html[data-viewport='mobile'] .hub-gender-body:has(.competition-pregame),
+html[data-viewport='mobile'] .invite-card-carousel:has(.competition-pregame),
+html[data-viewport='mobile'] .invite-card-carousel-item:has(.competition-pregame),
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame) {
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
+}
+
+html[data-viewport='mobile'] .invite-game-card__frame:has(.competition-pregame) {
+  flex: 1 0 auto;
+  grid-template-rows: auto 1fr;
+}
+
+html[data-viewport='mobile'] .competition-pregame,
+html[data-viewport='mobile'] .competition-pregame__players {
+  flex: 1 0 auto;
+  min-width: 0;
+}
+
+html[data-viewport='mobile'] .competition-pregame__players {
+  display: flex;
+  flex-direction: column;
+}
+
+html[data-viewport='mobile'] .competition-pregame__roster {
+  flex: 1 0 auto;
+  grid-auto-rows: 1fr;
+}
+
+/* Keep all languages available in one compact, accessible flag strip. */
+html[data-viewport='mobile'] .competition-pregame__languages {
+  flex-wrap: nowrap;
+  gap: 0.25rem;
+  margin-block: 0.35rem 0.5rem;
+  overflow-x: auto;
+}
+
+html[data-viewport='mobile'] .competition-pregame__language {
+  flex: 1 0 2.5rem;
+  min-height: 2.75rem;
+  padding: 0.2rem;
+  font-size: 0;
+}
+
+html[data-viewport='mobile'] .competition-pregame__language > span {
+  font-size: 1.25rem;
+}
+
+html[data-viewport='mobile'] .competition-pregame__rules {
+  padding: 0.6rem;
+}
+
+html[data-viewport='mobile'] .competition-pregame__facts {
+  margin-block: 0.4rem;
+  gap: 0.35rem;
+}
+
+html[data-viewport='mobile'] .competition-pregame__facts > div {
+  padding: 0.4rem;
+}
+
+html[data-viewport='mobile'] .competition-pregame__steps {
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+/* Tonight's rules: one compact pane, with flags instead of boxed tiles. */
+html[data-viewport='mobile'] .competition-pregame__rules {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-content: start;
+  column-gap: 0.35rem;
+  padding: 0.5rem;
+}
+
+html[data-viewport='mobile'] .competition-pregame__rules > .competition-pregame__heading {
+  align-self: center;
+  font-size: 0.95rem;
+}
+
+html[data-viewport='mobile'] .competition-pregame__languages {
+  gap: 0.1rem;
+  margin: 0;
+  overflow: visible;
+}
+
+html[data-viewport='mobile'] .competition-pregame__language {
+  flex: 0 0 auto;
+  width: 1.65rem;
+  min-height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+html[data-viewport='mobile'] .competition-pregame__language[aria-pressed='true'] {
+  background: transparent;
+  box-shadow: inset 0 -2px var(--color-brand-muted);
+}
+
+html[data-viewport='mobile'] .competition-pregame__language > span {
+  font-size: 1rem;
+}
+
+html[data-viewport='mobile'] .competition-pregame__facts,
+html[data-viewport='mobile'] .competition-pregame__steps {
+  grid-column: 1 / -1;
+}
+
+html[data-viewport='mobile'] .competition-pregame__facts {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.25rem;
+  margin: 0.35rem 0;
+}
+
+html[data-viewport='mobile'] .competition-pregame__facts > div {
+  padding: 0.3rem;
+}
+
+html[data-viewport='mobile'] .competition-pregame__facts dt {
+  font-size: 0.56rem;
+}
+
+html[data-viewport='mobile'] .competition-pregame__facts dd {
+  font-size: 0.7rem;
+  line-height: 1.2;
+}
+
+html[data-viewport='mobile'] .competition-pregame__steps {
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+html[data-viewport='mobile'] .competition-pregame__steps li {
+  grid-template-columns: 1.35rem minmax(0, 1fr);
+  column-gap: 0.4rem;
+}
+
+html[data-viewport='mobile'] .competition-pregame__steps li::before {
+  width: 1.35rem;
+  height: 1.35rem;
+  font-size: 0.7rem;
+}
+
+html[data-viewport='mobile'] .competition-pregame__steps strong {
+  font-size: 0.76rem;
+}
+
+html[data-viewport='mobile'] .competition-pregame__steps span {
+  font-size: 0.72rem;
+  line-height: 1.25;
+}
+
+@media (max-width: 350px) {
+  html[data-viewport='mobile'] .competition-pregame__facts {
+    grid-template-columns: 1.4fr 0.8fr 1fr 1fr;
+  }
+
+  html[data-viewport='mobile'] .competition-pregame__steps {
+    gap: 0.2rem;
+  }
+
+  html[data-viewport='mobile'] .competition-pregame__steps span {
+    font-size: 0.7rem;
+    line-height: 1.2;
+  }
+}
+
+html[data-viewport='mobile'] .invite-game-card__roster:has(.competition-pregame__rules) {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+html[data-viewport='mobile'] .competition-pregame__steps strong {
+  line-height: 1.2;
+}
+
+html[data-viewport='mobile'] .competition-pregame__rules > .competition-pregame__heading {
+  line-height: 1.2;
+}
