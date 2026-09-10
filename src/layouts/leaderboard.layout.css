@@ -58,6 +58,11 @@ html[data-viewport='tv'] .tv-play-view .tv-play-standings ol > li {
   flex: 1 1 0;
 }
 
+/* Share the full TV height across the roster instead of stopping at 48px. */
+html[data-viewport='tv'] .tv-play-view .tv-play-standings ol > li {
+  max-height: none;
+}
+
 html[data-viewport='web'] .tv-play-standings-body,
 html[data-viewport='tv'] .tv-play-standings-body {
   overflow-y: auto;
