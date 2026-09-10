@@ -17,7 +17,6 @@ import {
   isOrganizedFriendly,
 } from '../../lib/friendlyGames'
 import { inviteCardData, type SessionSource } from '../../lib/sessionDisplay'
-import { useViewport } from '../../contexts/ViewportContext'
 import { useLocale } from '../../providers/LocaleProvider'
 import { supabase } from '../../lib/supabaseClient'
 import { InviteCardRosterEditor } from './InviteCardRosterEditor'
@@ -51,8 +50,6 @@ type Props = CompetitionProps | FriendlyProps
 export function InviteGameCard(props: Props) {
   const { t } = useTranslation()
   const { locale } = useLocale()
-  const { bucket } = useViewport()
-  const showPregameOverview = bucket === 'web' || bucket === 'tv'
   const [busy, setBusy] = useState(false)
   const [pregameView, setPregameView] = useState<'players' | 'rules'>('players')
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -150,7 +147,6 @@ export function InviteGameCard(props: Props) {
       headerAction={
         row ? (
           <div className="invite-game-card__header-links" aria-label="Competition navigation">
-          {!showPregameOverview && <>
           <a href={`#players-${row.id}`} role="button" aria-pressed={pregameView === 'players'}
             aria-controls={`players-${row.id}`}
             onKeyDown={(event) => { if (event.key === ' ') { event.preventDefault(); setPregameView('players') } }}
@@ -172,7 +168,6 @@ export function InviteGameCard(props: Props) {
           >
             Rules
           </a>
-          </>}
           <Link className="invite-game-card__matches-link" to={detailTo}>Matches</Link>
           </div>
         ) : undefined
@@ -191,14 +186,7 @@ export function InviteGameCard(props: Props) {
       }
       editAriaLabel={props.kind === 'competition' ? t('competition.edit') : t('friendly.edit')}
       rosterSection={
-        props.kind === 'competition' && showPregameOverview ? (
-          <CompetitionPregamePanel
-            row={props.row}
-            view="overview"
-            canReorder={canEditSetup}
-            rosterContent={canEditRoster ? <InviteCardRosterEditor row={props.row} onSaved={props.onRefresh} /> : undefined}
-          />
-        ) : props.kind === 'competition' && canEditRoster && pregameView === 'players' ? (
+        props.kind === 'competition' && canEditRoster && pregameView === 'players' ? (
           <InviteCardRosterEditor row={props.row} onSaved={props.onRefresh} />
         ) : props.kind === 'competition' ? (
           <CompetitionPregamePanel row={props.row} view={pregameView} canReorder={canEditSetup} />

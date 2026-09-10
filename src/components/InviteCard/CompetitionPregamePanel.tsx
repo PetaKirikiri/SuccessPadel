@@ -10,6 +10,8 @@ import { rulesCopy, rulesLanguages, type RulesLanguage } from '../../lib/competi
 import { useCompetitionLineupDrag } from '../../hooks/useCompetitionLineupDrag'
 import { useAuth } from '../../hooks/useAuth'
 import { PlayerNameLink } from '../../shared/ProfilePhoto/PlayerNameLink'
+import { orderSessionPairsByTeamIndex } from '../../lib/competitionDuoTeams'
+import { formatClubTimeLocalized } from '../../lib/courtSchedule'
 
 type AttendanceStatus = 'pending' | 'confirmed' | 'cancelled'
 type AttendanceRow = {
@@ -68,13 +70,35 @@ export function CompetitionPregamePanel({ row, view = 'players', canReorder = fa
   const recognizedAdmin = !authLoading && Boolean(user?.id && profile?.id === user.id && profile?.is_admin)
   const reorderEnabled = canReorder && recognizedAdmin && mode !== 'duos'
   const lineup = useCompetitionLineupDrag(row.id, roster, reorderEnabled && busyPlayerId === null)
+  const displayedPlayers = useMemo(() => {
+    if (mode !== 'duos' || !row.session_pairs?.length) return lineup.players
+    const byId = new Map(roster.map((player) => [player.id, player]))
+    const ranks = new Map(roster.map((player) => [player.id, player.rank_order ?? 0]))
+    const pairs = orderSessionPairsByTeamIndex(row.session_pairs, ranks, Math.ceil(roster.length / 2))
+    const paired = pairs.flatMap((pair) => [pair?.roster_a_id, pair?.roster_b_id])
+      .map((id) => id ? byId.get(id) : undefined)
+      .filter((player): player is (typeof roster)[number] => Boolean(player))
+    // Never hide an attendee when a legacy pair record is incomplete.
+    return paired.length === roster.length && new Set(paired.map((player) => player.id)).size === roster.length
+      ? paired : lineup.players
+  }, [mode, row.session_pairs, roster, lineup.players])
   const scoreTarget = americanoScoreTarget(row)
   const copy = rulesCopy[language]
+  const firstGameTime = schedule.playStartsAt
+    ? formatClubTimeLocalized(schedule.playStartsAt, language === 'he' ? 'en' : language)
+    : null
   const translate = (text: string) => text
     .replaceAll('{target}', String(scoreTarget))
     .replaceAll('{minutes}', String(schedule.gameMinutes))
     .replaceAll('{rounds}', String(schedule.totalGames))
-  const steps = [...copy.steps.slice(0, 4), mode === 'duos' ? copy.duos : copy.rotation, copy.steps[4]]
+    .replaceAll('{start}', firstGameTime ?? '')
+  const steps = [
+    [firstGameTime ? copy.arrival[0] : copy.warmup, copy.arrival[1]],
+    ...copy.steps.slice(0, 4),
+    mode === 'duos' ? copy.duos : copy.rotation,
+    copy.steps[4],
+    copy.spirit,
+  ]
   const chooseLanguage = (next: RulesLanguage) => {
     setLanguage(next)
     try { localStorage.setItem('success-padel:rules-language', next) } catch { /* Selection still works without storage. */ }
@@ -152,17 +176,19 @@ export function CompetitionPregamePanel({ row, view = 'players', canReorder = fa
       {view !== 'rules' && <section id={`players-${row.id}`} className="competition-pregame__players" aria-label="Player attendance">
         {rosterContent ?? <>
         {reorderEnabled && <p className="competition-pregame__lineup-status" role="status" aria-live="polite">{lineup.message}</p>}
-        <ol className="competition-pregame__roster" aria-busy={lineup.saving}>
-          {lineup.players.map((player, index) => {
+        <ol className="competition-pregame__roster" data-fixed-pairs={mode === 'duos'} aria-label={mode === 'duos' ? 'Fixed-pair teams' : 'Players'} aria-busy={lineup.saving}>
+          {displayedPlayers.map((player, index) => {
             const name = rosterDisplayName(player)
             const avatar = competitionPlayerAvatarUrl(player)
             const status = attendance[player.id] ?? 'pending'
             return (
               <li className={`competition-pregame__player competition-pregame__player--${status}`} key={player.id}
+                data-team-side={mode === 'duos' ? index % 2 === 0 ? 'first' : 'second' : undefined}
+                data-team-number={mode === 'duos' ? Math.floor(index / 2) + 1 : undefined}
                 data-lineup-player={player.id} data-lineup-session={row.id} data-drop-target={lineup.targetId === player.id}
                 data-reorder-enabled={reorderEnabled} data-dragging={lineup.draggingId === player.id}
                 tabIndex={reorderEnabled ? 0 : undefined}
-                aria-label={reorderEnabled ? `${name}, position ${index + 1}. Drag this card or use arrow keys to reorder.` : undefined}
+                aria-label={reorderEnabled ? `${name}, position ${index + 1}. Drag this card or use arrow keys to reorder.` : mode === 'duos' ? `Team ${Math.floor(index / 2) + 1}: ${name}` : undefined}
                 onPointerDown={(event) => lineup.pointerDown(event, index)} onPointerMove={lineup.pointerMove}
                 onPointerUp={lineup.pointerUp} onPointerCancel={lineup.cancel}
                 onLostPointerCapture={lineup.cancel} onDragStart={(event) => event.preventDefault()}

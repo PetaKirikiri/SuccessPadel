@@ -2212,7 +2212,7 @@ html[data-viewport='mobile'] .competition-pregame__steps {
 }
 
 html[data-viewport='mobile'] .competition-pregame__facts {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.25rem;
   margin: 0.35rem 0;
 }
@@ -2231,19 +2231,30 @@ html[data-viewport='mobile'] .competition-pregame__facts dd {
 }
 
 html[data-viewport='mobile'] .competition-pregame__steps {
-  gap: 0.4rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem 0.75rem;
   margin-top: 0.4rem;
 }
 
 html[data-viewport='mobile'] .competition-pregame__steps li {
-  grid-template-columns: 1.35rem minmax(0, 1fr);
+  grid-template-columns: 1.1rem minmax(0, 1fr);
+  align-content: start;
+  row-gap: 0.2rem;
   column-gap: 0.4rem;
 }
 
 html[data-viewport='mobile'] .competition-pregame__steps li::before {
-  width: 1.35rem;
-  height: 1.35rem;
+  width: 1.1rem;
+  height: 1.1rem;
   font-size: 0.7rem;
+}
+
+html[data-viewport='mobile'] .competition-pregame__steps li > span {
+  grid-column: 1 / -1;
+}
+
+html[data-viewport='mobile'] .competition-pregame__steps li::before {
+  grid-row: 1;
 }
 
 html[data-viewport='mobile'] .competition-pregame__steps strong {
@@ -2257,7 +2268,7 @@ html[data-viewport='mobile'] .competition-pregame__steps span {
 
 @media (max-width: 350px) {
   html[data-viewport='mobile'] .competition-pregame__facts {
-    grid-template-columns: 1.4fr 0.8fr 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   html[data-viewport='mobile'] .competition-pregame__steps {
@@ -2282,4 +2293,65 @@ html[data-viewport='mobile'] .competition-pregame__steps strong {
 
 html[data-viewport='mobile'] .competition-pregame__rules > .competition-pregame__heading {
   line-height: 1.2;
+}
+
+/* Fixed duos: two partners inside one numbered team card, not 16 ranked cards. */
+html[data-viewport='mobile'] .competition-pregame__roster[data-fixed-pairs='true'] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 0;
+  row-gap: 3px;
+  margin-top: 0;
+}
+html[data-viewport='mobile'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__player {
+  position: relative;
+  grid-template-columns: 24px minmax(0, 1fr) 30px;
+  grid-template-rows: auto;
+  align-content: center;
+  gap: 4px;
+  min-height: 52px;
+  padding: 14px 6px 4px;
+  border: 1px solid var(--color-brand-border, #315b77);
+  background: var(--color-brand-bg-alt);
+}
+html[data-viewport='mobile'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__player[data-team-side='first'] {
+  border-inline-end: 0;
+  border-radius: 12px 0 0 12px;
+}
+html[data-viewport='mobile'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__player[data-team-side='second'] {
+  border-inline-start: 0;
+  border-radius: 0 12px 12px 0;
+}
+html[data-viewport='mobile'] .competition-pregame__player[data-team-side='first']::before {
+  content: 'TEAM ' attr(data-team-number);
+  position: absolute;
+  top: 5px;
+  inset-inline-start: 7px;
+  color: var(--color-brand-muted);
+  font-size: 8px;
+  line-height: 1;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+}
+html[data-viewport='mobile'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__rank {
+  display: none;
+}
+html[data-viewport='mobile'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__confirm {
+  grid-column: 3;
+  grid-row: 1;
+  min-height: 32px;
+}
+html[data-viewport='mobile'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__avatar {
+  grid-column: 1;
+  grid-row: 1;
+  width: 24px;
+  height: 24px;
+}
+html[data-viewport='mobile'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__name {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: 12px;
+  line-height: 1.2;
+}
+html[data-viewport='mobile'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__player--confirmed {
+  background: color-mix(in srgb, #168a52 26%, var(--color-brand-bg-alt));
 }
