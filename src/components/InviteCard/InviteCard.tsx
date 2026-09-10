@@ -18,6 +18,7 @@ export type InviteCardProps = {
   competitionId?: string | null
   currentUserId?: string | null
   ruleChips?: RuleChip[]
+  headerAction?: ReactNode
   scoringHeadline?: string | null
   qrUrl?: string | null
   qrAriaLabel?: string
@@ -82,6 +83,7 @@ export function InviteCard({
   competitionId = null,
   currentUserId,
   ruleChips = [],
+  headerAction,
   canEdit = false,
   editTo,
   editAriaLabel,
@@ -161,7 +163,7 @@ export function InviteCard({
         titleLine={cleanTitle}
         adminActions={adminActions}
       />
-      <InviteCardHeaderBadges chips={ruleChips} />
+      {headerAction ?? <InviteCardHeaderBadges chips={ruleChips} />}
     </header>
   )
 

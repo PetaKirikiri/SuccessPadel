@@ -53,6 +53,20 @@ html[data-viewport='mobile'] .hub-root {
   min-height: 100%;
 }
 
+/* Mobile hubs grow with long invite cards; shell-main is the single scroll owner. */
+html[data-viewport='mobile'] .shell-main:has(.hub-root) {
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+html[data-viewport='mobile'] .shell-main:has(.hub-root) > div {
+  min-height: 100%;
+  height: auto;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
 html[data-viewport='web'] .hub-gender-bar {
   padding-left: 1rem;
   padding-right: 1rem;

@@ -19,6 +19,7 @@ import { inviteCardData, type SessionSource } from '../../lib/sessionDisplay'
 import { useLocale } from '../../providers/LocaleProvider'
 import { supabase } from '../../lib/supabaseClient'
 import { InviteCardRosterEditor } from './InviteCardRosterEditor'
+import { CompetitionPregamePanel } from './CompetitionPregamePanel'
 
 type CompetitionProps = {
   kind: 'competition'
@@ -141,6 +142,21 @@ export function InviteGameCard(props: Props) {
       currentUserId={currentUserId}
       qrUrl={row ? competitionPlayUrl(row.id) : game ? `${shareSiteOrigin()}/friendly/${game.id}` : undefined}
       qrAriaLabel={t('leaderboard.viewAlongHint')}
+      headerAction={
+        row ? (
+          <a
+            className="invite-game-card__rules-jump"
+            href={`#tonights-rules-${row.id}`}
+            onClick={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+              document.getElementById(`tonights-rules-${row.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }}
+          >
+            Tonight&apos;s Rules
+          </a>
+        ) : undefined
+      }
       canEdit={
         props.kind === 'competition'
           ? canEditSetup
@@ -157,6 +173,8 @@ export function InviteGameCard(props: Props) {
       rosterSection={
         props.kind === 'competition' && canEditRoster ? (
           <InviteCardRosterEditor row={props.row} onSaved={props.onRefresh} />
+        ) : props.kind === 'competition' ? (
+          <CompetitionPregamePanel row={props.row} />
         ) : undefined
       }
       canDelete={
@@ -178,4 +196,3 @@ export function InviteGameCard(props: Props) {
     />
   )
 }
-
