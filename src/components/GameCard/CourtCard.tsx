@@ -899,16 +899,16 @@ export function CourtMatchCell({
       side === 'right' ? 'justify-self-end' : 'justify-self-start'
     }`
   const labelSlotClass = 'game-card-court-team-label-slot min-h-12'
-  const teamAIdentity = teamAPlayerList.some((player) => learningIdentityForSlot(player.rosterId)) ? null : learningIdentityForTeam(
+  const teamAIdentity = teamAPlayerList[0]?.teamLearningIdentity ?? (teamAPlayerList.some((player) => learningIdentityForSlot(player.rosterId)) ? null : learningIdentityForTeam(
     teamAPlayerList[0]?.name,
     teamAPlayerList[1]?.name,
     teamAPlayerList.flatMap((player) => [player.id, player.rosterId, player.padelPlayerId]),
-  )
-  const teamBIdentity = teamBPlayerList.some((player) => learningIdentityForSlot(player.rosterId)) ? null : learningIdentityForTeam(
+  ))
+  const teamBIdentity = teamBPlayerList[0]?.teamLearningIdentity ?? (teamBPlayerList.some((player) => learningIdentityForSlot(player.rosterId)) ? null : learningIdentityForTeam(
     teamBPlayerList[0]?.name,
     teamBPlayerList[1]?.name,
     teamBPlayerList.flatMap((player) => [player.id, player.rosterId, player.padelPlayerId]),
-  )
+  ))
   const slotIcons = (players: CourtPlayer[], side: 'left' | 'right') => {
     const slots = players.flatMap((player) => {
       const identity = learningIdentityForSlot(player.rosterId)

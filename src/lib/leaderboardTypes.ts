@@ -1,4 +1,5 @@
 export type LeaderboardEntry = {
+  teamLearningIdentity?: import('./spiritAnimals').TeamLearningIdentity | null
   roster_entry_id?: string | null
   profile_id: string
   padel_player_id?: string | null

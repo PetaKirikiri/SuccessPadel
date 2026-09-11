@@ -36,6 +36,7 @@ import { agentDebugIngest } from '../../lib/debug/devDebug'
 import type { LeaderboardEntry } from '../../lib/leaderboardTypes'
 import type { CourtPlayer } from '../../lib/americanoSchedule'
 import { spiritAnimalForTeam } from '../../lib/spiritAnimals'
+import { luminousIdentityForTeam } from '../../lib/luminousTeamSlots'
 import {
   resolveCourtPlayerDisplayName,
   rosterEntryGender,
@@ -181,9 +182,10 @@ export function GameCardCourts({
       enrichedPlayers?.[1]?.name ?? names[1] ?? '',
     ]
     const teamEmblemUrl = spiritAnimalForTeam(resolvedNames[0], resolvedNames[1])
+    const slotIdentity = luminousIdentityForTeam(competitionId, roster ?? [], enrichedPlayers?.flatMap(player => [player.rosterId, player.id, player.padelPlayerId]) ?? [])
     return {
       names: resolvedNames,
-      players: teamEmblemUrl
+      players: slotIdentity ? enrichedPlayers?.map(player => ({ ...player, teamLearningIdentity: slotIdentity, teamEmblemUrl: slotIdentity.imageUrl })) : teamEmblemUrl
         ? enrichedPlayers?.map((player) => ({
             ...player,
             teamEmblemUrl: player.teamEmblemUrl ?? teamEmblemUrl,

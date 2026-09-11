@@ -30,6 +30,7 @@ import type { CourtPlayer } from '../../lib/americanoSchedule'
 import { buildRosterNameById } from '../../hooks/useCompetitions'
 import { useTranslation } from '../../hooks/useTranslation'
 import { enrichStandingsWithAvatars } from '../../lib/leaderboardEntries'
+import { luminousIdentityForTeam } from '../../lib/luminousTeamSlots'
 import { competitionViewAlongUrl } from '../../lib/siteUrl'
 import { supabase } from '../../lib/supabaseClient'
 import { pivotScheduleByGame } from '../../lib/competitionCourtBoard'
@@ -625,7 +626,7 @@ export function GameCardPlayEvent() {
     started,
   ])
 
-  const standings = liveStandings
+  const standings = liveStandings.map(entry => ({ ...entry, teamLearningIdentity: luminousIdentityForTeam(id, roster, [entry.player_a_id, entry.player_b_id, ...entry.profile_id.split(':').slice(1)]) }))
   const complete = isCompetitionComplete(session, rounds, courtMatches)
   const standingsOrder = useMemo(
     () => liveStandings.filter((row) => row.games > 0).map((row) => row.profile_id),

@@ -234,7 +234,7 @@ function LeaderboardRow({
 }) {
   const record = entryRecord(entry)
   const slotIdentity = learningIdentityForSlot(entry.roster_entry_id)
-  const learningIdentity = learningIdentityForTeam(
+  const learningIdentity = entry.teamLearningIdentity ?? learningIdentityForTeam(
     entry.player_a_name,
     entry.player_b_name,
     [entry.player_a_id, entry.player_b_id, ...entry.profile_id.split(':').slice(1)],

@@ -25,6 +25,7 @@ export type GameRound = {
 }
 
 export type CourtPlayer = {
+  teamLearningIdentity?: import('./spiritAnimals').TeamLearningIdentity | null
   id: string | null
   /** session_players.id — used for duo team label lookup */
   rosterId?: string | null
