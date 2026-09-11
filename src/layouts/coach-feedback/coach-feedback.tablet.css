@@ -1,0 +1,68 @@
+html[data-viewport='tablet'] .profile-section-tabs { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); border-bottom:1px solid var(--color-brand-border); }
+html[data-viewport='tablet'] .profile-section-tabs button { display:flex;align-items:center;justify-content:center;gap:7px;min-width:0;min-height:54px;padding:10px 6px;border:0;border-bottom:3px solid transparent;background:transparent;color:var(--color-brand-muted);font:inherit;font-size:13px;font-weight:650;cursor:pointer; }
+html[data-viewport='tablet'] .profile-section-tabs button[aria-selected='true'], html[data-viewport='tablet'] .profile-section-tabs button[aria-pressed='true'] { color:var(--color-brand-primary);background:color-mix(in srgb,var(--color-brand-primary) 8%,transparent);border-bottom-color:var(--color-brand-primary); }
+html[data-viewport='tablet'] .profile-section-tabs svg { width:18px;height:18px;flex:none; }
+html[data-viewport='tablet'] .profile-section-tabs button:focus-visible { outline:2px solid var(--color-brand-primary);outline-offset:-3px; }
+html[data-viewport='tablet'] .player-section-panel { min-width:0; }
+html[data-viewport='tablet'] .padel-skill-sheet { padding:20px;color:var(--color-brand-ink); }
+html[data-viewport='tablet'] .padel-skill-sheet__heading { display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:16px; }
+html[data-viewport='tablet'] .padel-skill-sheet__heading h2 { font-size:18px;font-weight:750;letter-spacing:-0.02em;margin:0; }
+html[data-viewport='tablet'] .padel-skill-sheet__heading > span { font-size:11px;color:var(--color-brand-muted); }
+html[data-viewport='tablet'] .padel-skill-sheet__attributes { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px; }
+html[data-viewport='tablet'] .padel-skill-tile { --skill-color:#7dc7ee;position:relative;display:flex;align-items:center;gap:12px;min-height:88px;padding:15px 12px;text-align:left;font:inherit;color:var(--color-brand-ink);border:1px solid var(--color-brand-border);border-radius:4px 15px 4px 15px;background:linear-gradient(135deg,color-mix(in srgb,var(--skill-color) 7%,var(--color-brand-bg-alt)),var(--color-brand-bg));cursor:pointer;min-width:0; }
+html[data-viewport='tablet'] .padel-skill-tile[data-skill='selection'] { --skill-color:#b7a4ee; }
+html[data-viewport='tablet'] .padel-skill-tile[data-skill='attack'] { --skill-color:#e9b977; }
+html[data-viewport='tablet'] .padel-skill-tile[data-skill='defence'] { --skill-color:#74c6c5; }
+html[data-viewport='tablet'] .padel-skill-tile[data-skill='movement'] { --skill-color:#93c6ea; }
+html[data-viewport='tablet'] .padel-skill-tile[data-skill='teamwork'] { --skill-color:#a2c89b; }
+html[data-viewport='tablet'] .padel-skill-tile[aria-pressed='true'] { border-color:var(--skill-color);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--skill-color) 20%,transparent);background:linear-gradient(135deg,color-mix(in srgb,var(--skill-color) 18%,var(--color-brand-bg-alt)),var(--color-brand-bg)); }
+html[data-viewport='tablet'] .padel-skill-tile:focus-visible { outline:2px solid var(--color-brand-primary);outline-offset:3px; }
+html[data-viewport='tablet'] .padel-skill-tile__crest { display:grid;place-items:center;width:42px;height:46px;flex:none;color:var(--skill-color);background:color-mix(in srgb,var(--skill-color) 10%,transparent);clip-path:polygon(50% 0,94% 22%,94% 73%,50% 100%,6% 73%,6% 22%); }
+html[data-viewport='tablet'] .padel-skill-tile__crest svg { width:25px;height:25px;stroke-width:1.6; }
+html[data-viewport='tablet'] .padel-skill-tile__body { display:flex;flex-direction:column;gap:6px;min-width:0; }
+html[data-viewport='tablet'] .padel-skill-tile__body strong { font-size:14px;line-height:1.2;font-weight:700; }
+html[data-viewport='tablet'] .padel-skill-tile__body > span { font-size:11px;line-height:1.25;color:var(--color-brand-muted); }
+html[data-viewport='tablet'] .padel-skill-tile__code { position:absolute;top:6px;right:9px;font-size:8px;letter-spacing:0.12em;color:var(--skill-color);opacity:0.65; }
+html[data-viewport='tablet'] .padel-skill-detail { margin-top:16px;padding:16px;border:1px solid var(--color-brand-border);border-radius:12px;background:color-mix(in srgb,var(--color-brand-bg-alt) 65%,transparent); }
+html[data-viewport='tablet'] .padel-skill-detail > header { display:flex;align-items:center;gap:8px;margin-bottom:10px; }
+html[data-viewport='tablet'] .padel-skill-detail > header > svg { width:17px;height:17px;color:var(--color-brand-primary); }
+html[data-viewport='tablet'] .padel-skill-detail h3 { margin:0;font-size:14px;font-weight:700; }
+html[data-viewport='tablet'] .padel-skill-detail > header > span { margin-left:auto;font-size:10px;color:var(--color-brand-muted); }
+html[data-viewport='tablet'] .padel-skill-detail__branches { margin:0;padding:0;list-style:none; }
+html[data-viewport='tablet'] .padel-skill-detail__branches li { display:grid;grid-template-columns:12px minmax(0,1fr) 18px;align-items:center;gap:7px;padding:8px 0;font-size:12px;border-bottom:1px solid color-mix(in srgb,var(--color-brand-border) 40%,transparent); }
+html[data-viewport='tablet'] .padel-skill-detail__branches li > span:last-child { color:var(--color-brand-muted);text-align:right; }
+html[data-viewport='tablet'] .padel-skill-detail__node { width:6px;height:6px;transform:rotate(45deg);border:1px solid var(--color-brand-muted); }
+html[data-viewport='tablet'] .padel-skill-detail__observations { display:flex;align-items:center;gap:7px;margin-top:12px;color:var(--color-brand-muted);font-size:11px; }
+html[data-viewport='tablet'] .padel-skill-detail__observations svg { width:14px;height:14px; }
+html[data-viewport='tablet'] .coach-record-trigger { display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;flex:none;min-width:60px;min-height:48px;padding:8px;border:1px solid var(--color-brand-border);border-radius:12px;background:var(--color-brand-bg-alt);color:var(--color-brand-primary);font:inherit;font-size:10px;font-weight:650;cursor:pointer; }
+html[data-viewport='tablet'] .coach-record-trigger > svg { width:21px;height:21px; }
+html[data-viewport='tablet'] .coach-record-trigger:focus-visible { outline:2px solid var(--color-brand-primary);outline-offset:2px; }
+html[data-viewport='tablet'] .coach-recorder { position:fixed;inset:0;margin:auto;width:calc(100% - 24px);max-width:440px;max-height:calc(100dvh - 32px);overflow:auto;box-sizing:border-box;padding:22px;border:1px solid var(--color-brand-border);border-radius:20px;background:var(--color-brand-bg);color:var(--color-brand-ink);box-shadow:0 18px 70px #0006; }
+html[data-viewport='tablet'] .coach-recorder::backdrop { background:#031525b8; }
+html[data-viewport='tablet'] .coach-recorder > header { display:flex;align-items:center;justify-content:space-between;gap:12px; }
+html[data-viewport='tablet'] .coach-recorder > header span { color:var(--color-brand-muted);font-size:12px; }
+html[data-viewport='tablet'] .coach-recorder h2 { font-size:22px;font-weight:700;margin:4px 0; }
+html[data-viewport='tablet'] .coach-recorder button { display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:10px 14px;border:1px solid var(--color-brand-border);border-radius:10px;background:var(--color-brand-bg-alt);color:var(--color-brand-primary);font:inherit;font-size:13px;font-weight:650;cursor:pointer; }
+html[data-viewport='tablet'] .coach-recorder button:disabled { opacity:0.5;cursor:wait; }
+html[data-viewport='tablet'] .coach-recorder button svg { width:18px;height:18px; }
+html[data-viewport='tablet'] .coach-recorder__status { display:flex;flex-direction:column;align-items:center;gap:12px;padding:26px 0 16px; }
+html[data-viewport='tablet'] .coach-recorder__status > svg { width:40px;height:40px;padding:10px;box-sizing:content-box;border-radius:50%;background:var(--color-brand-bg-alt);color:var(--color-brand-primary); }
+html[data-viewport='tablet'] .coach-recorder__status[data-recording='true'] > svg { color:#f48a8a;background:#ac34342b; }
+html[data-viewport='tablet'] .coach-recorder__status strong { font-size:20px; }
+html[data-viewport='tablet'] .coach-recorder__hint { color:var(--color-brand-muted);font-size:12px;line-height:1.5;text-align:center;margin:0 0 16px; }
+html[data-viewport='tablet'] .coach-recorder audio { width:100%;margin:0 0 14px; }
+html[data-viewport='tablet'] .coach-recorder__error { color:#f49b9b;font-size:13px;line-height:1.45;margin:10px 0; }
+html[data-viewport='tablet'] .coach-recorder > footer { display:flex;gap:10px;justify-content:center;flex-wrap:wrap; }
+html[data-viewport='tablet'] .coach-recorder .coach-recorder__send { background:var(--color-brand-primary);color:var(--color-brand-bg); }
+html[data-viewport='tablet'] .coach-observation-list { display:grid;gap:12px;margin-top:14px; }
+html[data-viewport='tablet'] .coach-observation { border:1px solid var(--color-brand-border);border-radius:10px;padding:12px; }
+html[data-viewport='tablet'] .coach-observation > header { display:flex;justify-content:space-between;gap:10px;font-size:11px;color:var(--color-brand-muted); }
+html[data-viewport='tablet'] .coach-observation[data-kind='strength'] > header strong { color:#88d7b2; }
+html[data-viewport='tablet'] .coach-observation[data-kind='improvement'] > header strong { color:#e7bf85; }
+html[data-viewport='tablet'] .coach-observation > p { font-size:13px;line-height:1.5;margin:8px 0; }
+html[data-viewport='tablet'] .coach-observation .coach-observation__next { color:var(--color-brand-primary); }
+html[data-viewport='tablet'] .coach-observation > footer, html[data-viewport='tablet'] .coach-observation details { font-size:11px;line-height:1.5;color:var(--color-brand-muted); }
+html[data-viewport='tablet'] .coach-observation details { margin-top:8px;overflow-wrap:anywhere; }
+html[data-viewport='tablet'] .coach-observation summary { cursor:pointer; }
+html[data-viewport='tablet'] .coach-feedback-message { font-size:12px;color:var(--color-brand-muted);margin-top:12px; }
+html[data-viewport='tablet'] .coach-feedback-message button { margin-left:8px;color:var(--color-brand-primary);text-decoration:underline; }

@@ -1,0 +1,34 @@
+name: Layout integrity
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+permissions:
+  contents: read
+jobs:
+  layout-integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Require an explicit change scope on pull requests
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          LAYOUT_SCOPE=$(node --input-type=module -e '
+            import fs from "node:fs";
+            const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, "utf8"));
+            const scopes = event.pull_request.labels.map(l => l.name).filter(n => /^layout:(mobile|tablet|web|tv|shared|infrastructure)$/.test(n));
+            if (scopes.length !== 1) throw new Error("Choose exactly one layout scope label: mobile, tablet, web, tv, shared, or infrastructure.");
+            console.log(scopes[0].slice(7));
+          ')
+          npm run check:layout-scope -- --scope "$LAYOUT_SCOPE" --base "$BASE_SHA" --committed
+      - run: npm run build

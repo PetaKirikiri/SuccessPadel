@@ -1,10 +1,12 @@
 import { Share2 } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { LineLogoIcon } from '../line/LineLogoIcon'
 import { GameLineupSprite } from './GameLineupSprite'
 import type { TranslateFn } from '../../i18n'
 
 type Props = {
+  coachAction?: ReactNode
   name: string
   avatarUrl?: string | null
   showdownSpriteUrl?: string | null
@@ -31,6 +33,7 @@ function initial(name: string): string {
 }
 
 export function PlayerProfileBanner({
+  coachAction,
   name,
   avatarUrl,
   showdownSpriteUrl,
@@ -116,6 +119,7 @@ export function PlayerProfileBanner({
           )}
         </div>
       </div>
+      {coachAction}
       {(canShareProfile || canAddLine || showdownSpriteUrl || fighterEditTo) && (
         <div className="profile-banner__actions flex shrink-0 items-end gap-2">
           {(canShareProfile || canAddLine) && (

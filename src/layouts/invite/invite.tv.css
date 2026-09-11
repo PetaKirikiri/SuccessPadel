@@ -1392,3 +1392,11 @@ html[data-viewport='tv'] .invite-game-card__header-links > a[aria-controls^='pla
   background: currentColor;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='9' cy='8' r='3'/%3E%3Cpath d='M3 21v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6M21 21v-2a6 6 0 0 0-4-5.65'/%3E%3C/svg%3E") center / contain no-repeat;
 }
+/* Direct attendance responses: explicit tv ownership. */
+html[data-viewport='tv'] .competition-pregame .competition-pregame__roster .competition-pregame__attendance-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; min-width: 0; }
+html[data-viewport='tv'] .competition-pregame .competition-pregame__roster .competition-pregame__attendance-actions button { min-height: 32px; padding: 4px 6px; border: 1px solid var(--color-brand-border); border-radius: 6px; font: inherit; font-size: 14px; font-weight: 700; line-height: 1.15; white-space: nowrap; background: var(--color-brand-bg); color: var(--color-brand-ink); cursor: pointer; }
+html[data-viewport='tv'] .competition-pregame .competition-pregame__roster .competition-pregame__attendance-actions button:focus-visible { outline: 2px solid #7dd3fc; outline-offset: 2px; }
+html[data-viewport='tv'] .competition-pregame .competition-pregame__roster .competition-pregame__attendance-actions button:disabled { opacity: 0.65; cursor: wait; }
+html[data-viewport='tv'] .competition-pregame .competition-pregame__roster .competition-pregame__attendance-yes[aria-pressed='true'] { background: #16744b; border-color: #4cbb85; color: white; }
+html[data-viewport='tv'] .competition-pregame .competition-pregame__roster .competition-pregame__attendance-no[aria-pressed='true'] { background: #762d38; border-color: #d7818d; color: white; }
+html[data-viewport='tv'] .competition-pregame .competition-pregame__roster .competition-pregame__player--cancelled { opacity: 1; background: #482d3b; }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { CompetitionRow } from '../../hooks/useCompetitions'
 import { rosterDisplayName } from '../../hooks/useCompetitions'
 import { competitionPlayerAvatarUrl } from '../../lib/competitionRosterAvatars'
@@ -12,12 +12,14 @@ import { useAuth } from '../../hooks/useAuth'
 import { PlayerNameLink } from '../../shared/ProfilePhoto/PlayerNameLink'
 import { orderSessionPairsByTeamIndex } from '../../lib/competitionDuoTeams'
 import { formatClubTimeLocalized } from '../../lib/courtSchedule'
-
 type AttendanceStatus = 'pending' | 'confirmed' | 'cancelled'
+
 type AttendanceRow = {
   roster_entry_id: string
   status: AttendanceStatus
 }
+
+const SHARED_ATTENDANCE_LOAD_ERROR = 'Could not load shared attendance. Check your connection before responding.'
 
 type Props = {
   row: CompetitionRow
@@ -61,6 +63,8 @@ export function CompetitionPregamePanel({ row, view = 'players', canReorder = fa
   const [attendance, setAttendance] = useState<Record<string, AttendanceStatus>>({})
   const [busyPlayerId, setBusyPlayerId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const saving = useRef(false)
+  const revision = useRef(0)
   const roster = useMemo(
     () => [...(row.session_players ?? [])].sort((a, b) => (a.rank_order ?? 999) - (b.rank_order ?? 999)),
     [row.session_players],
@@ -108,19 +112,22 @@ export function CompetitionPregamePanel({ row, view = 'players', canReorder = fa
     let active = true
     setAttendance(readLocalAttendance(row.id))
     const load = async () => {
-      const { data } = await supabase
+      const version = revision.current
+      const { data, error: loadError } = await supabase
         .from('competition_attendance')
         .select('roster_entry_id, status')
         .eq('session_id', row.id)
-      if (!active || !data) return
-      setAttendance((local) => ({
-        ...local,
-        ...Object.fromEntries(
-          (data as AttendanceRow[]).map((item) => [item.roster_entry_id, item.status]),
-        ),
-      }))
+      if (!active || saving.current || version !== revision.current) return
+      if (loadError) { setError(SHARED_ATTENDANCE_LOAD_ERROR); return }
+      setError((current) => current === SHARED_ATTENDANCE_LOAD_ERROR ? null : current)
+      const shared = Object.fromEntries((data as AttendanceRow[] ?? []).map((item) => [item.roster_entry_id, item.status]))
+      setAttendance(shared)
+      writeLocalAttendance(row.id, shared)
     }
     void load()
+    const refreshOnFocus = () => { if (!document.hidden) void load() }
+    const poll = window.setInterval(refreshOnFocus, 15000)
+    window.addEventListener('focus', refreshOnFocus)
 
     const channel = supabase
       .channel(`competition-attendance:${row.id}`)
@@ -135,14 +142,17 @@ export function CompetitionPregamePanel({ row, view = 'players', canReorder = fa
 
     return () => {
       active = false
+      window.clearInterval(poll)
+      window.removeEventListener('focus', refreshOnFocus)
       void supabase.removeChannel(channel)
     }
   }, [row.id])
 
-  const toggleAttendance = async (rosterEntryId: string) => {
-    if (busyPlayerId) return
+  const updateAttendance = async (rosterEntryId: string, nextStatus: AttendanceStatus) => {
+    if (saving.current) return
+    saving.current = true
+    revision.current += 1
     const previousStatus = attendance[rosterEntryId] ?? 'pending'
-    const nextStatus: AttendanceStatus = attendance[rosterEntryId] === 'confirmed' ? 'pending' : 'confirmed'
     setBusyPlayerId(rosterEntryId)
     setError(null)
     setAttendance((current) => {
@@ -167,6 +177,8 @@ export function CompetitionPregamePanel({ row, view = 'players', canReorder = fa
         ? String(cause.message) : 'Check your connection and try again.'
       setError(`Attendance was not saved: ${message}`)
     } finally {
+      saving.current = false
+      revision.current += 1
       setBusyPlayerId(null)
     }
   }
@@ -207,21 +219,20 @@ export function CompetitionPregamePanel({ row, view = 'players', canReorder = fa
                   className="competition-pregame__name"
                   disabled={lineup.saving || lineup.draggingId !== null}
                 />
-                <button
-                  type="button"
-                  className={`competition-pregame__confirm competition-pregame__confirm--${status}`}
-                  disabled={busyPlayerId !== null || lineup.saving || lineup.draggingId !== null}
-                  aria-pressed={status === 'confirmed'}
-                  aria-label={`${name}: ${status === 'confirmed' ? 'confirmed' : 'unconfirmed'}. Change attendance.`}
-                  onClick={() => void toggleAttendance(player.id)}
-                >
-                  <span className="competition-pregame__confirm-track" aria-hidden="true">
-                    <span className="competition-pregame__confirm-knob" />
-                  </span>
-                  <span className="competition-pregame__confirm-label">
-                    {busyPlayerId === player.id ? 'Saving…' : status === 'confirmed' ? 'Confirmed' : 'Unconfirmed'}
-                  </span>
-                </button>
+                <div className="competition-pregame__attendance-actions" role="group" aria-label={`${name}: attendance`} aria-busy={busyPlayerId === player.id}>
+                  <button type="button" className="competition-pregame__attendance-yes"
+                    disabled={busyPlayerId !== null || lineup.saving || lineup.draggingId !== null}
+                    aria-pressed={status === 'confirmed'} aria-label={`${name}: confirm attendance`}
+                    onClick={() => void updateAttendance(player.id, status === 'confirmed' ? 'pending' : 'confirmed')}>
+                    Confirm
+                  </button>
+                  <button type="button" className="competition-pregame__attendance-no"
+                    disabled={busyPlayerId !== null || lineup.saving || lineup.draggingId !== null}
+                    aria-pressed={status === 'cancelled'} aria-label={`${name}: can’t play`}
+                    onClick={() => void updateAttendance(player.id, status === 'cancelled' ? 'pending' : 'cancelled')}>
+                    Can’t play
+                  </button>
+                </div>
               </li>
             )
           })}

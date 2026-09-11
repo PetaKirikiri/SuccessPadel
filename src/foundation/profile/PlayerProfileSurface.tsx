@@ -9,6 +9,8 @@ import { LinePlayerLinkPanel } from '../../foundation/line/LinePlayerLinkPanel'
 import { PlayerMatchHistory } from '../../foundation/profile/PlayerMatchHistory'
 import { PlayerProfileBanner } from '../../foundation/profile/PlayerProfileBanner'
 import { PlayerProfileCard } from '../../foundation/profile/PlayerProfileCard'
+import { PlayerCoachFeedback } from './PlayerCoachFeedback'
+import { CoachRecorder } from './CoachRecorder'
 import type { PlayerProfileTab } from '../../foundation/profile/PlayerProfileTabs'
 import { PlayerProfileDetailsDisplay } from '../../foundation/profile/PlayerProfileDetailsDisplay'
 import { ProfileDetailsForm, type EditableProfile } from '../../foundation/profile/ProfileDetailsForm'
@@ -105,6 +107,16 @@ export function PlayerProfileSurface() {
   const [avatarError, setAvatarError] = useState<string | null>(null)
   const [avatarBusy, setAvatarBusy] = useState(false)
   const [ownedPadelPlayerId, setOwnedPadelPlayerId] = useState<string | null>(null)
+  const [canRecordCoach, setCanRecordCoach] = useState(false)
+  const [coachFeedbackRevision, setCoachFeedbackRevision] = useState(0)
+  useEffect(() => {
+    let active = true
+    setCanRecordCoach(false)
+    if (user?.id) void supabase.rpc('can_record_coach_feedback').then(({ data, error }) => {
+      if (active) setCanRecordCoach(!error && data === true)
+    })
+    return () => { active = false }
+  }, [user?.id])
   const [lineHandshakeWorking, setLineHandshakeWorking] = useState(false)
   const [lineHandshakeError, setLineHandshakeError] = useState<string | null>(null)
   const lineHandshakeStarted = useRef(false)
@@ -494,7 +506,7 @@ export function PlayerProfileSurface() {
             onClick={() => navigate('/friendly')}
             className="self-start text-sm font-medium text-brand-accent"
           >
-            ← {t('common.back')}
+            {t('common.back')}
           </button>
           <p className="flex flex-1 items-center justify-center text-center text-sm text-brand-muted">
             {t('playerProfile.notFound')}
@@ -526,7 +538,7 @@ export function PlayerProfileSurface() {
               onClick={goBack}
               className="profile-back self-start px-1 text-sm font-medium text-brand-accent"
             >
-              ← {t('common.back')}
+              {t('common.back')}
             </button>
           ) : null}
           {lineHandshakeWorking ? (
@@ -552,6 +564,10 @@ export function PlayerProfileSurface() {
                 <PlayerProfileBanner
                   embedded
                   name={displayName}
+                  coachAction={canRecordCoach && resolved?.padelPlayerId ? (
+                    <CoachRecorder key={resolved.padelPlayerId} playerId={resolved.padelPlayerId} playerName={displayName}
+                      competitionId={competitionId} onSaved={() => { setCoachFeedbackRevision(value => value + 1); setTab('feedback') }} />
+                  ) : undefined}
                   avatarUrl={avatarUrl}
                   showdownSpriteUrl={showdownSpriteUrl}
                   memberSince={isOwnProfile ? null : memberSince}
@@ -577,7 +593,7 @@ export function PlayerProfileSurface() {
                 />
               }
             >
-              {tab === 'history' ? (
+              {tab === 'feedback' ? <PlayerCoachFeedback playerId={resolved?.padelPlayerId ?? null} revision={coachFeedbackRevision} canView={Boolean(user && (isOwnProfile || canRecordCoach))} /> : tab === 'history' ? (
                 <PlayerMatchHistory
                   playerId={profileId ?? padelPlayerId ?? playerId}
                   embedded

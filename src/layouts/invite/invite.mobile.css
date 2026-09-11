@@ -2355,3 +2355,18 @@ html[data-viewport='mobile'] .competition-pregame__roster[data-fixed-pairs='true
 html[data-viewport='mobile'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__player--confirmed {
   background: color-mix(in srgb, #168a52 26%, var(--color-brand-bg-alt));
 }
+/* Direct attendance responses: explicit mobile ownership. */
+html[data-viewport='mobile'] .competition-pregame .competition-pregame__roster .competition-pregame__attendance-actions { display: grid; grid-template-columns: repeat(2, 32px); gap: 8px; min-width: 0; }
+html[data-viewport='mobile'] .competition-pregame .competition-pregame__roster .competition-pregame__attendance-actions button { width: 32px; min-height: 32px; padding: 0; border: 1px solid var(--color-brand-border); border-radius: 6px; font: inherit; font-size: 0; font-weight: 700; line-height: 1; white-space: nowrap; background: var(--color-brand-bg); color: var(--color-brand-ink); cursor: pointer; }
+html[data-viewport='mobile'] .competition-pregame .competition-pregame__roster .competition-pregame__attendance-yes::after { content: '✓'; font-size: 16px; }
+html[data-viewport='mobile'] .competition-pregame .competition-pregame__roster .competition-pregame__attendance-no::after { content: '×'; font-size: 19px; }
+html[data-viewport='mobile'] .competition-pregame .competition-pregame__roster .competition-pregame__attendance-actions button:focus-visible { outline: 2px solid #7dd3fc; outline-offset: 2px; }
+html[data-viewport='mobile'] .competition-pregame .competition-pregame__roster .competition-pregame__attendance-actions button:disabled { opacity: 0.65; cursor: wait; }
+html[data-viewport='mobile'] .competition-pregame .competition-pregame__roster .competition-pregame__attendance-yes[aria-pressed='true'] { background: #16744b; border-color: #4cbb85; color: white; }
+html[data-viewport='mobile'] .competition-pregame .competition-pregame__roster .competition-pregame__attendance-no[aria-pressed='true'] { background: #762d38; border-color: #d7818d; color: white; }
+html[data-viewport='mobile'] .competition-pregame .competition-pregame__roster .competition-pregame__player--cancelled { opacity: 1; background: #482d3b; }
+html[data-viewport='mobile'] .competition-pregame .competition-pregame__roster .competition-pregame__player { grid-template-columns: 24px minmax(0,1fr) 72px; grid-template-rows: auto; min-height: 52px; gap: 3px; }
+html[data-viewport='mobile'] .competition-pregame .competition-pregame__roster .competition-pregame__rank { display: none; }
+html[data-viewport='mobile'] .competition-pregame .competition-pregame__roster .competition-pregame__avatar { grid-column: 1; grid-row: 1; }
+html[data-viewport='mobile'] .competition-pregame .competition-pregame__roster .competition-pregame__name { grid-column: 2; grid-row: 1; }
+html[data-viewport='mobile'] .competition-pregame .competition-pregame__roster .competition-pregame__attendance-actions { grid-column: 3; grid-row: 1; }

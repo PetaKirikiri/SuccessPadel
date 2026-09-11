@@ -987,3 +987,16 @@ html[data-viewport='tablet'] .competition-pregame__confirm-knob { position: abso
 html[data-viewport='tablet'] .competition-pregame__confirm--confirmed { background: transparent; border-color: transparent; color: #64e49d; }
 html[data-viewport='tablet'] .competition-pregame__confirm--confirmed .competition-pregame__confirm-track { background: #198d57; }
 html[data-viewport='tablet'] .competition-pregame__confirm--confirmed .competition-pregame__confirm-knob { transform: translateX(0.9rem); }
+/* Direct attendance responses: explicit tablet ownership. */
+html[data-viewport='tablet'] .competition-pregame .competition-pregame__roster .competition-pregame__attendance-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; min-width: 0; }
+html[data-viewport='tablet'] .competition-pregame .competition-pregame__roster .competition-pregame__attendance-actions button { min-height: 32px; padding: 4px 6px; border: 1px solid var(--color-brand-border); border-radius: 6px; font: inherit; font-size: 11px; font-weight: 700; line-height: 1.15; white-space: nowrap; background: var(--color-brand-bg); color: var(--color-brand-ink); cursor: pointer; }
+html[data-viewport='tablet'] .competition-pregame .competition-pregame__roster .competition-pregame__attendance-actions button:focus-visible { outline: 2px solid #7dd3fc; outline-offset: 2px; }
+html[data-viewport='tablet'] .competition-pregame .competition-pregame__roster .competition-pregame__attendance-actions button:disabled { opacity: 0.65; cursor: wait; }
+html[data-viewport='tablet'] .competition-pregame .competition-pregame__roster .competition-pregame__attendance-yes[aria-pressed='true'] { background: #16744b; border-color: #4cbb85; color: white; }
+html[data-viewport='tablet'] .competition-pregame .competition-pregame__roster .competition-pregame__attendance-no[aria-pressed='true'] { background: #762d38; border-color: #d7818d; color: white; }
+html[data-viewport='tablet'] .competition-pregame .competition-pregame__roster .competition-pregame__player--cancelled { opacity: 1; background: #482d3b; }
+html[data-viewport='tablet'] .competition-pregame .competition-pregame__roster .competition-pregame__player { grid-template-columns: 24px minmax(0,1fr); grid-template-rows: auto auto; min-height: 66px; gap: 3px 5px; }
+html[data-viewport='tablet'] .competition-pregame .competition-pregame__roster .competition-pregame__rank { display: none; }
+html[data-viewport='tablet'] .competition-pregame .competition-pregame__roster .competition-pregame__avatar { grid-column: 1; grid-row: 1; }
+html[data-viewport='tablet'] .competition-pregame .competition-pregame__roster .competition-pregame__name { grid-column: 2; grid-row: 1; }
+html[data-viewport='tablet'] .competition-pregame .competition-pregame__roster .competition-pregame__attendance-actions { grid-column: 1 / -1; grid-row: 2; }

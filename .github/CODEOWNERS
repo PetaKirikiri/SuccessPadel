@@ -1,0 +1,16 @@
+# GitHub must separately require code-owner approval and disable bypasses.
+# This file alone does not prevent an administrator or direct push changing it.
+/src/layouts/ @PetaKirikiri
+/src/components/GameCard/ @PetaKirikiri
+/src/components/InviteCard/ @PetaKirikiri
+/src/components/leaderboard/ @PetaKirikiri
+/src/index.css @PetaKirikiri
+/src/contexts/ViewportContext.tsx @PetaKirikiri
+/src/lib/viewportLock.ts @PetaKirikiri
+/src/lib/viewBreakpoints.ts @PetaKirikiri
+/scripts/*layout* @PetaKirikiri
+/package.json @PetaKirikiri
+/package-lock.json @PetaKirikiri
+/vite.config.ts @PetaKirikiri
+/AGENTS.md @PetaKirikiri
+/.github/ @PetaKirikiri

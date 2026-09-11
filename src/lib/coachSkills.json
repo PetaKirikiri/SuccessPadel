@@ -1,0 +1,8 @@
+[
+  {"id":"positioning","code":"POS","name":"Positioning","hint":"Own your space","skills":["Net position","Court coverage","Recovery position"]},
+  {"id":"selection","code":"DEC","name":"Shot Selection","hint":"Choose your moment","skills":["Lob or drive","Risk & patience","Serve & return choices"]},
+  {"id":"attack","code":"ATK","name":"Attack","hint":"Build the point","skills":["Volleys","Bandeja & víbora","Smash & finishing"]},
+  {"id":"defence","code":"DEF","name":"Defence","hint":"Stay in the rally","skills":["Back & double glass","Defensive lob","Low-ball control"]},
+  {"id":"movement","code":"MOV","name":"Movement","hint":"Ready for the next ball","skills":["Split step","Footwork & balance","Moving back for lobs"]},
+  {"id":"teamwork","code":"TEAM","name":"Teamwork","hint":"Move as a pair","skills":["Communication","Moving together","Covering the middle"]}
+]

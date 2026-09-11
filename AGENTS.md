@@ -50,14 +50,16 @@ After any competition timing change, run `npm run check:schedule`, `npm run chec
 
 **One game card** for friendly and competition — import `GameCard` from [`src/components/GameCard`](src/components/GameCard), never `ScoringGameCard` / `FriendlyManualGameCard`.
 
-| Size | Viewport | File |
+| Size | Viewport | Isolated layout file |
 |------|----------|------|
-| `mobile` | &lt; 768px | [`GameCardMobile.tsx`](src/components/GameCard/GameCardMobile.tsx) |
-| `tablet` | 768–1023px | [`GameCardTablet.tsx`](src/components/GameCard/GameCardTablet.tsx) |
-| `web` | 1024–1535px | [`GameCardWeb.tsx`](src/components/GameCard/GameCardWeb.tsx) |
-| `tv` | ≥ 1536px | [`GameCardTv.tsx`](src/components/GameCard/GameCardTv.tsx) + [`gameCard.tv.css`](src/components/GameCard/gameCard.tv.css) |
+| `mobile` | &lt; 768px | `src/layouts/game-card/game-card.mobile.css` |
+| `tablet` | 768–1023px | `src/layouts/game-card/game-card.tablet.css` |
+| `web` | 1024–1535px | `src/layouts/game-card/game-card.web.css` |
+| `tv` | ≥ 1536px | `src/layouts/game-card/game-card.tv.css` |
 
-**Rules:** Edit the size-specific file for layout changes. Do not add `tvCompact` or size `if` branches in shared shell/header/courts code. TV court grid / carousel CSS lives in `gameCard.tv.css` only. Hook: [`useGameCardSize`](src/hooks/useGameCardSize.ts). Breakpoints: [`viewBreakpoints.ts`](src/lib/viewBreakpoints.ts).
+**Rules:** Edit the size-specific layout file for single-mode changes. The renderer is currently shared `GameCard.tsx`; separate GameCardMobile/Tablet/Web/Tv TSX files do not exist. Do not claim they do. Legacy `src/components/GameCard/gameCard.tv.css` contains all-mode rules and is shared infrastructure, not a TV-only edit target. Do not add new size branches to shared shell/header/courts code. Hook: [`useGameCardSize`](src/hooks/useGameCardSize.ts). Breakpoints: [`viewBreakpoints.ts`](src/lib/viewBreakpoints.ts).
+
+**Enforced change scope:** For a user-requested single-mode edit, run `npm run check:layout-scope -- --scope <mobile|tablet|web|tv> --staged` before committing. Never widen the scope to make a failed check pass: explain the shared dependency and obtain approval. Shared visual work must be reviewed in all modes. Guard/config changes are separately declared `infrastructure` work. See `docs/viewport-isolation.md` for CI, repository protections and remaining migration. `npm run build` includes layout validation and guard regression tests.
 
 Run `npm run check:cycles` after changing game card imports.
 
@@ -139,7 +141,7 @@ Never add `Friendly*Card` / `Competition*Card` duplicates — use `kind` / `mode
 | Card | Path | Notes |
 |------|------|-------|
 | Invite | [`src/components/InviteCard/`](src/components/InviteCard/) | `InviteGameCard` |
-| Game | [`src/components/GameCard/`](src/components/GameCard/) | `GameCard` facade + size variants |
+| Game | [`src/components/GameCard/`](src/components/GameCard/) | Shared renderer; isolated per-mode CSS, not separate TSX variants yet |
 | Leaderboard | [`src/components/leaderboard/Leaderboard.tsx`](src/components/leaderboard/Leaderboard.tsx) | Hub: [`pages/Leaderboard.tsx`](src/pages/Leaderboard.tsx) with `source: 'season' \| 'friendly'` |
 | Court | [`src/components/GameCard/CourtCard.tsx`](src/components/GameCard/CourtCard.tsx) | Inside game card + manual score page |
 | Setup | [`src/components/SetupCard/SetupCard.tsx`](src/components/SetupCard/SetupCard.tsx) | Shared by friendly + competition forms |

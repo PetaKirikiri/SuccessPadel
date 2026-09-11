@@ -1,6 +1,7 @@
 import os from 'node:os'
 import postcss from 'postcss'
-import { defineConfig, type Plugin } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
+import { handleFeedback } from './server/coaching/feedback.mjs'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import basicSsl from '@vitejs/plugin-basic-ssl'
@@ -48,6 +49,14 @@ function legacyTvCssPlugin(): Plugin {
 
 export default defineConfig({
   plugins: [
+    {
+      name: 'coach-feedback-server',
+      configureServer(server) {
+        // Only this server-side closure receives the private OpenAI key.
+        const env = { ...loadEnv(server.config.mode, process.cwd(), ''), ...process.env }
+        server.middlewares.use('/api/coach-feedback', (req, res) => { void handleFeedback(req, res, env) })
+      },
+    },
     react(),
     tailwindcss(),
     viteDebugIngestPlugin(),

@@ -14,7 +14,7 @@ export function PlayerProfileCard({ tab, onTab, banner, children, hideTabs = fal
     <div className="game-card p-0">
       {banner}
       {hideTabs ? null : <PlayerProfileTabs tab={tab} onTab={onTab} embedded />}
-      <div className="min-w-0">{children}</div>
+      <div className="player-section-panel" id="player-section-panel" role="tabpanel" aria-labelledby={hideTabs ? undefined : `player-section-${tab}`}>{children}</div>
     </div>
   )
 }

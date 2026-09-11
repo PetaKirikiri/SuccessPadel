@@ -1,7 +1,8 @@
 import { useTranslation } from '../../hooks/useTranslation'
-import { IconHubPast, IconProfile, shellTabClass } from '../../shared/NavBar/ShellTabIcons'
+import { History, UserRound, MessageSquare } from 'lucide-react'
+import '../../layouts/coach-feedback.layout.css'
 
-export type PlayerProfileTab = 'profile' | 'history'
+export type PlayerProfileTab = 'profile' | 'history' | 'feedback'
 
 type Props = {
   tab: PlayerProfileTab
@@ -15,26 +16,33 @@ export function PlayerProfileTabs({ tab, onTab, embedded = false }: Props) {
   if (embedded) {
     return (
       <div
-        className="grid grid-cols-2 border-b border-brand-border/60"
+        className="profile-section-tabs"
         role="tablist"
         aria-label={t('playerProfile.tabProfile')}
       >
-        {(['profile', 'history'] as const).map((id) => {
+        {(['profile', 'history', 'feedback'] as const).map((id, index) => {
           const selected = tab === id
+          const Icon = id === 'profile' ? UserRound : id === 'history' ? History : MessageSquare
           return (
             <button
               key={id}
               type="button"
               role="tab"
               aria-selected={selected}
+              id={`player-section-${id}`}
+              aria-controls="player-section-panel"
+              tabIndex={selected ? 0 : -1}
               onClick={() => onTab(id)}
-              className={`py-2.5 font-display text-sm transition md:py-3 md:text-base ${
-                selected
-                  ? 'bg-brand-bg-alt font-semibold text-brand-primary'
-                  : 'text-brand-muted hover:bg-brand-bg-alt/40'
-              }`}
+              onKeyDown={(event) => {
+                const next = event.key === 'ArrowRight' ? (index + 1) % 3 : event.key === 'ArrowLeft' ? (index + 2) % 3 : event.key === 'Home' ? 0 : event.key === 'End' ? 2 : null
+                if (next === null) return
+                event.preventDefault()
+                onTab((['profile', 'history', 'feedback'] as const)[next])
+                event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus()
+              }}
             >
-              {id === 'profile' ? t('playerProfile.tabProfile') : t('playerProfile.tabHistory')}
+              <Icon aria-hidden="true" />
+              <span>{id === 'profile' ? t('playerProfile.tabProfile') : id === 'history' ? t('playerProfile.tabHistory') : 'Coach Feedback'}</span>
             </button>
           )
         })}
@@ -43,23 +51,24 @@ export function PlayerProfileTabs({ tab, onTab, embedded = false }: Props) {
   }
 
   return (
-    <div className="game-dock-inner">
+    <div className="profile-section-tabs">
       <button
         type="button"
         onClick={() => onTab('profile')}
-        className={shellTabClass(tab === 'profile', 'rank')}
+        aria-pressed={tab === 'profile'}
       >
-        <IconProfile />
-        <span className="truncate text-xs leading-tight md:text-sm">{t('playerProfile.tabProfile')}</span>
+        <UserRound aria-hidden="true" />
+        <span>{t('playerProfile.tabProfile')}</span>
       </button>
       <button
         type="button"
         onClick={() => onTab('history')}
-        className={shellTabClass(tab === 'history', 'competition')}
+        aria-pressed={tab === 'history'}
       >
-        <IconHubPast />
-        <span className="truncate text-xs leading-tight md:text-sm">{t('playerProfile.tabHistory')}</span>
+        <History aria-hidden="true" />
+        <span>{t('playerProfile.tabHistory')}</span>
       </button>
+      <button type="button" onClick={() => onTab('feedback')} aria-pressed={tab === 'feedback'}><MessageSquare aria-hidden="true" /><span>Coach Feedback</span></button>
     </div>
   )
 }
