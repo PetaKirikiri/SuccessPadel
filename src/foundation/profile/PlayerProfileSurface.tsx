@@ -593,7 +593,7 @@ export function PlayerProfileSurface() {
                 />
               }
             >
-              {tab === 'feedback' ? <PlayerCoachFeedback playerId={resolved?.padelPlayerId ?? null} revision={coachFeedbackRevision} canView={Boolean(user && (isOwnProfile || canRecordCoach))} /> : tab === 'history' ? (
+              {tab === 'feedback' ? <PlayerCoachFeedback playerId={resolved?.padelPlayerId ?? null} revision={coachFeedbackRevision} canView={Boolean(user && (isOwnProfile || canRecordCoach))} demo={import.meta.env.DEV && playerId === 'dave'} /> : tab === 'history' ? (
                 <PlayerMatchHistory
                   playerId={profileId ?? padelPlayerId ?? playerId}
                   embedded

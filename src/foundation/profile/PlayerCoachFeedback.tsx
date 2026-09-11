@@ -1,22 +1,28 @@
 import { useEffect, useId, useState } from 'react'
-import { Crosshair, Signpost, Shield, Footprints, UsersRound, MoveUpRight, MessageSquare } from 'lucide-react'
+import { Crosshair, Signpost, Shield, Footprints, UsersRound, MoveUpRight, MessageSquare, CalendarPlus } from 'lucide-react'
 import skills from '../../lib/coachSkills.json'
 import { loadCoachEntries, type CoachEntry } from '../../lib/coachFeedback'
+import { demoCoachEntry } from '../../lib/coachFeedbackDemo'
 
 const icons = { positioning: Crosshair, selection: Signpost, attack: MoveUpRight, defence: Shield, movement: Footprints, teamwork: UsersRound }
 const attributes = skills.map(skill => ({ ...skill, icon: icons[skill.id as keyof typeof icons] }))
 const kindLabel = { strength: 'Strength', improvement: 'Work on', observation: 'Observation' }
 
-export function PlayerCoachFeedback({ playerId, revision, canView }: { playerId: string | null; revision: number; canView: boolean }) {
+export function PlayerCoachFeedback({ playerId, revision, canView, demo = false }: { playerId: string | null; revision: number; canView: boolean; demo?: boolean }) {
   const [selectedId, setSelectedId] = useState('positioning')
   const [entries, setEntries] = useState<CoachEntry[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [retry, setRetry] = useState(0)
+  const [bookingNote, setBookingNote] = useState<string | null>(null)
   const panelId = useId()
   useEffect(() => {
     let active = true
     setEntries([]); setError(null)
+    if (import.meta.env.DEV && demo) {
+      setEntries([demoCoachEntry(playerId ?? 'local-dave-preview')]); setLoading(false)
+      return
+    }
     if (!playerId || !canView) { setLoading(false); return }
     setLoading(true)
     void loadCoachEntries(playerId).then(rows => {
@@ -27,7 +33,7 @@ export function PlayerCoachFeedback({ playerId, revision, canView }: { playerId:
     }).catch(e => { if (active) setError(e instanceof Error ? e.message : 'Could not load feedback.') })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [playerId, revision, canView, retry])
+  }, [playerId, revision, canView, retry, demo])
   const selected = attributes.find(attribute => attribute.id === selectedId) ?? attributes[0]
   const SelectedIcon = selected.icon
   const observations = entries.flatMap(entry => entry.feedback.observations
@@ -60,8 +66,14 @@ export function PlayerCoachFeedback({ playerId, revision, canView }: { playerId:
               <header><strong>{kindLabel[note.kind]}</strong><time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleDateString()}</time></header>
               <p>{note.observation}</p>
               {note.next_step ? <p className="coach-observation__next">{note.next_step}</p> : null}
-              <footer>{entry.coach?.display_name || 'Coach'} · AI-organised note</footer>
+              <footer>{entry.id === 'local-fictional-dave-demo' ? 'Fictional demo · not a real assessment' : `${entry.coach?.display_name || 'Coach'} · AI-organised note`}</footer>
               <details><summary>Original coach note</summary><p>{entry.transcript}</p></details>
+              <div className="coach-observation__booking">
+                <button type="button" onClick={() => setBookingNote(`${entry.id}-${index}`)} aria-label={`Book lesson: ${note.skill}`}>
+                  <CalendarPlus aria-hidden="true" /> Book lesson
+                </button>
+                {bookingNote === `${entry.id}-${index}` ? <p role="status">Please speak to reception to arrange a lesson on {note.skill.toLowerCase()}. Online booking isn’t available yet.</p> : null}
+              </div>
             </article>
           ))}</div>
         ) : <div className="padel-skill-detail__observations"><MessageSquare aria-hidden="true" /><span>{canView ? 'No coach observations for this skill yet' : 'Feedback is private to the player and authorised staff.'}</span></div>}
