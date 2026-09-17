@@ -13,6 +13,24 @@ html[data-viewport='web'] .game-card-fill > :first-child {
   flex-shrink: 0;
 }
 
+html[data-viewport='web'] .game-card-tv-header-back {
+  inset: 0.4rem 0.4rem auto auto;
+  z-index: 20;
+}
+
+html[data-viewport='web'] .game-card-tv-header-back > button {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-brand-muted);
+  box-shadow: none;
+}
+
+html[data-viewport='web'] .game-card-tv-header-actions {
+  right: 3.4rem;
+}
+
 html[data-viewport='web'] .tv-play-view .game-card-tv-header-panel {
   min-height: 5rem;
   padding: 0.35rem 1rem;

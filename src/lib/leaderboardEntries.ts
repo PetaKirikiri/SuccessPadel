@@ -1,4 +1,5 @@
 import type { LeaderboardEntry } from './leaderboardTypes'
+import { playerDisplayName } from './playerDisplayName'
 import { isDuoLeaderboardEntry } from './leaderboardFilters'
 import { formatTeamLabelForDisplay } from './competitionFormatPresets'
 
@@ -46,14 +47,14 @@ function isNumberedPlayerLabel(name: string): boolean {
 }
 
 export function firstDisplayName(fullName: string | null | undefined): string {
-  const trimmed = (fullName ?? '').trim()
+  const trimmed = playerDisplayName(fullName)
   if (isNumberedPlayerLabel(trimmed)) return trimmed
   const tokens = trimmed.split(/\s+/).filter(Boolean)
   return tokens[0] ?? 'Player'
 }
 
 function nameTokens(fullName: string): { first: string } {
-  const trimmed = fullName.trim()
+  const trimmed = playerDisplayName(fullName)
   if (isNumberedPlayerLabel(trimmed)) return { first: trimmed }
   const tokens = trimmed.split(/\s+/).filter(Boolean)
   // A one-letter first token is an initial, not a usable first name. Keep the

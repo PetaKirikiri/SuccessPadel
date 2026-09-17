@@ -65,9 +65,23 @@ html[data-viewport='mobile'] .game-card-tv-header-panel {
   padding: 0.75rem 0.6rem;
 }
 
-html[data-viewport='mobile'] .game-card-tv-header-back,
 html[data-viewport='mobile'] .game-card-tv-header-actions > .game-card-header-score-btn {
   display: none;
+}
+
+html[data-viewport='mobile'] .game-card-tv-header-back {
+  display: flex;
+  inset: 0.25rem 0.25rem auto auto;
+  z-index: 20;
+}
+
+html[data-viewport='mobile'] .game-card-tv-header-back > button {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-brand-muted);
+  box-shadow: none;
 }
 
 html[data-viewport='mobile'] .game-card-tv-header-center {
@@ -90,6 +104,13 @@ html[data-viewport='mobile'] .game-card-tv-header-actions {
   align-items: flex-end;
   justify-content: center;
   gap: 0.45rem;
+  padding-top: 3rem;
+}
+
+html[data-viewport='mobile'] .game-card-tv-header-actions > button[aria-label] {
+  position: absolute;
+  top: 0.25rem;
+  right: 3.25rem;
 }
 
 html[data-viewport='mobile'] .game-card-tv-header-actions .game-card-header-timer {

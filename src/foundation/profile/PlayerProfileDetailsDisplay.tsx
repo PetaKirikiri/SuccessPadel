@@ -14,6 +14,7 @@ import {
   Zap,
 } from 'lucide-react'
 import type { TranslateFn } from '../../i18n'
+import { playerDisplayName } from '../../lib/playerDisplayName'
 import { ACHIEVEMENT_IMAGE, type Achievement } from '../../lib/competitionAchievements'
 import { countryLabel } from '../../lib/countries'
 import {
@@ -99,7 +100,7 @@ export function PlayerProfileDetailsDisplay({
   showDetails = true,
   t,
 }: Props) {
-  const displayName = profile?.display_name?.trim() || fallbackName
+  const displayName = playerDisplayName(profile?.display_name?.trim() || fallbackName)
   const playStyles = parsePlayStyles(profile?.play_style)
   const gender = storedGender(profile)
   const skillLevel = storedSkill(profile)

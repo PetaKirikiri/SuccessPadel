@@ -1,5 +1,6 @@
 import type { MouseEvent, ReactNode } from 'react'
 import { useOpenPlayerProfile } from '../../hooks/useOpenPlayerProfile'
+import { playerDisplayName } from '../../lib/playerDisplayName'
 
 type Props = {
   displayName: string
@@ -40,7 +41,7 @@ export function PlayerNameLink({
       disabled={disabled || opening}
       className={`max-w-full truncate text-left underline-offset-2 hover:underline disabled:opacity-60 ${className}`}
     >
-      {children ?? displayName}
+      {children ?? playerDisplayName(displayName)}
     </button>
   )
 }

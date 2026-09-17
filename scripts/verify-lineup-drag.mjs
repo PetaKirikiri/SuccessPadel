@@ -51,6 +51,22 @@ try {
       assert.equal(floating.z, '20')
       assert.equal(floating.touch, 'none')
       assert.equal(floating.target, 'true')
+      // Before release, every intervening player must already be sliding into
+      // the insertion order, while the underlying slot IDs remain stationary.
+      const previewOrder = [...before.keys()]
+      previewOrder.splice(to, 0, previewOrder.splice(from, 1)[0])
+      const destinations = evaluate(`(()=>{
+        const cards=[...document.querySelectorAll('[data-lineup-player]')];
+        return cards.map(e=>{
+          const effect=e.getAnimations().at(-1)?.effect;
+          return effect?.getKeyframes().at(-1)?.transform ?? 'none';
+        });
+      })()`)
+      for (let index=0; index<before.length; index++) {
+        if (index===from) continue
+        const shifted=previewOrder.indexOf(index)!==index
+        assert.equal(destinations[index] !== 'translate(0px, 0px)', shifted, `${mode}: player ${index} previews insertion`)
+      }
       if (touch) await send('Input.dispatchTouchEvent', { type:'touchEnd', touchPoints:[] })
       else await send('Input.dispatchMouseEvent', { type:'mouseReleased', ...b, button:'left', buttons:0, clickCount:1 })
       const expected = [...before]; expected.splice(to, 0, expected.splice(from,1)[0])

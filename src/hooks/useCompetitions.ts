@@ -44,9 +44,9 @@ export function rosterDisplayName(sp: CompetitionPlayer): string {
     return clubDisplayName(profileId, fromProfile)
   }
   const fromPadel = sp.padel_players?.display_name?.trim()
-  if (fromPadel) return fromPadel
+  if (fromPadel) return clubDisplayName(profileId, fromPadel)
   const guest = sp.guest_name?.trim()
-  if (guest) return guest
+  if (guest) return clubDisplayName(profileId, guest)
   return 'Player'
 }
 

@@ -18,9 +18,14 @@ export function useCompetitionLineupDrag(sessionId: string, source: CompetitionP
   const staleSource = useRef<string | null>(null)
   const drag = useRef<{
     from: number; to: number; snapshot: CompetitionPlayer[]; element: HTMLElement;
-    x: number; y: number; left: number; top: number; animation: Animation | null
+    x: number; y: number; left: number; top: number; animation: Animation | null;
+    previews: Map<HTMLElement, Animation>
   } | null>(null)
-  useEffect(() => () => { drag.current?.animation?.cancel(); drag.current = null }, [])
+  useEffect(() => () => {
+    drag.current?.animation?.cancel()
+    drag.current?.previews.forEach(animation => animation.cancel())
+    drag.current = null
+  }, [])
   useEffect(() => {
     if (!inFlight.current && !drag.current && JSON.stringify(lineupSnapshot(source)) !== staleSource.current) {
       latestPlayers.current = source
@@ -77,7 +82,7 @@ export function useCompetitionLineupDrag(sessionId: string, source: CompetitionP
     event.currentTarget.setPointerCapture(event.pointerId)
     const rect = event.currentTarget.getBoundingClientRect()
     drag.current = { from: index, to: index, snapshot: latestPlayers.current, element: event.currentTarget,
-      x: event.clientX, y: event.clientY, left: rect.left, top: rect.top, animation: null }
+      x: event.clientX, y: event.clientY, left: rect.left, top: rect.top, animation: null, previews: new Map() }
     setDraggingId(players[index]!.id)
     setTargetId(players[index]!.id)
   }
@@ -88,12 +93,30 @@ export function useCompetitionLineupDrag(sessionId: string, source: CompetitionP
     current.animation?.cancel()
     const rect = current.element.getBoundingClientRect()
     const transform = `translate(${event.clientX - current.x + current.left - rect.left}px, ${event.clientY - current.y + current.top - rect.top}px)`
-    // Measure the fixed footprints before floating this card again. Hit-testing
-    // rendered elements misses grid gaps and can be blocked by the drag preview.
+    // Hit-test the fixed slot footprints, never the animated occupants. Otherwise
+    // sliding a neighbour out of the way changes the target under the pointer.
     const cards = Array.from(current.element.parentElement?.querySelectorAll<HTMLElement>('[data-lineup-player]') ?? [])
       .filter((element) => element.dataset.lineupSession === sessionId)
-    const to = nearestLineupSlot(cards.map((element) => element.getBoundingClientRect()), event.clientX, event.clientY)
+    const previousTransforms = cards.map(element => getComputedStyle(element).transform)
+    current.previews.forEach(animation => animation.cancel())
+    current.previews.clear()
+    const footprints = cards.map(element => element.getBoundingClientRect())
+    const to = nearestLineupSlot(footprints, event.clientX, event.clientY)
     if (to >= 0) { current.to = to; setTargetId(current.snapshot[to]!.id) }
+    // The same insertion permutation drives both the live preview and save:
+    // lift one occupant out, shift everyone between, leave its destination open.
+    const order = moveLineupPlayer(cards.map((_, index) => index), current.from, current.to)
+    const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : 140
+    order.forEach((originalIndex, slotIndex) => {
+      if (originalIndex === current.from) return
+      const element = cards[originalIndex]!
+      const origin = footprints[originalIndex]!
+      const destination = footprints[slotIndex]!
+      const shifted = `translate(${destination.left - origin.left}px, ${destination.top - origin.top}px)`
+      current.previews.set(element, element.animate([
+        { transform: previousTransforms[originalIndex] }, { transform: shifted },
+      ], { duration, easing: 'ease-out', fill: 'forwards' }))
+    })
     current.animation = current.element.animate([{ transform }, { transform }], { duration: 1, fill: 'forwards' })
     // Scroll the actual page container, not the fixed viewport wrapper.
     let parent = event.currentTarget.parentElement
@@ -109,6 +132,7 @@ export function useCompetitionLineupDrag(sessionId: string, source: CompetitionP
   }
   const cancel = () => {
     drag.current?.animation?.cancel()
+    drag.current?.previews.forEach(animation => animation.cancel())
     drag.current = null
     setTargetId(null)
     setDraggingId(null)

@@ -1,4 +1,5 @@
 import { Share2 } from 'lucide-react'
+import { playerDisplayName } from '../../lib/playerDisplayName'
 import type { ReactNode } from 'react'
 import { LineLogoIcon } from '../line/LineLogoIcon'
 import type { TranslateFn } from '../../i18n'
@@ -31,7 +32,7 @@ function initial(name: string): string {
 export function PlayerProfileBanner({
   adminAction,
   coachAction,
-  name,
+  name: originalName,
   avatarUrl,
   memberSince,
   canAddLine,
@@ -46,6 +47,7 @@ export function PlayerProfileBanner({
   embedded = false,
   t,
 }: Props) {
+  const name = playerDisplayName(originalName)
   const canChangePhoto = Boolean(photoInputId || onChangePhoto)
   const avatarClass =
     'relative shrink-0 cursor-pointer'
