@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { competitionInvitePath } from '../../lib/competitionInviteLink'
 import { ensureCompetitionScheduleSaved } from '../../lib/persistCompetitionSchedule'
 import { GameBoard } from '../../components/GameCard/GameBoard'
 import { Leaderboard } from '../../components/leaderboard'
@@ -725,7 +726,7 @@ export function GameCardPlayEvent() {
         tvCarousel={columns.length > 0}
         viewAlongUrl={isTvLayout ? viewAlongUrl : null}
         onTvGameChange={setTvGameNumber}
-        onTvBack={() => navigate('/competitions')}
+        onTvBack={() => navigate(id ? competitionInvitePath(id) : '/competitive')}
         leaderboardBody={!hasSideLeaderboard ? leaderboardStandard : undefined}
         activePanel={tab === 'games' ? 'game' : 'leaderboard'}
         onActivePanel={handleActivePanel}

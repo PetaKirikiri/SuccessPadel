@@ -10,6 +10,7 @@ import { useLineClientProfile } from '../../hooks/useLineClientProfile'
 import { useTranslation } from '../../hooks/useTranslation'
 import type { TranslateFn } from '../../i18n'
 import { competitionIsPast } from '../../lib/competitionListCard'
+import { selectInvitedCompetition } from '../../lib/competitionInviteLink'
 import { canEditFriendlySession, splitFriendlyGames, type FriendlyGameRecord } from '../../lib/friendlyGames'
 import { deleteFriendlySession } from '../../lib/friendlyServer'
 import { friendlyDivisionLabels } from '../../lib/friendlyGameDisplay'
@@ -38,6 +39,7 @@ type FriendlyProps = SharedProps & {
 
 type CompetitiveProps = SharedProps & {
   mode: 'competitive'
+  competitionId?: string | null
   rows?: CompetitionRow[]
   error?: string | null
   userId?: string
@@ -224,6 +226,7 @@ function CompetitiveGamesListBody({
   onRefresh: onRefreshProp,
   listTab,
   showListTabs = true,
+  competitionId = null,
 }: CompetitiveProps) {
   const selfFetch = rowsProp === undefined
   const hub = useCompetitionHubRows(selfFetch)
@@ -241,9 +244,10 @@ function CompetitiveGamesListBody({
   const genderFilter = useGamesGenderFilter()
   const visibleRows = tab === 'past' ? pastRows : currentRows
   const filteredRows = useMemo(() => {
+    if (competitionId !== null) return selectInvitedCompetition(rows, competitionId)
     if (!genderFilter) return visibleRows
     return visibleRows.filter((row) => matchesGamesGenderFilter(row.gender, genderFilter))
-  }, [visibleRows, genderFilter])
+  }, [rows, competitionId, visibleRows, genderFilter])
 
   useEffect(() => {
     if (!showListTabs || loading || didDefaultTab.current) return
@@ -273,6 +277,8 @@ function CompetitiveGamesListBody({
         ) : (
           <GamesHubLoading />
         )
+      ) : competitionId !== null && filteredRows.length === 0 ? (
+        <GamesHubEmpty><p>{t('common.notFound')}</p></GamesHubEmpty>
       ) : filteredRows.length === 0 ? (
         showListTabs ? (
           <div className="game-card space-y-2 px-4 py-5 text-center">

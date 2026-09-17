@@ -8,6 +8,7 @@ type Mode = 'friendly' | 'competitive'
 export function GamesHomePage({ mode }: { mode: Mode }) {
   const { user, profile, loading: authLoading } = useAuth()
   const location = useLocation()
+  const competitionId = new URLSearchParams(location.search).get('competition')
   const isAdmin = !authLoading && Boolean(profile?.is_admin)
   const lineError = (location.state as { lineError?: string } | null)?.lineError
 
@@ -16,6 +17,7 @@ export function GamesHomePage({ mode }: { mode: Mode }) {
       <GamesHubView
         showPastTab
         hubNav="none"
+        pinnedToCurrent={competitionId !== null}
         currentPanel={
           <GamesList
             mode="competitive"
@@ -23,6 +25,7 @@ export function GamesHomePage({ mode }: { mode: Mode }) {
             isAdmin={isAdmin}
             userId={user?.id}
             showListTabs={false}
+            competitionId={competitionId}
           />
         }
         pastPanel={
@@ -32,6 +35,7 @@ export function GamesHomePage({ mode }: { mode: Mode }) {
             isAdmin={isAdmin}
             userId={user?.id}
             showListTabs={false}
+            competitionId={competitionId}
           />
         }
       />

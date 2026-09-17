@@ -4,7 +4,8 @@ import { GameBoardPreview } from '../../components/GameCard/GameBoardPreview'
 import { InviteCard } from './InviteCard'
 import { useTranslation } from '../../hooks/useTranslation'
 import type { CompetitionRow } from '../../hooks/useCompetitions'
-import { competitionPlayUrl, shareSiteOrigin } from '../../lib/siteUrl'
+import { shareSiteOrigin } from '../../lib/siteUrl'
+import { competitionInviteUrl } from '../../lib/competitionInviteLink'
 import type { FriendlyGameRecord } from '../../lib/friendlyGames'
 import {
   DEFAULT_FRIENDLY_ORGANIZED_CONFIG,
@@ -123,7 +124,7 @@ export function InviteGameCard(props: Props) {
       detailTo={detailTo}
       competitionId={row?.id}
       currentUserId={currentUserId}
-      qrUrl={row ? competitionPlayUrl(row.id) : game ? `${shareSiteOrigin()}/friendly/${game.id}` : undefined}
+      qrUrl={row ? competitionInviteUrl(row.id) : game ? `${shareSiteOrigin()}/friendly/${game.id}` : undefined}
       qrAriaLabel={t('leaderboard.viewAlongHint')}
       accountAction={row ? <InviteProfileAction /> : undefined}
       headerAction={

@@ -44,6 +44,8 @@ type Props = {
   /** Gender filter on invite card banners. */
   showGenderFilter?: boolean
   initialGenderFilter?: Gender | null
+  /** An event invitation must not land on an unrelated saved hub tab. */
+  pinnedToCurrent?: boolean
 }
 
 function HubTab({
@@ -115,10 +117,12 @@ export function GamesHubView({
   listClassName = '',
   showGenderFilter = true,
   initialGenderFilter = null,
+  pinnedToCurrent = false,
 }: Props) {
   const { t } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [tab, setTabState] = useState<GamesHubTab>(() => searchTab(searchParams.get('view')) ?? 'current')
+  const [selectedTab, setTabState] = useState<GamesHubTab>(() => searchTab(searchParams.get('view')) ?? 'current')
+  const tab = pinnedToCurrent ? 'current' : selectedTab
   const [genderFilter, setGenderFilterState] = useState<Gender>(initialGenderFilter ?? 'Mixed')
   const didDefaultTab = useRef(false)
   const didApplyStoredGender = useRef(false)
