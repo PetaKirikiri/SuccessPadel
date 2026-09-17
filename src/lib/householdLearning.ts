@@ -20,8 +20,3 @@ export const HOUSEHOLD_SLOT_IDENTITIES = [
   {"rosterId": "d101edfc-bb73-4721-9735-93c4bd828dcc", "imageUrl": "/household-learning/stairs.png", "english": "Stairs", "thai": "บันได", "phonetic": "ban-dai"},
   {"rosterId": "9b4ee57c-73aa-4d2d-983f-d147384361f5", "imageUrl": "/household-learning/roof.png", "english": "Roof", "thai": "หลังคา", "phonetic": "lang-khaa"},
 ] as const satisfies readonly (TeamLearningIdentity & { rosterId: string })[]
-
-/** Event-owned session_players IDs; never names, profiles, rank or current partner. */
-export function learningIdentityForSlot(rosterId: string | null | undefined): TeamLearningIdentity | null {
-  return HOUSEHOLD_SLOT_IDENTITIES.find((slot) => slot.rosterId === rosterId) ?? null
-}

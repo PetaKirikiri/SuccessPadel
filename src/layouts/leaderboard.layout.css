@@ -313,3 +313,108 @@ html[data-viewport='tv'] .team-learning-badge--leaderboard .team-learning-badge_
   line-height: 1.2;
   text-align: center;
 }
+
+/* Slot vocabulary sits beside the score; the avatar column always belongs to the player. */
+html[data-viewport='mobile'] .leaderboard-row--slot-learning {
+  grid-template-columns: 1.25rem 2rem minmax(0, 1fr) 6rem;
+}
+html[data-viewport='mobile'] .leaderboard-row--slot-learning-badges {
+  grid-template-columns: 1.25rem 2rem minmax(0, 1fr) minmax(0, 4rem) 6rem;
+}
+html[data-viewport='mobile'] .leaderboard-slot-score {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+html[data-viewport='mobile'] .leaderboard-slot-score__icon {
+  display: block;
+  width: 1.75rem;
+  height: 1.75rem;
+  object-fit: contain;
+}
+
+html[data-viewport='tablet'] .leaderboard-row--slot-learning {
+  grid-template-columns: 1.25rem 2rem minmax(0, 1fr) 6rem;
+}
+html[data-viewport='tablet'] .leaderboard-row--slot-learning-badges {
+  grid-template-columns: 1.25rem 2rem minmax(0, 1fr) minmax(0, 4rem) 6rem;
+}
+html[data-viewport='tablet'] .leaderboard-slot-score {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+html[data-viewport='tablet'] .leaderboard-slot-score__icon {
+  display: block;
+  width: 1.75rem;
+  height: 1.75rem;
+  object-fit: contain;
+}
+
+html[data-viewport='web'] .leaderboard-row--slot-learning {
+  grid-template-columns: 1.25rem 2rem minmax(0, 1fr) 6rem;
+}
+html[data-viewport='web'] .leaderboard-row--slot-learning-badges {
+  grid-template-columns: 1.25rem 2rem minmax(0, 1fr) minmax(0, 4rem) 6rem;
+}
+html[data-viewport='web'] .leaderboard-slot-score {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+html[data-viewport='web'] .leaderboard-slot-score__icon {
+  display: block;
+  width: 1.75rem;
+  height: 1.75rem;
+  object-fit: contain;
+}
+
+html[data-viewport='tv'] .leaderboard-row--slot-learning {
+  grid-template-columns: 1.25rem 2rem minmax(0, 1fr) 6rem;
+}
+html[data-viewport='tv'] .leaderboard-row--slot-learning-badges {
+  grid-template-columns: 1.25rem 2rem minmax(0, 1fr) minmax(0, 4rem) 6rem;
+}
+html[data-viewport='tv'] .leaderboard-slot-score {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+html[data-viewport='tv'] .leaderboard-slot-score__icon {
+  display: block;
+  width: 1.75rem;
+  height: 1.75rem;
+  object-fit: contain;
+}
+
+html[data-viewport='mobile'] .leaderboard-slot-score > div {
+  width: 100%;
+  min-width: 0;
+  margin-right: 0;
+}
+
+html[data-viewport='tablet'] .leaderboard-slot-score > div {
+  width: 100%;
+  min-width: 0;
+  margin-right: 0;
+}
+
+html[data-viewport='web'] .leaderboard-slot-score > div {
+  width: 100%;
+  min-width: 0;
+  margin-right: 0;
+}
+
+html[data-viewport='tv'] .leaderboard-slot-score > div {
+  width: 100%;
+  min-width: 0;
+  margin-right: 0;
+}

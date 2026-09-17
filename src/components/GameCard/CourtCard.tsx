@@ -18,7 +18,7 @@ import { GENDER_CHIP_COLORS } from '../../foundation/profile/profileFormUi'
 import type { LiveCourt, ScoringGameCourt } from './gameBoardTypes'
 import { learningIdentityForTeam } from '../../lib/spiritAnimals'
 import { TeamLearningBadge } from '../TeamLearningBadge'
-import { learningIdentityForSlot } from '../../lib/householdLearning'
+import { learningIdentityForSlot } from '../../lib/slotLearning'
 
 export function stopCardNav(e: { stopPropagation: () => void }) {
   e.stopPropagation()
@@ -987,7 +987,8 @@ export function CourtMatchCell({
 
   const compactTeamSides = duoAlignedSides
 
-  const usesScoreFirstLayout = compact || scoreFirst
+  const hasSlotLearning = [...teamAPlayerList, ...teamBPlayerList].some((player) => learningIdentityForSlot(player.rosterId))
+  const usesScoreFirstLayout = compact || scoreFirst || hasSlotLearning
 
   const grid = usesScoreFirstLayout ? (
     showScores ? (

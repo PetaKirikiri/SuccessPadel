@@ -251,15 +251,30 @@ html[data-viewport='web'] .court-slot-learning-item {
   justify-items: center;
   gap: 0.1rem;
   min-width: 0;
+  width: 100%;
 }
 html[data-viewport='web'] .court-slot-learning-copy {
   display: grid;
   justify-items: center;
+  width: 100%;
+  min-width: 0;
   line-height: 1.1;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 html[data-viewport='web'] .team-learning-badge--slots {
   gap: 0.45rem;
+  width: 18%;
+}
+html[data-viewport='web'] .game-card-court-match--sides:has(.team-learning-badge--slots) > .game-card-court-match__side {
+  max-width: 60%;
+}
+html[data-viewport='web'] .game-card-court-match--sides:has(.team-learning-badge--slots) .game-card-court-player__avatar {
+  width: clamp(2.5rem, 8cqw, 3.75rem);
+  height: clamp(2.5rem, 8cqw, 3.75rem);
+}
+html[data-viewport='web'] .game-card-court-match--sides:has(.team-learning-badge--slots) .game-card-court-player__name {
+  font-size: clamp(1rem, 3cqw, 1.7rem);
 }
 html[data-viewport='web'] .team-learning-badge--slots .team-learning-badge__image {
   width: clamp(2.5rem, 10cqh, 4rem);

@@ -24,7 +24,7 @@ import type { LeaderboardEntry } from '../../lib/leaderboardTypes'
 import { openPlayerProfile } from '../../lib/openPlayerProfile'
 import { LeaderboardShareButton, type LeaderboardShareRow } from './LeaderboardShareButton'
 import { learningIdentityForTeam } from '../../lib/spiritAnimals'
-import { learningIdentityForSlot } from '../../lib/householdLearning'
+import { learningIdentityForSlot } from '../../lib/slotLearning'
 import { TeamLearningBadge } from '../TeamLearningBadge'
 import { validateStandings, type CompetitionFormat } from '../../lib/competition-formats/contract'
 
@@ -270,7 +270,7 @@ function LeaderboardRow({
         compact ? 'flex-1' : 'py-2.5 md:py-3.5'
       } ${onOpenProfile || onToggleHighlight ? 'cursor-pointer hover:bg-brand-bg-alt/60' : ''} ${isMe ? 'bg-brand-bg-alt' : ''}${
         highlighted ? ' leaderboard-row--arrived' : ''
-      }`}
+      }${!simpleTeamRow && slotIdentity ? ` leaderboard-row--slot-learning${showBadges ? ' leaderboard-row--slot-learning-badges' : ''}` : ''}`}
     >
       <span
         className={`text-center font-display text-sm font-semibold ${
@@ -279,9 +279,7 @@ function LeaderboardRow({
       >
         {rank}
       </span>
-      {!simpleTeamRow && slotIdentity ? (
-        <img className="player-learning-badge__image" src={slotIdentity.imageUrl} alt={slotIdentity.english} draggable={false} />
-      ) : !simpleTeamRow ? (
+      {!simpleTeamRow ? (
         <PlayerAvatar
           displayName={entry.display_name}
           avatarUrl={entry.avatar_url}
@@ -319,7 +317,14 @@ function LeaderboardRow({
           ))}
         </span>
       ) : null}
-      <ScoreWithRecord score={entry.total_points} record={compact ? null : record} compact={compact} t={t} />
+      {!simpleTeamRow && slotIdentity ? (
+        <div className="leaderboard-slot-score">
+          <img className="leaderboard-slot-score__icon" src={slotIdentity.imageUrl} alt={slotIdentity.english} draggable={false} />
+          <ScoreWithRecord score={entry.total_points} record={compact ? null : record} compact={compact} t={t} />
+        </div>
+      ) : (
+        <ScoreWithRecord score={entry.total_points} record={compact ? null : record} compact={compact} t={t} />
+      )}
     </li>
   )
 }
