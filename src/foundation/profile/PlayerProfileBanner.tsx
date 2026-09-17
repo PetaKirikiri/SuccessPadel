@@ -1,8 +1,6 @@
 import { Share2 } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { Link } from 'react-router-dom'
 import { LineLogoIcon } from '../line/LineLogoIcon'
-import { GameLineupSprite } from './GameLineupSprite'
 import type { TranslateFn } from '../../i18n'
 
 type Props = {
@@ -10,9 +8,6 @@ type Props = {
   coachAction?: ReactNode
   name: string
   avatarUrl?: string | null
-  showdownSpriteUrl?: string | null
-  fighterEditTo?: string
-  fighterEditLabel?: string
   memberSince?: string | null
   canAddLine: boolean
   onAddLine?: () => void
@@ -38,9 +33,6 @@ export function PlayerProfileBanner({
   coachAction,
   name,
   avatarUrl,
-  showdownSpriteUrl,
-  fighterEditTo,
-  fighterEditLabel,
   memberSince,
   canAddLine,
   onAddLine,
@@ -122,7 +114,7 @@ export function PlayerProfileBanner({
         </div>
       </div>
       {coachAction}
-      {(adminAction || canShareProfile || canAddLine || showdownSpriteUrl || fighterEditTo) && (
+      {(adminAction || canShareProfile || canAddLine) && (
         <div className="profile-banner__actions flex shrink-0 items-end gap-2">
           {adminAction}
           {(canShareProfile || canAddLine) && (
@@ -154,41 +146,6 @@ export function PlayerProfileBanner({
               )}
             </div>
           )}
-          {(showdownSpriteUrl || fighterEditTo) ? (
-            <div className="flex flex-col items-end gap-1">
-              {showdownSpriteUrl ? (
-                fighterEditTo ? (
-                  <Link
-                    to={fighterEditTo}
-                    aria-label={fighterEditLabel}
-                    className="rounded-lg px-1 py-0.5 opacity-80 transition active:scale-[0.98] active:opacity-100"
-                  >
-                    <GameLineupSprite
-                      src={showdownSpriteUrl}
-                      facing="right"
-                      size={52}
-                      className="h-12 w-12 md:h-16 md:w-16"
-                    />
-                  </Link>
-                ) : (
-                  <GameLineupSprite
-                    src={showdownSpriteUrl}
-                    facing="right"
-                    size={52}
-                    className="h-12 w-12 opacity-75 md:h-16 md:w-16"
-                  />
-                )
-              ) : null}
-              {fighterEditTo ? (
-                <Link
-                  to={fighterEditTo}
-                  className="text-[10px] font-semibold leading-none text-brand-muted underline-offset-2 active:text-brand-accent"
-                >
-                  {fighterEditLabel}
-                </Link>
-              ) : null}
-            </div>
-          ) : null}
         </div>
       )}
     </div>

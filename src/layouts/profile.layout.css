@@ -74,3 +74,46 @@ html[data-viewport='web'] .profile-banner__actions {
   flex-direction: column;
   align-items: flex-end;
 }
+
+/* Profiles have their own return action instead of the bottom dock. */
+html[data-viewport='mobile'] .profile-scroll,
+html[data-viewport='tablet'] .profile-scroll,
+html[data-viewport='web'] .profile-scroll,
+html[data-viewport='tv'] .profile-scroll {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+html[data-viewport='mobile'] .profile-back,
+html[data-viewport='tablet'] .profile-back,
+html[data-viewport='web'] .profile-back,
+html[data-viewport='tv'] .profile-back {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 0.4rem;
+  min-height: 44px;
+  padding: 0 0.65rem;
+  border: 0;
+  border-radius: 0.6rem;
+  background: transparent;
+  color: #b5c3cf;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+html[data-viewport='mobile'] .profile-back svg,
+html[data-viewport='tablet'] .profile-back svg,
+html[data-viewport='web'] .profile-back svg,
+html[data-viewport='tv'] .profile-back svg {
+  width: 20px;
+  height: 20px;
+}
+
+html[data-viewport='mobile'] .profile-back:focus-visible,
+html[data-viewport='tablet'] .profile-back:focus-visible,
+html[data-viewport='web'] .profile-back:focus-visible,
+html[data-viewport='tv'] .profile-back:focus-visible {
+  outline: 2px solid var(--color-brand-accent);
+  outline-offset: 2px;
+}

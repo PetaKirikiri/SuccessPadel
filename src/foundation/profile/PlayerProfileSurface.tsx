@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useId } from 'react'
+import { ArrowLeft } from 'lucide-react'
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { AppShellColumn } from '../../foundation/AppShell'
 import type { LeaderboardEntry } from '../../lib/leaderboardTypes'
@@ -8,8 +9,6 @@ import { LinePlayerLinkModal } from '../../shared/Modal/LinePlayerLinkModal'
 import { LinePlayerLinkPanel } from '../../foundation/line/LinePlayerLinkPanel'
 import { PlayerMatchHistory } from '../../foundation/profile/PlayerMatchHistory'
 import { PlayerProfileBanner } from '../../foundation/profile/PlayerProfileBanner'
-import { AdminAddMemberAction } from './AdminAddMemberAction'
-import { canManageMembers } from '../../lib/memberPermissions'
 import { PlayerProfileCard } from '../../foundation/profile/PlayerProfileCard'
 import { PlayerCoachFeedback } from './PlayerCoachFeedback'
 import { CoachRecorder } from './CoachRecorder'
@@ -28,7 +27,6 @@ import { playerProfileShareUrl, sharePlayerProfile } from '../../lib/playerProfi
 import { playerNameSlug } from '../../lib/playerProfileSlug'
 import { uploadProfileAvatar, validateProfileAvatar } from '../../lib/profileAvatar'
 import { resolveProfileAvatarUrl } from '../../lib/resolveProfileAvatar'
-import { resolveGameSpriteUrl } from '../../lib/pixelAvatar/resolveGameSprite'
 import { isLineLiffBrowser } from '../../lib/line/liff'
 import { runLinePlayerProfileHandshake } from '../../lib/line/profileHandshake'
 import { supabase } from '../../lib/supabaseClient'
@@ -232,16 +230,6 @@ export function PlayerProfileSurface() {
     resolved?.profile,
     routeEntry?.avatar_url,
   ])
-
-  const showdownSpriteUrl = useMemo(() => {
-    if (isOwnProfile && authProfile) {
-      return resolveGameSpriteUrl(authProfile)
-    }
-    if (resolved?.profile) {
-      return resolveGameSpriteUrl(resolved.profile)
-    }
-    return null
-  }, [authProfile, isOwnProfile, resolved?.profile])
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -483,7 +471,7 @@ export function PlayerProfileSurface() {
     linkablePadelPlayerId ??
     (resolved?.profile ? null : playerId)
 
-  const exitPath = competitionId ? `/competitions/${competitionId}` : '/friendly'
+  const exitPath = competitionId ? `/competitions/${competitionId}` : '/competitive'
 
   const goBack = () => {
     const here = `${location.pathname}${location.search}`
@@ -491,10 +479,12 @@ export function PlayerProfileSurface() {
       navigate(state.from)
       return
     }
+    if (window.history.state?.idx > 0) {
+      navigate(-1)
+      return
+    }
     navigate(exitPath)
   }
-
-  const showBack = Boolean(state?.from) || !isOwnProfile
 
   if (!playerId) {
     return (
@@ -534,15 +524,10 @@ export function PlayerProfileSurface() {
 
       <main data-scroll-y className="profile-scroll scroll-y min-h-0 min-w-0 flex-1">
         <AppShellColumn fill={false} className="space-y-3 pb-8">
-          {showBack ? (
-            <button
-              type="button"
-              onClick={goBack}
-              className="profile-back self-start px-1 text-sm font-medium text-brand-accent"
-            >
-              {t('common.back')}
-            </button>
-          ) : null}
+          <button type="button" onClick={goBack} className="profile-back">
+            <ArrowLeft aria-hidden="true" />
+            {t('aria.back')}
+          </button>
           {lineHandshakeWorking ? (
             <div className="pointer-events-none fixed inset-0 z-[300] flex items-center justify-center bg-brand-bg/90 px-6 dark:bg-black/70">
               <p className="text-center text-sm text-brand-muted">{t('lineLink.signingInLine')}</p>
@@ -566,14 +551,11 @@ export function PlayerProfileSurface() {
                 <PlayerProfileBanner
                   embedded
                   name={displayName}
-                  adminAction={isOwnProfile && canManageMembers(authLoading, user?.id, authProfile)
-                    ? <AdminAddMemberAction label={t('members.addMember')} /> : undefined}
                   coachAction={canRecordCoach && resolved?.padelPlayerId ? (
                     <CoachRecorder key={resolved.padelPlayerId} playerId={resolved.padelPlayerId} playerName={displayName}
                       competitionId={competitionId} onSaved={() => { setCoachFeedbackRevision(value => value + 1); setTab('feedback') }} />
                   ) : undefined}
                   avatarUrl={avatarUrl}
-                  showdownSpriteUrl={showdownSpriteUrl}
                   memberSince={isOwnProfile ? null : memberSince}
                   canAddLine={canConnectLine && !showInlineLineSetup}
                   onAddLine={

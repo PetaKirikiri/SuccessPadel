@@ -67,7 +67,7 @@ export function Layout() {
           </AppShellColumn>
         )}
       </main>
-      {showBottomNav && !isCompetitionOverview ? (
+      {showBottomNav && !isCompetitionOverview && !onPlayerProfile ? (
         <div className="shell-dock">
           <AppBottomNav />
         </div>
