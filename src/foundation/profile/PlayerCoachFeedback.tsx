@@ -19,7 +19,7 @@ export function PlayerCoachFeedback({ playerId, revision, canView, demo = false 
   useEffect(() => {
     let active = true
     setEntries([]); setError(null)
-    if (import.meta.env.DEV && demo) {
+    if (demo) {
       setEntries([demoCoachEntry(playerId ?? 'local-dave-preview')]); setLoading(false)
       return
     }
@@ -64,10 +64,15 @@ export function PlayerCoachFeedback({ playerId, revision, canView, demo = false 
           <div className="coach-observation-list">{observations.map(({ entry, note, index }) => (
             <article className="coach-observation" key={`${entry.id}-${index}`} id={`observation-${entry.id}-${index}`} data-kind={note.kind}>
               <header><strong>{kindLabel[note.kind]}</strong><time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleDateString()}</time></header>
-              <p>{note.observation}</p>
+              <div className="coach-comment">
+                <span className="coach-comment__avatar" aria-hidden="true">{(entry.coach?.display_name || 'Coach').charAt(0)}</span>
+                <div className="coach-comment__body">
+                  <strong>{demo ? 'Coach · example' : entry.coach?.display_name || 'Coach'}</strong>
+                  <blockquote><em>“{note.observation.replace(/^DEMO: /, '')}”</em></blockquote>
+                </div>
+                {demo ? <span className="coach-comment__score" aria-label="Example skill score out of 10"><strong>{note.kind === 'strength' ? '7' : '5'}</strong><span>/10</span></span> : null}
+              </div>
               {note.next_step ? <p className="coach-observation__next">{note.next_step}</p> : null}
-              <footer>{entry.id === 'local-fictional-dave-demo' ? 'Fictional demo · not a real assessment' : `${entry.coach?.display_name || 'Coach'} · AI-organised note`}</footer>
-              <details><summary>Original coach note</summary><p>{entry.transcript}</p></details>
               <div className="coach-observation__booking">
                 <button type="button" onClick={() => setBookingNote(`${entry.id}-${index}`)} aria-label={`Book lesson: ${note.skill}`}>
                   <CalendarPlus aria-hidden="true" /> Book lesson

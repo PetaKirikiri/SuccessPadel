@@ -632,7 +632,8 @@ export const fr: Messages = {
     },
   },
   members: {
-    title: 'Membres',
+    addMember: 'Ajouter un membre',
+    title: 'Joueurs',
     myProfile: 'Mon profil',
     empty: 'Aucun membre pour le moment',
     lineLinked: 'Membres LINE',
@@ -648,6 +649,10 @@ export const fr: Messages = {
     createHint: 'Entrez un nom, appuyez sur Ajouter — le lien profil s’ouvre pour partager dans LINE.',
     createAccept: 'Ajouter',
     createFailed: 'Impossible de créer le joueur',
+    levelIntro: 'Définissez le niveau officiel de chaque joueur. Les changements sont enregistrés immédiatement.',
+    levelUnassigned: 'Non défini',
+    levelSaveFailed: 'Impossible d’enregistrer le niveau',
+    playerLevelFor: 'Niveau de {name}',
   },
   lang: {
     en: 'English',

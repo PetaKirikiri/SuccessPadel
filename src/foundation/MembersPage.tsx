@@ -1,6 +1,7 @@
 import { Share2, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
+import { canManageMembers } from '../lib/memberPermissions'
 import { DeleteConfirm } from '../shared/Modal/DeleteConfirm'
 import { useAuth } from '../hooks/useAuth'
 import { useTranslation } from '../hooks/useTranslation'
@@ -167,7 +168,9 @@ function MemberSection({
 export function MembersPage() {
   const { t } = useTranslation()
   const { user, profile, loading: authLoading, session, restoreSession } = useAuth()
-  const isAdmin = !authLoading && Boolean(profile?.is_admin)
+  const isAdmin = canManageMembers(authLoading, user?.id, profile)
+  const location = useLocation()
+  const createInput = useRef<HTMLInputElement>(null)
   const [members, setMembers] = useState<Profile[]>([])
   const [linePadelPlayers, setLinePadelPlayers] = useState<GuestPlayerRow[]>([])
   const [guestPlayers, setGuestPlayers] = useState<GuestPlayerRow[]>([])
@@ -181,6 +184,12 @@ export function MembersPage() {
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [shareFeedback, setShareFeedback] = useState<{ id: string; message: string } | null>(null)
   const firstLoad = useRef(true)
+
+  useEffect(() => {
+    if (!isAdmin || initialLoading || new URLSearchParams(location.search).get('add') !== '1') return
+    createInput.current?.scrollIntoView({ block: 'center' })
+    createInput.current?.focus({ preventScroll: true })
+  }, [isAdmin, initialLoading, location.search])
 
   const load = useCallback(async () => {
     if (firstLoad.current) setInitialLoading(true)
@@ -265,7 +274,7 @@ export function MembersPage() {
 
   const createPlayer = async () => {
     const name = createName.trim()
-    if (!name) return
+    if (!isAdmin || createBusy || !name) return
     setCreateBusy(true)
     setCreateError(null)
     const { data, error } = await supabase.rpc('find_or_create_padel_player', {
@@ -286,12 +295,14 @@ export function MembersPage() {
   }
 
   const createPlayerForm = isAdmin ? (
-    <div className="overflow-hidden rounded-2xl border border-brand-border bg-brand-surface">
+    <div id="add-member" role="region" aria-label={t('members.addMember')} className="overflow-hidden rounded-2xl border border-brand-border bg-brand-surface">
       <div className="flex items-center gap-2 px-3 py-3">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-bg-alt text-sm font-semibold text-brand-muted ring-1 ring-brand-border/80">
           +
         </span>
         <input
+          ref={createInput}
+          aria-label={t('members.createPlaceholder')}
           type="text"
           value={createName}
           onChange={(e) => setCreateName(e.target.value)}

@@ -136,6 +136,21 @@ Hub (`/friendly`, `/competitive`) = paper + list of **InviteGameCard** + gender 
 
 ## Five canonical cards (legacy table)
 
+### Singles / duos isolation (approved architecture migration)
+
+Format ownership is separate from route kind and viewport. See
+`docs/competition-format-isolation.md`. Keep shared scoring/persistence primitives;
+format-specific modules belong under `competition-formats/singles/` or `duos/`.
+Both competition standings presentations must pass an explicit format contract.
+Never fall back from duo standings to individual entries or infer fixed pairs from
+adjacent roster names when pair records are incomplete. Show a data warning instead.
+Run `npm run check:formats` and `npm run test:formats`; for format-only commits run
+`npm run check:formats -- --scope singles|duos --staged`. Shared edits require explicit
+approval and both-format verification, not relabelling to bypass a failed check.
+PRs require a `format:singles`, `format:duos`, or `format:shared` label. Remaining shared
+renderers are NOT independent format apps. The user approved this migration; do not
+undo the ownership boundary to enforce the older blanket no-duplicate-card wording.
+
 Never add `Friendly*Card` / `Competition*Card` duplicates — use `kind` / `mode` props on one component.
 
 | Card | Path | Notes |
@@ -149,6 +164,18 @@ Never add `Friendly*Card` / `Competition*Card` duplicates — use `kind` / `mode
 **Hub:** [`src/components/InviteCard/`](src/components/InviteCard/) — `GamesHomeSurface`, `GamesHubView`, `GamesList`. **Play:** [`src/foundation/play/`](src/foundation/play/). **Roster:** [`src/components/InviteCard/RosterList.tsx`](src/components/InviteCard/RosterList.tsx).
 
 ## Invite Card Data Map
+
+### Format-owned roster presentation
+
+- Attendance markup belongs to `src/components/competition-formats/singles/SinglesRoster.tsx`
+  or `duos/DuosRoster.tsx`; `CompetitionPregamePanel` remains the shared data/controller layer.
+- Roster CSS belongs only to `src/layouts/competition-formats/<singles|duos>/roster.<mobile|tablet|web|tv>.css`.
+  A duo-mobile change must pass BOTH `check:formats -- --scope duos --staged`
+  and `check:layout-scope -- --scope mobile --staged`.
+- Format renderers cannot import each other or unreviewed shared dependencies.
+  Shared contract/guard/registry changes are separately declared infrastructure work.
+- Do not put extracted roster selectors back into shared invite CSS; the build rejects it.
+- These explicit format variants are approved architecture, not friendly/competition kind forks.
 
 The invite card is a presenter, not the source of game/player truth.
 

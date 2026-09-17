@@ -14,3 +14,7 @@
 /vite.config.ts @PetaKirikiri
 /AGENTS.md @PetaKirikiri
 /.github/ @PetaKirikiri
+/src/lib/competition-formats/ @PetaKirikiri
+/src/components/competition-formats/ @PetaKirikiri
+/tests/competition-formats/ @PetaKirikiri
+/scripts/*competition-formats* @PetaKirikiri

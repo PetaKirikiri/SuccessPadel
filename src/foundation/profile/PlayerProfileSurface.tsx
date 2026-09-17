@@ -8,6 +8,8 @@ import { LinePlayerLinkModal } from '../../shared/Modal/LinePlayerLinkModal'
 import { LinePlayerLinkPanel } from '../../foundation/line/LinePlayerLinkPanel'
 import { PlayerMatchHistory } from '../../foundation/profile/PlayerMatchHistory'
 import { PlayerProfileBanner } from '../../foundation/profile/PlayerProfileBanner'
+import { AdminAddMemberAction } from './AdminAddMemberAction'
+import { canManageMembers } from '../../lib/memberPermissions'
 import { PlayerProfileCard } from '../../foundation/profile/PlayerProfileCard'
 import { PlayerCoachFeedback } from './PlayerCoachFeedback'
 import { CoachRecorder } from './CoachRecorder'
@@ -564,6 +566,8 @@ export function PlayerProfileSurface() {
                 <PlayerProfileBanner
                   embedded
                   name={displayName}
+                  adminAction={isOwnProfile && canManageMembers(authLoading, user?.id, authProfile)
+                    ? <AdminAddMemberAction label={t('members.addMember')} /> : undefined}
                   coachAction={canRecordCoach && resolved?.padelPlayerId ? (
                     <CoachRecorder key={resolved.padelPlayerId} playerId={resolved.padelPlayerId} playerName={displayName}
                       competitionId={competitionId} onSaved={() => { setCoachFeedbackRevision(value => value + 1); setTab('feedback') }} />
@@ -593,7 +597,7 @@ export function PlayerProfileSurface() {
                 />
               }
             >
-              {tab === 'feedback' ? <PlayerCoachFeedback playerId={resolved?.padelPlayerId ?? null} revision={coachFeedbackRevision} canView={Boolean(user && (isOwnProfile || canRecordCoach))} demo={import.meta.env.DEV && playerId === 'dave'} /> : tab === 'history' ? (
+              {tab === 'feedback' ? <PlayerCoachFeedback playerId={resolved?.padelPlayerId ?? null} revision={coachFeedbackRevision} canView={Boolean(user && (isOwnProfile || canRecordCoach))} demo={playerId === 'dave'} /> : tab === 'history' ? (
                 <PlayerMatchHistory
                   playerId={profileId ?? padelPlayerId ?? playerId}
                   embedded

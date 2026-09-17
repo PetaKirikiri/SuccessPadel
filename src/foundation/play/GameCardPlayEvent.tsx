@@ -26,6 +26,8 @@ import { completeCompetitionLeaderboard, computeAmericanoStandings } from '../..
 import { computeDuoStandings } from '../../lib/computeDuoStandings'
 import { computeFriendlySessionStandings } from '../../lib/friendlySessionStandings'
 import { duoLabelsForMatch } from '../../lib/competitionFormatPresets'
+import { duoStandings } from '../../lib/competition-formats/duos/standings'
+import { singlesStandings } from '../../lib/competition-formats/singles/standings'
 import type { CourtPlayer } from '../../lib/americanoSchedule'
 import { buildRosterNameById } from '../../hooks/useCompetitions'
 import { useTranslation } from '../../hooks/useTranslation'
@@ -340,11 +342,12 @@ export function GameCardPlayEvent() {
     () =>
       isDuo && teams.length >= 2
         ? enrichStandingsWithAvatars(
-            computeDuoStandings(roster, rounds, effectiveCourtMatches, teams),
+            // Standings reflect saved results, never stale local/gesture drafts.
+            computeDuoStandings(roster, rounds, courtMatches, teams),
             leaderboard,
           )
         : [],
-    [effectiveCourtMatches, isDuo, leaderboard, roster, rounds, teams],
+    [courtMatches, isDuo, leaderboard, roster, rounds, teams],
   )
 
   const gestureStandings = useMemo(
@@ -365,23 +368,25 @@ export function GameCardPlayEvent() {
     [columns, courtIdByLabel, isDuo, liveCourtScoreOverrides, roster, teams],
   )
 
-  const liveStandings = useMemo(() => {
+  const standingsModel = useMemo(() => {
+    // Fixed pairs stay team standings after the first persisted score arrives.
+    // The server leaderboard is individual; it must not replace these pair rows.
+    if (isDuo) {
+      return duoStandings(effectiveDuoStandings, teams.length)
+    }
     // Persisted match_players are the scoring authority. Recomputing against the
     // current round roster can attribute historical scores to the wrong player
     // after an explicit roster substitution, even though the saved match is intact.
     if (leaderboard.length > 0) {
-      return isDuo ? leaderboard : completeCompetitionLeaderboard(roster, leaderboard)
-    }
-    if (isDuo && teams.length >= 2 && effectiveDuoStandings.length > 0) {
-      return effectiveDuoStandings
+      return singlesStandings(completeCompetitionLeaderboard(roster, leaderboard))
     }
     if (!isDuo && effectivePlayerStandings.length > 0) {
-      return effectivePlayerStandings
+      return singlesStandings(effectivePlayerStandings)
     }
     if (manualStandings.length > 0) {
-      return enrichStandingsWithAvatars(manualStandings, leaderboard)
+      return singlesStandings(enrichStandingsWithAvatars(manualStandings, leaderboard))
     }
-    return enrichStandingsWithAvatars(gestureStandings, leaderboard)
+    return singlesStandings(enrichStandingsWithAvatars(gestureStandings, leaderboard))
   }, [
     effectiveDuoStandings,
     effectivePlayerStandings,
@@ -393,6 +398,8 @@ export function GameCardPlayEvent() {
     rounds,
     teams,
   ])
+
+  const liveStandings = standingsModel.entries
 
   const roundTimesByGame = useMemo(
     () =>
@@ -644,6 +651,7 @@ export function GameCardPlayEvent() {
     standings.length > 0 ? (
       <Leaderboard
         entries={standings}
+        competitionFormat={standingsModel.format}
         scoreUnit={scoreUnit}
         currentUserId={user?.id ?? null}
         competitionId={id ?? null}
@@ -656,7 +664,7 @@ export function GameCardPlayEvent() {
       />
     ) : (
       <p className="game-card px-3 py-6 text-center text-sm text-brand-muted">
-        {t('leaderboard.standings')}
+        {standingsModel.error ?? t('leaderboard.standings')}
       </p>
     )
 
@@ -664,6 +672,7 @@ export function GameCardPlayEvent() {
     standings.length > 0 ? (
       <Leaderboard
         entries={standings}
+        competitionFormat={standingsModel.format}
         scoreUnit={scoreUnit}
         currentUserId={user?.id ?? null}
         competitionId={id ?? null}
@@ -676,7 +685,7 @@ export function GameCardPlayEvent() {
         onToggleEntryHighlight={togglePlayerArrival}
       />
     ) : (
-      <p className="px-3 py-6 text-center text-sm text-brand-muted">{t('leaderboard.standings')}</p>
+      <p className="px-3 py-6 text-center text-sm text-brand-muted">{standingsModel.error ?? t('leaderboard.standings')}</p>
     )
 
   const viewAlongUrl = id ? competitionViewAlongUrl(id) : null

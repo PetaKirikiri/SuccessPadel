@@ -2,9 +2,18 @@ import type { TeamLearningIdentity } from './spiritAnimals'
 
 export const LUMINOUS_COMPETITION_ID = 'c446edaf-3437-4084-ada8-e1008df8296f'
 export const LUMINOUS_TEAM_IDENTITIES: readonly TeamLearningIdentity[] =
-  ['Bear', 'Tiger', 'Lion', 'Shark', 'Cobra', 'Eagle', 'Rhino', 'Wolf'].map(english => ({
+  [
+    ['Bear', 'หมี', 'mee'],
+    ['Tiger', 'เสือ', 'suea'],
+    ['Lion', 'สิงโต', 'sing-toh'],
+    ['Shark', 'ฉลาม', 'cha-laam'],
+    ['Cobra', 'งูเห่า', 'ngoo hao'],
+    ['Eagle', 'นกอินทรี', 'nok in-see'],
+    ['Rhino', 'แรด', 'raet'],
+    ['Wolf', 'หมาป่า', 'maa paa'],
+  ].map(([english, thai, phonetic]) => ({
     imageUrl: `/spirit-animals/luminous/${english.toLowerCase()}.png`,
-    english, thai: '', phonetic: '',
+    english, thai, phonetic,
   }))
 
 type SlotRow = { id: string; rank_order: number | null; profile_id?: string | null; padel_player_id?: string | null }

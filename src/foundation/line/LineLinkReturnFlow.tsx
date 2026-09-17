@@ -10,6 +10,7 @@ import {
   resolveCompetitionPathAfterLink,
 } from '../../lib/line/playerLink'
 import { isNativeApp } from '../../lib/native/app'
+import { PLAYER_LINK_APP_ORIGIN } from '../../lib/line/playerLinkReturnUrls'
 import { LineSigningInScreen } from './LineSigningInScreen'
 
 type Props = {
@@ -52,6 +53,14 @@ export function LineLinkReturnFlow({ search }: Props) {
 
         const finishInBrowser = isNativeApp() || !isLineLiffBrowser()
         if (finishInBrowser) {
+          // The registered OAuth callback may still be hosted on Vercel.
+          // Transfer the one-time handoff BEFORE consuming it, so the session
+          // is installed on the public app rather than stranded on that host.
+          if (!isNativeApp() && window.location.origin !== PLAYER_LINK_APP_ORIGIN) {
+            succeeded = true
+            window.location.replace(lineHandoffCompleteUrl(result.handoffToken))
+            return
+          }
           const { competitionId, error: handoffErr } = await consumeLineHandoffToken(
             result.handoffToken,
           )

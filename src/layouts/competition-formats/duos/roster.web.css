@@ -1,0 +1,56 @@
+/* duos roster — web only. Shared shell styling is not owned here. */
+html[data-viewport='web'] [data-competition-format='duos'] .competition-pregame__roster { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem; margin: 0.6rem 0 0; padding: 0; list-style: none; overflow: auto; }
+
+html[data-viewport='web'] [data-competition-format='duos'] .competition-pregame__player { display: grid; grid-template-columns: 1.2rem 2rem minmax(0,1fr) auto; align-items: center; gap: 0.38rem; min-width: 0; border-radius: 0.58rem; background: var(--color-brand-bg-alt); padding: 0.3rem 0.42rem; }
+
+html[data-viewport='web'] [data-competition-format='duos'] .competition-pregame__player--confirmed { background: color-mix(in srgb, #168a52 26%, var(--color-brand-bg-alt)); }
+
+html[data-viewport='web'] [data-competition-format='duos'] .competition-pregame__player--cancelled { opacity: 0.58; }
+
+html[data-viewport='web'] [data-competition-format='duos'] .competition-pregame__rank { color: var(--color-brand-muted); font-size: 0.62rem; font-weight: 800; }
+
+html[data-viewport='web'] [data-competition-format='duos'] .competition-pregame__avatar { width: 2rem; height: 2rem; border-radius: 999px; object-fit: cover; }
+
+html[data-viewport='web'] [data-competition-format='duos'] .competition-pregame__avatar--initial { display: grid; place-items: center; background: var(--color-brand-surface); }
+
+html[data-viewport='web'] [data-competition-format='duos'] .competition-pregame__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.8rem; font-weight: 750; }
+
+html[data-viewport='web'] [data-competition-format='duos'] .competition-pregame__confirm { min-height: 1.85rem; border: 1px solid var(--color-brand-primary); border-radius: 0.5rem; background: transparent; color: var(--color-brand-primary); padding: 0.2rem 0.5rem; font-size: 0.6rem; font-weight: 850; white-space: nowrap; }
+
+html[data-viewport='web'] [data-competition-format='duos'] .competition-pregame__confirm--confirmed { background: #198d57; border-color: #198d57; color: white; opacity: 1; }
+
+html[data-viewport='web'] [data-competition-format='duos'] .competition-pregame__confirm { display: flex; align-items: center; gap: 0.35rem; border: 0; background: transparent; color: var(--color-brand-muted); padding: 0.15rem; }
+
+html[data-viewport='web'] [data-competition-format='duos'] .competition-pregame__confirm-track { position: relative; width: 2.1rem; height: 1.15rem; flex: none; border-radius: 999px; background: color-mix(in srgb, var(--color-brand-muted) 38%, transparent); }
+
+html[data-viewport='web'] [data-competition-format='duos'] .competition-pregame__confirm-knob { position: absolute; top: 0.125rem; left: 0.125rem; width: 0.9rem; height: 0.9rem; border-radius: 999px; background: white; transition: transform 160ms ease; }
+
+html[data-viewport='web'] [data-competition-format='duos'] .competition-pregame__confirm--confirmed { background: transparent; border-color: transparent; color: #64e49d; }
+
+html[data-viewport='web'] [data-competition-format='duos'] .competition-pregame__confirm--confirmed .competition-pregame__confirm-track { background: #198d57; }
+
+html[data-viewport='web'] [data-competition-format='duos'] .competition-pregame__confirm--confirmed .competition-pregame__confirm-knob { transform: translateX(0.95rem); }
+
+html[data-viewport='web'] [data-competition-format='duos'] .competition-pregame__roster {
+  margin: 0;
+  flex: 1;
+  gap: 6px;
+  grid-auto-rows: minmax(38px, 1fr);
+  overflow: visible;
+}
+
+html[data-viewport='web'] [data-competition-format='duos'] .competition-pregame__player { padding: 4px 8px; }
+
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster .competition-pregame__attendance-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; min-width: 0; }
+
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster .competition-pregame__attendance-actions button { min-height: 32px; padding: 4px 6px; border: 1px solid var(--color-brand-border); border-radius: 6px; font: inherit; font-size: 11px; font-weight: 700; line-height: 1.15; white-space: nowrap; background: var(--color-brand-bg); color: var(--color-brand-ink); cursor: pointer; }
+
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster .competition-pregame__attendance-actions button:focus-visible { outline: 2px solid #7dd3fc; outline-offset: 2px; }
+
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster .competition-pregame__attendance-actions button:disabled { opacity: 0.65; cursor: wait; }
+
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster .competition-pregame__attendance-yes[aria-pressed='true'] { background: #16744b; border-color: #4cbb85; color: white; }
+
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster .competition-pregame__attendance-no[aria-pressed='true'] { background: #762d38; border-color: #d7818d; color: white; }
+
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster .competition-pregame__player--cancelled { opacity: 1; background: #482d3b; }

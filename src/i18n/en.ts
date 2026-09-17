@@ -632,7 +632,8 @@ export const en: Messages = {
     },
   },
   members: {
-    title: 'Members',
+    addMember: 'Add member',
+    title: 'Players',
     myProfile: 'My profile',
     empty: 'No members yet',
     lineLinked: 'LINE members',
@@ -648,6 +649,10 @@ export const en: Messages = {
     createHint: 'Type a name, tap Add — profile link opens to share in LINE.',
     createAccept: 'Add',
     createFailed: 'Could not create player',
+    levelIntro: 'Set each player’s official club level. Changes save immediately.',
+    levelUnassigned: 'Not set',
+    levelSaveFailed: 'Could not save player level',
+    playerLevelFor: 'Level for {name}',
   },
   lang: {
     en: 'English',

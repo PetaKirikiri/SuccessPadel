@@ -21,6 +21,7 @@ import { useLocale } from '../../providers/LocaleProvider'
 import { supabase } from '../../lib/supabaseClient'
 import { InviteCardRosterEditor } from './InviteCardRosterEditor'
 import { CompetitionPregamePanel } from './CompetitionPregamePanel'
+import { useViewportBucket } from '../../contexts/ViewportContext'
 
 type CompetitionProps = {
   kind: 'competition'
@@ -52,6 +53,8 @@ export function InviteGameCard(props: Props) {
   const { locale } = useLocale()
   const [busy, setBusy] = useState(false)
   const [pregameView, setPregameView] = useState<'players' | 'rules'>('players')
+  const viewport = useViewportBucket()
+  const showOverview = viewport === 'tv' || viewport === 'web'
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const row = props.kind === 'competition' ? props.row : undefined
@@ -186,10 +189,10 @@ export function InviteGameCard(props: Props) {
       }
       editAriaLabel={props.kind === 'competition' ? t('competition.edit') : t('friendly.edit')}
       rosterSection={
-        props.kind === 'competition' && canEditRoster && pregameView === 'players' ? (
+        props.kind === 'competition' && canEditRoster && pregameView === 'players' && !showOverview ? (
           <InviteCardRosterEditor row={props.row} onSaved={props.onRefresh} />
         ) : props.kind === 'competition' ? (
-          <CompetitionPregamePanel row={props.row} view={pregameView} canReorder={canEditSetup} />
+          <CompetitionPregamePanel row={props.row} view={showOverview ? 'overview' : pregameView} canReorder={canEditSetup} />
         ) : undefined
       }
       canDelete={

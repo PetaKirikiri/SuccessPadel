@@ -6,6 +6,7 @@ import { GameLineupSprite } from './GameLineupSprite'
 import type { TranslateFn } from '../../i18n'
 
 type Props = {
+  adminAction?: ReactNode
   coachAction?: ReactNode
   name: string
   avatarUrl?: string | null
@@ -33,6 +34,7 @@ function initial(name: string): string {
 }
 
 export function PlayerProfileBanner({
+  adminAction,
   coachAction,
   name,
   avatarUrl,
@@ -120,8 +122,9 @@ export function PlayerProfileBanner({
         </div>
       </div>
       {coachAction}
-      {(canShareProfile || canAddLine || showdownSpriteUrl || fighterEditTo) && (
+      {(adminAction || canShareProfile || canAddLine || showdownSpriteUrl || fighterEditTo) && (
         <div className="profile-banner__actions flex shrink-0 items-end gap-2">
+          {adminAction}
           {(canShareProfile || canAddLine) && (
             <div className="flex flex-col items-end gap-2">
               {canShareProfile && onShareProfile && (

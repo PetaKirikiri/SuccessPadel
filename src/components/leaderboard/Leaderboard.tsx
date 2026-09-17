@@ -26,8 +26,10 @@ import { LeaderboardShareButton, type LeaderboardShareRow } from './LeaderboardS
 import { learningIdentityForTeam } from '../../lib/spiritAnimals'
 import { learningIdentityForSlot } from '../../lib/householdLearning'
 import { TeamLearningBadge } from '../TeamLearningBadge'
+import { validateStandings, type CompetitionFormat } from '../../lib/competition-formats/contract'
 
 type Props = {
+  competitionFormat?: CompetitionFormat
   entries: LeaderboardEntry[]
   compact?: boolean
   scoreUnit?: AmericanoScoringUnit
@@ -323,6 +325,7 @@ function LeaderboardRow({
 }
 
 export function Leaderboard({
+  competitionFormat,
   entries,
   compact = false,
   scoreUnit = 'points',
@@ -345,7 +348,7 @@ export function Leaderboard({
   const navigate = useNavigate()
   const location = useLocation()
   const [info, setInfo] = useState<AchievementInfo | null>(null)
-  const activeEntries = entries
+  const activeEntries = !competitionFormat || validateStandings(competitionFormat, entries) ? entries : []
   const showingTeamEntries = activeEntries.some((entry) =>
     isDuoLeaderboardEntry(entry.profile_id),
   )
@@ -403,7 +406,7 @@ export function Leaderboard({
     : `game-card overflow-hidden p-0 ${flushBottom ? 'rounded-b-none' : ''}`
 
   return (
-    <div className={shellClass}>
+    <div className={shellClass} data-competition-format={competitionFormat ?? (showingTeamEntries ? 'duos' : 'singles')}>
       {shareTitle && shareRows.length > 0 ? (
         <div
           className={`flex items-center justify-end border-b border-brand-border/60 ${
@@ -467,7 +470,7 @@ export function Leaderboard({
               badges={badgesFor(source)}
               showBadges={effectiveShowAchievements}
               compact={compact}
-              simpleTeamRow={simpleTeamRows && isDuoLeaderboardEntry(source.profile_id)}
+              simpleTeamRow={compact && (competitionFormat === 'duos' || (simpleTeamRows && isDuoLeaderboardEntry(source.profile_id)))}
               highlighted={highlightedEntryIds?.has(source.profile_id) ?? false}
               onToggleHighlight={
                 onToggleEntryHighlight ? () => onToggleEntryHighlight(source.profile_id) : undefined

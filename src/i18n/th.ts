@@ -628,7 +628,8 @@ export const th: Messages = {
     },
   },
   members: {
-    title: 'สมาชิก',
+    addMember: 'เพิ่มสมาชิก',
+    title: 'ผู้เล่น',
     myProfile: 'โปรไฟล์ของฉัน',
     empty: 'ยังไม่มีสมาชิก',
     lineLinked: 'สมาชิก LINE',
@@ -644,6 +645,10 @@ export const th: Messages = {
     createHint: 'พิมพ์ชื่อ แล้วกดเพิ่ม — ลิงก์โปรไฟล์จะเปิดให้แชร์ใน LINE',
     createAccept: 'เพิ่ม',
     createFailed: 'สร้างผู้เล่นไม่ได้',
+    levelIntro: 'กำหนดระดับอย่างเป็นทางการของผู้เล่นแต่ละคน การเปลี่ยนแปลงจะบันทึกทันที',
+    levelUnassigned: 'ยังไม่กำหนด',
+    levelSaveFailed: 'บันทึกระดับผู้เล่นไม่ได้',
+    playerLevelFor: 'ระดับของ {name}',
   },
   lang: {
     en: 'English',

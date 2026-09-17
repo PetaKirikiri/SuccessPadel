@@ -32,3 +32,16 @@ jobs:
           ')
           npm run check:layout-scope -- --scope "$LAYOUT_SCOPE" --base "$BASE_SHA" --committed
       - run: npm run build
+      - name: Require singles/duos ownership declaration on pull requests
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          FORMAT_SCOPE=$(node --input-type=module -e '
+            import fs from "node:fs";
+            const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, "utf8"));
+            const scopes = event.pull_request.labels.map(l => l.name).filter(n => /^format:(singles|duos|shared)$/.test(n));
+            if (scopes.length !== 1) throw new Error("Choose exactly one format scope: singles, duos, or shared.");
+            console.log(scopes[0].slice(7));
+          ')
+          npm run check:formats -- --scope "$FORMAT_SCOPE" --base "$BASE_SHA" --committed

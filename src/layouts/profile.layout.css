@@ -8,6 +8,35 @@
   overflow: hidden;
 }
 
+/* New admin action only; no changes to existing profile geometry. */
+html[data-viewport='mobile'] .profile-add-member,
+html[data-viewport='tablet'] .profile-add-member,
+html[data-viewport='web'] .profile-add-member,
+html[data-viewport='tv'] .profile-add-member {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--color-brand-border);
+  border-radius: 0.65rem;
+  background: var(--color-brand-bg-alt);
+  color: var(--color-brand-primary);
+  font-size: 0.85rem;
+  font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
+}
+html[data-viewport='mobile'] .profile-add-member__icon,
+html[data-viewport='tablet'] .profile-add-member__icon,
+html[data-viewport='web'] .profile-add-member__icon,
+html[data-viewport='tv'] .profile-add-member__icon { width: 1.1rem; height: 1.1rem; flex: none; }
+html[data-viewport='mobile'] .profile-add-member:focus-visible,
+html[data-viewport='tablet'] .profile-add-member:focus-visible,
+html[data-viewport='web'] .profile-add-member:focus-visible,
+html[data-viewport='tv'] .profile-add-member:focus-visible { outline: 2px solid var(--color-brand-accent); outline-offset: 3px; }
+
 .profile-scroll {
   min-height: 0;
   min-width: 0;

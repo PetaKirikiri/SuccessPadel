@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import type { CompetitionRow } from '../../hooks/useCompetitions'
+import type { CompetitionPlayer, CompetitionRow } from '../../hooks/useCompetitions'
 import { rosterDisplayName } from '../../hooks/useCompetitions'
 import { competitionPlayerAvatarUrl } from '../../lib/competitionRosterAvatars'
 import { resolveCompetitionSchedule } from '../../lib/competitionLayout'
@@ -9,10 +9,11 @@ import { supabase } from '../../lib/supabaseClient'
 import { rulesCopy, rulesLanguages, type RulesLanguage } from '../../lib/competitionRulesLanguages'
 import { useCompetitionLineupDrag } from '../../hooks/useCompetitionLineupDrag'
 import { useAuth } from '../../hooks/useAuth'
-import { PlayerNameLink } from '../../shared/ProfilePhoto/PlayerNameLink'
+import { CompetitionRoster } from '../competition-formats/CompetitionRoster'
+import type { AttendancePlayer, AttendanceStatus } from '../competition-formats/rosterContract'
 import { orderSessionPairsByTeamIndex } from '../../lib/competitionDuoTeams'
 import { formatClubTimeLocalized } from '../../lib/courtSchedule'
-type AttendanceStatus = 'pending' | 'confirmed' | 'cancelled'
+import { fixedPairRoster } from '../../lib/competition-formats/duos/roster'
 
 type AttendanceRow = {
   roster_entry_id: string
@@ -26,10 +27,6 @@ type Props = {
   view?: 'players' | 'rules' | 'overview'
   rosterContent?: ReactNode
   canReorder?: boolean
-}
-
-function playerInitial(name: string): string {
-  return name.trim().charAt(0).toUpperCase() || 'P'
 }
 
 function attendanceStorageKey(sessionId: string): string {
@@ -74,18 +71,20 @@ export function CompetitionPregamePanel({ row, view = 'players', canReorder = fa
   const recognizedAdmin = !authLoading && Boolean(user?.id && profile?.id === user.id && profile?.is_admin)
   const reorderEnabled = canReorder && recognizedAdmin && mode !== 'duos'
   const lineup = useCompetitionLineupDrag(row.id, roster, reorderEnabled && busyPlayerId === null)
-  const displayedPlayers = useMemo(() => {
-    if (mode !== 'duos' || !row.session_pairs?.length) return lineup.players
-    const byId = new Map(roster.map((player) => [player.id, player]))
+  const rosterModel = useMemo(() => {
+    if (mode !== 'duos') return { players: lineup.players, teams: [], error: null }
     const ranks = new Map(roster.map((player) => [player.id, player.rank_order ?? 0]))
-    const pairs = orderSessionPairsByTeamIndex(row.session_pairs, ranks, Math.ceil(roster.length / 2))
-    const paired = pairs.flatMap((pair) => [pair?.roster_a_id, pair?.roster_b_id])
-      .map((id) => id ? byId.get(id) : undefined)
-      .filter((player): player is (typeof roster)[number] => Boolean(player))
-    // Never hide an attendee when a legacy pair record is incomplete.
-    return paired.length === roster.length && new Set(paired.map((player) => player.id)).size === roster.length
-      ? paired : lineup.players
+    const pairs = orderSessionPairsByTeamIndex(row.session_pairs ?? [], ranks, Math.ceil(roster.length / 2))
+    return fixedPairRoster(roster, pairs)
   }, [mode, row.session_pairs, roster, lineup.players])
+  const attendancePlayer = (player: CompetitionPlayer): AttendancePlayer => ({
+    id: player.id,
+    name: rosterDisplayName(player),
+    avatar: competitionPlayerAvatarUrl(player),
+    profileId: player.profile_id ?? player.profiles?.id ?? player.padel_players?.profile_id ?? player.padel_players?.profiles?.id,
+    padelPlayerId: player.padel_player_id ?? player.padel_players?.id,
+    status: attendance[player.id] ?? 'pending',
+  })
   const scoreTarget = americanoScoreTarget(row)
   const copy = rulesCopy[language]
   const firstGameTime = schedule.playStartsAt
@@ -184,59 +183,22 @@ export function CompetitionPregamePanel({ row, view = 'players', canReorder = fa
   }
 
   return (
-    <div className="competition-pregame">
+    <div className="competition-pregame" data-competition-format={mode}>
       {view !== 'rules' && <section id={`players-${row.id}`} className="competition-pregame__players" aria-label="Player attendance">
         {rosterContent ?? <>
+        {rosterModel.error ? <p className="competition-pregame__error" role="alert">{rosterModel.error}</p> : null}
         {reorderEnabled && <p className="competition-pregame__lineup-status" role="status" aria-live="polite">{lineup.message}</p>}
-        <ol className="competition-pregame__roster" data-fixed-pairs={mode === 'duos'} aria-label={mode === 'duos' ? 'Fixed-pair teams' : 'Players'} aria-busy={lineup.saving}>
-          {displayedPlayers.map((player, index) => {
-            const name = rosterDisplayName(player)
-            const avatar = competitionPlayerAvatarUrl(player)
-            const status = attendance[player.id] ?? 'pending'
-            return (
-              <li className={`competition-pregame__player competition-pregame__player--${status}`} key={player.id}
-                data-team-side={mode === 'duos' ? index % 2 === 0 ? 'first' : 'second' : undefined}
-                data-team-number={mode === 'duos' ? Math.floor(index / 2) + 1 : undefined}
-                data-lineup-player={player.id} data-lineup-session={row.id} data-drop-target={lineup.targetId === player.id}
-                data-reorder-enabled={reorderEnabled} data-dragging={lineup.draggingId === player.id}
-                tabIndex={reorderEnabled ? 0 : undefined}
-                aria-label={reorderEnabled ? `${name}, position ${index + 1}. Drag this card or use arrow keys to reorder.` : mode === 'duos' ? `Team ${Math.floor(index / 2) + 1}: ${name}` : undefined}
-                onPointerDown={(event) => lineup.pointerDown(event, index)} onPointerMove={lineup.pointerMove}
-                onPointerUp={lineup.pointerUp} onPointerCancel={lineup.cancel}
-                onLostPointerCapture={lineup.cancel} onDragStart={(event) => event.preventDefault()}
-                onKeyDown={(event) => lineup.keyDown(event, index)}>
-                <span className="competition-pregame__rank">{index + 1}</span>
-                {avatar ? (
-                  <img className="competition-pregame__avatar" src={avatar} alt="" />
-                ) : (
-                  <span className="competition-pregame__avatar competition-pregame__avatar--initial">{playerInitial(name)}</span>
-                )}
-                <PlayerNameLink
-                  displayName={name}
-                  profileId={player.profile_id ?? player.profiles?.id ?? player.padel_players?.profile_id ?? player.padel_players?.profiles?.id}
-                  padelPlayerId={player.padel_player_id ?? player.padel_players?.id}
-                  competitionId={row.id}
-                  className="competition-pregame__name"
-                  disabled={lineup.saving || lineup.draggingId !== null}
-                />
-                <div className="competition-pregame__attendance-actions" role="group" aria-label={`${name}: attendance`} aria-busy={busyPlayerId === player.id}>
-                  <button type="button" className="competition-pregame__attendance-yes"
-                    disabled={busyPlayerId !== null || lineup.saving || lineup.draggingId !== null}
-                    aria-pressed={status === 'confirmed'} aria-label={`${name}: confirm attendance`}
-                    onClick={() => void updateAttendance(player.id, status === 'confirmed' ? 'pending' : 'confirmed')}>
-                    Confirm
-                  </button>
-                  <button type="button" className="competition-pregame__attendance-no"
-                    disabled={busyPlayerId !== null || lineup.saving || lineup.draggingId !== null}
-                    aria-pressed={status === 'cancelled'} aria-label={`${name}: can’t play`}
-                    onClick={() => void updateAttendance(player.id, status === 'cancelled' ? 'pending' : 'cancelled')}>
-                    Can’t play
-                  </button>
-                </div>
-              </li>
-            )
-          })}
-        </ol>
+        {mode === 'duos' ? (
+          <CompetitionRoster format="duos" sessionId={row.id}
+            teams={rosterModel.teams.map(([a, b]) => [attendancePlayer(a), attendancePlayer(b)])}
+            busyPlayerId={busyPlayerId} disabled={busyPlayerId !== null}
+            onAttendance={updateAttendance} />
+        ) : (
+          <CompetitionRoster format="singles" sessionId={row.id}
+            players={rosterModel.players.map(attendancePlayer)} drag={{ ...lineup, enabled: reorderEnabled }}
+            busyPlayerId={busyPlayerId} disabled={busyPlayerId !== null || lineup.saving || lineup.draggingId !== null}
+            onAttendance={updateAttendance} />
+        )}
         {error ? <p className="competition-pregame__error" role="alert">{error}</p> : null}
         </>}
       </section>}

@@ -47,9 +47,9 @@ export function checkViewportFile(css, file) {
 }
 
 export function fileScope(file) {
-  if (/^(scripts\/(?:check-layouts|layout-isolation|check-layout-scope|test-layout-isolation)|\.github\/|package(?:-lock)?\.json$|AGENTS\.md$|vite\.config\.|src\/lib\/(?:viewBreakpoints|viewportLock)\.|src\/contexts\/ViewportContext\.)/.test(file)) return 'infrastructure'
+  if (/^(scripts\/(?:check-layouts|layout-isolation|check-layout-scope|test-layout-isolation|check-competition-formats|test-competition-formats)|\.github\/|package(?:-lock)?\.json$|AGENTS\.md$|vite\.config\.|src\/lib\/(?:viewBreakpoints|viewportLock)\.|src\/contexts\/ViewportContext\.)/.test(file)) return 'infrastructure'
   // Only the audited, scoped CSS directories qualify as isolated visual edits.
-  const mode = /^src\/layouts\/(?:invite|game-card|court-card)\/[^/]+\.(mobile|tablet|web|tv)\.css$/.exec(file)?.[1]
+  const mode = /^src\/layouts\/(?:invite|game-card|court-card|competition-formats\/(?:singles|duos))\/[^/]+\.(mobile|tablet|web|tv)\.css$/.exec(file)?.[1]
   return mode ?? 'shared'
 }
 

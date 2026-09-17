@@ -11,7 +11,7 @@ import {
 } from './liff'
 import { readLineProfilePatch } from './profileSync'
 import { lineOAuthRedirectUri } from './oauth'
-import { handshakeSiteOrigin, siteOrigin } from '../siteUrl'
+import { lineHandoffCompleteUrl, PLAYER_LINK_APP_ORIGIN } from './playerLinkReturnUrls'
 import { supabase } from '../supabaseClient'
 import { rememberBrowserSession } from '../auth/cachedSession'
 import { syncProfileForUser } from '../authProfile'
@@ -32,9 +32,7 @@ export function linePlayerLinkRedirectUri(): string {
   return lineOAuthRedirectUri()
 }
 
-export function lineHandoffCompleteUrl(handoffToken: string): string {
-  return `${siteOrigin()}/auth/line/complete?handoffToken=${encodeURIComponent(handoffToken)}`
-}
+export { lineHandoffCompleteUrl } from './playerLinkReturnUrls'
 
 async function edgeErrorMessage(error: unknown): Promise<string> {
   if (error instanceof FunctionsHttpError) {
@@ -77,9 +75,9 @@ export function rememberPlayerLinkCompetition(
 
 export const PLAYER_LINK_HANDOFF_PATH = '/link'
 
-/** Safari / default browser URL — always Vercel origin, never liff.line.me. */
+/** Safari / default browser URL — the public app, never the LIFF hosting origin. */
 export function playerLinkBrowserUrl(linkToken: string, competitionId: string | null = null): string {
-  return `${handshakeSiteOrigin()}${PLAYER_LINK_HANDOFF_PATH}?${playerLinkLoginQuery(linkToken, competitionId)}`
+  return `${PLAYER_LINK_APP_ORIGIN}${PLAYER_LINK_HANDOFF_PATH}?${playerLinkLoginQuery(linkToken, competitionId)}`
 }
 
 function buildLineAuthorizeUrl(linkToken: string): string {

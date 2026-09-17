@@ -614,6 +614,7 @@ export type Messages = {
     }
   }
   members: {
+    addMember: string
     title: string
     myProfile: string
     empty: string
@@ -630,6 +631,10 @@ export type Messages = {
     createHint: string
     createAccept: string
     createFailed: string
+    levelIntro: string
+    levelUnassigned: string
+    levelSaveFailed: string
+    playerLevelFor: string
   }
   lang: {
     en: string

@@ -1,0 +1,157 @@
+/* Fixed-pair layout ownership. Every selector must stay inside the duo root. */
+html[data-viewport='web'] .tv-play-view .tv-play-standings [data-competition-format='duos'] ol > li:has(.leaderboard-team-simple) {
+  grid-template-columns: 1.5rem minmax(0, 1fr) 3.5rem;
+  min-height: 76px;
+  max-height: none;
+  flex: 1 0 76px;
+  align-items: center;
+  column-gap: 0.5rem;
+  padding: 0.35rem 0.65rem;
+  overflow: hidden;
+}
+
+html[data-viewport='web'] .tv-play-standings [data-competition-format='duos'] .leaderboard-team-simple {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+html[data-viewport='web'] .tv-play-standings [data-competition-format='duos'] .leaderboard-team-players {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  min-width: 0;
+}
+
+html[data-viewport='web'] .tv-play-standings [data-competition-format='duos'] .leaderboard-team-player {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  align-items: center;
+  min-height: 1.75rem;
+  gap: 0.4rem;
+}
+
+html[data-viewport='web'] .tv-play-standings [data-competition-format='duos'] .leaderboard-team-player img {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+html[data-viewport='web'] .tv-play-standings [data-competition-format='duos'] .leaderboard-team-player__name {
+  font-size: clamp(0.8rem, 0.9vw, 1.1rem);
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-viewport='web'] .tv-play-standings [data-competition-format='duos'] .leaderboard-team-simple .team-learning-badge--leaderboard {
+  width: 2.75rem;
+  max-width: 2.75rem;
+  overflow: hidden;
+}
+
+html[data-viewport='web'] .tv-play-standings [data-competition-format='duos'] .leaderboard-team-simple .team-learning-badge__image {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+html[data-viewport='web'] .tv-play-standings [data-competition-format='duos'] .leaderboard-team-simple .team-learning-badge__copy {
+  display: none;
+}
+
+html[data-viewport='tv'] .tv-play-view .tv-play-standings [data-competition-format='duos'] ol > li:has(.leaderboard-team-simple) {
+  grid-template-columns: 1.5rem minmax(0, 1fr) 3.5rem;
+  min-height: 76px;
+  max-height: none;
+  flex: 1 0 76px;
+  align-items: center;
+  column-gap: 0.5rem;
+  padding: 0.35rem 0.65rem;
+  overflow: hidden;
+}
+
+html[data-viewport='tv'] .tv-play-standings [data-competition-format='duos'] .leaderboard-team-simple {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(4.5rem, 0.8fr);
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+html[data-viewport='tv'] .tv-play-standings [data-competition-format='duos'] .leaderboard-team-players {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  min-width: 0;
+}
+
+html[data-viewport='tv'] .tv-play-standings [data-competition-format='duos'] .leaderboard-team-player {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  align-items: center;
+  min-height: 1.75rem;
+  gap: 0.4rem;
+}
+
+html[data-viewport='tv'] .tv-play-standings [data-competition-format='duos'] .leaderboard-team-player img {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+html[data-viewport='tv'] .tv-play-standings [data-competition-format='duos'] .leaderboard-team-player__name {
+  font-size: clamp(0.8rem, 0.9vw, 1.1rem);
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-viewport='tv'] .tv-play-standings [data-competition-format='duos'] .leaderboard-team-simple .team-learning-badge--leaderboard {
+  width: 4.5rem;
+  max-width: 4.5rem;
+  justify-self: center;
+  overflow: hidden;
+}
+
+html[data-viewport='tv'] .tv-play-standings [data-competition-format='duos'] .leaderboard-team-simple .team-learning-badge__image {
+  width: 4.5rem;
+  height: 4.5rem;
+}
+
+html[data-viewport='tv'] .tv-play-standings [data-competition-format='duos'] .leaderboard-team-simple .team-learning-badge__copy {
+  display: none;
+}
+
+[data-competition-format='duos'] .leaderboard-team-simple {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: clamp(0.25rem, 0.55vw, 0.75rem);
+}
+
+[data-competition-format='duos'] .leaderboard-team-simple .leaderboard-team-players {
+  margin-top: 0;
+}
+
+html[data-viewport='tv'] .tv-play-standings [data-competition-format='duos'] ol > li:has(.leaderboard-team-simple) {
+  grid-template-columns: 1.35rem minmax(0, 1fr) minmax(6.5rem, 8rem) 4.25rem;
+}
+
+html[data-viewport='tv'] [data-competition-format='duos'] .leaderboard-team-simple {
+  display: contents;
+}
+
+html[data-viewport='tv'] [data-competition-format='duos'] .leaderboard-team-simple .leaderboard-team-players {
+  min-width: 0;
+  overflow: hidden;
+}
+
+html[data-viewport='tv'] [data-competition-format='duos'] .leaderboard-team-simple .team-learning-badge--leaderboard {
+  width: 100%;
+  min-width: 0;
+  max-width: 8rem;
+  overflow: hidden;
+}

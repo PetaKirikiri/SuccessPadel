@@ -632,7 +632,8 @@ export const ru: Messages = {
     },
   },
   members: {
-    title: 'Участники',
+    addMember: 'Добавить участника',
+    title: 'Игроки',
     myProfile: 'Мой профиль',
     empty: 'Пока нет участников',
     lineLinked: 'Участники LINE',
@@ -648,6 +649,10 @@ export const ru: Messages = {
     createHint: 'Введите имя, нажмите Добавить — откроется ссылка для LINE.',
     createAccept: 'Добавить',
     createFailed: 'Не удалось создать игрока',
+    levelIntro: 'Укажите официальный уровень каждого игрока. Изменения сохраняются сразу.',
+    levelUnassigned: 'Не задан',
+    levelSaveFailed: 'Не удалось сохранить уровень игрока',
+    playerLevelFor: 'Уровень игрока {name}',
   },
   lang: {
     en: 'English',

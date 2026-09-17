@@ -6,6 +6,15 @@
 @import './game-card.layout.css';
 @import './court-card.layout.css';
 @import './leaderboard.layout.css';
+@import './competition-formats/duos/leaderboard.css';
+@import './competition-formats/singles/roster.mobile.css';
+@import './competition-formats/singles/roster.tablet.css';
+@import './competition-formats/singles/roster.web.css';
+@import './competition-formats/singles/roster.tv.css';
+@import './competition-formats/duos/roster.mobile.css';
+@import './competition-formats/duos/roster.tablet.css';
+@import './competition-formats/duos/roster.web.css';
+@import './competition-formats/duos/roster.tv.css';
 @import './profile.layout.css';
 @import './gesture-pad.layout.css';
 @import './gesture-score.layout.css';

@@ -16,7 +16,7 @@ import {
   shouldTryLineInAppSignIn,
 } from '../../lib/line/lineInAppConnect'
 import { lineOAuthCallbackCode } from '../../lib/line/oauth'
-import { hasLiffId, isLineLiffBrowser, lineAppEntryUrl } from '../../lib/line/liff'
+import { hasLiffId, isInLineClient, isLineLiffBrowser, lineAppEntryUrl } from '../../lib/line/liff'
 
 function shouldSkipLineEntryGate(pathname: string, search: string): boolean {
   if (pathname.startsWith('/auth/')) return true
@@ -72,9 +72,27 @@ export function LineEntryGate({ children }: { children: ReactNode }) {
     if (shouldSkipLineEntryGate(pathname, search)) return
     if (!shouldTryLineInAppSignIn(false)) return
 
-    if (isLineLiffBrowser() && !hasExplicitLiffContext(search)) {
+    // LIFF may already have consumed its URL parameters. Their absence does not
+    // mean this is a plain browser: sending an actual LIFF client back to its
+    // entry URL restarts the handshake indefinitely.
+    if (isLineLiffBrowser() && !isInLineClient() && !hasExplicitLiffContext(search)) {
       const entry = lineAppEntryUrl(`${pathname}${search}`)
       if (entry) {
+        try {
+          const key = 'sp-line-entry-redirect'
+          const previous = Number(sessionStorage.getItem(key) || 0)
+          if (Date.now() - previous < 120_000) {
+            setWorking(false)
+            setError('LINE could not finish opening. Please close this window and reopen the link from LINE.')
+            return
+          }
+          sessionStorage.setItem(key, String(Date.now()))
+        } catch {
+          // Without a persistent guard, automatic navigation cannot safely retry.
+          setWorking(false)
+          setError('LINE needs browser storage to finish signing in. Please reopen this link in LINE.')
+          return
+        }
         lineHandshakeDebug('S1-gate', 'LineEntryGate.tsx:liff-entry', 'plain LINE browser link → LIFF entry', 'H1', {
           pathname,
         })
