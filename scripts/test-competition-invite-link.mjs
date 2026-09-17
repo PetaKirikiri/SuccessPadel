@@ -5,11 +5,12 @@ import { competitionInvitePath, competitionInviteUrl, selectInvitedCompetition }
 
 const id = '9df4f70a-2532-4f11-9a6d-013ab7110c25'
 test('shared links always use the public domain and permanent competition code', () => {
-  assert.equal(competitionInviteUrl(id), 'https://successpadel.app/c/17sep26')
+  assert.equal(competitionInviteUrl(id), 'https://successpadel.app/c/9df4f70a')
   const config = JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'))
   const redirect = config.redirects.find(rule => rule.source === new URL(competitionInviteUrl(id)).pathname)
   assert.equal(redirect.permanent, true)
   assert.equal(redirect.destination, competitionInvitePath(id))
+  assert.equal(new Set(config.redirects.map(rule => rule.source)).size, config.redirects.length)
   assert.equal(new URL(redirect.destination, 'https://successpadel.app').searchParams.get('competition'), id)
   assert.equal(competitionInviteUrl('another-event'), 'https://successpadel.app/competitive?competition=another-event')
   assert.equal(competitionInvitePath('test&view=past'), '/competitive?competition=test%26view%3Dpast')
