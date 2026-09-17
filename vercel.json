@@ -1,4 +1,11 @@
 {
   "functions": { "api/coach-feedback.mjs": { "maxDuration": 180 } },
+  "redirects": [
+    {
+      "source": "/c/17sep26",
+      "destination": "/competitive?competition=9df4f70a-2532-4f11-9a6d-013ab7110c25",
+      "permanent": true
+    }
+  ],
   "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }]
 }
