@@ -2107,3 +2107,87 @@ html[data-viewport='mobile'] .competition-pregame__rules > .competition-pregame_
 
 /* Fixed duos: two partners inside one numbered team card, not 16 ranked cards. */
 /* Direct attendance responses: explicit mobile ownership. */
+/* Profile access replaces competition header edit/delete controls. */
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__profile-action)::before,
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__profile-action)::after {
+  max-height: calc(100% - 72px);
+}
+
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition'] .invite-game-card__title-admin:has(.invite-game-card__profile-action) {
+  position: absolute;
+  inset: 4px 4px auto auto;
+  transform: none;
+  margin: 0;
+  z-index: 3;
+}
+
+html[data-viewport='mobile'] .invite-game-card__profile-action {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #b5c3cf;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+html[data-viewport='mobile'] .invite-game-card__profile-action:hover {
+  background: rgb(181 195 207 / 10%);
+}
+
+html[data-viewport='mobile'] .invite-game-card__profile-action:focus-visible {
+  outline: 2px solid #b5c3cf;
+  outline-offset: -2px;
+}
+
+html[data-viewport='mobile'] .invite-game-card__profile-action:disabled { opacity: 0.5; }
+html[data-viewport='mobile'] .invite-game-card__profile-icon { width: 24px; height: 24px; }
+/* One shared ground line for the tabs and both character feet. */
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__header-links) {
+  --invite-ground-inset: 4px;
+}
+
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition'] .invite-game-card__header-links {
+  top: auto;
+  bottom: var(--invite-ground-inset);
+  margin-top: 0;
+  width: min(17rem, calc(100% - 80px));
+}
+
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__header-links)::before,
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__header-links)::after {
+  bottom: var(--invite-ground-inset);
+  width: 40px;
+  height: 60px;
+}
+
+/* Account for the artwork's transparent space below the soles. */
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__header-links)::before { left: 2px; transform: translateY(4%); }
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__header-links)::after { right: 2px; transform: translateY(1%); }
+/* Preserve roster space in short mobile windows; taller phones are unchanged. */
+@media (max-height: 650px) {
+  html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header:has(.invite-game-card__header-links) {
+    min-height: 112px;
+  }
+
+  html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-link {
+    top: 30px;
+  }
+
+  html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-link::before {
+    top: -27px;
+    width: 80px;
+    height: 24px;
+  }
+
+  html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header:has(.invite-game-card__profile-action)::before,
+  html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header:has(.invite-game-card__profile-action)::after {
+    width: 32px;
+    height: 48px;
+    max-height: 48px;
+  }
+}

@@ -4,7 +4,6 @@ import { GameBoardPreview } from '../../components/GameCard/GameBoardPreview'
 import { InviteCard } from './InviteCard'
 import { useTranslation } from '../../hooks/useTranslation'
 import type { CompetitionRow } from '../../hooks/useCompetitions'
-import { competitionIsLiveByTime } from '../../lib/competitionListCard'
 import { competitionPlayUrl, shareSiteOrigin } from '../../lib/siteUrl'
 import type { FriendlyGameRecord } from '../../lib/friendlyGames'
 import {
@@ -18,10 +17,10 @@ import {
 } from '../../lib/friendlyGames'
 import { inviteCardData, type SessionSource } from '../../lib/sessionDisplay'
 import { useLocale } from '../../providers/LocaleProvider'
-import { supabase } from '../../lib/supabaseClient'
 import { InviteCardRosterEditor } from './InviteCardRosterEditor'
 import { CompetitionPregamePanel } from './CompetitionPregamePanel'
 import { useViewportBucket } from '../../contexts/ViewportContext'
+import { InviteProfileAction } from './InviteProfileAction'
 
 type CompetitionProps = {
   kind: 'competition'
@@ -51,11 +50,9 @@ type Props = CompetitionProps | FriendlyProps
 export function InviteGameCard(props: Props) {
   const { t } = useTranslation()
   const { locale } = useLocale()
-  const [busy, setBusy] = useState(false)
   const [pregameView, setPregameView] = useState<'players' | 'rules'>('players')
   const viewport = useViewportBucket()
   const showOverview = viewport === 'tv' || viewport === 'web'
-  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const row = props.kind === 'competition' ? props.row : undefined
   const game = props.kind === 'friendly' ? props.game : undefined
@@ -81,25 +78,6 @@ export function InviteGameCard(props: Props) {
   const canManageFriendly = Boolean(
     props.kind === 'friendly' && canEditFriendlySession(props.game, currentUserId, isAdmin),
   )
-
-  const removeCompetition = async () => {
-    if (props.kind !== 'competition') return
-    const competitionRow = props.row
-    const isLive = competitionIsLiveByTime(competitionRow, Date.now())
-    const warning = isLive
-      ? t('competition.deleteLiveConfirm', { title: competitionRow.title })
-      : t('competition.deleteConfirm', { title: competitionRow.title })
-    if (!window.confirm(warning)) return
-
-    setBusy(true)
-    setDeleteError(null)
-    const { error: err } = await supabase.rpc('delete_competition_session', {
-      p_session_id: competitionRow.id,
-    })
-    setBusy(false)
-    if (err) setDeleteError(err.message)
-    else props.onRefresh?.()
-  }
 
   const friendlyOrganizedConfig = game?.organizedConfig ?? DEFAULT_FRIENDLY_ORGANIZED_CONFIG
   const friendlyPreview = game
@@ -147,6 +125,7 @@ export function InviteGameCard(props: Props) {
       currentUserId={currentUserId}
       qrUrl={row ? competitionPlayUrl(row.id) : game ? `${shareSiteOrigin()}/friendly/${game.id}` : undefined}
       qrAriaLabel={t('leaderboard.viewAlongHint')}
+      accountAction={row ? <InviteProfileAction /> : undefined}
       headerAction={
         row ? (
           <div className="invite-game-card__header-links" aria-label="Competition navigation">
@@ -177,7 +156,7 @@ export function InviteGameCard(props: Props) {
       }
       canEdit={
         props.kind === 'competition'
-          ? canEditSetup
+          ? false
           : canManageFriendly && Boolean(props.to)
       }
       editTo={
@@ -197,12 +176,11 @@ export function InviteGameCard(props: Props) {
       }
       canDelete={
         props.kind === 'competition'
-          ? isAdmin
+          ? false
           : canManageFriendly && Boolean(props.onDelete)
       }
-      onDelete={props.kind === 'competition' ? () => void removeCompetition() : props.onDelete}
-      deleteBusy={props.kind === 'competition' ? busy : props.deleteBusy}
-      deleteError={props.kind === 'competition' ? deleteError : undefined}
+      onDelete={props.kind === 'friendly' ? props.onDelete : undefined}
+      deleteBusy={props.kind === 'friendly' ? props.deleteBusy : undefined}
       deleteAriaLabel={t('competition.delete')}
       belowLink={
         props.kind === 'friendly' && (showFriendlyCourtBoard || (isAdmin && isFree && props.to))

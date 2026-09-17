@@ -1,4 +1,29 @@
 /* singles roster — tv only. Shared shell styling is not owned here. */
+html[data-viewport='tv'] [data-competition-format='singles'] .competition-pregame__player[data-reorder-enabled='true'] {
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+
+html[data-viewport='tv'] [data-competition-format='singles'] .competition-pregame__player[data-dragging='true'] {
+  position: relative;
+  z-index: 20;
+  cursor: grabbing;
+  box-shadow: 0 12px 26px rgb(0 0 0 / 45%);
+  outline: 2px solid var(--color-brand-primary);
+  opacity: 0.96;
+  will-change: transform;
+}
+
+html[data-viewport='tv'] [data-competition-format='singles'] .competition-pregame__roster:has([data-dragging='true']) {
+  overflow: visible;
+}
+
+html[data-viewport='tv'] [data-competition-format='singles'] .competition-pregame__player[data-drop-target='true'] {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: -2px;
+}
+
 html[data-viewport='tv'] [data-competition-format='singles'] .competition-pregame__roster { display: grid; grid-template-columns: 1fr 1fr; gap: 0.42rem; margin: 0.8rem 0 0; padding: 0; list-style: none; overflow: auto; }
 
 html[data-viewport='tv'] [data-competition-format='singles'] .competition-pregame__player { display: grid; grid-template-columns: 1.5rem 2.6rem minmax(0,1fr) auto; align-items: center; gap: 0.5rem; min-width: 0; border-radius: 0.7rem; background: var(--color-brand-bg-alt); padding: 0.42rem 0.55rem; }

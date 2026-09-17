@@ -265,3 +265,15 @@ html[data-viewport='mobile'] .competition-pregame[data-competition-format='singl
 html[data-viewport='mobile'] .competition-pregame[data-competition-format='singles'] .competition-pregame__roster .competition-pregame__name { grid-column: 2; grid-row: 1; }
 
 html[data-viewport='mobile'] .competition-pregame[data-competition-format='singles'] .competition-pregame__roster .competition-pregame__attendance-actions { grid-column: 3; grid-row: 1; }
+/* Short mobile windows: eight rows must fit without shrinking attendance targets. */
+@media (max-height: 650px) {
+  html[data-viewport='mobile'] .competition-pregame[data-competition-format='singles'] .competition-pregame__roster {
+    row-gap: 3px;
+  }
+
+  html[data-viewport='mobile'] .competition-pregame[data-competition-format='singles'] .competition-pregame__roster .competition-pregame__player {
+    min-height: 44px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+}

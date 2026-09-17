@@ -1215,3 +1215,56 @@ html[data-viewport='web'] .competition-pregame__rules {
 }
 html[data-viewport='web'] .competition-pregame__rules .competition-pregame__steps { gap: 6px; }
 /* Direct attendance responses: explicit web ownership. */
+/* Profile access replaces competition header edit/delete controls. */
+html[data-viewport='web'] .invite-game-card[data-kind='competition'] .invite-game-card__title-admin:has(.invite-game-card__profile-action) {
+  position: absolute;
+  inset: 4px 4px auto auto;
+  transform: none;
+  margin: 0;
+  z-index: 3;
+}
+
+html[data-viewport='web'] .invite-game-card__profile-action {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #b5c3cf;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+html[data-viewport='web'] .invite-game-card__profile-action:hover {
+  background: rgb(181 195 207 / 10%);
+}
+
+html[data-viewport='web'] .invite-game-card__profile-action:focus-visible {
+  outline: 2px solid #b5c3cf;
+  outline-offset: -2px;
+}
+
+html[data-viewport='web'] .invite-game-card__profile-action:disabled { opacity: 0.5; }
+html[data-viewport='web'] .invite-game-card__profile-icon { width: 24px; height: 24px; }
+/* One shared ground line for the tabs and both character feet. */
+html[data-viewport='web'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__header-links) {
+  --invite-ground-inset: 4px;
+}
+
+html[data-viewport='web'] .invite-game-card[data-kind='competition'] .invite-game-card__header-links {
+  top: auto;
+  bottom: var(--invite-ground-inset);
+  margin-top: 0;
+}
+
+html[data-viewport='web'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__header-links)::before,
+html[data-viewport='web'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__header-links)::after {
+  bottom: var(--invite-ground-inset);
+}
+
+/* Account for the artwork's transparent space below the soles. */
+html[data-viewport='web'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__header-links)::before { transform: translateY(4%); }
+html[data-viewport='web'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__header-links)::after { transform: translateY(1%); }

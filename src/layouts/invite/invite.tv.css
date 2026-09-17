@@ -1336,3 +1336,56 @@ html[data-viewport='tv'] .invite-game-card__header-links > a[aria-controls^='pla
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='9' cy='8' r='3'/%3E%3Cpath d='M3 21v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6M21 21v-2a6 6 0 0 0-4-5.65'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 /* Direct attendance responses: explicit tv ownership. */
+/* Profile access replaces competition header edit/delete controls. */
+html[data-viewport='tv'] .invite-game-card[data-kind='competition'] .invite-game-card__title-admin:has(.invite-game-card__profile-action) {
+  position: absolute;
+  inset: 4px 4px auto auto;
+  transform: none;
+  margin: 0;
+  z-index: 3;
+}
+
+html[data-viewport='tv'] .invite-game-card__profile-action {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #b5c3cf;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+html[data-viewport='tv'] .invite-game-card__profile-action:hover {
+  background: rgb(181 195 207 / 10%);
+}
+
+html[data-viewport='tv'] .invite-game-card__profile-action:focus-visible {
+  outline: 2px solid #b5c3cf;
+  outline-offset: -2px;
+}
+
+html[data-viewport='tv'] .invite-game-card__profile-action:disabled { opacity: 0.5; }
+html[data-viewport='tv'] .invite-game-card__profile-icon { width: 24px; height: 24px; }
+/* One shared ground line for the tabs and both character feet. */
+html[data-viewport='tv'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__header-links) {
+  --invite-ground-inset: 12px;
+}
+
+html[data-viewport='tv'] .invite-game-card[data-kind='competition'] .invite-game-card__header-links {
+  top: auto;
+  bottom: var(--invite-ground-inset);
+  margin-top: 0;
+}
+
+html[data-viewport='tv'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__header-links)::before,
+html[data-viewport='tv'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__header-links)::after {
+  bottom: var(--invite-ground-inset);
+}
+
+/* Account for the artwork's transparent space below the soles. */
+html[data-viewport='tv'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__header-links)::before { transform: translateY(4%); }
+html[data-viewport='tv'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__header-links)::after { transform: translateY(1%); }

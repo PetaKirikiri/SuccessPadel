@@ -972,3 +972,41 @@ html[data-viewport='tablet'] .competition-pregame__error { color: #ff8585; font-
 html[data-viewport='tablet'] .invite-game-card__rules-jump { grid-column: 1 / -1; justify-self: end; display: grid; place-items: center; min-height: 2.1rem; border: 1px solid var(--color-brand-primary); border-radius: 0.65rem; background: color-mix(in srgb, var(--color-brand-primary) 18%, transparent); color: var(--color-brand-ink); padding: 0 0.8rem; font-size: 0.72rem; font-weight: 850; text-decoration: none; }
 html[data-viewport='tablet'] .competition-pregame__rules { scroll-margin-top: 0.75rem; }
 /* Direct attendance responses: explicit tablet ownership. */
+/* Profile access replaces competition header edit/delete controls. */
+html[data-viewport='tablet'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__profile-action) {
+  position: relative;
+}
+
+html[data-viewport='tablet'] .invite-game-card[data-kind='competition'] .invite-game-card__title-admin:has(.invite-game-card__profile-action) {
+  position: absolute;
+  inset: 4px 4px auto auto;
+  transform: none;
+  margin: 0;
+  z-index: 3;
+}
+
+html[data-viewport='tablet'] .invite-game-card__profile-action {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #b5c3cf;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+html[data-viewport='tablet'] .invite-game-card__profile-action:hover {
+  background: rgb(181 195 207 / 10%);
+}
+
+html[data-viewport='tablet'] .invite-game-card__profile-action:focus-visible {
+  outline: 2px solid #b5c3cf;
+  outline-offset: -2px;
+}
+
+html[data-viewport='tablet'] .invite-game-card__profile-action:disabled { opacity: 0.5; }
+html[data-viewport='tablet'] .invite-game-card__profile-icon { width: 24px; height: 24px; }

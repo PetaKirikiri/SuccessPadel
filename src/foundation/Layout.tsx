@@ -17,6 +17,8 @@ export function Layout() {
     /^\/competitions\/[^/]+\/edit$/.test(loc.pathname)
   const isGestureRoute = isGesturePadRoute(loc.pathname)
   const showBottomNav = hasAppBottomNav(loc.pathname)
+  // Keep the existing edge-to-edge hub shell; omit only its bottom dock.
+  const isCompetitionOverview = /^\/competitive\/?$/.test(loc.pathname)
   const needsFillViewport = isGamesHub || isPlaySession || isCompetitionSetup
 
   if (isGestureRoute) {
@@ -65,7 +67,7 @@ export function Layout() {
           </AppShellColumn>
         )}
       </main>
-      {showBottomNav ? (
+      {showBottomNav && !isCompetitionOverview ? (
         <div className="shell-dock">
           <AppBottomNav />
         </div>
