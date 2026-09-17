@@ -1280,6 +1280,7 @@ html[data-viewport='tv'] .competition-pregame__steps span { font-size: 13px; lin
 html[data-viewport='tv'] .competition-pregame {
   grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
   height: auto;
+  flex: 1 0 auto;
   align-items: stretch;
   gap: 14px;
 }
@@ -1290,7 +1291,27 @@ html[data-viewport='tv'] .competition-pregame__rules {
   height: auto;
   overflow: visible;
 }
-html[data-viewport='tv'] .competition-pregame__rules .competition-pregame__steps { gap: 6px; }
+html[data-viewport='tv'] .competition-pregame__rules {
+  display: flex;
+  flex-direction: column;
+}
+html[data-viewport='tv'] .competition-pregame__rules .competition-pregame__steps {
+  flex: 1 0 auto;
+  align-content: space-between;
+  gap: 6px;
+}
+
+/* Keep the competition overview as tall as the space below its header.
+   Ordinary hub lists remain content-sized; short screens can still scroll. */
+html[data-viewport='tv'] .shell-main:has(.competition-pregame) > div,
+html[data-viewport='tv'] .hub-root:has(.competition-pregame),
+html[data-viewport='tv'] .hub-list:has(.competition-pregame),
+html[data-viewport='tv'] .hub-gender-shell:has(.competition-pregame),
+html[data-viewport='tv'] .hub-gender-body:has(.competition-pregame) {
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
+}
 
 /* Fixed partners share one continuous team row; attendance remains per person. */
 
