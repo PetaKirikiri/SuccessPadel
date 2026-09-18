@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { type LiveCourtGamesScore, type LiveCourtPointFeed } from '../../lib/liveCourtScore'
+import { useViewportBucket } from '../../hooks/useGameCardSize'
+import { scheduledTvGame } from '../../lib/scheduledTvGame'
 import { useTranslation } from '../../hooks/useTranslation'
 import type { TranslateFn } from '../../i18n'
 import type { AmericanoScoringUnit } from '../../lib/competitionPresets'
@@ -273,6 +275,7 @@ export function GameBoard({
   onActivePanel,
 }: Props) {
   const { t } = useTranslation()
+  const viewport = useViewportBucket()
   const useCarousel = tvCarousel
   const games = useMemo(() => {
     const rows = pivotScheduleByGame(columns)
@@ -514,6 +517,7 @@ export function GameBoard({
         <TvGameCarousel
           gameNumbers={gameNumbers}
           activeGameNumber={focusGameNumber}
+          autoGameNumber={scheduledTvGame(viewport, clock, gameNumbers, roundTimesByGame)}
           persistenceKey={
             competitionId
               ? `successpadel:competition:${competitionId}:selected-game`

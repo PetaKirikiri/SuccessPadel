@@ -12,6 +12,7 @@ export type TvGameNav = {
 type Props = {
   gameNumbers: number[]
   activeGameNumber?: number
+  autoGameNumber?: number
   persistenceKey?: string
   renderGame: (gameNumber: number, nav: TvGameNav) => ReactNode
   onGameChange?: (gameNumber: number) => void
@@ -22,6 +23,7 @@ type Props = {
 export function TvGameCarousel({
   gameNumbers,
   activeGameNumber,
+  autoGameNumber,
   persistenceKey,
   renderGame,
   onGameChange,
@@ -42,6 +44,12 @@ export function TvGameCarousel({
       : gameNumbers[0]!
     setSelection({ key: persistenceKey, game: initial })
   }, [activeGameNumber, gameNumbers, persistenceKey, selectedGame])
+
+  // Advance once at each scheduled start; manual browsing remains available between starts.
+  useEffect(() => {
+    if (autoGameNumber == null) return
+    setSelection({ key: persistenceKey, game: autoGameNumber })
+  }, [autoGameNumber, persistenceKey])
 
   const index = selectedGame == null ? -1 : gameNumbers.indexOf(selectedGame)
   const nav: TvGameNav = {
