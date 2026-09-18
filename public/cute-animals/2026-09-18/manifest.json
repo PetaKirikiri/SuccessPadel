@@ -1,0 +1,70 @@
+{
+  "competitionId": "ced2a918-b0c1-493c-8875-11185878dd23",
+  "theme": "Cute baby animals",
+  "identities": [
+    {
+      "slot": 1,
+      "slug": "puppy",
+      "imageUrl": "/cute-animals/2026-09-18/icons/puppy.png",
+      "english": "Puppy",
+      "thai": "ลูกหมา",
+      "phonetic": "look-maa"
+    },
+    {
+      "slot": 2,
+      "slug": "red-panda",
+      "imageUrl": "/cute-animals/2026-09-18/icons/red-panda.png",
+      "english": "Red panda",
+      "thai": "แพนด้าแดง",
+      "phonetic": "phaen-daa-daeng"
+    },
+    {
+      "slot": 3,
+      "slug": "otter",
+      "imageUrl": "/cute-animals/2026-09-18/icons/otter.png",
+      "english": "Otter",
+      "thai": "นาก",
+      "phonetic": "naak"
+    },
+    {
+      "slot": 4,
+      "slug": "seal-pup",
+      "imageUrl": "/cute-animals/2026-09-18/icons/seal-pup.png",
+      "english": "Seal pup",
+      "thai": "ลูกแมวน้ำ",
+      "phonetic": "look-maeo-naam"
+    },
+    {
+      "slot": 5,
+      "slug": "koala",
+      "imageUrl": "/cute-animals/2026-09-18/icons/koala.png",
+      "english": "Koala",
+      "thai": "โคอาลา",
+      "phonetic": "khoh-aa-laa"
+    },
+    {
+      "slot": 6,
+      "slug": "hedgehog",
+      "imageUrl": "/cute-animals/2026-09-18/icons/hedgehog.png",
+      "english": "Hedgehog",
+      "thai": "เม่นแคระ",
+      "phonetic": "men-khrae"
+    },
+    {
+      "slot": 7,
+      "slug": "hamster",
+      "imageUrl": "/cute-animals/2026-09-18/icons/hamster.png",
+      "english": "Hamster",
+      "thai": "แฮมสเตอร์",
+      "phonetic": "haem-ster"
+    },
+    {
+      "slot": 8,
+      "slug": "duckling",
+      "imageUrl": "/cute-animals/2026-09-18/icons/duckling.png",
+      "english": "Duckling",
+      "thai": "ลูกเป็ด",
+      "phonetic": "look-bpet"
+    }
+  ]
+}
