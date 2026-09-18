@@ -71,7 +71,7 @@ html[data-viewport='mobile'] .game-card-tv-header-actions > .game-card-header-sc
 
 html[data-viewport='mobile'] .game-card-tv-header-back {
   display: flex;
-  inset: 0.25rem 0.25rem auto auto;
+  inset: 0.25rem auto auto 0.25rem;
   z-index: 20;
 }
 
@@ -85,6 +85,7 @@ html[data-viewport='mobile'] .game-card-tv-header-back > button {
 }
 
 html[data-viewport='mobile'] .game-card-tv-header-center {
+  top: 1rem;
   right: 7.25rem;
 }
 
