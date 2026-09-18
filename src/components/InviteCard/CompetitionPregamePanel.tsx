@@ -1,3 +1,4 @@
+import { Grid2X2, Timer, Coffee, Zap, UsersRound, Flag } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { CompetitionPlayer, CompetitionRow } from '../../hooks/useCompetitions'
 import { rosterDisplayName } from '../../hooks/useCompetitions'
@@ -6,13 +7,12 @@ import { resolveCompetitionSchedule } from '../../lib/competitionLayout'
 import { competitionPlayerMode } from '../../lib/competitionFormatPresets'
 import { americanoScoreTarget } from '../../lib/competitionPresets'
 import { supabase } from '../../lib/supabaseClient'
-import { rulesCopy, rulesLanguages, type RulesLanguage } from '../../lib/competitionRulesLanguages'
+import { rulesHighlights, rulesCopy, rulesLanguages, type RulesLanguage } from '../../lib/competitionRulesLanguages'
 import { useCompetitionLineupDrag } from '../../hooks/useCompetitionLineupDrag'
 import { useAuth } from '../../hooks/useAuth'
 import { CompetitionRoster } from '../competition-formats/CompetitionRoster'
 import type { AttendancePlayer, AttendanceStatus } from '../competition-formats/rosterContract'
 import { orderSessionPairsByTeamIndex } from '../../lib/competitionDuoTeams'
-import { formatClubTimeLocalized } from '../../lib/courtSchedule'
 import { fixedPairRoster } from '../../lib/competition-formats/duos/roster'
 
 type AttendanceRow = {
@@ -87,20 +87,14 @@ export function CompetitionPregamePanel({ row, view = 'players', canReorder = fa
   })
   const scoreTarget = americanoScoreTarget(row)
   const copy = rulesCopy[language]
-  const firstGameTime = schedule.playStartsAt
-    ? formatClubTimeLocalized(schedule.playStartsAt, language === 'he' ? 'en' : language)
-    : null
-  const translate = (text: string) => text
-    .replaceAll('{target}', String(scoreTarget))
-    .replaceAll('{minutes}', String(schedule.gameMinutes))
-    .replaceAll('{rounds}', String(schedule.totalGames))
-    .replaceAll('{start}', firstGameTime ?? '')
-  const steps = [
-    [firstGameTime ? copy.arrival[0] : copy.warmup, copy.arrival[1]],
-    ...copy.steps.slice(0, 4),
-    mode === 'duos' ? copy.duos : copy.rotation,
-    copy.steps[4],
-    copy.spirit,
+  const highlights = rulesHighlights[language]
+  const tiles = [
+    { id: 'games', icon: Grid2X2, value: String(schedule.totalGames), label: highlights.games },
+    { id: 'duration', icon: Timer, value: String(schedule.gameMinutes), label: highlights.duration },
+    { id: 'break', icon: Coffee, value: String(schedule.breakMinutes), label: highlights.break },
+    { id: 'golden', icon: Zap, value: '40–40', label: highlights.golden, note: highlights.decider },
+    { id: 'partners', icon: UsersRound, value: highlights[mode === 'duos' ? 'fixed' : 'rotate'], label: highlights.partners },
+    { id: 'target', icon: Flag, value: String(scoreTarget), label: highlights.target, note: highlights.buzzer },
   ]
   const chooseLanguage = (next: RulesLanguage) => {
     setLanguage(next)
@@ -203,7 +197,7 @@ export function CompetitionPregamePanel({ row, view = 'players', canReorder = fa
         </>}
       </section>}
 
-      {view !== 'players' && <aside id={`tonights-rules-${row.id}`} className="competition-pregame__rules" aria-label={copy.title} lang={language} dir={language === 'he' ? 'rtl' : 'ltr'}>
+      {view !== 'players' && <aside id={`tonights-rules-${row.id}`} className="competition-pregame__rules competition-pregame__rules--visual" aria-label={copy.title} lang={language} dir={language === 'he' ? 'rtl' : 'ltr'}>
         <h3 className="competition-pregame__heading">{copy.title}</h3>
         <div className="competition-pregame__languages" role="group" aria-label="Rules language" dir="ltr">
           {rulesLanguages.map((item) => (
@@ -214,17 +208,16 @@ export function CompetitionPregamePanel({ row, view = 'players', canReorder = fa
             </button>
           ))}
         </div>
-        <dl className="competition-pregame__facts">
-          <div><dt>{copy.facts[0]}</dt><dd>{copy.formats[mode === 'duos' ? 1 : 0]}</dd></div>
-          <div><dt>{copy.facts[1]}</dt><dd>{schedule.totalGames}</dd></div>
-          <div><dt>{copy.facts[2]}</dt><dd>{copy.minutes.replace('{n}', String(schedule.gameMinutes))}</dd></div>
-          <div><dt>{copy.facts[3]}</dt><dd>{copy.minutes.replace('{n}', String(schedule.breakMinutes))}</dd></div>
-        </dl>
-        <ol className="competition-pregame__steps">
-          {steps.map(([heading, body], index) => (
-            <li key={index}><strong>{translate(heading)}</strong><span>{translate(body)}</span></li>
+        <ul className="competition-rules__grid">
+          {tiles.map(({ id, icon: Icon, value, label, note }) => (
+            <li className="competition-rules__tile" data-rule={id} key={id}>
+              <Icon className="competition-rules__icon" aria-hidden="true" />
+              <strong className="competition-rules__value">{value}</strong>
+              <span className="competition-rules__label">{label}</span>
+              {note && <span className="competition-rules__note">{note}</span>}
+            </li>
           ))}
-        </ol>
+        </ul>
       </aside>}
     </div>
   )

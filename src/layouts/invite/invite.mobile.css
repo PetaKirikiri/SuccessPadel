@@ -2191,3 +2191,42 @@ html[data-viewport='mobile'] .invite-game-card[data-kind='competition'] .invite-
     max-height: 48px;
   }
 }
+
+/* Visual rules board: key facts fill the available panel. */
+html[data-viewport='mobile'] .competition-pregame__rules--visual { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto minmax(0, 1fr); align-content: stretch; gap: clamp(0.5rem, 1.2vh, 1rem); width: 100%; min-height: 0; max-height: none; height: 100%; padding: clamp(0.5rem, 1.2vw, 1.25rem); overflow: visible; container-type: inline-size; }
+html[data-viewport='mobile'] .competition-pregame__rules--visual > .competition-pregame__heading { align-self: center; margin: 0; font-size: clamp(0.9rem, 2vw, 1.6rem); line-height: 1.15; }
+html[data-viewport='mobile'] .competition-pregame__rules--visual .competition-pregame__languages { display: flex; flex-wrap: nowrap; align-items: center; gap: 0.2rem; margin: 0; overflow: visible; }
+html[data-viewport='mobile'] .competition-pregame__rules--visual .competition-pregame__language { flex: 0 0 auto; width: clamp(1.6rem, 3vw, 2.75rem); min-width: 0; min-height: 2rem; height: auto; padding: 0.2rem 0; border: 0; border-radius: 0; background: transparent; font-size: 0; }
+html[data-viewport='mobile'] .competition-pregame__rules--visual .competition-pregame__language[aria-pressed='true'] { background: transparent; box-shadow: inset 0 -2px #7dd3fc; }
+html[data-viewport='mobile'] .competition-pregame__rules--visual .competition-pregame__language > span { font-size: clamp(1rem, 2vw, 1.5rem); line-height: 1; }
+html[data-viewport='mobile'] .competition-rules__grid { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); gap: clamp(0.4rem, 1.1cqw, 1rem); min-height: 0; height: 100%; margin: 0; padding: 0; list-style: none; }
+html[data-viewport='mobile'] .competition-rules__tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(0.15rem, 0.7vh, 0.5rem); min-width: 0; min-height: 0; padding: clamp(0.45rem, 1.5cqw, 1.5rem); border: 1px solid #366181; border-radius: clamp(0.6rem, 1.5cqw, 1.25rem); background: linear-gradient(145deg, #183f60, #102e49); text-align: center; }
+html[data-viewport='mobile'] .competition-rules__icon { flex: 0 0 auto; width: clamp(1.1rem, 3cqw, 2.5rem); height: clamp(1.1rem, 3cqw, 2.5rem); color: #7dd3fc; stroke-width: 1.75; }
+html[data-viewport='mobile'] .competition-rules__value { color: #fff; font-size: clamp(2rem, 8cqw, 6.5rem); font-weight: 850; line-height: 1; font-variant-numeric: tabular-nums; }
+html[data-viewport='mobile'] .competition-rules__label { color: #d5e9f5; font-size: clamp(0.75rem, 2.2cqw, 1.65rem); font-weight: 700; line-height: 1.15; }
+html[data-viewport='mobile'] .competition-rules__note { max-width: 25ch; color: #b6cedf; font-size: clamp(0.65rem, 1.65cqw, 1.15rem); line-height: 1.2; }
+html[data-viewport='mobile'] .competition-rules__tile[data-rule='golden'] { border-color: #b58e42; background: linear-gradient(145deg, #514526, #2b302e); }
+html[data-viewport='mobile'] .competition-rules__tile[data-rule='golden'] .competition-rules__icon, html[data-viewport='mobile'] .competition-rules__tile[data-rule='golden'] .competition-rules__value { color: #ffda79; }
+html[data-viewport='mobile'] .competition-rules__tile[data-rule='golden'] .competition-rules__value { font-size: clamp(1.7rem, 5.7cqw, 4.7rem); direction: ltr; }
+html[data-viewport='mobile'] .competition-rules__tile[data-rule='partners'] .competition-rules__value { font-size: clamp(1.3rem, 4.2cqw, 3.5rem); }
+@media (min-width: 500px) {
+  html[data-viewport='mobile'] .competition-rules__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  html[data-viewport='mobile'] .competition-rules__grid { grid-template-columns: repeat(6, minmax(0, 1fr)); grid-template-rows: minmax(0, 1fr); gap: 0.2rem; }
+  html[data-viewport='mobile'] .competition-pregame__rules--visual { gap: 0.25rem; padding: 0.3rem; }
+  html[data-viewport='mobile'] .competition-rules__tile { padding: 0.25rem; gap: 0.1rem; }
+  html[data-viewport='mobile'] .competition-rules__icon { width: 0.8rem; height: 0.8rem; }
+  html[data-viewport='mobile'] .competition-rules__value { font-size: 1.7rem; }
+  html[data-viewport='mobile'] .competition-rules__tile[data-rule='golden'] .competition-rules__value,
+  html[data-viewport='mobile'] .competition-rules__tile[data-rule='partners'] .competition-rules__value { font-size: 1.3rem; }
+  html[data-viewport='mobile'] .competition-rules__label { font-size: 0.65rem; }
+  html[data-viewport='mobile'] .competition-rules__note { font-size: 0.55rem; }
+}
+
+html[data-viewport='mobile'] .shell-main > div:has(.competition-pregame__rules--visual),
+html[data-viewport='mobile'] .hub-root:has(.competition-pregame__rules--visual),
+html[data-viewport='mobile'] .hub-list:has(.competition-pregame__rules--visual),
+html[data-viewport='mobile'] .hub-gender-shell:has(.competition-pregame__rules--visual),
+html[data-viewport='mobile'] .hub-gender-body:has(.competition-pregame__rules--visual) { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; }
+html[data-viewport='mobile'] .competition-pregame:has(.competition-pregame__rules--visual) { flex: 1 1 0; height: 100%; min-height: 0; }

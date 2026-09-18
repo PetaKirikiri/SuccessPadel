@@ -104,3 +104,25 @@ export const rulesCopy: Record<RulesLanguage, RulesCopy> = {
     duos: ['משחקים מול כל זוג פעם אחת.', 'נשארים עם אותו שותף לאורך התחרות. כל זוג משחק מול כל אחד מהזוגות האחרים פעם אחת.'],
   },
 }
+
+/** Short labels for the visual rules board; numbers come from the saved schedule. */
+export const rulesHighlights: Record<RulesLanguage, {
+  games: string; duration: string; break: string; golden: string; decider: string;
+  fixed: string; rotate: string; partners: string; target: string; buzzer: string;
+}> = {
+  en: { games: 'Games total', duration: 'Minutes per game', break: 'Minute breaks',
+    golden: 'Golden point', decider: 'One deciding point. No advantage.',
+    fixed: 'Same', rotate: 'Rotate', partners: 'Partner', target: 'Games to win', buzzer: 'Or stop when the timer ends.' },
+  th: { games: 'รอบทั้งหมด', duration: 'นาทีต่อรอบ', break: 'นาทีพักระหว่างรอบ',
+    golden: 'โกลเดนพอยต์', decider: 'แต้มเดียวตัดสิน ไม่มีแอดแวนเทจ',
+    fixed: 'คู่เดิม', rotate: 'เปลี่ยนคู่', partners: 'คู่เล่น', target: 'เกมเพื่อชนะ', buzzer: 'หรือหยุดเมื่อหมดเวลา' },
+  fr: { games: 'Manches au total', duration: 'Minutes par manche', break: 'Minutes de pause',
+    golden: 'Point décisif', decider: 'Un seul point. Pas d’avantage.',
+    fixed: 'Même', rotate: 'Changez', partners: 'Partenaire', target: 'Jeux pour gagner', buzzer: 'Ou à la fin du temps imparti.' },
+  ru: { games: 'Раундов всего', duration: 'Минут на раунд', break: 'Минут перерыва',
+    golden: 'Золотое очко', decider: 'Одно решающее очко. Без преимущества.',
+    fixed: 'Тот же', rotate: 'Смена', partners: 'Партнёр', target: 'Геймов для победы', buzzer: 'Или до конца таймера.' },
+  he: { games: 'סיבובים בסך הכול', duration: 'דקות לסיבוב', break: 'דקות הפסקה',
+    golden: 'נקודת זהב', decider: 'נקודה מכריעה אחת. ללא יתרון.',
+    fixed: 'קבוע', rotate: 'מתחלף', partners: 'שותף', target: 'משחקונים לניצחון', buzzer: 'או עד לסיום הזמן.' },
+}
