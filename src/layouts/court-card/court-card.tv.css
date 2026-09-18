@@ -309,3 +309,12 @@ html[data-viewport='tv'] .tv-play-view .game-card-court-match--sides:has(.team-l
   text-align: center;
   max-width: 100%;
 }
+
+/* Give the artwork equal breathing room beside names and the score box. */
+html[data-viewport='tv'] .tv-play-view .tv-play-standings [data-competition-format='duos'] ol > li[role='button']:has(.leaderboard-team-simple) {
+  grid-template-columns: 1rem minmax(0, 1fr) minmax(0, 1fr) 3.75rem;
+  column-gap: 0.75rem;
+}
+html[data-viewport='tv'] .tv-play-view .tv-play-standings [data-competition-format='duos'] .leaderboard-team-simple {
+  display: contents;
+}
