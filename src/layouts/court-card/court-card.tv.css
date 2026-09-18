@@ -267,3 +267,45 @@ html[data-viewport='tv'] .court-slot-learning-copy .team-learning-badge__phoneti
 html[data-viewport='tv'] .court-slot-learning-copy .team-learning-badge__english {
   font-size: clamp(0.65rem, 2.1cqh, 0.85rem);
 }
+
+/* Large-screen team identities: prominent artwork with two learning labels. */
+html[data-viewport='tv'] .tv-play-view .team-learning-badge--court:not(.team-learning-badge--slots) {
+  width: 30%;
+  top: 54%;
+}
+html[data-viewport='tv'] .tv-play-view .team-learning-badge--court:not(.team-learning-badge--slots) .team-learning-badge__image {
+  width: clamp(9rem, min(30cqw, 46cqh), 22rem);
+  height: clamp(9rem, min(30cqw, 46cqh), 22rem);
+}
+html[data-viewport='tv'] .tv-play-view .team-learning-badge--court:not(.team-learning-badge--slots).team-learning-badge--left { left: 35%; }
+html[data-viewport='tv'] .tv-play-view .team-learning-badge--court:not(.team-learning-badge--slots).team-learning-badge--right { left: 65%; }
+html[data-viewport='tv'] .tv-play-view .team-learning-badge--court:not(.team-learning-badge--slots) .team-learning-badge__copy {
+  display: grid;
+  gap: 0.15rem;
+}
+html[data-viewport='tv'] .tv-play-view .team-learning-badge__thai { display: none; }
+html[data-viewport='tv'] .tv-play-view .tv-play-standings [data-competition-format='duos'] .leaderboard-team-simple .team-learning-badge--leaderboard {
+  width: 100%;
+  max-width: none;
+  place-self: center;
+  place-items: center;
+}
+html[data-viewport='tv'] .tv-play-view .tv-play-standings [data-competition-format='duos'] .leaderboard-team-simple .team-learning-badge__image {
+  width: clamp(5rem, 6vw, 9rem);
+  height: clamp(5rem, 6vw, 9rem);
+  max-width: 100%;
+  object-fit: contain;
+}
+html[data-viewport='tv'] .tv-play-view .game-card-court-match--sides:has(.team-learning-badge--court:not(.team-learning-badge--slots)) > .game-card-court-match__side {
+  width: 38%;
+}
+html[data-viewport='tv'] .tv-play-view .game-card-court-match--sides:has(.team-learning-badge--court:not(.team-learning-badge--slots)) > .game-card-court-match__side > div {
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: center;
+}
+html[data-viewport='tv'] .tv-play-view .game-card-court-match--sides:has(.team-learning-badge--court:not(.team-learning-badge--slots)) .game-card-court-player__name {
+  order: 1;
+  text-align: center;
+  max-width: 100%;
+}
