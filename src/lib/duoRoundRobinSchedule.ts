@@ -1,4 +1,5 @@
 import type { StoredScheduleRound } from './rankedSchedule'
+import { allocateDuoCourts } from './competition-formats/duos/courtAllocation'
 
 export type DuoTeamInput = {
   label: string
@@ -82,10 +83,12 @@ export function solveDuoSchedule(
     rounds.push(rematchRound(rounds, teams.length, seed + rounds.length))
   }
 
-  return rounds.slice(0, gameCount).map((round, index) => ({
+  const selectedRounds = rounds.slice(0, gameCount)
+  const courtAllocation = allocateDuoCourts(selectedRounds, teams.length)
+  return selectedRounds.map((round, index) => ({
     round: index + 1,
     matches: round.map(([teamA, teamB], courtIndex) => ({
-      court: courtIndex + 1,
+      court: courtAllocation[index][courtIndex],
       team_a: teams[teamA].rosterIds,
       team_b: teams[teamB].rosterIds,
     })),

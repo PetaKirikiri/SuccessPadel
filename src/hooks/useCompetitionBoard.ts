@@ -244,7 +244,8 @@ export function useCompetitionBoard(
     if (!isAmericano || !layoutValid) return []
     let plannedGames: GameRound[]
     if (isDuo && teams.length >= 2) {
-      const duoSchedule = buildDuoStoredSchedule(
+      // Saved match-ups/court moves remain authoritative; balance only unsaved draws.
+      const duoSchedule = storedSchedule.length > 0 ? storedSchedule : buildDuoStoredSchedule(
         teams.map((t) => ({ label: t.label, rosterIds: t.roster_ids })),
         totalGames || COMPETITION_SCHEDULE.games,
         scheduleSeed,
