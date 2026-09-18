@@ -178,6 +178,12 @@ html[data-viewport='web'] .game-card-court-score-button--finished {
   border-color: color-mix(in srgb, var(--color-brand-border) 40%, transparent); color: var(--color-brand-muted);
 }
 html[data-viewport='web'] .game-card-court-score-button__value { line-height: 0.9; }
+html[data-viewport='web'] .game-card-court-score-picker:has(> :nth-child(8)) {
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+}
+html[data-viewport='web'] .game-card-court-score-picker:has(> :nth-child(9)) {
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+}
 html[data-viewport='web'] .game-card-court-score-picker {
   position: absolute;
   z-index: 3;

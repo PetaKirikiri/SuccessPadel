@@ -4,7 +4,7 @@ import { ChevronsUpDown } from 'lucide-react'
 import { displayCourtLabel } from '../../lib/courtDisplay'
 import type { TranslateFn } from '../../i18n'
 import type { AmericanoScoringUnit } from '../../lib/competitionPresets'
-import { bumpScoreField, scoreDigitsOnly } from '../../lib/competitionScoreInput'
+import { bumpScoreField, courtGameScoreOptions, scoreDigitsOnly } from '../../lib/competitionScoreInput'
 import { compactDisplayNames } from '../../lib/leaderboardEntries'
 import type { CourtPlayer } from '../../lib/americanoSchedule'
 import type { GameCardSize } from '../../lib/viewBreakpoints'
@@ -536,6 +536,7 @@ function CourtScoreButton({
 
 function CourtScores({
   scoreUnit,
+  scoreMax,
   scoreA,
   scoreB,
   onScoreA,
@@ -549,6 +550,7 @@ function CourtScores({
   t,
 }: {
   scoreUnit: AmericanoScoringUnit
+  scoreMax?: number
   scoreA?: string
   scoreB?: string
   onScoreA?: (v: string) => void
@@ -617,7 +619,7 @@ function CourtScores({
           role="listbox"
           aria-label="Select score"
         >
-          {Array.from({ length: 7 }, (_, score) => {
+          {courtGameScoreOptions(scoreMax).map((score) => {
             const value = String(score)
             const selected = value === (pickerSide === 'a' ? gamesA : gamesB)
             return (
@@ -707,7 +709,7 @@ export function CourtMatchCell({
   onGamesCommit,
   disabled = false,
   finished = false,
-  scoreMax: _scoreMax,
+  scoreMax,
   teamAPlayers,
   teamBPlayers,
   teamALabel,
@@ -971,6 +973,7 @@ export function CourtMatchCell({
   const scoreCenter = showScores ? (
     <CourtScores
       scoreUnit={scoreUnit}
+      scoreMax={scoreMax}
       scoreA={scoreA}
       scoreB={scoreB}
       onScoreA={onScoreA}

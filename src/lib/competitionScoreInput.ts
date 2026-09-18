@@ -20,6 +20,12 @@ export function courtGameScoreMax(playTo?: number): number {
   return playTo ?? COURT_SCORE_INPUT_MAX
 }
 
+/** Quick game-score picker: respect configured game caps, not the open-score sentinel. */
+export function courtGameScoreOptions(scoreMax?: number): number[] {
+  const cap = Number.isInteger(scoreMax) && scoreMax! >= 1 && scoreMax! <= 8 ? scoreMax! : 6
+  return Array.from({ length: cap + 1 }, (_, score) => score)
+}
+
 export function courtSubmitReady(teamAStr: string, teamBStr: string, _playTo?: number): boolean {
   if (teamAStr === '' && teamBStr === '') return false
   return (teamAStr === '' || parseScoreField(teamAStr) !== null) &&

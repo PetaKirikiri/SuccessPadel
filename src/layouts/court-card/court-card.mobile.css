@@ -223,6 +223,12 @@ html[data-viewport='mobile'] .game-card-court-score-button__value {
   line-height: 0.9;
 }
 
+html[data-viewport='mobile'] .game-card-court-score-picker:has(> :nth-child(8)) {
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+}
+html[data-viewport='mobile'] .game-card-court-score-picker:has(> :nth-child(9)) {
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+}
 html[data-viewport='mobile'] .game-card-court-score-picker {
   position: absolute;
   z-index: 3;
