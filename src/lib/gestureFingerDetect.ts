@@ -143,10 +143,10 @@ function emptyHold(): HoldState {
 }
 
 /** 0→1 over stabilize-then-hold; reaches 1 only when a score would fire. */
-function holdProgress(heldSince: number | null, stableFrames: number, now: number): number {
+function holdProgress(heldSince: number | null, stableFrames: number, now: number, holdMs = GESTURE_HOLD_MS): number {
   if (heldSince == null || stableFrames < 1) return 0
   const stabilize = Math.min(1, stableFrames / STABLE_FRAMES) * 0.28
-  const hold = Math.min(1, (now - heldSince) / GESTURE_HOLD_MS) * 0.72
+  const hold = Math.min(1, (now - heldSince) / holdMs) * 0.72
   return Math.min(1, stabilize + hold)
 }
 
@@ -181,6 +181,8 @@ function stepHold(
   releaseDetected: boolean,
   allowDirectionChange: boolean,
 ): { state: HoldState; ui: HoldUi; fire: FingerScoreAction | null } {
+  // All scoring gestures, including peace-sign Undo, share the same timing.
+  const holdMs = GESTURE_HOLD_MS
   if (preview) {
     return {
       state: { ...emptyHold(), cooldownUntil: state.cooldownUntil },
@@ -208,11 +210,11 @@ function stepHold(
       const stableFrames = same ? state.stableFrames + 1 : 1
       const candidate = { ...state, held: detected, heldSince, stableFrames, lastDetectedAt: now,
         releaseEvidenceMs: 0, releaseSamples: 0, releaseLastSeenAt: now }
-      if (stableFrames >= STABLE_FRAMES && now - heldSince >= GESTURE_HOLD_MS) {
+      if (stableFrames >= STABLE_FRAMES && now - heldSince >= holdMs) {
         const fired = afterFireState(candidate, detected, now)
         return { state: fired, ui: uiFrom(fired, null, 0), fire: detected }
       }
-      return { state: candidate, ui: uiFrom(candidate, asFingerAction(detected), holdProgress(heldSince, stableFrames, now)), fire: null }
+      return { state: candidate, ui: uiFrom(candidate, asFingerAction(detected), holdProgress(heldSince, stableFrames, now, holdMs)), fire: null }
     }
     const continuous = state.releaseLastSeenAt != null
       && now - state.releaseLastSeenAt <= RELEASE_SAMPLE_GAP_MS
@@ -254,7 +256,7 @@ function stepHold(
     ) {
       return {
         state,
-        ui: uiFrom(state, asFingerAction(state.held), holdProgress(state.heldSince, state.stableFrames, now)),
+        ui: uiFrom(state, asFingerAction(state.held), holdProgress(state.heldSince, state.stableFrames, now, holdMs)),
         fire: null,
       }
     }
@@ -289,7 +291,7 @@ function stepHold(
   const stableFrames = state.stableFrames + 1
   const heldSince = state.heldSince ?? now
   const heldFor = now - heldSince
-  const progress = holdProgress(heldSince, stableFrames, now)
+  const progress = holdProgress(heldSince, stableFrames, now, holdMs)
   const nextState: HoldState = {
     ...state,
     heldSince,
@@ -297,7 +299,7 @@ function stepHold(
     stableFrames,
   }
 
-  if (stableFrames >= STABLE_FRAMES && heldFor >= GESTURE_HOLD_MS) {
+  if (stableFrames >= STABLE_FRAMES && heldFor >= holdMs) {
     const fired = afterFireState(nextState, detected, now)
     return {
       state: fired,
@@ -333,6 +335,8 @@ export function gestureScoreBeep(): void {
 
 export type GestureCameraEngineConfig = {
   video: HTMLVideoElement
+  /** Optional input crop only; classifier, fresh-frame gate and score latch stay shared. */
+  prepareThumbFrame?: (video: HTMLVideoElement) => HTMLVideoElement | HTMLCanvasElement
   /** Experimental practice input; live courts retain their existing finger mapping. */
   gestureMode?: 'fingers' | 'thumbs'
   preview?: boolean
@@ -491,7 +495,8 @@ export class GestureCameraEngine {
     let releaseDetected = false
     try {
       if (thumbRecognizer) {
-        const result = thumbDecisionFromResult(thumbRecognizer.recognizeForVideo(video, this.frameTs))
+        const input = this.config.prepareThumbFrame?.(video) ?? video
+        const result = thumbDecisionFromResult(thumbRecognizer.recognizeForVideo(input, this.frameTs))
         detected = result.action
         releaseDetected = result.releaseDetected
       } else if (landmarker) {

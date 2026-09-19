@@ -15,7 +15,6 @@ import {
   gestureScoreBeep,
   type FingerAction,
 } from '../../lib/gestureFingerDetect'
-import { hasPendingGestureScoreCameraRequest } from '../../lib/gestureScoreCamera'
 import {
   competitionCourtSetupKey,
   ensureGestureCameraSession,
@@ -40,6 +39,7 @@ import {
   friendlyStartsAtIso,
 } from '../../lib/friendlyGames'
 import { ThumbScorePadView } from './ThumbScorePadView'
+import { useGestureRecognitionZoom } from '../../hooks/useGestureRecognitionZoom'
 import { useGesturePadChrome } from '../../lib/gesturePadChrome'
 import {
   competitionRoundTimesByGame,
@@ -387,6 +387,7 @@ export function GestureScoreCourtPage() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const ballOverlayRef = useRef<HTMLCanvasElement>(null)
   const engineRef = useRef<GestureCameraEngine | null>(null)
+  const { zoom, setZoom, zoomCanvasRef, prepareThumbFrame } = useGestureRecognitionZoom()
   const saveChainRef = useRef<Promise<void>>(Promise.resolve())
   const pendingSavesRef = useRef(0)
   const sessionInitKeyRef = useRef<string | null>(null)
@@ -670,6 +671,7 @@ export function GestureScoreCourtPage() {
       engine = new GestureCameraEngine({
         video,
         gestureMode: 'thumbs',
+        prepareThumbFrame,
         preview: detectPreviewRef.current,
         onFire: (action) => {
           if (action === 'reset') return
@@ -681,9 +683,8 @@ export function GestureScoreCourtPage() {
         },
       })
       engineRef.current = engine
-      if (hasPendingGestureScoreCameraRequest()) {
-        void engine.start()
-      }
+      // Also resume after a development hot refresh; permission failures retain manual retry.
+      void engine.start()
     }
 
     mountEngine()
@@ -693,7 +694,7 @@ export function GestureScoreCourtPage() {
       engine?.stop()
       engineRef.current = null
     }
-  }, [scorerReady, setCameraStatus])
+  }, [scorerReady, setCameraStatus, prepareThumbFrame])
 
   useEffect(() => {
     if (detectPreview) document.documentElement.dataset.gestureDetectPreview = 'true'
@@ -710,6 +711,7 @@ export function GestureScoreCourtPage() {
 
   return scorerReady ? (
     <ThumbScorePadView
+      zoom={zoom} onZoomChange={setZoom} zoomCanvasRef={zoomCanvasRef}
       videoRef={videoRef} status={status} error={scoreSaveError ?? cameraError}
       ourPoints={pointsA} theirPoints={pointsB} ourGames={gamesA} theirGames={gamesB}
       timerValue={currentTimerValue ?? '0:00'} restartCamera={startCamera}

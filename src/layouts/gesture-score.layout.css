@@ -1588,129 +1588,294 @@ html[data-viewport='tv'][data-gesture-ui='court'] .gesture-score-court__finger-i
   }
 }
 
-/* Phone landscape: use the visible height, not tablet-width utility sizing. */
-html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad {
-  width: var(--app-width, 100dvw);
-  height: var(--app-height, 100dvh);
+/* One mobile scorer layout, including portrait screens rotated into landscape. */
+html[data-viewport='mobile'] .gesture-score-pad {
+  --pad-width: var(--app-width, 100dvw);
+  --pad-height: var(--app-height, 100dvh);
+  --pad-camera-height: min(calc(var(--pad-width) * 0.2025), calc(var(--pad-height) * 0.5));
+  --pad-time-height: clamp(32px, min(calc(var(--pad-width) * 0.105), calc(var(--pad-height) * 0.30)), 120px);
+  --pad-middle-gap: calc((var(--pad-height) - var(--pad-camera-height) - var(--pad-time-height)) / 3);
+  width: var(--pad-width);
+  height: var(--pad-height);
   min-width: 0;
   min-height: 0;
 }
 
-html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__header {
-  height: 60px;
-  padding: 4px max(8px, env(safe-area-inset-right)) 4px max(8px, env(safe-area-inset-left));
+html[data-viewport='mobile'][data-orientation='portrait'] .gesture-score-pad {
+  --pad-width: var(--app-height, 100dvh);
+  --pad-height: var(--app-width, 100dvw);
+  left: var(--app-width, 100dvw);
 }
 
-html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__timer {
-  padding: 3px 18px;
+html[data-viewport='mobile'] .gesture-score-pad__header {
+  position: absolute;
+  inset: var(--pad-middle-gap) 32% auto;
+  z-index: 431;
+  height: var(--pad-time-height);
+  padding: 0;
+  pointer-events: none;
 }
 
-html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__timer > p:first-child {
-  font-size: 9px;
-  line-height: 12px;
+html[data-viewport='mobile'] .gesture-score-pad__timer {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
-html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__timer > p:last-child {
-  font-size: 28px;
-  line-height: 30px;
+html[data-viewport='mobile'] .gesture-score-pad__timer > p:first-child {
+  display: none;
 }
 
-html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__body {
+html[data-viewport='mobile'] .gesture-score-pad__timer > p:last-child {
+  font-size: var(--pad-time-height);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+html[data-viewport='mobile'] .gesture-score-pad__body {
+  position: relative;
   min-height: 0;
-  grid-template-rows: minmax(0, 1fr) 56px auto;
-  gap: 6px;
-  padding: 0 max(10px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 0;
+  padding: 0;
 }
 
-html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__score-panel {
+html[data-viewport='mobile'] .gesture-score-pad__score-panel {
   min-height: 0;
-  grid-template-columns: minmax(0, 1fr) 64px minmax(0, 1fr);
-  gap: 8px;
-  padding: 6px 20px;
+  max-width: none;
+  grid-template-columns: minmax(0, 1fr) 36% minmax(0, 1fr);
+  gap: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
-html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__score-panel > div {
+html[data-viewport='mobile'] .gesture-score-pad__score-panel > div {
+  position: relative;
   min-width: 0;
   gap: 2px;
+  text-align: center;
 }
 
-html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__score-panel > div > p {
+html[data-viewport='mobile'] .gesture-score-pad__score-panel > div:first-child,
+html[data-viewport='mobile'] .gesture-score-pad__score-panel > div:last-child {
+  padding: 64px 0 24px;
+  justify-content: center;
+}
+
+html[data-viewport='mobile'] .gesture-score-pad__score-panel > div:first-child > p:nth-child(2),
+html[data-viewport='mobile'] .gesture-score-pad__score-panel > div:last-child > p:nth-child(2) {
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
+}
+
+html[data-viewport='mobile'] .gesture-score-pad__score-panel > div:first-child > p:first-child,
+html[data-viewport='mobile'] .gesture-score-pad__score-panel > div:last-child > p:first-child {
+  display: none;
+}
+
+html[data-viewport='mobile'] .gesture-score-pad__score-panel > div > p {
   margin: 0;
   font-size: 12px;
   line-height: 16px;
 }
 
-html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__score-panel > div:first-child > p:last-child,
-html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__score-panel > div:last-child > p:last-child {
-  font-size: clamp(48px, 28dvh, 120px);
-  line-height: 0.95;
+html[data-viewport='mobile'] .gesture-score-pad__score-panel > div:first-child > p:last-child,
+html[data-viewport='mobile'] .gesture-score-pad__score-panel > div:last-child > p:last-child {
+  font-size: clamp(72px, min(calc(var(--pad-height) * 0.72), calc(var(--pad-width) * 0.265)), 280px);
+  line-height: 0.85;
 }
 
-html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__score-panel > div:nth-child(2) > p:last-child {
-  font-size: 44px;
-  line-height: 1;
-}
-
-html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__score-panel > div:nth-child(2) > p:not(:last-child) {
-  padding: 3px;
-  font-size: 9px;
-  line-height: 12px;
-}
-
-html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__actions {
-  min-height: 0;
-  gap: 8px;
-  padding: 0;
-}
-
-html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__actions > button {
-  min-width: 0;
-  min-height: 48px;
-  flex-direction: row;
-  gap: 8px;
-  padding: 6px;
-}
-
-html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__actions img {
-  width: 30px;
-  height: 30px;
-}
-
-html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__actions > button > span {
-  font-size: 12px;
-  line-height: 16px;
-}
-
-html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__messages:empty {
+html[data-viewport='mobile'] .gesture-score-pad__score-panel > div:nth-child(2) > p:last-child {
   display: none;
 }
 
-html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__messages > p {
+html[data-viewport='mobile'] .gesture-score-pad__score-panel > div:nth-child(2) > p:not(:last-child) {
+  padding: 3px;
+  font-size: 9px;
+  line-height: 12px;
+  position: absolute;
+  bottom: max(4px, env(safe-area-inset-bottom));
+  z-index: 431;
+}
+
+html[data-viewport='mobile'] .gesture-score-pad__actions {
+  display: contents;
+}
+
+html[data-viewport='mobile'] .gesture-score-pad__actions > button {
+  min-width: 0;
+  min-height: 48px;
+  flex-direction: row;
+  gap: 10px;
+  padding: 3px;
+  position: absolute;
+  z-index: 431;
+  top: 8px;
+  width: 26%;
+  height: 60px;
+  border: 0;
+  border-radius: 16px;
+  box-shadow: none;
+}
+
+html[data-viewport='mobile'] .gesture-score-pad__actions > button:first-child {
+  left: 3%;
+  background: #21ed82;
+  color: #042d18;
+}
+
+html[data-viewport='mobile'] .gesture-score-pad__actions > button:nth-child(2) {
+  right: 3%;
+  background: #ff334b;
+  color: #fff;
+}
+
+html[data-viewport='mobile'] .gesture-score-pad__actions > button:nth-child(n+3) {
+  display: none;
+}
+
+html[data-viewport='mobile'] .gesture-score-pad__actions img {
+  width: 54px;
+  height: 54px;
+  filter: brightness(0);
+}
+
+html[data-viewport='mobile'] .gesture-score-pad__actions > button:first-child img {
+  content: url('/gesture-score/thumb-up-solid.svg');
+}
+
+html[data-viewport='mobile'] .gesture-score-pad__actions > button:nth-child(2) img {
+  content: url('/gesture-score/thumb-down-solid.svg');
+  filter: brightness(0) invert(1);
+}
+
+html[data-viewport='mobile'] .gesture-score-pad__actions > button > span {
+  display: none;
+}
+
+html[data-viewport='mobile'] .gesture-score-pad__messages:empty {
+  display: none;
+}
+
+html[data-viewport='mobile'] .gesture-score-pad__messages > p {
   padding: 2px 8px;
   font-size: 11px;
   line-height: 14px;
+  position: absolute;
+  bottom: 0;
+  z-index: 432;
 }
 
-html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__camera {
-  top: 4px;
-  right: max(10px, env(safe-area-inset-right));
-  width: 88px;
-  height: 50px;
+html[data-viewport='mobile'] .gesture-score-pad__camera {
+  top: auto;
+  bottom: var(--pad-middle-gap);
+  right: auto;
+  left: 32%;
+  width: 36%;
+  height: var(--pad-camera-height);
+  object-position: center;
+  /* The video is the 1x preview; the canvas displays the cropped inference input. */
+  object-fit: cover;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
-html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__start-camera {
-  top: 8px;
-  right: max(10px, env(safe-area-inset-right));
+html[data-viewport='mobile'] .gesture-score-pad__start-camera {
+  top: calc(var(--pad-height) / 2 - 22px);
+  right: auto;
+  left: 36%;
+  width: 28%;
+  pointer-events: auto;
   min-height: 44px;
   padding: 6px 12px;
   font-size: 11px;
   line-height: 16px;
 }
 
-html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__back {
-  top: 8px;
-  bottom: auto;
-  left: max(10px, env(safe-area-inset-left));
+html[data-viewport='mobile'] .gesture-score-pad__back {
+  z-index: 435;
+  top: auto;
+  bottom: max(4px, env(safe-area-inset-bottom));
+  left: max(4px, env(safe-area-inset-left));
   width: 44px;
   height: 44px;
+}
+
+/* Recognition controls are shared functionality; existing score geometry is unchanged. */
+html:is([data-viewport='mobile'], [data-viewport='tablet'], [data-viewport='web'], [data-viewport='tv']) .gesture-score-pad__recognition-crop {
+  position: fixed;
+  z-index: 431;
+  pointer-events: none;
+  transform: scaleX(-1);
+  object-fit: contain;
+  background: #0b2a4a;
+}
+
+html:is([data-viewport='tablet'], [data-viewport='web'], [data-viewport='tv']) .gesture-score-pad__recognition-crop {
+  top: max(0.75rem, env(safe-area-inset-top));
+  right: 1.5rem;
+  width: 12rem;
+  height: 9rem;
+  border-radius: 0.75rem;
+}
+
+html:is([data-viewport='mobile'], [data-viewport='tablet'], [data-viewport='web'], [data-viewport='tv']) .gesture-score-pad[data-recognition-zoom='1'] .gesture-score-pad__recognition-crop,
+html:is([data-viewport='mobile'], [data-viewport='tablet'], [data-viewport='web'], [data-viewport='tv']) .gesture-score-pad:not([data-camera-status='running']) .gesture-score-pad__recognition-crop {
+  visibility: hidden;
+}
+
+html:is([data-viewport='mobile'], [data-viewport='tablet'], [data-viewport='web'], [data-viewport='tv']) .gesture-score-pad:not([data-recognition-zoom='1']) video.gesture-score-pad__camera {
+  visibility: hidden;
+}
+
+html:is([data-viewport='mobile'], [data-viewport='tablet'], [data-viewport='web'], [data-viewport='tv']) .gesture-score-pad__zoom {
+  position: absolute;
+  z-index: 434;
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 24px;
+  background: #06192de6;
+}
+
+html[data-viewport='mobile'] .gesture-score-pad__zoom {
+  display: none;
+  bottom: max(4px, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+html:is([data-viewport='tablet'], [data-viewport='web'], [data-viewport='tv']) .gesture-score-pad__zoom {
+  top: calc(max(0.75rem, env(safe-area-inset-top)) + 9rem - 50px);
+  right: 1.5rem;
+}
+
+html:is([data-viewport='mobile'], [data-viewport='tablet'], [data-viewport='web'], [data-viewport='tv']) .gesture-score-pad__zoom button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 22px;
+  color: #b4c6d7;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+html:is([data-viewport='mobile'], [data-viewport='tablet'], [data-viewport='web'], [data-viewport='tv']) .gesture-score-pad__zoom button[aria-pressed='true'] {
+  background: #224d74;
+  color: #fff;
 }

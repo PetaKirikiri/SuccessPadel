@@ -1,6 +1,6 @@
 import type { GestureRecognizerResult } from '@mediapipe/tasks-vision'
 
-export type ThumbScoreAction = 'team1' | 'team2'
+export type ThumbScoreAction = 'team1' | 'team2' | 'undo'
 export type ThumbDecision = { action: ThumbScoreAction | null; releaseDetected: boolean }
 
 export const THUMB_CONFIDENCE = 0.65
@@ -29,7 +29,8 @@ export function thumbDecisionFromResult(
   if (best.score >= THUMB_CONFIDENCE) {
     if (best.categoryName === 'Thumb_Up') return { action: 'team1', releaseDetected: false }
     if (best.categoryName === 'Thumb_Down') return { action: 'team2', releaseDetected: false }
+    if (best.categoryName === 'Victory') return { action: 'undo', releaseDetected: false }
   }
-  const stillThumb = best.categoryName === 'Thumb_Up' || best.categoryName === 'Thumb_Down'
+  const stillThumb = best.categoryName === 'Thumb_Up' || best.categoryName === 'Thumb_Down' || best.categoryName === 'Victory'
   return { action: null, releaseDetected: !stillThumb && best.score >= THUMB_ABSENCE_CONFIDENCE }
 }

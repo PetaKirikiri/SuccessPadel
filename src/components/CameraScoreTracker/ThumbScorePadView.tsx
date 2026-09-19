@@ -1,6 +1,7 @@
 import type { RefObject } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import type { EngineStatus } from '../../lib/gestureFingerDetect'
+import { RECOGNITION_ZOOMS, type RecognitionZoom } from '../../lib/gestureRecognitionZoom'
 
 // The approved tester presentation. Both entry points render this exact markup.
 // Existing styling is preserved verbatim; do not redesign it during scoring work.
@@ -20,6 +21,9 @@ function FingerCountIcon({ count }: { count: 1 | 2 | 3 | 4 }) {
   )
 }
 type Props = {
+  zoom?: RecognitionZoom
+  onZoomChange?: (zoom: RecognitionZoom) => void
+  zoomCanvasRef?: RefObject<HTMLCanvasElement | null>
   videoRef: RefObject<HTMLVideoElement | null>
   status: EngineStatus
   error: string | null
@@ -39,11 +43,22 @@ type Props = {
 
 export function ThumbScorePadView({ videoRef, status, error, ourPoints, theirPoints,
   ourGames, theirGames, timerValue, onWin, onLose, onUndo, onReset,
-  undoDisabled = false, restartCamera, goBack }: Props) {
+  undoDisabled = false, restartCamera, goBack, zoom = 1, onZoomChange, zoomCanvasRef }: Props) {
   const goldenPoint = ourPoints >= 3 && theirPoints >= 3
   const showStartCameraButton = status === 'idle' || status === 'error' || status === 'unsupported'
   return (
-    <main className="gesture-score-pad fixed inset-0 z-[420] flex min-h-0 flex-col overflow-hidden bg-[#0b2a4a] text-white">
+    <main data-recognition-zoom={zoom} data-camera-status={status} className="gesture-score-pad fixed inset-0 z-[420] flex min-h-0 flex-col overflow-hidden bg-[#0b2a4a] text-white">
+      <canvas ref={zoomCanvasRef} className="gesture-score-pad__camera gesture-score-pad__recognition-crop" aria-label="Zoomed recognition area" />
+      {onZoomChange ? (
+        <div className="gesture-score-pad__zoom" role="group" aria-label="Recognition zoom">
+          {RECOGNITION_ZOOMS.map(value => (
+            <button key={value} type="button" aria-pressed={zoom === value}
+              aria-label={`Recognition zoom ${value}×`} onClick={() => onZoomChange(value)}>
+              {value}×
+            </button>
+          ))}
+        </div>
+      ) : null}
       <video
         ref={videoRef}
         muted

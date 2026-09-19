@@ -3,8 +3,9 @@ let pendingCameraRequest: Promise<MediaStream> | null = null
 const CAMERA_CONSTRAINTS: MediaStreamConstraints = {
   video: {
     facingMode: 'user',
-    width: { ideal: 960 },
-    height: { ideal: 540 },
+    width: { ideal: 1920 },
+    height: { ideal: 1080 },
+    frameRate: { ideal: 30, max: 30 },
   },
   audio: false,
 }

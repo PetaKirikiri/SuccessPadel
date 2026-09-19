@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { GestureCameraEngine, gestureScoreBeep, type FingerScoreAction } from '../../lib/gestureFingerDetect'
 import { useGesturePadChrome } from '../../lib/gesturePadChrome'
 
 import { ThumbScorePadView } from './ThumbScorePadView'
+import { useGestureRecognitionZoom } from '../../hooks/useGestureRecognitionZoom'
 
 type PadAction = 'win' | 'lose' | 'undo' | 'reset'
 type Status = 'idle' | 'loading' | 'running' | 'unsupported' | 'error'
@@ -13,9 +14,6 @@ type ScoreSnapshot = {
   theirPoints: number
   ourGames: number
   theirGames: number
-}
-type GestureScoreLocationState = {
-  cameraError?: string
 }
 
 function formatTimer(totalSeconds: number): string {
@@ -35,10 +33,9 @@ function padActionFromEngine(action: FingerScoreAction): PadAction | null {
 export function GestureScorePadPage() {
   useGesturePadChrome()
   const navigate = useNavigate()
-  const location = useLocation()
-  const routeState = location.state as GestureScoreLocationState | null
   const videoRef = useRef<HTMLVideoElement>(null)
   const engineRef = useRef<GestureCameraEngine | null>(null)
+  const { zoom, setZoom, zoomCanvasRef, prepareThumbFrame } = useGestureRecognitionZoom()
   const applyPadActionRef = useRef<(action: PadAction) => void>(() => {})
   const scoreRef = useRef<ScoreSnapshot>({ ourPoints: 0, theirPoints: 0, ourGames: 0, theirGames: 0 })
   const historyRef = useRef<ScoreSnapshot[]>([])
@@ -111,18 +108,13 @@ export function GestureScorePadPage() {
   applyPadActionRef.current = applyPadAction
 
   useEffect(() => {
-    if (routeState?.cameraError) {
-      setStatus('error')
-      setError(routeState.cameraError)
-      return
-    }
-
     const video = videoRef.current
     if (!video) return
 
     const engine = new GestureCameraEngine({
       video,
       gestureMode: 'thumbs',
+      prepareThumbFrame,
       onFire: (action) => {
         const pad = padActionFromEngine(action)
         if (pad) applyPadActionRef.current(pad)
@@ -131,12 +123,14 @@ export function GestureScorePadPage() {
       onError: setError,
     })
     engineRef.current = engine
+    // Also resume after a development hot refresh; permission failures retain manual retry.
+    void engine.start()
 
     return () => {
       engine.stop()
       engineRef.current = null
     }
-  }, [routeState?.cameraError])
+  }, [prepareThumbFrame])
 
   useEffect(() => {
     const startedAt = Date.now()
@@ -158,6 +152,7 @@ export function GestureScorePadPage() {
   }
 
   return <ThumbScorePadView
+    zoom={zoom} onZoomChange={setZoom} zoomCanvasRef={zoomCanvasRef}
     videoRef={videoRef} status={status} error={error}
     ourPoints={ourPoints} theirPoints={theirPoints} ourGames={ourGames} theirGames={theirGames}
     timerValue={formatTimer(elapsedSeconds)} restartCamera={restartCamera} goBack={goBack}

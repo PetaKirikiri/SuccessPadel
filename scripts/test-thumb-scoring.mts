@@ -2,6 +2,21 @@ import assert from 'node:assert/strict'
 import './test-thumb-surface.mts'
 import { thumbDecisionFromResult } from '../src/lib/gestureThumbDetect'
 import { GestureCameraEngine, fingerActionFromLandmarks, type FingerScoreAction } from '../src/lib/gestureFingerDetect'
+import { recognitionCrop, prepareRecognitionFrame } from '../src/lib/gestureRecognitionZoom'
+
+assert.deepEqual(recognitionCrop(1920, 1080, 2), { x: 480, y: 270, width: 960, height: 540 })
+assert.deepEqual(recognitionCrop(1920, 1080, 1.5), { x: 320, y: 180, width: 1280, height: 720 })
+assert.deepEqual(recognitionCrop(1080, 1920, 2), { x: 270, y: 480, width: 540, height: 960 })
+const cropVideo = { videoWidth: 1920, videoHeight: 1080 } as HTMLVideoElement
+const draws: unknown[][] = []
+const cropCanvas = { width: 0, height: 0, getContext: () => ({ drawImage: (...args: unknown[]) => draws.push(args) }) } as unknown as HTMLCanvasElement
+assert.equal(prepareRecognitionFrame(cropVideo, cropCanvas, 1), cropVideo, '1x preserves original video input')
+assert.equal(draws.length, 0)
+assert.equal(prepareRecognitionFrame(cropVideo, cropCanvas, 2), cropCanvas, 'The preview canvas is the actual recognizer input')
+assert.deepEqual(draws[0], [cropVideo, 480, 270, 960, 540, 0, 0, 960, 540])
+assert.equal(cropCanvas.width, 960)
+assert.equal(cropCanvas.height, 540)
+assert.throws(() => prepareRecognitionFrame(cropVideo, null, 2), /not ready/, 'Never silently recognise outside the chosen crop')
 
 type Point = { x: number; y: number; z: number }
 const up: Point[] = Array.from({ length: 21 }, () => ({ x: 0.5, y: 0.6, z: 0 }))
@@ -13,18 +28,26 @@ for (const [i, x] of [[5, 0.44], [9, 0.51], [13, 0.58], [17, 0.65]]) {
 }
 const down = structuredClone(up)
 const fist = structuredClone(up)
+const peace = structuredClone(up)
 const unrecognisedHand = structuredClone(up)
 const category = (categoryName: string, score = 0.95) => ({ categoryName, score, index: -1, displayName: '' })
 const result = (name: string, score = 0.95) => ({ landmarks: [up], gestures: [[category(name, score)]] })
 for (const [name, expected] of [['Thumb_Up', 'team1'], ['Thumb_Down', 'team2']] as const) {
   assert.deepEqual(thumbDecisionFromResult(result(name)), { action: expected, releaseDetected: false })
-  assert.deepEqual(thumbDecisionFromResult(result(name, 0.5)), { action: null, releaseDetected: false })
+  for (const confidence of [0.65, 0.8]) {
+    assert.deepEqual(thumbDecisionFromResult(result(name, confidence)), { action: expected, releaseDetected: false })
+  }
+  for (const confidence of [0.4, 0.5, 0.649]) {
+    assert.deepEqual(thumbDecisionFromResult(result(name, confidence)), { action: null, releaseDetected: false })
+  }
 }
 for (const name of ['Closed_Fist', 'Open_Palm']) {
   assert.deepEqual(thumbDecisionFromResult(result(name)), { action: null, releaseDetected: true })
   assert.deepEqual(thumbDecisionFromResult(result(name, 0.6)), { action: null, releaseDetected: true })
 }
-for (const name of ['None', 'Victory', 'Pointing_Up', 'ILoveYou', 'Unknown']) {
+assert.deepEqual(thumbDecisionFromResult(result('Victory', 0.65)), { action: 'undo', releaseDetected: false })
+assert.deepEqual(thumbDecisionFromResult(result('Victory', 0.649)), { action: null, releaseDetected: false })
+for (const name of ['None', 'Pointing_Up', 'ILoveYou', 'Unknown']) {
   assert.deepEqual(thumbDecisionFromResult(result(name)), { action: null, releaseDetected: true })
 }
 assert.deepEqual(thumbDecisionFromResult({ landmarks: [], gestures: [] }), { action: null, releaseDetected: true })
@@ -47,6 +70,7 @@ function harness(gestureMode?: 'thumbs' | 'fingers') {
     fired.push(a)
     engine.markScoreCommitted(now, a)
   } })
+  const recognizerInputs: unknown[] = []
   const internals = engine as unknown as { tick: () => void; landmarker: unknown; thumbRecognizer: unknown }
   internals.landmarker = { detectForVideo: () => {
     if (throws) throw new Error('Camera inference interrupted')
@@ -54,10 +78,11 @@ function harness(gestureMode?: 'thumbs' | 'fingers') {
   } }
   if (gestureMode === 'thumbs') {
     internals.landmarker = null
-    internals.thumbRecognizer = { recognizeForVideo: () => {
+    internals.thumbRecognizer = { recognizeForVideo: (input: unknown) => {
+      recognizerInputs.push(input)
       if (throws) throw new Error('Camera inference interrupted')
       if (!pose) return { landmarks: [], gestures: [] }
-      return result(pose === up ? 'Thumb_Up' : pose === down ? 'Thumb_Down' : pose === fist ? 'Closed_Fist' : 'None')
+      return result(pose === up ? 'Thumb_Up' : pose === down ? 'Thumb_Down' : pose === peace ? 'Victory' : pose === fist ? 'Closed_Fist' : 'None')
     } }
   }
   const frame = (time: number, points?: Point[], error = false, newVideoFrame = true) => {
@@ -68,8 +93,51 @@ function harness(gestureMode?: 'thumbs' | 'fingers') {
   const release = (start: number, points?: Point[]) => {
     for (let t = start; t <= start + 400; t += 50) frame(t, points)
   }
-  return { engine, fired, frame, release }
+  return { engine, fired, frame, release, recognizerInputs }
 }
+
+for (const fps of [4, 15, 30, 60]) {
+  const undo = harness('thumbs')
+  for (let f = 0; f <= fps * 4; f++) {
+    const t = f * 1000 / fps
+    undo.frame(t, peace)
+    if (t < 100) assert.equal(undo.fired.length, 0, 'Peace shares the 100 ms thumb hold')
+    if (t >= 100) assert.equal(undo.fired.length, 1, 'Peace fires as soon as the thumb hold is met')
+  }
+  assert.deepEqual(undo.fired, ['undo'], 'Holding peace must undo only once')
+  undo.release(4100)
+  for (let t = 4600; t <= 5400; t += 50) undo.frame(t, peace)
+  assert.deepEqual(undo.fired, ['undo', 'undo'], 'Removing and remaking peace allows a new Undo')
+  undo.frame(5700, up); undo.frame(5820, up)
+  assert.deepEqual(undo.fired, ['undo', 'undo', 'team1'], 'Thumbs still work immediately after Undo')
+}
+const afterThumb = harness('thumbs')
+afterThumb.frame(0, up); afterThumb.frame(120, up)
+afterThumb.frame(400, peace); afterThumb.frame(450, peace)
+assert.deepEqual(afterThumb.fired, ['team1'], 'Peace still needs a stable 100 ms hold')
+afterThumb.frame(500, peace)
+assert.deepEqual(afterThumb.fired, ['team1', 'undo'], 'No special reset pose before Undo')
+for (let f = 0; f < 90; f++) afterThumb.frame(1200 + f * 1000 / 30, f % 9 === 8 ? undefined : peace)
+assert.deepEqual(afterThumb.fired, ['team1', 'undo'], 'Brief tracking dropouts cannot repeat Undo')
+const shortPeace = harness('thumbs')
+shortPeace.frame(0, peace); shortPeace.frame(50, peace)
+shortPeace.release(250)
+shortPeace.frame(800, peace); shortPeace.frame(850, peace)
+assert.deepEqual(shortPeace.fired, [], 'Separate brief peace signs cannot combine into Undo')
+const undoPreview = harness('thumbs')
+undoPreview.engine.updateConfig({ preview: true })
+for (let t = 0; t <= 2000; t += 50) undoPreview.frame(t, peace)
+assert.deepEqual(undoPreview.fired, [], 'Preview must not undo')
+
+const zoomed = harness('thumbs')
+zoomed.frame(0, up); zoomed.frame(120, up)
+zoomed.engine.updateConfig({ prepareThumbFrame: () => cropCanvas })
+zoomed.frame(300, up); zoomed.frame(450, up)
+assert.equal(zoomed.recognizerInputs.at(-1), cropCanvas)
+assert.deepEqual(zoomed.fired, ['team1'], 'Zoom must not reset a held gesture and double-score')
+zoomed.release(500)
+zoomed.frame(1000, up); zoomed.frame(1120, up)
+assert.deepEqual(zoomed.fired, ['team1', 'team1'], 'New gestures still score with cropped input')
 
 const thumb = harness('thumbs')
 thumb.frame(0, up); thumb.frame(60, up)
