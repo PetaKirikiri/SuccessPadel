@@ -1587,3 +1587,130 @@ html[data-viewport='tv'][data-gesture-ui='court'] .gesture-score-court__finger-i
     min-height: 100dvh;
   }
 }
+
+/* Phone landscape: use the visible height, not tablet-width utility sizing. */
+html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad {
+  width: var(--app-width, 100dvw);
+  height: var(--app-height, 100dvh);
+  min-width: 0;
+  min-height: 0;
+}
+
+html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__header {
+  height: 60px;
+  padding: 4px max(8px, env(safe-area-inset-right)) 4px max(8px, env(safe-area-inset-left));
+}
+
+html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__timer {
+  padding: 3px 18px;
+}
+
+html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__timer > p:first-child {
+  font-size: 9px;
+  line-height: 12px;
+}
+
+html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__timer > p:last-child {
+  font-size: 28px;
+  line-height: 30px;
+}
+
+html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__body {
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr) 56px auto;
+  gap: 6px;
+  padding: 0 max(10px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+}
+
+html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__score-panel {
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr) 64px minmax(0, 1fr);
+  gap: 8px;
+  padding: 6px 20px;
+}
+
+html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__score-panel > div {
+  min-width: 0;
+  gap: 2px;
+}
+
+html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__score-panel > div > p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__score-panel > div:first-child > p:last-child,
+html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__score-panel > div:last-child > p:last-child {
+  font-size: clamp(48px, 28dvh, 120px);
+  line-height: 0.95;
+}
+
+html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__score-panel > div:nth-child(2) > p:last-child {
+  font-size: 44px;
+  line-height: 1;
+}
+
+html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__score-panel > div:nth-child(2) > p:not(:last-child) {
+  padding: 3px;
+  font-size: 9px;
+  line-height: 12px;
+}
+
+html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__actions {
+  min-height: 0;
+  gap: 8px;
+  padding: 0;
+}
+
+html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__actions > button {
+  min-width: 0;
+  min-height: 48px;
+  flex-direction: row;
+  gap: 8px;
+  padding: 6px;
+}
+
+html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__actions img {
+  width: 30px;
+  height: 30px;
+}
+
+html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__actions > button > span {
+  font-size: 12px;
+  line-height: 16px;
+}
+
+html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__messages:empty {
+  display: none;
+}
+
+html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__messages > p {
+  padding: 2px 8px;
+  font-size: 11px;
+  line-height: 14px;
+}
+
+html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__camera {
+  top: 4px;
+  right: max(10px, env(safe-area-inset-right));
+  width: 88px;
+  height: 50px;
+}
+
+html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__start-camera {
+  top: 8px;
+  right: max(10px, env(safe-area-inset-right));
+  min-height: 44px;
+  padding: 6px 12px;
+  font-size: 11px;
+  line-height: 16px;
+}
+
+html[data-viewport='mobile'][data-orientation='landscape'] .gesture-score-pad__back {
+  top: 8px;
+  bottom: auto;
+  left: max(10px, env(safe-area-inset-left));
+  width: 44px;
+  height: 44px;
+}
