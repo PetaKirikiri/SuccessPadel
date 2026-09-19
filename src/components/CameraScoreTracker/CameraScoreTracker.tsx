@@ -33,10 +33,10 @@ function holdStyle(progress: number): CSSProperties {
 function FingerIcon({ count }: { count: 1 | 2 | 3 }) {
   const src =
     count === 1
-      ? '/gesture-score/one-finger.png'
+      ? '/gesture-score/thumb-up.svg'
       : count === 2
-        ? '/gesture-score/two-fingers.png'
-        : '/gesture-score/three-fingers.png'
+        ? '/gesture-score/thumb-down.svg'
+        : '/gesture-score/undo.svg'
   return (
     <img
       src={src}
@@ -557,7 +557,7 @@ export const CameraScoreTracker = forwardRef<CameraScoreTrackerHandle, CameraSco
     return (
       <main className={cameraScoreTrackerRootClass}>
         {preview ? (
-          <p className="gesture-score-court__detect-banner">1 / 2 / 3 — on when camera sees that many fingers</p>
+          <p className="gesture-score-court__detect-banner">Thumbs up / thumbs down — one point per gesture</p>
         ) : null}
         <GestureScoreCourtNavigator
           gameLabel={gameLabel}
@@ -619,7 +619,7 @@ export const CameraScoreTracker = forwardRef<CameraScoreTrackerHandle, CameraSco
             holdProgress={holdProgress}
             gestureCooldown={gestureCooldown}
             preview={preview}
-            ariaLabel="Team 1 point"
+            ariaLabel="Thumbs up — Team 1 point"
             className="gesture-score-court__finger-btn gesture-score-court__finger-btn--team1"
             disabled={preview ? false : scoreDisabled}
             onClick={onTeam1}
@@ -645,7 +645,7 @@ export const CameraScoreTracker = forwardRef<CameraScoreTrackerHandle, CameraSco
             holdProgress={holdProgress}
             gestureCooldown={gestureCooldown}
             preview={preview}
-            ariaLabel="Team 2 point"
+            ariaLabel="Thumbs down — Team 2 point"
             className="gesture-score-court__finger-btn gesture-score-court__finger-btn--team2"
             disabled={preview ? false : scoreDisabled}
             onClick={onTeam2}

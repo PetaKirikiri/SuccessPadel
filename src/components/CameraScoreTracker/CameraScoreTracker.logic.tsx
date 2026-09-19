@@ -538,6 +538,7 @@ export function GestureScoreCourtPage() {
 
   const [status, setStatus] = useState<Status>('idle')
   const [cameraError, setCameraError] = useState<string | null>(null)
+  const [scoreSaveError, setScoreSaveError] = useState<string | null>(null)
   const setCameraStatus = useCallback((next: Status) => {
     setStatus(next)
   }, [])
@@ -608,6 +609,7 @@ export function GestureScoreCourtPage() {
 
     const switchingCourt = sessionInitKeyRef.current !== courtSetupKey
     if (switchingCourt) {
+      setScoreSaveError(null)
       applyScoreLocal(null, false)
       localLogRef.current = null
     }
@@ -619,7 +621,8 @@ export function GestureScoreCourtPage() {
 
     void (async () => {
       if (pendingSavesRef.current > 0) return
-      const { log } = await ensureGestureCameraSession(cameraCtx)
+      const { log, error } = await ensureGestureCameraSession(cameraCtx)
+      if (error) setScoreSaveError(`Score not saved to the website: ${error}`)
       if (pendingSavesRef.current > 0) return
       const remote = log ?? (await loadGestureCameraLog(cameraCtx.courtSetupKey))
       if (shouldPreferLocalGestureLog(localLogRef.current, remote)) return
@@ -675,6 +678,7 @@ export function GestureScoreCourtPage() {
             const liveSession = await restoreSession()
             if (!liveSession?.access_token) {
               canSaveRef.current = false
+              setScoreSaveError('Score not saved to the website. Please sign in and retry.')
               return
             }
             canSaveRef.current = true
@@ -700,16 +704,19 @@ export function GestureScoreCourtPage() {
           )
           if (error) {
             if (error === 'Not authenticated') canSaveRef.current = false
+            setScoreSaveError(`Score not saved to the website: ${error}`)
             return
           }
+          setScoreSaveError(null)
           if (undoSeq > 0 && undoSeq !== undoSeqRef.current) return
+          publishLocalScore(planned)
         })
-        .catch(() => {})
+        .catch(() => setScoreSaveError('Score not saved to the website. Check your connection and retry.'))
         .finally(() => {
           pendingSavesRef.current = Math.max(0, pendingSavesRef.current - 1)
         })
     },
-    [cameraCtx, needsAuth, restoreSession, roster, session, sessionPairs],
+    [cameraCtx, needsAuth, publishLocalScore, restoreSession, roster, session, sessionPairs],
   )
 
   const applyFingerAction = useCallback(
@@ -737,7 +744,6 @@ export function GestureScoreCourtPage() {
       }
 
       applyScoreLocal(planned, ended, true)
-      publishLocalScore(planned)
 
       queueMicrotask(() => {
         if (courtSetupKey) writeLocalGestureCameraLog(courtSetupKey, planned)
@@ -748,7 +754,7 @@ export function GestureScoreCourtPage() {
         enqueuePersist(planned, prior, ended, undoSeq)
       })
     },
-    [applyScoreLocal, cameraCtx, courtSetupKey, enqueuePersist, playTo, publishLocalScore],
+    [applyScoreLocal, cameraCtx, courtSetupKey, enqueuePersist, playTo],
   )
 
   applyFingerActionRef.current = (action) => {
@@ -768,7 +774,6 @@ export function GestureScoreCourtPage() {
 
       const { log, matchEnded } = planned
       applyScoreLocal(log, matchEnded, true)
-      publishLocalScore(log)
 
       queueMicrotask(() => {
         if (courtSetupKey) writeLocalGestureCameraLog(courtSetupKey, log)
@@ -777,7 +782,7 @@ export function GestureScoreCourtPage() {
         enqueuePersist(log, prior, matchEnded)
       })
     },
-    [applyScoreLocal, cameraCtx, courtSetupKey, enqueuePersist, publishLocalScore],
+    [applyScoreLocal, cameraCtx, courtSetupKey, enqueuePersist],
   )
 
   useEffect(() => {
@@ -843,6 +848,7 @@ export function GestureScoreCourtPage() {
 
       engine = new GestureCameraEngine({
         video,
+        gestureMode: 'thumbs',
         preview: detectPreviewRef.current,
         onFire: (action) => {
           if (action === 'reset') return
@@ -898,7 +904,7 @@ export function GestureScoreCourtPage() {
           preview={detectPreview}
           showStartCamera={showStartCamera}
           cameraStarting={status === 'loading'}
-          cameraError={cameraError}
+          cameraError={scoreSaveError ?? cameraError}
           cameraStatus={status}
           gameLabel={`G${gameNum}`}
           courtLabel={displayCourtLabel}

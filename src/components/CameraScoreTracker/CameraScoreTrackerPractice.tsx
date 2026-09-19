@@ -38,7 +38,7 @@ function padActionFromEngine(action: FingerScoreAction): PadAction | null {
 function FingerCountIcon({ count }: { count: 1 | 2 | 3 | 4 }) {
   return (
     <img
-      src={`/gesture-score/${count === 1 ? 'one-finger' : count === 2 ? 'two-fingers' : count === 3 ? 'three-fingers' : 'four-fingers'}.png`}
+      src={`/gesture-score/${count === 1 ? 'thumb-up.svg' : count === 2 ? 'thumb-down.svg' : count === 3 ? 'undo.svg' : 'reset.svg'}`}
       alt=""
       className="h-9 w-9 shrink-0 object-contain md:h-20 md:w-20"
       aria-hidden="true"
@@ -119,7 +119,7 @@ export function GestureScorePadPage() {
     } else {
       applyPadelPoint(action === 'win' ? 'us' : 'them')
     }
-    engineRef.current?.markScoreCommitted(performance.now())
+    engineRef.current?.markScoreCommitted(performance.now(), action === 'win' ? 'team1' : action === 'lose' ? 'team2' : action)
     gestureScoreBeep()
   }
 
@@ -137,6 +137,7 @@ export function GestureScorePadPage() {
 
     const engine = new GestureCameraEngine({
       video,
+      gestureMode: 'thumbs',
       onFire: (action) => {
         const pad = padActionFromEngine(action)
         if (pad) applyPadActionRef.current(pad)
@@ -244,7 +245,7 @@ export function GestureScorePadPage() {
             type="button"
             onClick={() => applyPadAction('win')}
             className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-full border border-[#34d399]/45 bg-[#34d399]/15 px-1 py-3 text-[#34d399] shadow-xl shadow-black/25 active:scale-[0.96] md:flex-row md:gap-5 md:px-7 md:py-7"
-            aria-label="Point for us"
+            aria-label="Thumbs up — point for our team"
           >
             <FingerCountIcon count={1} />
             <span className="text-[11px] font-black uppercase tracking-wide md:text-4xl">Win</span>
@@ -253,7 +254,7 @@ export function GestureScorePadPage() {
             type="button"
             onClick={() => applyPadAction('lose')}
             className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-full border border-[#60a5fa]/45 bg-[#60a5fa]/15 px-1 py-3 text-[#60a5fa] shadow-xl shadow-black/25 active:scale-[0.96] md:flex-row md:gap-5 md:px-7 md:py-7"
-            aria-label="Point for them"
+            aria-label="Thumbs down — point for other team"
           >
             <FingerCountIcon count={2} />
             <span className="text-[11px] font-black uppercase tracking-wide md:text-4xl">Lose</span>

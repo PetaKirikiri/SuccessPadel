@@ -3,7 +3,9 @@
  * Count extended digits (any finger). 1 → team1, 2 → team2, 3 → undo, 4 → reset.
  */
 
-import { FilesetResolver, HandLandmarker, type Landmark, type NormalizedLandmark } from '@mediapipe/tasks-vision'
+import { FilesetResolver, HandLandmarker, type GestureRecognizer, type Landmark, type NormalizedLandmark } from '@mediapipe/tasks-vision'
+import { thumbDecisionFromResult } from './gestureThumbDetect'
+import { createThumbRecognizer } from './gestureThumbRecognizer'
 import {
   clearGestureScoreCameraCache,
   requestGestureScoreCamera,
@@ -30,6 +32,10 @@ const MODEL =
 export const GESTURE_HOLD_MS = 100
 /** Block repeat fires after a score (manual tap or camera). */
 export const GESTURE_COOLDOWN_MS = 200
+/** Accumulated evidence that the previous gesture ended, not a special reset pose. */
+export const GESTURE_RELEASE_MS = 300
+/** Ignore long pauses, without locking out cameras running below 7 FPS. */
+const RELEASE_SAMPLE_GAP_MS = 1000
 /** Keep hold progress when the camera briefly loses the hand between frames. */
 const DROP_GRACE_MS = 400
 /** Consecutive frames with the same finger count before hold timer counts. */
@@ -49,6 +55,10 @@ type HoldState = {
   stableFrames: number
   cooldownUntil: number
   awaitingRelease: boolean
+  releaseEvidenceMs: number
+  releaseSamples: number
+  releaseLastSeenAt: number | null
+  canChangeAction: boolean
   lastFired: FingerScoreAction | null
 }
 
@@ -124,6 +134,10 @@ function emptyHold(): HoldState {
     stableFrames: 0,
     cooldownUntil: 0,
     awaitingRelease: false,
+    releaseEvidenceMs: 0,
+    releaseSamples: 0,
+    releaseLastSeenAt: null,
+    canChangeAction: false,
     lastFired: null,
   }
 }
@@ -152,6 +166,10 @@ function afterFireState(state: HoldState, action: FingerScoreAction, now: number
     lastFired: action,
     cooldownUntil: now + GESTURE_COOLDOWN_MS,
     awaitingRelease: true,
+    releaseEvidenceMs: 0,
+    releaseSamples: 0,
+    releaseLastSeenAt: null,
+    canChangeAction: true,
   }
 }
 
@@ -160,6 +178,8 @@ function stepHold(
   detected: FingerScoreAction | null,
   now: number,
   preview: boolean,
+  releaseDetected: boolean,
+  allowDirectionChange: boolean,
 ): { state: HoldState; ui: HoldUi; fire: FingerScoreAction | null } {
   if (preview) {
     return {
@@ -180,26 +200,53 @@ function stepHold(
   })
 
   if (state.awaitingRelease) {
-    if (!detected) {
-      const released = { ...state, awaitingRelease: false, held: null, heldSince: null, stableFrames: 0 }
-      return {
-        state: released,
-        ui: uiFrom(released, null, 0),
-        fire: null,
+    if (allowDirectionChange && state.canChangeAction && detected && detected !== state.lastFired
+      && now >= state.cooldownUntil) {
+      const same = state.held === detected && state.lastDetectedAt != null
+        && now - state.lastDetectedAt <= RELEASE_SAMPLE_GAP_MS
+      const heldSince = same ? state.heldSince ?? now : now
+      const stableFrames = same ? state.stableFrames + 1 : 1
+      const candidate = { ...state, held: detected, heldSince, stableFrames, lastDetectedAt: now,
+        releaseEvidenceMs: 0, releaseSamples: 0, releaseLastSeenAt: now }
+      if (stableFrames >= STABLE_FRAMES && now - heldSince >= GESTURE_HOLD_MS) {
+        const fired = afterFireState(candidate, detected, now)
+        return { state: fired, ui: uiFrom(fired, null, 0), fire: detected }
       }
+      return { state: candidate, ui: uiFrom(candidate, asFingerAction(detected), holdProgress(heldSince, stableFrames, now)), fire: null }
     }
-    if (now < state.cooldownUntil) {
-      const blocked = { ...state, held: null, heldSince: null, stableFrames: 0 }
-      return { state: blocked, ui: uiFrom(blocked, null, 0), fire: null }
+    const continuous = state.releaseLastSeenAt != null
+      && now - state.releaseLastSeenAt <= RELEASE_SAMPLE_GAP_MS
+    const elapsed = continuous ? now - state.releaseLastSeenAt! : 0
+    const priorEvidence = continuous ? state.releaseEvidenceMs : 0
+    const absent = releaseDetected && !detected
+    // Accumulate absence and tolerate occasional contrary frames. A sustained
+    // thumb drains evidence faster than isolated dropouts can accumulate it.
+    const releaseEvidenceMs = absent ? priorEvidence + elapsed : Math.max(0, priorEvidence - elapsed * 2)
+    const releaseSamples = absent ? (continuous ? state.releaseSamples : 0) + 1
+      : releaseEvidenceMs > 0 ? Math.max(0, state.releaseSamples - 1) : 0
+    const released = releaseEvidenceMs >= GESTURE_RELEASE_MS && releaseSamples >= 3
+    const next = {
+      ...state,
+      awaitingRelease: !released,
+      releaseEvidenceMs: released ? 0 : releaseEvidenceMs,
+      releaseSamples: released ? 0 : releaseSamples,
+      releaseLastSeenAt: released ? null : now,
+      held: null,
+      heldSince: null,
+      stableFrames: 0,
+      lastDetectedAt: null,
     }
-    if (detected === state.lastFired) {
-      const blocked = { ...state, held: null, heldSince: null, stableFrames: 0 }
-      return { state: blocked, ui: uiFrom(blocked, null, 0), fire: null }
-    }
-    state = { ...state, awaitingRelease: false }
+    return { state: next, ui: uiFrom(next, null, 0), fire: null }
   }
 
   if (!detected) {
+    if (allowDirectionChange && releaseDetected && state.lastDetectedAt != null
+      && now - state.lastDetectedAt >= GESTURE_HOLD_MS) {
+      // Tolerate a brief missed frame, but do not combine separate flashes
+      // across a sustained non-thumb interval into a new score.
+      const cleared = { ...state, held: null, heldSince: null, lastDetectedAt: null, stableFrames: 0 }
+      return { state: cleared, ui: uiFrom(cleared, null, 0), fire: null }
+    }
     if (
       state.held &&
       state.lastDetectedAt != null &&
@@ -286,6 +333,8 @@ export function gestureScoreBeep(): void {
 
 export type GestureCameraEngineConfig = {
   video: HTMLVideoElement
+  /** Experimental practice input; live courts retain their existing finger mapping. */
+  gestureMode?: 'fingers' | 'thumbs'
   preview?: boolean
   onFire: (action: FingerScoreAction) => void
   onHoldUi?: (ui: HoldUi) => void
@@ -296,10 +345,12 @@ export type GestureCameraEngineConfig = {
 /** Camera + hand landmarker + finger count + hold. Pages wire onFire only. */
 export class GestureCameraEngine {
   private landmarker: HandLandmarker | null = null
+  private thumbRecognizer: GestureRecognizer | null = null
   private stream: MediaStream | null = null
   private frameId: number | null = null
   private runId = 0
   private frameTs = 0
+  private lastThumbVideoTime = -1
   private hold = emptyHold()
   private lastUi: HoldUi | null = null
   private config: GestureCameraEngineConfig
@@ -313,13 +364,14 @@ export class GestureCameraEngine {
   }
 
   resetHoldTracking(): void {
-    this.hold = { ...this.hold, held: null, heldSince: null, stableFrames: 0, lastDetectedAt: null }
+    this.hold = { ...this.hold, held: null, heldSince: null, stableFrames: 0, lastDetectedAt: null, releaseEvidenceMs: 0, releaseSamples: 0, releaseLastSeenAt: null }
   }
 
   markScoreCommitted(now = performance.now(), action?: FingerScoreAction): void {
     const fired = action ?? this.hold.lastFired
-    if (!fired || fired === 'reset') return
-    this.hold = afterFireState(this.hold, fired, now)
+    if (!fired) return
+    const canChangeAction = this.hold.awaitingRelease && this.hold.lastFired === fired && this.hold.canChangeAction
+    this.hold = { ...afterFireState(this.hold, fired, now), canChangeAction }
   }
 
   markScoreBlocked(now = performance.now()): void {
@@ -353,24 +405,33 @@ export class GestureCameraEngine {
       if (this.runId !== runId) return
 
       const vision = await FilesetResolver.forVisionTasks(WASM)
-      const opts = { runningMode: 'VIDEO' as const, numHands: 1 }
-      let landmarker: HandLandmarker
-      try {
-        landmarker = await HandLandmarker.createFromOptions(vision, {
-          baseOptions: { modelAssetPath: MODEL, delegate: 'GPU' },
-          ...opts,
-        })
-      } catch {
-        landmarker = await HandLandmarker.createFromOptions(vision, {
-          baseOptions: { modelAssetPath: MODEL, delegate: 'CPU' },
-          ...opts,
-        })
+      if (this.config.gestureMode === 'thumbs') {
+        const recognizer = await createThumbRecognizer(vision)
+        if (this.runId !== runId) {
+          recognizer.close()
+          return
+        }
+        this.thumbRecognizer = recognizer
+      } else {
+        const opts = { runningMode: 'VIDEO' as const, numHands: 1 }
+        let landmarker: HandLandmarker
+        try {
+          landmarker = await HandLandmarker.createFromOptions(vision, {
+            baseOptions: { modelAssetPath: MODEL, delegate: 'GPU' },
+            ...opts,
+          })
+        } catch {
+          landmarker = await HandLandmarker.createFromOptions(vision, {
+            baseOptions: { modelAssetPath: MODEL, delegate: 'CPU' },
+            ...opts,
+          })
+        }
+        if (this.runId !== runId) {
+          landmarker.close()
+          return
+        }
+        this.landmarker = landmarker
       }
-      if (this.runId !== runId) {
-        landmarker.close()
-        return
-      }
-      this.landmarker = landmarker
       this.config.onStatus?.('running')
       this.frameId = requestAnimationFrame(this.tick)
     } catch (e) {
@@ -391,7 +452,10 @@ export class GestureCameraEngine {
     clearGestureScoreCameraCache()
     this.landmarker?.close()
     this.landmarker = null
+    this.thumbRecognizer?.close()
+    this.thumbRecognizer = null
     this.frameTs = 0
+    this.lastThumbVideoTime = -1
     this.hold = emptyHold()
     this.lastUi = null
     this.config.onStatus?.('idle')
@@ -404,27 +468,45 @@ export class GestureCameraEngine {
   private tick = (): void => {
     const { video, preview, onFire, onHoldUi } = this.config
     const landmarker = this.landmarker
-    if (!landmarker || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+    const thumbRecognizer = this.thumbRecognizer
+    if ((!landmarker && !thumbRecognizer) || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
       this.frameId = requestAnimationFrame(this.tick)
       return
+    }
+
+    // Do not run the heavier classifier repeatedly on the same video frame.
+    // Display refresh and the legacy finger path are unchanged.
+    if (thumbRecognizer) {
+      if (video.currentTime === this.lastThumbVideoTime) {
+        this.frameId = requestAnimationFrame(this.tick)
+        return
+      }
+      this.lastThumbVideoTime = video.currentTime
     }
 
     const now = performance.now()
     this.frameTs = now <= this.frameTs ? this.frameTs + 1 : now
 
     let detected: FingerScoreAction | null = null
+    let releaseDetected = false
     try {
-      const result = landmarker.detectForVideo(video, this.frameTs)
-      detected = fingerActionFromLandmarks(
-        pickHand(result.landmarks),
-        pickHand(result.worldLandmarks),
-      )
+      if (thumbRecognizer) {
+        const result = thumbDecisionFromResult(thumbRecognizer.recognizeForVideo(video, this.frameTs))
+        detected = result.action
+        releaseDetected = result.releaseDetected
+      } else if (landmarker) {
+        const result = landmarker.detectForVideo(video, this.frameTs)
+        const landmarks = pickHand(result.landmarks)
+        detected = fingerActionFromLandmarks(landmarks, pickHand(result.worldLandmarks))
+        releaseDetected = !landmarks?.length || detected === null
+      }
     } catch {
+      this.hold = { ...this.hold, releaseEvidenceMs: 0, releaseSamples: 0, releaseLastSeenAt: null }
       this.frameId = requestAnimationFrame(this.tick)
       return
     }
 
-    const step = stepHold(this.hold, detected, now, Boolean(preview))
+    const step = stepHold(this.hold, detected, now, Boolean(preview), releaseDetected, Boolean(thumbRecognizer))
     this.hold = step.state
     if (onHoldUi) {
       const ui = step.ui
