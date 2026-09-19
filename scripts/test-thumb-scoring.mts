@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import './test-thumb-surface.mts'
 import { thumbDecisionFromResult } from '../src/lib/gestureThumbDetect'
 import { GestureCameraEngine, fingerActionFromLandmarks, type FingerScoreAction } from '../src/lib/gestureFingerDetect'
 

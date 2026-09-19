@@ -14,7 +14,6 @@ import {
   GestureCameraEngine,
   gestureScoreBeep,
   type FingerAction,
-  type HoldUi,
 } from '../../lib/gestureFingerDetect'
 import { hasPendingGestureScoreCameraRequest } from '../../lib/gestureScoreCamera'
 import {
@@ -26,14 +25,12 @@ import {
   gestureCameraPlayEnded,
   planGestureCameraPoint,
   planGestureCameraUndo,
-  planGestureCameraGamesOverride,
   persistPlannedGestureCameraLog,
   rosterFromCourt,
   scoreFromLog,
   type GestureCameraContext,
 } from '../../lib/gestureCameraScore'
 import type { MatchGestureLog } from '../../lib/matchLogServer'
-import type { MatchTeam } from '../../lib/types'
 import type { GameLogPoint } from '../../lib/gameLogSerialize'
 import {
   DEFAULT_FRIENDLY_ORGANIZED_CONFIG,
@@ -42,12 +39,11 @@ import {
   friendlyPreviewGames,
   friendlyStartsAtIso,
 } from '../../lib/friendlyGames'
-import { CameraScoreTrackerShell } from './'
-import { CameraScoreTracker, type CameraScoreTrackerHandle } from './'
+import { ThumbScorePadView } from './ThumbScorePadView'
+import { useGesturePadChrome } from '../../lib/gesturePadChrome'
 import {
   competitionRoundTimesByGame,
   isGameSlotInBreakAfter,
-  isGameSlotLive,
 } from '../../lib/competitionLayout'
 import { ensureCompetitionRoundId } from '../../lib/competitionRoundResolve'
 import { formatDateInput } from '../../lib/courtSchedule'
@@ -59,15 +55,7 @@ import {
 } from '../../lib/gestureCameraLocalCache'
 import { useTennisBallDebugOverlay } from '../../lib/gestureTennisBallDebug'
 
-const EMPTY_HOLD_UI: HoldUi = {
-  activeHold: null,
-  holdProgress: 0,
-  gestureCooldown: false,
-}
-
 type Status = 'idle' | 'loading' | 'running' | 'unsupported' | 'error'
-type CountdownState = 'starts' | 'playing' | 'break' | 'finished' | 'scheduled'
-type GameOption = { value: string; label: string }
 type CourtOption = {
   value: string
   label: string
@@ -80,28 +68,6 @@ function formatCountdown(ms: number): string {
   const m = Math.floor(ms / 60000)
   const s = Math.floor((ms % 60000) / 1000)
   return `${m}:${String(s).padStart(2, '0')}`
-}
-
-function timerState(
-  now: number,
-  gameNumber: number,
-  times: { startsAt: number; endsAt: number } | undefined,
-  timesByGame?: Map<number, { startsAt: number; endsAt: number }>,
-): CountdownState {
-  if (!times) return 'scheduled'
-  if (isGameSlotLive(now, times)) return 'playing'
-  if (now < times.startsAt) return 'starts'
-  if (timesByGame && isGameSlotInBreakAfter(now, gameNumber, timesByGame)) return 'break'
-  if (now >= times.endsAt) return 'finished'
-  return 'scheduled'
-}
-
-function timerLabel(state: CountdownState): string {
-  if (state === 'starts') return 'Game starts in'
-  if (state === 'playing') return 'Current game'
-  if (state === 'break') return 'Break time'
-  if (state === 'finished') return 'Finished'
-  return 'Game time'
 }
 
 function timerValue(
@@ -121,6 +87,7 @@ function timerValue(
 }
 
 export function GestureScoreCourtPage() {
+  useGesturePadChrome()
   const location = useLocation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -174,7 +141,7 @@ export function GestureScoreCourtPage() {
   }, [competitionCourtId, courtLabel, friendlyRoute, gameNum, id])
   const scorerUserId = needsAuth ? (authSession?.user?.id ?? user?.id ?? null) : null
   const presenceScopeKey = id ? `${friendlyRoute ? 'friendly' : 'competition'}:${id}` : undefined
-  const scorerPresence = useGestureScorerPresence(presenceScopeKey, courtSetupKey, scorerUserId)
+  useGestureScorerPresence(presenceScopeKey, courtSetupKey, scorerUserId)
 
   const competitionGames = useMemo(() => pivotScheduleByGame(columns), [columns])
   const competitionRoundTimesByGameMap = useMemo(
@@ -275,90 +242,9 @@ export function GestureScoreCourtPage() {
 
   const courtMatch = friendlyRoute ? friendlyCourtMatch : competitionCourtMatch
   const resolvedCourtLabel = friendlyRoute ? courtLabel : competitionCourtLabel
-  const selectedGame = useMemo(
-    () => scheduleGames.find((game) => game.gameNumber === gameNum) ?? null,
-    [gameNum, scheduleGames],
-  )
-  const gameOptions: GameOption[] = useMemo(
-    () => {
-      const options = scheduleGames.map((game) => ({
-        value: String(game.gameNumber),
-        label: `G${game.gameNumber}`,
-      }))
-      if (options.some((option) => option.value === String(gameNum))) return options
-      return [{ value: String(gameNum), label: `G${gameNum}` }, ...options]
-    },
-    [gameNum, scheduleGames],
-  )
   const selectedCourtValue = friendlyRoute ? courtLabel : competitionCourtId
-  const courtStatus = useCallback(
-    (optionCourtSetupKey: string | undefined): CourtOption['status'] => {
-      if (!optionCourtSetupKey) return undefined
-      if (optionCourtSetupKey === courtSetupKey) return 'mine'
-      return (scorerPresence.get(optionCourtSetupKey) ?? 0) > 0 ? 'occupied' : 'available'
-    },
-    [courtSetupKey, scorerPresence],
-  )
-  const courtOptions: CourtOption[] = useMemo(() => {
-    const fallback = selectedCourtValue
-      ? [{
-          value: selectedCourtValue,
-          label: resolvedCourtLabel || selectedCourtValue,
-          courtSetupKey,
-          status: courtStatus(courtSetupKey),
-        }]
-      : []
-    if (!selectedGame) return fallback
-    if (friendlyRoute) {
-      const options = selectedGame.courts.map((court) => ({
-        value: court.courtLabel,
-        label: court.courtLabel,
-        courtSetupKey: id
-          ? friendlyGestureCourtSetupKey(id, selectedGame.gameNumber, court.courtLabel)
-          : undefined,
-      }))
-      const withStatus = options.map((option) => ({
-        ...option,
-        status: courtStatus(option.courtSetupKey),
-      }))
-      return withStatus.some((option) => option.value === selectedCourtValue)
-        ? withStatus
-        : [...fallback, ...withStatus]
-    }
-    const liveCourts = liveCourtsByGame.get(selectedGame.gameNumber) ?? []
-    const options: CourtOption[] = []
-    for (const court of selectedGame.courts) {
-      const live = liveCourts.find((row) => row.courtName === court.courtLabel)
-      const value = live?.courtId ?? courtIdByLabel.get(court.courtLabel)
-      if (!value) continue
-      const optionCourtSetupKey = id
-        ? competitionCourtSetupKey(id, selectedGame.gameNumber, value)
-        : undefined
-      options.push({
-        value,
-        label: court.courtLabel,
-        courtSetupKey: optionCourtSetupKey,
-        status: courtStatus(optionCourtSetupKey),
-      })
-    }
-    return options.some((option) => option.value === selectedCourtValue)
-      ? options
-      : [...fallback, ...options]
-  }, [
-    courtSetupKey,
-    courtStatus,
-    courtIdByLabel,
-    friendlyRoute,
-    id,
-    liveCourtsByGame,
-    resolvedCourtLabel,
-    selectedCourtValue,
-    selectedGame,
-  ])
   const currentTimes = roundTimesByGame.get(gameNum)
-  const currentTimerState = timerState(tick, gameNum, currentTimes, roundTimesByGame)
   const currentTimerValue = timerValue(tick, gameNum, currentTimes, roundTimesByGame)
-  const displayCourtLabel = resolvedCourtLabel || courtOptions.find((option) => option.value === selectedCourtValue)?.label || 'Court'
 
   const courtOptionsForGame = useCallback(
     (nextGameNumber: number): CourtOption[] => {
@@ -401,30 +287,6 @@ export function GestureScoreCourtPage() {
       if (matchingCourt) setActiveCourtValue(matchingCourt.value)
     }
   }, [activeCourtValue, activeGameNum, courtOptionsForGame, resolvedCourtLabel, scheduleGames])
-
-  const changeGame = useCallback(
-    (value: string) => {
-      const nextGameNumber = Number(value)
-      if (!Number.isFinite(nextGameNumber)) return
-      const nextCourtOptions = courtOptionsForGame(nextGameNumber)
-      const currentCourtLabel =
-        courtOptionsForGame(gameNum).find((option) => option.value === selectedCourtValue)?.label ??
-        displayCourtLabel
-      const sameCourt =
-        nextCourtOptions.find((option) => option.value === selectedCourtValue) ??
-        nextCourtOptions.find((option) => option.label === currentCourtLabel)
-      setActiveGameNum(nextGameNumber)
-      setActiveCourtValue(sameCourt?.value ?? nextCourtOptions[0]?.value ?? selectedCourtValue)
-    },
-    [courtOptionsForGame, displayCourtLabel, gameNum, selectedCourtValue],
-  )
-
-  const changeCourt = useCallback(
-    (value: string) => {
-      setActiveCourtValue(value)
-    },
-    [],
-  )
 
   useEffect(() => {
     if (!id || !Number.isFinite(gameNum) || !selectedCourtValue) return
@@ -525,7 +387,6 @@ export function GestureScoreCourtPage() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const ballOverlayRef = useRef<HTMLCanvasElement>(null)
   const engineRef = useRef<GestureCameraEngine | null>(null)
-  const trackerRef = useRef<CameraScoreTrackerHandle>(null)
   const saveChainRef = useRef<Promise<void>>(Promise.resolve())
   const pendingSavesRef = useRef(0)
   const sessionInitKeyRef = useRef<string | null>(null)
@@ -552,14 +413,6 @@ export function GestureScoreCourtPage() {
   const [pointHistory, setPointHistory] = useState<GameLogPoint[]>([])
   matchEndedRef.current = matchEnded
 
-  const teamAPlayers = useMemo(
-    () => courtMatch?.teamAPlayers ?? [],
-    [courtMatch?.teamAPlayers],
-  )
-  const teamBPlayers = useMemo(
-    () => courtMatch?.teamBPlayers ?? [],
-    [courtMatch?.teamBPlayers],
-  )
   const applyScoreLocal = useCallback(
     (log: MatchGestureLog | null, ended: boolean, immediate = false) => {
       localLogRef.current = log
@@ -761,30 +614,6 @@ export function GestureScoreCourtPage() {
     applyFingerAction(action)
   }
 
-  const applyGamesEdit = useCallback(
-    (team: MatchTeam, games: number) => {
-      if (!cameraCtx) return
-
-      const prior = localLogRef.current
-      const current = scoreFromLog(prior)
-      const gamesA = team === 'a' ? games : current.gamesA
-      const gamesB = team === 'b' ? games : current.gamesB
-      const planned = planGestureCameraGamesOverride(cameraCtx, prior, gamesA, gamesB)
-      if (!planned) return
-
-      const { log, matchEnded } = planned
-      applyScoreLocal(log, matchEnded, true)
-
-      queueMicrotask(() => {
-        if (courtSetupKey) writeLocalGestureCameraLog(courtSetupKey, log)
-        gestureScoreBeep()
-        engineRef.current?.resetHoldTracking()
-        enqueuePersist(log, prior, matchEnded)
-      })
-    },
-    [applyScoreLocal, cameraCtx, courtSetupKey, enqueuePersist],
-  )
-
   useEffect(() => {
     if (status !== 'running' && status !== 'loading') return
     const video = videoRef.current
@@ -800,10 +629,6 @@ export function GestureScoreCourtPage() {
     }
   }, [status])
 
-  const resumeCameraVideo = useCallback(() => {
-    engineRef.current?.resumeVideo()
-  }, [])
-
   const startCamera = useCallback(() => {
     setCameraError(null)
     void engineRef.current?.restart()
@@ -811,7 +636,6 @@ export function GestureScoreCourtPage() {
 
   const stopCamera = useCallback(() => {
     engineRef.current?.stop()
-    trackerRef.current?.setHold(EMPTY_HOLD_UI)
     setCameraError(null)
   }, [])
 
@@ -820,9 +644,6 @@ export function GestureScoreCourtPage() {
     ballOverlayRef,
     ballDebug && (status === 'running' || status === 'loading'),
   )
-
-  const showStartCamera =
-    status === 'idle' || status === 'loading' || status === 'error' || status === 'unsupported'
 
   const pageLoading =
     (needsAuth && (authLoading || sessionSyncing)) ||
@@ -854,7 +675,6 @@ export function GestureScoreCourtPage() {
           if (action === 'reset') return
           applyFingerActionRef.current(action)
         },
-        onHoldUi: (ui) => trackerRef.current?.setHold(ui),
         onStatus: setCameraStatus,
         onError: (message) => {
           setCameraError(message)
@@ -872,7 +692,6 @@ export function GestureScoreCourtPage() {
       cancelled = true
       engine?.stop()
       engineRef.current = null
-      trackerRef.current?.setHold(EMPTY_HOLD_UI)
     }
   }, [scorerReady, setCameraStatus])
 
@@ -889,82 +708,16 @@ export function GestureScoreCourtPage() {
     return <Navigate to={friendlyRoute && id ? `/friendly/${id}` : id ? `/competitions/${id}` : '/friendly'} replace />
   }
 
-  const goldenPoint = pointsA >= 3 && pointsB >= 3
-  const undoDisabled = pointHistory.length === 0
-
-  return (
-    <CameraScoreTrackerShell onSurfacePointerDown={resumeCameraVideo}>
-      {!scorerReady && pageLoading ? (
-        <p className="px-4 py-8 text-center text-sm text-white/70">Loading court…</p>
-      ) : null}
-      {scorerReady ? (
-        <CameraScoreTracker
-          key={courtSetupKey}
-          ref={trackerRef}
-          preview={detectPreview}
-          showStartCamera={showStartCamera}
-          cameraStarting={status === 'loading'}
-          cameraError={scoreSaveError ?? cameraError}
-          cameraStatus={status}
-          gameLabel={`G${gameNum}`}
-          courtLabel={displayCourtLabel}
-          gameOptions={gameOptions}
-          selectedGame={String(gameNum)}
-          onGameChange={changeGame}
-          courtOptions={courtOptions}
-          selectedCourt={selectedCourtValue}
-          onCourtChange={changeCourt}
-          timerLabel={timerLabel(currentTimerState)}
-          timerValue={currentTimerValue}
-          timerTimeLabel={selectedGame?.timeLabel}
-          onStartCamera={startCamera}
-          onStopCamera={stopCamera}
-          cameraPreview={
-            <span
-              className={`gesture-score-court__camera-preview-frame${
-                status === 'running' || status === 'loading'
-                  ? ''
-                  : ' gesture-score-court__camera-preview-frame--hidden'
-              }`}
-            >
-              <video
-                ref={videoRef}
-                muted
-                playsInline
-                className={`gesture-score-court__camera-preview${
-                  status === 'running' || status === 'loading'
-                    ? ''
-                    : ' gesture-score-court__camera-preview--hidden'
-                }`}
-                aria-label="Camera preview"
-              />
-              {ballDebug ? (
-                <canvas
-                  ref={ballOverlayRef}
-                  className="gesture-score-court__ball-debug-overlay"
-                  aria-hidden
-                />
-              ) : null}
-            </span>
-          }
-          pointLeft={pointsA}
-          pointRight={pointsB}
-          gamesLeft={gamesA}
-          gamesRight={gamesB}
-          golden={goldenPoint}
-          isFinal={matchEnded}
-          team1Players={teamAPlayers}
-          team2Players={teamBPlayers}
-          pointHistory={pointHistory}
-          scoreDisabled={false}
-          undoDisabled={undoDisabled}
-          onGamesLeftChange={(games) => void applyGamesEdit('a', games)}
-          onGamesRightChange={(games) => void applyGamesEdit('b', games)}
-          onTeam1={() => applyFingerAction('team1')}
-          onTeam2={() => applyFingerAction('team2')}
-          onUndo={() => applyFingerAction('undo')}
-        />
-      ) : null}
-    </CameraScoreTrackerShell>
-  )
+  return scorerReady ? (
+    <ThumbScorePadView
+      videoRef={videoRef} status={status} error={scoreSaveError ?? cameraError}
+      ourPoints={pointsA} theirPoints={pointsB} ourGames={gamesA} theirGames={gamesB}
+      timerValue={currentTimerValue ?? '0:00'} restartCamera={startCamera}
+      goBack={() => { stopCamera(); navigate(friendlyRoute ? `/friendly/${id}` : `/competitions/${id}`) }}
+      onWin={() => applyFingerAction('team1')}
+      onLose={() => applyFingerAction('team2')}
+      onUndo={() => applyFingerAction('undo')}
+      undoDisabled={pointHistory.length === 0}
+    />
+  ) : <p role="status">Loading court…</p>
 }
