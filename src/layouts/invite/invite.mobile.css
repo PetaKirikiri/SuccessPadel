@@ -2322,3 +2322,17 @@ html[data-viewport='mobile'] .competition-level-guide { gap: 0.45rem; }
 html[data-viewport='mobile'] .competition-level-guide__card { gap: 0.5rem; }
 html[data-viewport='mobile'] .invite-game-card__pregame-pane:not([hidden]) { display: contents; }
 html[data-viewport='mobile'] .invite-game-card__pregame-pane[hidden] { display: none; }
+
+@media (min-width: 600px) {
+  html[data-viewport='mobile'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__header-links)::before,
+  html[data-viewport='mobile'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__header-links)::after,
+  html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header:has(.invite-game-card__profile-action)::before,
+  html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header:has(.invite-game-card__profile-action)::after {
+    height: calc(100% - 1rem);
+    max-height: none;
+    width: auto;
+    aspect-ratio: 2 / 3;
+  }
+  html[data-viewport='mobile'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__header-links)::before { left: 12%; transform: translate(-50%, 4%); }
+  html[data-viewport='mobile'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__header-links)::after { right: 12%; transform: translate(50%, 1%); }
+}

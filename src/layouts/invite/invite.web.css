@@ -1372,3 +1372,13 @@ html[data-viewport='web'] .competition-level-guide dl > div { padding-block: 0.2
 html[data-viewport='web'] .invite-game-card__roster:has(.competition-level-guide) { max-height: none; }
 html[data-viewport='web'] .invite-game-card__pregame-pane:not([hidden]) { display: contents; }
 html[data-viewport='web'] .invite-game-card__pregame-pane[hidden] { display: none; }
+
+/* Let the approved artwork fill the header height, within the empty side lanes. */
+html[data-viewport='web'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__header-links)::before,
+html[data-viewport='web'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__header-links)::after {
+  height: calc(100% - 1rem);
+  width: auto;
+  aspect-ratio: 2 / 3;
+}
+html[data-viewport='web'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__header-links)::before { left: 15%; transform: translate(-50%, 4%); }
+html[data-viewport='web'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__header-links)::after { right: 15%; transform: translate(50%, 1%); }
