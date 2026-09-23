@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Repeat2, MoveUpRight, PanelsTopLeft, UsersRound, CircleHelp } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { competitionLevelLabel } from '../../lib/competitionLevel'
 import type { CompetitionRow } from '../../hooks/useCompetitions'
@@ -11,6 +12,27 @@ type Guide = {
   image_url: string
   image_alt: string
   padel_skill_levels: { name: string; rank: number; storage_value: string }
+}
+
+// Versioned presentation artwork replaces the original abstract court diagrams.
+const levelArtwork: Record<string, { src: string; alt: string; caption: string }> = {
+  beginner: {
+    src: '/level-guides/beginner-return-v2.png',
+    alt: 'A beginner preparing a basic return after the ball bounces.',
+    caption: 'Learning a basic return',
+  },
+  low_inter: {
+    src: '/level-guides/low-inter-glass-v2.png',
+    alt: 'A player preparing to return a ball rebounding from the back glass.',
+    caption: 'Starting to use the back glass',
+  },
+}
+
+const skillIcons = {
+  Rallies: Repeat2,
+  'Serve & return': MoveUpRight,
+  Glass: PanelsTopLeft,
+  Positioning: UsersRound,
 }
 
 export function CompetitionLevelGuide({ row, onClose }: { row: CompetitionRow; onClose: () => void }) {
@@ -53,7 +75,6 @@ export function CompetitionLevelGuide({ row, onClose }: { row: CompetitionRow; o
     <header className="competition-level-guide__header">
       <div>
         <h2 id={`level-guide-title-${row.id}`} ref={heading} tabIndex={-1}>Is this your level?</h2>
-        <p>Think about your usual match play, not your best shot.</p>
       </div>
       <button type="button" className="competition-level-guide__back" aria-label="Back to players" onClick={onClose}>← Back</button>
     </header>
@@ -66,14 +87,22 @@ export function CompetitionLevelGuide({ row, onClose }: { row: CompetitionRow; o
         {guides.map(guide => <article key={guide.level_code} id={`level-${row.id}-${guide.level_code}`}
           className="competition-level-guide__card" data-active={selected === guide.level_code}>
           <div className="competition-level-guide__intro">
-            <div><h3>{guide.padel_skill_levels.name}</h3><p>{guide.summary}</p></div>
-            <img src={guide.image_url} alt={guide.image_alt} />
+            <h3>{guide.padel_skill_levels.name}</h3>
           </div>
-          <dl>{guide.self_checks.map(check => <div key={check.area}><dt>{check.area}</dt><dd>{check.text}</dd></div>)}</dl>
-          <p className="competition-level-guide__focus"><strong>Work towards</strong> {guide.next_level_focus}</p>
+          <figure className="competition-level-guide__illustration">
+            <img src={levelArtwork[guide.level_code]?.src ?? guide.image_url}
+              alt={levelArtwork[guide.level_code]?.alt ?? guide.image_alt} decoding="async" />
+            {levelArtwork[guide.level_code] && <figcaption>{levelArtwork[guide.level_code].caption}</figcaption>}
+          </figure>
+          <dl>{guide.self_checks.map(check => {
+            const Icon = skillIcons[check.area as keyof typeof skillIcons] ?? CircleHelp
+            return <div key={check.area} data-skill={check.area}>
+              <dt><Icon className="competition-level-guide__skill-icon" aria-hidden="true" /><span>{check.area}</span></dt>
+              <dd>{check.text}</dd>
+            </div>
+          })}</dl>
         </article>)}
       </div>
-      <p className="competition-level-guide__note">Double glass means a rebound off both the back and side walls. These are Success Padel’s club guidelines.</p>
     </>}
   </section>
 }

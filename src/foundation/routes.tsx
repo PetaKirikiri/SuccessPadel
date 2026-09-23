@@ -1,4 +1,6 @@
+import { CoachesCommentPage } from './coaching/CoachesCommentPage'
 import { lazy, Suspense } from 'react'
+const StreamMatchPage = lazy(() => import('../features/streaming/StreamMatchPage').then(m => ({ default: m.StreamMatchPage })))
 import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 import { Layout } from './Layout'
 import { HomeCompetitionRedirect } from './HomeCompetitionRedirect'
@@ -183,8 +185,11 @@ function MainAppRoutes() {
           path="competitions/:id/games/:gameNumber/gesture-score"
           element={<GestureScoreCourtEntry />}
         />
+        <Route path="stream" element={<Suspense fallback={null}><StreamMatchPage /></Suspense>} />
+        <Route path="competitions/:id/stream" element={<Suspense fallback={null}><StreamMatchPage /></Suspense>} />
         <Route path="competitive" element={<GamesHomePage mode="competitive" />} />
         <Route path="competitions" element={<Navigate to="/competitive" replace />} />
+        <Route path="coaches-comment" element={<CoachesCommentPage />} />
         <Route path="players/:playerId" element={<PlayerProfileSurface />} />
         <Route
           path="members"

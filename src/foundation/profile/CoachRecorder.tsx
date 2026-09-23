@@ -2,10 +2,10 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { Mic, Square, Send, X, RotateCcw } from 'lucide-react'
 import { sendCoachRecording } from '../../lib/coachFeedback'
 
-type Props = { playerId: string; playerName: string; competitionId: string | null; onSaved: () => void }
+type Props = { playerId: string; playerName: string; competitionId: string | null; onSaved: () => void; compact?: boolean }
 type Phase = 'idle' | 'requesting' | 'recording' | 'ready' | 'sending'
 
-export function CoachRecorder({ playerId, playerName, competitionId, onSaved }: Props) {
+export function CoachRecorder({ playerId, playerName, competitionId, onSaved, compact = false }: Props) {
   const [phase, setPhase] = useState<Phase>('idle')
   const [seconds, setSeconds] = useState(0)
   const [blob, setBlob] = useState<Blob | null>(null)
@@ -115,20 +115,20 @@ export function CoachRecorder({ playerId, playerName, competitionId, onSaved }: 
   }
   return <>
     <button className="coach-record-trigger" type="button" onClick={() => void start()} aria-label={`Record coach feedback for ${playerName}`}>
-      <Mic aria-hidden="true" /><span>Coach note</span>
+      <Mic aria-hidden="true" />{compact ? null : <span>Coach note</span>}
     </button>
     <dialog ref={dialog} className="coach-recorder" aria-labelledby={titleId} onCancel={event => { event.preventDefault(); if (!busy.current) discard() }}>
-      <header><div><span>Coach observation</span><h2 id={titleId}>{playerName}</h2></div><button type="button" onClick={discard} disabled={phase === 'sending'} aria-label="Discard and close"><X aria-hidden="true" /></button></header>
+      <header><div><span>Coaches Comment</span><h2 id={titleId}>{playerName}</h2></div><button type="button" onClick={discard} disabled={phase === 'sending'} aria-label="Discard and close"><X aria-hidden="true" /></button></header>
       <div className="coach-recorder__status" role="status" aria-live="polite" data-recording={phase === 'recording'}>
-        <Mic aria-hidden="true" /><strong>{phase === 'sending' ? 'Transcribing & organising…' : phase === 'requesting' ? 'Allow microphone access' : phase === 'recording' ? `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}` : blob ? 'Ready to send' : 'Ready to record'}</strong>
+        <Mic aria-hidden="true" /><strong>{phase === 'sending' ? 'Transcribing & organising…' : phase === 'requesting' ? 'Allow microphone access' : phase === 'recording' ? `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}` : blob ? 'Listen before saving' : 'Ready to record'}</strong>
       </div>
-      <p className="coach-recorder__hint">{phase === 'sending' ? 'Saving this observation to the player’s skill profile. Keep this open.' : 'Up to 2 minutes. Audio is sent to OpenAI; the transcript and organised feedback are saved for the player and authorised staff.'}</p>
+      <p className="coach-recorder__hint">{phase === 'sending' ? 'Saving this observation to the player’s skill profile. Keep this open.' : 'Up to 2 minutes. Audio is transcribed with OpenAI; the saved comment appears on the player’s profile.'}</p>
       {audioUrl && phase !== 'sending' ? <audio controls src={audioUrl} /> : null}
       {error ? <p className="coach-recorder__error" role="alert">{error}</p> : null}
       <footer>
         {phase === 'recording' ? <button type="button" onClick={stop}><Square aria-hidden="true" />Stop recording</button> : null}
         {phase === 'idle' || phase === 'ready' ? <button type="button" onClick={() => void start()}><RotateCcw aria-hidden="true" />{blob ? 'Record again' : 'Try recording'}</button> : null}
-        {blob ? <button type="button" className="coach-recorder__send" onClick={() => void send()} disabled={phase === 'sending'}><Send aria-hidden="true" />{phase === 'sending' ? 'Saving…' : 'Send & save'}</button> : null}
+        {blob ? <button type="button" className="coach-recorder__send" onClick={() => void send()} disabled={phase === 'sending'}><Send aria-hidden="true" />{phase === 'sending' ? 'Saving…' : 'Accept & save'}</button> : null}
       </footer>
     </dialog>
   </>

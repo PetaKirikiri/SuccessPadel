@@ -75,6 +75,7 @@ function MatchRow({
       <p className="mt-2 text-xs font-medium text-brand-accent">
         {entry.points} {t('leaderboard.pts')}
       </p>
+      {entry.recording_urls?.map((url, index) => <a key={url} href={url} target="_blank" rel="noopener noreferrer">Watch Match{index > 0 ? ` (part ${index + 1})` : ''}</a>)}
     </li>
   )
 }

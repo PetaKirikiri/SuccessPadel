@@ -1,0 +1,14 @@
+{$CONTROL_HOST} {
+  @internal path /internal/*
+  respond @internal 404
+  reverse_proxy 127.0.0.1:8090
+}
+{$MEDIA_HOST} {
+  @whip path_regexp whip ^/court/[0-9a-f-]+/whip(/.*)?$
+  handle @whip {
+    reverse_proxy 127.0.0.1:8889
+  }
+  handle {
+    respond 404
+  }
+}

@@ -17,9 +17,23 @@ legacy editable admin flag does not grant recording access.
    transcribes; the transcript is persisted before GPT (`gpt-4o-mini`, configurable
    through server-only `OPENAI_COACH_MODEL`) organises structured observations.
 5. Categories/subskills come from `src/lib/coachSkills.json`. Evidence must be a
-   verbatim transcript excerpt. No numeric ratings or competition data are changed.
+   verbatim transcript excerpt. Each assessed observation stores a 1–10 skill rating
+   and its source: coach-stated or AI-estimated from the fixed behavioural rubric.
+   Insufficient evidence produces a null rating. No competition data are changed.
 6. Successful save opens Coach Feedback and reloads its database entries. Original
    transcript, coach, date, model and token usage remain attached to the record.
+
+## Cumulative skill ratings
+
+Recordings append; retrying the same submission never adds another vote. All completed
+history is loaded with cursor pagination (not just the latest 100). Each skill and
+subskill shows the average across rated recordings, rounded to one decimal. Multiple
+tags in the same recording are averaged first so a verbose note cannot outweigh
+other recordings. There is no overall player rank or official competition-level change.
+The comment retains its individual score and visibly identifies AI estimates.
+Historical notes without ratings remain visible and do not count as zero; this change
+does not retrospectively invent ratings or rewrite saved feedback. Deleting an authorised
+note removes its contribution on the next calculation.
 
 Completed observations are public on player profiles, including for signed-out
 visitors and unrelated players. Public loading includes the comment, skill tags,
@@ -28,6 +42,14 @@ model usage and error details. Only staff can read processing/error rows. The ra
 audio is sent to OpenAI but not stored by Success Padel. The coach's browser keeps
 it for retry while the recording dialog remains open. Closing/discarding removes
 that local recording; unsaved audio does not survive closing/reloading the page.
+
+Completed notes offer **Delete note** only to their original author while that
+account still has coach access. Confirmation explains that deletion removes the
+whole recording entry, including its transcript and all extracted skill tags.
+Players, other coaches and anonymous visitors cannot delete it; a database DELETE
+policy enforces this independently of the button. Processing entries cannot be
+deleted. Failed deletion keeps the note visible; successful deletion updates the
+skill counts without reloading the profile. No real notes are removed by setup.
 
 Retries use the same ID/audio hash, return completed submissions without another
 AI call, and reuse a saved transcript after GPT failure. An in-progress lease lasts
@@ -51,6 +73,9 @@ three minutes before retry is allowed. There is a per-coach 30-new-notes/hour gu
 
 `node --test server/coaching/*.test.mjs` exercises schema/evidence validation,
 provider failures, authorisation, pipeline persistence, retry and deduplication.
+`npx vite-node scripts/test-coach-skill-ratings.mts` checks cumulative averages,
+unrated history, per-recording weighting, duplicate protection, deletion recalculation
+and full-history pagination without network access or live writes.
 `server/coaching/permissions.test.sql` tests real database RLS in a transaction and
 rolls every test write back. Build and layout checks remain unchanged.
 

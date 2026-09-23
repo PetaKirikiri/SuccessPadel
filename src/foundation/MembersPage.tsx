@@ -9,6 +9,8 @@ import { adminDeletePlayer, canAdminDeletePlayer } from '../lib/playerDelete'
 import { clubDisplayName } from '../lib/clubMemberDisplay'
 import { lineHandshakeDebug } from '../lib/debug/lineHandshakeDebug'
 import { firstDisplayName } from '../lib/leaderboardEntries'
+import { SKILL_LEVELS, type SkillLevel } from '../lib/competitionPresets'
+import { profileSkillLabel } from '../lib/profileI18n'
 import { playerProfileShareUrl, sharePlayerProfile } from '../lib/playerProfileShare'
 import { playerProfilePath } from '../lib/playerProfileSlug'
 import { supabase } from '../lib/supabaseClient'
@@ -20,6 +22,7 @@ type GuestPlayerRow = {
   game_count: number
   line_user_id?: string | null
   line_picture_url?: string | null
+  skill_level?: string | null
 }
 
 type PadelLineRow = {
@@ -28,6 +31,7 @@ type PadelLineRow = {
   profile_id: string | null
   line_user_id: string | null
   line_picture_url?: string | null
+  skill_level: string | null
 }
 
 type DeleteTarget = { id: string; name: string }
@@ -43,6 +47,10 @@ function MemberListRow({
   shareFeedback,
   onShare,
   onDelete,
+  skillLevel,
+  levelBusy,
+  onSkillLevelChange,
+  canEditLevel,
 }: {
   id: string
   name: string
@@ -54,6 +62,10 @@ function MemberListRow({
   shareFeedback?: string | null
   onShare: () => void
   onDelete: () => void
+  skillLevel: string | null
+  levelBusy: boolean
+  onSkillLevelChange: (level: SkillLevel | null) => void
+  canEditLevel: boolean
 }) {
   const { t } = useTranslation()
 
@@ -90,6 +102,25 @@ function MemberListRow({
           ) : null}
         </div>
       </Link>
+      {canEditLevel ? (
+        <select
+          value={skillLevel ?? ''}
+          disabled={levelBusy}
+          aria-label={t('members.playerLevelFor', { name })}
+          className="member-level-select"
+          onChange={(event) => {
+            const value = event.target.value
+            onSkillLevelChange(value ? (value as SkillLevel) : null)
+          }}
+        >
+          <option value="">{t('members.levelUnassigned')}</option>
+          {SKILL_LEVELS.map((level) => (
+            <option key={level} value={level}>
+              {profileSkillLabel(level, t)}
+            </option>
+          ))}
+        </select>
+      ) : null}
       {canShare ? (
         <button
           type="button"
@@ -169,6 +200,8 @@ export function MembersPage() {
   const { t } = useTranslation()
   const { user, profile, loading: authLoading, session, restoreSession } = useAuth()
   const isAdmin = canManageMembers(authLoading, user?.id, profile)
+  // Enable only after admin_set_player_skill_level is available in production.
+  const canEditLevels = isAdmin && import.meta.env.VITE_MEMBER_LEVEL_EDITING === 'true'
   const location = useLocation()
   const createInput = useRef<HTMLInputElement>(null)
   const [members, setMembers] = useState<Profile[]>([])
@@ -183,6 +216,8 @@ export function MembersPage() {
   const [deleteBusy, setDeleteBusy] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [shareFeedback, setShareFeedback] = useState<{ id: string; message: string } | null>(null)
+  const [levelBusyId, setLevelBusyId] = useState<string | null>(null)
+  const [levelError, setLevelError] = useState<string | null>(null)
   const firstLoad = useRef(true)
 
   useEffect(() => {
@@ -207,20 +242,20 @@ export function MembersPage() {
     const [profilesRes, guestsRes, padelRes] = await Promise.all([
       supabase
         .from('profiles')
-        .select('id, display_name, avatar_url, line_user_id, is_admin')
+        .select('id, display_name, avatar_url, line_user_id, is_admin, skill_level')
         .order('display_name'),
       supabase.rpc('list_guest_players_with_games'),
       supabase
         .from('padel_players')
-        .select('id, display_name, profile_id, line_user_id, line_picture_url')
-        .not('line_user_id', 'is', null)
+        .select('id, display_name, profile_id, line_user_id, line_picture_url, skill_level')
         .order('display_name'),
     ])
     setMembers((profilesRes.data as Profile[]) ?? [])
-    setGuestPlayers((guestsRes.data as GuestPlayerRow[]) ?? [])
     const lineMap = new Map<string, string>()
+    const skillByPadelId = new Map<string, string | null>()
     const linkedPadelPlayers: GuestPlayerRow[] = []
     for (const row of (padelRes.data as PadelLineRow[] | null) ?? []) {
+      skillByPadelId.set(row.id, row.skill_level)
       if (row.profile_id && row.line_user_id?.trim()) {
         lineMap.set(row.profile_id, row.line_user_id)
       } else if (row.line_user_id?.trim()) {
@@ -229,12 +264,19 @@ export function MembersPage() {
           display_name: row.display_name,
           line_user_id: row.line_user_id,
           line_picture_url: row.line_picture_url ?? null,
+          skill_level: row.skill_level,
           game_count: 0,
         })
       }
     }
     setPadelLineByProfileId(lineMap)
     setLinePadelPlayers(linkedPadelPlayers)
+    setGuestPlayers(
+      ((guestsRes.data as GuestPlayerRow[]) ?? []).map((row) => ({
+        ...row,
+        skill_level: skillByPadelId.get(row.id) ?? null,
+      })),
+    )
     setInitialLoading(false)
     firstLoad.current = false
   }, [restoreSession, session])
@@ -360,6 +402,33 @@ export function MembersPage() {
     void load()
   }
 
+  const saveSkillLevel = async ({
+    rowId,
+    profileId,
+    padelPlayerId,
+    level,
+  }: {
+    rowId: string
+    profileId?: string | null
+    padelPlayerId?: string | null
+    level: SkillLevel | null
+  }) => {
+    setLevelBusyId(rowId)
+    setLevelError(null)
+    const { error } = await supabase.rpc('admin_set_player_skill_level', {
+      p_padel_player_id: padelPlayerId ?? null,
+      p_profile_id: profileId ?? null,
+      p_skill_level: level,
+    })
+    if (error) {
+      setLevelError(error.message || t('members.levelSaveFailed'))
+      setLevelBusyId(null)
+      return
+    }
+    await load()
+    setLevelBusyId(null)
+  }
+
   const renderMemberRow = (member: Profile) => {
     const name = firstDisplayName(clubDisplayName(member.id, member.display_name))
     return (
@@ -377,6 +446,12 @@ export function MembersPage() {
           setDeleteError(null)
           setDeleteTarget({ id: member.id, name })
         }}
+        skillLevel={member.skill_level}
+        levelBusy={levelBusyId === member.id}
+        onSkillLevelChange={(level) =>
+          void saveSkillLevel({ rowId: member.id, profileId: member.id, level })
+        }
+        canEditLevel={canEditLevels}
       />
     )
   }
@@ -392,6 +467,9 @@ export function MembersPage() {
   return (
     <div className="space-y-5 px-3 pb-[calc(4.5rem+env(safe-area-inset-bottom))] pt-1 md:px-6">
       <h1 className="text-lg font-semibold text-brand-primary">{t('members.title')}</h1>
+
+      {canEditLevels ? <p className="member-level-intro">{t('members.levelIntro')}</p> : null}
+      {levelError ? <p className="member-level-error">{levelError}</p> : null}
 
       {isAdmin ? createPlayerForm : null}
 
@@ -419,6 +497,12 @@ export function MembersPage() {
                 setDeleteError(null)
                 setDeleteTarget({ id: player.id, name })
               }}
+              skillLevel={player.skill_level ?? null}
+              levelBusy={levelBusyId === player.id}
+              onSkillLevelChange={(level) =>
+                void saveSkillLevel({ rowId: player.id, padelPlayerId: player.id, level })
+              }
+              canEditLevel={canEditLevels}
             />
           )
         })}
@@ -459,6 +543,12 @@ export function MembersPage() {
                 setDeleteError(null)
                 setDeleteTarget({ id: player.id, name })
               }}
+              skillLevel={player.skill_level ?? null}
+              levelBusy={levelBusyId === player.id}
+              onSkillLevelChange={(level) =>
+                void saveSkillLevel({ rowId: player.id, padelPlayerId: player.id, level })
+              }
+              canEditLevel={canEditLevels}
             />
           )
         })}

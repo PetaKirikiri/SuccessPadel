@@ -22,7 +22,7 @@ function fixture({staff=true}={}) {
      }).then(resolve,reject)},
    };return query
  }}
- const note={observations:[{category:'attack',skill:'Volleys',kind:'strength',observation:'Good volleys.',next_step:'',evidence:'Alex volleys well.'}]}
+ const note={observations:[{category:'attack',skill:'Volleys',kind:'strength',observation:'Good volleys.',next_step:'',evidence:'Alex volleys well.',rating:7,rating_source:'estimated'}]}
  const dependencies={createClient:()=>db,fetcher:async(url)=>{
    calls.push(url)
    if(url.endsWith('transcriptions'))return Response.json({text:'Alex volleys well.'})
@@ -44,6 +44,19 @@ test('full pipeline persists identity, transcript, structured feedback and usage
 test('nonstaff is rejected before AI or database writes',async()=>{
  const f=fixture({staff:false});await assert.rejects(processFeedback(f.input,'Bearer test',f.env,f.dependencies),e=>e.status===403)
  assert.equal(f.rows.size,0);assert.equal(f.calls.length,0)
+})
+test('new recordings append to the same player; retry does not replace or duplicate history',async()=>{
+ const f=fixture()
+ await processFeedback(f.input,'Bearer test',f.env,f.dependencies)
+ const original=structuredClone(f.rows.get(f.input.id))
+ const second={...f.input,id:crypto.randomUUID(),audio:Buffer.alloc(200,3).toString('base64')}
+ await processFeedback(second,'Bearer test',f.env,f.dependencies)
+ await processFeedback(second,'Bearer test',f.env,f.dependencies)
+ assert.equal(f.rows.size,2)
+ assert.deepEqual(f.rows.get(f.input.id),original)
+ assert.equal(f.rows.get(second.id).player_id,f.input.playerId)
+ assert.equal(f.rows.get(second.id).feedback.observations[0].rating,7)
+ assert.equal(f.calls.length,4)
 })
 test('GPT failure preserves transcript, retry skips Whisper',async()=>{
  const f=fixture();const fetcher=f.dependencies.fetcher

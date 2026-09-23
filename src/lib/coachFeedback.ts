@@ -3,6 +3,9 @@ import { supabase } from './supabaseClient'
 export type CoachObservation = {
   category: string; skill: string; kind: 'strength' | 'improvement' | 'observation'
   observation: string; next_step: string; evidence: string
+  /** Absent on historical notes; never treat an unassessed skill as zero. */
+  rating?: number | null
+  rating_source?: 'coach' | 'estimated' | null
 }
 export type CoachEntry = {
   id: string; player_id: string; coach_id?: string; created_at: string; transcript: string
@@ -10,13 +13,24 @@ export type CoachEntry = {
   coach: { display_name: string } | null
 }
 export async function loadCoachEntries(playerId: string): Promise<CoachEntry[]> {
-  const { data, error } = await supabase.from('player_coach_observations')
-    .select('id,player_id,coach_id,created_at,transcript,feedback')
-    .eq('player_id', playerId).eq('status', 'complete').order('created_at', { ascending: false }).limit(100)
-  if (error) throw new Error('Could not load coach feedback. Please try again.')
+  const rows: Omit<CoachEntry, 'coach'>[] = []
+  let cursor: Omit<CoachEntry, 'coach'> | undefined
+  // Keyset pagination preserves the full history, even while new notes arrive.
+  for (;;) {
+    let query = supabase.from('player_coach_observations')
+      .select('id,player_id,coach_id,created_at,transcript,feedback')
+      .eq('player_id', playerId).eq('status', 'complete')
+      .order('created_at', { ascending: false }).order('id', { ascending: false }).limit(100)
+    if (cursor) query = query.or(`created_at.lt.${cursor.created_at},and(created_at.eq.${cursor.created_at},id.lt.${cursor.id})`)
+    const { data, error } = await query
+    if (error) throw new Error('Could not load coach feedback. Please try again.')
+    const page = (data ?? []) as unknown as Omit<CoachEntry, 'coach'>[]
+    rows.push(...page)
+    if (page.length < 100) break
+    cursor = page[page.length - 1]
+  }
   // profiles table joins are not public. Resolve attribution through the same
   // existing public profile endpoint used by player pages, without widening RLS.
-  const rows = data as unknown as Omit<CoachEntry, 'coach'>[]
   const coachIds = [...new Set(rows.flatMap(row => row.coach_id ? [row.coach_id] : []))]
   const coaches = new Map(await Promise.all(coachIds.map(async id => {
     const { data: profile } = await supabase.rpc('get_player_profile', { p_profile_id: id })
@@ -25,6 +39,14 @@ export async function loadCoachEntries(playerId: string): Promise<CoachEntry[]> 
     return [id, name ? { display_name: name } : null] as const
   })))
   return rows.map(row => ({ ...row, coach: row.coach_id ? coaches.get(row.coach_id) ?? null : null }))
+}
+export async function deleteCoachEntry(id: string, playerId: string): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) throw new Error('Sign in with your coach account to delete feedback.')
+  const { data, error } = await supabase.from('player_coach_observations').delete()
+    .eq('id', id).eq('player_id', playerId).eq('coach_id', session.user.id)
+    .eq('status', 'complete').select('id')
+  if (error || data?.length !== 1) throw new Error('Could not delete this note. It may already be deleted, or you no longer have permission.')
 }
 export async function sendCoachRecording(input: { id: string; playerId: string; competitionId: string | null; blob: Blob; seconds: number }) {
   const { data: { session } } = await supabase.auth.getSession()

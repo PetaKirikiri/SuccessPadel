@@ -4,7 +4,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { useTranslation } from '../../hooks/useTranslation'
 import { signInWithBrowserPlayerUsername } from '../../lib/auth/browserPlayerLogin'
 import { isLineLoginConfigured } from '../../lib/line/auth'
-import { isLineLiffBrowser, lineAppEntryUrl } from '../../lib/line/liff'
+import { isLineLiffBrowser, lineSignInEntryUrl } from '../../lib/line/liff'
 import { LineSignUpQr } from '../../foundation/line/LineSignUpQr'
 
 const LINE_ADD_FRIEND_GUIDE_SRC = '/assets/line-add-friend-guide.png'
@@ -34,14 +34,15 @@ function LinkStep({
   )
 }
 
-export function LineSignInModal({ onClose }: Props) {
+export function LineSignInModal({ onClose, returnTo }: Props) {
   const { restoreSession } = useAuth()
   const { t } = useTranslation()
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [playerName, setPlayerName] = useState('')
   const [playerBusy, setPlayerBusy] = useState(false)
   const [playerError, setPlayerError] = useState<string | null>(null)
-  const qrUrl = useMemo(() => lineAppEntryUrl('/friendly'), [])
+  const destination = returnTo ?? `${window.location.pathname}${window.location.search}${window.location.hash}`
+  const qrUrl = useMemo(() => lineSignInEntryUrl(destination), [destination])
   const lineEnabled = isLineLoginConfigured()
   const inLineApp = isLineLiffBrowser()
 

@@ -133,7 +133,8 @@ export function loginWithAppDebugLog(
       url: loginWithAppUrlSnapshot(),
     },
     timestamp: Date.now(),
-    pageUrl: window.location.href.slice(0, 500),
+    // Auth handoff fragments may contain a one-use credential; never log them.
+    pageUrl: `${window.location.origin}${window.location.pathname}${window.location.search}`.slice(0, 500),
     userAgent: navigator.userAgent.slice(0, 300),
   }
   // #region agent log
@@ -169,7 +170,7 @@ export function installLoginWithAppLifecycleDebug(): void {
     visibility: document.visibilityState,
     hidden: document.hidden,
     referrer: document.referrer.slice(0, 120),
-    href: window.location.href.slice(0, 200),
+    href: `${window.location.origin}${window.location.pathname}${window.location.search}`.slice(0, 200),
   })
 
   loginWithAppDebugLog('lifecycle:bootstrap', 'app boot', 'H20', {

@@ -91,3 +91,36 @@ html[data-viewport='mobile'] .coach-comment blockquote { margin:5px 0 0;line-hei
 html[data-viewport='mobile'] .coach-comment__score { display:flex;align-items:baseline;gap:2px;flex:none;color:var(--color-brand-primary); }
 html[data-viewport='mobile'] .coach-comment__score strong { font-size:24px;line-height:1; }
 html[data-viewport='mobile'] .coach-comment__score > span { font-size:11px;color:var(--color-brand-muted); }
+
+/* Court-by-court coach recording */
+html[data-viewport='mobile'] .coaches-comment-entry { display:flex;align-items:center;gap:12px;width:100%;min-height:54px;padding:12px 18px;border:0;border-bottom:1px solid var(--color-brand-border);background:var(--color-brand-bg-alt);color:var(--color-brand-primary);font:inherit;font-weight:650;text-align:left;cursor:pointer; }
+html[data-viewport='mobile'] .coaches-comment-entry > svg { width:21px;height:21px;flex:none; }
+html[data-viewport='mobile'] .coaches-comment-entry > svg:last-child { margin-left:auto; }
+html[data-viewport='mobile'] .coaches-comment { width:100%;max-width:860px;margin:0 auto;padding:16px;box-sizing:border-box;color:var(--color-brand-ink); }
+html[data-viewport='mobile'] .coaches-comment__header { display:flex;align-items:center;gap:14px;padding:4px 0 18px; }
+html[data-viewport='mobile'] .coaches-comment__header h1 { font-size:24px;font-weight:750;margin:0;line-height:1.2; }
+html[data-viewport='mobile'] .coaches-comment__header p { margin:5px 0 0;color:var(--color-brand-muted);font-size:13px; }
+html[data-viewport='mobile'] .coaches-comment__header button, html[data-viewport='mobile'] .coaches-comment__games button, html[data-viewport='mobile'] .coaches-comment__retry { display:inline-flex;align-items:center;justify-content:center;flex:none;min-width:44px;min-height:44px;padding:8px;border:1px solid var(--color-brand-border);border-radius:12px;background:var(--color-brand-bg-alt);color:var(--color-brand-primary);font:inherit;cursor:pointer; }
+html[data-viewport='mobile'] .coaches-comment button:disabled { opacity:0.4;cursor:default; }
+html[data-viewport='mobile'] .coaches-comment button:focus-visible, html[data-viewport='mobile'] .coaches-comment-entry:focus-visible { outline:2px solid var(--color-brand-primary);outline-offset:3px; }
+html[data-viewport='mobile'] .coaches-comment__games { display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;padding:12px;border:1px solid var(--color-brand-border);border-radius:14px;background:var(--color-brand-bg); }
+html[data-viewport='mobile'] .coaches-comment__games > div { display:flex;flex-direction:column;gap:3px;text-align:center; }
+html[data-viewport='mobile'] .coaches-comment__games strong { font-size:20px; }
+html[data-viewport='mobile'] .coaches-comment__games span { font-size:12px;color:var(--color-brand-muted); }
+html[data-viewport='mobile'] .coaches-comment__courts { display:grid;gap:20px; }
+html[data-viewport='mobile'] .coaches-comment__court { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:16px;padding-bottom:16px;border-bottom:1px solid var(--color-brand-border); }
+html[data-viewport='mobile'] .coaches-comment__court > h2 { grid-column:1/-1;padding:0 0 10px;margin:0;font-size:18px;font-weight:750;color:var(--color-brand-primary); }
+html[data-viewport='mobile'] .coaches-comment__team { min-width:0;border-top:2px solid #84cbed; }
+html[data-viewport='mobile'] .coaches-comment__team[data-team='b'] { border-top-color:#e7bd86; }
+html[data-viewport='mobile'] .coaches-comment__team > h3 { padding:8px 0 0;margin:0;color:#84cbed;font-size:11px;font-weight:750;letter-spacing:0.06em;text-transform:uppercase; }
+html[data-viewport='mobile'] .coaches-comment__team[data-team='b'] > h3 { color:#e7bd86; }
+html[data-viewport='mobile'] .coaches-comment__court ul { list-style:none;margin:0;padding:0; }
+html[data-viewport='mobile'] .coaches-comment__player { display:flex;align-items:center;gap:8px;min-height:68px;padding:8px 0;box-sizing:border-box; }
+html[data-viewport='mobile'] .coaches-comment__player + .coaches-comment__player { border-top:1px solid color-mix(in srgb,var(--color-brand-border) 35%,transparent); }
+html[data-viewport='mobile'] .coaches-comment__identity { flex:1;min-width:0; }
+html[data-viewport='mobile'] .coaches-comment__identity > strong { display:block;font-size:16px;font-weight:650;line-height:1.25;overflow-wrap:anywhere; }
+html[data-viewport='mobile'] .coaches-comment__identity > span { display:flex;align-items:center;gap:4px;margin-top:4px;font-size:11px;color:var(--color-brand-muted); }
+html[data-viewport='mobile'] .coaches-comment__identity > span svg { width:13px;height:13px;color:#91d5b1; }
+html[data-viewport='mobile'] .coaches-comment__player > .coach-record-trigger { width:40px;min-width:40px;height:44px;min-height:44px;padding:8px;border-radius:12px; }
+html[data-viewport='mobile'] .coaches-comment__player > .coach-record-trigger svg { width:21px;height:21px; }
+html[data-viewport='mobile'] .coaches-comment__court > ul { grid-column:1/-1; }

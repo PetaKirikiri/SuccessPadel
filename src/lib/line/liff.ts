@@ -1,6 +1,7 @@
 import liff from '@line/liff'
 import { saveReturnTo } from '../authReturnTo'
 import { handshakeSiteOrigin } from '../siteUrl'
+import { lineReturnEntryUrl } from './returnDestination'
 
 const liffId = (import.meta.env.VITE_LIFF_ID as string | undefined)?.trim() || undefined
 
@@ -153,6 +154,11 @@ export function lineAppEntryUrl(path = '/friendly'): string | null {
   const normalized = path.startsWith('/') ? path : `/${path}`
   const suffix = normalized === '/' ? '' : normalized
   return `https://liff.line.me/${liffId}${suffix}`
+}
+
+/** Ordinary sign-in carries a destination; account-link QR keeps its own protocol. */
+export function lineSignInEntryUrl(destination: string): string | null {
+  return liffId ? lineReturnEntryUrl(liffId, destination) : null
 }
 
 export function isMobileWeb(): boolean {

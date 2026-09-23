@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useId } from 'react'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Mic, ChevronRight } from 'lucide-react'
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { AppShellColumn } from '../../foundation/AppShell'
 import type { LeaderboardEntry } from '../../lib/leaderboardTypes'
@@ -12,6 +12,7 @@ import { PlayerProfileBanner } from '../../foundation/profile/PlayerProfileBanne
 import { PlayerProfileCard } from '../../foundation/profile/PlayerProfileCard'
 import { PlayerCoachFeedback } from './PlayerCoachFeedback'
 import { CoachRecorder } from './CoachRecorder'
+import { coachCompetitionFromPath } from '../../lib/coachGameLineup'
 import type { PlayerProfileTab } from '../../foundation/profile/PlayerProfileTabs'
 import { PlayerProfileDetailsDisplay } from '../../foundation/profile/PlayerProfileDetailsDisplay'
 import { ProfileDetailsForm, type EditableProfile } from '../../foundation/profile/ProfileDetailsForm'
@@ -87,6 +88,20 @@ export function PlayerProfileSurface() {
   const { inClient } = useLineClientProfile()
   const competitionId = searchParams.get('competition')
   const state = location.state as LocationState | null
+  function openCoachesComment() {
+    const currentCompetition = competitionId ?? coachCompetitionFromPath(state?.from)
+    const query = new URLSearchParams()
+    if (currentCompetition) {
+      query.set('competition', currentCompetition)
+      if (state?.from?.startsWith('/competitions/')) {
+        try {
+          const game = sessionStorage.getItem(`successpadel:competition:${currentCompetition}:selected-game`)
+          if (game && Number(game) > 0) query.set('game', game)
+        } catch { /* Current round remains the fallback when storage is unavailable. */ }
+      }
+    }
+    navigate(`/coaches-comment?${query}`, { state: { from: location.pathname + location.search, profileState: location.state } })
+  }
   const snapshot = state?.snapshot ?? null
   const routeEntry = snapshotEntryMatchesRoute(snapshot?.entry, playerId)
     ? (snapshot?.entry ?? null)
@@ -524,10 +539,10 @@ export function PlayerProfileSurface() {
 
       <main data-scroll-y className="profile-scroll scroll-y min-h-0 min-w-0 flex-1">
         <AppShellColumn fill={false} className="space-y-3 pb-8">
-          <button type="button" onClick={goBack} className="profile-back">
+          {loading || (isOwnProfile && authLoading) || playerNotFound ? <button type="button" onClick={goBack} className="profile-back">
             <ArrowLeft aria-hidden="true" />
             {t('aria.back')}
-          </button>
+          </button> : null}
           {lineHandshakeWorking ? (
             <div className="pointer-events-none fixed inset-0 z-[300] flex items-center justify-center bg-brand-bg/90 px-6 dark:bg-black/70">
               <p className="text-center text-sm text-brand-muted">{t('lineLink.signingInLine')}</p>
@@ -547,9 +562,10 @@ export function PlayerProfileSurface() {
             <PlayerProfileCard
               tab={tab}
               onTab={setTab}
-              banner={
+              banner={<>
                 <PlayerProfileBanner
                   embedded
+                  backAction={<button type="button" onClick={goBack} className="profile-back" aria-label={t('aria.back')} title={t('aria.back')}><ArrowLeft aria-hidden="true" /></button>}
                   name={displayName}
                   coachAction={canRecordCoach && resolved?.padelPlayerId ? (
                     <CoachRecorder key={resolved.padelPlayerId} playerId={resolved.padelPlayerId} playerName={displayName}
@@ -577,9 +593,12 @@ export function PlayerProfileSurface() {
                   }
                   t={t}
                 />
-              }
+                {canRecordCoach ? <button type="button" className="coaches-comment-entry" onClick={openCoachesComment}>
+                  <Mic aria-hidden="true" /><span>Coaches Comment</span><ChevronRight aria-hidden="true" />
+                </button> : null}
+              </>}
             >
-              {tab === 'feedback' ? <PlayerCoachFeedback playerId={resolved?.padelPlayerId ?? null} revision={coachFeedbackRevision} demo={playerId === 'dave'} /> : tab === 'history' ? (
+              {tab === 'feedback' ? <PlayerCoachFeedback playerId={resolved?.padelPlayerId ?? null} revision={coachFeedbackRevision} viewerId={user?.id} canDeleteOwn={canRecordCoach} demo={playerId === 'dave'} /> : tab === 'history' ? (
                 <PlayerMatchHistory
                   playerId={profileId ?? padelPlayerId ?? playerId}
                   embedded

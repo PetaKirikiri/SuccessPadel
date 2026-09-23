@@ -3,11 +3,20 @@ import assert from 'node:assert/strict'
 import { inputSchema, validateFeedback, transcribeAudio, organiseTranscript, processFeedback, handleFeedback } from './feedback.mjs'
 
 const transcript='Alex recovers well but should take smaller steps.'
-const feedback={observations:[{category:'movement',skill:'Footwork & balance',kind:'improvement',observation:'Use smaller adjustment steps.',next_step:'Practise short steps before contact.',evidence:'should take smaller steps'}]}
+const feedback={observations:[{category:'movement',skill:'Footwork & balance',kind:'improvement',observation:'Use smaller adjustment steps.',next_step:'Practise short steps before contact.',evidence:'should take smaller steps',rating:null,rating_source:null}]}
 test('valid evidence and exact subskill accepted',()=>assert.equal(validateFeedback(feedback,transcript).observations.length,1))
 test('invented evidence rejected',()=>assert.throws(()=>validateFeedback(feedback,'Something else')))
 test('wrong category/subskill rejected',()=>assert.throws(()=>validateFeedback({observations:[{...feedback.observations[0],category:'attack'}]},transcript)))
-test('invented ratings and fields rejected',()=>assert.throws(()=>validateFeedback({...feedback,rating:9},transcript)))
+test('unsupported top-level ratings and fields rejected',()=>assert.throws(()=>validateFeedback({...feedback,rating:9},transcript)))
+test('bounded skill ratings retain their source; invalid and unlabelled scores rejected',()=>{
+ for(const source of ['coach','estimated']) {
+  const rated={observations:[{...feedback.observations[0],rating:6,rating_source:source}]}
+  assert.equal(validateFeedback(rated,transcript).observations[0].rating,6)
+ }
+ for(const change of [{rating:0,rating_source:'estimated'},{rating:11,rating_source:'coach'},
+  {rating:6.5,rating_source:'coach'},{rating:6,rating_source:null},{rating:null,rating_source:'estimated'}])
+  assert.throws(()=>validateFeedback({observations:[{...feedback.observations[0],...change}]},transcript))
+})
 test('empty observations are valid, not fabricated',()=>assert.deepEqual(validateFeedback({observations:[]},'Hello'),{observations:[]}))
 test('upload validates ids, duration, format and size',()=>{
  const input={id:crypto.randomUUID(),playerId:crypto.randomUUID(),competitionId:null,seconds:20,mime:'audio/mp4',audio:'YQ=='}

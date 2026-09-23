@@ -138,7 +138,7 @@ export function InviteGameCard(props: Props) {
       currentUserId={currentUserId}
       qrUrl={row ? competitionInviteUrl(row.id) : game ? `${shareSiteOrigin()}/friendly/${game.id}` : undefined}
       qrAriaLabel={t('leaderboard.viewAlongHint')}
-      accountAction={row ? <InviteProfileAction /> : undefined}
+      accountAction={row ? <InviteProfileAction competitionId={row.id} /> : undefined}
       headerAction={
         row ? (
           <div className="invite-game-card__header-links" aria-label="Competition navigation">

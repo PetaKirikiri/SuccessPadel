@@ -13,6 +13,17 @@ do $$ begin
 end $$;
 insert into public.player_coach_observations(id,player_id,coach_id,audio_sha256,audio_seconds)
 select observation,player,coach,'rollback-only-test',10 from coach_test_context;
+reset role;
+set local role anon;
+do $$ begin
+  if exists(select id from public.player_coach_observations where id=(select observation from coach_test_context)) then raise exception 'anonymous saw processing note'; end if;
+end $$;
+reset role;
+set local role authenticated;
+do $$ begin
+  delete from public.player_coach_observations where id=(select observation from coach_test_context);
+  if found then raise exception 'processing note deletion allowed'; end if;
+end $$;
 update public.player_coach_observations set transcript='Rollback-only test',feedback='{"observations":[]}',status='complete'
 where id=(select observation from coach_test_context);
 do $$ begin
@@ -22,10 +33,33 @@ do $$ begin
     raise exception 'identity was mutable';
   exception when insufficient_privilege then null; end;
 end $$;
+reset role;
+set local role anon;
+do $$ begin
+  if (select count(id) from public.player_coach_observations where id=(select observation from coach_test_context))<>1 then raise exception 'anonymous cannot read completed feedback'; end if;
+  if (select transcript from public.player_coach_observations where id=(select observation from coach_test_context))<>'Rollback-only test' then raise exception 'anonymous comment missing'; end if;
+  begin
+    perform audio_sha256 from public.player_coach_observations limit 1;
+    raise exception 'anonymous internal fields exposed';
+  exception when insufficient_privilege then null; end;
+  begin
+    update public.player_coach_observations set transcript='forbidden' where id=(select observation from coach_test_context);
+    raise exception 'anonymous update allowed';
+  exception when insufficient_privilege then null; end;
+  begin
+    insert into public.player_coach_observations(id,player_id,coach_id,audio_sha256,audio_seconds)
+      select gen_random_uuid(),player,coach,'forbidden',10 from coach_test_context;
+    raise exception 'anonymous insert allowed';
+  exception when insufficient_privilege then null; end;
+end $$;
+reset role;
+set local role authenticated;
 select set_config('request.jwt.claim.sub',(select player_profile::text from coach_test_context),true);
 do $$ begin
   if public.can_record_coach_feedback() then raise exception 'player has staff access'; end if;
   if (select count(*) from public.player_coach_observations where id=(select observation from coach_test_context))<>1 then raise exception 'player cannot read own feedback'; end if;
+  delete from public.player_coach_observations where id=(select observation from coach_test_context);
+  if found then raise exception 'player deleted coach feedback'; end if;
   begin
     insert into public.player_coach_observations(id,player_id,coach_id,audio_sha256,audio_seconds)
       select gen_random_uuid(),player,player_profile,'forbidden',10 from coach_test_context;
@@ -39,25 +73,44 @@ end $$;
 select set_config('request.jwt.claim.sub',(select outsider::text from coach_test_context),true);
 do $$ begin
   if not exists(select 1 from public.player_coach_observations where id=(select observation from coach_test_context)) then raise exception 'unrelated player cannot read public feedback'; end if;
+  delete from public.player_coach_observations where id=(select observation from coach_test_context);
+  if found then raise exception 'outsider deleted feedback'; end if;
+end $$;
+reset role;
+-- Give an unrelated test user coach status, solely inside this rollback transaction.
+insert into public.coach_feedback_staff(profile_id) select outsider from coach_test_context;
+set local role authenticated;
+select set_config('request.jwt.claim.sub',(select outsider::text from coach_test_context),true);
+do $$ begin
+  if not public.can_record_coach_feedback() then raise exception 'second coach fixture invalid'; end if;
+  delete from public.player_coach_observations where id=(select observation from coach_test_context);
+  if found then raise exception 'another coach deleted author feedback'; end if;
+end $$;
+reset role;
+delete from public.coach_feedback_staff where profile_id=(select coach from coach_test_context);
+set local role authenticated;
+select set_config('request.jwt.claim.sub',(select coach::text from coach_test_context),true);
+do $$ begin
+  delete from public.player_coach_observations where id=(select observation from coach_test_context);
+  if found then raise exception 'revoked coach deleted feedback'; end if;
+end $$;
+reset role;
+insert into public.coach_feedback_staff(profile_id) select coach from coach_test_context;
+set local role authenticated;
+select set_config('request.jwt.claim.sub',(select coach::text from coach_test_context),true);
+do $$ begin
+  delete from public.player_coach_observations where id=(select observation from coach_test_context);
+  if not found then raise exception 'author could not delete feedback'; end if;
 end $$;
 reset role;
 set local role anon;
 do $$ begin
-  if (select count(id) from public.player_coach_observations where id=(select observation from coach_test_context))<>1 then raise exception 'anonymous cannot read public feedback'; end if;
-  if exists(select id from public.player_coach_observations where status<>'complete') then raise exception 'anonymous saw unfinished feedback'; end if;
+  if exists(select id from public.player_coach_observations where id=(select observation from coach_test_context)) then raise exception 'deleted note remains public'; end if;
   begin
-    update public.player_coach_observations set transcript='forbidden' where id=(select observation from coach_test_context);
-    raise exception 'anonymous update allowed';
-  exception when insufficient_privilege then null; end;
-  begin
-    delete from public.player_coach_observations where id=(select observation from coach_test_context);
+    delete from public.player_coach_observations where id=gen_random_uuid();
     raise exception 'anonymous deletion allowed';
-  exception when insufficient_privilege then null; end;
-  begin
-    perform audio_sha256 from public.player_coach_observations limit 1;
-    raise exception 'anonymous internal fields exposed';
   exception when insufficient_privilege then null; end;
 end $$;
 reset role;
 rollback;
-select 'PASS: staff save/read, public completed feedback, anonymous write/internal-field denial, immutable player identity, no self-granted coach access; all test writes rolled back' as result;
+select 'PASS: public completed comments; processing/internal fields hidden from anon; staff-only recording; author-only deletion; immutable identity; all test writes rolled back' as result;

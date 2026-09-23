@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type ReactElement } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { streamingEnabled } from '../../features/streaming/api'
+import '../../features/streaming/streaming.css'
 import { Plus } from 'lucide-react'
 import type { GamesHubTab } from '../../components/InviteCard/GamesHubView'
 import { useAuth } from '../../hooks/useAuth'
@@ -158,6 +160,7 @@ function HubNavItem({ kind }: { kind: HubKind }) {
               {t(item.labelKey)}
             </button>
           ))}
+          {kind === 'competitive' && streamingEnabled && <Link className="court-stream__entry" role="menuitem" to="/stream" onClick={() => setOpen(false)}>Stream Match</Link>}
           {isAdmin ? (
             <>
               <div className="my-1 border-t border-brand-border" role="separator" />

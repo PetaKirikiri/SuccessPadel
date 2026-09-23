@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient'
 
 export type PlayerMatchHistoryEntry = {
+  recording_urls?: string[]
   match_id: string
   played_at: string | null
   score_summary: string
@@ -36,5 +37,10 @@ export async function fetchPlayerMatchHistory(playerId: string): Promise<PlayerM
     p_player_id: playerId,
   })
   if (error || !Array.isArray(data)) return []
-  return data.map(parseEntry).filter((e): e is PlayerMatchHistoryEntry => e != null)
+  const entries = data.map(parseEntry).filter((e): e is PlayerMatchHistoryEntry => e != null)
+  if (entries.length && import.meta.env.VITE_STREAMING_API_URL) {
+    const recordings = await supabase.from('match_recordings').select('match_id,youtube_video_id').in('match_id', entries.map(e => e.match_id)).eq('state', 'ready')
+    if (!recordings.error) for (const entry of entries) entry.recording_urls = (recordings.data ?? []).filter(r => r.match_id === entry.match_id).map(r => `https://www.youtube.com/watch?v=${encodeURIComponent(r.youtube_video_id)}`)
+  }
+  return entries
 }

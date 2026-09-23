@@ -16,5 +16,6 @@
 @import './competition-formats/duos/roster.web.css';
 @import './competition-formats/duos/roster.tv.css';
 @import './profile.layout.css';
+@import './members.layout.css';
 @import './gesture-pad.layout.css';
 @import './gesture-score.layout.css';

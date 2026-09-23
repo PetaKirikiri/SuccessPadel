@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useSyncExternalStore } from 'react'
+import { useAuth } from './useAuth'
+import { createNavigationSnapshotCache } from '../lib/navigationSnapshotCache'
 import { supabase } from '../lib/supabaseClient'
 import { enrichCompetitionPlayersAvatars } from '../lib/competitionRosterAvatars'
 import { mergeShowdownIntoRounds } from '../lib/competitionRoundShowdown'
@@ -23,73 +25,80 @@ type Options = {
   pollMs?: number | false
 }
 
+const snapshots = createNavigationSnapshotCache<PublicCompetition>()
+const emptyRounds: CompetitionRound[] = []
+const emptyMatches: CourtMatch[] = []
+const emptyRoster: CompetitionPlayer[] = []
+const emptyPairs: CompetitionSessionPair[] = []
+const emptyCourts: ClubCourt[] = []
+const emptyLeaderboard: LeaderboardEntry[] = []
+
+function normalizeCompetition(d: PublicCompetition, roster: CompetitionPlayer[]): PublicCompetition {
+  return {
+    ...d,
+    roster,
+    rounds: mergeShowdownIntoRounds(d.rounds ?? [], roster),
+    matches: d.matches ?? [],
+    courts: d.courts ?? [],
+    session_pairs: d.session_pairs ?? [],
+    leaderboard: normalizeLeaderboardEntries((d.leaderboard ?? []).map(entry => {
+      const slot = roster.find(player => player.id === entry.profile_id ||
+        (player.profile_id && [entry.profile_id, entry.member_profile_id].includes(player.profile_id)) ||
+        (player.padel_player_id && [entry.profile_id, entry.padel_player_id].includes(player.padel_player_id)))
+      return { ...entry, roster_entry_id: entry.roster_entry_id ?? slot?.id ?? null }
+    })),
+  }
+}
+
 export function usePublicCompetition(sessionId: string | undefined, options?: Options) {
   const pollMs = options?.pollMs
-  const [session, setSession] = useState<GameSession | null>(null)
-  const [rounds, setRounds] = useState<CompetitionRound[]>([])
-  const [courtMatches, setCourtMatches] = useState<CourtMatch[]>([])
-  const [roster, setRoster] = useState<CompetitionPlayer[]>([])
-  const [sessionPairs, setSessionPairs] = useState<CompetitionSessionPair[]>([])
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
-  const [clubCourts, setClubCourts] = useState<ClubCourt[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { user } = useAuth()
+  const key = `${user?.id ?? 'public'}:${sessionId ?? ''}`
+  const subscribe = useCallback((listener: () => void) => snapshots.subscribe(key, listener), [key])
+  const read = useCallback(() => snapshots.read(key), [key])
+  const snapshot = useSyncExternalStore(subscribe, read)
+  const session = snapshot.data?.session ?? null
+  const rounds = snapshot.data?.rounds ?? emptyRounds
+  const courtMatches = snapshot.data?.matches ?? emptyMatches
+  const roster = snapshot.data?.roster ?? emptyRoster
+  const sessionPairs = snapshot.data?.session_pairs ?? emptyPairs
+  const clubCourts = snapshot.data?.courts ?? emptyCourts
+  const leaderboard = snapshot.data?.leaderboard ?? emptyLeaderboard
+  const error = snapshot.error
+  const loading = Boolean(sessionId) && !snapshot.data && !error
 
   const applyMatchScore = useCallback((roundId: string, courtId: string, scoreSummary: string) => {
-    const playedAt = new Date().toISOString()
-    setCourtMatches((prev) => {
-      const next = [...prev]
-      const idx = next.findIndex(
-        (m) => m.competition_round_id === roundId && m.court_id === courtId,
-      )
-      const row: CourtMatch = {
-        competition_round_id: roundId,
-        court_id: courtId,
-        score_summary: scoreSummary,
-        played_at: playedAt,
-        match_players: [],
-      }
-      if (idx >= 0) next[idx] = row
-      else next.push(row)
-      return next
+    snapshots.update(key, current => {
+      if (!current) return current
+      const matches = [...current.matches]
+      const idx = matches.findIndex(m => m.competition_round_id === roundId && m.court_id === courtId)
+      const row: CourtMatch = { competition_round_id: roundId, court_id: courtId, score_summary: scoreSummary,
+        played_at: new Date().toISOString(), match_players: [] }
+      if (idx >= 0) matches[idx] = row
+      else matches.push(row)
+      return { ...current, matches }
     })
-  }, [])
+  }, [key])
 
-  const refresh = useCallback(
-    async (silent = false) => {
-      if (!sessionId) return
-      if (!silent) setLoading(true)
+  const refresh = useCallback(async (_silent = false) => {
+    if (!sessionId) return
+    await snapshots.refresh(key, async () => {
       const [{ data, error: err }, { data: pairsData, error: pairsErr }] = await Promise.all([
         supabase.rpc('get_public_competition', { p_session_id: sessionId }),
         supabase.rpc('get_public_competition_session_pairs', { p_session_id: sessionId }),
       ])
-      if (err || pairsErr) {
-        setError(err?.message ?? pairsErr?.message ?? 'Failed to load competition')
-      } else if (!data) {
-        setError('Not found')
-      } else {
-        const d = data as PublicCompetition
-        setError(null)
-        setSession(d.session)
-        const enrichedRoster = await enrichCompetitionPlayersAvatars(d.roster ?? [])
-        setRoster(enrichedRoster)
-        setRounds(mergeShowdownIntoRounds(d.rounds ?? [], enrichedRoster))
-        setSessionPairs((pairsData as CompetitionSessionPair[]) ?? d.session_pairs ?? [])
-        setClubCourts(d.courts ?? [])
-        setCourtMatches(d.matches ?? [])
-        setLeaderboard(normalizeLeaderboardEntries((d.leaderboard ?? []).map((entry) => {
-          const slot = enrichedRoster.find((player) =>
-            player.id === entry.profile_id ||
-            (player.profile_id && [entry.profile_id, entry.member_profile_id].includes(player.profile_id)) ||
-            (player.padel_player_id && [entry.profile_id, entry.padel_player_id].includes(player.padel_player_id)),
-          )
-          return { ...entry, roster_entry_id: entry.roster_entry_id ?? slot?.id ?? null }
-        })))
-      }
-      if (!silent) setLoading(false)
-    },
-    [sessionId],
-  )
+      if (err || pairsErr) throw new Error(err?.message ?? pairsErr?.message ?? 'Failed to load competition')
+      if (!data) throw new Error('Not found')
+      const d = data as PublicCompetition
+      return normalizeCompetition({ ...d, session_pairs: (pairsData as CompetitionSessionPair[]) ?? d.session_pairs }, d.roster ?? [])
+    })
+    const current = snapshots.read(key).data
+    if (!current) return
+    // Photos enhance the already visible board; never hold navigation behind them.
+    void enrichCompetitionPlayersAvatars(current.roster).then(enrichedRoster => {
+      snapshots.update(key, latest => latest === current ? normalizeCompetition(current, enrichedRoster) : latest, false)
+    }).catch(() => { /* Keep the board and its existing photos on enrichment failure. */ })
+  }, [sessionId, key])
 
   useEffect(() => {
     void refresh()

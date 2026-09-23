@@ -5,3 +5,7 @@ enabled = true
 enabled = true
 site_url = "http://localhost:5173"
 additional_redirect_urls = ["http://localhost:5173/auth/callback"]
+
+# This pre-session endpoint authenticates the LINE ID token with LINE itself.
+[functions.line-liff-recognize]
+verify_jwt = false

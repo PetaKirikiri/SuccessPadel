@@ -76,6 +76,7 @@ html[data-viewport='tablet'] .competition-pregame[data-competition-format='singl
 
 html[data-viewport='tablet'] .competition-pregame[data-competition-format='singles'] .competition-pregame__roster .competition-pregame__avatar { grid-column: 1; grid-row: 1; }
 
-html[data-viewport='tablet'] .competition-pregame[data-competition-format='singles'] .competition-pregame__roster .competition-pregame__name { grid-column: 2; grid-row: 1; }
+/* Keep the profile tap target on the name; surrounding space belongs to card drag. */
+html[data-viewport='tablet'] .competition-pregame[data-competition-format='singles'] .competition-pregame__roster .competition-pregame__name { grid-column: 2; grid-row: 1; justify-self: start; width: fit-content; max-width: 100%; }
 
 html[data-viewport='tablet'] .competition-pregame[data-competition-format='singles'] .competition-pregame__roster .competition-pregame__attendance-actions { grid-column: 1 / -1; grid-row: 2; }

@@ -1,0 +1,7 @@
+**
+!package.json
+!package-lock.json
+!server/
+!server/streaming/
+!server/streaming/*.mjs
+!server/streaming/Dockerfile

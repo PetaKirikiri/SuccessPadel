@@ -1,0 +1,26 @@
+# Pinned against MediaMTX 1.21.0. Linux host networking; control ports are loopback only.
+logLevel: warn
+api: true
+apiAddress: 127.0.0.1:9997
+authMethod: http
+authHTTPAddress: http://127.0.0.1:8090/internal/media-auth
+authHTTPExclude: []
+rtsp: true
+rtspAddress: 127.0.0.1:8554
+rtspTransports: [tcp]
+rtmp: false
+hls: false
+srt: false
+moq: false
+playback: false
+webrtc: true
+webrtcAddress: 127.0.0.1:8889
+webrtcLocalUDPAddress: :8189
+webrtcLocalTCPAddress: :8189
+webrtcTrackGatherTimeout: 10s
+# Set MTX_WEBRTCADDITIONALHOSTS to the VM's public IPv4 / DNS name.
+webrtcIPsFromInterfaces: false
+paths:
+  '~^court/[0-9a-f-]+$':
+    source: publisher
+    overridePublisher: false

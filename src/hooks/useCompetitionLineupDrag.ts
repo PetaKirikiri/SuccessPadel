@@ -18,8 +18,10 @@ export function useCompetitionLineupDrag(sessionId: string, source: CompetitionP
   const staleSource = useRef<string | null>(null)
   const drag = useRef<{
     from: number; to: number; snapshot: CompetitionPlayer[]; element: HTMLElement;
-    x: number; y: number; left: number; top: number; animation: Animation | null;
-    previews: Map<HTMLElement, Animation>
+    x: number; y: number; animation: Animation | null;
+    previews: Map<HTMLElement, Animation>; previewTo: number | null;
+    cards: HTMLElement[]; footprints: DOMRect[]; container: HTMLElement;
+    containerLeft: number; containerTop: number; scrollLeft: number; scrollTop: number
   } | null>(null)
   useEffect(() => () => {
     drag.current?.animation?.cancel()
@@ -76,48 +78,68 @@ export function useCompetitionLineupDrag(sessionId: string, source: CompetitionP
 
   const pointerDown = (event: PointerEvent<HTMLElement>, index: number) => {
     if (!enabled || drag.current || !event.isPrimary || event.button !== 0) return
-    if ((event.target as HTMLElement).closest('button, a, input, select, textarea')) return
+    // Touch browsers may retarget blank space beside a name to its button.
+    // Use the actual contact point so only the real controls exclude pickup.
+    const hit = event.currentTarget.ownerDocument.elementFromPoint(event.clientX, event.clientY)
+    if (!hit || !event.currentTarget.contains(hit)) return
+    if (hit.closest('button, a, input, select, textarea, [role="button"], [contenteditable="true"]')) return
     event.preventDefault()
     event.stopPropagation()
     event.currentTarget.setPointerCapture(event.pointerId)
-    const rect = event.currentTarget.getBoundingClientRect()
+    const container = event.currentTarget.parentElement!
+    const containerRect = container.getBoundingClientRect()
+    const cards = Array.from(container.querySelectorAll<HTMLElement>('[data-lineup-player]'))
+      .filter(element => element.dataset.lineupSession === sessionId)
     drag.current = { from: index, to: index, snapshot: latestPlayers.current, element: event.currentTarget,
-      x: event.clientX, y: event.clientY, left: rect.left, top: rect.top, animation: null, previews: new Map() }
+      x: event.clientX, y: event.clientY, animation: null, previews: new Map(), previewTo: null,
+      cards, footprints: cards.map(element => element.getBoundingClientRect()), container,
+      containerLeft: containerRect.left, containerTop: containerRect.top,
+      scrollLeft: container.scrollLeft, scrollTop: container.scrollTop }
     setDraggingId(players[index]!.id)
     setTargetId(players[index]!.id)
+  }
+  const positionAt = (current: NonNullable<typeof drag.current>, x: number, y: number) => {
+    // Measure one stable container, not sixteen animated cards on every event.
+    const rect = current.container.getBoundingClientRect()
+    const dx = rect.left - current.containerLeft - (current.container.scrollLeft - current.scrollLeft)
+    const dy = rect.top - current.containerTop - (current.container.scrollTop - current.scrollTop)
+    return {
+      to: nearestLineupSlot(current.footprints, x - dx, y - dy),
+      transform: `translate(${x - current.x - dx}px, ${y - current.y - dy}px)`,
+    }
   }
   const pointerMove = (event: PointerEvent<HTMLElement>) => {
     const current = drag.current
     if (!current) return
     if (!enabled) { cancel(); return }
-    current.animation?.cancel()
-    const rect = current.element.getBoundingClientRect()
-    const transform = `translate(${event.clientX - current.x + current.left - rect.left}px, ${event.clientY - current.y + current.top - rect.top}px)`
-    // Hit-test the fixed slot footprints, never the animated occupants. Otherwise
-    // sliding a neighbour out of the way changes the target under the pointer.
-    const cards = Array.from(current.element.parentElement?.querySelectorAll<HTMLElement>('[data-lineup-player]') ?? [])
-      .filter((element) => element.dataset.lineupSession === sessionId)
-    const previousTransforms = cards.map(element => getComputedStyle(element).transform)
-    current.previews.forEach(animation => animation.cancel())
-    current.previews.clear()
-    const footprints = cards.map(element => element.getBoundingClientRect())
-    const to = nearestLineupSlot(footprints, event.clientX, event.clientY)
+    const { to, transform } = positionAt(current, event.clientX, event.clientY)
     if (to >= 0) { current.to = to; setTargetId(current.snapshot[to]!.id) }
     // The same insertion permutation drives both the live preview and save:
     // lift one occupant out, shift everyone between, leave its destination open.
-    const order = moveLineupPlayer(cards.map((_, index) => index), current.from, current.to)
-    const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : 140
-    order.forEach((originalIndex, slotIndex) => {
-      if (originalIndex === current.from) return
-      const element = cards[originalIndex]!
-      const origin = footprints[originalIndex]!
-      const destination = footprints[slotIndex]!
-      const shifted = `translate(${destination.left - origin.left}px, ${destination.top - origin.top}px)`
-      current.previews.set(element, element.animate([
-        { transform: previousTransforms[originalIndex] }, { transform: shifted },
-      ], { duration, easing: 'ease-out', fill: 'forwards' }))
-    })
-    current.animation = current.element.animate([{ transform }, { transform }], { duration: 1, fill: 'forwards' })
+    if (current.previewTo !== current.to) {
+      const { cards, footprints } = current
+      const previousTransforms = cards.map(element => getComputedStyle(element).transform)
+      current.previews.forEach(animation => animation.cancel())
+      current.previews.clear()
+      current.previewTo = current.to
+      const order = moveLineupPlayer(cards.map((_, index) => index), current.from, current.to)
+      const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : 140
+      order.forEach((originalIndex, slotIndex) => {
+        if (originalIndex === current.from) return
+        const element = cards[originalIndex]!
+        const origin = footprints[originalIndex]!
+        const destination = footprints[slotIndex]!
+        const shifted = `translate(${destination.left - origin.left}px, ${destination.top - origin.top}px)`
+        current.previews.set(element, element.animate([
+          { transform: previousTransforms[originalIndex] }, { transform: shifted },
+        ], { duration, easing: 'ease-out', fill: 'forwards' }))
+      })
+    }
+    if (current.animation) {
+      (current.animation.effect as KeyframeEffect).setKeyframes([{ transform }, { transform }])
+    } else {
+      current.animation = current.element.animate([{ transform }, { transform }], { duration: 1, fill: 'forwards' })
+    }
     // Scroll the actual page container, not the fixed viewport wrapper.
     let parent = event.currentTarget.parentElement
     while (parent) {
@@ -138,9 +160,13 @@ export function useCompetitionLineupDrag(sessionId: string, source: CompetitionP
     setDraggingId(null)
   }
   const pointerUp = (event: PointerEvent<HTMLElement>) => {
-    // A fast release can arrive beyond the last pointermove event.
-    if (drag.current) pointerMove(event)
     const current = drag.current
+    // Commit from the release coordinates immediately, even if the final move
+    // was coalesced. Never start another animation or scroll on pointerup.
+    if (current) {
+      const { to } = positionAt(current, event.clientX, event.clientY)
+      if (to >= 0) current.to = to
+    }
     cancel()
     if (current) void saveMove(current.snapshot, current.from, current.to)
   }

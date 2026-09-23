@@ -1327,7 +1327,6 @@ html[data-viewport='web'] .invite-game-card__roster:has(.competition-level-guide
 html[data-viewport='web'] .competition-level-guide { display: flex; flex-direction: column; flex: 1; gap: 0.9rem; min-width: 0; min-height: 0; padding: clamp(0.75rem, 1.5vw, 1.8rem); color: #e5f2fa; }
 html[data-viewport='web'] .competition-level-guide__header { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
 html[data-viewport='web'] .competition-level-guide__header h2 { margin: 0; font-size: clamp(1.2rem, 2vw, 2rem); font-weight: 750; line-height: 1.2; }
-html[data-viewport='web'] .competition-level-guide__header p { margin: 0.3rem 0 0; color: #b6cfe0; font-size: clamp(0.8rem, 1.1vw, 1.1rem); line-height: 1.3; }
 html[data-viewport='web'] .competition-level-guide button { border: 1px solid #5f96b6; border-radius: 0.6rem; background: #173d59; color: #e5f2fa; padding: 0.55rem 0.8rem; font: inherit; cursor: pointer; }
 html[data-viewport='web'] .competition-level-guide button:focus-visible { outline: 2px solid #7dd3fc; outline-offset: 2px; }
 html[data-viewport='web'] .competition-level-guide__back { flex: 0 0 auto; font-size: 0.85rem; }
@@ -1336,15 +1335,10 @@ html[data-viewport='web'] .competition-level-guide__cards { display: grid; grid-
 html[data-viewport='web'] .competition-level-guide__card { display: flex; flex-direction: column; gap: clamp(0.7rem, 1.2vh, 1.3rem); min-width: 0; padding: clamp(1rem, 1.6vw, 2rem); border: 1px solid #416f91; border-radius: 1rem; background: #123654; }
 html[data-viewport='web'] .competition-level-guide__intro { display: grid; grid-template-columns: minmax(0, 1fr) 36%; align-items: center; gap: 1rem; }
 html[data-viewport='web'] .competition-level-guide__intro h3 { margin: 0; font-size: clamp(1.35rem, 2.3vw, 2.75rem); font-weight: 800; color: #7dd3fc; line-height: 1.1; }
-html[data-viewport='web'] .competition-level-guide__intro p { margin: 0.5rem 0 0; font-size: clamp(0.9rem, 1.25vw, 1.25rem); line-height: 1.35; }
-html[data-viewport='web'] .competition-level-guide__intro img { display: block; width: 100%; height: auto; }
 html[data-viewport='web'] .competition-level-guide dl { display: grid; flex: 1; gap: 0.8rem; margin: 0; }
 html[data-viewport='web'] .competition-level-guide dl > div { display: flex; flex-direction: column; justify-content: center; gap: 0.2rem; border-top: 1px solid #2f5573; padding-top: 0.7rem; }
 html[data-viewport='web'] .competition-level-guide dt { color: #9adcf8; font-size: clamp(0.85rem, 1.15vw, 1.3rem); font-weight: 750; }
 html[data-viewport='web'] .competition-level-guide dd { margin: 0; font-size: clamp(0.9rem, 1.3vw, 1.4rem); line-height: 1.35; }
-html[data-viewport='web'] .competition-level-guide__focus { margin: 0; padding: 0.7rem 0.8rem; border-radius: 0.5rem; background: #204e66; font-size: clamp(0.8rem, 1.1vw, 1.1rem); line-height: 1.35; }
-html[data-viewport='web'] .competition-level-guide__focus strong { display: block; margin-bottom: 0.2rem; color: #a7e5c6; }
-html[data-viewport='web'] .competition-level-guide__note { margin: 0; color: #a5c0d5; font-size: clamp(0.75rem, 1vw, 1rem); line-height: 1.3; }
 
 /* Keep the help screen in the same full-height content area. */
 html[data-viewport='web'] .shell-main > div:has(.competition-level-guide),
@@ -1362,16 +1356,31 @@ html[data-viewport='web'] .competition-level-guide__card { gap: 0.65rem; padding
 html[data-viewport='web'] .competition-level-guide dl { gap: 0.4rem; }
 html[data-viewport='web'] .competition-level-guide dl > div { padding-top: 0.4rem; }
 html[data-viewport='web'] .competition-level-guide dd { font-size: 0.95rem; line-height: 1.3; }
-html[data-viewport='web'] .competition-level-guide__focus { font-size: 0.85rem; padding: 0.5rem 0.65rem; }
 html[data-viewport='web'] .competition-level-guide__cards { min-height: min-content; }
-html[data-viewport='web'] .competition-level-guide__intro img { max-height: 56px; object-fit: contain; }
 html[data-viewport='web'] .competition-level-guide__intro h3 { font-size: 1.6rem; }
-html[data-viewport='web'] .competition-level-guide__intro p { font-size: 0.95rem; }
 html[data-viewport='web'] .competition-level-guide__card { gap: 0.4rem; }
 html[data-viewport='web'] .competition-level-guide dl > div { padding-block: 0.25rem 0; gap: 0.15rem; }
 html[data-viewport='web'] .invite-game-card__roster:has(.competition-level-guide) { max-height: none; }
 html[data-viewport='web'] .invite-game-card__pregame-pane:not([hidden]) { display: contents; }
 html[data-viewport='web'] .invite-game-card__pregame-pane[hidden] { display: none; }
+
+/* Visual skill checks: one icon and one short phrase per skill. */
+html[data-viewport='web'] .competition-level-guide__intro { display: block; }
+html[data-viewport='web'] .competition-level-guide dl { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 1fr; gap: 0.65rem; }
+html[data-viewport='web'] .competition-level-guide dl > div { align-items: center; text-align: center; gap: 0.3rem; padding: clamp(0.3rem, 1vh, 0.8rem) 0.45rem; border: 1px solid #305e7b; border-radius: 0.75rem; background: #10304b; }
+html[data-viewport='web'] .competition-level-guide dt { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; font-size: clamp(0.85rem, 1.3vw, 1.6rem); }
+html[data-viewport='web'] .competition-level-guide__skill-icon { width: clamp(1.5rem, 4vh, 4.5rem); height: clamp(1.5rem, 4vh, 4.5rem); stroke-width: 1.7; color: #7dd3fc; }
+html[data-viewport='web'] .competition-level-guide [data-skill='Serve & return'] .competition-level-guide__skill-icon { color: #a7e5c6; }
+html[data-viewport='web'] .competition-level-guide [data-skill='Glass'] .competition-level-guide__skill-icon { color: #f2ce7a; }
+html[data-viewport='web'] .competition-level-guide [data-skill='Positioning'] .competition-level-guide__skill-icon { color: #c4b5fd; }
+html[data-viewport='web'] .competition-level-guide dd { font-size: clamp(0.85rem, 1.3vw, 1.6rem); line-height: 1.3; max-width: 23ch; }
+
+@media (max-height: 650px) {
+  html[data-viewport='web'] .competition-level-guide { padding: 0.4rem; gap: 0.4rem; }
+  html[data-viewport='web'] .competition-level-guide__back { padding: 0.35rem 0.65rem; }
+  html[data-viewport='web'] .competition-level-guide__card { padding: 0.5rem; }
+  html[data-viewport='web'] .competition-level-guide__intro h3 { font-size: 1.2rem; }
+}
 
 /* Let the approved artwork fill the header height, within the empty side lanes. */
 html[data-viewport='web'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__header-links)::before,
@@ -1382,3 +1391,29 @@ html[data-viewport='web'] .invite-game-card[data-kind='competition'] .invite-gam
 }
 html[data-viewport='web'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__header-links)::before { left: 15%; transform: translate(-50%, 4%); }
 html[data-viewport='web'] .invite-game-card[data-kind='competition'] .invite-game-card__header:has(.invite-game-card__header-links)::after { right: 15%; transform: translate(50%, 1%); }
+
+/* Skill illustrations show the player and the shot, with compact checks alongside. */
+html[data-viewport='web'] .competition-level-guide__illustration { margin: 0; min-width: 0; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 0.4rem; }
+html[data-viewport='web'] .competition-level-guide__illustration img { display: block; width: 100%; min-height: 0; object-fit: contain; border-radius: 0.6rem; }
+html[data-viewport='web'] .competition-level-guide__illustration figcaption { color: #b6cfe0; font-size: 0.85rem; line-height: 1.25; text-align: center; }
+html[data-viewport='web'] .competition-level-guide__illustration img { height: clamp(110px, 22vh, 280px); }
+html[data-viewport='web'] .competition-level-guide dt { flex-direction: row; gap: 0.4rem; }
+html[data-viewport='web'] .competition-level-guide__skill-icon { flex-shrink: 0; width: 1.5rem; height: 1.5rem; }
+@media (max-height: 650px) {
+  html[data-viewport='web'] .competition-level-guide__card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); column-gap: 0.8rem; }
+  html[data-viewport='web'] .competition-level-guide__intro { grid-column: 1 / -1; }
+  html[data-viewport='web'] .competition-level-guide__illustration img { height: auto; max-height: 100%; }
+  html[data-viewport='web'] .competition-level-guide dl { grid-template-columns: minmax(0, 1fr); gap: 0.35rem; }
+  html[data-viewport='web'] .competition-level-guide dl > div { display: grid; grid-template-columns: 1.35rem minmax(0, 1fr); align-items: center; column-gap: 0.4rem; padding: 0.3rem; text-align: left; }
+  html[data-viewport='web'] .competition-level-guide dt span { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+  html[data-viewport='web'] .competition-level-guide dd { font-size: 0.8rem; line-height: 1.2; max-width: none; }
+  html[data-viewport='web'] .competition-level-guide__illustration figcaption { font-size: 0.75rem; }
+}
+
+/* Competition account dropdown */
+html[data-viewport='web'] .invite-game-card__profile-menu-root { position:relative; }
+html[data-viewport='web'] .invite-game-card__profile-menu { position:absolute;top:calc(100% + 4px);right:0;z-index:20;min-width:205px;max-width:calc(100vw - 32px);padding:5px;border:1px solid var(--color-brand-border);border-radius:12px;background:var(--color-brand-surface);box-shadow:0 8px 28px #0005; }
+html[data-viewport='web'] .invite-game-card__profile-menu button { display:flex;align-items:center;gap:10px;width:100%;min-height:46px;padding:10px 12px;border:0;border-radius:8px;background:transparent;color:var(--color-brand-primary);font:inherit;font-size:14px;font-weight:600;text-align:left;white-space:nowrap;cursor:pointer; }
+html[data-viewport='web'] .invite-game-card__profile-menu button:hover { background:var(--color-brand-bg-alt); }
+html[data-viewport='web'] .invite-game-card__profile-menu button:focus-visible { outline:2px solid var(--color-brand-accent);outline-offset:-2px;background:var(--color-brand-bg-alt); }
+html[data-viewport='web'] .invite-game-card__profile-menu button > svg { width:19px;height:19px;flex:none; }

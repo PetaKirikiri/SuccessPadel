@@ -5,6 +5,7 @@ import { LineLogoIcon } from '../line/LineLogoIcon'
 import type { TranslateFn } from '../../i18n'
 
 type Props = {
+  backAction?: ReactNode
   adminAction?: ReactNode
   coachAction?: ReactNode
   name: string
@@ -30,6 +31,7 @@ function initial(name: string): string {
 }
 
 export function PlayerProfileBanner({
+  backAction,
   adminAction,
   coachAction,
   name: originalName,
@@ -87,6 +89,7 @@ export function PlayerProfileBanner({
       className={`profile-banner flex items-center gap-3 px-4 py-4 ${embedded ? 'border-b border-brand-border/60' : 'game-card'}`}
     >
       <div className="flex min-w-0 flex-1 items-center gap-3">
+        {backAction}
         {avatar}
         <div className="min-w-0">
           <h1 className="truncate font-display text-lg font-bold text-brand-primary md:text-xl">{name}</h1>

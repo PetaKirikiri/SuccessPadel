@@ -1,0 +1,33 @@
+# Run from this folder on a Linux VM. Do not scale the controller service.
+services:
+  controller:
+    build:
+      context: ../..
+      dockerfile: server/streaming/Dockerfile
+    network_mode: host
+    init: true
+    env_file: .env.local
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+  mediamtx:
+    image: bluenviron/mediamtx:1.21.0
+    network_mode: host
+    environment:
+      MTX_WEBRTCADDITIONALHOSTS: ${MTX_WEBRTCADDITIONALHOSTS:?required}
+      MTX_WEBRTCALLOWORIGINS: ${APP_ORIGIN:?required}
+    volumes: [./mediamtx.yml:/mediamtx.yml:ro]
+    restart: unless-stopped
+  caddy:
+    image: caddy:2.10.2
+    network_mode: host
+    environment:
+      CONTROL_HOST: ${CONTROL_HOST:?required}
+      MEDIA_HOST: ${MEDIA_HOST:?required}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+volumes:
+  caddy_data:
+  caddy_config:

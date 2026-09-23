@@ -34,9 +34,23 @@ try {
     run('open', `${base}/tests/competition-formats/lineup.html`)
     run('wait', '[data-reorder-enabled="true"]')
     const slots = evaluate('[...document.querySelectorAll("[data-lineup-player]")].map(e=>e.dataset.lineupPlayer)')
-    const drag = async (from, to) => {
+    const drag = async (from, to, pickup = 'avatar', quick = false) => {
       const before = names()
       const points = evaluate(`[${from},${to}].map(i=>{const r=document.querySelectorAll('.competition-pregame__avatar')[i].getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})`)
+      if (pickup !== 'avatar') {
+        points[0] = evaluate(`(()=>{
+          const card=document.querySelectorAll('[data-lineup-player]')[${from}];
+          const r=card.getBoundingClientRect();
+          const name=card.querySelector('.competition-pregame__name');
+          const n=name.getBoundingClientRect();
+          const range=document.createRange(); range.selectNodeContents(name);
+          if(n.width>range.getBoundingClientRect().width+2) throw new Error('Invisible name button still fills blank space');
+          const candidate={x:n.right+3,y:n.top+n.height/2};
+          const hit=document.elementFromPoint(candidate.x,candidate.y);
+          const blank=hit?.closest('[data-lineup-player]')===card && !hit.closest('button,a,input');
+          return ${JSON.stringify(pickup)}==='space' && blank ? candidate : {x:r.left+5,y:r.top+r.height/2};
+        })()`)
+      }
       const [a,b] = points
       if (touch) {
         await send('Input.dispatchTouchEvent', { type:'touchStart', touchPoints:[{...a,id:1}] })
@@ -45,8 +59,9 @@ try {
         await send('Input.dispatchMouseEvent', { type:'mousePressed', ...a, button:'left', buttons:1, clickCount:1 })
         await send('Input.dispatchMouseEvent', { type:'mouseMoved', ...b, button:'left', buttons:1 })
       }
+      if (!quick) {
       const floating = evaluate(`(()=>{const e=document.querySelector('[data-dragging="true"]');const s=e&&getComputedStyle(e);return {floating:!!e,transform:s?.transform,z:s?.zIndex,touch:s?.touchAction,target:document.querySelectorAll('[data-lineup-player]')[${to}].dataset.dropTarget}})()`)
-      assert.equal(floating.floating, true, `${mode}: drag started`)
+      assert.equal(floating.floating, true, `${mode}: ${pickup} drag ${from} to ${to} started at ${JSON.stringify(a)}`)
       assert.notEqual(floating.transform, 'none')
       assert.equal(floating.z, '20')
       assert.equal(floating.touch, 'none')
@@ -67,6 +82,7 @@ try {
         const shifted=previewOrder.indexOf(index)!==index
         assert.equal(destinations[index] !== 'translate(0px, 0px)', shifted, `${mode}: player ${index} previews insertion`)
       }
+      }
       if (touch) await send('Input.dispatchTouchEvent', { type:'touchEnd', touchPoints:[] })
       else await send('Input.dispatchMouseEvent', { type:'mouseReleased', ...b, button:'left', buttons:0, clickCount:1 })
       const expected = [...before]; expected.splice(to, 0, expected.splice(from,1)[0])
@@ -75,8 +91,11 @@ try {
       return before
     }
     // Forward/backward, across columns and between first/last slots.
-    for (const [from,to] of [[0,15],[15,0],[1,10],[10,1]]) await drag(from,to)
-    assert.equal(evaluate('window.lineupTest.calls.length'),4)
+    await drag(0, 3, 'padding', true)
+    await drag(3, 0, 'space', true)
+    for (const [from,to,pickup] of [[0,15,'padding'],[15,0,'space'],[1,10,'avatar'],[10,1,'padding']]) await drag(from,to,pickup)
+    assert.equal(evaluate('window.lineupTest.calls.length'),6)
+    assert.equal(evaluate('window.lineupTest.attendance'),0, 'Dragging blank space never clicks attendance')
     const acknowledged = names()
     run('reload'); run('wait','[data-lineup-player]')
     assert.deepEqual(names(), acknowledged, 'Saved fixture order survives reload')
