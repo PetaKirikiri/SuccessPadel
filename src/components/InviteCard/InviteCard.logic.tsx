@@ -19,6 +19,7 @@ import {
 import { inviteCardData, type SessionSource } from '../../lib/sessionDisplay'
 import { useLocale } from '../../providers/LocaleProvider'
 import { InviteCardRosterEditor } from './InviteCardRosterEditor'
+import { isDuoCompetition } from '../../lib/competitionFormatPresets'
 import { CompetitionPregamePanel } from './CompetitionPregamePanel'
 import { useViewportBucket } from '../../contexts/ViewportContext'
 import { InviteProfileAction } from './InviteProfileAction'
@@ -70,8 +71,10 @@ export function InviteGameCard(props: Props) {
   const data = inviteCardData(source, t, { detailTo, locale })
 
   const canEditSetup = Boolean(props.kind === 'competition' && props.row.status !== 'complete' && isAdmin)
+  // Singles use the draggable lineup for admins in every viewport.
   const canEditRoster = Boolean(
     props.kind === 'competition' &&
+      isDuoCompetition(props.row) &&
       props.row.status !== 'complete' &&
       !props.row.competition_started_at &&
       isAdmin,
