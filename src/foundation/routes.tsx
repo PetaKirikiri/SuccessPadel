@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 import { Layout } from './Layout'
+import { HomeCompetitionRedirect } from './HomeCompetitionRedirect'
 import { ProtectedRoute } from './ProtectedRoute'
 import { SetupNotice } from './SetupNotice'
 import { useAuth } from '../hooks/useAuth'
@@ -146,7 +147,7 @@ function MainAppRoutes() {
           </div>
         }
       >
-        <Route index element={<Navigate to="/friendly" replace />} />
+        <Route index element={<HomeCompetitionRedirect />} />
         <Route path="friendly" element={<GamesHomePage mode="friendly" />} />
         <Route path="friendly/new" element={<FriendlyGameForm />} />
         <Route
