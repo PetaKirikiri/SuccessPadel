@@ -1,5 +1,49 @@
 /* Tablet court card layout lock. */
 
+/* One continuous team boundary; decoration never intercepts score/player taps. */
+html[data-viewport='tablet'] .game-card-court-match-wrap {
+  position: relative;
+}
+
+html[data-viewport='tablet'] .game-card-court-match-wrap::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  background: color-mix(in srgb, var(--color-brand-accent-light) 55%, transparent);
+  pointer-events: none;
+}
+
+html[data-viewport='tablet'] .game-card-court-shell:has(> .game-card-court-card-body):not(:has(.game-card-court-match-wrap)) {
+  display: flex;
+  flex-direction: column;
+}
+
+html[data-viewport='tablet'] .game-card-court-card-body:not(:has(.game-card-court-match-wrap)) {
+  position: relative;
+  flex: 1;
+}
+
+/* The inline-score layout has no match wrapper; fill its existing court body. */
+html[data-viewport='tablet'] .game-card-court-card-body:not(:has(.game-card-court-match-wrap))::before {
+  content: '';
+  position: absolute;
+  inset-block: 0.625rem;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  background: color-mix(in srgb, var(--color-brand-accent-light) 55%, transparent);
+  pointer-events: none;
+}
+
+/* Keep score spacing, but avoid doubling the new full-height divider. */
+html[data-viewport='tablet'] .game-card-court-match-wrap:not(:has(.game-card-court-score-section--points)) .game-card-court-score-divider {
+  background: transparent;
+}
+
+
 html[data-viewport='tablet'] .game-card-court-match--sides:has(.team-learning-badge) { position: relative; min-height: 10rem; }
 html[data-viewport='tablet'] .team-learning-badge--court { position: absolute; z-index: 1; top: 50%; display: grid; width: 6.5rem; justify-items: center; gap: 0.15rem; margin: 0; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
 html[data-viewport='tablet'] .team-learning-badge--left { left: 39%; }
