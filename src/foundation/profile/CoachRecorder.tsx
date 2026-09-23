@@ -2,10 +2,11 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { Mic, Square, Send, X, RotateCcw } from 'lucide-react'
 import { sendCoachRecording } from '../../lib/coachFeedback'
 
-type Props = { playerId: string; playerName: string; competitionId: string | null; onSaved: () => void; compact?: boolean }
+type Props = { playerId: string; playerName: string; competitionId: string | null; onSaved: () => void; compact?: boolean; inline?: boolean; disabled?: boolean; onActiveChange?: (active: boolean) => void }
 type Phase = 'idle' | 'requesting' | 'recording' | 'ready' | 'sending'
 
-export function CoachRecorder({ playerId, playerName, competitionId, onSaved, compact = false }: Props) {
+export function CoachRecorder({ playerId, playerName, competitionId, onSaved, compact = false, inline = false, disabled = false, onActiveChange }: Props) {
+  const [expanded, setExpanded] = useState(false)
   const [phase, setPhase] = useState<Phase>('idle')
   const [seconds, setSeconds] = useState(0)
   const [blob, setBlob] = useState<Blob | null>(null)
@@ -21,6 +22,8 @@ export function CoachRecorder({ playerId, playerName, competitionId, onSaved, co
   const started = useRef(0)
   const busy = useRef(false)
   const titleId = useId()
+  const activeInline = useRef(false)
+  const notifyUnmount = useRef(onActiveChange)
 
   function release() {
     if (timer.current) clearInterval(timer.current)
@@ -38,10 +41,11 @@ export function CoachRecorder({ playerId, playerName, competitionId, onSaved, co
     stop()
     setBlob(null); setPhase('idle'); setError(null)
     dialog.current?.close()
+    setExpanded(false); activeInline.current = false; onActiveChange?.(false)
   }
   useEffect(() => {
     mounted.current = true
-    return () => { mounted.current = false; generation.current += 1; if (recorder.current) recorder.current.onstop = null; stop() }
+    return () => { mounted.current = false; generation.current += 1; if (recorder.current) recorder.current.onstop = null; stop(); if (activeInline.current) notifyUnmount.current?.(false) }
   }, [])
   useEffect(() => {
     if (!blob) { setAudioUrl(null); return }
@@ -57,8 +61,9 @@ export function CoachRecorder({ playerId, playerName, competitionId, onSaved, co
   }, [phase])
 
   async function start() {
-    if (busy.current || phase === 'recording' || phase === 'requesting') return
-    dialog.current?.showModal()
+    if (disabled || busy.current || phase === 'recording' || phase === 'requesting') return
+    if (inline) { activeInline.current = true; setExpanded(true); onActiveChange?.(true) }
+    else dialog.current?.showModal()
     setError(null); setBlob(null); setSeconds(0); setPhase('requesting')
     const request = ++generation.current
     try {
@@ -106,13 +111,26 @@ export function CoachRecorder({ playerId, playerName, competitionId, onSaved, co
     try {
       await sendCoachRecording({ id: submissionId.current, playerId, competitionId, blob, seconds })
       if (!mounted.current) return
-      setBlob(null); setPhase('idle'); dialog.current?.close(); onSaved()
+      setBlob(null); setPhase('idle'); setExpanded(false); activeInline.current = false; dialog.current?.close(); onActiveChange?.(false); onSaved()
     } catch (e) {
       if (!mounted.current) return
       setPhase('ready')
       setError(e instanceof Error && e.name !== 'TimeoutError' ? e.message : 'Processing is taking longer than expected. Wait a moment and retry; the same recording will not create a duplicate.')
     } finally { busy.current = false }
   }
+  if (inline) return expanded ? <div className="coach-inline" role="group" aria-label={`Comment for ${playerName}`}>
+    <div className="coach-inline__status" data-recording={phase === 'recording'}>
+      <span role="status" aria-live="polite">{phase === 'recording' ? `Recording ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}` : phase === 'requesting' ? 'Microphone…' : phase === 'sending' ? 'Saving…' : blob ? 'Listen & review' : 'Try again'}</span>
+      <button type="button" onClick={discard} disabled={phase === 'sending'} aria-label={`Discard comment for ${playerName}`} title="Discard"><X aria-hidden="true" /></button>
+    </div>
+    {audioUrl && phase !== 'sending' ? <audio controls src={audioUrl} aria-label={`Play recording for ${playerName}`} /> : null}
+    {error ? <p className="coach-inline__error" role="alert">{error}</p> : null}
+    <div className="coach-inline__actions">
+      {phase === 'recording' ? <button type="button" onClick={stop}><Square aria-hidden="true" />Stop</button> : null}
+      {phase === 'idle' || phase === 'ready' ? <button type="button" onClick={() => void start()}><RotateCcw aria-hidden="true" />{blob ? 'Again' : 'Retry'}</button> : null}
+      {blob ? <button type="button" className="coach-inline__accept" onClick={() => void send()} disabled={phase === 'sending'}><Send aria-hidden="true" />{phase === 'sending' ? 'Saving…' : 'Accept'}</button> : null}
+    </div>
+  </div> : <button className="coach-record-trigger" type="button" disabled={disabled} onClick={() => void start()} aria-label={`Record coach feedback for ${playerName}`}><Mic aria-hidden="true" /></button>
   return <>
     <button className="coach-record-trigger" type="button" onClick={() => void start()} aria-label={`Record coach feedback for ${playerName}`}>
       <Mic aria-hidden="true" />{compact ? null : <span>Coach note</span>}

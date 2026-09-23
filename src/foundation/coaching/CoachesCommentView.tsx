@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { ArrowLeft, ChevronLeft, ChevronRight, Check, Mic } from 'lucide-react'
 import { CoachRecorder } from '../profile/CoachRecorder'
 import type { CoachCourt, CoachPlayer } from '../../lib/coachGameLineup'
@@ -17,26 +18,28 @@ type Props = {
   onNext?: () => void
 }
 export function CoachesCommentView(props: Props) {
+  const [activePlayer, setActivePlayer] = useState<string | null>(null)
   function playerRow(player: CoachPlayer) {
     return <li key={player.id} className="coaches-comment__player">
       <div className="coaches-comment__identity"><strong>{player.name}</strong>
         {props.saved.has(player.id) ? <span role="status"><Check aria-hidden="true" />Comment saved</span> : null}
         {!player.playerId ? <span>Player profile needed to save a comment</span> : null}
       </div>
-      {player.playerId ? <CoachRecorder playerId={player.playerId} playerName={player.name}
-        competitionId={props.competitionId} compact onSaved={() => props.onSaved(player.id)} /> :
+      {player.playerId ? <CoachRecorder key={player.playerId} playerId={player.playerId} playerName={player.name}
+        competitionId={props.competitionId} inline disabled={activePlayer !== null && activePlayer !== player.id}
+        onActiveChange={active => setActivePlayer(current => active ? player.id : current === player.id ? null : current)} onSaved={() => props.onSaved(player.id)} /> :
         <button className="coach-record-trigger" type="button" disabled aria-label={`Player profile needed for ${player.name}`}><Mic aria-hidden="true" /></button>}
     </li>
   }
   return <section className="coaches-comment">
     <header className="coaches-comment__header">
-      <button type="button" onClick={props.onBack} aria-label="Back"><ArrowLeft aria-hidden="true" /></button>
+      <button type="button" onClick={props.onBack} disabled={activePlayer !== null} aria-label="Back"><ArrowLeft aria-hidden="true" /></button>
       <div><h1>Coaches Comment</h1><p>{props.title}</p></div>
     </header>
     <nav className="coaches-comment__games" aria-label="Choose game">
-      <button type="button" aria-label="Previous game" disabled={!props.onPrevious} onClick={props.onPrevious}><ChevronLeft aria-hidden="true" /></button>
+      <button type="button" aria-label="Previous game" disabled={activePlayer !== null || !props.onPrevious} onClick={props.onPrevious}><ChevronLeft aria-hidden="true" /></button>
       <div><strong>{props.gameNumber ? `Game ${props.gameNumber}` : 'Players'}</strong><span>{props.playerCount} players</span></div>
-      <button type="button" aria-label="Next game" disabled={!props.onNext} onClick={props.onNext}><ChevronRight aria-hidden="true" /></button>
+      <button type="button" aria-label="Next game" disabled={activePlayer !== null || !props.onNext} onClick={props.onNext}><ChevronRight aria-hidden="true" /></button>
     </nav>
     <div className="coaches-comment__courts">
       {props.courts.map(court => <section key={court.id} className="coaches-comment__court" aria-label={court.name}>
