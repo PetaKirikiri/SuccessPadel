@@ -1,3 +1,4 @@
+import { competitionLevelLabel, competitionInviteTitle } from './competitionLevel'
 import type { CompetitionRow } from '../hooks/useCompetitions'
 import type { TranslateFn } from '../i18n'
 import type { AppLocale } from './locale'
@@ -33,6 +34,7 @@ export type SessionScheduleDisplay = {
 
 export type InviteCardData = {
   title: string
+  levelLabel?: string | null
   dateLine: string
   timeLine: string
   detailTo: string
@@ -105,7 +107,7 @@ export function ruleChips(
   if (source.kind === 'competition') {
     return withDivisionChips(
       ruleChipsFromCompetitionRow(source.row, t),
-      source.row.skill_level,
+      competitionLevelLabel(source.row),
       null,
     )
   }
@@ -133,7 +135,8 @@ export function inviteCardData(
     const roster = competitionInviteRoster(source.row)
     const scoringHeadline = competitionInviteScoringHeadline(source.row, t)
     return {
-      title: source.row.title,
+      title: competitionInviteTitle(source.row.title, competitionLevelLabel(source.row)),
+      levelLabel: competitionLevelLabel(source.row),
       dateLine: schedule.dateLine,
       timeLine: schedule.timeLine,
       detailTo: opts?.detailTo ?? `/competitions/${source.row.id}`,

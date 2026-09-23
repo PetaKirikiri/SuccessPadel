@@ -1435,3 +1435,25 @@ html[data-viewport='tv'] .hub-list:has(.competition-pregame__rules--visual),
 html[data-viewport='tv'] .hub-gender-shell:has(.competition-pregame__rules--visual),
 html[data-viewport='tv'] .hub-gender-body:has(.competition-pregame__rules--visual) { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; }
 html[data-viewport='tv'] .competition-pregame:has(.competition-pregame__rules--visual) { flex: 1 1 0; height: 100%; min-height: 0; }
+
+/* Saved competition eligibility, separate from the event title. */
+html[data-viewport='tv'] .invite-game-card__ability {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  justify-self: center;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0.3rem auto 0;
+  padding: 0.2rem 0.7rem;
+  border: 1px solid #63b6d4;
+  border-radius: 999px;
+  background: #164763;
+  color: #d9f5ff;
+  font-size: 1.1rem;
+  font-weight: 750;
+  line-height: 1.2;
+  text-align: center;
+}
+html[data-viewport='tv'] .invite-game-card__title-link:has(.invite-game-card__ability) .invite-game-card__schedule-date,
+html[data-viewport='tv'] .invite-game-card__title-link:has(.invite-game-card__ability) .invite-game-card__schedule-time { grid-row: 3; }
+html[data-viewport='tv'] .invite-game-card__header:has(.invite-game-card__ability) { min-height: 13rem; }

@@ -106,6 +106,8 @@ export type GameSession = {
   target_players: number | null
   player_cap_mode: PlayerCapMode | null
   game_group_id: string | null
+  skill_level_min_rank?: number | null
+  skill_level_max_rank?: number | null
   skill_level: string | null
   gender: string | null
   rules: string | null

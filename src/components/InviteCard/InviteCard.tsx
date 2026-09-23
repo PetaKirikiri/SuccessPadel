@@ -10,6 +10,7 @@ import { InviteCardHeaderTitle } from './InviteCardHeaderTitle'
 
 export type InviteCardProps = {
   title: string
+  levelLabel?: string | null
   dateLine: string
   timeLine: string
   detailTo: string
@@ -79,6 +80,7 @@ function cleanInviteTitle(title: string, dateLine: string, timeLine: string): st
 
 export function InviteCard({
   title,
+  levelLabel,
   dateLine,
   timeLine,
   detailTo,
@@ -167,6 +169,7 @@ export function InviteCard({
         dateLine={dateCompact}
         timeLine={timeLine}
         titleLine={cleanTitle}
+        levelLabel={levelLabel}
         adminActions={accountAction ?? adminActions}
       />
       {headerAction ?? <InviteCardHeaderBadges chips={ruleChips} />}
