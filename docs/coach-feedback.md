@@ -14,8 +14,14 @@ legacy editable admin flag does not grant recording access.
 3. `/api/coach-feedback` validates the session and database staff membership, then
    fixes the player identity from its canonical `padel_players.id` (never from AI).
 4. A unique submission is inserted before the AI call. Whisper (`whisper-1`)
-   transcribes; the transcript is persisted before GPT (`gpt-4o-mini`, configurable
-   through server-only `OPENAI_COACH_MODEL`) organises structured observations.
+   auto-detects the spoken language and transcribes it. The original transcript is
+   persisted before GPT (`gpt-4o-mini`, configurable through server-only
+   `OPENAI_COACH_MODEL`) translates and organises structured observations in English.
+   French and mixed-language recordings use the same English output standard.
+   Observation text and next steps are English; evidence stays verbatim in the
+   original language. Skill labels, rating rubric and coach-stated scores are preserved.
+   This applies to new recordings and retries of incomplete notes; completed historical
+   notes are not rewritten.
 5. Categories/subskills come from `src/lib/coachSkills.json`. Evidence must be a
    verbatim transcript excerpt. Each assessed observation stores a 1–10 skill rating
    and its source: coach-stated or AI-estimated from the fixed behavioural rubric.
@@ -79,6 +85,9 @@ and full-history pagination without network access or live writes.
 `server/coaching/permissions.test.sql` tests real database RLS in a transaction and
 rolls every test write back. Build and layout checks remain unchanged.
 
-Live test on 2026-09-11: the supplied OpenAI key returned HTTP 429,
-`credit_balance_exhausted` / `insufficient_quota`. A successful live audio-to-feedback
-run is still required after billing is restored. No real-player test notes were saved.
+Live provider check on 2026-09-23: synthetic French audio passed through Whisper
+and the shared organisation function using the locally configured server key.
+Output observations and next steps were English, French evidence was retained,
+and an explicit seven-out-of-ten volley score stayed coach-rated at 7/10.
+All 21 backend tests passed. This check did not exercise a signed-in production
+browser or save any real-player notes.

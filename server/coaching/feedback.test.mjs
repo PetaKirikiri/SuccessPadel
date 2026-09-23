@@ -27,6 +27,7 @@ test('Whisper upload uses requested model and original audio',async()=>{
  const result=await transcribeAudio(Buffer.from('test'),'audio/mp4',{OPENAI_API_KEY:'test-only'},async(url,req)=>{
    assert.equal(url,'https://api.openai.com/v1/audio/transcriptions')
    assert.equal(req.body.get('model'),'whisper-1')
+   assert.equal(req.body.has('language'),false, 'Whisper must auto-detect French and other spoken languages')
    assert.equal(req.body.get('file').name,'observation.m4a')
    return Response.json({text:transcript})
  }); assert.equal(result,transcript)
@@ -40,6 +41,20 @@ test('GPT enforces structured response, no storage, server-selected player',asyn
   assert.equal(JSON.parse(body.messages[1].content).selected_player,'Alex')
   return Response.json({choices:[{finish_reason:'stop',message:{content:JSON.stringify(feedback)}}],usage:{total_tokens:20}})
  });assert.deepEqual(result.feedback,feedback)
+})
+test('French feedback uses English instructions while retaining verbatim French evidence and coach score',async()=>{
+ const french='Alex réussit régulièrement ses volées. Je lui donne sept sur dix pour les volées.'
+ const translated={observations:[{category:'attack',skill:'Volleys',kind:'strength',observation:'Alex consistently executes his volleys well.',next_step:'',evidence:'Alex réussit régulièrement ses volées.',rating:7,rating_source:'coach'}]}
+ const result=await organiseTranscript(french,'Alex',{OPENAI_API_KEY:'test-only'},async(_url,req)=>{
+  const body=JSON.parse(req.body)
+  assert.match(body.messages[0].content,/every observation and next_step in clear, concise English/)
+  assert.match(body.messages[0].content,/Keep evidence in its original language/)
+  assert.doesNotMatch(body.messages[0].content,/feedback in the transcript's language/)
+  assert.equal(JSON.parse(body.messages[1].content).transcript,french)
+  return Response.json({choices:[{finish_reason:'stop',message:{content:JSON.stringify(translated)}}]})
+ })
+ assert.deepEqual(result.feedback,translated)
+ assert.throws(()=>validateFeedback({observations:[{...translated.observations[0],evidence:'Alex consistently executes his volleys well.'}]},french),/Evidence not in transcript/)
 })
 test('refusal and truncated results are not saved as observations',async()=>{
  for(const choice of [{finish_reason:'length',message:{}},{finish_reason:'stop',message:{refusal:'no'}}])
