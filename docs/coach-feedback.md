@@ -21,8 +21,10 @@ legacy editable admin flag does not grant recording access.
 6. Successful save opens Coach Feedback and reloads its database entries. Original
    transcript, coach, date, model and token usage remain attached to the record.
 
-Players can read their own completed observations after signing in; authorised
-staff can read all. Anonymous and unrelated players cannot read feedback. The raw
+Completed observations are public on player profiles, including for signed-out
+visitors and unrelated players. Public loading includes the comment, skill tags,
+coach attribution and date; anonymous column grants exclude internal audio hashes,
+model usage and error details. Only staff can read processing/error rows. The raw
 audio is sent to OpenAI but not stored by Success Padel. The coach's browser keeps
 it for retry while the recording dialog remains open. Closing/discarding removes
 that local recording; unsaved audio does not survive closing/reloading the page.

@@ -118,14 +118,19 @@ async function resolvePlayerIdFromRoute(routePlayerId: string): Promise<string> 
   const { data: profiles } = await supabase
     .from('profiles')
     .select('id, display_name')
-  const profile = profiles?.find((row) => playerNameSlug(row.display_name) === routeSlug)
-  if (profile?.id) return profile.id
-
   const { data: padelPlayers } = await supabase
     .from('padel_players')
     .select('id, display_name, profile_id')
-  const padel = padelPlayers?.find((row) => playerNameSlug(row.display_name) === routeSlug)
-  return padel?.profile_id ?? padel?.id ?? routePlayerId
+  // Legacy name URLs must not pick the first of multiple different people.
+  // Collapse linked account/roster aliases to the same identity before checking.
+  const identities = new Set<string>()
+  for (const row of profiles ?? []) {
+    if (playerNameSlug(row.display_name) === routeSlug) identities.add(row.id)
+  }
+  for (const row of padelPlayers ?? []) {
+    if (playerNameSlug(row.display_name) === routeSlug) identities.add(row.profile_id ?? row.id)
+  }
+  return identities.size === 1 ? [...identities][0]! : routePlayerId
 }
 
 async function ensureLinkablePadelPlayer(playerId: string): Promise<string | null> {
@@ -166,6 +171,8 @@ export async function resolvePlayerProfile(playerId: string): Promise<ResolvedPl
     padelLineUserId: null,
     linkablePadelPlayerId: null,
   }
+
+  if (!isPlayerUuid(playerId)) return empty
 
   const { data: padelById } = await supabase
     .from('padel_players')

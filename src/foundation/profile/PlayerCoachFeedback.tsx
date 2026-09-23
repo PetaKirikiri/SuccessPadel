@@ -8,7 +8,7 @@ const icons = { positioning: Crosshair, selection: Signpost, attack: MoveUpRight
 const attributes = skills.map(skill => ({ ...skill, icon: icons[skill.id as keyof typeof icons] }))
 const kindLabel = { strength: 'Strength', improvement: 'Work on', observation: 'Observation' }
 
-export function PlayerCoachFeedback({ playerId, revision, canView, demo = false }: { playerId: string | null; revision: number; canView: boolean; demo?: boolean }) {
+export function PlayerCoachFeedback({ playerId, revision, demo = false }: { playerId: string | null; revision: number; demo?: boolean }) {
   const [selectedId, setSelectedId] = useState('positioning')
   const [entries, setEntries] = useState<CoachEntry[]>([])
   const [loading, setLoading] = useState(false)
@@ -23,7 +23,7 @@ export function PlayerCoachFeedback({ playerId, revision, canView, demo = false 
       setEntries([demoCoachEntry(playerId ?? 'local-dave-preview')]); setLoading(false)
       return
     }
-    if (!playerId || !canView) { setLoading(false); return }
+    if (!playerId) { setLoading(false); return }
     setLoading(true)
     void loadCoachEntries(playerId).then(rows => {
       if (!active) return
@@ -33,7 +33,7 @@ export function PlayerCoachFeedback({ playerId, revision, canView, demo = false 
     }).catch(e => { if (active) setError(e instanceof Error ? e.message : 'Could not load feedback.') })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [playerId, revision, canView, retry, demo])
+  }, [playerId, revision, retry, demo])
   const selected = attributes.find(attribute => attribute.id === selectedId) ?? attributes[0]
   const SelectedIcon = selected.icon
   const observations = entries.flatMap(entry => entry.feedback.observations
@@ -81,7 +81,7 @@ export function PlayerCoachFeedback({ playerId, revision, canView, demo = false 
               </div>
             </article>
           ))}</div>
-        ) : <div className="padel-skill-detail__observations"><MessageSquare aria-hidden="true" /><span>{canView ? 'No coach observations for this skill yet' : 'Feedback is private to the player and authorised staff.'}</span></div>}
+        ) : <div className="padel-skill-detail__observations"><MessageSquare aria-hidden="true" /><span>No coach observations for this skill yet</span></div>}
         {!loading && !error ? entries.filter(entry => entry.feedback.observations.length === 0).map(entry => <details key={entry.id} className="coach-observation"><summary>Saved note · no clear skill observation</summary><p>{entry.transcript}</p><footer>{entry.coach?.display_name || 'Coach'} · {new Date(entry.created_at).toLocaleDateString()}</footer></details>) : null}
       </section>
     </section>

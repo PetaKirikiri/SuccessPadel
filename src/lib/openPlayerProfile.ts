@@ -23,18 +23,18 @@ export type OpenPlayerProfileInput = {
 export async function resolvePlayerRouteId(
   input: Pick<OpenPlayerProfileInput, 'profileId' | 'padelPlayerId' | 'displayName'>,
 ): Promise<string | null> {
-  if (isPlayerUuid(input.profileId)) return input.profileId
   if (isPlayerUuid(input.padelPlayerId)) return input.padelPlayerId
+  if (isPlayerUuid(input.profileId)) return input.profileId
   const name = input.displayName?.trim()
   if (!name) return null
 
-  const { data, error } = await supabase.rpc('find_or_create_padel_player', {
-    p_display_name: name,
-    p_guest_email: null,
-    p_profile_id: null,
-  })
-  if (error || !data) return null
-  return data as string
+  // Opening a profile must never create a second player from a display label.
+  // A name-only legacy caller may navigate only to an unambiguous existing row.
+  const { data, error } = await supabase.from('padel_players')
+    .select('id, display_name').ilike('display_name', name)
+  if (error) return null
+  const matches = (data ?? []).filter(row => row.display_name.trim().toLocaleLowerCase() === name.toLocaleLowerCase())
+  return matches.length === 1 ? matches[0]!.id : null
 }
 
 export async function openPlayerProfile(

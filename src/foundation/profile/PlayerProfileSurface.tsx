@@ -258,7 +258,7 @@ export function PlayerProfileSurface() {
     return () => {
       cancelled = true
     }
-  }, [playerId])
+  }, [playerId, user?.id])
 
   const reloadProfile = () => {
     void refreshProfile()
@@ -579,7 +579,7 @@ export function PlayerProfileSurface() {
                 />
               }
             >
-              {tab === 'feedback' ? <PlayerCoachFeedback playerId={resolved?.padelPlayerId ?? null} revision={coachFeedbackRevision} canView={Boolean(user && (isOwnProfile || canRecordCoach))} demo={playerId === 'dave'} /> : tab === 'history' ? (
+              {tab === 'feedback' ? <PlayerCoachFeedback playerId={resolved?.padelPlayerId ?? null} revision={coachFeedbackRevision} demo={playerId === 'dave'} /> : tab === 'history' ? (
                 <PlayerMatchHistory
                   playerId={profileId ?? padelPlayerId ?? playerId}
                   embedded

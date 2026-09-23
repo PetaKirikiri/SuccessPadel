@@ -5,16 +5,26 @@ export type CoachObservation = {
   observation: string; next_step: string; evidence: string
 }
 export type CoachEntry = {
-  id: string; player_id: string; created_at: string; transcript: string
+  id: string; player_id: string; coach_id?: string; created_at: string; transcript: string
   feedback: { observations: CoachObservation[] }
   coach: { display_name: string } | null
 }
 export async function loadCoachEntries(playerId: string): Promise<CoachEntry[]> {
   const { data, error } = await supabase.from('player_coach_observations')
-    .select('id,player_id,created_at,transcript,feedback,coach:profiles!coach_id(display_name)')
+    .select('id,player_id,coach_id,created_at,transcript,feedback')
     .eq('player_id', playerId).eq('status', 'complete').order('created_at', { ascending: false }).limit(100)
   if (error) throw new Error('Could not load coach feedback. Please try again.')
-  return data as unknown as CoachEntry[]
+  // profiles table joins are not public. Resolve attribution through the same
+  // existing public profile endpoint used by player pages, without widening RLS.
+  const rows = data as unknown as Omit<CoachEntry, 'coach'>[]
+  const coachIds = [...new Set(rows.flatMap(row => row.coach_id ? [row.coach_id] : []))]
+  const coaches = new Map(await Promise.all(coachIds.map(async id => {
+    const { data: profile } = await supabase.rpc('get_player_profile', { p_profile_id: id })
+    const name = profile && typeof profile === 'object' && 'display_name' in profile
+      && typeof profile.display_name === 'string' ? profile.display_name : null
+    return [id, name ? { display_name: name } : null] as const
+  })))
+  return rows.map(row => ({ ...row, coach: row.coach_id ? coaches.get(row.coach_id) ?? null : null }))
 }
 export async function sendCoachRecording(input: { id: string; playerId: string; competitionId: string | null; blob: Blob; seconds: number }) {
   const { data: { session } } = await supabase.auth.getSession()

@@ -19,7 +19,9 @@ export function playerProfilePath(input: {
   suffix?: string
   competitionId?: string | null
 }): string {
-  const token = playerNameSlug(input.displayName) ?? input.id
+  // Names are labels, not identity: LINE names and roster names can differ.
+  // Keep legacy name links only when the caller has no permanent player ID.
+  const token = isPlayerUuid(input.id) ? input.id : playerNameSlug(input.displayName) ?? input.id
   const params = input.competitionId ? `?competition=${encodeURIComponent(input.competitionId)}` : ''
   return `/players/${token ?? 'player'}${input.suffix ?? ''}${params}`
 }
