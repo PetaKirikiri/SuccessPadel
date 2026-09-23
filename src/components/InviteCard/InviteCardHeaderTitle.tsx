@@ -9,6 +9,7 @@ type InviteCardHeaderTitleProps = {
   timeLine: string
   titleLine: string
   levelLabel?: string | null
+  levelHelp?: ReactNode
   adminActions?: ReactNode
 }
 
@@ -51,6 +52,7 @@ export function InviteCardHeaderTitle({
   timeLine,
   titleLine,
   levelLabel,
+  levelHelp,
   adminActions,
 }: InviteCardHeaderTitleProps) {
   const { t } = useTranslation()
@@ -78,12 +80,12 @@ export function InviteCardHeaderTitle({
             <p className="invite-game-card__schedule-date">{dateLine}</p>
             {timeLine ? <p className="invite-game-card__schedule-time">{timeLine}</p> : null}
             <p className="invite-game-card__level">{titleLine}</p>
-            {levelLabel ? <p className="invite-game-card__ability" aria-label={`Player level: ${levelLabel}`}>{levelLabel}</p> : null}
+            {levelLabel ? <div className="invite-game-card__ability-row"><p className="invite-game-card__ability" aria-label={`Player level: ${levelLabel}`}>{levelLabel}</p>{levelHelp}</div> : null}
           </Link> : <div className="invite-game-card__title-link">
             <p className="invite-game-card__schedule-date">{dateLine}</p>
             {timeLine ? <p className="invite-game-card__schedule-time">{timeLine}</p> : null}
             <p className="invite-game-card__level">{titleLine}</p>
-            {levelLabel ? <p className="invite-game-card__ability" aria-label={`Player level: ${levelLabel}`}>{levelLabel}</p> : null}
+            {levelLabel ? <div className="invite-game-card__ability-row"><p className="invite-game-card__ability" aria-label={`Player level: ${levelLabel}`}>{levelLabel}</p>{levelHelp}</div> : null}
           </div>}
         </div>
 

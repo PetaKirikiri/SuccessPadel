@@ -27,15 +27,17 @@ Open is an event admission option, not player ability. Historical Open events re
 
 When both are NULL, use the existing single `skill_level` field; Open is unrestricted. No existing event has been assigned a new range by this migration. Future setup UI must update both fields together and explicitly clear an old range when switching back to a single-level event.
 
-## Educational guide, next phase
+## Educational guide
 
 `public.padel_skill_level_guides` stores per-level/per-language summary, self-check array, next-level focus, image URL and accessible alternative text. Supported locales: en, th, fr, ru, he.
 
-Six blank English drafts exist. There are no invented assessment thresholds or published images. Develop the criteria and illustrations with the user before publishing. Explain repeatable abilities under match conditions, not one successful shot or time spent playing.
+Beginner and Low Inter have English self-assessment guides with court illustrations. The invite question-mark button opens the guides for its saved eligible range in the main content area. The four higher levels remain drafts. Assess repeatable match abilities, not one successful shot or time spent playing.
+
+The copy is Success Padel club guidance, not a claimed translation of any external rating. General coaching concepts were checked against [LTA rating guidance](https://www.lta.org.uk/advantage-home/my-game/what-is-my-padel-rating/) and [LTA double-glass coaching](https://www.lta.org.uk/roles-and-venues/coaches/development/courses/Class/?classId=a1CSr000001PiJpMAK).
 
 Anonymous visitors can read the catalog and published guides. Only existing admins can edit/read drafts through the app. Publishing requires a summary, at least one self-check, an image URL and alternative text. The catalog itself is read-only to browser roles.
 
-The guide, new badges and app level pickers are not changed by this database migration. They must consume the catalog in the next UI phase; existing hard-coded choices in `competitionPresets.ts` are legacy.
+The guide reads published database content and the catalog. The invite badge reads the saved competition range. Existing hard-coded choices in `competitionPresets.ts` are legacy and the setup picker still needs a separate update.
 
 ## Verification
 

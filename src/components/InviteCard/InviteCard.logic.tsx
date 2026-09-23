@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { GameBoardPreview } from '../../components/GameCard/GameBoardPreview'
 import { InviteCard } from './InviteCard'
@@ -20,6 +20,7 @@ import { inviteCardData, type SessionSource } from '../../lib/sessionDisplay'
 import { useLocale } from '../../providers/LocaleProvider'
 import { InviteCardRosterEditor } from './InviteCardRosterEditor'
 import { isDuoCompetition } from '../../lib/competitionFormatPresets'
+import { CompetitionLevelGuide } from './CompetitionLevelGuide'
 import { CompetitionPregamePanel } from './CompetitionPregamePanel'
 import { useViewportBucket } from '../../contexts/ViewportContext'
 import { InviteProfileAction } from './InviteProfileAction'
@@ -52,7 +53,12 @@ type Props = CompetitionProps | FriendlyProps
 export function InviteGameCard(props: Props) {
   const { t } = useTranslation()
   const { locale } = useLocale()
-  const [pregameView, setPregameView] = useState<'players' | 'rules'>('players')
+  const [pregameView, setPregameView] = useState<'players' | 'rules' | 'levels'>('players')
+  const levelHelp = useRef<HTMLButtonElement>(null)
+  const closeLevelGuide = () => {
+    setPregameView('players')
+    requestAnimationFrame(() => levelHelp.current?.focus())
+  }
   const viewport = useViewportBucket()
   const showOverview = viewport === 'tv' || viewport === 'web'
 
@@ -123,6 +129,9 @@ export function InviteGameCard(props: Props) {
   return (
     <InviteCard
       {...data}
+      levelHelp={row && data.levelLabel ? <button ref={levelHelp} type="button" className="invite-game-card__level-help"
+        aria-label={`About ${data.levelLabel} levels`} aria-expanded={pregameView === 'levels'} aria-controls={`level-guide-${row.id}`}
+        onClick={event => { event.stopPropagation(); if (pregameView === 'levels') closeLevelGuide(); else setPregameView('levels') }}>?</button> : undefined}
       sessionKind={props.kind}
       detailTo={detailTo}
       competitionId={row?.id}
@@ -171,13 +180,16 @@ export function InviteGameCard(props: Props) {
             : undefined
       }
       editAriaLabel={props.kind === 'competition' ? t('competition.edit') : t('friendly.edit')}
-      rosterSection={
-        props.kind === 'competition' && canEditRoster && pregameView === 'players' && !showOverview ? (
-          <InviteCardRosterEditor row={props.row} onSaved={props.onRefresh} />
-        ) : props.kind === 'competition' ? (
-          <CompetitionPregamePanel row={props.row} view={showOverview ? 'overview' : pregameView} canReorder={canEditSetup} />
-        ) : undefined
-      }
+      rosterSection={props.kind === 'competition' ? <>
+        {pregameView === 'levels' ? <CompetitionLevelGuide row={props.row} onClose={closeLevelGuide} /> : null}
+        <div className="invite-game-card__pregame-pane" hidden={pregameView === 'levels'}>
+          {canEditRoster && pregameView === 'players' && !showOverview ? (
+            <InviteCardRosterEditor row={props.row} onSaved={props.onRefresh} />
+          ) : (
+            <CompetitionPregamePanel row={props.row} view={showOverview ? 'overview' : pregameView === 'rules' ? 'rules' : 'players'} canReorder={canEditSetup} />
+          )}
+        </div>
+      </> : undefined}
       canDelete={
         props.kind === 'competition'
           ? false
