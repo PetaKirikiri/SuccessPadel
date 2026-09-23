@@ -32,7 +32,7 @@ export function competitionPlayerAvatarUrl(
   return resolveRosterAvatarUrl(profile as ProfileAvatarFields | null, linePicture)
 }
 
-function resolveRosterPlayer(
+export function resolveRosterPlayer(
   sp: CompetitionPlayer,
   profilesById: Map<string, ProfileRow>,
   padelById: Map<string, PadelRow>,
@@ -42,11 +42,13 @@ function resolveRosterPlayer(
   const padelProfile = padel?.profile_id ? profilesById.get(padel.profile_id) : undefined
 
   const profileId = sp.profile_id ?? padelProfile?.id ?? padel?.profile_id ?? null
+  // The competition response owns the roster name. Photo enrichment must not
+  // rename players depending on which profile rows the viewer can read.
   const displayName =
+    sp.profiles?.display_name?.trim() ||
     directProfile?.display_name?.trim() ||
     padelProfile?.display_name?.trim() ||
     padel?.display_name?.trim() ||
-    sp.profiles?.display_name?.trim() ||
     sp.guest_name?.trim() ||
     null
 
