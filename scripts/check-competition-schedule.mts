@@ -83,6 +83,38 @@ if (
   throw new Error('Canonical six-round schedule must run 18:10–19:54')
 }
 
+// Event admission/finish time remains the booked window, including delay allowance.
+const eveningSession = {
+  ...canonicalSession,
+  starts_at: '2026-09-23T11:00:00.000Z',
+  ends_at: '2026-09-23T13:00:00.000Z',
+  schedule_game_minutes: 15,
+  starts_on: '2026-09-23',
+  title: 'Evening competition',
+  status: 'open',
+}
+const evening = layout.resolveCompetitionSchedule(eveningSession)
+if (evening.eventEndsAt?.toISOString() !== eveningSession.ends_at || evening.eventMinutes !== 120
+  || evening.playBlockMinutes !== 110 || evening.gameMinutes !== 15 || evening.breakMinutes !== 4) {
+  throw new Error('Booked 18:00–20:00 window must retain its ten-minute delay allowance')
+}
+const eveningRounds = layout.competitionRoundTimesByGame(eveningSession, 6)
+if (eveningRounds.get(6)?.endsAt !== Date.parse('2026-09-23T12:50:00.000Z')) {
+  throw new Error('Showing the full event window must not stretch or reschedule the rounds')
+}
+const display = await load('src/lib/competitionGameDisplay.ts')
+const list = await load('src/lib/competitionListCard.ts')
+if (display.competitionScheduleDisplay(eveningSession, 'en').timeLine !== '18:00–20:00'
+  || !list.competitionScheduledLabel(eveningSession)?.endsWith('18:00–20:00')
+  || list.competitionIsPast(eveningSession, Date.parse('2026-09-23T12:55:00.000Z'))
+  || !list.competitionIsPast(eveningSession, Date.parse(eveningSession.ends_at))) {
+  throw new Error('Invites and competition lists must respect the booked 20:00 finish')
+}
+if (layout.resolveCompetitionSchedule({ ...eveningSession, ends_at: null }).eventEndsAt?.toISOString()
+  !== '2026-09-23T12:50:00.000Z') {
+  throw new Error('Legacy events without an end time must still fall back to planned rounds')
+}
+
 const savedRounds = [
   {
     round_number: 1,

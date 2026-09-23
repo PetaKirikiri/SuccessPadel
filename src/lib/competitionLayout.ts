@@ -179,25 +179,22 @@ export function resolveCompetitionSchedule(
       : null
 
   const configEventMinutes = leadInMinutes + playBlockMinutes
+  // The booked event window includes slack for late arrivals and delays.
+  // Planned rounds must never shorten its advertised finish time.
   const eventEndsAt =
-    playStartsAt != null && playBlockMinutes > 0
-      ? new Date(playStartsAt.getTime() + playBlockMinutes * 60_000)
-      : session?.ends_at != null
-        ? new Date(session.ends_at)
+    session?.ends_at != null
+      ? new Date(session.ends_at)
+      : playStartsAt != null && playBlockMinutes > 0
+        ? new Date(playStartsAt.getTime() + playBlockMinutes * 60_000)
         : anchorStartsAt != null && configEventMinutes > 0
           ? new Date(anchorStartsAt.getTime() + configEventMinutes * 60_000)
           : null
-
-  const resolvedEventMinutes =
-    playBlockMinutes > 0 && eventMinutes > configEventMinutes + 1
-      ? configEventMinutes
-      : eventMinutes || configEventMinutes
 
   return {
     totalGames,
     breakMinutes,
     gameMinutes,
-    eventMinutes: resolvedEventMinutes,
+    eventMinutes: eventMinutes || configEventMinutes,
     leadInMinutes,
     playBlockMinutes,
     usedMinutes,
