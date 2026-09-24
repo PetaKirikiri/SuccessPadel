@@ -41,12 +41,12 @@ export function CompetitionLevelGuide({ row, onClose }: { row: CompetitionRow; o
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [retry, setRetry] = useState(0)
-  const heading = useRef<HTMLHeadingElement>(null)
+  const panel = useRef<HTMLElement>(null)
   const level = competitionLevelLabel(row)
   const min = row.skill_level_min_rank
   const max = row.skill_level_max_rank
   const legacy = row.skill_level
-  useEffect(() => { heading.current?.focus({ preventScroll: true }) }, [])
+  useEffect(() => { panel.current?.focus({ preventScroll: true }) }, [])
   useEffect(() => {
     let active = true
     setLoading(true)
@@ -70,14 +70,8 @@ export function CompetitionLevelGuide({ row, onClose }: { row: CompetitionRow; o
     return () => { active = false }
   }, [min, max, legacy, retry])
 
-  return <section className="competition-level-guide" id={`level-guide-${row.id}`} aria-labelledby={`level-guide-title-${row.id}`}
+  return <section className="competition-level-guide" id={`level-guide-${row.id}`} aria-label={`${level ?? 'Player'} level guide`} ref={panel} tabIndex={-1}
     onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); onClose() } }}>
-    <header className="competition-level-guide__header">
-      <div>
-        <h2 id={`level-guide-title-${row.id}`} ref={heading} tabIndex={-1}>Is this your level?</h2>
-      </div>
-      <button type="button" className="competition-level-guide__back" aria-label="Back to players" onClick={onClose}>← Back</button>
-    </header>
     {loading ? <p role="status">Loading level guide…</p> : error ? <div role="alert">Couldn’t load the guide. <button type="button" onClick={() => setRetry(value => value + 1)}>Try again</button></div> : guides.length === 0 ? <p>The {level} guide is being prepared.</p> : <>
       <div className="competition-level-guide__tabs" role="group" aria-label="Choose a level">
         {guides.map(guide => <button type="button" key={guide.level_code} aria-pressed={selected === guide.level_code}
