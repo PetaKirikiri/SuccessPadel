@@ -1,5 +1,5 @@
-import { useRef, useState, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { GameBoardPreview } from '../../components/GameCard/GameBoardPreview'
 import { InviteCard } from './InviteCard'
 import { useTranslation } from '../../hooks/useTranslation'
@@ -24,6 +24,8 @@ import { CompetitionLevelGuide } from './CompetitionLevelGuide'
 import { CompetitionPregamePanel } from './CompetitionPregamePanel'
 import { useViewportBucket } from '../../contexts/ViewportContext'
 import { InviteProfileAction } from './InviteProfileAction'
+import { CompetitionReview } from './CompetitionReview'
+import { competitionReviewAvailable } from '../../lib/competitionReview'
 
 type CompetitionProps = {
   kind: 'competition'
@@ -53,7 +55,10 @@ type Props = CompetitionProps | FriendlyProps
 export function InviteGameCard(props: Props) {
   const { t } = useTranslation()
   const { locale } = useLocale()
-  const [pregameView, setPregameView] = useState<'players' | 'rules' | 'levels'>('players')
+  const [pregameView, setPregameView] = useState<'players' | 'rules' | 'levels' | 'review'>('players')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [now, setNow] = useState(Date.now)
+  useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 60_000); return () => clearInterval(timer) }, [])
   const levelHelp = useRef<HTMLButtonElement>(null)
   const closeLevelGuide = () => {
     setPregameView('players')
@@ -63,6 +68,9 @@ export function InviteGameCard(props: Props) {
   const showOverview = viewport === 'tv' || viewport === 'web'
 
   const row = props.kind === 'competition' ? props.row : undefined
+  const hasReview = competitionReviewAvailable(row, now)
+  const requestedReview = searchParams.get('view') === 'review' && searchParams.get('competition') === row?.id
+  useEffect(() => { setPregameView(requestedReview && hasReview ? 'review' : 'players') }, [row?.id, requestedReview, hasReview])
   const game = props.kind === 'friendly' ? props.game : undefined
   const isAdmin = props.isAdmin ?? false
   const currentUserId = props.kind === 'competition' ? props.userId : props.currentUserId
@@ -164,6 +172,9 @@ export function InviteGameCard(props: Props) {
             Rules
           </a>
           <Link className="invite-game-card__matches-link" to={detailTo}>Matches</Link>
+          {hasReview ? <a href={`?competition=${row.id}&view=review`} role="button" aria-pressed={pregameView === 'review'} aria-controls={`review-${row.id}`}
+            onKeyDown={event => { if (event.key === ' ') { event.preventDefault(); setPregameView('review') } }}
+            onClick={event => { event.preventDefault(); event.stopPropagation(); setPregameView('review'); setSearchParams(previous => { const next = new URLSearchParams(previous); next.set('competition', row.id); next.set('view', 'review'); return next }, { replace: true }) }}>Review</a> : null}
           </div>
         ) : undefined
       }
@@ -182,7 +193,8 @@ export function InviteGameCard(props: Props) {
       editAriaLabel={props.kind === 'competition' ? t('competition.edit') : t('friendly.edit')}
       rosterSection={props.kind === 'competition' ? <>
         {pregameView === 'levels' ? <CompetitionLevelGuide row={props.row} onClose={closeLevelGuide} /> : null}
-        <div className="invite-game-card__pregame-pane" hidden={pregameView === 'levels'}>
+        {pregameView === 'review' && hasReview ? <CompetitionReview key={props.row.id} competitionId={props.row.id} userId={currentUserId} /> : null}
+        <div className="invite-game-card__pregame-pane" hidden={pregameView === 'levels' || pregameView === 'review'}>
           {canEditRoster && pregameView === 'players' && !showOverview ? (
             <InviteCardRosterEditor row={props.row} onSaved={props.onRefresh} />
           ) : (

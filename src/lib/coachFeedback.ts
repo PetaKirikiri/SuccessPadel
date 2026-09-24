@@ -12,7 +12,7 @@ export type CoachEntry = {
   feedback: { observations: CoachObservation[] }
   coach: { display_name: string } | null
 }
-export async function loadCoachEntries(playerId: string): Promise<CoachEntry[]> {
+export async function loadCoachEntries(playerId: string, competitionId?: string): Promise<CoachEntry[]> {
   const rows: Omit<CoachEntry, 'coach'>[] = []
   let cursor: Omit<CoachEntry, 'coach'> | undefined
   // Keyset pagination preserves the full history, even while new notes arrive.
@@ -21,6 +21,7 @@ export async function loadCoachEntries(playerId: string): Promise<CoachEntry[]> 
       .select('id,player_id,coach_id,created_at,transcript,feedback')
       .eq('player_id', playerId).eq('status', 'complete')
       .order('created_at', { ascending: false }).order('id', { ascending: false }).limit(100)
+    if (competitionId) query = query.eq('competition_id', competitionId)
     if (cursor) query = query.or(`created_at.lt.${cursor.created_at},and(created_at.eq.${cursor.created_at},id.lt.${cursor.id})`)
     const { data, error } = await query
     if (error) throw new Error('Could not load coach feedback. Please try again.')

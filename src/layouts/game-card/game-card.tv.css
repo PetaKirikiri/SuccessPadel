@@ -18,7 +18,7 @@ html[data-viewport='tv'] .game-card-fill > :first-child {
 }
 
 html[data-viewport='tv'] .game-card-tv-header-back {
-  inset: 0.4rem 0.4rem auto auto;
+  inset: 0.4rem auto auto 0.4rem;
   z-index: 20;
 }
 
@@ -32,7 +32,37 @@ html[data-viewport='tv'] .game-card-tv-header-back > button {
 }
 
 html[data-viewport='tv'] .game-card-tv-header-actions {
-  right: 3.4rem;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+}
+
+html[data-viewport='tv'] .game-card-tv-header-actions > * {
+  pointer-events: auto;
+}
+
+html[data-viewport='tv'] .game-card-tv-header-actions:has(> .tv-game-header-qr)::before {
+  content: 'Scan';
+  position: absolute;
+  top: 0.25rem;
+  left: 3.75rem;
+  width: 58px;
+  color: var(--color-brand-primary);
+  font-size: 0.75rem;
+  font-weight: 650;
+  line-height: 1rem;
+  text-align: center;
+}
+
+html[data-viewport='tv'] .game-card-tv-header-actions > .tv-game-header-qr {
+  position: absolute;
+  top: 1.4rem;
+  left: 3.75rem;
+  margin: 0;
+}
+
+html[data-viewport='tv'] .game-card-tv-header-actions > .game-card-header-timer {
+  order: 1;
 }
 
 html[data-viewport='tv'] .tv-play-view .game-card-tv-header-panel {

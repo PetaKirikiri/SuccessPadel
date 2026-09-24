@@ -1,0 +1,59 @@
+html[data-viewport='tablet'] .competition-review { width:100%; min-width:0; padding:16px; color:var(--color-brand-primary); text-align:left; }
+html[data-viewport='tablet'] .competition-review__heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
+html[data-viewport='tablet'] .competition-review h2 { display:flex; align-items:center; gap:10px; margin:0; font-size:1.25rem; }
+html[data-viewport='tablet'] .competition-review h3 { display:flex; align-items:center; gap:10px; margin:0 0 12px; font-size:1rem; }
+html[data-viewport='tablet'] .competition-review h2 svg, html[data-viewport='tablet'] .competition-review h3 svg { width:22px; height:22px; flex-shrink:0; color:var(--color-brand-accent); }
+html[data-viewport='tablet'] .competition-review__heading > span, html[data-viewport='tablet'] .competition-review p, html[data-viewport='tablet'] .competition-review time { font-size:0.8rem; color:var(--color-brand-muted); }
+html[data-viewport='tablet'] .competition-review__columns { display:grid; grid-template-columns:minmax(0,1fr); gap:20px; }
+html[data-viewport='tablet'] .competition-review__personal, html[data-viewport='tablet'] .competition-review__results { min-width:0; }
+html[data-viewport='tablet'] .competition-review__picker { display:flex; align-items:center; justify-content:space-between; gap:12px; font-weight:700; }
+html[data-viewport='tablet'] .competition-review select { min-width:0; max-width:70%; min-height:44px; padding:8px; border:1px solid var(--color-brand-border); border-radius:8px; color:var(--color-brand-primary); background:var(--color-brand-bg-alt); }
+html[data-viewport='tablet'] .competition-review__stats { display:grid; grid-template-columns:minmax(0,0.8fr) minmax(0,1.1fr) minmax(0,1.1fr); gap:10px; margin:18px 0; }
+html[data-viewport='tablet'] .competition-review__stat { min-width:0; border:1px solid var(--color-brand-border); border-radius:14px; padding:18px 14px; background:var(--color-brand-bg-alt); }
+html[data-viewport='tablet'] .competition-review__stat dt { display:flex; align-items:center; gap:8px; font-size:0.8rem; font-weight:650; color:var(--color-brand-primary); }
+html[data-viewport='tablet'] .competition-review__stat dt svg { width:22px; height:22px; flex-shrink:0; color:var(--color-brand-accent); }
+html[data-viewport='tablet'] .competition-review__stat--record dt svg { color:#f3cb77; }
+html[data-viewport='tablet'] .competition-review__stat dd { margin:14px 0 0; font-size:2.4rem; line-height:1; font-weight:750; font-variant-numeric:tabular-nums; color:var(--color-brand-primary); }
+html[data-viewport='tablet'] .competition-review__stat-caption { display:block; margin-top:9px; color:var(--color-brand-muted); font-size:0.72rem; font-weight:450; line-height:1.4; }
+html[data-viewport='tablet'] .competition-review__record { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+html[data-viewport='tablet'] .competition-review__record > span { display:flex; flex-direction:column; align-items:center; gap:6px; }
+html[data-viewport='tablet'] .competition-review__record svg { width:17px; height:17px; }
+html[data-viewport='tablet'] .competition-review__record b { font-size:1.8rem; }
+html[data-viewport='tablet'] .competition-review__record small { font-size:0.7rem; font-weight:550; }
+html[data-viewport='tablet'] .competition-review .competition-review__difference { display:flex; align-items:center; gap:4px; margin:10px 0 0; font-size:0.7rem; font-weight:550; line-height:1.4; }
+html[data-viewport='tablet'] .competition-review__difference svg { width:17px; height:17px; flex-shrink:0; }
+html[data-viewport='tablet'] .competition-review__matches { list-style:none; padding:0; margin:0; }
+html[data-viewport='tablet'] .competition-review__matches li { margin:0 0 10px; padding:14px; border:1px solid var(--color-brand-border); border-radius:12px; background:var(--color-brand-bg-alt); }
+html[data-viewport='tablet'] .competition-review__feedback article { padding:12px 0; border-bottom:1px solid var(--color-brand-border); }
+html[data-viewport='tablet'] .competition-review__matches header, html[data-viewport='tablet'] .competition-review__feedback header { display:flex; justify-content:space-between; gap:12px; font-size:0.8rem; }
+html[data-viewport='tablet'] .competition-review__matches header { color:var(--color-brand-muted); font-size:0.75rem; }
+html[data-viewport='tablet'] .competition-review__matches header > span { display:flex; align-items:center; gap:5px; }
+html[data-viewport='tablet'] .competition-review__matches header svg { width:14px; height:14px; }
+html[data-viewport='tablet'] .competition-review__match-body { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:center; padding-top:10px; }
+html[data-viewport='tablet'] .competition-review__sides p { display:flex; align-items:center; gap:10px; margin:0; font-size:0.7rem; }
+html[data-viewport='tablet'] .competition-review__sides p + p { margin-top:10px; }
+html[data-viewport='tablet'] .competition-review__sides svg { width:22px; height:22px; flex-shrink:0; color:var(--color-brand-accent); }
+html[data-viewport='tablet'] .competition-review__sides p + p svg { color:#f3cb77; }
+html[data-viewport='tablet'] .competition-review__sides strong { display:block; font-size:0.9rem; line-height:1.4; overflow-wrap:anywhere; }
+html[data-viewport='tablet'] .competition-review__match-score { display:flex; flex-direction:column; align-items:center; gap:6px; min-width:72px; padding:10px 0 10px 12px; border-left:1px solid var(--color-brand-border); }
+html[data-viewport='tablet'] .competition-review__match-score > span { display:flex; align-items:center; gap:4px; font-size:0.75rem; font-weight:650; }
+html[data-viewport='tablet'] .competition-review__match-score svg { width:17px; height:17px; }
+html[data-viewport='tablet'] .competition-review__match-score > strong { display:flex; align-items:center; gap:7px; font-size:1.6rem; font-variant-numeric:tabular-nums; }
+html[data-viewport='tablet'] .competition-review__match-score small { font-size:1rem; color:var(--color-brand-muted); }
+html[data-viewport='tablet'] .competition-review__matches strong { color:var(--color-brand-primary); }
+html[data-viewport='tablet'] .competition-review [data-result='Win'] { color:#5fddaf; }
+html[data-viewport='tablet'] .competition-review [data-result='Loss'] { color:#f6aba2; }
+html[data-viewport='tablet'] .competition-review [data-result='Draw'] { color:var(--color-brand-muted); }
+html[data-viewport='tablet'] .competition-review__closest { display:flex; align-items:center; gap:12px; padding:12px 14px; margin-bottom:22px; border:1px solid #766643; border-radius:12px; background:#f3cb7709; }
+html[data-viewport='tablet'] .competition-review__closest > svg { width:27px; height:27px; flex-shrink:0; color:#f3cb77; }
+html[data-viewport='tablet'] .competition-review__closest > div { flex:1; min-width:0; }
+html[data-viewport='tablet'] .competition-review__closest strong { display:block; font-size:0.85rem; }
+html[data-viewport='tablet'] .competition-review__closest span { display:block; margin-top:4px; color:var(--color-brand-muted); font-size:0.75rem; }
+html[data-viewport='tablet'] .competition-review__closest > b { font-size:1.3rem; color:#f3cb77; font-variant-numeric:tabular-nums; }
+html[data-viewport='tablet'] .competition-review .competition-review__standings-caption { margin:-4px 0 16px; font-size:0.75rem; }
+html[data-viewport='tablet'] .competition-review__feedback { margin-top:22px; }
+html[data-viewport='tablet'] .competition-review blockquote { margin:12px 0; font-size:0.95rem; font-style:italic; }
+html[data-viewport='tablet'] .competition-review a, html[data-viewport='tablet'] .competition-review button { display:inline-flex; align-items:center; min-height:44px; color:var(--color-brand-accent); }
+html[data-viewport='tablet'] .competition-review select:focus-visible, html[data-viewport='tablet'] .competition-review a:focus-visible, html[data-viewport='tablet'] .competition-review button:focus-visible { outline:2px solid var(--color-brand-accent); outline-offset:2px; }
+html[data-viewport='tablet'] .invite-game-card__roster:has(.competition-review) { overflow-y:auto; min-height:0; display:block; }
+html[data-viewport='tablet'] .invite-game-card__header-links:has([aria-controls^='review-']) { grid-template-columns:repeat(4,minmax(0,1fr)); }

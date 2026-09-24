@@ -47,6 +47,8 @@ type Props = {
   simpleTeamRows?: boolean
   highlightedEntryIds?: ReadonlySet<string>
   onToggleEntryHighlight?: (entryId: string) => void
+  onSelectEntry?: (entry: LeaderboardEntry) => void
+  selectedEntryId?: string | null
 }
 
 type AchievementInfo = { iconKey: string; emoji: string; labelKey: string }
@@ -216,6 +218,8 @@ function LeaderboardRow({
   compact = false,
   simpleTeamRow = false,
   onOpenProfile,
+  onSelectEntry,
+  selected = false,
   highlighted = false,
   onToggleHighlight,
   onSelectAchievement,
@@ -229,6 +233,8 @@ function LeaderboardRow({
   compact?: boolean
   simpleTeamRow?: boolean
   onOpenProfile?: () => void | Promise<void>
+  onSelectEntry?: () => void
+  selected?: boolean
   highlighted?: boolean
   onToggleHighlight?: () => void
   onSelectAchievement: (info: AchievementInfo) => void
@@ -246,16 +252,18 @@ function LeaderboardRow({
     <li
       onClick={() => {
         if (onToggleHighlight) onToggleHighlight()
+        else if (onSelectEntry) onSelectEntry()
         else if (onOpenProfile) void onOpenProfile()
       }}
       onKeyDown={(event) => {
-        if (!onToggleHighlight || (event.key !== 'Enter' && event.key !== ' ')) return
+        if ((!onToggleHighlight && !onSelectEntry) || (event.key !== 'Enter' && event.key !== ' ')) return
         event.preventDefault()
-        onToggleHighlight()
+        if (onToggleHighlight) onToggleHighlight()
+        else onSelectEntry?.()
       }}
-      role={onToggleHighlight ? 'button' : undefined}
-      tabIndex={onToggleHighlight ? 0 : undefined}
-      aria-pressed={onToggleHighlight ? highlighted : undefined}
+      role={onToggleHighlight || onSelectEntry ? 'button' : undefined}
+      tabIndex={onToggleHighlight || onSelectEntry ? 0 : undefined}
+      aria-pressed={onToggleHighlight ? highlighted : onSelectEntry ? selected : undefined}
       className={`${
         compact && simpleTeamRow
           ? COMPACT_TEAM_ROW_GRID
@@ -268,7 +276,7 @@ function LeaderboardRow({
             : ROW_GRID_NO_BADGES
       } min-h-0 border-b border-brand-border/60 transition last:border-0 ${
         compact ? 'flex-1' : 'py-2.5 md:py-3.5'
-      } ${onOpenProfile || onToggleHighlight ? 'cursor-pointer hover:bg-brand-bg-alt/60' : ''} ${isMe ? 'bg-brand-bg-alt' : ''}${
+      } ${onOpenProfile || onSelectEntry || onToggleHighlight ? 'cursor-pointer hover:bg-brand-bg-alt/60' : ''} ${isMe ? 'bg-brand-bg-alt' : ''}${
         highlighted ? ' leaderboard-row--arrived' : ''
       }${!simpleTeamRow && slotIdentity ? ` leaderboard-row--slot-learning${showBadges ? ' leaderboard-row--slot-learning-badges' : ''}` : ''}`}
     >
@@ -348,6 +356,8 @@ export function Leaderboard({
   simpleTeamRows = false,
   highlightedEntryIds,
   onToggleEntryHighlight,
+  onSelectEntry,
+  selectedEntryId,
 }: Props) {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -471,7 +481,9 @@ export function Leaderboard({
               key={e.profile_id}
               rank={rank}
               entry={e}
-              isMe={isMe}
+              isMe={selectedEntryId ? source.profile_id === selectedEntryId : isMe}
+              selected={source.profile_id === selectedEntryId}
+              onSelectEntry={onSelectEntry ? () => onSelectEntry(source) : undefined}
               badges={badgesFor(source)}
               showBadges={effectiveShowAchievements}
               compact={compact}
@@ -482,7 +494,7 @@ export function Leaderboard({
               }
               onSelectAchievement={setInfo}
               onOpenProfile={
-                onToggleEntryHighlight || isDuoLeaderboardEntry(source.profile_id)
+                onSelectEntry || onToggleEntryHighlight || isDuoLeaderboardEntry(source.profile_id)
                   ? undefined
                   : () => {
                       void openPlayerProfile(navigate, {

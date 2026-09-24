@@ -28,6 +28,7 @@ const originalFrom = supabase.from, originalRpc = supabase.rpc, originalFetch = 
 globalThis.fetch = async () => { throw new Error('Unexpected network in coach ratings tests') }
 let history = Array.from({ length: 205 }, (_, i) => ({
   ...entry(String(1000 - i).padStart(4, '0'), note(i < 100 ? 8 : 4)), coach_id: 'test-coach', status: 'complete',
+  competition_id: i % 2 === 0 ? 'event-one' : 'event-two',
 }))
 let pages = 0, attributionCalls = 0, fail = false
 supabase.from = ((table: string) => {
@@ -47,7 +48,7 @@ supabase.from = ((table: string) => {
     },
     then: (resolve: (value: unknown) => unknown) => {
       pages++
-      if (pages === 1) history = [{ ...entry('9999', note(10)), coach_id: 'test-coach', status: 'complete' }, ...history]
+      if (pages === 1) history = [{ ...entry('9999', note(10)), coach_id: 'test-coach', status: 'complete', competition_id: 'event-two' }, ...history]
       return Promise.resolve({ data: result.slice(0, limit), error: fail ? { message: 'Failed page' } : null }).then(resolve)
     },
   }
@@ -62,6 +63,9 @@ try {
   assert.equal(attributionCalls, 1)
   assert.equal(skillRating(loaded, 'positioning').score, 6)
   assert.equal(loaded[0].coach?.display_name, 'Test coach')
+  const eventNotes = await loadCoachEntries('test-player', 'event-one')
+  assert.equal(eventNotes.length, 103, 'Review includes only notes explicitly linked to the event')
+  assert.equal((await loadCoachEntries('test-player', 'different-event')).length, 0)
   fail = true
   await assert.rejects(loadCoachEntries('test-player'), /Could not load/)
   console.log('Coach rating checks passed: cumulative averages, history, deletion, missing scores, 205-row pagination, attribution, failure handling.')
