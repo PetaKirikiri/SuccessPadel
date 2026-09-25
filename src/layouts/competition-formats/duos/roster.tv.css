@@ -173,7 +173,32 @@ html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .c
 
 html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__attendance-no { display: none; }
 html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__attendance-actions { grid-template-columns: auto; }
-html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true']:has(> :nth-child(16)) .competition-pregame__player[data-team-side] { grid-template-columns: auto auto; justify-content: center; }
+html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true']:has(> :nth-child(16)) .competition-pregame__player[data-team-side] { grid-template-columns: minmax(0, 1fr); justify-content: center; }
 html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true']:has(> :nth-child(16)) .competition-pregame__name { grid-column: 1 / -1; }
-html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true']:has(> :nth-child(16)) .competition-pregame__attendance-actions { grid-column: 2; grid-row: 1; justify-self: center; }
-html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true']:has(> :nth-child(16)) .competition-pregame__attendance-yes { min-height: 40px; padding: 8px 12px; font-size: clamp(16px, 1vw, 20px); }
+html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true']:has(> :nth-child(16)) .competition-pregame__attendance-actions { position: absolute; grid-area: auto; inset-block-start: 24px; inset-inline-end: 8px; }
+
+/* Keep portraits/names centred; confirmation is a quiet, accessible tick. */
+html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__attendance-actions button.competition-pregame__attendance-yes {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #7894aa;
+  font-size: 0;
+}
+html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__attendance-yes::after {
+  content: '';
+  width: 10px;
+  height: 18px;
+  border-right: 3px solid currentColor;
+  border-bottom: 3px solid currentColor;
+  transform: translateY(-3px) rotate(45deg);
+}
+html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__attendance-actions .competition-pregame__attendance-yes[aria-pressed='true'] { color: #6cf0a5; background: rgb(36 181 105 / 15%); }
+html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__attendance-yes:not(:disabled):hover { color: #b4ffd3; background: rgb(36 181 105 / 20%); }
+html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true']:has(> :nth-child(16)) .competition-pregame__player[data-team-side].competition-pregame__player--confirmed { background: #123f3c; }
