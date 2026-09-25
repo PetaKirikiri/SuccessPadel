@@ -129,8 +129,8 @@ html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .c
 html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true']:has(> :nth-child(16)) .competition-pregame__player:nth-child(4n + 3) { margin-inline-start: 6px; }
 html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true']:has(> :nth-child(16)) .competition-pregame__attendance-actions button { padding: 4px 2px; font-size: 12px; }
 
-/* Attendance responses are temporarily hidden from the team lineup. */
-html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster .competition-pregame__attendance-actions { display: none; }
+/* Keep attendance confirmation available without the cancellation action. */
+html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster .competition-pregame__attendance-actions { display: grid; }
 
 /* Quiet team labels keep the emphasis on the partners. */
 html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true']:has(> :nth-child(16)) { row-gap: 12px; }
@@ -170,3 +170,10 @@ html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .c
 
 html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true']:has(> :nth-child(16)) .competition-pregame__player:nth-child(4n + 1)::before { width: calc(200% - 6px); }
 html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true']:has(> :nth-child(16)) .competition-pregame__player:nth-child(4n + 3)::before { width: calc(200% + 6px); }
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__attendance-no { display: none; }
+html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__attendance-actions { grid-template-columns: auto; }
+html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true']:has(> :nth-child(16)) .competition-pregame__player[data-team-side] { grid-template-columns: auto auto; justify-content: center; }
+html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true']:has(> :nth-child(16)) .competition-pregame__name { grid-column: 1 / -1; }
+html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true']:has(> :nth-child(16)) .competition-pregame__attendance-actions { grid-column: 2; grid-row: 1; justify-self: center; }
+html[data-viewport='tv'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true']:has(> :nth-child(16)) .competition-pregame__attendance-yes { min-height: 28px; padding: 4px 6px; font-size: 11px; }

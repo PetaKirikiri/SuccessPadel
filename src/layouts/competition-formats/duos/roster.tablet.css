@@ -115,8 +115,8 @@ html[data-viewport='tablet'] .competition-pregame[data-competition-format='duos'
   grid-row: 2;
 }
 
-/* Attendance responses are temporarily hidden from the team lineup. */
-html[data-viewport='tablet'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster .competition-pregame__attendance-actions { display: none; }
+/* Keep attendance confirmation available without the cancellation action. */
+html[data-viewport='tablet'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster .competition-pregame__attendance-actions { display: grid; }
 
 /* Quiet team labels keep the emphasis on the partners. */
 html[data-viewport='tablet'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] { row-gap: 12px; }
@@ -148,3 +148,10 @@ html[data-viewport='tablet'] .competition-pregame[data-competition-format='duos'
   font-weight: 650;
   letter-spacing: 0.04em;
 }
+
+html[data-viewport='tablet'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__attendance-no { display: none; }
+html[data-viewport='tablet'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__attendance-actions { grid-template-columns: auto; }
+html[data-viewport='tablet'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__player[data-team-side] { grid-template-columns: 24px minmax(0, 1fr) 32px; }
+html[data-viewport='tablet'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__attendance-actions { grid-column: 3; grid-row: 1; }
+html[data-viewport='tablet'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__attendance-yes { width: 32px; min-height: 32px; padding: 0; font-size: 0; }
+html[data-viewport='tablet'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__attendance-yes::after { content: '✓'; font-size: 16px; }
