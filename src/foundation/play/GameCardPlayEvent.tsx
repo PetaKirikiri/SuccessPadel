@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { PadelLoading } from '../../shared/Loading/PadelLoading'
 import { competitionInvitePath } from '../../lib/competitionInviteLink'
 import { ensureCompetitionScheduleSaved } from '../../lib/persistCompetitionSchedule'
 import { GameBoard } from '../../components/GameCard/GameBoard'
@@ -740,9 +741,7 @@ export function GameCardPlayEvent() {
 
   const loadOrError = (
     <>
-      {loading && !session ? (
-        <p className="py-6 text-center text-xs text-brand-muted">{t('common.loading')}</p>
-      ) : !session ? (
+      {!session ? (
         <p className="py-6 text-center text-sm text-red-600">
           {error ?? t('competition.notFound')}
         </p>
@@ -757,6 +756,8 @@ export function GameCardPlayEvent() {
     session,
     gamesBody,
   }
+
+  if (loading && !session) return <PadelLoading />
 
   return (
     <div className={`play-session-root flex min-h-0 flex-1 flex-col overflow-hidden${hasSideLeaderboard ? ' game-bg' : ''}`}>

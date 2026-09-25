@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { nearestCompetitionId, type HomepageCompetition } from '../lib/nearestCompetition'
 import { supabase } from '../lib/supabaseClient'
+import { PadelLoading } from '../shared/Loading/PadelLoading'
 
 export function HomeCompetitionRedirect() {
   const { search, hash } = useLocation()
@@ -33,5 +34,5 @@ export function HomeCompetitionRedirect() {
     }
   }, [search, hash])
 
-  return destination ? <Navigate to={destination} replace /> : <p role="status">Loading competition…</p>
+  return destination ? <Navigate to={destination} replace /> : <PadelLoading />
 }

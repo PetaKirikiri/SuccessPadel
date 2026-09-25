@@ -17,6 +17,7 @@ export function GamesHomePage({ mode }: { mode: Mode }) {
       <GamesHubView
         showPastTab
         hubNav="none"
+        showGenderFilter={competitionId === null}
         pinnedToCurrent={competitionId !== null}
         currentPanel={
           <GamesList

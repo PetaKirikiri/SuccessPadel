@@ -6,6 +6,7 @@ import type { Gender } from '../../lib/competitionPresets'
 import { consumeStoredCompetitiveGenderFilter } from '../../lib/gamesGenderFilter'
 import { Leaderboard as HubLeaderboard } from '../../components/leaderboard/Leaderboard.logic'
 import { GamesGenderFilterButtons } from './GamesGenderFilterButtons'
+import { PadelLoading } from '../../shared/Loading/PadelLoading'
 import {
   IconHubCurrent,
   IconHubLeaderboard,
@@ -79,8 +80,7 @@ function HubTab({
 }
 
 export function GamesHubLoading() {
-  const { t } = useTranslation()
-  return <p className="py-8 text-center text-sm text-brand-muted">{t('common.loading')}</p>
+  return <PadelLoading />
 }
 
 export function GamesHubEmpty({ children }: { children: ReactNode }) {

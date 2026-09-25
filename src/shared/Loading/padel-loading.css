@@ -1,0 +1,42 @@
+/* Shared, viewport-independent loading state. Does not alter loaded surfaces. */
+.padel-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: #0c2c46;
+  flex: 1;
+  min-width: 0;
+  min-height: 12rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  color: var(--color-brand-muted, #9ab3c8);
+}
+
+.padel-loading__logo {
+  width: clamp(8rem, 18vw, 12rem);
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  filter: grayscale(1) brightness(0) invert(0.85);
+}
+
+.padel-loading__spinner {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid rgb(126 211 247 / 22%);
+  border-top-color: #7ed3f7;
+  border-radius: 50%;
+  animation: padel-loading-spin 0.9s linear infinite;
+}
+
+.padel-loading__label { font-size: 0.875rem; }
+
+@keyframes padel-loading-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .padel-loading__spinner { animation: none; }
+}
