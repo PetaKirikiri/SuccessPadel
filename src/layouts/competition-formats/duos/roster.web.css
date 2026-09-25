@@ -54,3 +54,109 @@ html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .
 html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster .competition-pregame__attendance-no[aria-pressed='true'] { background: #762d38; border-color: #d7818d; color: white; }
 
 html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster .competition-pregame__player--cancelled { opacity: 1; background: #482d3b; }
+
+/* Join the members of each persisted pair into a single team row. */
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: 0;
+  row-gap: 8px;
+}
+
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__player {
+  position: relative;
+  border: 1px solid var(--color-brand-border);
+  padding: 20px 6px 6px;
+  min-height: 92px;
+  grid-template-columns: 1.5rem minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-content: center;
+  gap: 6px 5px;
+}
+
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__player[data-team-side='first'] {
+  border-inline-end: 0;
+  border-radius: 10px 0 0 10px;
+}
+
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__player[data-team-side='second'] {
+  border-inline-start: 0;
+  border-radius: 0 10px 10px 0;
+}
+
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__player[data-team-side='first']::before {
+  content: 'TEAM ' attr(data-team-number);
+  position: absolute;
+  inset-inline-start: 10px;
+  top: 6px;
+  color: var(--color-brand-muted);
+  font-size: 9px;
+  line-height: 1;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+}
+
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__rank { display: none; }
+
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__avatar {
+  grid-column: 1;
+  grid-row: 1;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__name {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: 1rem;
+}
+
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__attendance-actions {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__player:nth-child(4n + 2) { margin-inline-end: 6px; }
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__player:nth-child(4n + 3) { margin-inline-start: 6px; }
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__attendance-actions button { padding: 4px 2px; font-size: 10px; }
+
+/* Attendance responses are temporarily hidden from the team lineup. */
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster .competition-pregame__attendance-actions { display: none; }
+
+/* Quiet team labels keep the emphasis on the partners. */
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] { row-gap: 12px; }
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__player[data-team-side] {
+  background: #102f4c;
+  border-color: #355772;
+  border-width: 1px;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  gap: 6px;
+  grid-template-rows: auto;
+  padding: 24px 8px 12px;
+  min-height: 104px;
+}
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__player[data-team-side='first'] { border-inline-end: 0; }
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__player[data-team-side='second'] { border-inline-start: 0; }
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__player[data-team-side='first']::before {
+  content: 'TEAM ' attr(data-team-number);
+  top: 7px;
+  inset-inline-start: 0;
+  width: 200%;
+  text-align: center;
+  pointer-events: none;
+  z-index: 1;
+  padding: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #9bb2c6;
+  font-size: 11px;
+  line-height: 1.1;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+}
+
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__avatar { grid-column: 1; grid-row: 1; width: clamp(36px, 3vw, 46px); height: clamp(36px, 3vw, 46px); }
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__name { grid-column: 1; grid-row: 2; max-width: 100%; font-size: clamp(17px, 1.5vw, 23px); line-height: 1.15; font-weight: 750; text-align: center; }
+
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__player:nth-child(4n + 1)::before { width: calc(200% - 6px); }
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__player:nth-child(4n + 3)::before { width: calc(200% + 6px); }
