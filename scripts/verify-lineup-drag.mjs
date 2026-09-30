@@ -114,6 +114,30 @@ try {
     run('focus','[data-lineup-player="fixture-slot-0"]'); run('press','ArrowRight')
     assert.deepEqual(names(),saved)
     assert.match(evaluate('document.querySelector("[role=status]").textContent'),/Order was not saved/)
+    run('eval','window.lineupTest.fail=false')
+    // Another tab changes the lineup. Reject this stale move, refresh without
+    // overwriting that edit, then allow the next deliberate move to save.
+    run('eval','window.lineupTest.remoteMove(0,4)')
+    const remote = evaluate('window.lineupTest.savedNames()')
+    run('focus','[data-lineup-player="fixture-slot-0"]'); run('press','ArrowRight')
+    run('wait','[aria-busy="false"].competition-pregame__roster')
+    assert.deepEqual(names(),remote,'Conflict recovers to the actual saved lineup')
+    assert.match(evaluate('document.querySelector("[role=status]").textContent'),/Lineup updated to the saved order/)
+    assert.deepEqual(evaluate('window.lineupTest.savedNames()'),remote,'Rejected move never replays over remote edit')
+    await drag(0,1,'padding',true)
+    assert.deepEqual(names(),evaluate('window.lineupTest.savedNames()'),'Next move saves after conflict recovery')
+    // A focus refresh loads other-tab changes, but a delayed old response must
+    // not undo a newer local save. A failed refresh keeps the current roster.
+    run('eval','window.lineupTest.remoteMove(1,3); window.dispatchEvent(new Event("focus"))')
+    run('wait','20')
+    assert.deepEqual(names(),evaluate('window.lineupTest.savedNames()'),'Focus refresh loads saved positions')
+    run('eval','window.lineupTest.holdRead=true; window.dispatchEvent(new Event("focus"))')
+    await drag(0,1,'padding',true)
+    const afterSave = names()
+    run('eval','window.lineupTest.holdRead=false; window.lineupTest.pendingReads.splice(0).forEach(resolve=>resolve())')
+    assert.deepEqual(names(),afterSave,'Old read cannot roll back a newer move')
+    run('eval','window.lineupTest.failRead=true; window.dispatchEvent(new Event("focus"))')
+    assert.deepEqual(names(),afterSave,'Failed refresh does not clear the roster')
     console.log(`PASS ${mode}: ${touch ? 'touch' : 'mouse'} drag, floating feedback, all slots, queued saves, rollback`)
   }
   run('open',`${base}/tests/competition-formats/lineup.html?readonly`); run('wait','[data-lineup-player]')

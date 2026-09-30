@@ -4,7 +4,7 @@ import { ViewportProvider } from '../../src/contexts/ViewportContext'
 import { CompetitionRoster } from '../../src/components/competition-formats/CompetitionRoster'
 import { useCompetitionLineupDrag } from '../../src/hooks/useCompetitionLineupDrag'
 import type { CompetitionPlayer } from '../../src/hooks/useCompetitions'
-import { lineupSnapshot, occupantsInFixedSlots } from '../../src/lib/competitionLineupOrder'
+import { lineupSnapshot, moveLineupPlayer, occupantsInFixedSlots } from '../../src/lib/competitionLineupOrder'
 import { supabase } from '../../src/lib/supabaseClient'
 import '../../src/index.css'
 
@@ -16,15 +16,30 @@ const initial: CompetitionPlayer[] = Array.from({ length: 16 }, (_, i) => ({
 }))
 let saved: CompetitionPlayer[] = JSON.parse(localStorage.getItem(storageKey) ?? 'null') ?? initial
 const source = saved
-const test = { calls: [] as unknown[], pending: [] as (() => void)[], hold: false, fail: false, attendance: 0 }
+const test = {
+  calls: [] as unknown[], pending: [] as (() => void)[], hold: false, fail: false, attendance: 0,
+  reads: 0, holdRead: false, failRead: false, pendingReads: [] as (() => void)[],
+  savedNames: () => saved.map(player => player.guest_name),
+  remoteMove: (from: number, to: number) => {
+    saved = occupantsInFixedSlots(saved, moveLineupPlayer(saved, from, to))
+    localStorage.setItem(storageKey, JSON.stringify(saved))
+  },
+}
 Object.assign(window, { lineupTest: test })
 supabase.rpc = (async (name: string, args: { p_session_id: string; p_expected_slots: unknown; p_occupant_order: string[] }) => {
+  if (name === 'list_competitions_for_setup') {
+    test.reads += 1
+    const snapshot = structuredClone(saved)
+    if (test.holdRead) await new Promise<void>(resolve => test.pendingReads.push(resolve))
+    return test.failRead ? { error: { message: 'Test refresh unavailable' } }
+      : { data: [{ id: 'fixture-only', session_players: snapshot }], error: null }
+  }
   test.calls.push({ name, ...args })
   if (test.hold) await new Promise<void>(resolve => test.pending.push(resolve))
   if (test.fail) return { error: { message: 'Test save rejected' } }
   if (name !== 'reorder_competition_slot_occupants' || args.p_session_id !== 'fixture-only' ||
       JSON.stringify(args.p_expected_slots) !== JSON.stringify(lineupSnapshot(saved))) {
-    return { error: { message: 'Invalid or stale fixture request' } }
+    return { error: { message: 'The lineup was changed elsewhere. Refresh before trying again' } }
   }
   saved = occupantsInFixedSlots(saved, args.p_occupant_order.map(id => saved.find(player => player.id === id)!))
   localStorage.setItem(storageKey, JSON.stringify(saved))

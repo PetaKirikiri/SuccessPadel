@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, type PointerEvent, type KeyboardEvent } from 'react'
-import type { CompetitionPlayer } from './useCompetitions'
+import { useCallback, useEffect, useRef, useState, type PointerEvent, type KeyboardEvent } from 'react'
+import type { CompetitionPlayer, CompetitionRow } from './useCompetitions'
 import { clearCompetitionHubCache } from './useCompetitionHubRows'
 import { lineupSnapshot, moveLineupPlayer, nearestLineupSlot, occupantsInFixedSlots } from '../lib/competitionLineupOrder'
 import { supabase } from '../lib/supabaseClient'
@@ -16,6 +16,11 @@ export function useCompetitionLineupDrag(sessionId: string, source: CompetitionP
   const permitted = useRef(enabled)
   permitted.current = enabled
   const staleSource = useRef<string | null>(null)
+  const sourceSnapshot = useRef('')
+  sourceSnapshot.current = JSON.stringify(lineupSnapshot(source))
+  const revision = useRef(0)
+  const refreshRequest = useRef(0)
+  const recovering = useRef(false)
   const drag = useRef<{
     from: number; to: number; snapshot: CompetitionPlayer[]; element: HTMLElement;
     x: number; y: number; animation: Animation | null;
@@ -24,19 +29,65 @@ export function useCompetitionLineupDrag(sessionId: string, source: CompetitionP
     containerLeft: number; containerTop: number; scrollLeft: number; scrollTop: number
   } | null>(null)
   useEffect(() => () => {
+    refreshRequest.current += 1
     drag.current?.animation?.cancel()
     drag.current?.previews.forEach(animation => animation.cancel())
     drag.current = null
   }, [])
   useEffect(() => {
     if (!inFlight.current && !drag.current && JSON.stringify(lineupSnapshot(source)) !== staleSource.current) {
+      revision.current += 1
       latestPlayers.current = source
       setPlayers(source)
     }
   }, [source, sessionId])
 
+  const refreshLineup = useCallback(async (afterConflict = false) => {
+    if (!permitted.current || drag.current || (inFlight.current && !afterConflict)) return false
+    const request = ++refreshRequest.current
+    const version = revision.current
+    try {
+      // Use the same public roster contract as the page, without its cached copy.
+      // Do not replay a rejected move against a lineup the user has not seen.
+      const { data, error } = await supabase.rpc('list_competitions_for_setup')
+      if (error) return false
+      const row = (data as CompetitionRow[] | null)?.find(item => item.id === sessionId)
+      if (!row?.session_players || request !== refreshRequest.current || version !== revision.current ||
+          !permitted.current || drag.current || (inFlight.current && !afterConflict)) return false
+      const next = [...row.session_players].sort((a, b) =>
+        (a.rank_order ?? 999) - (b.rank_order ?? 999) || a.id.localeCompare(b.id))
+      staleSource.current = sourceSnapshot.current
+      if (JSON.stringify(lineupSnapshot(next)) !== JSON.stringify(lineupSnapshot(latestPlayers.current))) {
+        revision.current += 1
+        latestPlayers.current = next
+        setPlayers(next)
+        clearCompetitionHubCache()
+      }
+      return true
+    } catch {
+      // A failed background refresh must never clear the displayed lineup.
+      return false
+    }
+  }, [sessionId])
+
+  useEffect(() => {
+    if (!enabled) return
+    const refreshWhenVisible = () => { if (!document.hidden) void refreshLineup() }
+    refreshWhenVisible()
+    window.addEventListener('focus', refreshWhenVisible)
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+    const poll = window.setInterval(refreshWhenVisible, 15000)
+    return () => {
+      refreshRequest.current += 1
+      window.clearInterval(poll)
+      window.removeEventListener('focus', refreshWhenVisible)
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+    }
+  }, [enabled, refreshLineup])
+
   const saveMove = async (snapshot: CompetitionPlayer[], from: number, to: number) => {
-    if (!enabled || from === to) return
+    if (!enabled || recovering.current || from === to) return
+    revision.current += 1
     const ordered = moveLineupPlayer(snapshot, from, to)
     setMessage('')
     // Update once on drop; acknowledging the save must not reload the hub or
@@ -70,14 +121,20 @@ export function useCompetitionLineupDrag(sessionId: string, source: CompetitionP
       latestPlayers.current = active.snapshot
       setPlayers(active.snapshot)
       setMessage(`Order was not saved: ${error instanceof Error ? error.message : 'Please try again.'}`)
+      if (error instanceof Error && error.message.includes('The lineup was changed elsewhere')) {
+        recovering.current = true
+        const refreshed = await refreshLineup(true)
+        if (refreshed) setMessage('Lineup updated to the saved order. Please make your move again.')
+      }
     } finally {
+      recovering.current = false
       inFlight.current = false
       setSaving(false)
     }
   }
 
   const pointerDown = (event: PointerEvent<HTMLElement>, index: number) => {
-    if (!enabled || drag.current || !event.isPrimary || event.button !== 0) return
+    if (!enabled || recovering.current || drag.current || !event.isPrimary || event.button !== 0) return
     // Touch browsers may retarget blank space beside a name to its button.
     // Use the actual contact point so only the real controls exclude pickup.
     const hit = event.currentTarget.ownerDocument.elementFromPoint(event.clientX, event.clientY)
@@ -86,6 +143,7 @@ export function useCompetitionLineupDrag(sessionId: string, source: CompetitionP
     event.preventDefault()
     event.stopPropagation()
     event.currentTarget.setPointerCapture(event.pointerId)
+    revision.current += 1
     const container = event.currentTarget.parentElement!
     const containerRect = container.getBoundingClientRect()
     const cards = Array.from(container.querySelectorAll<HTMLElement>('[data-lineup-player]'))
