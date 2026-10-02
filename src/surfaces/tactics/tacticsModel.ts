@@ -6,7 +6,7 @@ export type Point = { x: number; y: number }
 export type Player = Point & { id: number; team: 'opponents' | 'you' }
 export type ShotKind = 'drive' | 'lob'
 export type TacticsState = {
-  players: Player[]; ball: Point; target: Point; hitter: number; ballOwner?: number; kind: ShotKind; speed: number
+  players: Player[]; ball: Point; target: Point; hitter: number; ballOwner: number; kind: ShotKind; speed: number
 }
 export type Sample = Point & { z: number; t: number; bounced: boolean }
 export type Shot = {
@@ -20,15 +20,15 @@ export const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.mi
 export const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y)
 
 export function initialTactics(): TacticsState {
-  return {
+  return selectShooter({
     players: [
       { id: 1, team: 'opponents', x: 2.7, y: 7.4 },
       { id: 2, team: 'opponents', x: 7.3, y: 7.4 },
       { id: 3, team: 'you', x: 3.0, y: 15.7 },
       { id: 4, team: 'you', x: 7.3, y: 13.9 },
     ],
-    ball: { x: 3.55, y: 15.3 }, target: { x: 8.6, y: 2.5 }, hitter: 3, kind: 'drive', speed: 12,
-  }
+    ball: { x: 3.55, y: 15.3 }, target: { x: 8.6, y: 2.5 }, hitter: 3, ballOwner: 3, kind: 'drive', speed: 12,
+  }, 3)
 }
 
 /** Time to get a racket within reach, including reaction and acceleration from rest. */
@@ -120,16 +120,16 @@ export function lobOpportunity(state: TacticsState, shot: Shot, target: Point): 
   return 65 + 20 * clamp((retreat - 2.8) / 4, 0, 1) + 15 * clamp((3.4 - target.y) / 2, 0, 1)
 }
 
-export function placeBall(state: TacticsState, point: Point): TacticsState {
-  const upper = state.ball.y < COURT.net
-  return { ...state, ballOwner: undefined, ball: { x: clamp(point.x, 0.15, 9.85), y: clamp(point.y, upper ? 0.15 : 10.15, upper ? 9.85 : 19.85) } }
-}
 /** Keep the contact point beside the selected player so the ball stays visible. */
 export function selectShooter(state: TacticsState, id: number): TacticsState {
   const player = state.players.find(p => p.id === id)
   if (!player) return state
-  const placed = placeBall({ ...state, ball: player }, { x: player.x + (player.x > 5 ? -0.55 : 0.55), y: player.y + (player.y < COURT.net ? 0.4 : -0.4) })
-  return { ...placed, hitter: id, ballOwner: id }
+  const upper = player.y < COURT.net
+  const ball = {
+    x: clamp(player.x + (player.x > 5 ? -0.55 : 0.55), 0.15, 9.85),
+    y: clamp(player.y + (upper ? 0.4 : -0.4), upper ? 0.15 : 10.15, upper ? 9.85 : 19.85),
+  }
+  return { ...state, ball, hitter: id, ballOwner: id }
 }
 
 export function calculateHeatmap(state: TacticsState): HeatCell[] {
@@ -179,16 +179,22 @@ export function defensiveSafety(state: TacticsState, returnArea: Point, target: 
     }
     worstLane = Math.min(worstLane, bestIntercept)
   }
-  // Any opponent being able to attack a gap makes it exposed. No late glass
-  // recovery or boundary-accuracy bonus is counted as defensive coverage.
-  return 100 / (1 + Math.exp(-worstLane / 0.16))
+  // Ready players control their immediate racket/step area even when the
+  // worst-case fast-return lane allows little reaction time. Fade that local
+  // coverage from 0.9 m to 2.9 m; wider gaps still rely on lane interception.
+  const nearest = Math.min(...defenders.map(player => distance(player, target)))
+  const fade = clamp((nearest - 0.9) / 2, 0, 1)
+  const localCoverage = 98 * (1 - fade * fade * (3 - 2 * fade))
+  const laneCoverage = 100 / (1 + Math.exp(-worstLane / 0.16))
+  return Math.max(localCoverage, laneCoverage)
 }
 
 /** Automatically compare legal landing cells and a small set of realistic shot paces.
  * Normalize to a bottom-half hitter, then transform the entire result back so the
- * ball can start on either side. A manually placed starting point stays fixed; a selected shooter owns their contact point.
+ * selected shooter owns the contact point on either side.
  */
 export function chooseAutomaticShot(input: TacticsState): { state: TacticsState; cells: HeatCell[]; shot: Shot } {
+  input = selectShooter(input, input.ballOwner)
   const flipped = input.ball.y < 10
   const reflect = (p: Point): Point => ({ x: 10 - p.x, y: 20 - p.y })
   const base: TacticsState = flipped ? {

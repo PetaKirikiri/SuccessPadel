@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { arrivalTime, chooseAutomaticShot, calculateHeatmap, defensiveSafety, evaluateShot, initialTactics, lobOpportunity, movePlayer, placeBall, selectShooter } from '../src/surfaces/tactics/tacticsModel.ts'
+import { arrivalTime, chooseAutomaticShot, calculateHeatmap, defensiveSafety, evaluateShot, initialTactics, lobOpportunity, movePlayer, selectShooter } from '../src/surfaces/tactics/tacticsModel.ts'
 
 test('a defender on the trajectory closes an otherwise open shot', () => {
   const state = initialTactics()
@@ -40,10 +40,11 @@ test('glass rebounds stay on court and run forward in time', () => {
   }
 })
 
-test('moving players preserves the chosen ball start; opponents cannot cross the net', () => {
+test('moving the shooter carries the ball; opponents cannot cross the net', () => {
   const start = initialTactics()
   const moved = movePlayer(start, 3, { x: 4, y: 16.7 })
-  assert.deepEqual(moved.ball, start.ball)
+  assert.notDeepEqual(moved.ball, start.ball)
+  assert.equal(moved.ballOwner, 3)
   assert.deepEqual(start.players[2], { id: 3, team: 'you', x: 3, y: 15.7 })
   assert.ok(movePlayer(start, 1, { x: -100, y: 99 }).players[0].y < 10)
   assert.ok(movePlayer(start, 1, { x: -100, y: 99 }).players[0].x > 0)
@@ -117,12 +118,12 @@ test('uncovered short balls and the abandoned wing are dangerous, not safe wall 
   assert.ok(defensiveSafety(covering, returnArea, { x: 5, y: 11 }) > defensiveSafety(state, returnArea, { x: 5, y: 11 }) + 30)
 })
 
-test('ball placement stays on our half even when dragged or nudged across the net', () => {
+test('the trajectory restores its shooter anchor even if given a stale ball position', () => {
   const state = initialTactics()
-  assert.deepEqual(placeBall(state, { x: 4, y: 14 }).ball, { x: 4, y: 14 })
-  const outside = placeBall(state, { x: 20, y: 2 })
-  assert.ok(outside.ball.y > 10 && outside.ball.x < 10)
-  assert.deepEqual(outside.players, state.players)
+  assert.equal(state.ballOwner, 3)
+  const result = chooseAutomaticShot({ ...state, ball: { x: 9, y: 1 } })
+  assert.deepEqual(result.state.ball, state.ball)
+  assert.ok(result.shot.samples[0].y > 10)
 })
 
 test('useful lob zones appear behind net players and disappear when they cover the back', () => {
@@ -150,9 +151,6 @@ test('selecting a shooter moves the contact point and follows only that player',
   assert.deepEqual(movePlayer(selected, 3, { x: 2, y: 18 }).ball, selected.ball)
   const moved = movePlayer(selected, 4, { x: 6, y: 17 })
   assert.notDeepEqual(moved.ball, selected.ball)
-  const manual = placeBall(moved, { x: 3, y: 14 })
-  assert.equal(manual.ballOwner, undefined)
-  assert.deepEqual(movePlayer(manual, 4, { x: 8, y: 12 }).ball, manual.ball)
   assert.equal(selectShooter(moved, 3).ballOwner, 3)
 })
 
@@ -170,8 +168,6 @@ test('either team can attack, with ball placement and lob zones following that s
   assert.ok(Math.abs(result.shot.samples[0].y - upper.ball.y) < 1e-8)
   const lobs = result.cells.filter(c => (c.lobScore ?? 0) >= 65)
   assert.ok(lobs.length > 0 && lobs.every(c => c.y > 16.6))
-  const manual = placeBall(upper, { x: 4, y: 18 })
-  assert.ok(manual.ball.y < 10 && manual.ballOwner === undefined)
   const moved = movePlayer(upper, 1, { x: 4, y: 2 })
   assert.ok(moved.ball.y < 10 && moved.ball.y > moved.players[0].y)
   assert.notDeepEqual(moved.ball, upper.ball)
@@ -181,7 +177,6 @@ test('either team can attack, with ball placement and lob zones following that s
   const lower = selectShooter(teammate, 3)
   assert.equal(lower.ballOwner, 3)
   assert.ok(lower.ball.y > 10 && chooseAutomaticShot(lower).state.target.y < 10)
-  assert.ok(placeBall(lower, { x: 4, y: 2 }).ball.y > 10)
 })
 
 
@@ -196,4 +191,20 @@ test('lob opportunities remain visible without becoming the direct trajectory on
     assert.ok(result.cells.filter(c => (c.lobScore ?? 0) >= 65).every(c => c.score >= 65))
     assert.equal(result.state.target.y < 10, state.ball.y > 10)
   }
+})
+
+
+test('both shooting players clearly cover nearby space while the abandoned wing stays exposed', () => {
+  const state = selectShooter(movePlayer(movePlayer(initialTactics(), 3, { x: 4.8, y: 12.7 }), 4, { x: 8.2, y: 12.9 }), 4)
+  const returnArea = { x: 2, y: 3 }
+  for (const player of state.players.filter(p => p.team === 'you')) {
+    assert.ok(defensiveSafety(state, returnArea, player) >= 95)
+    for (const [dx, dy] of [[1.3, 0], [-1.3, 0], [0, 1.3], [0, -1.3]]) {
+      assert.ok(defensiveSafety(state, returnArea, { x: player.x + dx, y: player.y + dy }) > 85)
+    }
+  }
+  const gap = { x: 1, y: 12.5 }
+  assert.ok(defensiveSafety(state, returnArea, gap) < 25)
+  const covered = movePlayer(state, 3, gap)
+  assert.ok(defensiveSafety(covered, returnArea, gap) >= 95)
 })

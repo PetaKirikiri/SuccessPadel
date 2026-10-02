@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent, PointerEvent } from 'react'
-import { chooseAutomaticShot, distance, initialTactics, movePlayer, placeBall, selectShooter } from './tacticsModel'
+import { chooseAutomaticShot, distance, initialTactics, movePlayer, selectShooter } from './tacticsModel'
 import type { Point } from './tacticsModel'
 import { courtPoint, courtView, drawCourt, screenPoint } from './drawCourt'
 import '../../layouts/tactics.layout.css'
@@ -57,10 +57,7 @@ export default function TacticsPage() {
 
   function move(id: string, point: Point) {
     if (!id) return
-    setState(current => {
-      if (id === 'ball') return placeBall(current, point)
-      return movePlayer(current, Number(id.replace('player-', '')), point)
-    })
+    setState(current => movePlayer(current, Number(id.replace('player-', '')), point))
   }
   function pointerPoint(event: PointerEvent<HTMLCanvasElement>) {
     const rect = event.currentTarget.getBoundingClientRect()
@@ -77,18 +74,15 @@ export default function TacticsPage() {
     }
     const { screen, point, view } = pointerPoint(event)
     const candidates = [
-      { id: 'ball', point: state.ball, radius: 20 },
       ...state.players.map(p => ({ id: `player-${p.id}`, point: p, radius: Math.max(22, view.scale * 0.52) })),
     ]
     const hit = candidates.find(c => distance(screen, screenPoint(c.point, view)) <= c.radius)
     if (!hit && (point.x < 0 || point.x > 10 || point.y < 0 || point.y > 20)) return
-    // Empty defensive court can receive a double-tap near a player, but cannot place the ball.
-    const attackingHalf = (point.y < 10) === (state.ball.y < 10)
-    const id = hit?.id ?? (attackingHalf ? 'ball' : '')
+    // Empty court only listens for nearby double-taps; the ball is never draggable.
+    const id = hit?.id ?? ''
     event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId)
     setSelected(id)
     drag.current = { id, pointer: event.pointerId, offset: hit ? { x: hit.point.x - point.x, y: hit.point.y - point.y } : { x: 0, y: 0 }, start: screen, started: event.timeStamp, moved: false }
-    if (!hit) move(id, point)
   }
   function onPointerMove(event: PointerEvent<HTMLCanvasElement>) {
     if (!drag.current || drag.current.pointer !== event.pointerId) return
@@ -127,14 +121,14 @@ export default function TacticsPage() {
     event.preventDefault()
     const canvas = canvasRef.current
     if (canvas && courtView(canvas.clientWidth, canvas.clientHeight).rotated) step = { x: -step.y, y: step.x }
-    const point = id === 'ball' ? state.ball : state.players.find(p => `player-${p.id}` === id)
+    const point = state.players.find(p => `player-${p.id}` === id)
     if (point) move(id, { x: point.x + step.x, y: point.y + step.y })
   }
   return (
     <main className="tactics" aria-label="Padel tactics board">
-      <canvas ref={canvasRef} className="tactics__court" aria-label="Drag the players. Double-tap or double-click near any player to make them the shooter and switch the attacking side. Drag the ball or tap the attacking half to set its starting position. Opponent returns are calculated automatically. Green areas labelled Lob show useful lob targets." onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag} onLostPointerCapture={() => { drag.current = null; setSelected('') }} />
+      <canvas ref={canvasRef} className="tactics__court" aria-label="Drag the players. Double-tap or double-click near any player to make them the shooter and switch the attacking side. The ball stays attached to the shooter. Green on their half shows the areas their team covers. Opponent returns are calculated automatically. Green areas labelled Lob show useful lob targets." onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag} onLostPointerCapture={() => { drag.current = null; setSelected('') }} />
       <div className="tactics__accessible-controls">
-        {['player-1', 'player-2', 'player-3', 'player-4', 'ball'].map(id => <button type="button" key={id} onFocus={() => setSelected(id)} onBlur={() => setSelected('')} onKeyDown={e => keyMove(e, id)}>{id.replace('-', ' ')}: use arrow keys to move{id.startsWith('player-') ? '; Enter to select shooter' : ''}</button>)}
+        {['player-1', 'player-2', 'player-3', 'player-4'].map(id => <button type="button" key={id} onFocus={() => setSelected(id)} onBlur={() => setSelected('')} onKeyDown={e => keyMove(e, id)}>{id.replace('-', ' ')}: use arrow keys to move{id.startsWith('player-') ? '; Enter to select shooter' : ''}</button>)}
       </div>
     </main>
   )

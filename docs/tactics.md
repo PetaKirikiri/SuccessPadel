@@ -20,9 +20,10 @@ Only the court, four players, ball, heatmap and recommended path are visible. Dr
 players or the ball; double-tap or double-click near any player to select the shooter and switch the attacking side.
 Players stay in place; shot targets, return danger and lob zones recalculate for the selected team.
 The ball snaps beside that player and follows them, with a lime ring marking the shooter.
-Dragging or placing the ball manually releases that attachment. Tap empty space on the attacking half to place the ball. Taps on empty
-defending court do nothing, and dragging the ball cannot cross the net. A manually placed ball remains at the chosen
-start when players move. The opponents’ return and defensive exposure are calculated automatically. The trajectory always selects the highest rated legal direct shot, comparing 12/16 m/s
+The ball is always anchored to a player, including on first load. It has no independent
+pointer or keyboard control, and tapping empty court never relocates it. Moving the
+shooter carries the ball; moving another player leaves the shot origin unchanged.
+The opponents’ return and defensive exposure are calculated automatically. The trajectory always selects the highest rated legal direct shot, comparing 12/16 m/s
 drives over all 25 cm landing cells. Lobs at 7 m/s are evaluated separately as optional
 green landing zones labelled “Lob”; they never determine the trajectory line. On the defending
 half, each cell shows the best direct-shot score or qualifying lob opportunity. The other half estimates fast-return lanes from both opponents and the
@@ -58,7 +59,9 @@ racket reach, 2.7 m maximum contact height, floor restitution 0.68 vertically / 
 horizontally, wall restitution 0.75. These are prototype parameters, not measured
 player data. Spin, movement direction, body orientation and skill are excluded. Defensive coverage is a positional pressure estimate: 16 m/s direct return lanes,
 ready movement at 4.5 m/s after reaction, and 0.12 s extra recovery for the player
-nearest the ball. It checks interceptions before the target, so a player can screen
+selected as the shooter. Immediate racket/step coverage is scored green within 0.9 m
+of either player and fades smoothly to zero at 2.9 m; the stronger of this coverage
+and the lane interception score is shown. This is a positional heuristic, not a win probability. It checks interceptions before the target, so a player can screen
 space behind them. It does not award safety for a later bounce or a difficult
 boundary shot, and does not predict an exact legal return height. Players stay at
 their current positions. The teammate contributes to defensive coverage, not
