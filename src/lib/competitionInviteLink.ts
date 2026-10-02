@@ -4,9 +4,9 @@ export function competitionInvitePath(id: string): string {
 }
 
 export function competitionInviteUrl(id: string): string {
-  // Public aliases are permanent and must match vercel.json redirects.
-  if (id.toLowerCase() === '9df4f70a-2532-4f11-9a6d-013ab7110c25') {
-    return 'https://successpadel.app/c/9df4f70a'
+  // The server resolves this prefix only when it identifies exactly one event.
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    return `https://successpadel.app/c/${id.slice(0, 8).toLowerCase()}`
   }
   return `https://successpadel.app${competitionInvitePath(id)}`
 }

@@ -11,6 +11,7 @@ const files = [
   'api/competition-share.ts', 'server/sharing/competitionPage.ts',
   'src/lib/competitionShareDetails.ts', 'src/lib/competitionLevel.ts',
   'src/lib/courtSchedule.ts', 'src/lib/competitionScheduleLayout.ts',
+  'src/lib/competitionInviteLink.ts',
 ]
 await writeFile(join(output, 'package.json'), '{"type":"module"}')
 for (const file of files) {

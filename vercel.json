@@ -1,19 +1,9 @@
 {
   "functions": {
-    "api/coach-feedback.mjs": {
-      "maxDuration": 180
-    },
-    "api/competition-share.ts": {
-      "includeFiles": "dist/index.html",
-      "maxDuration": 10
-    }
+    "api/coach-feedback.mjs": { "maxDuration": 180 },
+    "api/competition-share.ts": { "includeFiles": "dist/index.html", "maxDuration": 10 }
   },
   "redirects": [
-    {
-      "source": "/c/9df4f70a",
-      "destination": "/competitive?competition=9df4f70a-2532-4f11-9a6d-013ab7110c25",
-      "permanent": true
-    },
     {
       "source": "/c/17sep26",
       "destination": "/competitive?competition=9df4f70a-2532-4f11-9a6d-013ab7110c25",
@@ -21,24 +11,13 @@
     }
   ],
   "rewrites": [
+    { "source": "/c/:inviteCode", "destination": "/api/competition-share?inviteCode=:inviteCode" },
     {
       "source": "/competitive",
-      "has": [
-        {
-          "type": "query",
-          "key": "competition",
-          "value": "(?<eventId>[0-9a-fA-F-]{36})"
-        }
-      ],
+      "has": [{ "type": "query", "key": "competition", "value": "(?<eventId>[0-9a-fA-F-]{36})" }],
       "destination": "/api/competition-share?competition=:eventId"
     },
-    {
-      "source": "/competitions/:eventId",
-      "destination": "/api/competition-share?competition=:eventId"
-    },
-    {
-      "source": "/((?!api/).*)",
-      "destination": "/index.html"
-    }
+    { "source": "/competitions/:eventId", "destination": "/api/competition-share?competition=:eventId" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

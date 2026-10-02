@@ -5,8 +5,10 @@ import { recogniseExistingLineMember } from '../supabase/functions/_shared/lineR
 
 const destinations = [
   '/c/9df4f70a',
+  '/c/eeea4cc0',
   '/c/another-event',
-  '/competitive?competition=c446edaf-3437-4084-ada8-e1008df8296f',
+  '/c/c446edaf',
+  '/competitive?competition=c446edaf-3437-4084-ada8-e1008df8296f&view=review#scores',
   '/players/dave?competition=another-id#feedback',
   '/competitions/another-id?game=4',
 ]
@@ -30,7 +32,9 @@ for (const destination of destinations) {
   }
 }
 assert.equal(originalReturnPath('/competitive?competition=9df4f70a-2532-4f11-9a6d-013ab7110c25&sp_line_attempt=1'), '/c/9df4f70a')
+assert.equal(originalReturnPath('/competitive?competition=eeea4cc0-a90c-4c19-be69-ef880852adcc&sp_line_attempt=1'), '/c/eeea4cc0')
 assert.equal(originalReturnPath('/competitive?competition=different-event'), '/competitive?competition=different-event')
+assert.equal(originalReturnPath('/competitive?competition=c446edaf-3437-4084-ada8-e1008df8296f'), '/c/c446edaf')
 for (const invalid of ['//evil.example/c/test', 'https://evil.example/c/test', '/\\evil.example', '/login', '/login/competitive', '/auth/line/resume', 'javascript:alert(1)', '/%2f%2fevil.example', 'https://successpadel.app@evil.example/c/test']) {
   assert.equal(safeReturnPath(invalid), null, invalid)
 }

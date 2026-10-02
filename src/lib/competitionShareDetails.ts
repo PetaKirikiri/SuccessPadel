@@ -1,6 +1,7 @@
 import { competitionInviteTitle, competitionLevelLabel } from './competitionLevel.js'
 import { CLUB_TIMEZONE, formatClubTimeLocalized } from './courtSchedule.js'
 import { competitionScheduleFromSession, totalScheduleMinutes } from './competitionScheduleLayout.js'
+import { competitionInviteUrl } from './competitionInviteLink.js'
 import type { GameSession } from './types'
 
 export type ShareCompetition = Pick<GameSession,
@@ -32,8 +33,9 @@ export function competitionShareDetails(row: ShareCompetition) {
   }).format(date) : null
   const timeText = start ? `${formatClubTimeLocalized(start, 'en')}${end ? `–${formatClubTimeLocalized(end, 'en')}` : ''}` : null
   return {
-    title: [name, level].filter(Boolean).join(' · '),
-    description: [dateText, timeText, 'Success Padel Samui'].filter(Boolean).join(' · '),
-    url: `https://successpadel.app/competitive?competition=${encodeURIComponent(row.id)}`,
+    // Chat apps emphasize the title and may truncate it: put when to arrive first.
+    title: [timeText, dateText].filter(Boolean).join(' · ') || name,
+    description: [name, level, 'Success Padel Samui'].filter(Boolean).join(' · '),
+    url: competitionInviteUrl(row.id),
   }
 }

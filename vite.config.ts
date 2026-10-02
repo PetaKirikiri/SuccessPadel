@@ -59,6 +59,7 @@ export default defineConfig({
           const url = new URL(req.url ?? '/', 'http://localhost')
           const matches = (url.pathname === '/competitive' && url.searchParams.has('competition'))
             || /^\/competitions\/[^/]+\/?$/.test(url.pathname)
+            || /^\/c\/[^/]+\/?$/.test(url.pathname)
             || url.pathname === '/api/competition-share'
           if (!matches) return next()
           void handleCompetitionPage(req, res, env, async () => server.transformIndexHtml(
