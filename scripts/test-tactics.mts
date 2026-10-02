@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { arrivalTime, chooseAutomaticShot, calculateHeatmap, defensiveSafety, evaluateShot, initialTactics, movePlayer } from '../src/surfaces/tactics/tacticsModel.ts'
+import { arrivalTime, chooseAutomaticShot, calculateHeatmap, defensiveSafety, evaluateShot, initialTactics, lobOpportunity, movePlayer, placeBall } from '../src/surfaces/tactics/tacticsModel.ts'
 
 test('a defender on the trajectory closes an otherwise open shot', () => {
   const state = initialTactics()
@@ -111,4 +111,23 @@ test('uncovered short balls and the abandoned wing are dangerous, not safe wall 
   assert.ok(defensiveSafety(shifted, returnArea, { x: 8.5, y: 15 }) < 15)
   const covering = movePlayer(state, 4, { x: 5, y: 11 })
   assert.ok(defensiveSafety(covering, returnArea, { x: 5, y: 11 }) > defensiveSafety(state, returnArea, { x: 5, y: 11 }) + 30)
+})
+
+test('ball placement stays on our half even when dragged or nudged across the net', () => {
+  const state = initialTactics()
+  assert.deepEqual(placeBall(state, { x: 4, y: 14 }).ball, { x: 4, y: 14 })
+  const outside = placeBall(state, { x: 20, y: 2 })
+  assert.ok(outside.ball.y > 10 && outside.ball.x < 10)
+  assert.deepEqual(outside.players, state.players)
+})
+
+test('useful lob zones appear behind net players and disappear when they cover the back', () => {
+  const state = initialTactics()
+  const lobCells = chooseAutomaticShot(state).cells.filter(p => (p.lobScore ?? 0) >= 65)
+  assert.ok(lobCells.length > 0)
+  assert.ok(lobCells.every(p => p.y <= 3.4 && p.y >= 0.6 && p.score >= 65))
+  state.players = state.players.map(p => p.team === 'opponents' ? { ...p, y: 2 } : p)
+  assert.equal(chooseAutomaticShot(state).cells.filter(p => (p.lobScore ?? 0) >= 65).length, 0)
+  const low = { ...initialTactics(), kind: 'lob' as const, speed: 16, target: { x: 5, y: 2 } }
+  assert.equal(lobOpportunity(low, evaluateShot(low), low.target), 0)
 })

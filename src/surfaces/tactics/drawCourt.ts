@@ -78,6 +78,18 @@ export function drawCourt(canvas: HTMLCanvasElement, state: TacticsState, cells:
   for (let x = 0; x <= 10; x += 0.16) { ctx.beginPath(); ctx.moveTo(x, 9.91); ctx.lineTo(x, 10.14); ctx.stroke() }
   ctx.restore()
 
+  // One small on-court label per useful lob region; no controls or legend.
+  for (const left of [true, false]) {
+    const zone = cells.filter(cell => (cell.lobScore ?? 0) >= 65 && (left ? cell.x < 5 : cell.x >= 5))
+    if (zone.length < 8) continue
+    const centre = { x: zone.reduce((sum, p) => sum + p.x, 0) / zone.length, y: zone.reduce((sum, p) => sum + p.y, 0) / zone.length }
+    const anchor = zone.reduce((nearest, p) => Math.hypot(p.x - centre.x, p.y - centre.y) < Math.hypot(nearest.x - centre.x, nearest.y - centre.y) ? p : nearest)
+    const p = screenPoint(anchor, view)
+    ctx.font = '600 14px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+    ctx.fillStyle = '#084a35c9'; ctx.beginPath(); ctx.roundRect(p.x - 24, p.y - 13, 48, 26, 13); ctx.fill()
+    ctx.fillStyle = '#e5fff0'; ctx.fillText('Lob', p.x, p.y)
+  }
+
   // Trajectory in court projection; the dotted segment is after the first bounce.
   for (const bounced of [false, true]) {
     const points = shot.samples.filter(p => p.bounced === bounced)

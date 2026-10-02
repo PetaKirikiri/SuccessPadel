@@ -99,7 +99,30 @@ export function evaluateShot(state: TacticsState, target: Point = state.target):
   return { samples, flight, margin, score, valid: true, reason: null, interceptor }
 }
 
-export type HeatCell = Point & { score: number; valid: boolean }
+export type HeatCell = Point & { score: number; valid: boolean; lobScore?: number }
+
+/** A useful lob can force opponents off the net without winning outright.
+ * Require a deep, in-bounds landing behind both players and no reachable
+ * overhead before either player has been forced at least two metres back.
+ */
+export function lobOpportunity(state: TacticsState, shot: Shot, target: Point): number {
+  if (!shot.valid || state.kind !== 'lob' || target.y < 0.6 || target.y > 3.4 || target.x < 0.6 || target.x > 9.4) return 0
+  if (Math.max(...shot.samples.filter(p => !p.bounced).map(p => p.z)) < 3.5) return 0
+  const opponents = state.players.filter(p => p.team === 'opponents')
+  const retreat = Math.min(...opponents.map(p => p.y - target.y))
+  if (retreat < 2.8) return 0
+  for (const p of opponents) {
+    const earlyOverhead = shot.samples.some(point =>
+      !point.bounced && point.y < 10 && point.y >= p.y - 2 && point.z > 0.1 && point.z <= 3.1 && arrivalTime(p, point) <= point.t,
+    )
+    if (earlyOverhead) return 0
+  }
+  return 65 + 20 * clamp((retreat - 2.8) / 4, 0, 1) + 15 * clamp((3.4 - target.y) / 2, 0, 1)
+}
+
+export function placeBall(state: TacticsState, point: Point): TacticsState {
+  return { ...state, ball: { x: clamp(point.x, 0.15, 9.85), y: clamp(point.y, 10.15, 19.85) } }
+}
 export function calculateHeatmap(state: TacticsState): HeatCell[] {
   const cells: HeatCell[] = []
   const size = 0.25
@@ -170,17 +193,21 @@ export function chooseAutomaticShot(input: TacticsState): { state: TacticsState;
   for (let y = 0.125; y < 10; y += 0.25) {
     for (let x = 0.125; x < 10; x += 0.25) {
       const target = { x, y }
-      let score = 0, valid = false
+      let score = 0, valid = false, lobScore = 0
       for (const option of options) {
         const candidate = { ...base, ...option, target }
-        const shot = evaluateShot(candidate)
+        let shot = evaluateShot(candidate)
         if (!shot.valid) continue
+        if (option.kind === 'lob') {
+          lobScore = lobOpportunity(candidate, shot, target)
+          shot = { ...shot, score: Math.max(shot.score, lobScore) }
+        }
         valid = true; score = Math.max(score, shot.score)
         if (!best || shot.score > best.shot.score || (shot.score === best.shot.score && shot.margin > best.shot.margin)) {
           best = { state: candidate, shot }
         }
       }
-      cells.push({ ...target, score, valid })
+      cells.push({ ...target, score, valid, lobScore })
     }
   }
   // A blocked formation still gets its best legal shot, without claiming it is open.

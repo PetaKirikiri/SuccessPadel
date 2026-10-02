@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent, PointerEvent } from 'react'
-import { chooseAutomaticShot, clamp, distance, initialTactics, movePlayer } from './tacticsModel'
+import { chooseAutomaticShot, distance, initialTactics, movePlayer, placeBall } from './tacticsModel'
 import type { Point } from './tacticsModel'
 import { courtPoint, courtView, drawCourt, screenPoint } from './drawCourt'
 import '../../layouts/tactics.layout.css'
@@ -56,10 +56,7 @@ export default function TacticsPage() {
 
   function move(id: string, point: Point) {
     setState(current => {
-      if (id === 'ball') return { ...current, ball: {
-        x: clamp(point.x, 0.15, 9.85),
-        y: point.y < 10 ? clamp(point.y, 0.15, 9.85) : clamp(point.y, 10.15, 19.85),
-      } }
+      if (id === 'ball') return placeBall(current, point)
       return movePlayer(current, Number(id.replace('player-', '')), point)
     })
   }
@@ -82,7 +79,7 @@ export default function TacticsPage() {
       ...state.players.map(p => ({ id: `player-${p.id}`, point: p, radius: Math.max(22, view.scale * 0.52) })),
     ]
     const hit = candidates.find(c => distance(screen, screenPoint(c.point, view)) <= c.radius)
-    if (!hit && (point.x < 0 || point.x > 10 || point.y < 0 || point.y > 20)) return
+    if (!hit && (point.x < 0 || point.x > 10 || point.y < 10 || point.y > 20)) return
     const id = hit?.id ?? 'ball'
     event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId)
     setSelected(id)
@@ -112,7 +109,7 @@ export default function TacticsPage() {
   }
   return (
     <main className="tactics" aria-label="Padel tactics board">
-      <canvas ref={canvasRef} className="tactics__court" aria-label="Drag the players. Drag the ball or tap the court to set its starting position. The heatmap and recommended trajectory update automatically." onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag} onLostPointerCapture={() => { drag.current = null; setSelected('') }} />
+      <canvas ref={canvasRef} className="tactics__court" aria-label="Drag the players. Drag the ball or tap your half to set its starting position. Opponent returns are calculated automatically. Green areas labelled Lob show useful lob targets." onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag} onLostPointerCapture={() => { drag.current = null; setSelected('') }} />
       <div className="tactics__accessible-controls">
         {['player-1', 'player-2', 'player-3', 'player-4', 'ball'].map(id => <button type="button" key={id} onFocus={() => setSelected(id)} onBlur={() => setSelected('')} onKeyDown={e => keyMove(e, id)}>{id.replace('-', ' ')}: use arrow keys to move</button>)}
       </div>

@@ -17,15 +17,17 @@ importing this page or connecting to competition state.
 ## Interaction
 
 Only the court, four players, ball, heatmap and recommended path are visible. Drag
-players or the ball; tap empty court to place the ball. The ball remains at the chosen
-start when players move. Either half can be the attacking side. Target, pace and shot
+players or the ball; tap empty space on your half to place the ball. Taps on empty
+opponent court do nothing, and dragging the ball cannot cross the net. The ball remains at the chosen
+start when players move. The opponents’ return and defensive exposure are calculated automatically. Target, pace and shot
 kind are selected automatically by comparing 12/16 m/s drives and 7 m/s lobs over all
 25 cm landing cells. On the attacking half, each cell shows its best candidate; the path shows the
 highest rated legal candidate overall. The other half estimates fast-return lanes from both opponents and the
 recommended landing area, using our players as defenders. An exposed lane from
 either opponent is dangerous, even if the ball might later be retrieved off glass. Green means
 attacking opportunity on their half and defensive safety on ours; red is the
-reverse. Both halves use rich red and green with a smooth blend and no grid. There is no manual aim, pace, hitter or play control.
+reverse. Both halves use rich red and green with a smooth blend and no grid. Useful deep lob zones are green and labelled “Lob”. There is no manual aim, pace,
+hitter or play control.
 
 ## What the heatmap means
 
@@ -41,6 +43,13 @@ ball's time. The minimum difference is the internal time margin; positive is bet
 for the hitter. A sigmoid maps this margin to colour, with an edge-accuracy penalty.
 It is not a win probability. Drive and lob candidates differ in contact height and horizontal pace; the launch
 angle follows the candidate target.
+
+Lob usefulness also credits forcing opponents back, even if they can eventually
+return the ball. A labelled zone must land 0.6–3.4 m from the back wall, at least
+0.6 m from a side wall, and at least 2.8 m behind both opponents. It requires an
+apex of at least 3.5 m and no reachable overhead below 3.1 m before forcing the
+opponent two metres backwards. This positional-benefit score is a heuristic,
+not a guarantee against a smash. Labels disappear when no targets qualify.
 
 Assumptions: 0.22 s reaction, 5 m/s² acceleration, 4.5 m/s running, 0.8 m horizontal
 racket reach, 2.7 m maximum contact height, floor restitution 0.68 vertically / 0.72
