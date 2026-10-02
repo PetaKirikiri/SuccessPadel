@@ -135,7 +135,7 @@ test('useful lob zones appear behind net players and disappear when they cover t
 
 test('selecting a shooter moves the contact point and follows only that player', () => {
   const initial = initialTactics()
-  assert.equal(selectShooter(initial, 1), initial)
+  assert.equal(selectShooter(initial, 99), initial)
   const selected = selectShooter(initial, 4)
   assert.equal(selected.hitter, 4)
   assert.equal(selected.ballOwner, 4)
@@ -150,4 +150,32 @@ test('selecting a shooter moves the contact point and follows only that player',
   assert.equal(manual.ballOwner, undefined)
   assert.deepEqual(movePlayer(manual, 4, { x: 8, y: 12 }).ball, manual.ball)
   assert.equal(selectShooter(moved, 3).ballOwner, 3)
+})
+
+
+test('either team can attack, with ball placement and lob zones following that side', () => {
+  const initial = initialTactics()
+  // Leave space behind the bottom team for a mirrored lob opportunity.
+  const formation = movePlayer(movePlayer(initial, 3, { x: 3, y: 12.5 }), 4, { x: 7, y: 12.5 })
+  const upper = selectShooter(formation, 1)
+  assert.equal(upper.ballOwner, 1)
+  assert.ok(upper.ball.y < 10)
+  assert.deepEqual(upper.players, formation.players)
+  const result = chooseAutomaticShot(upper)
+  assert.ok(result.shot.valid && result.state.target.y > 10)
+  assert.ok(Math.abs(result.shot.samples[0].y - upper.ball.y) < 1e-8)
+  const lobs = result.cells.filter(c => (c.lobScore ?? 0) >= 65)
+  assert.ok(lobs.length > 0 && lobs.every(c => c.y > 16.6))
+  const manual = placeBall(upper, { x: 4, y: 18 })
+  assert.ok(manual.ball.y < 10 && manual.ballOwner === undefined)
+  const moved = movePlayer(upper, 1, { x: 4, y: 2 })
+  assert.ok(moved.ball.y < 10 && moved.ball.y > moved.players[0].y)
+  assert.notDeepEqual(moved.ball, upper.ball)
+  const teammate = selectShooter(moved, 2)
+  assert.equal(teammate.ballOwner, 2)
+  assert.ok(teammate.ball.y < 10)
+  const lower = selectShooter(teammate, 3)
+  assert.equal(lower.ballOwner, 3)
+  assert.ok(lower.ball.y > 10 && chooseAutomaticShot(lower).state.target.y < 10)
+  assert.ok(placeBall(lower, { x: 4, y: 2 }).ball.y > 10)
 })

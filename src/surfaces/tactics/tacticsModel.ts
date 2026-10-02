@@ -121,13 +121,14 @@ export function lobOpportunity(state: TacticsState, shot: Shot, target: Point): 
 }
 
 export function placeBall(state: TacticsState, point: Point): TacticsState {
-  return { ...state, ballOwner: undefined, ball: { x: clamp(point.x, 0.15, 9.85), y: clamp(point.y, 10.15, 19.85) } }
+  const upper = state.ball.y < COURT.net
+  return { ...state, ballOwner: undefined, ball: { x: clamp(point.x, 0.15, 9.85), y: clamp(point.y, upper ? 0.15 : 10.15, upper ? 9.85 : 19.85) } }
 }
 /** Keep the contact point beside the selected player so the ball stays visible. */
 export function selectShooter(state: TacticsState, id: number): TacticsState {
-  const player = state.players.find(p => p.id === id && p.team === 'you')
+  const player = state.players.find(p => p.id === id)
   if (!player) return state
-  const placed = placeBall(state, { x: player.x + (player.x > 5 ? -0.55 : 0.55), y: player.y - 0.4 })
+  const placed = placeBall({ ...state, ball: player }, { x: player.x + (player.x > 5 ? -0.55 : 0.55), y: player.y + (player.y < COURT.net ? 0.4 : -0.4) })
   return { ...placed, hitter: id, ballOwner: id }
 }
 
@@ -191,7 +192,7 @@ export function chooseAutomaticShot(input: TacticsState): { state: TacticsState;
   const flipped = input.ball.y < 10
   const reflect = (p: Point): Point => ({ x: 10 - p.x, y: 20 - p.y })
   const base: TacticsState = flipped ? {
-    ...input, ball: reflect(input.ball),
+    ...input, ball: reflect(input.ball), target: reflect(input.target),
     players: input.players.map(p => ({ ...p, ...reflect(p), team: p.team === 'you' ? 'opponents' : 'you' })),
   } : input
   const options: { kind: ShotKind; speed: number }[] = [

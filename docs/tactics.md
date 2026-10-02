@@ -17,17 +17,18 @@ importing this page or connecting to competition state.
 ## Interaction
 
 Only the court, four players, ball, heatmap and recommended path are visible. Drag
-players or the ball; double-tap near either attacking player to select the shooter.
+players or the ball; double-tap or double-click near any player to select the shooter and switch the attacking side.
+Players stay in place; shot targets, return danger and lob zones recalculate for the selected team.
 The ball snaps beside that player and follows them, with a lime ring marking the shooter.
-Dragging or placing the ball manually releases that attachment. Tap empty space on your half to place the ball. Taps on empty
-opponent court do nothing, and dragging the ball cannot cross the net. A manually placed ball remains at the chosen
+Dragging or placing the ball manually releases that attachment. Tap empty space on the attacking half to place the ball. Taps on empty
+defending court do nothing, and dragging the ball cannot cross the net. A manually placed ball remains at the chosen
 start when players move. The opponents’ return and defensive exposure are calculated automatically. Target, pace and shot
 kind are selected automatically by comparing 12/16 m/s drives and 7 m/s lobs over all
-25 cm landing cells. On the attacking half, each cell shows its best candidate; the path shows the
+25 cm landing cells. On the defending half, each cell shows the attackers’ best candidate; the path shows the
 highest rated legal candidate overall. The other half estimates fast-return lanes from both opponents and the
 recommended landing area, using our players as defenders. An exposed lane from
 either opponent is dangerous, even if the ball might later be retrieved off glass. Green means
-attacking opportunity on their half and defensive safety on ours; red is the
+attacking opportunity on the receiving half and return safety on the shooting half; red is the
 reverse. Both halves use rich red and green with a smooth blend and no grid. Useful deep lob zones are green and labelled “Lob”. There is no manual aim, pace or play control.
 
 ## What the heatmap means
