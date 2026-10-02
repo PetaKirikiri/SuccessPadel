@@ -166,4 +166,27 @@ html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .
 html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__player[data-team-side] { grid-template-columns: auto auto; justify-content: center; }
 html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__name { grid-column: 1 / -1; }
 html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__attendance-actions { grid-column: 2; grid-row: 1; justify-self: center; }
-html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__attendance-yes { min-height: 28px; padding: 4px 6px; font-size: 11px; }
+/* Match the icon-only confirmation used by the other viewport sizes. */
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__attendance-actions button.competition-pregame__attendance-yes {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #7894aa;
+  font-size: 0;
+}
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__attendance-yes::after {
+  content: '';
+  width: 8px;
+  height: 14px;
+  border-right: 3px solid currentColor;
+  border-bottom: 3px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+}
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__attendance-actions .competition-pregame__attendance-yes[aria-pressed='true'] { color: #6cf0a5; background: rgb(36 181 105 / 15%); }
+html[data-viewport='web'] .competition-pregame[data-competition-format='duos'] .competition-pregame__roster[data-fixed-pairs='true'] .competition-pregame__attendance-yes:not(:disabled):hover { color: #b4ffd3; background: rgb(36 181 105 / 20%); }
