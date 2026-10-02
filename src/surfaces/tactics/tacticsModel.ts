@@ -119,6 +119,38 @@ export function movePlayer(state: TacticsState, id: number, point: Point): Tacti
   return { ...state, players: state.players.map(p => p.id === id ? next : p) }
 }
 
+/** Positional exposure to a fast return, rather than eventual retrieval after
+ * a wall bounce. Inputs are normalized with the shooting team in the bottom half.
+ * Consider both opponents' current contact positions and the planned shot's
+ * landing area; the quickest threat determines the time available at each point.
+ */
+export function defensiveSafety(state: TacticsState, returnArea: Point, target: Point): number {
+  const sources: Point[] = [...state.players.filter(p => p.team === 'opponents'), returnArea]
+  const defenders = state.players.filter(p => p.team === 'you')
+  const shooter = defenders.reduce((nearest, p) => distance(p, state.ball) < distance(nearest, state.ball) ? p : nearest)
+  let worstLane = Infinity
+  for (const source of sources) {
+    const flight = distance(source, target) / 16
+    let bestIntercept = -Infinity
+    for (let step = 1; step <= 20; step++) {
+      const fraction = step / 20
+      const point = { x: source.x + (target.x - source.x) * fraction, y: source.y + (target.y - source.y) * fraction }
+      if (point.y <= 10) continue
+      // This positional field assumes ready footwork, rather than the shot
+      // evaluator's acceleration from rest. A player can screen space behind
+      // them by intercepting the direct lane before the return reaches it.
+      const coverTime = Math.min(...defenders.map(player =>
+        ASSUMPTIONS.reaction + Math.max(0, distance(player, point) - ASSUMPTIONS.reach) / ASSUMPTIONS.runSpeed + (player.id === shooter.id ? 0.12 : 0),
+      ))
+      bestIntercept = Math.max(bestIntercept, flight * fraction - coverTime)
+    }
+    worstLane = Math.min(worstLane, bestIntercept)
+  }
+  // Any opponent being able to attack a gap makes it exposed. No late glass
+  // recovery or boundary-accuracy bonus is counted as defensive coverage.
+  return 100 / (1 + Math.exp(-worstLane / 0.16))
+}
+
 /** Automatically compare legal landing cells and a small set of realistic shot paces.
  * Normalize to a bottom-half hitter, then transform the entire result back so the
  * ball can start on either side. The chosen starting point never follows a player.
@@ -153,22 +185,10 @@ export function chooseAutomaticShot(input: TacticsState): { state: TacticsState;
   }
   // A blocked formation still gets its best legal shot, without claiming it is open.
   const chosen = best ?? { state: base, shot: evaluateShot(base) }
-  // Estimate the next return from the recommended landing area. Mirror that
-  // return into the same evaluator, with our two players now defending. Invert
-  // its opportunity score: green means we cover the return; red means exposure.
-  const returnBase: TacticsState = {
-    ...base, ball: reflect(chosen.state.target),
-    players: base.players.map(p => ({ ...p, ...reflect(p), team: p.team === 'you' ? 'opponents' : 'you' })),
-  }
-  for (let y = 0.125; y < 10; y += 0.25) {
+  for (let y = 10.125; y < 20; y += 0.25) {
     for (let x = 0.125; x < 10; x += 0.25) {
       const target = { x, y }
-      let danger = 0
-      for (const option of options) {
-        const reply = evaluateShot({ ...returnBase, ...option, target })
-        if (reply.valid) danger = Math.max(danger, reply.score)
-      }
-      cells.push({ ...reflect(target), score: 100 - danger, valid: true })
+      cells.push({ ...target, score: defensiveSafety(base, chosen.state.target, target), valid: true })
     }
   }
   if (!flipped) return { ...chosen, cells }

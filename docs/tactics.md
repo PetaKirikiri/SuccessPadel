@@ -21,10 +21,11 @@ players or the ball; tap empty court to place the ball. The ball remains at the 
 start when players move. Either half can be the attacking side. Target, pace and shot
 kind are selected automatically by comparing 12/16 m/s drives and 7 m/s lobs over all
 25 cm landing cells. On the attacking half, each cell shows its best candidate; the path shows the
-highest rated legal candidate overall. The other half estimates return coverage
-from that recommended landing area, using our players as defenders. Green means
+highest rated legal candidate overall. The other half estimates fast-return lanes from both opponents and the
+recommended landing area, using our players as defenders. An exposed lane from
+either opponent is dangerous, even if the ball might later be retrieved off glass. Green means
 attacking opportunity on their half and defensive safety on ours; red is the
-reverse. Both halves share a softly smoothed red-to-green blend with no grid. There is no manual aim, pace, hitter or play control.
+reverse. Both halves use rich red and green with a smooth blend and no grid. There is no manual aim, pace, hitter or play control.
 
 ## What the heatmap means
 
@@ -44,9 +45,12 @@ angle follows the candidate target.
 Assumptions: 0.22 s reaction, 5 m/s² acceleration, 4.5 m/s running, 0.8 m horizontal
 racket reach, 2.7 m maximum contact height, floor restitution 0.68 vertically / 0.72
 horizontally, wall restitution 0.75. These are prototype parameters, not measured
-player data. Spin, movement direction, body orientation and skill are excluded. Defensive
-coverage approximates a return from the recommended landing area, keeping players
-at their current positions. The teammate contributes to defensive coverage, not
+player data. Spin, movement direction, body orientation and skill are excluded. Defensive coverage is a positional pressure estimate: 16 m/s direct return lanes,
+ready movement at 4.5 m/s after reaction, and 0.12 s extra recovery for the player
+nearest the ball. It checks interceptions before the target, so a player can screen
+space behind them. It does not award safety for a later bounce or a difficult
+boundary shot, and does not predict an exact legal return height. Players stay at
+their current positions. The teammate contributes to defensive coverage, not
 the score of the outbound shot. A defensive lob may still be marked covered because an opponent can return it.
 
 ## Verification

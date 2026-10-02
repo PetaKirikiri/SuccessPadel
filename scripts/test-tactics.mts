@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { arrivalTime, chooseAutomaticShot, calculateHeatmap, evaluateShot, initialTactics, movePlayer } from '../src/surfaces/tactics/tacticsModel.ts'
+import { arrivalTime, chooseAutomaticShot, calculateHeatmap, defensiveSafety, evaluateShot, initialTactics, movePlayer } from '../src/surfaces/tactics/tacticsModel.ts'
 
 test('a defender on the trajectory closes an otherwise open shot', () => {
   const state = initialTactics()
@@ -100,4 +100,15 @@ test('moving our partner updates defensive safety while preserving the ball and 
   assert.equal(defense.length, 1600)
   assert.ok(defense.every(c => Number.isFinite(c.score) && c.score >= 0 && c.score <= 100))
   assert.ok(defense.some((c, i) => Math.abs(c.score - before.cells.filter(p => p.y > 10)[i].score) > 20))
+})
+
+test('uncovered short balls and the abandoned wing are dangerous, not safe wall recoveries', () => {
+  const state = initialTactics()
+  const returnArea = { x: 5.5, y: 5 }
+  assert.ok(defensiveSafety(state, returnArea, { x: 5, y: 11 }) < 20)
+  assert.ok(defensiveSafety(state, returnArea, { x: 7.3, y: 13.9 }) > 65)
+  const shifted = movePlayer(state, 4, { x: 1, y: 15 })
+  assert.ok(defensiveSafety(shifted, returnArea, { x: 8.5, y: 15 }) < 15)
+  const covering = movePlayer(state, 4, { x: 5, y: 11 })
+  assert.ok(defensiveSafety(covering, returnArea, { x: 5, y: 11 }) > defensiveSafety(state, returnArea, { x: 5, y: 11 }) + 30)
 })

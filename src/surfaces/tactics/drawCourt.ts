@@ -50,14 +50,14 @@ export function drawCourt(canvas: HTMLCanvasElement, state: TacticsState, cells:
     for (let y = 0; y < 80; y++) for (let x = 0; x < 40; x++) {
       for (let k = -3; k <= 3; k++) horizontal[y * 40 + x] += scores[y * 40 + clamp(x + k, 0, 39)] * weights[k + 3] / 64
     }
-    const red = [218, 91, 98], green = [57, 189, 133]
+    const red = [220, 58, 79], green = [27, 188, 119]
     for (let y = 0; y < 80; y++) for (let x = 0; x < 40; x++) {
       let value = 0
       const half = y < 40 ? 0 : 40
       for (let k = -3; k <= 3; k++) value += horizontal[clamp(y + k, half, half + 39) * 40 + x] * weights[k + 3] / 64
       const i = (y * 40 + x) * 4
       for (let c = 0; c < 3; c++) pixels.data[i + c] = red[c] + (green[c] - red[c]) * value
-      pixels.data[i + 3] = 165
+      pixels.data[i + 3] = 235
     }
     hc.putImageData(pixels, 0, 0)
     ctx.imageSmoothingEnabled = true; ctx.drawImage(heat, 0, 0, 10, 20)
