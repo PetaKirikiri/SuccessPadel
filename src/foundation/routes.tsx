@@ -24,6 +24,7 @@ import { ResetPassword } from './ResetPassword'
 import { MembersPage } from './MembersPage'
 import { CameraScoreTrackerShell } from '../components/CameraScoreTracker'
 import { OfflineSoloCompetition } from '../surfaces/offline-competition/OfflineSoloCompetition'
+const TacticsPage = lazy(() => import('../surfaces/tactics/TacticsPage'))
 
 function GestureScoreCourtLoading() {
   return <CameraScoreTrackerShell>{null}</CameraScoreTrackerShell>
@@ -236,6 +237,7 @@ function AppFrame({ children }: { children: React.ReactNode }) {
 export function AppRoutes() {
   return (
     <Routes>
+      <Route path="/tactics" element={<Suspense fallback={null}><TacticsPage /></Suspense>} />
       <Route
         path="/competitions/new"
         element={

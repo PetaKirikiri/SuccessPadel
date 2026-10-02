@@ -1,0 +1,162 @@
+/** Pure court-space model. Metres, seconds; origin is the opponents' back-left corner.
+ * These are adjustable coaching assumptions, not calibrated point-win probabilities.
+ * No network, React, or session dependencies: this module can be reused independently.
+ */
+export type Point = { x: number; y: number }
+export type Player = Point & { id: number; team: 'opponents' | 'you' }
+export type ShotKind = 'drive' | 'lob'
+export type TacticsState = {
+  players: Player[]; ball: Point; target: Point; hitter: number; kind: ShotKind; speed: number
+}
+export type Sample = Point & { z: number; t: number; bounced: boolean }
+export type Shot = {
+  samples: Sample[]; flight: number; margin: number; score: number
+  valid: boolean; reason: 'net' | 'fence' | null; interceptor: number | null
+}
+export const COURT = { width: 10, length: 20, net: 10, service: 6.95 } as const
+export const ASSUMPTIONS = { reaction: 0.22, runSpeed: 4.5, acceleration: 5, reach: 0.8, maxReachHeight: 2.7 }
+const G = 9.81
+export const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
+export const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y)
+
+export function initialTactics(): TacticsState {
+  return {
+    players: [
+      { id: 1, team: 'opponents', x: 2.7, y: 7.4 },
+      { id: 2, team: 'opponents', x: 7.3, y: 7.4 },
+      { id: 3, team: 'you', x: 3.0, y: 15.7 },
+      { id: 4, team: 'you', x: 7.3, y: 13.9 },
+    ],
+    ball: { x: 3.55, y: 15.3 }, target: { x: 8.6, y: 2.5 }, hitter: 3, kind: 'drive', speed: 12,
+  }
+}
+
+/** Time to get a racket within reach, including reaction and acceleration from rest. */
+export function arrivalTime(player: Point, point: Point): number {
+  const d = Math.max(0, distance(player, point) - ASSUMPTIONS.reach)
+  const rampDistance = ASSUMPTIONS.runSpeed ** 2 / (2 * ASSUMPTIONS.acceleration)
+  const movement = d <= rampDistance
+    ? Math.sqrt(2 * d / ASSUMPTIONS.acceleration)
+    : ASSUMPTIONS.runSpeed / ASSUMPTIONS.acceleration + (d - rampDistance) / ASSUMPTIONS.runSpeed
+  return ASSUMPTIONS.reaction + movement
+}
+
+export function evaluateShot(state: TacticsState, target: Point = state.target): Shot {
+  const origin = state.ball
+  const flight = distance(origin, target) / state.speed
+  const z0 = state.kind === 'lob' ? 0.65 : 1.0
+  const vz = (G * flight * flight / 2 - z0) / flight
+  const height = (t: number) => z0 + vz * t - G * t * t / 2
+  const netFraction = (origin.y - COURT.net) / (origin.y - target.y)
+  const netHeight = height(flight * netFraction)
+  const netX = origin.x + (target.x - origin.x) * netFraction
+  const clearance = 0.88 + 0.04 * Math.abs(netX - 5) / 5 + 0.05
+  const valid = netHeight >= clearance
+  const samples: Sample[] = []
+  const steps = Math.max(12, Math.ceil(flight / 0.04))
+  for (let i = 0; i <= steps; i++) {
+    const f = i / steps
+    if (!valid && f > netFraction) break
+    samples.push({ x: origin.x + (target.x - origin.x) * f, y: origin.y + (target.y - origin.y) * f, z: height(f * flight), t: f * flight, bounced: false })
+  }
+  if (!valid) {
+    samples.push({ x: netX, y: COURT.net, z: Math.max(0, netHeight), t: flight * netFraction, bounced: false })
+    return { samples, flight, margin: -1, score: 0, valid: false, reason: 'net', interceptor: null }
+  }
+  // Follow the first bounce through glass rebounds until the second bounce.
+  let x = target.x, y = target.y, z = 0, t = flight
+  let vx = (target.x - origin.x) / flight * 0.72
+  let vy = (target.y - origin.y) / flight * 0.72
+  let vertical = Math.abs(vz - G * flight) * 0.68
+  for (let i = 0; i < 160; i++) {
+    const dt = 0.025
+    x += vx * dt; y += vy * dt; z += vertical * dt - G * dt * dt / 2
+    vertical -= G * dt; t += dt
+    if (z <= 0 || y >= 10) break
+    if (x < 0 || x > 10) {
+      // Front side enclosure is mesh; its unpredictable rebound is deliberately not projected.
+      if (y > 4 || z > 3) break
+      x = x < 0 ? -x : 20 - x; vx *= -0.75
+    }
+    if (y < 0) {
+      if (z > 3) break
+      y = -y; vy *= -0.75
+    }
+    samples.push({ x, y, z, t, bounced: true })
+  }
+  let margin = 3, interceptor: number | null = null
+  for (const point of samples) {
+    if (point.y >= 10 || point.z > ASSUMPTIONS.maxReachHeight || point.z < 0.1) continue
+    for (const player of state.players) {
+      if (player.team !== 'opponents') continue
+      const delta = arrivalTime(player, point) - point.t
+      if (delta < margin) { margin = delta; interceptor = player.id }
+    }
+  }
+  const edge = Math.min(target.x, 10 - target.x, target.y, 10 - target.y)
+  const edgePenalty = 22 * (1 - clamp(edge / 0.65, 0, 1))
+  const score = clamp(100 / (1 + Math.exp(-margin / 0.24)) - edgePenalty, 0, 100)
+  return { samples, flight, margin, score, valid: true, reason: null, interceptor }
+}
+
+export type HeatCell = Point & { score: number; valid: boolean }
+export function calculateHeatmap(state: TacticsState): HeatCell[] {
+  const cells: HeatCell[] = []
+  const size = 0.25
+  for (let y = size / 2; y < 10; y += size) {
+    for (let x = size / 2; x < 10; x += size) {
+      const shot = evaluateShot(state, { x, y })
+      cells.push({ x, y, score: shot.score, valid: shot.valid })
+    }
+  }
+  return cells
+}
+
+export function movePlayer(state: TacticsState, id: number, point: Point): TacticsState {
+  const player = state.players.find(p => p.id === id)
+  if (!player) return state
+  const next = { ...player, x: clamp(point.x, 0.35, 9.65), y: clamp(point.y, player.team === 'you' ? 10.4 : 0.35, player.team === 'you' ? 19.65 : 9.6) }
+  return { ...state, players: state.players.map(p => p.id === id ? next : p) }
+}
+
+/** Automatically compare legal landing cells and a small set of realistic shot paces.
+ * Normalize to a bottom-half hitter, then transform the entire result back so the
+ * ball can start on either side. The chosen starting point never follows a player.
+ */
+export function chooseAutomaticShot(input: TacticsState): { state: TacticsState; cells: HeatCell[]; shot: Shot } {
+  const flipped = input.ball.y < 10
+  const reflect = (p: Point): Point => ({ x: 10 - p.x, y: 20 - p.y })
+  const base: TacticsState = flipped ? {
+    ...input, ball: reflect(input.ball),
+    players: input.players.map(p => ({ ...p, ...reflect(p), team: p.team === 'you' ? 'opponents' : 'you' })),
+  } : input
+  const options: { kind: ShotKind; speed: number }[] = [
+    { kind: 'drive', speed: 12 }, { kind: 'drive', speed: 16 }, { kind: 'lob', speed: 7 },
+  ]
+  const cells: HeatCell[] = []
+  let best: { state: TacticsState; shot: Shot } | null = null
+  for (let y = 0.125; y < 10; y += 0.25) {
+    for (let x = 0.125; x < 10; x += 0.25) {
+      const target = { x, y }
+      let score = 0, valid = false
+      for (const option of options) {
+        const candidate = { ...base, ...option, target }
+        const shot = evaluateShot(candidate)
+        if (!shot.valid) continue
+        valid = true; score = Math.max(score, shot.score)
+        if (!best || shot.score > best.shot.score || (shot.score === best.shot.score && shot.margin > best.shot.margin)) {
+          best = { state: candidate, shot }
+        }
+      }
+      cells.push({ ...target, score, valid })
+    }
+  }
+  // A blocked formation still gets its best legal shot, without claiming it is open.
+  const chosen = best ?? { state: base, shot: evaluateShot(base) }
+  if (!flipped) return { ...chosen, cells }
+  return {
+    state: { ...chosen.state, ball: input.ball, players: input.players, target: reflect(chosen.state.target) },
+    shot: { ...chosen.shot, samples: chosen.shot.samples.map(p => ({ ...p, ...reflect(p) })) },
+    cells: cells.map(p => ({ ...p, ...reflect(p) })),
+  }
+}
