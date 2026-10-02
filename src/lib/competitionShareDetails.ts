@@ -1,6 +1,6 @@
-import { competitionInviteTitle, competitionLevelLabel } from './competitionLevel.ts'
-import { CLUB_TIMEZONE, formatClubTimeLocalized } from './courtSchedule.ts'
-import { competitionScheduleFromSession, totalScheduleMinutes } from './competitionScheduleLayout.ts'
+import { competitionInviteTitle, competitionLevelLabel } from './competitionLevel.js'
+import { CLUB_TIMEZONE, formatClubTimeLocalized } from './courtSchedule.js'
+import { competitionScheduleFromSession, totalScheduleMinutes } from './competitionScheduleLayout.js'
 import type { GameSession } from './types'
 
 export type ShareCompetition = Pick<GameSession,

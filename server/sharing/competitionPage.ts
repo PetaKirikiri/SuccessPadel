@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { competitionShareDetails, type ShareCompetition } from '../../src/lib/competitionShareDetails.ts'
+import { competitionShareDetails, type ShareCompetition } from '../../src/lib/competitionShareDetails.js'
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 type Request = IncomingMessage & { query?: Record<string, string | string[] | undefined> }
