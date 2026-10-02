@@ -22,6 +22,9 @@ import { finishLineReturn, prepareLineReturn } from '../../lib/line/returnHandof
 import { LineSigningInScreen } from './LineSigningInScreen'
 
 function shouldSkipLineEntryGate(pathname: string, search: string): boolean {
+  // The standalone tactics board has no account or competition to open.
+  // Sending it through LIFF loses /tactics in the competition return allowlist.
+  if (/^\/tactics\/?$/.test(pathname)) return true
   if (pathname.startsWith('/auth/')) return true
   if (pathname === '/login' && lineOAuthCallbackCode(search)) return true
   if (/^\/players\/[0-9a-f-]{36}$/i.test(pathname)) return true
