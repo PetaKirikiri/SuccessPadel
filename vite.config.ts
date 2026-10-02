@@ -1,7 +1,9 @@
 import os from 'node:os'
+import { readFile } from 'node:fs/promises'
 import postcss from 'postcss'
 import { defineConfig, loadEnv, type Plugin } from 'vite'
 import { handleFeedback } from './server/coaching/feedback.mjs'
+import { handleCompetitionPage } from './server/sharing/competitionPage'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import basicSsl from '@vitejs/plugin-basic-ssl'
@@ -49,6 +51,22 @@ function legacyTvCssPlugin(): Plugin {
 
 export default defineConfig({
   plugins: [
+    {
+      name: 'competition-share-metadata',
+      configureServer(server) {
+        const env = { ...loadEnv(server.config.mode, process.cwd(), ''), ...process.env }
+        server.middlewares.use((req, res, next) => {
+          const url = new URL(req.url ?? '/', 'http://localhost')
+          const matches = (url.pathname === '/competitive' && url.searchParams.has('competition'))
+            || /^\/competitions\/[^/]+\/?$/.test(url.pathname)
+            || url.pathname === '/api/competition-share'
+          if (!matches) return next()
+          void handleCompetitionPage(req, res, env, async () => server.transformIndexHtml(
+            req.url ?? '/', await readFile('index.html', 'utf8'),
+          )).catch(next)
+        })
+      },
+    },
     {
       name: 'coach-feedback-server',
       configureServer(server) {

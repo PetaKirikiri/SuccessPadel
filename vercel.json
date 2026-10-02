@@ -1,5 +1,13 @@
 {
-  "functions": { "api/coach-feedback.mjs": { "maxDuration": 180 } },
+  "functions": {
+    "api/coach-feedback.mjs": {
+      "maxDuration": 180
+    },
+    "api/competition-share.ts": {
+      "includeFiles": "dist/index.html",
+      "maxDuration": 10
+    }
+  },
   "redirects": [
     {
       "source": "/c/9df4f70a",
@@ -12,5 +20,25 @@
       "permanent": true
     }
   ],
-  "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }]
+  "rewrites": [
+    {
+      "source": "/competitive",
+      "has": [
+        {
+          "type": "query",
+          "key": "competition",
+          "value": "(?<eventId>[0-9a-fA-F-]{36})"
+        }
+      ],
+      "destination": "/api/competition-share?competition=:eventId"
+    },
+    {
+      "source": "/competitions/:eventId",
+      "destination": "/api/competition-share?competition=:eventId"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
+  ]
 }
