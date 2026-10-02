@@ -8,16 +8,30 @@
       "source": "/c/17sep26",
       "destination": "/competitive?competition=9df4f70a-2532-4f11-9a6d-013ab7110c25",
       "permanent": true
+    },
+    {
+      "source": "/c/17sep26/",
+      "destination": "/c/9df4f70a",
+      "permanent": true
     }
   ],
   "rewrites": [
     { "source": "/c/:inviteCode", "destination": "/api/competition-share?inviteCode=:inviteCode" },
+    { "source": "/c/:inviteCode/", "destination": "/api/competition-share?inviteCode=:inviteCode" },
     {
       "source": "/competitive",
-      "has": [{ "type": "query", "key": "competition", "value": "(?<eventId>[0-9a-fA-F-]{36})" }],
-      "destination": "/api/competition-share?competition=:eventId"
+      "has": [{ "type": "query", "key": "competition" }],
+      "destination": "/api/competition-share"
     },
-    { "source": "/competitions/:eventId", "destination": "/api/competition-share?competition=:eventId" },
+    {
+      "source": "/competitive/",
+      "has": [{ "type": "query", "key": "competition" }],
+      "destination": "/api/competition-share"
+    },
+    { "source": "/competitions/:eventId", "destination": "/api/competition-share?eventId=:eventId" },
+    { "source": "/competitions/:eventId/", "destination": "/api/competition-share?eventId=:eventId" },
+    { "source": "/competitions/:eventId/join", "destination": "/api/competition-share?eventId=:eventId" },
+    { "source": "/competitions/:eventId/join/", "destination": "/api/competition-share?eventId=:eventId" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

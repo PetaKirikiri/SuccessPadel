@@ -10,18 +10,26 @@ type Environment = Record<string, string | undefined>
 
 export function competitionIdFromRequest(req: Pick<Request, 'url' | 'query'>): string | null {
   const url = new URL(req.url ?? '/', 'https://successpadel.app')
-  const values = url.searchParams.getAll('competition')
-  const queryId = req.query?.competition
-  const pathCode = /^\/c\/([^/]+)\/?$/.exec(url.pathname)?.[1]
-  const code = pathCode ?? req.query?.inviteCode ?? url.searchParams.get('inviteCode')
-  if (code != null) {
-    if (queryId != null || values.length || Array.isArray(code) || url.searchParams.getAll('inviteCode').length > 1) return null
-    return shortCode.test(code) ? code.toLowerCase() : null
+  const values = (key: string) => {
+    const raw = url.searchParams.getAll(key)
+    const parsed = req.query?.[key]
+    if (raw.length > 1 || Array.isArray(parsed)) return null
+    return [...raw, ...(parsed == null ? [] : [parsed])]
   }
-  if (values.length > 1 || Array.isArray(queryId)) return null
-  const pathId = /^\/competitions\/([^/]+)\/?$/.exec(url.pathname)?.[1]
-  const id = queryId ?? values[0] ?? pathId
-  return typeof id === 'string' && uuid.test(id) ? id.toLowerCase() : null
+  const competition = values('competition')
+  const eventId = values('eventId')
+  const inviteCode = values('inviteCode')
+  if (!competition || !eventId || !inviteCode) return null
+  const pathCode = /^\/c\/([^/]+)\/?$/.exec(url.pathname)?.[1]
+  const pathId = /^\/competitions\/([^/]+)(?:\/join)?\/?$/.exec(url.pathname)?.[1]
+  const codes = [...inviteCode, ...(pathCode == null ? [] : [pathCode])]
+  const ids = [...competition, ...eventId, ...(pathId == null ? [] : [pathId])]
+  if (codes.length && ids.length) return null
+  const candidates = codes.length ? codes : ids
+  const format = codes.length ? shortCode : uuid
+  if (!candidates.length || candidates.some(value => !format.test(value))) return null
+  const unique = new Set(candidates.map(value => value.toLowerCase()))
+  return unique.size === 1 ? [...unique][0] : null
 }
 
 export async function loadPublicCompetition(id: string, env: Environment, fetcher = fetch): Promise<ShareCompetition | null> {
@@ -62,6 +70,12 @@ function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 }
 
+/** A failed lookup must not advertise the generic home page as this competition. */
+export function stripShareMetadata(html: string): string {
+  return html.replace(/<title\b[^>]*>[\s\S]*?<\/title>/gi, '')
+    .replace(/<meta\b[^>]*(?:property|name)=["'](?:og:[^"']*|twitter:[^"']*|description)["'][^>]*>/gi, '')
+}
+
 export function injectCompetitionMetadata(html: string, row: ShareCompetition): string {
   const details = competitionShareDetails(row)
   const title = escapeHtml(details.title)
@@ -88,26 +102,35 @@ export async function handleCompetitionPage(
     res.writeHead(405, { Allow: 'GET, HEAD' }).end()
     return
   }
-  let html = await template()
   const id = competitionIdFromRequest(req)
   const url = new URL(req.url ?? '/', 'https://successpadel.app')
   const isShort = url.pathname.startsWith('/c/') || req.query?.inviteCode != null || url.searchParams.has('inviteCode')
+  const isCompetition = isShort || url.pathname.startsWith('/competitions/')
+    || ['competition', 'eventId'].some(key => req.query?.[key] != null || url.searchParams.has(key))
+  let html = ''
   const unavailable = (status: number) => {
-    res.writeHead(status, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' })
-    res.end(req.method === 'HEAD' ? undefined : '<!doctype html><html><head><title>Success Padel</title></head><body><p>This competition link is unavailable. Please check the link or try again shortly.</p></body></html>')
+    res.writeHead(status, {
+      'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store',
+      'X-Robots-Tag': 'noindex, nosnippet, noimageindex',
+      ...(status === 503 ? { 'Retry-After': '60' } : {}),
+    })
+    // Long links retain the React shell so the normal app can still load/recover.
+    const body = !isShort && html ? stripShareMetadata(html)
+      : '<!doctype html><html><head></head><body><p>This competition link is unavailable. Please check the link or try again shortly.</p></body></html>'
+    res.end(req.method === 'HEAD' ? undefined : body)
   }
-  if (isShort && !id) return unavailable(404)
+  try { html = await template() } catch { return unavailable(503) }
+  if (isCompetition && !id) return unavailable(404)
   if (id) {
     try {
       const row = await lookup(id, env)
       if (row) {
         html = injectCompetitionMetadata(html, row)
         if (isShort) html = injectInviteEntry(html, row.id)
-      } else if (isShort) return unavailable(404)
+      } else return unavailable(404)
     } catch {
-      if (isShort) return unavailable(503)
-      // A preview lookup must never prevent a player opening the normal app.
-      console.warn('Competition share metadata unavailable; serving the normal app shell')
+      console.warn('Competition share metadata unavailable; suppressing preview until retry')
+      return unavailable(503)
     }
   }
   // Fetch saved details afresh. Chat applications may still keep their own cache.

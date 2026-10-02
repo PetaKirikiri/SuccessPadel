@@ -4,7 +4,7 @@ import { createServer } from 'node:http'
 import { runInNewContext } from 'node:vm'
 import { competitionShareDetails, type ShareCompetition } from '../src/lib/competitionShareDetails'
 import { competitionScheduleDisplay } from '../src/lib/competitionGameDisplay'
-import { competitionIdFromRequest, handleCompetitionPage, injectCompetitionMetadata, injectInviteEntry, loadPublicCompetition } from '../server/sharing/competitionPage'
+import { competitionIdFromRequest, handleCompetitionPage, injectCompetitionMetadata, injectInviteEntry, loadPublicCompetition, stripShareMetadata } from '../server/sharing/competitionPage'
 
 const id = 'c1a8521c-0716-4294-b98f-0cfb48fdee7d'
 const row = {
@@ -36,6 +36,12 @@ for (const tag of ['og:title', 'og:description', 'og:url', 'twitter:title', 'twi
 assert.equal((rendered.match(/<title>/g) ?? []).length, 1)
 assert.ok(rendered.includes('success-padel-chest-preview-v1.jpg'))
 assert.ok(rendered.includes(built ? '/assets/index-' : '/src/main.tsx'))
+assert.ok(!rendered.includes('Live leaderboard and scores for Success Padel Samui.'))
+assert.ok(!rendered.includes('Success Padel — Americano Competition'))
+assert.equal((rendered.match(/property="og:image"/g) ?? []).length, 1)
+const stripped = stripShareMetadata(rendered)
+assert.ok(!/(?:og:|twitter:|<title>)/.test(stripped), 'Unavailable event cannot advertise another preview')
+assert.ok(stripped.includes(built ? '/assets/index-' : '/src/main.tsx'), 'Unavailable metadata preserves app startup')
 const hostile = injectCompetitionMetadata(html, { ...row, title: '"><script>alert(1)</script>' })
 assert.ok(!hostile.includes('<script>alert(1)</script>'))
 assert.ok(hostile.includes('&lt;script&gt;'))
@@ -49,6 +55,10 @@ assert.equal(competitionIdFromRequest({ url: '/c/C1A8521C' }), 'c1a8521c')
 assert.equal(competitionIdFromRequest({ url: '/api/competition-share?inviteCode=c1a8521c' }), 'c1a8521c')
 assert.equal(competitionIdFromRequest({ url: '/c/invalid' }), null)
 assert.equal(competitionIdFromRequest({ url: `/c/c1a8521c?competition=${id}` }), null)
+assert.equal(competitionIdFromRequest({ url: `/competitions/${id}?competition=00000000-0000-0000-0000-000000000000` }), null)
+assert.equal(competitionIdFromRequest({ url: `/competitive?competition=${id}`, query: { competition: '00000000-0000-0000-0000-000000000000' } }), null)
+assert.equal(competitionIdFromRequest({ url: '/c/c1a8521c?inviteCode=00000000' }), null)
+assert.equal(competitionIdFromRequest({ url: `/api/competition-share?eventId=${id}`, query: { eventId: id } }), id)
 const entry = injectInviteEntry(rendered, id)
 const script = entry.match(/<script data-competition-entry>([\s\S]*?)<\/script>/)![1]
 let routed = ''
@@ -98,18 +108,33 @@ try {
   assert.equal(head.status, 200)
   assert.equal(await head.text(), '')
   assert.equal((await fetch(url, { method: 'POST' })).status, 405)
-  assert.equal(await (await fetch(`${base}/competitive?competition=invalid`)).text(), html)
+  const invalid = await fetch(`${base}/competitive?competition=invalid`)
+  assert.equal(invalid.status, 404)
+  assert.equal(await invalid.text(), stripShareMetadata(html))
   const short = await fetch(`${base}/c/c1a8521c`)
   assert.equal(short.status, 200)
   assert.equal(short.redirected, false)
   assert.equal(await short.text(), entry, 'Preview is served directly on the clean URL')
   assert.equal((await fetch(`${base}/c/00000000`)).status, 404)
   assert.equal((await fetch(`${base}/c/invalid`)).status, 404)
+  for (const path of [`/competitive?competition=${id}&preview=2`, `/competitive/?competition=${id}&view=review`, `/competitions/${id}`, `/competitions/${id}/`, `/competitions/${id}/join`, `/competitions/${id}/join/`, `/api/competition-share?eventId=${id}`]) {
+    const response = await fetch(base + path)
+    assert.equal(response.status, 200, path)
+    assert.equal(await response.text(), rendered, path)
+  }
+  assert.equal(await (await fetch(`${base}/c/c1a8521c/`)).text(), entry)
+  assert.equal((await fetch(`${base}/competitive?competition=00000000-0000-0000-0000-000000000000`)).status, 404)
+  assert.equal(await (await fetch(`${base}/competitive`)).text(), html, 'Ordinary hub still works')
   fail = true
   assert.equal((await fetch(`${base}/c/c1a8521c`)).status, 503)
   const fallback = await fetch(url)
-  assert.equal(fallback.status, 200)
-  assert.equal(await fallback.text(), html, 'Metadata outage must not block the app')
+  assert.equal(fallback.status, 503)
+  assert.equal(fallback.headers.get('retry-after'), '60')
+  assert.equal(fallback.headers.get('x-robots-tag'), 'noindex, nosnippet, noimageindex')
+  assert.equal(await fallback.text(), stripShareMetadata(html), 'Outages retain app startup without misleading previews')
+  const failedHead = await fetch(url, { method: 'HEAD' })
+  assert.equal(failedHead.status, 503)
+  assert.equal(await failedHead.text(), '')
 } finally {
   server.closeAllConnections()
   await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
@@ -117,6 +142,12 @@ try {
 const config = JSON.parse(await readFile('vercel.json', 'utf8'))
 assert.equal(config.functions['api/competition-share.ts'].includeFiles, 'dist/index.html')
 assert.equal(config.rewrites[0].source, '/c/:inviteCode')
-assert.equal(config.rewrites[1].source, '/competitive')
-assert.equal(config.rewrites[2].source, '/competitions/:eventId')
-console.log('Competition sharing: live fields, invite consistency, timezone, escaping, request guards, public reads, shell preservation and outage fallback passed')
+for (const path of ['/c/:inviteCode', '/c/:inviteCode/', '/competitive', '/competitive/', '/competitions/:eventId', '/competitions/:eventId/', '/competitions/:eventId/join', '/competitions/:eventId/join/']) {
+  const index = config.rewrites.findIndex((rule: { source: string }) => rule.source === path)
+  assert.ok(index >= 0 && index < config.rewrites.length - 1, `${path} resolves before the generic shell`)
+  assert.ok(config.rewrites[index].destination.startsWith('/api/competition-share'))
+  if (path.startsWith('/competitive') && !path.startsWith('/competitions')) {
+    assert.deepEqual(config.rewrites[index].has, [{ type: 'query', key: 'competition' }], 'Malformed values cannot bypass validation')
+  }
+}
+console.log('Competition sharing: date-first metadata, all link variants, identity conflicts, missing events, outages, app preservation and route guards passed')

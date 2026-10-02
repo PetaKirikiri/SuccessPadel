@@ -57,8 +57,8 @@ export default defineConfig({
         const env = { ...loadEnv(server.config.mode, process.cwd(), ''), ...process.env }
         server.middlewares.use((req, res, next) => {
           const url = new URL(req.url ?? '/', 'http://localhost')
-          const matches = (url.pathname === '/competitive' && url.searchParams.has('competition'))
-            || /^\/competitions\/[^/]+\/?$/.test(url.pathname)
+          const matches = (/^\/competitive\/?$/.test(url.pathname) && url.searchParams.has('competition'))
+            || /^\/competitions\/[^/]+(?:\/join)?\/?$/.test(url.pathname)
             || /^\/c\/[^/]+\/?$/.test(url.pathname)
             || url.pathname === '/api/competition-share'
           if (!matches) return next()
