@@ -60,11 +60,15 @@ test('reach takes longer with distance; both heatmaps are finite and bounded', (
 })
 
 
-test('automatic shot selects the highest rated legal cell without changing the start', () => {
+test('automatic trajectory selects the highest rated direct shot without changing the start', () => {
   const state = initialTactics()
   const result = chooseAutomaticShot(state)
   assert.ok(result.shot.valid)
-  assert.equal(result.shot.score, Math.max(...result.cells.filter(c => c.y < 10).map(c => c.score)))
+  assert.equal(result.state.kind, 'drive')
+  const directScores = result.cells.filter(c => c.y < 10).flatMap(target => [12, 16].map(speed =>
+    evaluateShot({ ...state, kind: 'drive', speed }, target).score,
+  ))
+  assert.equal(result.shot.score, Math.max(...directScores))
   assert.deepEqual(result.state.ball, state.ball)
   assert.deepEqual(result.shot.samples[0].x, state.ball.x)
   assert.deepEqual(result.shot.samples[0].y, state.ball.y)
@@ -178,4 +182,18 @@ test('either team can attack, with ball placement and lob zones following that s
   assert.equal(lower.ballOwner, 3)
   assert.ok(lower.ball.y > 10 && chooseAutomaticShot(lower).state.target.y < 10)
   assert.ok(placeBall(lower, { x: 4, y: 2 }).ball.y > 10)
+})
+
+
+test('lob opportunities remain visible without becoming the direct trajectory on either side', () => {
+  const initial = initialTactics()
+  const states = [initial, selectShooter(movePlayer(movePlayer(initial, 3, { x: 3, y: 12.5 }), 4, { x: 7, y: 12.5 }), 1)]
+  for (const state of states) {
+    const result = chooseAutomaticShot(state)
+    assert.equal(result.state.kind, 'drive')
+    assert.ok(result.shot.valid)
+    assert.ok(result.cells.some(c => (c.lobScore ?? 0) >= 65))
+    assert.ok(result.cells.filter(c => (c.lobScore ?? 0) >= 65).every(c => c.score >= 65))
+    assert.equal(result.state.target.y < 10, state.ball.y > 10)
+  }
 })

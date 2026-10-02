@@ -206,11 +206,14 @@ export function chooseAutomaticShot(input: TacticsState): { state: TacticsState;
       let score = 0, valid = false, lobScore = 0
       for (const option of options) {
         const candidate = { ...base, ...option, target }
-        let shot = evaluateShot(candidate)
+        const shot = evaluateShot(candidate)
         if (!shot.valid) continue
         if (option.kind === 'lob') {
           lobScore = lobOpportunity(candidate, shot, target)
-          shot = { ...shot, score: Math.max(shot.score, lobScore) }
+          // Lobs are optional landing zones, never the direct trajectory line.
+          score = Math.max(score, lobScore)
+          valid ||= lobScore > 0
+          continue
         }
         valid = true; score = Math.max(score, shot.score)
         if (!best || shot.score > best.shot.score || (shot.score === best.shot.score && shot.margin > best.shot.margin)) {
@@ -221,7 +224,8 @@ export function chooseAutomaticShot(input: TacticsState): { state: TacticsState;
     }
   }
   // A blocked formation still gets its best legal shot, without claiming it is open.
-  const chosen = best ?? { state: base, shot: evaluateShot(base) }
+  const fallback = { ...base, kind: 'drive' as const, speed: 12 }
+  const chosen = best ?? { state: fallback, shot: evaluateShot(fallback) }
   for (let y = 10.125; y < 20; y += 0.25) {
     for (let x = 0.125; x < 10; x += 0.25) {
       const target = { x, y }
