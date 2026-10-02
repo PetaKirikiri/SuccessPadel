@@ -64,7 +64,7 @@ test('automatic shot selects the highest rated legal cell without changing the s
   const state = initialTactics()
   const result = chooseAutomaticShot(state)
   assert.ok(result.shot.valid)
-  assert.equal(result.shot.score, Math.max(...result.cells.map(c => c.score)))
+  assert.equal(result.shot.score, Math.max(...result.cells.filter(c => c.y < 10).map(c => c.score)))
   assert.deepEqual(result.state.ball, state.ball)
   assert.deepEqual(result.shot.samples[0].x, state.ball.x)
   assert.deepEqual(result.shot.samples[0].y, state.ball.y)
@@ -81,6 +81,23 @@ test('starting on the other side mirrors the recommendation and heatmap', () => 
   const result = chooseAutomaticShot(reverse)
   assert.ok(Math.abs(result.shot.score - normal.shot.score) < 1e-8)
   assert.deepEqual(result.state.target, { x: 10 - normal.state.target.x, y: 20 - normal.state.target.y })
-  assert.ok(result.cells.every(c => c.y > 10))
+  assert.equal(result.cells.filter(c => c.y > 10).length, 1600)
+  assert.equal(result.cells.filter(c => c.y < 10).length, 1600)
+  for (let i = 0; i < result.cells.length; i++) {
+    assert.ok(Math.abs(result.cells[i].score - normal.cells[i].score) < 1e-8)
+    assert.equal(result.cells[i].y, 20 - normal.cells[i].y)
+  }
   assert.deepEqual(result.state.ball, reverse.ball)
+})
+
+test('moving our partner updates defensive safety while preserving the ball and attack', () => {
+  const state = initialTactics()
+  const before = chooseAutomaticShot(state)
+  const after = chooseAutomaticShot(movePlayer(state, 4, { x: 1, y: 11 }))
+  assert.deepEqual(after.state.ball, before.state.ball)
+  assert.deepEqual(after.state.target, before.state.target)
+  const defense = after.cells.filter(c => c.y > 10)
+  assert.equal(defense.length, 1600)
+  assert.ok(defense.every(c => Number.isFinite(c.score) && c.score >= 0 && c.score <= 100))
+  assert.ok(defense.some((c, i) => Math.abs(c.score - before.cells.filter(p => p.y > 10)[i].score) > 20))
 })

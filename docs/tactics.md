@@ -20,8 +20,11 @@ Only the court, four players, ball, heatmap and recommended path are visible. Dr
 players or the ball; tap empty court to place the ball. The ball remains at the chosen
 start when players move. Either half can be the attacking side. Target, pace and shot
 kind are selected automatically by comparing 12/16 m/s drives and 7 m/s lobs over all
-25 cm landing cells. Each cell shows its best candidate; the path shows the highest
-rated legal candidate overall. There is no manual aim, pace, hitter or play control.
+25 cm landing cells. On the attacking half, each cell shows its best candidate; the path shows the
+highest rated legal candidate overall. The other half estimates return coverage
+from that recommended landing area, using our players as defenders. Green means
+attacking opportunity on their half and defensive safety on ours; red is the
+reverse. Both halves share a softly smoothed red-to-green blend with no grid. There is no manual aim, pace, hitter or play control.
 
 ## What the heatmap means
 
@@ -41,9 +44,10 @@ angle follows the candidate target.
 Assumptions: 0.22 s reaction, 5 m/s² acceleration, 4.5 m/s running, 0.8 m horizontal
 racket reach, 2.7 m maximum contact height, floor restitution 0.68 vertically / 0.72
 horizontally, wall restitution 0.75. These are prototype parameters, not measured
-player data. Spin, movement direction, body orientation, skill and subsequent returns
-are excluded. The teammate is positional context, not a contributor to opponent
-reach. A defensive lob may still be marked covered because an opponent can return it.
+player data. Spin, movement direction, body orientation and skill are excluded. Defensive
+coverage approximates a return from the recommended landing area, keeping players
+at their current positions. The teammate contributes to defensive coverage, not
+the score of the outbound shot. A defensive lob may still be marked covered because an opponent can return it.
 
 ## Verification
 

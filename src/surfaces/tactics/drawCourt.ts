@@ -35,27 +35,33 @@ export function drawCourt(canvas: HTMLCanvasElement, state: TacticsState, cells:
   ctx.scale(s, s)
   ctx.fillStyle = '#164b59'; ctx.fillRect(0, 0, 10, 20)
   ctx.fillStyle = '#195563'; ctx.fillRect(0, 0, 10, 10)
-  // A small raster, interpolated by the canvas, makes a continuous field without a DOM cell grid.
+  // Smooth the scalar field before colouring, separately on either side of the
+  // net. One red-to-green blend, without yellow bands, grid cells or blue holes.
   if (cells.length) {
-    const heat = document.createElement('canvas'); heat.width = 40; heat.height = 40
+    const heat = document.createElement('canvas'); heat.width = 40; heat.height = 80
     const hc = heat.getContext('2d')!
-    const pixels = hc.createImageData(40, 40)
-    const heatTop = state.ball.y < 10 ? 10 : 0
+    const pixels = hc.createImageData(40, 80)
+    const scores = new Float32Array(3200)
     cells.forEach(cell => {
-      const i = Math.floor((cell.y - heatTop) * 4) * 40 + Math.floor(cell.x * 4)
-      const v = clamp(cell.score / 100, 0, 1)
-      const red = [239, 101, 91], yellow = [244, 202, 88], green = [84, 232, 159]
-      const a = v < 0.5 ? red : yellow, b = v < 0.5 ? yellow : green, f = v < 0.5 ? v * 2 : (v - 0.5) * 2
-      for (let c = 0; c < 3; c++) pixels.data[i * 4 + c] = a[c] + (b[c] - a[c]) * f
-      pixels.data[i * 4 + 3] = cell.valid ? 152 : 55
+      scores[Math.floor(cell.y * 4) * 40 + Math.floor(cell.x * 4)] = cell.score / 100
     })
+    const weights = [1, 6, 15, 20, 15, 6, 1]
+    const horizontal = new Float32Array(3200)
+    for (let y = 0; y < 80; y++) for (let x = 0; x < 40; x++) {
+      for (let k = -3; k <= 3; k++) horizontal[y * 40 + x] += scores[y * 40 + clamp(x + k, 0, 39)] * weights[k + 3] / 64
+    }
+    const red = [218, 91, 98], green = [57, 189, 133]
+    for (let y = 0; y < 80; y++) for (let x = 0; x < 40; x++) {
+      let value = 0
+      const half = y < 40 ? 0 : 40
+      for (let k = -3; k <= 3; k++) value += horizontal[clamp(y + k, half, half + 39) * 40 + x] * weights[k + 3] / 64
+      const i = (y * 40 + x) * 4
+      for (let c = 0; c < 3; c++) pixels.data[i + c] = red[c] + (green[c] - red[c]) * value
+      pixels.data[i + 3] = 165
+    }
     hc.putImageData(pixels, 0, 0)
-    ctx.imageSmoothingEnabled = true; ctx.drawImage(heat, 0, heatTop, 10, 10)
+    ctx.imageSmoothingEnabled = true; ctx.drawImage(heat, 0, 0, 10, 20)
   }
-  // Subtle court texture is a measurement grid, kept subordinate to the heatmap.
-  ctx.strokeStyle = '#d4f7f00a'; ctx.lineWidth = 0.02
-  for (let x = 0.5; x < 10; x += 0.5) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 20); ctx.stroke() }
-  for (let y = 0.5; y < 20; y += 0.5) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(10, y); ctx.stroke() }
   ctx.strokeStyle = '#b2d5d3'; ctx.lineWidth = 0.045
   ctx.strokeRect(0, 0, 10, 20)
   ctx.beginPath()

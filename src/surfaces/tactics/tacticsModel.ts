@@ -153,6 +153,24 @@ export function chooseAutomaticShot(input: TacticsState): { state: TacticsState;
   }
   // A blocked formation still gets its best legal shot, without claiming it is open.
   const chosen = best ?? { state: base, shot: evaluateShot(base) }
+  // Estimate the next return from the recommended landing area. Mirror that
+  // return into the same evaluator, with our two players now defending. Invert
+  // its opportunity score: green means we cover the return; red means exposure.
+  const returnBase: TacticsState = {
+    ...base, ball: reflect(chosen.state.target),
+    players: base.players.map(p => ({ ...p, ...reflect(p), team: p.team === 'you' ? 'opponents' : 'you' })),
+  }
+  for (let y = 0.125; y < 10; y += 0.25) {
+    for (let x = 0.125; x < 10; x += 0.25) {
+      const target = { x, y }
+      let danger = 0
+      for (const option of options) {
+        const reply = evaluateShot({ ...returnBase, ...option, target })
+        if (reply.valid) danger = Math.max(danger, reply.score)
+      }
+      cells.push({ ...reflect(target), score: 100 - danger, valid: true })
+    }
+  }
   if (!flipped) return { ...chosen, cells }
   return {
     state: { ...chosen.state, ball: input.ball, players: input.players, target: reflect(chosen.state.target) },
