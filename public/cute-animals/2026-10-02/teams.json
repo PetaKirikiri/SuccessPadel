@@ -1,0 +1,70 @@
+{
+  "competitionId": "c1a8521c-0716-4294-b98f-0cfb48fdee7d",
+  "theme": "Cute baby animals",
+  "identities": [
+    {
+      "slot": 1,
+      "slug": "kitten",
+      "imageUrl": "/cute-animals/2026-10-02/icons/kitten.png",
+      "english": "Kitten",
+      "thai": "ลูกแมว",
+      "phonetic": "look-maeo"
+    },
+    {
+      "slot": 2,
+      "slug": "bunny",
+      "imageUrl": "/cute-animals/2026-10-02/icons/bunny.png",
+      "english": "Bunny",
+      "thai": "กระต่าย",
+      "phonetic": "gra-dtaai"
+    },
+    {
+      "slot": 3,
+      "slug": "duckling",
+      "imageUrl": "/cute-animals/2026-10-02/icons/duckling.png",
+      "english": "Duckling",
+      "thai": "ลูกเป็ด",
+      "phonetic": "look-bpet"
+    },
+    {
+      "slot": 4,
+      "slug": "penguin-chick",
+      "imageUrl": "/cute-animals/2026-10-02/icons/penguin-chick.png",
+      "english": "Penguin chick",
+      "thai": "ลูกเพนกวิน",
+      "phonetic": "look-phen-gwin"
+    },
+    {
+      "slot": 5,
+      "slug": "hamster",
+      "imageUrl": "/cute-animals/2026-10-02/icons/hamster.png",
+      "english": "Hamster",
+      "thai": "แฮมสเตอร์",
+      "phonetic": "haem-ster"
+    },
+    {
+      "slot": 6,
+      "slug": "squirrel",
+      "imageUrl": "/cute-animals/2026-10-02/icons/squirrel.png",
+      "english": "Squirrel",
+      "thai": "กระรอก",
+      "phonetic": "gra-rok"
+    },
+    {
+      "slot": 7,
+      "slug": "fawn",
+      "imageUrl": "/cute-animals/2026-10-02/icons/fawn.png",
+      "english": "Fawn",
+      "thai": "ลูกกวาง",
+      "phonetic": "look-gwaang"
+    },
+    {
+      "slot": 8,
+      "slug": "lamb",
+      "imageUrl": "/cute-animals/2026-10-02/icons/lamb.png",
+      "english": "Lamb",
+      "thai": "ลูกแกะ",
+      "phonetic": "look-gae"
+    }
+  ]
+}

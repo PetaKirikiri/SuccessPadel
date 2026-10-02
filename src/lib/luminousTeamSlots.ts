@@ -1,5 +1,6 @@
 import type { TeamLearningIdentity } from './spiritAnimals'
 import cuteAnimals from '../../public/cute-animals/2026-09-18/manifest.json'
+import octoberBabyAnimals from '../../public/cute-animals/2026-10-02/teams.json'
 
 export const LUMINOUS_COMPETITION_ID = 'c446edaf-3437-4084-ada8-e1008df8296f'
 export const LUMINOUS_TEAM_IDENTITIES: readonly TeamLearningIdentity[] =
@@ -24,6 +25,7 @@ export function luminousIdentityForTeam(sessionId: string | null | undefined, ro
   const identities: readonly TeamLearningIdentity[] | null =
     sessionId === LUMINOUS_COMPETITION_ID ? LUMINOUS_TEAM_IDENTITIES
       : sessionId === cuteAnimals.competitionId ? cuteAnimals.identities
+      : sessionId === octoberBabyAnimals.competitionId ? octoberBabyAnimals.identities
       : null
   if (!identities) return null
   const rosterMatches = roster.filter(row => ids.includes(row.id))
