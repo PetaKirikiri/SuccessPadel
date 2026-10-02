@@ -105,7 +105,9 @@ export function drawCourt(canvas: HTMLCanvasElement, state: TacticsState, cells:
   for (const player of state.players) {
     const p = screenPoint(player, view), radius = clamp(s * 0.43, 14, 26)
     const color = player.team === 'you' ? '#c1eee0' : '#f9a48b'
-    if (selected === `player-${player.id}`) {
+    if (state.ballOwner === player.id) {
+      ring(ctx, p, radius + 5); ctx.strokeStyle = '#edff82'; ctx.lineWidth = 2; ctx.stroke()
+    } else if (selected === `player-${player.id}`) {
       ring(ctx, p, radius + 5); ctx.strokeStyle = `${color}99`; ctx.lineWidth = 1.5; ctx.stroke()
     }
     ctx.shadowColor = '#03181d88'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 3

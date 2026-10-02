@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent, PointerEvent } from 'react'
-import { chooseAutomaticShot, distance, initialTactics, movePlayer, placeBall } from './tacticsModel'
+import { chooseAutomaticShot, distance, initialTactics, movePlayer, placeBall, selectShooter } from './tacticsModel'
 import type { Point } from './tacticsModel'
 import { courtPoint, courtView, drawCourt, screenPoint } from './drawCourt'
 import '../../layouts/tactics.layout.css'
@@ -10,7 +10,8 @@ export default function TacticsPage() {
   const [selected, setSelected] = useState('')
   const [size, setSize] = useState(0)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const drag = useRef<{ id: string; pointer: number; offset: Point } | null>(null)
+  const drag = useRef<{ id: string; pointer: number; offset: Point; start: Point; started: number; moved: boolean } | null>(null)
+  const lastTap = useRef<{ player: number; time: number } | null>(null)
   const automatic = useMemo(() => chooseAutomaticShot(state), [state])
 
   useEffect(() => {
@@ -83,21 +84,40 @@ export default function TacticsPage() {
     const id = hit?.id ?? 'ball'
     event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId)
     setSelected(id)
-    drag.current = { id, pointer: event.pointerId, offset: hit ? { x: hit.point.x - point.x, y: hit.point.y - point.y } : { x: 0, y: 0 } }
+    drag.current = { id, pointer: event.pointerId, offset: hit ? { x: hit.point.x - point.x, y: hit.point.y - point.y } : { x: 0, y: 0 }, start: screen, started: event.timeStamp, moved: false }
     if (!hit) move(id, point)
   }
   function onPointerMove(event: PointerEvent<HTMLCanvasElement>) {
     if (!drag.current || drag.current.pointer !== event.pointerId) return
-    const { point } = pointerPoint(event)
+    const { point, screen } = pointerPoint(event)
+    if (distance(screen, drag.current.start) > 10) drag.current.moved = true
+    if (!drag.current.moved) return
     move(drag.current.id, { x: point.x + drag.current.offset.x, y: point.y + drag.current.offset.y })
   }
   function endDrag(event: PointerEvent<HTMLCanvasElement>) {
     if (drag.current?.pointer !== event.pointerId) return
+    const gesture = drag.current
+    const { screen, point, view } = pointerPoint(event)
+    if (event.type === 'pointerup' && !gesture.moved && distance(screen, gesture.start) <= 10 && event.timeStamp - gesture.started <= 350 && point.y >= 10) {
+      const nearby = state.players.filter(p => p.team === 'you')
+        .map(p => ({ player: p, gap: distance(screen, screenPoint(p, view)) }))
+        .filter(p => p.gap <= Math.max(44, view.scale * 0.9))
+        .sort((a, b) => a.gap - b.gap)[0]?.player
+      if (nearby && lastTap.current?.player === nearby.id && event.timeStamp - lastTap.current.time <= 400) {
+        setState(current => selectShooter(current, nearby.id))
+        lastTap.current = null
+      } else lastTap.current = nearby ? { player: nearby.id, time: event.timeStamp } : null
+    } else lastTap.current = null
     drag.current = null
     setSelected('')
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
   }
   function keyMove(event: KeyboardEvent, id: string) {
+    if ((event.key === 'Enter' || event.key === ' ') && id.startsWith('player-')) {
+      event.preventDefault()
+      setState(current => selectShooter(current, Number(id.replace('player-', ''))))
+      return
+    }
     const steps: Record<string, Point> = { ArrowLeft: { x: -0.25, y: 0 }, ArrowRight: { x: 0.25, y: 0 }, ArrowUp: { x: 0, y: -0.25 }, ArrowDown: { x: 0, y: 0.25 } }
     let step = steps[event.key]
     if (!step) return
@@ -109,9 +129,9 @@ export default function TacticsPage() {
   }
   return (
     <main className="tactics" aria-label="Padel tactics board">
-      <canvas ref={canvasRef} className="tactics__court" aria-label="Drag the players. Drag the ball or tap your half to set its starting position. Opponent returns are calculated automatically. Green areas labelled Lob show useful lob targets." onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag} onLostPointerCapture={() => { drag.current = null; setSelected('') }} />
+      <canvas ref={canvasRef} className="tactics__court" aria-label="Drag the players. Double-tap near an attacking player to make them the shooter. Drag the ball or tap your half to set its starting position. Opponent returns are calculated automatically. Green areas labelled Lob show useful lob targets." onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag} onLostPointerCapture={() => { drag.current = null; setSelected('') }} />
       <div className="tactics__accessible-controls">
-        {['player-1', 'player-2', 'player-3', 'player-4', 'ball'].map(id => <button type="button" key={id} onFocus={() => setSelected(id)} onBlur={() => setSelected('')} onKeyDown={e => keyMove(e, id)}>{id.replace('-', ' ')}: use arrow keys to move</button>)}
+        {['player-1', 'player-2', 'player-3', 'player-4', 'ball'].map(id => <button type="button" key={id} onFocus={() => setSelected(id)} onBlur={() => setSelected('')} onKeyDown={e => keyMove(e, id)}>{id.replace('-', ' ')}: use arrow keys to move{id === 'player-3' || id === 'player-4' ? '; Enter to select shooter' : ''}</button>)}
       </div>
     </main>
   )

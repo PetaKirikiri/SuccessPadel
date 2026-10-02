@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { arrivalTime, chooseAutomaticShot, calculateHeatmap, defensiveSafety, evaluateShot, initialTactics, lobOpportunity, movePlayer, placeBall } from '../src/surfaces/tactics/tacticsModel.ts'
+import { arrivalTime, chooseAutomaticShot, calculateHeatmap, defensiveSafety, evaluateShot, initialTactics, lobOpportunity, movePlayer, placeBall, selectShooter } from '../src/surfaces/tactics/tacticsModel.ts'
 
 test('a defender on the trajectory closes an otherwise open shot', () => {
   const state = initialTactics()
@@ -130,4 +130,24 @@ test('useful lob zones appear behind net players and disappear when they cover t
   assert.equal(chooseAutomaticShot(state).cells.filter(p => (p.lobScore ?? 0) >= 65).length, 0)
   const low = { ...initialTactics(), kind: 'lob' as const, speed: 16, target: { x: 5, y: 2 } }
   assert.equal(lobOpportunity(low, evaluateShot(low), low.target), 0)
+})
+
+
+test('selecting a shooter moves the contact point and follows only that player', () => {
+  const initial = initialTactics()
+  assert.equal(selectShooter(initial, 1), initial)
+  const selected = selectShooter(initial, 4)
+  assert.equal(selected.hitter, 4)
+  assert.equal(selected.ballOwner, 4)
+  assert.ok(Math.hypot(selected.ball.x - 7.3, selected.ball.y - 13.9) < 0.8)
+  const shot = chooseAutomaticShot(selected).shot
+  assert.equal(shot.samples[0].x, selected.ball.x)
+  assert.equal(shot.samples[0].y, selected.ball.y)
+  assert.deepEqual(movePlayer(selected, 3, { x: 2, y: 18 }).ball, selected.ball)
+  const moved = movePlayer(selected, 4, { x: 6, y: 17 })
+  assert.notDeepEqual(moved.ball, selected.ball)
+  const manual = placeBall(moved, { x: 3, y: 14 })
+  assert.equal(manual.ballOwner, undefined)
+  assert.deepEqual(movePlayer(manual, 4, { x: 8, y: 12 }).ball, manual.ball)
+  assert.equal(selectShooter(moved, 3).ballOwner, 3)
 })

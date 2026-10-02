@@ -6,7 +6,7 @@ export type Point = { x: number; y: number }
 export type Player = Point & { id: number; team: 'opponents' | 'you' }
 export type ShotKind = 'drive' | 'lob'
 export type TacticsState = {
-  players: Player[]; ball: Point; target: Point; hitter: number; kind: ShotKind; speed: number
+  players: Player[]; ball: Point; target: Point; hitter: number; ballOwner?: number; kind: ShotKind; speed: number
 }
 export type Sample = Point & { z: number; t: number; bounced: boolean }
 export type Shot = {
@@ -121,8 +121,16 @@ export function lobOpportunity(state: TacticsState, shot: Shot, target: Point): 
 }
 
 export function placeBall(state: TacticsState, point: Point): TacticsState {
-  return { ...state, ball: { x: clamp(point.x, 0.15, 9.85), y: clamp(point.y, 10.15, 19.85) } }
+  return { ...state, ballOwner: undefined, ball: { x: clamp(point.x, 0.15, 9.85), y: clamp(point.y, 10.15, 19.85) } }
 }
+/** Keep the contact point beside the selected player so the ball stays visible. */
+export function selectShooter(state: TacticsState, id: number): TacticsState {
+  const player = state.players.find(p => p.id === id && p.team === 'you')
+  if (!player) return state
+  const placed = placeBall(state, { x: player.x + (player.x > 5 ? -0.55 : 0.55), y: player.y - 0.4 })
+  return { ...placed, hitter: id, ballOwner: id }
+}
+
 export function calculateHeatmap(state: TacticsState): HeatCell[] {
   const cells: HeatCell[] = []
   const size = 0.25
@@ -139,7 +147,8 @@ export function movePlayer(state: TacticsState, id: number, point: Point): Tacti
   const player = state.players.find(p => p.id === id)
   if (!player) return state
   const next = { ...player, x: clamp(point.x, 0.35, 9.65), y: clamp(point.y, player.team === 'you' ? 10.4 : 0.35, player.team === 'you' ? 19.65 : 9.6) }
-  return { ...state, players: state.players.map(p => p.id === id ? next : p) }
+  const moved = { ...state, players: state.players.map(p => p.id === id ? next : p) }
+  return state.ballOwner === id ? selectShooter(moved, id) : moved
 }
 
 /** Positional exposure to a fast return, rather than eventual retrieval after
@@ -150,7 +159,7 @@ export function movePlayer(state: TacticsState, id: number, point: Point): Tacti
 export function defensiveSafety(state: TacticsState, returnArea: Point, target: Point): number {
   const sources: Point[] = [...state.players.filter(p => p.team === 'opponents'), returnArea]
   const defenders = state.players.filter(p => p.team === 'you')
-  const shooter = defenders.reduce((nearest, p) => distance(p, state.ball) < distance(nearest, state.ball) ? p : nearest)
+  const shooter = defenders.find(p => p.id === state.ballOwner) ?? defenders.reduce((nearest, p) => distance(p, state.ball) < distance(nearest, state.ball) ? p : nearest)
   let worstLane = Infinity
   for (const source of sources) {
     const flight = distance(source, target) / 16
@@ -176,7 +185,7 @@ export function defensiveSafety(state: TacticsState, returnArea: Point, target: 
 
 /** Automatically compare legal landing cells and a small set of realistic shot paces.
  * Normalize to a bottom-half hitter, then transform the entire result back so the
- * ball can start on either side. The chosen starting point never follows a player.
+ * ball can start on either side. A manually placed starting point stays fixed; a selected shooter owns their contact point.
  */
 export function chooseAutomaticShot(input: TacticsState): { state: TacticsState; cells: HeatCell[]; shot: Shot } {
   const flipped = input.ball.y < 10
