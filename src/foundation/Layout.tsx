@@ -5,12 +5,14 @@ import { AppShellColumn, hasAppBottomNav, isPlaySessionPath } from './AppShell'
 import { AppTopBar } from '../shared/NavBar/AppTopBar'
 import { LineBookmarkBanner } from '../foundation/line/LineBookmarkBanner'
 import { isGesturePadRoute } from '../lib/gesturePadChrome'
+import { isCompetitionInvitePath } from '../lib/competitionInviteLink'
 
 export function Layout() {
   const { t } = useTranslation()
   const loc = useLocation()
   const onPlayerProfile = loc.pathname.startsWith('/players/')
-  const isGamesHub = loc.pathname === '/friendly' || loc.pathname === '/competitive'
+  const isCompetitionOverview = isCompetitionInvitePath(loc.pathname)
+  const isGamesHub = loc.pathname === '/friendly' || isCompetitionOverview
   const isPlaySession = isPlaySessionPath(loc.pathname)
   const isCompetitionSetup =
     loc.pathname === '/competitions/new' ||
@@ -18,7 +20,6 @@ export function Layout() {
   const isGestureRoute = isGesturePadRoute(loc.pathname)
   const showBottomNav = hasAppBottomNav(loc.pathname)
   // Keep the existing edge-to-edge hub shell; omit only its bottom dock.
-  const isCompetitionOverview = /^\/competitive\/?$/.test(loc.pathname)
   const isCompetitionEntry = loc.pathname === '/' || isCompetitionOverview ||
     (loc.pathname.startsWith('/competitions/') && isPlaySession && !isCompetitionSetup)
   const needsFillViewport = isGamesHub || isPlaySession || isCompetitionSetup || isCompetitionEntry

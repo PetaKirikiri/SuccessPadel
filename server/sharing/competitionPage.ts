@@ -50,22 +50,6 @@ export async function loadPublicCompetition(id: string, env: Environment, fetche
   return matches.length === 1 ? matches[0] : null
 }
 
-/** Resolve the normal app route before React/LINE initialize, without an HTTP redirect
- * that would send preview crawlers back to the previously cached long URL. */
-export function injectInviteEntry(html: string, id: string): string {
-  if (!uuid.test(id)) throw new Error('Invalid competition identity')
-  return html.replace('</head>', `<script data-competition-entry>
-if (/^\\/c\\/[0-9a-f]{8}\\/?$/i.test(location.pathname)) {
-  const destination = new URL(location.href);
-  destination.pathname = '/competitive';
-  destination.searchParams.delete('preview');
-  destination.searchParams.delete('inviteCode');
-  destination.searchParams.set('competition', ${JSON.stringify(id)});
-  history.replaceState(history.state, '', destination.pathname + destination.search + destination.hash);
-}
-</script></head>`)
-}
-
 function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 }
@@ -126,7 +110,6 @@ export async function handleCompetitionPage(
       const row = await lookup(id, env)
       if (row) {
         html = injectCompetitionMetadata(html, row)
-        if (isShort) html = injectInviteEntry(html, row.id)
       } else return unavailable(404)
     } catch {
       console.warn('Competition share metadata unavailable; suppressing preview until retry')

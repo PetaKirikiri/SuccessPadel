@@ -189,6 +189,7 @@ function MainAppRoutes() {
         <Route path="stream" element={<Suspense fallback={null}><StreamMatchPage /></Suspense>} />
         <Route path="competitions/:id/stream" element={<Suspense fallback={null}><StreamMatchPage /></Suspense>} />
         <Route path="competitive" element={<GamesHomePage mode="competitive" />} />
+        <Route path="c/:inviteCode" element={<GamesHomePage mode="competitive" />} />
         <Route path="competitions" element={<Navigate to="/competitive" replace />} />
         <Route path="coaches-comment" element={<CoachesCommentPage />} />
         <Route path="players/:playerId" element={<PlayerProfileSurface />} />

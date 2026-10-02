@@ -3,6 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom'
 import { nearestCompetitionId, type HomepageCompetition } from '../lib/nearestCompetition'
 import { supabase } from '../lib/supabaseClient'
 import { PadelLoading } from '../shared/Loading/PadelLoading'
+import { canonicalCompetitionInviteLocation } from '../lib/competitionInviteLink'
 
 export function HomeCompetitionRedirect() {
   const { search, hash } = useLocation()
@@ -23,7 +24,8 @@ export function HomeCompetitionRedirect() {
           const params = new URLSearchParams(search)
           if (id && !params.has('competition')) params.set('competition', id)
           const query = params.toString()
-          setDestination(`/competitive${query ? `?${query}` : ''}${hash}`)
+          setDestination(canonicalCompetitionInviteLocation('/competitive', query, hash)
+            ?? `/competitive${query ? `?${query}` : ''}${hash}`)
         }
       }
     })().catch(() => { /* The finally block provides the competition-list fallback. */ })

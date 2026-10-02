@@ -1,5 +1,6 @@
 import { useAuth } from '../../hooks/useAuth'
-import { useLocation } from 'react-router-dom'
+import { Navigate, useLocation, useParams } from 'react-router-dom'
+import { canonicalCompetitionInviteLocation } from '../../lib/competitionInviteLink'
 import { GamesList } from './GamesList'
 import { GamesHubView } from './GamesHubView'
 
@@ -8,11 +9,16 @@ type Mode = 'friendly' | 'competitive'
 export function GamesHomePage({ mode }: { mode: Mode }) {
   const { user, profile, loading: authLoading } = useAuth()
   const location = useLocation()
-  const competitionId = new URLSearchParams(location.search).get('competition')
+  const { inviteCode } = useParams<{ inviteCode: string }>()
+  const competitionId = inviteCode ?? new URLSearchParams(location.search).get('competition')
   const isAdmin = !authLoading && Boolean(profile?.is_admin)
   const lineError = (location.state as { lineError?: string } | null)?.lineError
 
   if (mode === 'competitive') {
+    const canonical = canonicalCompetitionInviteLocation(location.pathname, location.search, location.hash)
+    if (canonical && canonical !== `${location.pathname}${location.search}${location.hash}`) {
+      return <Navigate to={canonical} replace state={location.state} />
+    }
     return (
       <GamesHubView
         showPastTab

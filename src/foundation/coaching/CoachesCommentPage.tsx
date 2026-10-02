@@ -9,6 +9,7 @@ import { competitionPlayerAvatarUrl } from '../../lib/competitionRosterAvatars'
 import { nearestCompetitionId, type HomepageCompetition } from '../../lib/nearestCompetition'
 import { coachCompetitionFromPath, coachGameLineup, initialCoachRound } from '../../lib/coachGameLineup'
 import { CoachesCommentView } from './CoachesCommentView'
+import { isCompetitionInvitePath } from '../../lib/competitionInviteLink'
 
 export function CoachesCommentPage() {
   const { user, loading: authLoading } = useAuth()
@@ -45,7 +46,7 @@ export function CoachesCommentPage() {
   }, [allowed, requestedId, retry, setParams, location.state])
   const returnState = location.state as { from?: string; profileState?: unknown } | null
   const from = returnState?.from
-  const onBack = () => from && (from.startsWith('/players/') || from === '/competitive' || coachCompetitionFromPath(from))
+  const onBack = () => from && (from.startsWith('/players/') || isCompetitionInvitePath(from.split(/[?#]/)[0]) || coachCompetitionFromPath(from))
     ? navigate(from, { state: returnState?.profileState }) : navigate('/profile')
   if (error || !allowed || !requestedId) return <section className="coaches-comment">
     <header className="coaches-comment__header"><button type="button" onClick={onBack} aria-label="Back"><ArrowLeft aria-hidden="true" /></button><h1>Coaches Comment</h1></header>

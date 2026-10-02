@@ -1,10 +1,9 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
-import { runInNewContext } from 'node:vm'
 import { competitionShareDetails, type ShareCompetition } from '../src/lib/competitionShareDetails'
 import { competitionScheduleDisplay } from '../src/lib/competitionGameDisplay'
-import { competitionIdFromRequest, handleCompetitionPage, injectCompetitionMetadata, injectInviteEntry, loadPublicCompetition, stripShareMetadata } from '../server/sharing/competitionPage'
+import { competitionIdFromRequest, handleCompetitionPage, injectCompetitionMetadata, loadPublicCompetition, stripShareMetadata } from '../server/sharing/competitionPage'
 
 const id = 'c1a8521c-0716-4294-b98f-0cfb48fdee7d'
 const row = {
@@ -59,12 +58,7 @@ assert.equal(competitionIdFromRequest({ url: `/competitions/${id}?competition=00
 assert.equal(competitionIdFromRequest({ url: `/competitive?competition=${id}`, query: { competition: '00000000-0000-0000-0000-000000000000' } }), null)
 assert.equal(competitionIdFromRequest({ url: '/c/c1a8521c?inviteCode=00000000' }), null)
 assert.equal(competitionIdFromRequest({ url: `/api/competition-share?eventId=${id}`, query: { eventId: id } }), id)
-const entry = injectInviteEntry(rendered, id)
-const script = entry.match(/<script data-competition-entry>([\s\S]*?)<\/script>/)![1]
-let routed = ''
-runInNewContext(script, { URL, location: { pathname: '/c/c1a8521c', href: 'https://successpadel.app/c/c1a8521c?view=review&preview=2#scores' }, history: { state: null, replaceState(_state: unknown, _title: string, path: string) { routed = path } } })
-assert.equal(routed, `/competitive?view=review&competition=${id}#scores`, 'Short invite enters the existing app route before startup, preserving the view/hash')
-assert.throws(() => injectInviteEntry(rendered, '</script>'))
+assert.ok(!rendered.includes('data-competition-entry'), 'No bootstrap script expands the clean address')
 
 const env = { SUPABASE_URL: 'https://example.supabase.co', SUPABASE_ANON_KEY: 'public-test-key' }
 const fetcher: typeof fetch = async (url, options) => {
@@ -114,7 +108,7 @@ try {
   const short = await fetch(`${base}/c/c1a8521c`)
   assert.equal(short.status, 200)
   assert.equal(short.redirected, false)
-  assert.equal(await short.text(), entry, 'Preview is served directly on the clean URL')
+  assert.equal(await short.text(), rendered, 'Short and legacy links serve identical preview and app HTML')
   assert.equal((await fetch(`${base}/c/00000000`)).status, 404)
   assert.equal((await fetch(`${base}/c/invalid`)).status, 404)
   for (const path of [`/competitive?competition=${id}&preview=2`, `/competitive/?competition=${id}&view=review`, `/competitions/${id}`, `/competitions/${id}/`, `/competitions/${id}/join`, `/competitions/${id}/join/`, `/api/competition-share?eventId=${id}`]) {
@@ -122,7 +116,7 @@ try {
     assert.equal(response.status, 200, path)
     assert.equal(await response.text(), rendered, path)
   }
-  assert.equal(await (await fetch(`${base}/c/c1a8521c/`)).text(), entry)
+  assert.equal(await (await fetch(`${base}/c/c1a8521c/`)).text(), rendered)
   assert.equal((await fetch(`${base}/competitive?competition=00000000-0000-0000-0000-000000000000`)).status, 404)
   assert.equal(await (await fetch(`${base}/competitive`)).text(), html, 'Ordinary hub still works')
   fail = true

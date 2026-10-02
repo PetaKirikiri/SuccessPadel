@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { GameBoardPreview } from '../../components/GameCard/GameBoardPreview'
 import { InviteCard } from './InviteCard'
 import { useTranslation } from '../../hooks/useTranslation'
 import type { CompetitionRow } from '../../hooks/useCompetitions'
 import { shareSiteOrigin } from '../../lib/siteUrl'
-import { competitionInviteUrl } from '../../lib/competitionInviteLink'
+import { canonicalCompetitionInviteLocation, competitionInviteUrl, selectInvitedCompetition } from '../../lib/competitionInviteLink'
 import type { FriendlyGameRecord } from '../../lib/friendlyGames'
 import {
   DEFAULT_FRIENDLY_ORGANIZED_CONFIG,
@@ -56,7 +56,10 @@ export function InviteGameCard(props: Props) {
   const { t } = useTranslation()
   const { locale } = useLocale()
   const [pregameView, setPregameView] = useState<'players' | 'rules' | 'levels' | 'review'>('players')
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
+  const { inviteCode } = useParams<{ inviteCode: string }>()
+  const navigate = useNavigate()
+  const location = useLocation()
   const [now, setNow] = useState(Date.now)
   useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 60_000); return () => clearInterval(timer) }, [])
   const levelHelp = useRef<HTMLButtonElement>(null)
@@ -69,7 +72,13 @@ export function InviteGameCard(props: Props) {
 
   const row = props.kind === 'competition' ? props.row : undefined
   const hasReview = competitionReviewAvailable(row, now)
-  const requestedReview = searchParams.get('view') === 'review' && searchParams.get('competition') === row?.id
+  const requestedId = inviteCode ?? searchParams.get('competition') ?? ''
+  const requestedReview = searchParams.get('view') === 'review' && Boolean(row && selectInvitedCompetition([row], requestedId).length)
+  const reviewParams = new URLSearchParams(searchParams)
+  reviewParams.set('competition', row?.id ?? '')
+  reviewParams.set('view', 'review')
+  const reviewPath = canonicalCompetitionInviteLocation('/competitive', reviewParams.toString(), location.hash)
+    ?? `/competitive?${reviewParams}`
   useEffect(() => { setPregameView(requestedReview && hasReview ? 'review' : 'players') }, [row?.id, requestedReview, hasReview])
   const game = props.kind === 'friendly' ? props.game : undefined
   const isAdmin = props.isAdmin ?? false
@@ -172,9 +181,9 @@ export function InviteGameCard(props: Props) {
             Rules
           </a>
           <Link className="invite-game-card__matches-link" to={detailTo}>Matches</Link>
-          {hasReview ? <a href={`?competition=${row.id}&view=review`} role="button" aria-pressed={pregameView === 'review'} aria-controls={`review-${row.id}`}
+          {hasReview ? <a href={reviewPath} role="button" aria-pressed={pregameView === 'review'} aria-controls={`review-${row.id}`}
             onKeyDown={event => { if (event.key === ' ') { event.preventDefault(); setPregameView('review') } }}
-            onClick={event => { event.preventDefault(); event.stopPropagation(); setPregameView('review'); setSearchParams(previous => { const next = new URLSearchParams(previous); next.set('competition', row.id); next.set('view', 'review'); return next }, { replace: true }) }}>Review</a> : null}
+            onClick={event => { event.preventDefault(); event.stopPropagation(); setPregameView('review'); navigate(reviewPath, { replace: true }) }}>Review</a> : null}
           </div>
         ) : undefined
       }
