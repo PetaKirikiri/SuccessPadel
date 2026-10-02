@@ -36,7 +36,7 @@ export function drawCourt(canvas: HTMLCanvasElement, state: TacticsState, cells:
   ctx.fillStyle = '#164b59'; ctx.fillRect(0, 0, 10, 20)
   ctx.fillStyle = '#195563'; ctx.fillRect(0, 0, 10, 10)
   // Smooth the scalar field before colouring, separately on either side of the
-  // net. One red-to-green blend, without yellow bands, grid cells or blue holes.
+  // net. Coral and mint meet through a light neutral instead of muddy brown.
   if (cells.length) {
     const heat = document.createElement('canvas'); heat.width = 40; heat.height = 80
     const hc = heat.getContext('2d')!
@@ -50,14 +50,17 @@ export function drawCourt(canvas: HTMLCanvasElement, state: TacticsState, cells:
     for (let y = 0; y < 80; y++) for (let x = 0; x < 40; x++) {
       for (let k = -3; k <= 3; k++) horizontal[y * 40 + x] += scores[y * 40 + clamp(x + k, 0, 39)] * weights[k + 3] / 64
     }
-    const red = [220, 58, 79], green = [27, 188, 119]
+    const red = [255, 133, 145], neutral = [241, 244, 227], green = [67, 218, 161]
     for (let y = 0; y < 80; y++) for (let x = 0; x < 40; x++) {
       let value = 0
       const half = y < 40 ? 0 : 40
       for (let k = -3; k <= 3; k++) value += horizontal[clamp(y + k, half, half + 39) * 40 + x] * weights[k + 3] / 64
       const i = (y * 40 + x) * 4
-      for (let c = 0; c < 3; c++) pixels.data[i + c] = red[c] + (green[c] - red[c]) * value
-      pixels.data[i + 3] = 235
+      const from = value < 0.5 ? red : neutral
+      const to = value < 0.5 ? neutral : green
+      const blend = value < 0.5 ? value * 2 : (value - 0.5) * 2
+      for (let c = 0; c < 3; c++) pixels.data[i + c] = from[c] + (to[c] - from[c]) * blend
+      pixels.data[i + 3] = 255
     }
     hc.putImageData(pixels, 0, 0)
     ctx.imageSmoothingEnabled = true; ctx.drawImage(heat, 0, 0, 10, 20)
