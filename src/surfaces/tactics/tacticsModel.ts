@@ -120,15 +120,11 @@ export function lobOpportunity(state: TacticsState, shot: Shot, target: Point): 
   return 65 + 20 * clamp((retreat - 2.8) / 4, 0, 1) + 15 * clamp((3.4 - target.y) / 2, 0, 1)
 }
 
-/** Keep the contact point beside the selected player so the ball stays visible. */
+/** The shot starts at the centre of its selected player. */
 export function selectShooter(state: TacticsState, id: number): TacticsState {
   const player = state.players.find(p => p.id === id)
   if (!player) return state
-  const upper = player.y < COURT.net
-  const ball = {
-    x: clamp(player.x + (player.x > 5 ? -0.55 : 0.55), 0.15, 9.85),
-    y: clamp(player.y + (upper ? 0.4 : -0.4), upper ? 0.15 : 10.15, upper ? 9.85 : 19.85),
-  }
+  const ball = { x: player.x, y: player.y }
   return { ...state, ball, hitter: id, ballOwner: id }
 }
 

@@ -18,7 +18,7 @@ importing this page or connecting to competition state.
 
 Only the court, four players, attached ball, coverage shadows and recommended path
 are visible. Drag players; double-tap or double-click near any player to select the
-shooter and switch attacking sides. Moving the shooter carries the ball. Empty
+shooter and switch attacking sides. The shot starts at the centre of the selected player, whose disc turns lime. Moving the shooter carries the ball. Empty
 court taps never relocate it.
 
 Each player casts a rounded, widening green shadow away from the incoming ball.

@@ -109,7 +109,8 @@ test('moving our partner updates defensive safety while preserving the ball and 
 })
 
 test('return danger follows reachable ball contacts instead of the opponents original positions', () => {
-  const state = initialTactics()
+  // Preserve the regression's outgoing contact location independently of the default setup.
+  const state = movePlayer(initialTactics(), 3, { x: 3.55, y: 15.3 })
   const outgoing = chooseAutomaticShot(state)
   // Moving both opponents too far from this path must not invent a return.
   const unreachable = movePlayer(movePlayer(state, 1, { x: 0.35, y: 9.6 }), 2, { x: 9.65, y: 9.6 })
@@ -169,7 +170,7 @@ test('selecting a shooter moves the contact point and follows only that player',
   const selected = selectShooter(initial, 4)
   assert.equal(selected.hitter, 4)
   assert.equal(selected.ballOwner, 4)
-  assert.ok(Math.hypot(selected.ball.x - 7.3, selected.ball.y - 13.9) < 0.8)
+  assert.deepEqual(selected.ball, { x: 7.3, y: 13.9 })
   const shot = chooseAutomaticShot(selected).shot
   assert.equal(shot.samples[0].x, selected.ball.x)
   assert.equal(shot.samples[0].y, selected.ball.y)
@@ -194,7 +195,7 @@ test('either team can attack, with ball placement and lob zones following that s
   const lobs = result.cells.filter(c => (c.lobScore ?? 0) >= 65)
   assert.ok(lobs.length > 0 && lobs.every(c => c.y > 16.6))
   const moved = movePlayer(upper, 1, { x: 4, y: 2 })
-  assert.ok(moved.ball.y < 10 && moved.ball.y > moved.players[0].y)
+  assert.deepEqual(moved.ball, { x: moved.players[0].x, y: moved.players[0].y })
   assert.notDeepEqual(moved.ball, upper.ball)
   const teammate = selectShooter(moved, 2)
   assert.equal(teammate.ballOwner, 2)

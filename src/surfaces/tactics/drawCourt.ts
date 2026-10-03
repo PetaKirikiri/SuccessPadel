@@ -91,7 +91,7 @@ export function drawCourt(canvas: HTMLCanvasElement, state: TacticsState, cells:
   ring(ctx, target, 4); ctx.fillStyle = '#ffffff'; ctx.fill()
   for (const player of state.players) {
     const p = screenPoint(player, view), radius = clamp(s * 0.43, 14, 26)
-    const color = player.team === 'you' ? '#edf8ff' : '#ffbd8f'
+    const color = state.ballOwner === player.id ? '#efffa3' : player.team === 'you' ? '#edf8ff' : '#ffbd8f'
     if (state.ballOwner === player.id) {
       ring(ctx, p, radius + 5); ctx.strokeStyle = '#edff82'; ctx.lineWidth = 2; ctx.stroke()
     } else if (selected === `player-${player.id}`) {
@@ -103,7 +103,4 @@ export function drawCourt(canvas: HTMLCanvasElement, state: TacticsState, cells:
     ctx.strokeStyle = '#103747'; ctx.lineWidth = 2; ctx.stroke()
     ctx.font = `600 ${Math.max(13, radius * 0.95)}px system-ui`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#133536'; ctx.fillText(String(player.id), p.x, p.y + 0.5)
   }
-  const ball = screenPoint(state.ball, view)
-  ring(ctx, ball, 11); ctx.fillStyle = '#efff8830'; ctx.fill()
-  ring(ctx, ball, 6.5); ctx.fillStyle = '#edff82'; ctx.fill(); ctx.strokeStyle = '#fffed9'; ctx.lineWidth = 1; ctx.stroke()
 }
