@@ -30,7 +30,10 @@ half, each cell shows the best direct-shot score or qualifying lob opportunity. 
 recommended landing area, using our players as defenders. An exposed lane from
 either opponent is dangerous, even if the ball might later be retrieved off glass. Green means
 attacking opportunity on the receiving half and return safety on the shooting half; red is the
-reverse. Both halves use rich red and green with a smooth blend and no grid. Useful deep lob zones are green and labelled “Lob”. There is no manual aim, pace or play control.
+reverse. A blue court remains visible beneath restrained tactical overlays. Strong coverage uses
+translucent green; exposed areas use a faint coral tint and coral outline. Mid-range values
+show the court surface. Lightly smoothed contour edges replace the full-court colour wash;
+no measurement grid or legend is added. Useful deep lob zones are green and labelled “Lob”. There is no manual aim, pace or play control.
 
 ## What the heatmap means
 
