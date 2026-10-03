@@ -30,10 +30,14 @@ half, each cell shows the best direct-shot score or qualifying lob opportunity. 
 contact points along the selected shot. An opponent crossing to intercept must reply
 from that new contact point, with contact height and movement pressure limiting the shot. Green means
 attacking opportunity on the receiving half and return safety on the shooting half; red is the
-reverse. A blue court remains visible beneath restrained tactical overlays. Strong coverage uses
-translucent green; exposed areas use a faint coral tint and coral outline. Mid-range values
-show the court surface. Lightly smoothed contour edges replace the full-court colour wash;
-no measurement grid or legend is added. Useful deep lob zones are green and labelled “Lob”. There is no manual aim, pace or play control.
+reverse. The court uses three flat visual states: green for useful/covered areas, coral
+for risky/exposed areas, and blue for neutral space. The display groups scores at
+70 or above into green and 20 or below into coral. Small disconnected patches under
+1.5 square metres are omitted; high-resolution rounded masks replace contours and gradients.
+Short on-court labels explain the colours in context: “Covered” and “Exposed” on the
+shooting half, “Avoid” on the receiving half, and a bullseye labelled “Aim here” for
+a favourable direct shot (or “Best option” when its score is below 55). Labels avoid
+player discs and each other; no toolbar or off-court legend is added. Useful deep lob zones are green and labelled “Lob”. There is no manual aim, pace or play control.
 
 ## What the heatmap means
 
