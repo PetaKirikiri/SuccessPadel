@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { arrivalTime, chooseAutomaticShot, calculateHeatmap, defensiveSafety, evaluateShot, initialTactics, lobOpportunity, movePlayer, selectShooter } from '../src/surfaces/tactics/tacticsModel.ts'
+import { arrivalTime, chooseAutomaticShot, calculateHeatmap, defensiveSafety, evaluateShot, initialTactics, lobOpportunity, movePlayer, selectShooter, possibleReturnContacts, returnFlight } from '../src/surfaces/tactics/tacticsModel.ts'
 
 test('a defender on the trajectory closes an otherwise open shot', () => {
   const state = initialTactics()
@@ -107,15 +107,39 @@ test('moving our partner updates defensive safety while preserving the ball and 
   assert.ok(defense.some((c, i) => Math.abs(c.score - before.cells.filter(p => p.y > 10)[i].score) > 20))
 })
 
-test('uncovered short balls and the abandoned wing are dangerous, not safe wall recoveries', () => {
+test('return danger follows reachable ball contacts instead of the opponents original positions', () => {
   const state = initialTactics()
-  const returnArea = { x: 5.5, y: 5 }
-  assert.ok(defensiveSafety(state, returnArea, { x: 5, y: 11 }) < 20)
-  assert.ok(defensiveSafety(state, returnArea, { x: 7.3, y: 13.9 }) > 65)
-  const shifted = movePlayer(state, 4, { x: 1, y: 15 })
-  assert.ok(defensiveSafety(shifted, returnArea, { x: 8.5, y: 15 }) < 15)
-  const covering = movePlayer(state, 4, { x: 5, y: 11 })
-  assert.ok(defensiveSafety(covering, returnArea, { x: 5, y: 11 }) > defensiveSafety(state, returnArea, { x: 5, y: 11 }) + 30)
+  const outgoing = chooseAutomaticShot(state)
+  // Moving both opponents too far from this path must not invent a return.
+  const unreachable = movePlayer(movePlayer(state, 1, { x: 0.35, y: 9.6 }), 2, { x: 9.65, y: 9.6 })
+  assert.equal(possibleReturnContacts(unreachable, outgoing.shot).length, 0)
+  const anticipatedRead = possibleReturnContacts(state, outgoing.shot)
+  assert.ok(anticipatedRead.length > 0)
+  assert.ok(defensiveSafety(state, anticipatedRead, { x: 7.3, y: 12 }) > 70)
+  assert.ok(defensiveSafety(state, anticipatedRead, { x: 1, y: 12.5 }) < 25)
+  assert.equal(defensiveSafety(state, [], { x: 5, y: 11 }), 50)
+  // Give player 2 the anticipated central position, preserving the same shot.
+  const anticipated = movePlayer(state, 2, { x: 4.8, y: 7.4 })
+  const contacts = possibleReturnContacts(anticipated, outgoing.shot)
+  assert.ok(contacts.length > 0)
+  assert.ok(contacts.some(c => c.playerId === 2))
+  assert.ok(contacts.every(c => outgoing.shot.samples.some(p => p.x === c.x && p.y === c.y && p.t === c.t)))
+  assert.ok(defensiveSafety(anticipated, contacts, { x: 8.5, y: 15 }) > 80)
+  assert.ok(defensiveSafety(anticipated, contacts, { x: 7.3, y: 12 }) > defensiveSafety(anticipated, contacts, { x: 1, y: 12.5 }) + 25)
+  const abandoned = movePlayer(anticipated, 4, { x: 1, y: 15 })
+  assert.ok(defensiveSafety(abandoned, contacts, { x: 8.5, y: 15 }) < defensiveSafety(anticipated, contacts, { x: 8.5, y: 15 }) - 30)
+})
+
+test('a low interception cannot produce an impossible fast short return through the net', () => {
+  const state = initialTactics()
+  const low = { x: 5, y: 7, z: 0.4, t: 0.5, bounced: false, playerId: 2, balance: 1 }
+  const target = { x: 7.3, y: 12 }
+  assert.equal(returnFlight(state, low, target, 1), null)
+  const soft = returnFlight(state, low, target, 0.4)
+  assert.ok(soft && soft.time > 0.7)
+  const high = { ...low, z: 2.5 }
+  assert.ok(returnFlight(state, high, target, 1))
+  assert.ok(defensiveSafety(state, [low], target) > defensiveSafety(state, [high], target))
 })
 
 test('the trajectory restores its shooter anchor even if given a stale ball position', () => {
@@ -196,15 +220,15 @@ test('lob opportunities remain visible without becoming the direct trajectory on
 
 test('both shooting players clearly cover nearby space while the abandoned wing stays exposed', () => {
   const state = selectShooter(movePlayer(movePlayer(initialTactics(), 3, { x: 4.8, y: 12.7 }), 4, { x: 8.2, y: 12.9 }), 4)
-  const returnArea = { x: 2, y: 3 }
+  const contacts = [{ x: 2, y: 8, z: 2, t: 0.6, bounced: false, playerId: 1, balance: 1 }]
   for (const player of state.players.filter(p => p.team === 'you')) {
-    assert.ok(defensiveSafety(state, returnArea, player) >= 95)
+    assert.ok(defensiveSafety(state, contacts, player) >= 95)
     for (const [dx, dy] of [[1.3, 0], [-1.3, 0], [0, 1.3], [0, -1.3]]) {
-      assert.ok(defensiveSafety(state, returnArea, { x: player.x + dx, y: player.y + dy }) > 85)
+      assert.ok(defensiveSafety(state, contacts, { x: player.x + dx, y: player.y + dy }) > 85)
     }
   }
   const gap = { x: 1, y: 12.5 }
-  assert.ok(defensiveSafety(state, returnArea, gap) < 25)
+  assert.ok(defensiveSafety(state, contacts, gap) < 25)
   const covered = movePlayer(state, 3, gap)
-  assert.ok(defensiveSafety(covered, returnArea, gap) >= 95)
+  assert.ok(defensiveSafety(covered, contacts, gap) >= 95)
 })

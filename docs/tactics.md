@@ -17,7 +17,7 @@ importing this page or connecting to competition state.
 ## Interaction
 
 Only the court, four players, ball, heatmap and recommended path are visible. Drag
-players or the ball; double-tap or double-click near any player to select the shooter and switch the attacking side.
+players; double-tap or double-click near any player to select the shooter and switch the attacking side.
 Players stay in place; shot targets, return danger and lob zones recalculate for the selected team.
 The ball snaps beside that player and follows them, with a lime ring marking the shooter.
 The ball is always anchored to a player, including on first load. It has no independent
@@ -26,9 +26,9 @@ shooter carries the ball; moving another player leaves the shot origin unchanged
 The opponents’ return and defensive exposure are calculated automatically. The trajectory always selects the highest rated legal direct shot, comparing 12/16 m/s
 drives over all 25 cm landing cells. Lobs at 7 m/s are evaluated separately as optional
 green landing zones labelled “Lob”; they never determine the trajectory line. On the defending
-half, each cell shows the best direct-shot score or qualifying lob opportunity. The other half estimates fast-return lanes from both opponents and the
-recommended landing area, using our players as defenders. An exposed lane from
-either opponent is dangerous, even if the ball might later be retrieved off glass. Green means
+half, each cell shows the best direct-shot score or qualifying lob opportunity. The shooting half estimates replies from reachable
+contact points along the selected shot. An opponent crossing to intercept must reply
+from that new contact point, with contact height and movement pressure limiting the shot. Green means
 attacking opportunity on the receiving half and return safety on the shooting half; red is the
 reverse. A blue court remains visible beneath restrained tactical overlays. Strong coverage uses
 translucent green; exposed areas use a faint coral tint and coral outline. Mid-range values
@@ -60,15 +60,25 @@ not a guarantee against a smash. Labels disappear when no targets qualify.
 Assumptions: 0.22 s reaction, 5 m/s² acceleration, 4.5 m/s running, 0.8 m horizontal
 racket reach, 2.7 m maximum contact height, floor restitution 0.68 vertically / 0.72
 horizontally, wall restitution 0.75. These are prototype parameters, not measured
-player data. Spin, movement direction, body orientation and skill are excluded. Defensive coverage is a positional pressure estimate: 16 m/s direct return lanes,
-ready movement at 4.5 m/s after reaction, and 0.12 s extra recovery for the player
-selected as the shooter. Immediate racket/step coverage is scored green within 0.9 m
-of either player and fades smoothly to zero at 2.9 m; the stronger of this coverage
-and the lane interception score is shown. This is a positional heuristic, not a win probability. It checks interceptions before the target, so a player can screen
-space behind them. It does not award safety for a later bounce or a difficult
-boundary shot, and does not predict an exact legal return height. Players stay at
-their current positions. The teammate contributes to defensive coverage, not
-the score of the outbound shot. A defensive lob may still be marked covered because an opponent can return it.
+player data. Spin, movement direction, body orientation and skill are excluded. Defensive coverage is conditional on the displayed outbound shot. The model allows up to
+0.5 s of anticipatory movement, then samples early and balanced contacts for each opponent
+before and after the bounce. Return origins are actual reachable samples, not the players’
+starting positions or an arbitrary landing point. This head start is a deliberately generous
+prototype assumption to include interceptions by players who read the shot early.
+
+Return pace ranges from 10 m/s for a stretched contact to 16 m/s for a balanced contact,
+with a reduction for redirecting away from the incoming line. Four pace fractions down to
+40% allow soft replies. Each return must clear the net from the actual contact height;
+a low pickup cannot fire a fast ball into a short target through the net. Defenders can
+intercept at reachable heights, using reaction/acceleration and a limited preparation
+credit from the outbound flight; they are not teleported towards the eventual reply.
+
+Immediate racket/step coverage remains green within 0.9 m of either shooting player
+and fades to zero at 2.9 m. Elsewhere, the quickest feasible reply determines exposure.
+If no reachable or legal reply is found, that area is neutral, not guaranteed safe.
+These are coaching heuristics, not calibrated probabilities or a complete ball/player
+simulation. Spin, handedness, precise body balance and post-return wall recovery are
+not modelled. The teammate contributes to defensive coverage, not outbound-shot scoring.
 
 ## Verification
 
@@ -76,5 +86,5 @@ the score of the outbound shot. A defensive lob may still be marked covered beca
 
 Checks interception versus open space, net failures, glass reflection, hitter/ball
 movement, court boundaries, finite heatmaps, automatic selection, and mirrored play. Also run the project build and cycle
-check after routing changes. Browser checks cover dragging, ball placement, automatic trajectory changes,
+check after routing changes. Browser checks cover dragging, permanent shooter attachment, automatic trajectory changes,
 and viewport fit. No database migrations or deployment are required locally.

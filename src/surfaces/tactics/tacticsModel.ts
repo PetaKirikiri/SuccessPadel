@@ -152,40 +152,78 @@ export function movePlayer(state: TacticsState, id: number, point: Point): Tacti
   return state.ballOwner === id ? selectShooter(moved, id) : moved
 }
 
-/** Positional exposure to a fast return, rather than eventual retrieval after
- * a wall bounce. Inputs are normalized with the shooting team in the bottom half.
- * Consider both opponents' current contact positions and the planned shot's
- * landing area; the quickest threat determines the time available at each point.
+export type ReturnContact = Sample & { playerId: number; balance: number }
+
+/** Anticipation allows an early move, not a return from a position the ball never visits.
+ * Keep an early and a more balanced contact in each volley/bounce phase per opponent.
  */
-export function defensiveSafety(state: TacticsState, returnArea: Point, target: Point): number {
-  const sources: Point[] = [...state.players.filter(p => p.team === 'opponents'), returnArea]
-  const defenders = state.players.filter(p => p.team === 'you')
-  const shooter = defenders.find(p => p.id === state.ballOwner) ?? defenders.reduce((nearest, p) => distance(p, state.ball) < distance(nearest, state.ball) ? p : nearest)
-  let worstLane = Infinity
-  for (const source of sources) {
-    const flight = distance(source, target) / 16
-    let bestIntercept = -Infinity
-    for (let step = 1; step <= 20; step++) {
-      const fraction = step / 20
-      const point = { x: source.x + (target.x - source.x) * fraction, y: source.y + (target.y - source.y) * fraction }
-      if (point.y <= 10) continue
-      // This positional field assumes ready footwork, rather than the shot
-      // evaluator's acceleration from rest. A player can screen space behind
-      // them by intercepting the direct lane before the return reaches it.
-      const coverTime = Math.min(...defenders.map(player =>
-        ASSUMPTIONS.reaction + Math.max(0, distance(player, point) - ASSUMPTIONS.reach) / ASSUMPTIONS.runSpeed + (player.id === shooter.id ? 0.12 : 0),
-      ))
-      bestIntercept = Math.max(bestIntercept, flight * fraction - coverTime)
+export function possibleReturnContacts(state: TacticsState, shot: Shot): ReturnContact[] {
+  if (!shot.valid) return []
+  const contacts: ReturnContact[] = []
+  for (const player of state.players.filter(p => p.team === 'opponents')) {
+    for (const bounced of [false, true]) {
+      const reachable = shot.samples.filter(p => p.bounced === bounced && p.y < 10 && p.z >= 0.15 && p.z <= ASSUMPTIONS.maxReachHeight && arrivalTime(player, p) <= p.t + 0.5)
+      if (!reachable.length) continue
+      const first = reachable[0]
+      const balanced = reachable.reduce((best, p) => p.t - arrivalTime(player, p) > best.t - arrivalTime(player, best) ? p : best)
+      for (const point of first === balanced ? [first] : [first, balanced]) {
+        contacts.push({ ...point, playerId: player.id, balance: clamp((point.t + 0.5 - arrivalTime(player, point)) / 0.4, 0, 1) })
+      }
     }
-    worstLane = Math.min(worstLane, bestIntercept)
   }
-  // Ready players control their immediate racket/step area even when the
-  // worst-case fast-return lane allows little reaction time. Fade that local
-  // coverage from 0.9 m to 2.9 m; wider gaps still rely on lane interception.
+  return contacts
+}
+
+/** Return-to-bounce flight. A stretched, sharply redirected ball cannot use the
+ * same pace as a balanced volley; low contacts must still clear the net.
+ */
+export function returnFlight(state: TacticsState, contact: ReturnContact, target: Point, pace = 1): { time: number; vertical: number } | null {
+  if (target.y <= 10 || contact.y >= 10) return null
+  const back = { x: state.ball.x - contact.x, y: state.ball.y - contact.y }
+  const reply = { x: target.x - contact.x, y: target.y - contact.y }
+  const length = Math.hypot(reply.x, reply.y)
+  const cosine = clamp((back.x * reply.x + back.y * reply.y) / (Math.hypot(back.x, back.y) * length), -1, 1)
+  const turn = Math.acos(cosine) / Math.PI
+  const maxPace = (10 + 6 * contact.balance) * (1 - 0.4 * turn)
+  const time = length / (maxPace * pace)
+  const vertical = (G * time * time / 2 - contact.z) / time
+  const netTime = time * (10 - contact.y) / reply.y
+  const netX = contact.x + reply.x * netTime / time
+  const netHeight = contact.z + vertical * netTime - G * netTime * netTime / 2
+  if (netHeight < 0.93 + 0.04 * Math.abs(netX - 5) / 5) return null
+  return { time, vertical }
+}
+
+/** Safety against feasible replies to this particular shot, in bottom-half coordinates.
+ * Neutral means no reachable/legal reply was modelled, rather than a guaranteed winner.
+ */
+export function defensiveSafety(state: TacticsState, contacts: ReturnContact[], target: Point): number {
+  const defenders = state.players.filter(p => p.team === 'you')
+  let worstLane = Infinity
+  for (const contact of contacts) {
+    for (const pace of [1, 0.8, 0.6, 0.4]) {
+      const flight = returnFlight(state, contact, target, pace)
+      if (!flight) continue
+      let bestIntercept = -Infinity
+      for (let step = 1; step <= 24; step++) {
+        const fraction = step / 24, time = flight.time * fraction
+        const point = { x: contact.x + (target.x - contact.x) * fraction, y: contact.y + (target.y - contact.y) * fraction }
+        const height = contact.z + flight.vertical * time - G * time * time / 2
+        if (point.y <= 10 || height > ASSUMPTIONS.maxReachHeight) continue
+        // The outbound flight lets players get ready, but does not magically
+        // move them towards a reply whose direction is not yet known.
+        const coverTime = Math.min(...defenders.map(player =>
+          arrivalTime(player, point) - Math.min(0.16, contact.t * 0.25) + (player.id === state.ballOwner ? Math.max(0, 0.18 - contact.t) : 0),
+        ))
+        bestIntercept = Math.max(bestIntercept, time - coverTime)
+      }
+      worstLane = Math.min(worstLane, bestIntercept)
+    }
+  }
   const nearest = Math.min(...defenders.map(player => distance(player, target)))
   const fade = clamp((nearest - 0.9) / 2, 0, 1)
   const localCoverage = 98 * (1 - fade * fade * (3 - 2 * fade))
-  const laneCoverage = 100 / (1 + Math.exp(-worstLane / 0.16))
+  const laneCoverage = worstLane === Infinity ? 50 : 100 / (1 + Math.exp(-worstLane / 0.16))
   return Math.max(localCoverage, laneCoverage)
 }
 
@@ -232,10 +270,11 @@ export function chooseAutomaticShot(input: TacticsState): { state: TacticsState;
   // A blocked formation still gets its best legal shot, without claiming it is open.
   const fallback = { ...base, kind: 'drive' as const, speed: 12 }
   const chosen = best ?? { state: fallback, shot: evaluateShot(fallback) }
+  const contacts = possibleReturnContacts(base, chosen.shot)
   for (let y = 10.125; y < 20; y += 0.25) {
     for (let x = 0.125; x < 10; x += 0.25) {
       const target = { x, y }
-      cells.push({ ...target, score: defensiveSafety(base, chosen.state.target, target), valid: true })
+      cells.push({ ...target, score: defensiveSafety(base, contacts, target), valid: true })
     }
   }
   if (!flipped) return { ...chosen, cells }
