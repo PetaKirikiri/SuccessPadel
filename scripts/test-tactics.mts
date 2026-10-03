@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { coverageShadows, playerShadow } from '../src/surfaces/tactics/coverageShadows.ts'
 import { test } from 'node:test'
 import { arrivalTime, chooseAutomaticShot, calculateHeatmap, defensiveSafety, evaluateShot, initialTactics, lobOpportunity, movePlayer, selectShooter, possibleReturnContacts, returnFlight } from '../src/surfaces/tactics/tacticsModel.ts'
 
@@ -231,4 +232,37 @@ test('both shooting players clearly cover nearby space while the abandoned wing 
   assert.ok(defensiveSafety(state, contacts, gap) < 25)
   const covered = movePlayer(state, 3, gap)
   assert.ok(defensiveSafety(covered, contacts, gap) >= 95)
+})
+
+
+test('coverage shadows project away from the incoming ball and move with the player', () => {
+  const player = { id: 4, team: 'you' as const, x: 7, y: 14 }
+  const source = { x: 5, y: 6 }
+  const shadow = playerShadow(player, source)
+  assert.ok(shadow.polygon[1].y > player.y && shadow.polygon[2].y > player.y)
+  for (const tangent of [shadow.polygon[0], shadow.polygon[3]]) {
+    assert.ok(Math.abs(Math.hypot(tangent.x - player.x, tangent.y - player.y) - shadow.radius) < 1e-8)
+    const dot = (tangent.x - player.x) * (tangent.x - source.x) + (tangent.y - player.y) * (tangent.y - source.y)
+    assert.ok(Math.abs(dot) < 1e-8)
+  }
+  assert.notDeepEqual(playerShadow({ ...player, x: 3 }, source).polygon, shadow.polygon)
+  const close = playerShadow(player, { x: 7, y: 13.5 })
+  assert.ok(close.polygon.every(p => Number.isFinite(p.x) && Number.isFinite(p.y)))
+})
+
+test('each team projects behind its players and shadows mirror when the shooter changes ends', () => {
+  const state = initialTactics(), result = chooseAutomaticShot(state)
+  const shadows = coverageShadows(result.state, result.shot)
+  assert.equal(shadows.length, 4)
+  for (const shadow of shadows) {
+    assert.ok(shadow.upper ? shadow.polygon[1].y < shadow.centre.y : shadow.polygon[1].y > shadow.centre.y)
+  }
+  const reflect = (p: { x: number; y: number }) => ({ x: 10 - p.x, y: 20 - p.y })
+  const reversed = { ...state, ball: reflect(state.ball), players: state.players.map(p => ({ ...p, ...reflect(p), team: p.team === 'you' ? 'opponents' as const : 'you' as const })) }
+  const other = chooseAutomaticShot(reversed)
+  const mirrored = coverageShadows(other.state, other.shot)
+  shadows.forEach((shadow, i) => shadow.polygon.forEach((point, j) => {
+    assert.ok(Math.abs(mirrored[i].polygon[j].x - (10 - point.x)) < 1e-8)
+    assert.ok(Math.abs(mirrored[i].polygon[j].y - (20 - point.y)) < 1e-8)
+  }))
 })

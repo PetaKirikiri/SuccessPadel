@@ -126,7 +126,7 @@ export default function TacticsPage() {
   }
   return (
     <main className="tactics" aria-label="Padel tactics board">
-      <canvas ref={canvasRef} className="tactics__court" aria-label="Drag the players. Double-tap or double-click near any player to make them the shooter and switch the attacking side. The ball stays attached to the shooter. Green on their half shows the areas their team covers. Opponent returns are calculated automatically. Green areas labelled Lob show useful lob targets." onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag} onLostPointerCapture={() => { drag.current = null; setSelected('') }} />
+      <canvas ref={canvasRef} className="tactics__court" aria-label="Drag the players. Double-tap or double-click near any player to make them the shooter and switch the attacking side. The ball stays attached to the shooter. Green shadows behind each player show the space they cover; coral gaps are unscreened. Curved arrows with dashed landing rings show optional lobs." onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag} onLostPointerCapture={() => { drag.current = null; setSelected('') }} />
       <div className="tactics__accessible-controls">
         {['player-1', 'player-2', 'player-3', 'player-4'].map(id => <button type="button" key={id} onFocus={() => setSelected(id)} onBlur={() => setSelected('')} onKeyDown={e => keyMove(e, id)}>{id.replace('-', ' ')}: use arrow keys to move{id.startsWith('player-') ? '; Enter to select shooter' : ''}</button>)}
       </div>

@@ -16,28 +16,29 @@ importing this page or connecting to competition state.
 
 ## Interaction
 
-Only the court, four players, ball, heatmap and recommended path are visible. Drag
-players; double-tap or double-click near any player to select the shooter and switch the attacking side.
-Players stay in place; shot targets, return danger and lob zones recalculate for the selected team.
-The ball snaps beside that player and follows them, with a lime ring marking the shooter.
-The ball is always anchored to a player, including on first load. It has no independent
-pointer or keyboard control, and tapping empty court never relocates it. Moving the
-shooter carries the ball; moving another player leaves the shot origin unchanged.
-The opponents’ return and defensive exposure are calculated automatically. The trajectory always selects the highest rated legal direct shot, comparing 12/16 m/s
-drives over all 25 cm landing cells. Lobs at 7 m/s are evaluated separately as optional
-green landing zones labelled “Lob”; they never determine the trajectory line. On the defending
-half, each cell shows the best direct-shot score or qualifying lob opportunity. The shooting half estimates replies from reachable
-contact points along the selected shot. An opponent crossing to intercept must reply
-from that new contact point, with contact height and movement pressure limiting the shot. Green means
-attacking opportunity on the receiving half and return safety on the shooting half; red is the
-reverse. The court uses three flat visual states: green for useful/covered areas, coral
-for risky/exposed areas, and blue for neutral space. The display groups scores at
-70 or above into green and 20 or below into coral. Small disconnected patches under
-1.5 square metres are omitted; high-resolution rounded masks replace contours and gradients.
-Short on-court labels explain the colours in context: “Covered” and “Exposed” on the
-shooting half, “Avoid” on the receiving half, and a bullseye labelled “Aim here” for
-a favourable direct shot (or “Best option” when its score is below 55). Labels avoid
-player discs and each other; no toolbar or off-court legend is added. Useful deep lob zones are green and labelled “Lob”. There is no manual aim, pace or play control.
+Only the court, four players, attached ball, coverage shadows and recommended path
+are visible. Drag players; double-tap or double-click near any player to select the
+shooter and switch attacking sides. Moving the shooter carries the ball. Empty
+court taps never relocate it.
+
+Each player casts a rounded, widening green shadow away from the incoming ball.
+Green consistently means space screened by that half’s players; coral is the
+unscreened space between and in front of those shadows. There is no neutral band,
+colour-strength scale, text label, or legend. Overlapping shadows merge into one
+covered area. The direct shot target is a white bullseye; eligible lob options use
+small curved arrows ending in dashed landing rings, never words or a lob trajectory.
+
+The shadows are geometric footprints, not a win-probability heatmap. They use tangents
+from the incoming origin to a 1.15 m racket/step footprint, clipped to each player’s
+half. Near contacts reduce the footprint to keep tangent geometry finite. On the
+receiving half, the source is the shooter’s ball. On the shooting half it is the
+earliest reachable return contact; if none exists, the chosen landing point supplies
+orientation only. Coral therefore means unscreened, not that a legal winning reply
+has been predicted. Player numbers are the only visible text.
+
+The automatic direct shot still compares 12/16 m/s drives. Optional 7 m/s lob
+opportunities and the shot-dependent return calculation remain available in the
+model; they no longer paint a multi-category score field on the court.
 
 ## What the heatmap means
 
@@ -55,11 +56,11 @@ It is not a win probability. Drive and lob candidates differ in contact height a
 angle follows the candidate target.
 
 Lob usefulness also credits forcing opponents back, even if they can eventually
-return the ball. A labelled zone must land 0.6–3.4 m from the back wall, at least
+return the ball. A lob landing cue must land 0.6–3.4 m from the back wall, at least
 0.6 m from a side wall, and at least 2.8 m behind both opponents. It requires an
 apex of at least 3.5 m and no reachable overhead below 3.1 m before forcing the
 opponent two metres backwards. This positional-benefit score is a heuristic,
-not a guarantee against a smash. Labels disappear when no targets qualify.
+not a guarantee against a smash. The lob cues disappear when no targets qualify.
 
 Assumptions: 0.22 s reaction, 5 m/s² acceleration, 4.5 m/s running, 0.8 m horizontal
 racket reach, 2.7 m maximum contact height, floor restitution 0.68 vertically / 0.72
