@@ -1,6 +1,7 @@
 import { COURT, clamp } from './tacticsModel'
 import { coverageShadows } from './coverageShadows'
 import { sampleAtTime } from './shotPlayback'
+import { coveredIsGood, lobLandingZones } from './targetZones'
 import type { HeatCell, Point, Shot, TacticsState } from './tacticsModel'
 
 export type CourtView = { width: number; height: number; scale: number; left: number; top: number; rotated: boolean }
@@ -35,16 +36,26 @@ export function drawCourt(canvas: HTMLCanvasElement, state: TacticsState, cells:
   ctx.translate(view.left, view.top)
   if (view.rotated) { ctx.translate(0, 10 * s); ctx.rotate(-Math.PI / 2) }
   ctx.scale(s, s)
-  // Two states: each player's protected shadow and the unscreened gaps.
-  ctx.fillStyle = '#f29a96'; ctx.fillRect(0, 0, 10, 20)
+  const lobs = lobLandingZones(cells)
+  // Attacking perspective: opponents' gaps are targets; our own gaps are exposed.
+  for (const upper of [true, false]) {
+    ctx.fillStyle = coveredIsGood(state, upper) ? '#f29a96' : '#70cf9b'
+    ctx.fillRect(0, upper ? 0 : 10, 10, 10)
+  }
   for (const shadow of coverageShadows(state, shot)) {
     ctx.save(); ctx.beginPath(); ctx.rect(0, shadow.upper ? 0 : 10, 10, 10); ctx.clip()
-    ctx.fillStyle = '#70cf9b'
+    ctx.fillStyle = coveredIsGood(state, shadow.upper) ? '#70cf9b' : '#f29a96'
     ctx.beginPath()
     shadow.polygon.forEach((p, i) => { if (!i) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y) })
     ctx.closePath(); ctx.fill()
     ring(ctx, shadow.centre, shadow.radius); ctx.fill()
     ctx.restore()
+  }
+  // A viable lob goes over the normal blocking shadow, opening a green landing pocket.
+  for (const zone of lobs) {
+    ctx.beginPath(); ctx.ellipse(zone.x, zone.y, zone.rx, zone.ry, 0, 0, Math.PI * 2)
+    ctx.fillStyle = '#70cf9b'; ctx.fill()
+    ctx.strokeStyle = '#ffffffaa'; ctx.lineWidth = 0.025; ctx.setLineDash([0.1, 0.1]); ctx.stroke(); ctx.setLineDash([])
   }
   ctx.strokeStyle = '#ffffffd9'; ctx.lineWidth = 0.04
   ctx.strokeRect(0, 0, 10, 20)
@@ -64,12 +75,8 @@ export function drawCourt(canvas: HTMLCanvasElement, state: TacticsState, cells:
 
   // Optional lofted-shot cues: a small arc ending in a dashed landing ring.
   // They remain separate from the straight recommended trajectory.
-  for (const left of [true, false]) {
-    const zone = cells.filter(cell => (cell.lobScore ?? 0) >= 70 && (left ? cell.x < 5 : cell.x >= 5))
-    if (zone.length < 24) continue
-    const centre = { x: zone.reduce((sum, p) => sum + p.x, 0) / zone.length, y: zone.reduce((sum, p) => sum + p.y, 0) / zone.length }
-    const anchor = zone.reduce((nearest, p) => Math.hypot(p.x - centre.x, p.y - centre.y) < Math.hypot(nearest.x - centre.x, nearest.y - centre.y) ? p : nearest)
-    const p = screenPoint(anchor, view)
+  for (const zone of lobs) {
+    const p = screenPoint(zone, view)
     ctx.strokeStyle = '#ffffffcc'; ctx.lineWidth = 1.8; ctx.setLineDash([3, 3])
     ctx.beginPath(); ctx.ellipse(p.x + 12, p.y + 4, 9, 4, 0, 0, Math.PI * 2); ctx.stroke()
     ctx.setLineDash([]); ctx.beginPath(); ctx.moveTo(p.x - 14, p.y + 2)

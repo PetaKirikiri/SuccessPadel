@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { coverageShadows, playerShadow } from '../src/surfaces/tactics/coverageShadows.ts'
 import { test } from 'node:test'
-import { arrivalTime, chooseAutomaticShot, calculateHeatmap, defensiveSafety, evaluateShot, initialTactics, lobOpportunity, movePlayer, selectShooter, possibleReturnContacts, returnFlight } from '../src/surfaces/tactics/tacticsModel.ts'
+import { arrivalTime, chooseAutomaticShot, calculateHeatmap, defensiveSafety, evaluateShot, executionMargin, initialTactics, lobOpportunity, movePlayer, selectShooter, possibleReturnContacts, returnFlight } from '../src/surfaces/tactics/tacticsModel.ts'
 
 test('a defender on the trajectory closes an otherwise open shot', () => {
   const state = initialTactics()
@@ -62,15 +62,13 @@ test('reach takes longer with distance; both heatmaps are finite and bounded', (
 })
 
 
-test('automatic trajectory selects the highest rated direct shot without changing the start', () => {
+test('automatic trajectory selects a forgiving direct shot without changing the start', () => {
   const state = initialTactics()
   const result = chooseAutomaticShot(state)
   assert.ok(result.shot.valid)
   assert.equal(result.state.kind, 'drive')
-  const directScores = result.cells.filter(c => c.y < 10).flatMap(target => [12, 16].map(speed =>
-    evaluateShot({ ...state, kind: 'drive', speed }, target).score,
-  ))
-  assert.equal(result.shot.score, Math.max(...directScores))
+  assert.ok(executionMargin(result.state) > 0)
+  assert.ok(Math.min(result.state.target.x, 10 - result.state.target.x, result.state.target.y, 10 - result.state.target.y) >= 1.25)
   assert.deepEqual(result.state.ball, state.ball)
   assert.deepEqual(result.shot.samples[0].x, state.ball.x)
   assert.deepEqual(result.shot.samples[0].y, state.ball.y)
@@ -110,8 +108,8 @@ test('moving our partner updates defensive safety while preserving the ball and 
 
 test('return danger follows reachable ball contacts instead of the opponents original positions', () => {
   // Preserve the regression's outgoing contact location independently of the default setup.
-  const state = movePlayer(initialTactics(), 3, { x: 3.55, y: 15.3 })
-  const outgoing = chooseAutomaticShot(state)
+  const state = { ...movePlayer(initialTactics(), 3, { x: 3.55, y: 15.3 }), target: { x: 5.375, y: 4.875 }, speed: 16 }
+  const outgoing = { shot: evaluateShot(state) }
   // Moving both opponents too far from this path must not invent a return.
   const unreachable = movePlayer(movePlayer(state, 1, { x: 0.35, y: 9.6 }), 2, { x: 9.65, y: 9.6 })
   assert.equal(possibleReturnContacts(unreachable, outgoing.shot).length, 0)
@@ -287,4 +285,40 @@ test('shot playback preserves pace, bounce timing and a pause between replays', 
   assert.equal(playbackTime(fast, 0), null)
   assert.equal(playbackTime(fast, end + 0.5), null)
   assert.ok(Math.abs(playbackTime(fast, end + 1.3)! - 0.3) < 1e-8)
+})
+
+
+test('deep defenders still invite a wide shot with more room inside the sideline', () => {
+  let state = initialTactics()
+  for (const [id, point] of [[1, { x: 2.3, y: 2.9 }], [2, { x: 7.9, y: 2.2 }], [3, { x: 2.5, y: 16.1 }], [4, { x: 8, y: 12.6 }]] as const) state = movePlayer(state, id, point)
+  const difficult = { ...state, target: { x: 9.375, y: 7.875 }, speed: 12 }
+  const oldTolerance = executionMargin(difficult)
+  const result = chooseAutomaticShot(state)
+  assert.ok(result.shot.valid)
+  assert.ok(result.state.target.x > 7 && result.state.target.x <= 8.75)
+  assert.ok(executionMargin(result.state) > oldTolerance + 0.15)
+  assert.equal(result.state.speed, 12)
+  const mirrored = { ...state, players: state.players.map(p => ({ ...p, x: 10 - p.x, y: 20 - p.y, team: p.team === 'you' ? 'opponents' as const : 'you' as const })) }
+  const reverse = chooseAutomaticShot(mirrored)
+  assert.deepEqual(reverse.state.target, { x: 10 - result.state.target.x, y: 20 - result.state.target.y })
+})
+
+
+test('target colours stay in the attacker perspective and lob pockets use eligible landing cells', async () => {
+  const { coveredIsGood, lobLandingZones } = await import('../src/surfaces/tactics/targetZones.ts')
+  for (const state of [initialTactics(), selectShooter(movePlayer(movePlayer(initialTactics(), 3, { x: 3, y: 12.5 }), 4, { x: 7, y: 12.5 }), 1)]) {
+    const result = chooseAutomaticShot(state)
+    const attackingUpper = result.state.ball.y < 10
+    assert.equal(coveredIsGood(result.state, attackingUpper), true)
+    assert.equal(coveredIsGood(result.state, !attackingUpper), false)
+    const zones = lobLandingZones(result.cells)
+    assert.ok(zones.length > 0)
+    for (const zone of zones) {
+      assert.equal(zone.y < 10, !attackingUpper)
+      const centre = result.cells.find(p => p.x === zone.x && p.y === zone.y)
+      assert.ok((centre?.lobScore ?? 0) >= 70)
+      assert.ok(zone.rx > 0 && zone.ry > 0)
+    }
+  }
+  assert.deepEqual(lobLandingZones([]), [])
 })

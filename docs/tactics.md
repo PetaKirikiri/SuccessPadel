@@ -21,24 +21,30 @@ are visible. Drag players; double-tap or double-click near any player to select 
 shooter and switch attacking sides. The shot starts at the centre of the selected player, whose disc turns lime. Moving the shooter carries the ball. Empty
 court taps never relocate it.
 
-Each player casts a rounded, widening green shadow away from the incoming ball.
-Green consistently means space screened by that half’s players; coral is the
-unscreened space between and in front of those shadows. There is no neutral band,
-colour-strength scale, text label, or legend. Overlapping shadows merge into one
-covered area. The direct shot target is a white bullseye; eligible lob options use
-small curved arrows ending in dashed landing rings, never words or a lob trajectory.
+Each player casts a rounded, widening shadow away from the incoming ball.
+Colours use the selected attack's perspective. On the receiving half, green gaps
+are aim opportunities and coral shadows are defended lanes. On the shooting half,
+green shadows are protected space and coral gaps are exposed. This meaning follows
+the selected shooter when the attacking team changes. There are no zone words.
 
-The shadows are geometric footprints, not a win-probability heatmap. They use tangents
-from the incoming origin to a 1.15 m racket/step footprint, clipped to each player’s
-half. Near contacts reduce the footprint to keep tangent geometry finite. On the
-receiving half, the source is the shooter’s ball. On the shooting half it is the
-earliest reachable return contact; if none exists, the chosen landing point supplies
-orientation only. Coral therefore means unscreened, not that a legal winning reply
-has been predicted. Player numbers are the only visible text.
+Useful lobs cut out small green landing pockets inside otherwise defended shadows;
+white curved arrows and dashed rings distinguish them from direct-shot openings.
+Each pocket is inscribed in cells with a lob score of at least 70. Lobs remain optional
+and never turn the recommended direct line into a shot through a defender.
 
-The automatic direct shot still compares 12/16 m/s drives. Optional 7 m/s lob
-opportunities and the shot-dependent return calculation remain available in the
-model; they no longer paint a multi-category score field on the court.
+The shadows are geometric footprints, not win probabilities. They use tangents from
+the incoming origin to a 1.15 m racket/step footprint, clipped to each player's half.
+On the receiving half the source is the shooter; on the shooting half it is the
+earliest reachable return contact, or the chosen target for orientation if no return
+is reachable. Green is a positional opportunity, not a guarantee of a winning shot.
+
+The automatic direct shot compares 12/16 m/s drives, keeping nominal targets at least
+1.25 m inside each boundary of the receiving half. It perturbs heading by ±0.04 rad,
+launch elevation by ±0.025 rad and power by ±6%, checking 27 combinations against
+the net and landing boundaries. Their average execution margin contributes 15% of
+the recommendation ranking, with the existing opponent-difficulty score contributing
+85%. This keeps useful wide angles while bringing targets away from the lines.
+These tolerances are design assumptions, not calibrated skill ratings.
 
 ## What the heatmap means
 

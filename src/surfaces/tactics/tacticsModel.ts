@@ -223,6 +223,38 @@ export function defensiveSafety(state: TacticsState, contacts: ReturnContact[], 
   return Math.max(localCoverage, laneCoverage)
 }
 
+/** Execution tolerance for a normal rally shot, in bottom-half coordinates.
+ * Perturb heading, launch angle and power together rather than assuming perfect aim.
+ * These are conservative design assumptions, not a measured player skill rating.
+ */
+export function executionMargin(state: TacticsState): number {
+  const { ball, target, speed } = state
+  const length = distance(ball, target), flight = length / speed
+  if (flight <= 0 || target.y >= 10) return 0
+  const vertical = (G * flight * flight / 2 - 1) / flight
+  const elevation = Math.atan2(vertical, speed), heading = Math.atan2(target.y - ball.y, target.x - ball.x)
+  const velocity = Math.hypot(speed, vertical)
+  let total = 0
+  for (const aim of [-0.04, 0, 0.04]) {
+    for (const loft of [-0.025, 0, 0.025]) {
+      for (const power of [0.94, 1, 1.06]) {
+        const horizontal = velocity * power * Math.cos(elevation + loft)
+        const vz = velocity * power * Math.sin(elevation + loft)
+        const vx = horizontal * Math.cos(heading + aim), vy = horizontal * Math.sin(heading + aim)
+        const duration = (vz + Math.sqrt(vz * vz + 2 * G)) / G
+        const x = ball.x + vx * duration, y = ball.y + vy * duration
+        const netTime = (10 - ball.y) / vy
+        if (netTime <= 0 || netTime >= duration) continue
+        const netX = ball.x + vx * netTime
+        const netHeight = 1 + vz * netTime - G * netTime * netTime / 2
+        const clearance = netHeight - (0.88 + 0.04 * Math.abs(netX - 5) / 5)
+        total += clamp(Math.min(x / 0.9, (10 - x) / 0.9, y / 1.2, (10 - y) / 1.2, clearance / 0.18), 0, 1)
+      }
+    }
+  }
+  return total / 27
+}
+
 /** Automatically compare legal landing cells and a small set of realistic shot paces.
  * Normalize to a bottom-half hitter, then transform the entire result back so the
  * selected shooter owns the contact point on either side.
@@ -240,6 +272,7 @@ export function chooseAutomaticShot(input: TacticsState): { state: TacticsState;
   ]
   const cells: HeatCell[] = []
   let best: { state: TacticsState; shot: Shot } | null = null
+  let bestRank = -Infinity
   for (let y = 0.125; y < 10; y += 0.25) {
     for (let x = 0.125; x < 10; x += 0.25) {
       const target = { x, y }
@@ -256,8 +289,13 @@ export function chooseAutomaticShot(input: TacticsState): { state: TacticsState;
           continue
         }
         valid = true; score = Math.max(score, shot.score)
-        if (!best || shot.score > best.shot.score || (shot.score === best.shot.score && shot.margin > best.shot.margin)) {
-          best = { state: candidate, shot }
+        // Keep the useful wide angle, but bring its landing area in from the lines.
+        // Execution tolerance tempers the tactical score without forcing central play.
+        if (Math.min(x, 10 - x, y, 10 - y) < 1.25) continue
+        const tolerance = executionMargin(candidate)
+        const rank = shot.score * 0.85 + tolerance * 15
+        if (!best || rank > bestRank) {
+          best = { state: candidate, shot }; bestRank = rank
         }
       }
       cells.push({ ...target, score, valid, lobScore })
