@@ -38,13 +38,19 @@ On the receiving half the source is the shooter; on the shooting half it is the
 earliest reachable return contact, or the chosen target for orientation if no return
 is reachable. Green is a positional opportunity, not a guarantee of a winning shot.
 
-The automatic direct shot compares 12/16 m/s drives, keeping nominal targets at least
-1.25 m inside each boundary of the receiving half. It perturbs heading by ±0.04 rad,
-launch elevation by ±0.025 rad and power by ±6%, checking 27 combinations against
-the net and landing boundaries. Their average execution margin contributes 15% of
-the recommendation ranking, with the existing opponent-difficulty score contributing
-85%. This keeps useful wide angles while bringing targets away from the lines.
-These tolerances are design assumptions, not calibrated skill ratings.
+The automatic direct shot compares 10/12/14/16 m/s drives, keeping nominal targets
+at least 1.25 m inside the receiving half. From 4 m or more behind the net, the first
+bounce must be at least 3.5 m beyond it: no delicate short-angle recommendation from
+the back. Wide cross-court rally shots remain available when they pass these checks.
+
+Execution tolerance is an eligibility gate, not a small bonus that a winner score
+can override. Heading varies by ±0.04 rad, launch elevation by ±0.025 rad and power by
+±6%. Every one of the 27 combinations must clear the net by at least 12 cm and land
+at least 35 cm inside the receiving half. Among eligible shots, opponent difficulty
+contributes 70% and the worst-case execution margin 30%. Returning a playable rally
+ball is preferable to recommending a precision winner. These are conservative design
+assumptions, not measured player skill levels. A central moderate-paced rally target
+is the fallback if the sampled candidates provide no eligible option.
 
 ## What the heatmap means
 

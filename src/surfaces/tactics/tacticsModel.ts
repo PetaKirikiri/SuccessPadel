@@ -234,7 +234,7 @@ export function executionMargin(state: TacticsState): number {
   const vertical = (G * flight * flight / 2 - 1) / flight
   const elevation = Math.atan2(vertical, speed), heading = Math.atan2(target.y - ball.y, target.x - ball.x)
   const velocity = Math.hypot(speed, vertical)
-  let total = 0
+  let worst = 1
   for (const aim of [-0.04, 0, 0.04]) {
     for (const loft of [-0.025, 0, 0.025]) {
       for (const power of [0.94, 1, 1.06]) {
@@ -244,15 +244,19 @@ export function executionMargin(state: TacticsState): number {
         const duration = (vz + Math.sqrt(vz * vz + 2 * G)) / G
         const x = ball.x + vx * duration, y = ball.y + vy * duration
         const netTime = (10 - ball.y) / vy
-        if (netTime <= 0 || netTime >= duration) continue
+        if (netTime <= 0 || netTime >= duration) return 0
         const netX = ball.x + vx * netTime
         const netHeight = 1 + vz * netTime - G * netTime * netTime / 2
         const clearance = netHeight - (0.88 + 0.04 * Math.abs(netX - 5) / 5)
-        total += clamp(Math.min(x / 0.9, (10 - x) / 0.9, y / 1.2, (10 - y) / 1.2, clearance / 0.18), 0, 1)
+        // Even the least accurate variant must retain some margin, not merely
+        // be averaged away by better outcomes from the same delicate shot.
+        worst = Math.min(worst, (x - 0.35) / 0.65, (9.65 - x) / 0.65,
+          (y - 0.35) / 0.85, (9.65 - y) / 0.85, (clearance - 0.12) / 0.18)
+        if (worst <= 0) return 0
       }
     }
   }
-  return total / 27
+  return clamp(worst, 0, 1)
 }
 
 /** Automatically compare legal landing cells and a small set of realistic shot paces.
@@ -268,7 +272,7 @@ export function chooseAutomaticShot(input: TacticsState): { state: TacticsState;
     players: input.players.map(p => ({ ...p, ...reflect(p), team: p.team === 'you' ? 'opponents' : 'you' })),
   } : input
   const options: { kind: ShotKind; speed: number }[] = [
-    { kind: 'drive', speed: 12 }, { kind: 'drive', speed: 16 }, { kind: 'lob', speed: 7 },
+    { kind: 'drive', speed: 10 }, { kind: 'drive', speed: 12 }, { kind: 'drive', speed: 14 }, { kind: 'drive', speed: 16 }, { kind: 'lob', speed: 7 },
   ]
   const cells: HeatCell[] = []
   let best: { state: TacticsState; shot: Shot } | null = null
@@ -289,11 +293,12 @@ export function chooseAutomaticShot(input: TacticsState): { state: TacticsState;
           continue
         }
         valid = true; score = Math.max(score, shot.score)
-        // Keep the useful wide angle, but bring its landing area in from the lines.
-        // Execution tolerance tempers the tactical score without forcing central play.
+        // From the back, teach a rally ball, not a touch-perfect short angle.
         if (Math.min(x, 10 - x, y, 10 - y) < 1.25) continue
+        if (base.ball.y >= 14 && y > 6.5) continue
         const tolerance = executionMargin(candidate)
-        const rank = shot.score * 0.85 + tolerance * 15
+        if (tolerance <= 0) continue
+        const rank = shot.score * 0.7 + tolerance * 30
         if (!best || rank > bestRank) {
           best = { state: candidate, shot }; bestRank = rank
         }
@@ -302,7 +307,7 @@ export function chooseAutomaticShot(input: TacticsState): { state: TacticsState;
     }
   }
   // A blocked formation still gets its best legal shot, without claiming it is open.
-  const fallback = { ...base, kind: 'drive' as const, speed: 12 }
+  const fallback = { ...base, target: { x: 5, y: 4 }, kind: 'drive' as const, speed: 10 }
   const chosen = best ?? { state: fallback, shot: evaluateShot(fallback) }
   const contacts = possibleReturnContacts(base, chosen.shot)
   for (let y = 10.125; y < 20; y += 0.25) {

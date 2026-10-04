@@ -288,16 +288,16 @@ test('shot playback preserves pace, bounce timing and a pause between replays', 
 })
 
 
-test('deep defenders still invite a wide shot with more room inside the sideline', () => {
+test('execution safety takes priority over a precision winner against deep defenders', () => {
   let state = initialTactics()
   for (const [id, point] of [[1, { x: 2.3, y: 2.9 }], [2, { x: 7.9, y: 2.2 }], [3, { x: 2.5, y: 16.1 }], [4, { x: 8, y: 12.6 }]] as const) state = movePlayer(state, id, point)
   const difficult = { ...state, target: { x: 9.375, y: 7.875 }, speed: 12 }
   const oldTolerance = executionMargin(difficult)
   const result = chooseAutomaticShot(state)
   assert.ok(result.shot.valid)
-  assert.ok(result.state.target.x > 7 && result.state.target.x <= 8.75)
-  assert.ok(executionMargin(result.state) > oldTolerance + 0.15)
-  assert.equal(result.state.speed, 12)
+  assert.ok(result.state.target.y <= 6.5)
+  assert.ok(executionMargin(result.state) > oldTolerance + 0.5)
+  assert.ok(evaluateShot(difficult).score > result.shot.score)
   const mirrored = { ...state, players: state.players.map(p => ({ ...p, x: 10 - p.x, y: 20 - p.y, team: p.team === 'you' ? 'opponents' as const : 'you' as const })) }
   const reverse = chooseAutomaticShot(mirrored)
   assert.deepEqual(reverse.state.target, { x: 10 - result.state.target.x, y: 20 - result.state.target.y })
@@ -321,4 +321,22 @@ test('target colours stay in the attacker perspective and lob pockets use eligib
     }
   }
   assert.deepEqual(lobLandingZones([]), [])
+})
+
+
+test('the reported backcourt position keeps a repeatable cross-court shot instead of the short angle', () => {
+  let state = initialTactics()
+  state = movePlayer(movePlayer(state, 1, { x: 2.8, y: 2.35 }), 2, { x: 7.2, y: 2.35 })
+  const delicate = { ...state, target: { x: 8.625, y: 7.625 }, speed: 12 }
+  assert.ok(evaluateShot(delicate).valid)
+  assert.equal(executionMargin(delicate), 0)
+  const result = chooseAutomaticShot(state)
+  assert.ok(result.state.target.x > 6.5 && result.state.target.x < 8.5)
+  assert.ok(result.state.target.y < 6.5)
+  assert.ok(executionMargin(result.state) >= 0.9)
+  assert.ok(evaluateShot(delicate).score > result.shot.score)
+  for (const point of [{ x: 0.35, y: 10.4 }, { x: 5, y: 10.4 }, { x: 9.65, y: 19.65 }]) {
+    const edge = chooseAutomaticShot(movePlayer(state, 3, point))
+    assert.ok(edge.shot.valid && executionMargin(edge.state) > 0)
+  }
 })
