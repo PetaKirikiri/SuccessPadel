@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { coverageShadows, playerShadow } from '../src/surfaces/tactics/coverageShadows.ts'
 import { test } from 'node:test'
-import { arrivalTime, chooseAutomaticShot, calculateHeatmap, defensiveSafety, evaluateShot, executionMargin, initialTactics, lobOpportunity, movePlayer, selectShooter, possibleReturnContacts, returnFlight } from '../src/surfaces/tactics/tacticsModel.ts'
+import { arrivalTime, backhandPressure, chooseAutomaticShot, calculateHeatmap, defensiveSafety, evaluateShot, executionMargin, initialTactics, lobOpportunity, movePlayer, selectShooter, possibleReturnContacts, returnFlight } from '../src/surfaces/tactics/tacticsModel.ts'
 
 test('a defender on the trajectory closes an otherwise open shot', () => {
   const state = initialTactics()
@@ -339,4 +339,25 @@ test('the reported backcourt position keeps a repeatable cross-court shot instea
     const edge = chooseAutomaticShot(movePlayer(state, 3, point))
     assert.ok(edge.shot.valid && executionMargin(edge.state) > 0)
   }
+})
+
+
+test('outside backhand preference follows handedness without bypassing execution safety', () => {
+  let state = initialTactics()
+  state = movePlayer(state, 1, { x: 2.4, y: 2.2 })
+  state = movePlayer(state, 2, { x: 7.8, y: 2.2 })
+  state = movePlayer(state, 3, { x: 3.9, y: 15.7 })
+  const right = chooseAutomaticShot(state)
+  assert.ok(right.state.target.x > state.players[1].x)
+  assert.ok(right.state.target.y <= 6.5)
+  assert.ok(executionMargin(right.state) > 0.7)
+  assert.ok(backhandPressure(right.state, right.shot) > 0)
+  const leftState = { ...state, players: state.players.map(p => ({ ...p, handedness: 'left' as const })) }
+  // The identical right-side ball is a forehand option for a left-handed receiver.
+  assert.ok(backhandPressure({ ...right.state, players: leftState.players }, right.shot) < 0)
+  const left = chooseAutomaticShot(leftState)
+  assert.ok(left.state.target.x < leftState.players[0].x)
+  assert.ok(executionMargin(left.state) > 0.7)
+  const flipped = { ...state, players: state.players.map(p => ({ ...p, x: 10 - p.x, y: 20 - p.y, team: p.team === 'you' ? 'opponents' as const : 'you' as const })) }
+  assert.deepEqual(chooseAutomaticShot(flipped).state.target, { x: 10 - right.state.target.x, y: 20 - right.state.target.y })
 })

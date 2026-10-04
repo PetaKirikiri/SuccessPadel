@@ -3,7 +3,7 @@
  * No network, React, or session dependencies: this module can be reused independently.
  */
 export type Point = { x: number; y: number }
-export type Player = Point & { id: number; team: 'opponents' | 'you' }
+export type Player = Point & { id: number; team: 'opponents' | 'you'; handedness?: 'right' | 'left' }
 export type ShotKind = 'drive' | 'lob'
 export type TacticsState = {
   players: Player[]; ball: Point; target: Point; hitter: number; ballOwner: number; kind: ShotKind; speed: number
@@ -170,6 +170,33 @@ export function possibleReturnContacts(state: TacticsState, shot: Shot): ReturnC
   return contacts
 }
 
+/** Preference for a backhand contact, not a rule that every backhand is weak.
+ * Bottom-half attack coordinates: a right-handed receiver's backhand is screen-right.
+ * Consider both early receivers so a partner's available forehand can neutralise it.
+ */
+export function backhandPressure(state: TacticsState, shot: Shot): number {
+  const contacts = possibleReturnContacts(state, shot)
+  const earliest = Math.min(...contacts.map(p => p.t))
+  let pressure = 1, outside = 0, found = false
+  const receivers = state.players.filter(p => p.team === 'opponents')
+  for (const player of receivers) {
+    const contact = contacts.filter(p => p.playerId === player.id).sort((a, b) => a.t - b.t)[0]
+    if (!contact || contact.t > earliest + 0.25) continue
+    // High overheads and time to run around the ball aren't forced backhands.
+    const hand = player.handedness === 'left' ? -1 : 1
+    const side = clamp(((contact.x - player.x) * hand - 0.2) / 1.1, -1, 1)
+    const timeToSet = Math.max(0, contact.t - arrivalTime(player, contact))
+    const confidence = clamp(1 - timeToSet / 0.8, 0, 1) * clamp((2.2 - contact.z) / 0.6, 0, 1)
+    pressure = Math.min(pressure, side * confidence)
+    const outerEdge = hand > 0 ? Math.max(...receivers.map(p => p.x)) : Math.min(...receivers.map(p => p.x))
+    outside = Math.max(outside, clamp((state.target.x - outerEdge) * hand / 0.6, 0, 1) * confidence)
+    found = true
+  }
+  // An outside backhand keeps the partner out of the lane; a middle backhand
+  // offers less positional benefit even when that player can take it first.
+  return !found ? 0 : pressure > 0 ? pressure * 0.35 + outside * 0.65 : pressure
+}
+
 /** Return-to-bounce flight. A stretched, sharply redirected ball cannot use the
  * same pace as a balanced volley; low contacts must still clear the net.
  */
@@ -298,7 +325,7 @@ export function chooseAutomaticShot(input: TacticsState): { state: TacticsState;
         if (base.ball.y >= 14 && y > 6.5) continue
         const tolerance = executionMargin(candidate)
         if (tolerance <= 0) continue
-        const rank = shot.score * 0.7 + tolerance * 30
+        const rank = shot.score * 0.7 + tolerance * 30 + backhandPressure(candidate, shot) * 30
         if (!best || rank > bestRank) {
           best = { state: candidate, shot }; bestRank = rank
         }
