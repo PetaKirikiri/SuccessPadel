@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent, PointerEvent } from 'react'
 import { chooseAutomaticShot, distance, initialTactics, movePlayer, selectShooter } from './tacticsModel'
 import type { Point } from './tacticsModel'
-import { courtPoint, courtView, drawCourt, screenPoint } from './drawCourt'
+import { courtPoint, courtView, drawCourt, drawShotPlayback, screenPoint } from './drawCourt'
+import { playbackTime } from './shotPlayback'
 import '../../layouts/tactics.layout.css'
 
 export default function TacticsPage() {
@@ -52,7 +53,37 @@ export default function TacticsPage() {
     return () => observer.disconnect()
   }, [])
   useEffect(() => {
-    if (canvasRef.current) drawCourt(canvasRef.current, automatic.state, automatic.cells, automatic.shot, selected)
+    const canvas = canvasRef.current
+    if (!canvas) return
+    drawCourt(canvas, automatic.state, automatic.cells, automatic.shot, selected)
+    const background = document.createElement('canvas')
+    background.width = canvas.width; background.height = canvas.height
+    background.getContext('2d')?.drawImage(canvas, 0, 0)
+    const ctx = canvas.getContext('2d')
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+    let frame = 0, started = performance.now()
+    function paint(now: number) {
+      if (!canvas || !ctx) return
+      ctx.setTransform(1, 0, 0, 1, 0, 0)
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      ctx.drawImage(background, 0, 0)
+      const time = reducedMotion.matches ? automatic.shot.flight * 0.6 : playbackTime(automatic.shot, (now - started) / 1000)
+      if (time !== null && !selected) drawShotPlayback(canvas, automatic.state, automatic.shot, time)
+      if (!document.hidden && !reducedMotion.matches && !selected) frame = requestAnimationFrame(paint)
+    }
+    function restart() {
+      cancelAnimationFrame(frame)
+      started = performance.now()
+      paint(started)
+    }
+    document.addEventListener('visibilitychange', restart)
+    reducedMotion.addEventListener('change', restart)
+    restart()
+    return () => {
+      cancelAnimationFrame(frame)
+      document.removeEventListener('visibilitychange', restart)
+      reducedMotion.removeEventListener('change', restart)
+    }
   }, [automatic, selected, size])
 
   function move(id: string, point: Point) {
@@ -129,7 +160,7 @@ export default function TacticsPage() {
   }
   return (
     <main className="tactics" aria-label="Padel tactics board">
-      <canvas ref={canvasRef} className="tactics__court" aria-label="Drag the players. Double-tap or double-click near any player to make them the shooter and switch the attacking side. The ball stays attached to the shooter. Green shadows behind each player show the space they cover; coral gaps are unscreened. Curved arrows with dashed landing rings show optional lobs." onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag} onLostPointerCapture={() => { drag.current = null; setSelected('') }} />
+      <canvas ref={canvasRef} className="tactics__court" aria-label="Drag the players. Double-tap or double-click near any player to make them the shooter and switch the attacking side. The ball stays attached to the shooter. Green shadows behind each player show the space they cover; coral gaps are unscreened. Curved arrows with dashed landing rings show optional lobs. The yellow ball replays the shot at its calculated speed; longer trails show faster travel." onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag} onLostPointerCapture={() => { drag.current = null; setSelected('') }} />
       <div className="tactics__accessible-controls">
         {['player-1', 'player-2', 'player-3', 'player-4'].map(id => <button type="button" key={id} onFocus={() => setSelected(id)} onBlur={() => setSelected('')} onKeyDown={e => keyMove(e, id)}>{id.replace('-', ' ')}: use arrow keys to move{id.startsWith('player-') ? '; Enter to select shooter' : ''}</button>)}
       </div>

@@ -1,5 +1,6 @@
 import { COURT, clamp } from './tacticsModel'
 import { coverageShadows } from './coverageShadows'
+import { sampleAtTime } from './shotPlayback'
 import type { HeatCell, Point, Shot, TacticsState } from './tacticsModel'
 
 export type CourtView = { width: number; height: number; scale: number; left: number; top: number; rotated: boolean }
@@ -103,4 +104,38 @@ export function drawCourt(canvas: HTMLCanvasElement, state: TacticsState, cells:
     ctx.strokeStyle = '#103747'; ctx.lineWidth = 2; ctx.stroke()
     ctx.font = `600 ${Math.max(13, radius * 0.95)}px system-ui`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#133536'; ctx.fillText(String(player.id), p.x, p.y + 0.5)
   }
+}
+
+/** Painted over a cached court so animation never reruns the tactical calculation. */
+export function drawShotPlayback(canvas: HTMLCanvasElement, state: TacticsState, shot: Shot, time: number) {
+  const ctx = canvas.getContext('2d')
+  const ball = sampleAtTime(shot, time)
+  if (!ctx || !ball) return
+  const view = courtView(canvas.clientWidth, canvas.clientHeight)
+  const head = screenPoint(ball, view)
+  const source = screenPoint(state.ball, view)
+  // Emerge from inside the shooter without painting over their number.
+  if (Math.hypot(head.x - source.x, head.y - source.y) < clamp(view.scale * 0.52, 22, 28) + 7) return
+  ctx.save()
+  const dpr = canvas.width / canvas.clientWidth
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  ctx.lineCap = 'round'
+  // Equal time histories naturally make fast shots longer and slow shots shorter.
+  const history = 0.12, segments = 12
+  for (let i = 0; i < segments; i++) {
+    const a = sampleAtTime(shot, Math.max(0, time - history + history * i / segments))
+    const b = sampleAtTime(shot, Math.max(0, time - history + history * (i + 1) / segments))
+    if (!a || !b) continue
+    const start = screenPoint(a, view), end = screenPoint(b, view)
+    if (Math.hypot(start.x - source.x, start.y - source.y) < clamp(view.scale * 0.52, 22, 28) + 3) continue
+    ctx.globalAlpha = 0.08 + 0.55 * (i + 1) / segments
+    ctx.lineWidth = 1 + 5 * (i + 1) / segments
+    ctx.strokeStyle = '#fff58a'
+    ctx.beginPath(); ctx.moveTo(start.x, start.y); ctx.lineTo(end.x, end.y); ctx.stroke()
+  }
+  ctx.globalAlpha = 1
+  ring(ctx, head, 7); ctx.fillStyle = '#fff36b'; ctx.fill()
+  ctx.strokeStyle = '#52602c'; ctx.lineWidth = 1.5; ctx.stroke()
+  ring(ctx, { x: head.x - 2, y: head.y - 2 }, 2); ctx.fillStyle = '#fffde0'; ctx.fill()
+  ctx.restore()
 }

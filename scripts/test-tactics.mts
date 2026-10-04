@@ -267,3 +267,24 @@ test('each team projects behind its players and shadows mirror when the shooter 
     assert.ok(Math.abs(mirrored[i].polygon[j].y - (20 - point.y)) < 1e-8)
   }))
 })
+
+test('shot playback preserves pace, bounce timing and a pause between replays', async () => {
+  const { sampleAtTime, playbackTime } = await import('../src/surfaces/tactics/shotPlayback.ts')
+  const state = initialTactics()
+  const slow = evaluateShot({ ...state, speed: 12 }, { x: 5, y: 2 })
+  const fast = evaluateShot({ ...state, speed: 16 }, { x: 5, y: 2 })
+  const slowPoint = sampleAtTime(slow, 0.3)!
+  const fastPoint = sampleAtTime(fast, 0.3)!
+  const travelled = (p: { x: number; y: number }) => Math.hypot(p.x - state.ball.x, p.y - state.ball.y)
+  assert.ok(Math.abs(travelled(fastPoint) / travelled(slowPoint) - 16 / 12) < 1e-8)
+  assert.deepEqual(sampleAtTime(fast, 0), { ...fast.samples[0] })
+  const landing = sampleAtTime(fast, fast.flight)!
+  assert.ok(Math.hypot(landing.x - 5, landing.y - 2) < 1e-8)
+  const beforeBounce = travelled(landing) - travelled(sampleAtTime(fast, fast.flight - 0.02)!)
+  const afterBounce = Math.hypot(sampleAtTime(fast, fast.flight + 0.02)!.x - landing.x, sampleAtTime(fast, fast.flight + 0.02)!.y - landing.y)
+  assert.ok(afterBounce < beforeBounce * 0.8)
+  const end = fast.samples.at(-1)!.t
+  assert.equal(playbackTime(fast, 0), null)
+  assert.equal(playbackTime(fast, end + 0.5), null)
+  assert.ok(Math.abs(playbackTime(fast, end + 1.3)! - 0.3) < 1e-8)
+})

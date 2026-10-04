@@ -93,3 +93,8 @@ Checks interception versus open space, net failures, glass reflection, hitter/ba
 movement, court boundaries, finite heatmaps, automatic selection, and mirrored play. Also run the project build and cycle
 check after routing changes. Browser checks cover dragging, permanent shooter attachment, automatic trajectory changes,
 and viewport fit. No database migrations or deployment are required locally.
+
+The yellow ball continuously replays the calculated trajectory using sample timestamps,
+with a tapered trail that grows with speed and shortens after the bounce. Playback
+pauses while dragging and when hidden; reduced-motion settings show a stationary
+ball and trail. Court rendering is cached between state changes.
