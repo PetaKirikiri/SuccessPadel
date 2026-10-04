@@ -1,6 +1,6 @@
 import { COURT, clamp } from './tacticsModel'
 import { coverageShadows } from './coverageShadows'
-import { sampleAtTime } from './shotPlayback'
+import { ballRadiusAtHeight, sampleAtTime } from './shotPlayback'
 import { coveredIsGood, lobLandingZones } from './targetZones'
 import type { HeatCell, Point, Shot, TacticsState } from './tacticsModel'
 
@@ -121,8 +121,9 @@ export function drawShotPlayback(canvas: HTMLCanvasElement, state: TacticsState,
   const view = courtView(canvas.clientWidth, canvas.clientHeight)
   const head = screenPoint(ball, view)
   const source = screenPoint(state.ball, view)
+  const radius = ballRadiusAtHeight(ball.z)
   // Emerge from inside the shooter without painting over their number.
-  if (Math.hypot(head.x - source.x, head.y - source.y) < clamp(view.scale * 0.52, 22, 28) + 7) return
+  if (Math.hypot(head.x - source.x, head.y - source.y) < clamp(view.scale * 0.52, 22, 28) + radius) return
   ctx.save()
   const dpr = canvas.width / canvas.clientWidth
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
@@ -141,8 +142,8 @@ export function drawShotPlayback(canvas: HTMLCanvasElement, state: TacticsState,
     ctx.beginPath(); ctx.moveTo(start.x, start.y); ctx.lineTo(end.x, end.y); ctx.stroke()
   }
   ctx.globalAlpha = 1
-  ring(ctx, head, 7); ctx.fillStyle = '#fff36b'; ctx.fill()
+  ring(ctx, head, radius); ctx.fillStyle = '#fff36b'; ctx.fill()
   ctx.strokeStyle = '#52602c'; ctx.lineWidth = 1.5; ctx.stroke()
-  ring(ctx, { x: head.x - 2, y: head.y - 2 }, 2); ctx.fillStyle = '#fffde0'; ctx.fill()
+  ring(ctx, { x: head.x - radius * 0.3, y: head.y - radius * 0.3 }, radius * 0.28); ctx.fillStyle = '#fffde0'; ctx.fill()
   ctx.restore()
 }

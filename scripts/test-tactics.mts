@@ -361,3 +361,21 @@ test('outside backhand preference follows handedness without bypassing execution
   const flipped = { ...state, players: state.players.map(p => ({ ...p, x: 10 - p.x, y: 20 - p.y, team: p.team === 'you' ? 'opponents' as const : 'you' as const })) }
   assert.deepEqual(chooseAutomaticShot(flipped).state.target, { x: 10 - right.state.target.x, y: 20 - right.state.target.y })
 })
+
+
+test('ball height grows subtly above the net, shrinks on landing, and caps at lob height', async () => {
+  const { ballRadiusAtHeight, sampleAtTime } = await import('../src/surfaces/tactics/shotPlayback.ts')
+  assert.ok(ballRadiusAtHeight(1.1) > ballRadiusAtHeight(0.95))
+  assert.ok(ballRadiusAtHeight(1.1) < ballRadiusAtHeight(0) * 1.3)
+  assert.equal(ballRadiusAtHeight(-1), ballRadiusAtHeight(0))
+  assert.equal(ballRadiusAtHeight(5), 12)
+  assert.equal(ballRadiusAtHeight(20), 12)
+  const state = initialTactics()
+  const lob = evaluateShot({ ...state, kind: 'lob', speed: 7, target: { x: 5, y: 1 } })
+  const peak = lob.samples.reduce((a, b) => a.z > b.z ? a : b)
+  const landing = sampleAtTime(lob, lob.flight)!
+  assert.ok(ballRadiusAtHeight(peak.z) > ballRadiusAtHeight(1.1))
+  assert.ok(ballRadiusAtHeight(landing.z) < ballRadiusAtHeight(peak.z))
+  const drive = chooseAutomaticShot(state).shot
+  assert.ok(Math.max(...drive.samples.map(p => ballRadiusAtHeight(p.z))) < ballRadiusAtHeight(peak.z))
+})

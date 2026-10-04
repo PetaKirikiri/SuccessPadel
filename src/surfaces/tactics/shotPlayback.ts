@@ -20,3 +20,13 @@ export function playbackTime(shot: Shot, elapsed: number): number | null {
   const time = phase - 0.2
   return time < 0 || time > end ? null : time
 }
+
+
+/** Screen-space size is a height cue, capped at a five-metre lob's size.
+ * Keep net-height changes subtle; use the full range only for genuinely high balls.
+ */
+export function ballRadiusAtHeight(height: number): number {
+  const z = Math.max(0, Math.min(5, height))
+  if (z <= 0.95) return 6 + (z / 0.95) * 1.25
+  return 7.25 + ((z - 0.95) / 4.05) * 4.75
+}

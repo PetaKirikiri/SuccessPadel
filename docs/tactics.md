@@ -119,3 +119,8 @@ The yellow ball continuously replays the calculated trajectory using sample time
 with a tapered trail that grows with speed and shortens after the bounce. Playback
 pauses while dragging and when hidden; reduced-motion settings show a stationary
 ball and trail. Court rendering is cached between state changes.
+
+Ball radius follows the sampled height continuously: 6 px at ground level, 7.25 px
+at net height (0.95 m), and at most 12 px for a 5 m or higher lob. It shrinks as the
+ball falls and grows again after a bounce. Position and speed still follow the same
+trajectory; optional lob cues do not replace the main direct shot.
