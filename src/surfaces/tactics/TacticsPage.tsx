@@ -73,10 +73,13 @@ export default function TacticsPage() {
       void document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(() => {})
     }
     const { screen, point, view } = pointerPoint(event)
-    const candidates = [
-      ...state.players.map(p => ({ id: `player-${p.id}`, point: p, radius: Math.max(22, view.scale * 0.52) })),
-    ]
-    const hit = candidates.find(c => distance(screen, screenPoint(c.point, view)) <= c.radius)
+    // A generous invisible footprint helps fingers grab the piece without covering it.
+    // Choose the nearest centre when footprints overlap, rather than roster order.
+    const radius = Math.max(event.pointerType === 'touch' ? 36 : 28, view.scale * 0.68)
+    const hit = state.players
+      .map(p => ({ id: `player-${p.id}`, point: p, gap: distance(screen, screenPoint(p, view)) }))
+      .filter(p => p.gap <= radius)
+      .sort((a, b) => a.gap - b.gap)[0]
     if (!hit && (point.x < 0 || point.x > 10 || point.y < 0 || point.y > 20)) return
     // Empty court only listens for nearby double-taps; the ball is never draggable.
     const id = hit?.id ?? ''
@@ -87,7 +90,7 @@ export default function TacticsPage() {
   function onPointerMove(event: PointerEvent<HTMLCanvasElement>) {
     if (!drag.current || drag.current.pointer !== event.pointerId) return
     const { point, screen } = pointerPoint(event)
-    if (distance(screen, drag.current.start) > 10) drag.current.moved = true
+    if (distance(screen, drag.current.start) > 4) drag.current.moved = true
     if (!drag.current.moved) return
     move(drag.current.id, { x: point.x + drag.current.offset.x, y: point.y + drag.current.offset.y })
   }
