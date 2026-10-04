@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { coverageShadows, playerShadow } from '../src/surfaces/tactics/coverageShadows.ts'
 import { test } from 'node:test'
-import { arrivalTime, backhandPressure, chooseAutomaticShot, calculateHeatmap, defensiveSafety, evaluateShot, executionMargin, initialTactics, lobOpportunity, movePlayer, selectShooter, possibleReturnContacts, returnFlight } from '../src/surfaces/tactics/tacticsModel.ts'
+import { arrivalTime, backhandPressure, chooseAutomaticShot, calculateHeatmap, defensiveSafety, distance, evaluateShot, executionMargin, initialTactics, lobOpportunity, movePlayer, selectShooter, possibleReturnContacts, returnFlight } from '../src/surfaces/tactics/tacticsModel.ts'
 
 test('a defender on the trajectory closes an otherwise open shot', () => {
   const state = initialTactics()
@@ -360,6 +360,32 @@ test('outside backhand preference follows handedness without bypassing execution
   assert.ok(executionMargin(left.state) > 0.7)
   const flipped = { ...state, players: state.players.map(p => ({ ...p, x: 10 - p.x, y: 20 - p.y, team: p.team === 'you' ? 'opponents' as const : 'you' as const })) }
   assert.deepEqual(chooseAutomaticShot(flipped).state.target, { x: 10 - right.state.target.x, y: 20 - right.state.target.y })
+})
+
+test('recommendations leave room from both receivers instead of feeding a nearby backhand', () => {
+  for (const [leftX, receiverY] of [[2.6, 16.85], [1.5, 16], [3, 14], [4.5, 18]]) {
+    let state = initialTactics()
+    for (const [id, x, y] of [[1, 2.5, 2.2], [2, 7.8, 2.05], [3, leftX, receiverY], [4, 8, receiverY + 0.3]]) {
+      state = movePlayer(state, id, { x, y })
+    }
+    state = selectShooter(state, 1)
+    const receivers = state.players.filter(p => p.team === 'you')
+    if (leftX === 1.5) {
+      // Previous recommendation in this formation landed 1.31 m from player 4.
+      assert.ok(Math.min(...receivers.map(p => distance(p, { x: 6.875, y: 15.625 }))) < 1.4)
+    }
+    const result = chooseAutomaticShot(state)
+    assert.ok(result.shot.valid)
+    assert.equal(result.state.kind, 'drive')
+    assert.ok(receivers.every(p => distance(p, result.state.target) >= 2.5))
+    const reverse = {
+      ...state,
+      players: state.players.map(p => ({ ...p, x: 10 - p.x, y: 20 - p.y, team: p.team === 'you' ? 'opponents' as const : 'you' as const })),
+    }
+    const mirrored = chooseAutomaticShot(reverse)
+    assert.deepEqual(mirrored.state.target, { x: 10 - result.state.target.x, y: 20 - result.state.target.y })
+    assert.ok(executionMargin(mirrored.state) > 0)
+  }
 })
 
 

@@ -47,14 +47,20 @@ Execution tolerance is an eligibility gate, not a small bonus that a winner scor
 can override. Heading varies by ±0.04 rad, launch elevation by ±0.025 rad and power by
 ±6%. Every one of the 27 combinations must clear the net by at least 12 cm and land
 at least 35 cm inside the receiving half. Among eligible shots, opponent difficulty
-contributes 70 points and the worst-case execution margin 30 points. Returning a playable rally
+contributes 70 points and the worst-case execution margin 30 points. Landing space
+adds up to 20 points, increasing from 1.25 m to 4 m from the nearest receiver.
+When an executable target at least 2.5 m from both receivers exists, targets closer
+to either player are excluded from the recommendation. The full flight and rebound
+interception checks still apply: distance at the bounce alone does not make a lane open.
+Returning a playable rally
 ball is preferable to recommending a precision winner. These are conservative design
 assumptions, not measured player skill levels. A central moderate-paced rally target
 is the fallback if the sampled candidates provide no eligible option.
 
 Players default to right-handed. An optional per-player `handedness` model field
 supports left-handed receivers without changing court-side orientation. Up to 30
-ranking points favour an early reachable backhand contact, particularly outside the
+ranking points favour an early reachable backhand contact, scaled by landing space
+so a close backhand cannot outweigh an available gap. This favours the outside of the
 pair rather than in the partner's forehand lane. An available early forehand reply
 neutralises this preference; overhead contact height and time to run around the ball
 reduce it. This is a coaching preference, not a claim that every backhand is weaker.

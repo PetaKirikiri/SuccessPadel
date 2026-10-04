@@ -304,9 +304,16 @@ export function chooseAutomaticShot(input: TacticsState): { state: TacticsState;
   const cells: HeatCell[] = []
   let best: { state: TacticsState; shot: Shot } | null = null
   let bestRank = -Infinity
+  let bestSpace: { state: TacticsState; shot: Shot } | null = null
+  let bestSpaceRank = -Infinity
+  const receivers = base.players.filter(p => p.team === 'opponents')
   for (let y = 0.125; y < 10; y += 0.25) {
     for (let x = 0.125; x < 10; x += 0.25) {
       const target = { x, y }
+      const landingDistance = Math.min(...receivers.map(p => distance(p, target)))
+      // Prefer a genuine gap over a nominal backhand beside a waiting defender.
+      // Space is capped so moving farther away cannot justify an impractical shot.
+      const landingSpace = clamp((landingDistance - 1.25) / 2.75, 0, 1)
       let score = 0, valid = false, lobScore = 0
       for (const option of options) {
         const candidate = { ...base, ...option, target }
@@ -325,9 +332,15 @@ export function chooseAutomaticShot(input: TacticsState): { state: TacticsState;
         if (base.ball.y >= 14 && y > 6.5) continue
         const tolerance = executionMargin(candidate)
         if (tolerance <= 0) continue
-        const rank = shot.score * 0.7 + tolerance * 30 + backhandPressure(candidate, shot) * 30
+        const rank = shot.score * 0.7 + tolerance * 30 + landingSpace * 20
+          + backhandPressure(candidate, shot) * 30 * landingSpace
         if (!best || rank > bestRank) {
           best = { state: candidate, shot }; bestRank = rank
+        }
+        // Close body/feet shots are not the default lesson. Only consider one
+        // when no executable target has this room from BOTH receivers.
+        if (landingDistance >= 2.5 && (!bestSpace || rank > bestSpaceRank)) {
+          bestSpace = { state: candidate, shot }; bestSpaceRank = rank
         }
       }
       cells.push({ ...target, score, valid, lobScore })
@@ -335,7 +348,7 @@ export function chooseAutomaticShot(input: TacticsState): { state: TacticsState;
   }
   // A blocked formation still gets its best legal shot, without claiming it is open.
   const fallback = { ...base, target: { x: 5, y: 4 }, kind: 'drive' as const, speed: 10 }
-  const chosen = best ?? { state: fallback, shot: evaluateShot(fallback) }
+  const chosen = bestSpace ?? best ?? { state: fallback, shot: evaluateShot(fallback) }
   const contacts = possibleReturnContacts(base, chosen.shot)
   for (let y = 10.125; y < 20; y += 0.25) {
     for (let x = 0.125; x < 10; x += 0.25) {
