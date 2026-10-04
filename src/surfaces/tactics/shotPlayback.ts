@@ -22,11 +22,15 @@ export function playbackTime(shot: Shot, elapsed: number): number | null {
 }
 
 
-/** Screen-space size is a height cue, capped at a five-metre lob's size.
- * Keep net-height changes subtle; use the full range only for genuinely high balls.
+/** Perceptual height cue: readable growth on normal drives, easing into a lob cap.
+ * The net is not a size switch; radius changes continuously through its height.
  */
 export function ballRadiusAtHeight(height: number): number {
   const z = Math.max(0, Math.min(5, height))
-  if (z <= 0.95) return 6 + (z / 0.95) * 1.25
-  return 7.25 + ((z - 0.95) / 4.05) * 4.75
+  return 4.5 + 7.5 * Math.sin(z / 5 * Math.PI / 2)
+}
+
+/** A small screen-space lift separates the ball from its ground-contact shadow. */
+export function ballLiftAtHeight(height: number): number {
+  return Math.max(0, Math.min(5, height)) * 4
 }

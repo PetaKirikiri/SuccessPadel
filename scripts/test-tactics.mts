@@ -364,9 +364,13 @@ test('outside backhand preference follows handedness without bypassing execution
 
 
 test('ball height grows subtly above the net, shrinks on landing, and caps at lob height', async () => {
-  const { ballRadiusAtHeight, sampleAtTime } = await import('../src/surfaces/tactics/shotPlayback.ts')
+  const { ballLiftAtHeight, ballRadiusAtHeight, sampleAtTime } = await import('../src/surfaces/tactics/shotPlayback.ts')
   assert.ok(ballRadiusAtHeight(1.1) > ballRadiusAtHeight(0.95))
-  assert.ok(ballRadiusAtHeight(1.1) < ballRadiusAtHeight(0) * 1.3)
+  assert.ok(ballRadiusAtHeight(1.1) < ballRadiusAtHeight(0.95) * 1.1)
+  assert.ok(ballRadiusAtHeight(1.5) > ballRadiusAtHeight(0) * 1.7)
+  assert.equal(ballLiftAtHeight(0), 0)
+  assert.equal(ballLiftAtHeight(20), 20)
+  assert.ok(ballLiftAtHeight(1.5) > ballLiftAtHeight(0.95))
   assert.equal(ballRadiusAtHeight(-1), ballRadiusAtHeight(0))
   assert.equal(ballRadiusAtHeight(5), 12)
   assert.equal(ballRadiusAtHeight(20), 12)

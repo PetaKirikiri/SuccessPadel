@@ -120,7 +120,10 @@ with a tapered trail that grows with speed and shortens after the bounce. Playba
 pauses while dragging and when hidden; reduced-motion settings show a stationary
 ball and trail. Court rendering is cached between state changes.
 
-Ball radius follows the sampled height continuously: 6 px at ground level, 7.25 px
-at net height (0.95 m), and at most 12 px for a 5 m or higher lob. It shrinks as the
-ball falls and grows again after a bounce. Position and speed still follow the same
-trajectory; optional lob cues do not replace the main direct shot.
+Ball radius follows a smooth perceptual height curve: 4.5 px at ground level,
+about 6.7 px at net height, about 7.9 px at a normal drive's 1.5 m apex, and at most
+12 px for a 5 m or higher lob. A small screen-up lift (4 px per metre, capped at
+20 px) separates it from a soft ground shadow. The shorter speed trail follows the
+same height projection. The landing guide is hollow so it does not hide the ball
+shrinking at the bounce. Shot geometry, simulated timing and optional lob cues are
+unchanged; size/lift are visual cues rather than a perspective camera simulation.

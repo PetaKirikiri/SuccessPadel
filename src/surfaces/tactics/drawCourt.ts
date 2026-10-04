@@ -1,6 +1,6 @@
 import { COURT, clamp } from './tacticsModel'
 import { coverageShadows } from './coverageShadows'
-import { ballRadiusAtHeight, sampleAtTime } from './shotPlayback'
+import { ballLiftAtHeight, ballRadiusAtHeight, sampleAtTime } from './shotPlayback'
 import { coveredIsGood, lobLandingZones } from './targetZones'
 import type { HeatCell, Point, Shot, TacticsState } from './tacticsModel'
 
@@ -94,9 +94,9 @@ export function drawCourt(canvas: HTMLCanvasElement, state: TacticsState, cells:
   }
   ctx.setLineDash([])
   const target = screenPoint(state.target, view)
-  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2.5
-  ring(ctx, target, 11); ctx.fillStyle = '#305a63'; ctx.fill(); ctx.stroke()
-  ring(ctx, target, 4); ctx.fillStyle = '#ffffff'; ctx.fill()
+  // A hollow landing guide leaves the actual ball visible as it shrinks at the bounce.
+  ctx.strokeStyle = '#ffffffb3'; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3])
+  ring(ctx, target, 9); ctx.stroke(); ctx.setLineDash([])
   for (const player of state.players) {
     const p = screenPoint(player, view), radius = clamp(s * 0.52, 22, 28)
     const color = state.ballOwner === player.id ? '#efffa3' : player.team === 'you' ? '#edf8ff' : '#ffbd8f'
@@ -119,31 +119,41 @@ export function drawShotPlayback(canvas: HTMLCanvasElement, state: TacticsState,
   const ball = sampleAtTime(shot, time)
   if (!ctx || !ball) return
   const view = courtView(canvas.clientWidth, canvas.clientHeight)
-  const head = screenPoint(ball, view)
+  const ground = screenPoint(ball, view)
+  const head = { x: ground.x, y: ground.y - ballLiftAtHeight(ball.z) }
   const source = screenPoint(state.ball, view)
   const radius = ballRadiusAtHeight(ball.z)
   // Emerge from inside the shooter without painting over their number.
-  if (Math.hypot(head.x - source.x, head.y - source.y) < clamp(view.scale * 0.52, 22, 28) + radius) return
+  if (Math.hypot(ground.x - source.x, ground.y - source.y) < clamp(view.scale * 0.52, 22, 28) + radius) return
   ctx.save()
   const dpr = canvas.width / canvas.clientWidth
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   ctx.lineCap = 'round'
+  // A stable floor reference makes the size change read as height, not inflation.
+  const height = clamp(ball.z, 0, 5)
+  ctx.save()
+  ctx.fillStyle = `rgba(9, 40, 43, ${0.3 - height * 0.035})`
+  ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 1 + height
+  ctx.beginPath(); ctx.ellipse(ground.x, ground.y + 1.5, 4 + height * 0.35, 2 + height * 0.15, 0, 0, Math.PI * 2); ctx.fill()
+  ctx.restore()
   // Equal time histories naturally make fast shots longer and slow shots shorter.
-  const history = 0.12, segments = 12
+  const history = 0.065, segments = 10
   for (let i = 0; i < segments; i++) {
     const a = sampleAtTime(shot, Math.max(0, time - history + history * i / segments))
     const b = sampleAtTime(shot, Math.max(0, time - history + history * (i + 1) / segments))
     if (!a || !b) continue
     const start = screenPoint(a, view), end = screenPoint(b, view)
     if (Math.hypot(start.x - source.x, start.y - source.y) < clamp(view.scale * 0.52, 22, 28) + 3) continue
-    ctx.globalAlpha = 0.08 + 0.55 * (i + 1) / segments
-    ctx.lineWidth = 1 + 5 * (i + 1) / segments
+    start.y -= ballLiftAtHeight(a.z); end.y -= ballLiftAtHeight(b.z)
+    ctx.globalAlpha = 0.04 + 0.3 * (i + 1) / segments
+    ctx.lineWidth = 0.7 + ballRadiusAtHeight(b.z) * 0.48 * (i + 1) / segments
     ctx.strokeStyle = '#fff58a'
     ctx.beginPath(); ctx.moveTo(start.x, start.y); ctx.lineTo(end.x, end.y); ctx.stroke()
   }
   ctx.globalAlpha = 1
-  ring(ctx, head, radius); ctx.fillStyle = '#fff36b'; ctx.fill()
-  ctx.strokeStyle = '#52602c'; ctx.lineWidth = 1.5; ctx.stroke()
-  ring(ctx, { x: head.x - radius * 0.3, y: head.y - radius * 0.3 }, radius * 0.28); ctx.fillStyle = '#fffde0'; ctx.fill()
+  const light = ctx.createRadialGradient(head.x - radius * 0.3, head.y - radius * 0.35, radius * 0.1, head.x, head.y, radius)
+  light.addColorStop(0, '#fffed0'); light.addColorStop(0.4, '#fff36b'); light.addColorStop(1, '#d7d947')
+  ring(ctx, head, radius); ctx.fillStyle = light; ctx.fill()
+  ctx.strokeStyle = '#63723099'; ctx.lineWidth = 1; ctx.stroke()
   ctx.restore()
 }
