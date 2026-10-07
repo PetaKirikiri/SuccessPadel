@@ -59,6 +59,14 @@ html[data-viewport='tablet'] .game-card-courts-grid--single {
   grid-template-rows: minmax(0, 1fr);
 }
 
+/* Rain mode retains its standings beside the courts: stack the two courts in
+   that narrower tablet column so scores and player names do not overlap. */
+html[data-viewport='tablet'] .rain-preview .game-card-courts-grid {
+  grid-template-columns: minmax(0, 1fr);
+  /* Override the legacy inline row count, which assumes two columns. */
+  grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+}
+
 html[data-viewport='tablet'] .game-card-courts-grid > * {
   min-height: 0;
   height: 100%;

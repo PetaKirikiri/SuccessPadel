@@ -358,10 +358,10 @@ export function useGameCardScoring({
     courtsForGame,
     courtIdByLabel,
     matchForCourt:
-      session.kind === 'competition' && session.matchForCourt
+      session.kind !== 'friendly' && session.matchForCourt
         ? session.matchForCourt
         : noopMatchForCourt,
-    canEdit: session.kind === 'competition' ? Boolean(canEdit) : false,
+    canEdit: session.kind !== 'friendly' && session.scoringEnabled ? Boolean(canEdit) : false,
     onSubmitScores: session.kind === 'competition' ? session.onSubmitScores : undefined,
     onSaved,
     playTo: courtPlayTo,
@@ -383,8 +383,8 @@ export function useGameCardScoring({
     return { ...friendlyScoring, canSubmitScores, hasScoring: true }
   }
 
-  if (session.kind === 'competition' && session.scoringEnabled && session.matchForCourt) {
-    return { ...competitionScoring, canSubmitScores: Boolean(session.onSubmitScores), hasScoring: true }
+  if (session.kind !== 'friendly' && session.scoringEnabled && session.matchForCourt) {
+    return { ...competitionScoring, canSubmitScores: session.kind === 'competition' && Boolean(session.onSubmitScores), hasScoring: true }
   }
 
   return {

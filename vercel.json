@@ -32,8 +32,8 @@
     { "source": "/competitions/:eventId/", "destination": "/api/competition-share?eventId=:eventId" },
     { "source": "/competitions/:eventId/join", "destination": "/api/competition-share?eventId=:eventId" },
     { "source": "/competitions/:eventId/join/", "destination": "/api/competition-share?eventId=:eventId" },
-    { "source": "/rain-mode", "destination": "/rain-mode/index.html" },
-    { "source": "/rain-mode/", "destination": "/rain-mode/index.html" },
+    { "source": "/rain-mode", "destination": "/index.html" },
+    { "source": "/rain-mode/", "destination": "/index.html" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

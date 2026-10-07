@@ -24,6 +24,7 @@ import { ResetPassword } from './ResetPassword'
 import { MembersPage } from './MembersPage'
 import { CameraScoreTrackerShell } from '../components/CameraScoreTracker'
 import { OfflineSoloCompetition } from '../surfaces/offline-competition/OfflineSoloCompetition'
+const RainModePreview = lazy(() => import('../surfaces/rain-test/RainModePreview'))
 const TacticsPage = lazy(() => import('../surfaces/tactics/TacticsPage'))
 
 function GestureScoreCourtLoading() {
@@ -88,6 +89,8 @@ function FriendlySessionEditRoute() {
 function MainAppRoutes() {
   return (
     <Routes>
+      <Route path="/rain-mode" element={<Suspense fallback={null}><RainModePreview /></Suspense>} />
+      <Route path="/rain-test" element={<Navigate to="/rain-mode" replace />} />
       <Route path="/offline-tonight" element={<OfflineSoloCompetition />} />
       <Route path="/login/login" element={<Navigate to="/login" replace />} />
       <Route path="/link" element={null} />

@@ -1,0 +1,87 @@
+/* Temporary preview only. No shared game-card layout overrides. */
+html:is([data-viewport='mobile'], [data-viewport='tablet'], [data-viewport='web'], [data-viewport='tv']) {
+  .rain-preview { display: flex; flex-direction: column; gap: 12px; width: 100%; height: var(--app-height, 100dvh); min-height: 0; padding: 14px; overflow: auto; color: #f2f8ff; background: #0b2945; }
+  .rain-preview__header { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+  .rain-preview__back { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; color: #b8d4e9; background: #173c5b; flex-shrink: 0; }
+  .rain-preview__weather { width: 42px; height: 42px; color: #7dd3fc; flex-shrink: 0; }
+  .rain-preview__title { flex: 1; min-width: 0; }
+  .rain-preview__title h1 { margin: 0; font-size: 27px; font-weight: 800; }
+  .rain-preview__title h1 span { margin-left: 8px; font-size: 12px; font-weight: 600; color: #a9c4d8; vertical-align: middle; }
+  .rain-preview__title p { margin: 2px 0 0; color: #adc7db; font-size: 14px; }
+  .rain-preview__rule { display: flex; align-items: center; gap: 10px; color: #6ee7bb; font-size: 19px; }
+  .rain-preview__board { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 25%); gap: 14px; flex: 1; min-height: 0; }
+  .rain-preview__play { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; }
+  .rain-preview__courts { display: flex; flex: 1; min-width: 0; min-height: 0; }
+  .rain-preview__leaderboard { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: auto; border: 1px solid #365b77; border-radius: 14px; background: #12375a; }
+  .rain-preview__leaderboard ol > li { flex: 1 0 38px; max-height: none; }
+  .rain-preview__rest { display: flex; flex-direction: column; flex-shrink: 0; min-height: 0; padding: 12px 16px; border: 1px solid #b38a42; border-radius: 14px; background: #243b48; }
+  .rain-preview__rest-heading { display: flex; gap: 14px; align-items: center; color: #ffcf78; }
+  .rain-preview__rest-heading > svg { width: 24px; height: 24px; flex-shrink: 0; }
+  .rain-preview__rest-heading > div { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; }
+  .rain-preview__rest-heading h2 { margin: 0; font-size: 20px; font-weight: 800; }
+  .rain-preview__rest-heading p { margin: 0; font-size: 13px; color: #d9c8a7; }
+  .rain-preview__rest-players { list-style: none; margin: 8px 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; min-height: 0; }
+  .rain-preview__rest-players li { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .rain-preview__rest-players strong { font-size: clamp(15px, 1.3vw, 22px); overflow-wrap: anywhere; line-height: 1.15; }
+  .rain-preview__avatar { display: flex; align-items: center; justify-content: center; width: clamp(32px, 3vw, 48px); height: clamp(32px, 3vw, 48px); border-radius: 50%; object-fit: cover; flex-shrink: 0; background: #36516a; color: #fff; }
+  .rain-preview__return { display: flex; align-items: center; gap: 8px; color: #ffcf78; font-size: 13px; }
+  .rain-preview__return svg { flex-shrink: 0; }
+  .rain-preview__rounds { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 8px; flex-shrink: 0; }
+  .rain-preview__rounds button { display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 58px; padding: 8px 4px; border-radius: 10px; border: 1px solid #365b77; background: #102f4c; color: #d0e5f4; cursor: pointer; }
+  .rain-preview__rounds button span { font-size: 13px; }
+  .rain-preview__rounds button[aria-current='step'] { background: #7dd3fc; color: #08253d; border-color: #7dd3fc; }
+  .rain-preview__rounds button:hover { border-color: #7dd3fc; }
+  .rain-preview__rounds button:focus-visible, .rain-preview__back:focus-visible { outline: 3px solid #ffcf78; outline-offset: 2px; }
+  .rain-preview__footer { display: flex; justify-content: space-between; gap: 12px; color: #9bb5ca; font-size: 12px; flex-shrink: 0; }
+  .rain-preview__notice { margin: auto; padding: 24px; }
+  .rain-preview__conflict { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; color: #ffcf78; }
+  .rain-preview__conflict button, .rain-preview__footer button { border: 1px solid #7dd3fc; border-radius: 6px; padding: 4px 8px; background: #12375a; color: #fff; cursor: pointer; }
+}
+
+html[data-viewport='mobile'] {
+  .rain-preview { padding: 10px; }
+  .rain-preview__header { flex-wrap: wrap; gap: 8px; }
+  .rain-preview__weather { width: 30px; height: 30px; }
+  .rain-preview__title h1 { font-size: 22px; }
+  .rain-preview__title p { font-size: 12px; }
+  .rain-preview__rule { flex-basis: 100%; margin-left: 52px; font-size: 15px; }
+  .rain-preview__board { display: flex; flex-direction: column; flex: none; }
+  .rain-preview__courts { flex-direction: column; }
+  .rain-preview__leaderboard { min-height: 540px; }
+  .rain-preview__rest { padding: 14px; }
+  .rain-preview__rest-heading h2 { font-size: 22px; }
+  .rain-preview__rest-players { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto auto; gap: 8px; }
+  .rain-preview__rest-players li { gap: 8px; }
+  .rain-preview__rest-players strong { font-size: 16px; }
+  .rain-preview__rounds { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .rain-preview__footer { flex-direction: column; gap: 4px; }
+}
+
+html[data-viewport='tablet'] {
+  .rain-preview__board { grid-template-columns: minmax(0, 1fr) 280px; min-height: 650px; }
+  .rain-preview__rule { font-size: 15px; }
+  .rain-preview__rest { padding: 14px; }
+}
+
+html[data-viewport='web'] {
+  /* Short windows scroll instead of hiding the second player in each team. */
+  .rain-preview__board { min-height: 600px; }
+}
+
+html[data-viewport='tv'] {
+  .rain-preview__board { min-height: 650px; }
+  .rain-preview { padding: 18px; gap: 16px; }
+  .rain-preview__title h1 { font-size: 34px; }
+  .rain-preview__title p { font-size: 18px; }
+  .rain-preview__rule { font-size: 26px; }
+  .rain-preview__rounds button { min-height: 72px; font-size: 20px; }
+  .rain-preview__rounds button span { font-size: 16px; }
+  .rain-preview__footer { font-size: 14px; }
+}
+
+html[data-viewport='tv'] .rain-preview__courts .game-card-court-player__name {
+  font-size: clamp(22px, 2vw, 38px);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+}

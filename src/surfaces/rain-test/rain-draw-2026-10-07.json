@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "competitionId": "a1ac8c3a-86f7-4936-b49c-829bd6c88953",
+  "date": "2026-10-07",
+  "timezone": "Asia/Bangkok",
+  "source": "Exact rendered rain-test draw captured before freezing; no reshuffle",
+  "courtLabels": ["Court 3", "Court 4"],
+  "courtIds": ["rain-court-1", "rain-court-2"],
+  "players": [
+    {"name":"Beat","rosterId":"73ec71ff-9c51-46d1-a90e-6cdafbaab105"},
+    {"name":"Adrian","rosterId":"a9c4d252-89dc-4acb-a9cb-53676653fdd1"},
+    {"name":"Mathias","rosterId":"72cf36b5-deb3-4d07-85c4-d17418f827a2","id":"c7696759-3b53-4328-99c5-16f512a7011d","avatarUrl":"https://bknorpjoyxucrihnpyda.supabase.co/storage/v1/object/public/avatars/c7696759-3b53-4328-99c5-16f512a7011d/avatar.jpg?v=1790385089317"},
+    {"name":"Tidtee","rosterId":"e5688a40-e30f-41e4-8bd1-3ba1d8270718","id":"6795364e-4f6a-44f0-90df-2a32d4073989","avatarUrl":"https://profile.line-scdn.net/0hprzAuuMgL11XOD5n-z1RIidoLDd0SXZPelZhP2FqJWQ-CWFZcwlgaGtscGRsXWkCe1gzbGo8eDhbK1g7SW7TaVAIcmxqCWoLe1ppuA"},
+    {"name":"Thida","rosterId":"2f113b93-57c5-4d9d-aeb5-41e9262a60a5","id":"c60eb29a-c9ec-4c26-a44a-0216263203de","avatarUrl":"https://profile.line-scdn.net/0hQNDRVTz0DmFpKxAdSSJwXxl7DQtKWldzERpFUAstUVlRTBswQURAD1wtBAZXHE9gQRkSBw94U1RLQU5-QjRHWilrUA86XyhDEQkKUghFCxNUR0lZWSobUyEjNC0pTTs3JDkfUjtQCBkKRQo_JTMDTABCIiw_Wg1kNnxiN2wZYOIGKXk0RE1ABVwrVFjX"},
+    {"name":"Bex","rosterId":"153c4454-929c-4690-b122-8fedf810d438"},
+    {"name":"Becky","rosterId":"d4b4e968-c246-4194-aaee-59fac4172393"},
+    {"name":"Bas","rosterId":"af1558ac-0169-4059-8622-5aae01af93dc","id":"97a6d872-edd8-45d9-86ba-762155d1a29c","avatarUrl":"https://bknorpjoyxucrihnpyda.supabase.co/storage/v1/object/public/avatars/97a6d872-edd8-45d9-86ba-762155d1a29c/avatar.jpg?v=1791369483562"},
+    {"name":"Puu","rosterId":"6b6b7c5e-d990-4f20-8914-21e2ff3d1e6b"},
+    {"name":"Nart Laemdin","rosterId":"2ae69145-9438-4a15-b304-15058da413ed"},
+    {"name":"Run","rosterId":"191b52e5-e739-4364-b37a-afb1de5e3af0"},
+    {"name":"Nart Bonkai","rosterId":"a33435ee-5402-48d9-9b15-9af4f32b29e7"}
+  ],
+  "rounds": [
+    {"startsAt":"18:15","endsAt":"18:25","courts":[[["Beat","Thida"],["Adrian","Bex"]],[["Mathias","Becky"],["Tidtee","Bas"]]],"resting":["Puu","Nart Laemdin","Run","Nart Bonkai"]},
+    {"startsAt":"18:25","endsAt":"18:35","courts":[[["Thida","Puu"],["Bex","Nart Laemdin"]],[["Becky","Run"],["Bas","Nart Bonkai"]]],"resting":["Beat","Adrian","Mathias","Tidtee"]},
+    {"startsAt":"18:35","endsAt":"18:45","courts":[[["Beat","Puu"],["Adrian","Nart Laemdin"]],[["Mathias","Run"],["Tidtee","Nart Bonkai"]]],"resting":["Thida","Bex","Becky","Bas"]},
+    {"startsAt":"18:45","endsAt":"18:55","courts":[[["Mathias","Bas"],["Tidtee","Thida"]],[["Beat","Bex"],["Adrian","Becky"]]],"resting":["Puu","Nart Laemdin","Run","Nart Bonkai"]},
+    {"startsAt":"18:55","endsAt":"19:05","courts":[[["Becky","Nart Bonkai"],["Bas","Puu"]],[["Thida","Nart Laemdin"],["Bex","Run"]]],"resting":["Beat","Adrian","Mathias","Tidtee"]},
+    {"startsAt":"19:05","endsAt":"19:15","courts":[[["Mathias","Nart Bonkai"],["Tidtee","Puu"]],[["Beat","Nart Laemdin"],["Adrian","Run"]]],"resting":["Thida","Bex","Becky","Bas"]},
+    {"startsAt":"19:15","endsAt":"19:25","courts":[[["Beat","Becky"],["Adrian","Bas"]],[["Mathias","Thida"],["Tidtee","Bex"]]],"resting":["Puu","Nart Laemdin","Run","Nart Bonkai"]},
+    {"startsAt":"19:25","endsAt":"19:35","courts":[[["Thida","Run"],["Bex","Nart Bonkai"]],[["Becky","Puu"],["Bas","Nart Laemdin"]]],"resting":["Beat","Adrian","Mathias","Tidtee"]},
+    {"startsAt":"19:35","endsAt":"19:45","courts":[[["Beat","Run"],["Adrian","Nart Bonkai"]],[["Mathias","Puu"],["Tidtee","Nart Laemdin"]]],"resting":["Thida","Bex","Becky","Bas"]}
+  ]
+}

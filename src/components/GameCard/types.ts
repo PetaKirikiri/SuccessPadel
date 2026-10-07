@@ -59,7 +59,8 @@ export type GameCardPreviewSession = {
   courtsForGame: LiveCourt[]
   courtIdByLabel?: Map<string, string>
   matchForCourt?: MatchForCourt
-  scoringEnabled: false
+  /** Opt-in local scoring; persistence must be supplied by the preview caller. */
+  scoringEnabled: boolean
 }
 
 export type GameCardSession =
