@@ -6,6 +6,8 @@ import type { GameCardSession } from '../../components/GameCard/types'
 import { useTranslation } from '../../hooks/useTranslation'
 import { PlayerAvatar } from '../../shared/ProfilePhoto/PlayerAvatar'
 import type { RainRound } from './rainSchedule'
+import savedDraw from './rain-draw-2026-10-07.json'
+import { rainCountdown } from './rainCountdown'
 import { loadFrozenRainDraw, RAIN_COMPETITION_ID, RAIN_COURT_IDS } from './frozenRainDraw'
 import { rainScoreKey } from './rainScores'
 import { useRainScores } from './useRainScores'
@@ -21,6 +23,11 @@ export default function RainModePreview() {
   const [rounds, setRounds] = useState<RainRound[]>([])
   const [error, setError] = useState('')
   const [selected, setSelected] = useState(0)
+  const [clock, setClock] = useState(Date.now)
+  useEffect(() => {
+    const interval = window.setInterval(() => setClock(Date.now()), 1000)
+    return () => window.clearInterval(interval)
+  }, [])
   const { scores, ready, status: saveStatus, saveScore, retry, conflicts, resolve, onlineScore } = useRainScores()
 
   useEffect(() => {
@@ -34,6 +41,7 @@ export default function RainModePreview() {
 
   const round = rounds[selected]
   const next = rounds[selected + 1]
+  const timer = round ? rainCountdown(savedDraw.date, round.startsAt, round.endsAt, clock, next?.startsAt) : null
   const previewSession: GameCardSession = {
     kind: 'preview', courtsForGame: [], courtIdByLabel: RAIN_COURT_IDS,
     gameRoundId: `rain-round-${selected + 1}`, scoringEnabled: ready,
@@ -53,7 +61,8 @@ export default function RainModePreview() {
           <section className="rain-preview__courts" aria-label={`Game ${selected + 1}: eight players on court`}>
             <GameCard key={round.game.gameNumber} game={round.game} session={previewSession}
               displayTimeLabel={round.game.timeLabel} scoreUnit="games" finished={false}
-              isLiveNow={false} isCurrentGame={false} countdownLabelText="" collapsed={false}
+              isLiveNow={timer?.live ?? false} isCurrentGame={timer?.live ?? false}
+              countdown={timer?.value} countdownLabelText={timer?.label ?? ''} collapsed={false}
               onToggleCollapsed={keepExpanded} t={t}
               canEdit={ready} onCompetitionCourtGamesSaved={saveScore}
               tvNav={{ onPrev: () => setSelected(index => Math.max(0, index - 1)), onNext: () => setSelected(index => Math.min(rounds.length - 1, index + 1)), atStart: selected === 0, atEnd: selected === rounds.length - 1 }} />
