@@ -3,7 +3,7 @@ import type { GameRow } from '../../lib/competitionCourtBoard'
 
 export const RAIN_START_MINUTES = 18 * 60 + 15
 export const RAIN_GAME_MINUTES = 10
-export const RAIN_CHANGEOVER_SECONDS = 105
+export const RAIN_CHANGEOVER_SECONDS = 60
 export const RAIN_ROUNDS = 9
 
 export type RainRound = {
