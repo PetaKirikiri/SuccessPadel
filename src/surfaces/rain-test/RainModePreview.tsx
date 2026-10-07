@@ -8,6 +8,7 @@ import { PlayerAvatar } from '../../shared/ProfilePhoto/PlayerAvatar'
 import type { RainRound } from './rainSchedule'
 import savedDraw from './rain-draw-2026-10-07.json'
 import { rainCountdown } from './rainCountdown'
+import { readRainViewedGame, saveRainViewedGame } from './rainViewedGame'
 import { loadFrozenRainDraw, RAIN_COMPETITION_ID, RAIN_COURT_IDS } from './frozenRainDraw'
 import { rainScoreKey } from './rainScores'
 import { useRainScores } from './useRainScores'
@@ -22,7 +23,7 @@ export default function RainModePreview() {
   const { t } = useTranslation()
   const [rounds, setRounds] = useState<RainRound[]>([])
   const [error, setError] = useState('')
-  const [selected, setSelected] = useState(0)
+  const [selected, setSelected] = useState(() => readRainViewedGame(COMPETITION_ID, savedDraw.rounds.length))
   const [clock, setClock] = useState(Date.now)
   useEffect(() => {
     const interval = window.setInterval(() => setClock(Date.now()), 1000)
@@ -40,6 +41,9 @@ export default function RainModePreview() {
   }, [])
 
   const round = rounds[selected]
+  useEffect(() => {
+    if (round) saveRainViewedGame(COMPETITION_ID, selected, rounds.length)
+  }, [round, selected, rounds.length])
   const next = rounds[selected + 1]
   const timer = round ? rainCountdown(savedDraw.date, round.startsAt, round.endsAt, clock, next?.startsAt) : null
   const previewSession: GameCardSession = {
