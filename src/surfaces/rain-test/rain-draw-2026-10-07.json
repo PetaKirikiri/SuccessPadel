@@ -23,12 +23,12 @@
   "rounds": [
     {"startsAt":"18:15","endsAt":"18:25","courts":[[["Beat","Thida"],["Adrian","Bex"]],[["Mathias","Becky"],["Tidtee","Bas"]]],"resting":["Puu","Nart Laemdin","Run","Nart Bonkai"]},
     {"startsAt":"18:26:45","endsAt":"18:36:45","courts":[[["Thida","Puu"],["Bex","Nart Laemdin"]],[["Becky","Run"],["Bas","Nart Bonkai"]]],"resting":["Beat","Adrian","Mathias","Tidtee"]},
-    {"startsAt":"18:38:30","endsAt":"18:48:30","courts":[[["Beat","Puu"],["Adrian","Nart Laemdin"]],[["Mathias","Run"],["Tidtee","Nart Bonkai"]]],"resting":["Thida","Bex","Becky","Bas"]},
-    {"startsAt":"18:50:15","endsAt":"19:00:15","courts":[[["Mathias","Bas"],["Tidtee","Thida"]],[["Beat","Bex"],["Adrian","Becky"]]],"resting":["Puu","Nart Laemdin","Run","Nart Bonkai"]},
-    {"startsAt":"19:02","endsAt":"19:12","courts":[[["Becky","Nart Bonkai"],["Bas","Puu"]],[["Thida","Nart Laemdin"],["Bex","Run"]]],"resting":["Beat","Adrian","Mathias","Tidtee"]},
-    {"startsAt":"19:13:45","endsAt":"19:23:45","courts":[[["Mathias","Nart Bonkai"],["Tidtee","Puu"]],[["Beat","Nart Laemdin"],["Adrian","Run"]]],"resting":["Thida","Bex","Becky","Bas"]},
-    {"startsAt":"19:25:30","endsAt":"19:35:30","courts":[[["Beat","Becky"],["Adrian","Bas"]],[["Mathias","Thida"],["Tidtee","Bex"]]],"resting":["Puu","Nart Laemdin","Run","Nart Bonkai"]},
-    {"startsAt":"19:37:15","endsAt":"19:47:15","courts":[[["Thida","Run"],["Bex","Nart Bonkai"]],[["Becky","Puu"],["Bas","Nart Laemdin"]]],"resting":["Beat","Adrian","Mathias","Tidtee"]},
-    {"startsAt":"19:49","endsAt":"19:59","courts":[[["Beat","Run"],["Adrian","Nart Bonkai"]],[["Mathias","Puu"],["Tidtee","Nart Laemdin"]]],"resting":["Thida","Bex","Becky","Bas"]}
+    {"startsAt":"18:46:48","endsAt":"18:56:48","courts":[[["Beat","Puu"],["Adrian","Nart Laemdin"]],[["Mathias","Run"],["Tidtee","Nart Bonkai"]]],"resting":["Thida","Bex","Becky","Bas"]},
+    {"startsAt":"18:58:33","endsAt":"19:08:33","courts":[[["Mathias","Bas"],["Tidtee","Thida"]],[["Beat","Bex"],["Adrian","Becky"]]],"resting":["Puu","Nart Laemdin","Run","Nart Bonkai"]},
+    {"startsAt":"19:10:18","endsAt":"19:20:18","courts":[[["Becky","Nart Bonkai"],["Bas","Puu"]],[["Thida","Nart Laemdin"],["Bex","Run"]]],"resting":["Beat","Adrian","Mathias","Tidtee"]},
+    {"startsAt":"19:22:03","endsAt":"19:32:03","courts":[[["Mathias","Nart Bonkai"],["Tidtee","Puu"]],[["Beat","Nart Laemdin"],["Adrian","Run"]]],"resting":["Thida","Bex","Becky","Bas"]},
+    {"startsAt":"19:33:48","endsAt":"19:43:48","courts":[[["Beat","Becky"],["Adrian","Bas"]],[["Mathias","Thida"],["Tidtee","Bex"]]],"resting":["Puu","Nart Laemdin","Run","Nart Bonkai"]},
+    {"startsAt":"19:45:33","endsAt":"19:55:33","courts":[[["Thida","Run"],["Bex","Nart Bonkai"]],[["Becky","Puu"],["Bas","Nart Laemdin"]]],"resting":["Beat","Adrian","Mathias","Tidtee"]},
+    {"startsAt":"19:57:18","endsAt":"20:07:18","courts":[[["Beat","Run"],["Adrian","Nart Bonkai"]],[["Mathias","Puu"],["Tidtee","Nart Laemdin"]]],"resting":["Thida","Bex","Becky","Bas"]}
   ]
 }

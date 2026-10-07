@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto'
 export function lockedRainSeedSql() {
   const draw = JSON.parse(readFileSync(new URL('../src/surfaces/rain-test/rain-draw-2026-10-07.json', import.meta.url), 'utf8'))
   const contentHash = createHash('sha256').update(JSON.stringify({ players: draw.players.map(p => [p.name, p.rosterId]), courtLabels: draw.courtLabels, courtIds: draw.courtIds, rounds: draw.rounds })).digest('hex')
-  if (contentHash !== 'c97c35bc959e3b5e73c27fdc72fd96224641dc5ec941abb42e05a66caf7aa1f5') throw new Error('Refusing to seed a changed draw')
+  if (contentHash !== '3430ceae195231c2663071c76d73fecea8e8f21d381c0e2cbdfeb54262e36e90') throw new Error('Refusing to seed a changed draw')
   // Preserve the original score-ledger identity after the approved timing amendment.
   const fingerprint = 'acdca2fd5eeca552f1da8558689f990f91bca9ae22e60ea85215ab1cef5dcdc0'
   const literal = JSON.stringify(draw).replaceAll("'", "''")
