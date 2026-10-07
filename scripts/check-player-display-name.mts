@@ -14,6 +14,20 @@ for (const [raw, expected] of [
 ]) assert.equal(playerDisplayName(raw), expected)
 assert.equal(firstDisplayName('🎾 Tidtee 🌸'), 'Tidtee')
 assert.deepEqual(compactDisplayNames(['🎾 Tidtee', 'David M 👏']), ['Tidtee', 'David M'])
+for (const name of [
+  'Nart Laemdin', 'Nart Bonkai', 'P’Nart Laemdin', "P'Nart Bonkai",
+  'P’ Nart Bonkai', 'P‘Nart Laemdin', 'PʼNart Bonkai',
+]) {
+  assert.equal(firstDisplayName(name), name)
+  // Court cards compact each name independently, not against the whole roster.
+  assert.deepEqual(compactDisplayNames([name]), [name])
+}
+assert.deepEqual(compactDisplayNames(['🎾 P’Nart   Bonkai', 'P’Nart Laemdin 👑']),
+  ['P’Nart Bonkai', 'P’Nart Laemdin'])
+assert.deepEqual(compactDisplayNames(['Bex', 'Bas', 'Anna Smith', 'David M', 'G Federle']),
+  ['Bex', 'Bas', 'Anna', 'David M', 'G Federle'], 'Other compact names stay unchanged')
+assert.deepEqual(compactDisplayNames(['Run', 'Thida', 'Nart Laemdin', 'Nart Bonkai']),
+  ['Run', 'Thida', 'Nart Laemdin', 'Nart Bonkai'])
 assert.equal(clubDisplayName(PETER_P_PROFILE_ID, 'Peter 🎾'), 'Peter P')
 assert.equal(clubDisplayName(null, '🌸 Tidtee'), 'Tidtee')
 assert.equal(clubDisplayNameFromLine(null, '🌸 Tidtee'), '🌸 Tidtee', 'LINE ingestion stays unchanged')

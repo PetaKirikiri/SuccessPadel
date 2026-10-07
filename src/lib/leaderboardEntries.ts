@@ -46,16 +46,22 @@ function isNumberedPlayerLabel(name: string): boolean {
   return /^Player\s+\S+$/i.test(name.trim())
 }
 
+/** These club labels distinguish two members, including on separate courts. */
+function isDistinctClubLabel(name: string): boolean {
+  // Keep the distinguishing location with or without the roster's Thai honorific.
+  return /^(?:P\s*['’‘ʼ]\s*)?Nart (Laemdin|Bonkai)$/i.test(name)
+}
+
 export function firstDisplayName(fullName: string | null | undefined): string {
   const trimmed = playerDisplayName(fullName)
-  if (isNumberedPlayerLabel(trimmed)) return trimmed
+  if (isNumberedPlayerLabel(trimmed) || isDistinctClubLabel(trimmed)) return trimmed
   const tokens = trimmed.split(/\s+/).filter(Boolean)
   return tokens[0] ?? 'Player'
 }
 
 function nameTokens(fullName: string): { first: string } {
   const trimmed = playerDisplayName(fullName)
-  if (isNumberedPlayerLabel(trimmed)) return { first: trimmed }
+  if (isNumberedPlayerLabel(trimmed) || isDistinctClubLabel(trimmed)) return { first: trimmed }
   const tokens = trimmed.split(/\s+/).filter(Boolean)
   // A one-letter first token is an initial, not a usable first name. Keep the
   // supplied roster label (for example "G Federle") intact in compact views.
