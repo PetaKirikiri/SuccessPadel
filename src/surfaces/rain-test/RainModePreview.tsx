@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, CloudRain, Armchair, Repeat2 } from 'lucide-react'
+import { ArrowLeft, Armchair, Repeat2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { GameCard } from '../../components/GameCard'
 import type { GameCardSession } from '../../components/GameCard/types'
@@ -55,9 +55,14 @@ export default function RainModePreview() {
     <main className="rain-preview">
       <header className="rain-preview__header">
         <Link className="rain-preview__back" to={`/competitions/${COMPETITION_ID}`} aria-label="Back to competition"><ArrowLeft /></Link>
-        <CloudRain className="rain-preview__weather" aria-hidden="true" />
-        <div className="rain-preview__title"><h1>Rain mode</h1><p>Wed 7 Oct · 18:15 start · 2 courts · 10-minute games · 1-minute changeovers</p></div>
-        <div className="rain-preview__rule"><Repeat2 aria-hidden="true" /><strong>Play 2 · Rest 1</strong></div>
+        <img className="rain-preview__logo" src="/brand/logo-padel.webp" alt="Success Padel" />
+        <div className="rain-preview__sky" aria-hidden="true">
+          {[0, 1, 2].map(cloud => <svg key={cloud} className="rain-preview__cloud" viewBox="0 0 120 80" focusable="false">
+            <path className="rain-preview__cloud-body" d="M24 44a14 14 0 0 1-1-28 22 22 0 0 1 42-5 17 17 0 0 1 28 14 10 10 0 0 1-1 20Z" />
+            <g className="rain-preview__drops"><path d="m30 52-5 10m27-10-5 10m27-10-5 10m27-10-5 10" /></g>
+            <g className="rain-preview__drops rain-preview__drops--second"><path d="m39 49-5 10m27-10-5 10m27-10-5 10" /></g>
+          </svg>)}
+        </div>
       </header>
       {error ? <p className="rain-preview__notice" role="alert">{error}</p> : !round ? <p className="rain-preview__notice" role="status">Loading tonight’s players…</p> : <>
         <div className="rain-preview__board">
