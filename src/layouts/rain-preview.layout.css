@@ -1,7 +1,7 @@
 /* Temporary preview only. No shared game-card layout overrides. */
 html:is([data-viewport='mobile'], [data-viewport='tablet'], [data-viewport='web'], [data-viewport='tv']) {
-  .rain-preview { display: flex; flex-direction: column; gap: 12px; width: 100%; height: var(--app-height, 100dvh); min-height: 0; padding: 14px; overflow: auto; color: #f2f8ff; background: #0b2945; }
-  .rain-preview__header { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+  .rain-preview { display: flex; flex-direction: column; gap: 0; width: 100%; height: var(--app-height, 100dvh); min-height: 0; padding: 0; overflow: auto; color: #f2f8ff; background: #0b2945; }
+  .rain-preview__header { display: none; }
   .rain-preview__back { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; color: #b8d4e9; background: #173c5b; flex-shrink: 0; }
   .rain-preview__weather { width: 42px; height: 42px; color: #7dd3fc; flex-shrink: 0; }
   .rain-preview__title { flex: 1; min-width: 0; }
@@ -26,13 +26,17 @@ html:is([data-viewport='mobile'], [data-viewport='tablet'], [data-viewport='web'
   .rain-preview__avatar { display: flex; align-items: center; justify-content: center; width: clamp(32px, 3vw, 48px); height: clamp(32px, 3vw, 48px); border-radius: 50%; object-fit: cover; flex-shrink: 0; background: #36516a; color: #fff; }
   .rain-preview__return { display: flex; align-items: center; gap: 8px; color: #ffcf78; font-size: 13px; }
   .rain-preview__return svg { flex-shrink: 0; }
-  .rain-preview__rounds { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 8px; flex-shrink: 0; }
+  /* The game header already provides previous/next navigation. */
+  .rain-preview__rounds { display: none; }
   .rain-preview__rounds button { display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 58px; padding: 8px 4px; border-radius: 10px; border: 1px solid #365b77; background: #102f4c; color: #d0e5f4; cursor: pointer; }
   .rain-preview__rounds button span { font-size: 13px; }
   .rain-preview__rounds button[aria-current='step'] { background: #7dd3fc; color: #08253d; border-color: #7dd3fc; }
   .rain-preview__rounds button:hover { border-color: #7dd3fc; }
   .rain-preview__rounds button:focus-visible, .rain-preview__back:focus-visible { outline: 3px solid #ffcf78; outline-offset: 2px; }
   .rain-preview__footer { display: flex; justify-content: space-between; gap: 12px; color: #9bb5ca; font-size: 12px; flex-shrink: 0; }
+  .rain-preview__footer > span:first-child { display: none; }
+  /* Keep actionable save failures visible without reserving a success footer. */
+  .rain-preview__footer:not(:has(button)) { display: none; }
   .rain-preview__notice { margin: auto; padding: 24px; }
   .rain-preview__conflict { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; color: #ffcf78; }
   .rain-preview__conflict button, .rain-preview__footer button { border: 1px solid #7dd3fc; border-radius: 6px; padding: 4px 8px; background: #12375a; color: #fff; cursor: pointer; }
