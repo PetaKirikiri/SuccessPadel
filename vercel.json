@@ -16,8 +16,6 @@
     }
   ],
   "rewrites": [
-    { "source": "/rain-mode", "destination": "/rain-mode/index.html" },
-    { "source": "/rain-mode/", "destination": "/rain-mode/index.html" },
     { "source": "/c/:inviteCode", "destination": "/api/competition-share?inviteCode=:inviteCode" },
     { "source": "/c/:inviteCode/", "destination": "/api/competition-share?inviteCode=:inviteCode" },
     {
@@ -34,6 +32,8 @@
     { "source": "/competitions/:eventId/", "destination": "/api/competition-share?eventId=:eventId" },
     { "source": "/competitions/:eventId/join", "destination": "/api/competition-share?eventId=:eventId" },
     { "source": "/competitions/:eventId/join/", "destination": "/api/competition-share?eventId=:eventId" },
+    { "source": "/rain-mode", "destination": "/rain-mode/index.html" },
+    { "source": "/rain-mode/", "destination": "/rain-mode/index.html" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
