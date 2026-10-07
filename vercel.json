@@ -16,6 +16,8 @@
     }
   ],
   "rewrites": [
+    { "source": "/rain-mode", "destination": "/rain-mode/index.html" },
+    { "source": "/rain-mode/", "destination": "/rain-mode/index.html" },
     { "source": "/c/:inviteCode", "destination": "/api/competition-share?inviteCode=:inviteCode" },
     { "source": "/c/:inviteCode/", "destination": "/api/competition-share?inviteCode=:inviteCode" },
     {
