@@ -10,7 +10,11 @@ const players = Array.from({ length: 12 }, (_, i) => ({ id: null, rosterId: Stri
 const rounds = buildRainSchedule(players)
 assert.equal(rounds.length, 9)
 assert.equal(rounds[0]!.startsAt, '18:15')
-assert.equal(rounds.at(-1)!.endsAt, '19:45')
+assert.equal(rounds.at(-1)!.endsAt, '19:59')
+const seconds = (clock: string) => {
+  const [h, m, s = 0] = clock.split(':').map(Number)
+  return h! * 3600 + m! * 60 + s
+}
 const partners = new Set<string>()
 for (const [index, round] of rounds.entries()) {
   assert.equal(round.game.courts.length, 2)
@@ -18,7 +22,8 @@ for (const [index, round] of rounds.entries()) {
   const active = round.game.courts.flatMap(court => [...court.teamAPlayers!, ...court.teamBPlayers!])
   assert.equal(active.length, 8)
   assert.equal(new Set([...active, ...round.resting].map(p => p.rosterId)).size, 12)
-  if (index) assert.equal(round.startsAt, rounds[index - 1]!.endsAt)
+  assert.equal(seconds(round.endsAt) - seconds(round.startsAt), 600)
+  if (index) assert.equal(seconds(round.startsAt) - seconds(rounds[index - 1]!.endsAt), 105)
   for (const court of round.game.courts) {
     for (const pair of [court.teamAPlayers!, court.teamBPlayers!]) {
       const key = pair.map(p => p.rosterId).sort().join(':')
@@ -34,7 +39,7 @@ for (const player of players) {
 }
 assert.throws(() => buildRainSchedule(players.slice(0, 8)))
 assert.throws(() => buildRainSchedule([...players.slice(0, 11), players[0]!]))
-console.log('Rain preview: 9 continuous rounds, 2 courts, all 12 accounted for; 6 games and 3 rests each; play 2/rest 1; no repeated partners.')
+console.log('Rain preview: 9 ten-minute rounds, 105-second changeovers, 19:59 finish; 6 games and 3 rests each; no repeated partners.')
 
 const values = new Map<string, string>()
 const storage = { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => { values.set(key, value) } }
@@ -42,6 +47,11 @@ const key = rainStorageKey('test-event', rounds)
 assert.deepEqual(rounds[0]!.game.courts.map(c => c.courtLabel), ['Court 3', 'Court 4'])
 const previousLabels = rounds.map(round => ({ ...round, game: { ...round.game, courts: round.game.courts.map((court, index) => ({ ...court, courtLabel: `Court ${index + 1}` })) } }))
 assert.equal(key, rainStorageKey('test-event', previousLabels), 'Relabeling courts must retain the same saved scores')
+const previousTimes = rounds.map((round, index) => ({ ...round,
+  startsAt: String(index), endsAt: String(index + 1),
+  game: { ...round.game, timeLabel: 'Previous timing' },
+}))
+assert.equal(key, rainStorageKey('test-event', previousTimes), 'Timing changes must retain saved scores and pending offline edits')
 saveRainScore(storage, key, 1, 'rain-court-1', { teamAPoints: 4, teamBPoints: 2 })
 saveRainScore(storage, key, 1, 'rain-court-2', { teamAPoints: 0, teamBPoints: 0 })
 saveRainScore(storage, key, 2, 'rain-court-1', { teamAPoints: 3, teamBPoints: 1 })
@@ -70,5 +80,5 @@ const previewSource = readFileSync('src/surfaces/rain-test/RainModePreview.tsx',
 assert(!previewSource.includes('buildRainSchedule'), 'The active page must not regenerate the assigned draw')
 assert(!previewSource.includes('list_competitions_for_setup'), 'Attendance changes must not replace the assigned draw')
 const frozenFingerprint = createHash('sha256').update(JSON.stringify({ players: frozenDraw.players.map(p => [p.name, p.rosterId]), courtLabels: frozenDraw.courtLabels, courtIds: frozenDraw.courtIds, rounds: frozenDraw.rounds })).digest('hex')
-assert.equal(frozenFingerprint, 'acdca2fd5eeca552f1da8558689f990f91bca9ae22e60ea85215ab1cef5dcdc0', 'Assigned 7 October rain draw is locked; do not silently reshuffle it')
+assert.equal(frozenFingerprint, 'c97c35bc959e3b5e73c27fdc72fd96224641dc5ec941abb42e05a66caf7aa1f5', 'Assigned 7 October rain draw with approved changeovers is locked; do not silently reshuffle it')
 console.log('Frozen draw fingerprint:', frozenFingerprint)

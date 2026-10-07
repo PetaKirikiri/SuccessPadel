@@ -3,6 +3,8 @@ import type { CourtPlayer } from '../../lib/americanoSchedule'
 import type { RainRound } from './rainSchedule'
 
 export const RAIN_COMPETITION_ID = savedDraw.competitionId
+// Stable score-ledger identity from the original assigned draw. Timing-only
+// amendments must retain this token so existing devices can still sync scores.
 export const RAIN_DRAW_FINGERPRINT = 'acdca2fd5eeca552f1da8558689f990f91bca9ae22e60ea85215ab1cef5dcdc0'
 export const RAIN_COURT_IDS = new Map(savedDraw.courtLabels.map((label, index) => [label, savedDraw.courtIds[index]!]))
 

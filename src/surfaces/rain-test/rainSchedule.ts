@@ -3,6 +3,7 @@ import type { GameRow } from '../../lib/competitionCourtBoard'
 
 export const RAIN_START_MINUTES = 18 * 60 + 15
 export const RAIN_GAME_MINUTES = 10
+export const RAIN_CHANGEOVER_SECONDS = 105
 export const RAIN_ROUNDS = 9
 
 export type RainRound = {
@@ -12,8 +13,10 @@ export type RainRound = {
   endsAt: string
 }
 
-function clock(minutes: number): string {
-  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
+function clock(seconds: number): string {
+  const minutes = Math.floor(seconds / 60)
+  const label = `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
+  return seconds % 60 ? `${label}:${String(seconds % 60).padStart(2, '0')}` : label
 }
 
 /** Local demonstration only. Does not read or persist competition rounds or scores. */
@@ -27,8 +30,9 @@ export function buildRainSchedule(players: CourtPlayer[]): RainRound[] {
     const active = groups.filter((_, index) => index !== restingGroup)
     const shift = Math.floor(round / 3)
     const pairs: [CourtPlayer, CourtPlayer][] = active[0]!.map((player, index) => [player, active[1]![(index + shift) % 4]!])
-    const startsAt = clock(RAIN_START_MINUTES + round * RAIN_GAME_MINUTES)
-    const endsAt = clock(RAIN_START_MINUTES + (round + 1) * RAIN_GAME_MINUTES)
+    const startSeconds = RAIN_START_MINUTES * 60 + round * (RAIN_GAME_MINUTES * 60 + RAIN_CHANGEOVER_SECONDS)
+    const startsAt = clock(startSeconds)
+    const endsAt = clock(startSeconds + RAIN_GAME_MINUTES * 60)
     const timeLabel = `${startsAt}–${endsAt}`
     const gameNumber = round + 1
     return {

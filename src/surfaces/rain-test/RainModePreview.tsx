@@ -44,7 +44,7 @@ export default function RainModePreview() {
       <header className="rain-preview__header">
         <Link className="rain-preview__back" to={`/competitions/${COMPETITION_ID}`} aria-label="Back to competition"><ArrowLeft /></Link>
         <CloudRain className="rain-preview__weather" aria-hidden="true" />
-        <div className="rain-preview__title"><h1>Rain mode</h1><p>Wed 7 Oct · 18:15 start · 2 courts · 10-minute games · No breaks</p></div>
+        <div className="rain-preview__title"><h1>Rain mode</h1><p>Wed 7 Oct · 18:15 start · 2 courts · 10-minute games · 1m 45s changeovers</p></div>
         <div className="rain-preview__rule"><Repeat2 aria-hidden="true" /><strong>Play 2 · Rest 1</strong></div>
       </header>
       {error ? <p className="rain-preview__notice" role="alert">{error}</p> : !round ? <p className="rain-preview__notice" role="status">Loading tonight’s players…</p> : <>
@@ -82,7 +82,7 @@ export default function RainModePreview() {
             <button type="button" onClick={() => resolve(key, true)}>Keep this device’s score</button>
           </div>
         })}
-        <footer className="rain-preview__footer"><span>12 players · 9 rounds · 6 games each · Ends 19:45</span><span role="status">{saveStatus}</span>{saveStatus !== 'All scores saved online' && <button type="button" onClick={retry}>Retry sync</button>}</footer>
+        <footer className="rain-preview__footer"><span>12 players · 9 rounds · 6 games each · Ends {rounds.at(-1)?.endsAt}</span><span role="status">{saveStatus}</span>{saveStatus !== 'All scores saved online' && <button type="button" onClick={retry}>Retry sync</button>}</footer>
       </>}
     </main>
   )
