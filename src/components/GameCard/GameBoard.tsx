@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { type LiveCourtGamesScore, type LiveCourtPointFeed } from '../../lib/liveCourtScore'
-import { useViewportBucket } from '../../hooks/useGameCardSize'
 import { scheduledTvGame } from '../../lib/scheduledTvGame'
 import { useTranslation } from '../../hooks/useTranslation'
 import type { TranslateFn } from '../../i18n'
@@ -275,7 +274,6 @@ export function GameBoard({
   onActivePanel,
 }: Props) {
   const { t } = useTranslation()
-  const viewport = useViewportBucket()
   const useCarousel = tvCarousel
   const games = useMemo(() => {
     const rows = pivotScheduleByGame(columns)
@@ -305,8 +303,16 @@ export function GameBoard({
 
   useEffect(() => {
     if (mode !== 'scoring' && !previewTimed) return
-    const timer = setInterval(() => setTick(Date.now()), 1000)
-    return () => clearInterval(timer)
+    const refreshClock = () => setTick(Date.now())
+    const timer = setInterval(refreshClock, 1000)
+    // Mobile browsers suspend timers in the background; catch up on return.
+    window.addEventListener('pageshow', refreshClock)
+    document.addEventListener('visibilitychange', refreshClock)
+    return () => {
+      clearInterval(timer)
+      window.removeEventListener('pageshow', refreshClock)
+      document.removeEventListener('visibilitychange', refreshClock)
+    }
   }, [mode, previewTimed])
 
   const clock = mode === 'scoring' || previewTimed ? tick : (now ?? tick)
@@ -517,7 +523,7 @@ export function GameBoard({
         <TvGameCarousel
           gameNumbers={gameNumbers}
           activeGameNumber={focusGameNumber}
-          autoGameNumber={scheduledTvGame(viewport, clock, gameNumbers, roundTimesByGame)}
+          autoGameNumber={scheduledTvGame(clock, gameNumbers, roundTimesByGame)}
           persistenceKey={
             competitionId
               ? `successpadel:competition:${competitionId}:selected-game`

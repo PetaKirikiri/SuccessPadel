@@ -45,7 +45,7 @@ export function TvGameCarousel({
     setSelection({ key: persistenceKey, game: initial })
   }, [activeGameNumber, gameNumbers, persistenceKey, selectedGame])
 
-  // Advance once at each scheduled start; manual browsing remains available between starts.
+  // Follow each schedule transition, without interrupting manual browsing on every tick.
   useEffect(() => {
     if (autoGameNumber == null) return
     setSelection({ key: persistenceKey, game: autoGameNumber })
