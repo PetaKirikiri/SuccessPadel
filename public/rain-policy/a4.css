@@ -1,0 +1,43 @@
+/* One A4 master: 10 mm margins, six equal panels, identical image and copy areas. */
+@page { size: A4 portrait; margin: 10mm; }
+.sign { width: 190mm; max-width: none; height: 277mm; min-height: 0; padding: 0; border: 0; border-radius: 0; background: #fffefa; }
+.sign-header { height: 17mm; margin: 0 0 2mm; gap: 5mm; justify-content: space-between; }
+.brand { width: 29mm; height: auto; }
+.policy-label { display: block; font-size: 8pt; }
+.policy-label span { font-size: 8pt; margin-top: 1mm; }
+h1 { font-size: 20pt; line-height: 1.2; margin: 0 0 3mm; text-align: left; }
+h2 { font-size: 12pt; line-height: 1.2; margin: 0 0 1.5mm; color: #693322; }
+p { font-size: 10pt; line-height: 1.3; }
+p + p { margin-top: 1mm; }
+.rules { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(3, 79mm); gap: 3mm; }
+.rules > li.rule-illustrated { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: 40mm minmax(0, 1fr); grid-column: auto; align-items: stretch; gap: 0; padding: 0; border: .25mm solid #cbd2cd; border-radius: 2mm; background: #fffefa; overflow: visible; }
+.rule-illustrated .rule-picture { display: block; width: 100%; height: 40mm; max-height: none; object-fit: contain; background: #faf7ee; border-radius: 2mm 2mm 0 0; }
+.rule-illustrated > div { padding: 2.5mm; text-align: left; border-top: .25mm solid #e1e4dd; }
+.rules strong { white-space: normal; }
+.notice-language h2 { font-size: 16pt; }
+.notice-language h2 svg { width: 8mm; height: 8mm; }
+.notice-language + .notice-language { margin-top: 7mm; padding-top: 5mm; }
+.rain-rules { margin-top: 4mm; }
+.rain-rules li { padding: 4mm; margin-top: 3mm; gap: 4mm; grid-template-columns: 21mm minmax(0, 1fr); border: .25mm solid #cbd2cd; border-radius: 2mm; }
+.time-badge { font-size: 20pt; }
+.time-badge small { font-size: 9pt; }
+.thanks { margin-top: 4mm; font-size: 10pt; }
+.rain-intro h2 { font-size: 13pt; margin-bottom: 2mm; }
+.rain-intro p { font-size: 9pt; }
+.rain-illustrated { margin-top: 4mm; gap: 3mm; }
+.rain-illustrated > li { grid-template-columns: 80mm minmax(0, 1fr); height: 63mm; border: .25mm solid #cbd2cd; border-radius: 2mm; }
+.rain-illustrated img { width: 80mm; height: 60mm; object-fit: contain; }
+.rain-copy { padding: 3mm; }
+.rain-copy h2 { font-size: 24pt; line-height: 1.15; margin-bottom: 3mm; }
+.rain-copy h2 small { font-size: 10pt; }
+.rain-copy h2 span { font-size: 12pt; margin-top: 1.5mm; }
+.rain-copy p { font-size: 10pt; line-height: 1.35; }
+.rain-copy p + p { padding-top: 2mm; margin-top: 2mm; }
+@media screen {
+  .sign { padding: 10mm; width: 210mm; height: 297mm; }
+}
+@media print {
+  body { margin: 0; padding: 0; background: white; }
+  .preview-bar, .sheet-tabs { display: none; }
+  .sign { zoom: 1 !important; box-shadow: none; }
+}
