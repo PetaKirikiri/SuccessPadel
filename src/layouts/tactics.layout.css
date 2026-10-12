@@ -1,6 +1,30 @@
-/* Standalone court surface. No app chrome or visible controls. */
+/* Standalone court surface with controls over the court. */
 .tactics { position: relative; isolation: isolate; flex: 1; min-height: 0; width: 100%; overflow: hidden; background: #0b252d; }
 .tactics__court { display: block; position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
 .tactics__accessible-controls { position: absolute; left: 15px; top: 15px; }
 .tactics__accessible-controls button { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .tactics__accessible-controls button:focus-visible { width: auto; height: auto; clip-path: none; padding: 8px; background: #0b252d; color: white; outline: 2px solid #edff82; }
+
+/* All modes share the same court and compact game controls at every viewport. */
+.tactics { display: flex; flex-direction: column; color: #eaf6f5; }
+.tactics__court-wrap { position: relative; flex: 1; min-height: 180px; }
+.tactics__modes { position: absolute; z-index: 2; top: 12px; left: 50%; transform: translateX(-50%); }
+.tactics__mode-options { position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); width: 180px; padding: 4px; border: 1px solid #78c9bd; border-radius: 12px; background: #102f36; box-shadow: 0 4px 16px #0005; }
+.tactics__mode-options button { width: 100%; }
+.tactics__modes button { display: flex; justify-content: center; align-items: center; gap: 6px; flex: 1; min-height: 44px; padding: 6px 10px; border: 1px solid transparent; border-radius: 10px; color: #adc8ca; background: transparent; font-size: 14px; font-weight: 700; cursor: pointer; }
+.tactics__modes button[aria-pressed='true'] { background: #24545b; border-color: #78c9bd; color: #f4ffef; }
+.tactics__modes > button { background: #102f36ed; border-color: #78c9bd; color: #f4ffef; box-shadow: 0 2px 8px #0004; }
+.tactics__modes svg, .tactics__feedback svg { width: 18px; height: 18px; flex-shrink: 0; }
+.tactics__challenge { display: flex; align-items: center; gap: 12px; padding: 10px 16px; flex-shrink: 0; }
+.tactics__progress { font-size: 13px; font-weight: 700; color: #94d2c8; white-space: nowrap; }
+.tactics__challenge h1 { font-size: 18px; line-height: 1.2; margin: 0 0 3px; }
+.tactics__challenge p { margin: 0; font-size: 14px; line-height: 1.35; color: #c0d9db; }
+.tactics__feedback { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 16px max(12px, env(safe-area-inset-bottom)); flex-shrink: 0; background: #102f36; min-height: 72px; }
+.tactics__feedback-copy { min-width: 0; font-size: 14px; }
+.tactics__feedback strong { font-size: 24px; color: #dafaab; }
+.tactics__feedback strong span { display: inline-block; font-size: 13px; color: #c0d9db; margin-left: 6px; }
+.tactics__feedback p { margin: 3px 0 0; font-size: 13px; line-height: 1.3; }
+.tactics__feedback-copy > span { display: block; color: #c0d9db; }
+.tactics__feedback button { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 10px 16px; flex-shrink: 0; border: 0; border-radius: 10px; background: #dafaab; color: #183b35; font-size: 15px; font-weight: 800; cursor: pointer; }
+.tactics__feedback button:disabled { opacity: 0.4; cursor: default; }
+.tactics button:focus-visible { outline: 3px solid #ffe477; outline-offset: 2px; }

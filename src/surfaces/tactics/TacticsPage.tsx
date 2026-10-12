@@ -1,19 +1,57 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent, PointerEvent } from 'react'
-import { chooseAutomaticShot, distance, initialTactics, movePlayer, selectShooter } from './tacticsModel'
+import { clamp, evaluateShot, chooseAutomaticShot, distance, initialTactics, movePlayer, selectShooter } from './tacticsModel'
 import type { Point } from './tacticsModel'
 import { courtPoint, courtView, drawCourt, drawShotPlayback, screenPoint } from './drawCourt'
 import { playbackTime } from './shotPlayback'
+import { Footprints, Target, Hand, Check, ArrowRight, RotateCcw, Gamepad2 } from 'lucide-react'
+import { challenges, challengeState, scorePlacement } from './tacticsChallenges'
+import type { TacticsMode } from './tacticsChallenges'
+import { drawChallenge } from './drawChallenge'
 import '../../layouts/tactics.layout.css'
 
 export default function TacticsPage() {
+  const [mode, setMode] = useState<TacticsMode>('free')
+  const [modeMenuOpen, setModeMenuOpen] = useState(false)
+  const [challengeIndex, setChallengeIndex] = useState(0)
+  const challenge = challenges[mode === 'placement' ? 'placement' : 'positioning'][challengeIndex]!
   const [state, setState] = useState(initialTactics)
+  const freeState = useRef(initialTactics())
+  const [choice, setChoice] = useState<Point | null>(null)
+  const [result, setResult] = useState<ReturnType<typeof scorePlacement> | null>(null)
+  const [results, setResults] = useState<number[]>([])
+  const [complete, setComplete] = useState(false)
+  const [moved, setMoved] = useState(false)
+  const [shotBlocked, setShotBlocked] = useState(false)
   const [selected, setSelected] = useState('')
   const [size, setSize] = useState(0)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const drag = useRef<{ id: string; pointer: number; offset: Point; start: Point; started: number; moved: boolean } | null>(null)
   const lastTap = useRef<{ player: number; time: number } | null>(null)
-  const automatic = useMemo(() => chooseAutomaticShot(state), [state])
+  const automatic = useMemo(() => mode === 'free' ? chooseAutomaticShot(state) : { state, cells: [], shot: evaluateShot(state) }, [state, mode])
+
+  function startChallenge(nextMode: TacticsMode, index = 0) {
+    setModeMenuOpen(false)
+    if (mode === 'free') freeState.current = state
+    setMode(nextMode); setChallengeIndex(index); setChoice(null); setResult(null); setMoved(false); setShotBlocked(false); setComplete(false)
+    setSelected(''); drag.current = null; lastTap.current = null
+    if (index === 0) setResults([])
+    setState(nextMode === 'free' ? freeState.current : challengeState(challenges[nextMode][index]!))
+  }
+  function checkAnswer() {
+    if (result || mode === 'free') return
+    const point = mode === 'placement' ? choice : state.players.find(p => p.id === challenge.player)
+    if (!point) return
+    const graded = scorePlacement(point, challenge.area)
+    const blocked = mode === 'placement' && !automatic.shot.valid
+    if (blocked) graded.score = 0
+    setShotBlocked(blocked); setResult(graded)
+    setResults(current => [...current.slice(0, challengeIndex), graded.score])
+  }
+  function nextChallenge() {
+    if (challengeIndex === challenges[mode === 'placement' ? 'placement' : 'positioning'].length - 1) setComplete(true)
+    else startChallenge(mode, challengeIndex + 1)
+  }
 
   useEffect(() => {
     const title = document.title; document.title = 'Padel tactics'
@@ -55,7 +93,9 @@ export default function TacticsPage() {
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-    drawCourt(canvas, automatic.state, automatic.cells, automatic.shot, selected)
+    drawCourt(canvas, automatic.state, automatic.cells, automatic.shot, selected, mode !== 'free')
+    if (mode !== 'free') drawChallenge(canvas, mode === 'placement' ? choice : null, result ? challenge.area : null,
+      mode === 'positioning' ? state.players.find(p => p.id === challenge.player)! : null)
     const background = document.createElement('canvas')
     background.width = canvas.width; background.height = canvas.height
     background.getContext('2d')?.drawImage(canvas, 0, 0)
@@ -68,8 +108,8 @@ export default function TacticsPage() {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       ctx.drawImage(background, 0, 0)
       const time = reducedMotion.matches ? automatic.shot.flight * 0.6 : playbackTime(automatic.shot, (now - started) / 1000)
-      if (time !== null && !selected) drawShotPlayback(canvas, automatic.state, automatic.shot, time)
-      if (!document.hidden && !reducedMotion.matches && !selected) frame = requestAnimationFrame(paint)
+      if (time !== null && !selected && (mode === 'free' || (mode === 'placement' && result))) drawShotPlayback(canvas, automatic.state, automatic.shot, time)
+      if (!document.hidden && !reducedMotion.matches && !selected && (mode === 'free' || (mode === 'placement' && result))) frame = requestAnimationFrame(paint)
     }
     function restart() {
       cancelAnimationFrame(frame)
@@ -84,10 +124,16 @@ export default function TacticsPage() {
       document.removeEventListener('visibilitychange', restart)
       reducedMotion.removeEventListener('change', restart)
     }
-  }, [automatic, selected, size])
+  }, [automatic, selected, size, mode, choice, result, challenge, state.players])
 
   function move(id: string, point: Point) {
-    if (!id) return
+    if (!id || (mode !== 'free' && (result || complete))) return
+    if (mode === 'placement') {
+      const target = { x: clamp(point.x, 0.2, 9.8), y: clamp(point.y, 0.2, 9.8) }
+      setChoice(target); setMoved(true); setState(current => ({ ...current, target })); return
+    }
+    if (mode === 'positioning' && id !== `player-${challenge.player}`) return
+    setMoved(true)
     setState(current => movePlayer(current, Number(id.replace('player-', '')), point))
   }
   function pointerPoint(event: PointerEvent<HTMLCanvasElement>) {
@@ -97,20 +143,29 @@ export default function TacticsPage() {
     return { screen, view, point: courtPoint(screen, view) }
   }
   function onPointerDown(event: PointerEvent<HTMLCanvasElement>) {
-    if (drag.current || !event.isPrimary) return
+    if (drag.current || !event.isPrimary || (mode !== 'free' && (result || complete))) return
     // Browsers require a real user gesture for fullscreen; unsupported phones
     // keep the same edge-to-edge court and can launch via the Home Screen manifest.
-    if (event.pointerType === 'touch' && document.fullscreenEnabled && !document.fullscreenElement) {
+    if (mode === 'free' && event.pointerType === 'touch' && document.fullscreenEnabled && !document.fullscreenElement) {
       void document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(() => {})
     }
     const { screen, point, view } = pointerPoint(event)
+    if (mode === 'placement') {
+      if (point.x < 0 || point.x > 10 || point.y < 0 || point.y > 10) return
+      event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId)
+      move('target', point); setSelected('target')
+      drag.current = { id: 'target', pointer: event.pointerId, offset: { x: 0, y: 0 }, start: screen, started: event.timeStamp, moved: true }
+      return
+    }
     // A generous invisible footprint helps fingers grab the piece without covering it.
     // Choose the nearest centre when footprints overlap, rather than roster order.
     const radius = Math.max(event.pointerType === 'touch' ? 36 : 28, view.scale * 0.68)
     const hit = state.players
+      .filter(p => mode === 'free' || p.id === challenge.player)
       .map(p => ({ id: `player-${p.id}`, point: p, gap: distance(screen, screenPoint(p, view)) }))
       .filter(p => p.gap <= radius)
       .sort((a, b) => a.gap - b.gap)[0]
+    if (!hit && mode !== 'free') return
     if (!hit && (point.x < 0 || point.x > 10 || point.y < 0 || point.y > 20)) return
     // Empty court only listens for nearby double-taps; the ball is never draggable.
     const id = hit?.id ?? ''
@@ -129,7 +184,7 @@ export default function TacticsPage() {
     if (drag.current?.pointer !== event.pointerId) return
     const gesture = drag.current
     const { screen, view } = pointerPoint(event)
-    if (event.type === 'pointerup' && !gesture.moved && distance(screen, gesture.start) <= 10 && event.timeStamp - gesture.started <= 350) {
+    if (mode === 'free' && event.type === 'pointerup' && !gesture.moved && distance(screen, gesture.start) <= 10 && event.timeStamp - gesture.started <= 350) {
       const nearby = state.players
         .map(p => ({ player: p, gap: distance(screen, screenPoint(p, view)) }))
         .filter(p => p.gap <= Math.max(44, view.scale * 0.9))
@@ -144,7 +199,7 @@ export default function TacticsPage() {
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
   }
   function keyMove(event: KeyboardEvent, id: string) {
-    if ((event.key === 'Enter' || event.key === ' ') && id.startsWith('player-')) {
+    if (mode === 'free' && (event.key === 'Enter' || event.key === ' ') && id.startsWith('player-')) {
       event.preventDefault()
       setState(current => selectShooter(current, Number(id.replace('player-', ''))))
       return
@@ -155,15 +210,39 @@ export default function TacticsPage() {
     event.preventDefault()
     const canvas = canvasRef.current
     if (canvas && courtView(canvas.clientWidth, canvas.clientHeight).rotated) step = { x: -step.y, y: step.x }
-    const point = state.players.find(p => `player-${p.id}` === id)
+    const point = mode === 'placement' ? choice ?? { x: 5, y: 5 } : state.players.find(p => `player-${p.id}` === id)
     if (point) move(id, { x: point.x + step.x, y: point.y + step.y })
   }
   return (
     <main className="tactics" aria-label="Padel tactics board">
-      <canvas ref={canvasRef} className="tactics__court" aria-label="Drag the players. Double-tap or double-click near any player to make them the shooter and switch the attacking side. The ball stays attached to the shooter. Green on the opponents’ half shows open targets; coral shadows are defended. Green on your half shows protected space; coral gaps are exposed. Green lob pockets mark useful landing areas over the defenders. Curved arrows with dashed landing rings show optional lobs. The yellow ball replays the shot at its calculated speed; longer trails show faster travel." onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag} onLostPointerCapture={() => { drag.current = null; setSelected('') }} />
+      {mode !== 'free' && <header className="tactics__challenge">
+        <span className="tactics__progress">{complete ? 'Complete' : `${challengeIndex + 1} / ${challenges[mode].length}`}</span>
+        <div><h1>{complete ? 'Round complete' : challenge.title}</h1><p>{complete ? 'Play again or try the other mode.' : challenge.prompt}</p></div>
+      </header>}
+      <div className="tactics__court-wrap">
+      <nav className="tactics__modes" aria-label="Tactics modes" onKeyDown={event => { if (event.key === 'Escape') setModeMenuOpen(false) }}>
+        <button type="button" aria-expanded={modeMenuOpen} aria-controls="tactics-mode-options" onClick={() => setModeMenuOpen(open => !open)}><Gamepad2 aria-hidden="true" />Modes</button>
+        {modeMenuOpen && <div className="tactics__mode-options" id="tactics-mode-options">
+          <button type="button" aria-pressed={mode === 'positioning'} onClick={() => startChallenge('positioning')}><Footprints aria-hidden="true" />Positioning</button>
+          <button type="button" aria-pressed={mode === 'placement'} onClick={() => startChallenge('placement')}><Target aria-hidden="true" />Ball placement</button>
+          <button type="button" aria-pressed={mode === 'free'} onClick={() => startChallenge('free')}><Hand aria-hidden="true" />Free play</button>
+        </div>}
+      </nav>
+      <canvas ref={canvasRef} className="tactics__court" aria-label={mode === 'free' ? 'Drag players; double-tap a player to choose the shooter.' : mode === 'positioning' ? `Move player ${challenge.player}. ${challenge.prompt}` : `Tap the opponents’ half to choose a landing spot. ${challenge.prompt}`} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag} onLostPointerCapture={() => { drag.current = null; setSelected('') }} />
       <div className="tactics__accessible-controls">
-        {['player-1', 'player-2', 'player-3', 'player-4'].map(id => <button type="button" key={id} onFocus={() => setSelected(id)} onBlur={() => setSelected('')} onKeyDown={e => keyMove(e, id)}>{id.replace('-', ' ')}: use arrow keys to move{id.startsWith('player-') ? '; Enter to select shooter' : ''}</button>)}
+        {(mode === 'free' ? ['player-1', 'player-2', 'player-3', 'player-4'] : mode === 'positioning' ? [`player-${challenge.player}`] : ['target']).map(id => <button type="button" key={id} onFocus={() => setSelected(id)} onBlur={() => setSelected('')} onKeyDown={e => keyMove(e, id)}>{id.replace('-', ' ')}: use arrow keys to move{mode === 'free' ? '; Enter to select shooter' : ''}</button>)}
       </div>
+      </div>
+      {mode !== 'free' && <footer className="tactics__feedback">
+        <div className="tactics__feedback-copy" aria-live="polite">
+          {complete ? <><strong>{results.reduce((sum, score) => sum + score, 0)} / {challenges[mode].length * 100}</strong><span>Round score · Practice zones</span></>
+          : result ? <><strong>{result.score} / 100 <span>{shotBlocked ? 'Shot hits the net' : result.metres < 0.005 ? 'In the target zone' : `${result.metres.toFixed(1)} m from the zone`}</span></strong><p>{shotBlocked ? 'Give the ball more room to cross the net.' : challenge.tip}</p></>
+          : <span>{mode === 'positioning' ? `Drag the outlined player ${challenge.player}.` : 'Tap a landing spot on the far half.'}</span>}
+        </div>
+        {complete ? <button type="button" onClick={() => startChallenge(mode)}><RotateCcw aria-hidden="true" />Play again</button>
+          : result ? <button type="button" onClick={nextChallenge}><ArrowRight aria-hidden="true" />{challengeIndex === challenges[mode].length - 1 ? 'Finish' : 'Next'}</button>
+          : <button type="button" disabled={!moved} onClick={checkAnswer}><Check aria-hidden="true" />{mode === 'placement' ? 'Play' : 'Check'}</button>}
+      </footer>}
     </main>
   )
 }

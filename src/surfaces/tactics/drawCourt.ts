@@ -6,7 +6,8 @@ import type { HeatCell, Point, Shot, TacticsState } from './tacticsModel'
 
 export type CourtView = { width: number; height: number; scale: number; left: number; top: number; rotated: boolean }
 export function courtView(width: number, height: number): CourtView {
-  const rotated = width > height
+  // Keep the familiar end-to-end court orientation in every mode and viewport.
+  const rotated = false
   const scale = Math.min((width - 8) / (rotated ? 20 : 10), (height - 8) / (rotated ? 10 : 20))
   return { width, height, scale, rotated, left: (width - scale * (rotated ? 20 : 10)) / 2, top: (height - scale * (rotated ? 10 : 20)) / 2 }
 }
@@ -20,7 +21,7 @@ export function courtPoint(p: Point, view: CourtView): Point {
 }
 const ring = (ctx: CanvasRenderingContext2D, p: Point, r: number) => { ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2) }
 
-export function drawCourt(canvas: HTMLCanvasElement, state: TacticsState, cells: HeatCell[], shot: Shot, selected: string) {
+export function drawCourt(canvas: HTMLCanvasElement, state: TacticsState, cells: HeatCell[], shot: Shot, selected: string, hideAdvice = false) {
   const width = canvas.clientWidth, height = canvas.clientHeight
   const dpr = Math.min(window.devicePixelRatio || 1, 2)
   if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) {
@@ -36,13 +37,13 @@ export function drawCourt(canvas: HTMLCanvasElement, state: TacticsState, cells:
   ctx.translate(view.left, view.top)
   if (view.rotated) { ctx.translate(0, 10 * s); ctx.rotate(-Math.PI / 2) }
   ctx.scale(s, s)
-  const lobs = lobLandingZones(cells)
+  const lobs = hideAdvice ? [] : lobLandingZones(cells)
   // Attacking perspective: opponents' gaps are targets; our own gaps are exposed.
   for (const upper of [true, false]) {
-    ctx.fillStyle = coveredIsGood(state, upper) ? '#f29a96' : '#70cf9b'
+    ctx.fillStyle = hideAdvice ? '#286778' : coveredIsGood(state, upper) ? '#f29a96' : '#70cf9b'
     ctx.fillRect(0, upper ? 0 : 10, 10, 10)
   }
-  for (const shadow of coverageShadows(state, shot)) {
+  for (const shadow of hideAdvice ? [] : coverageShadows(state, shot)) {
     ctx.save(); ctx.beginPath(); ctx.rect(0, shadow.upper ? 0 : 10, 10, 10); ctx.clip()
     ctx.fillStyle = coveredIsGood(state, shadow.upper) ? '#70cf9b' : '#f29a96'
     ctx.beginPath()
@@ -85,7 +86,7 @@ export function drawCourt(canvas: HTMLCanvasElement, state: TacticsState, cells:
   }
 
   // Trajectory in court projection; the dotted segment is after the first bounce.
-  for (const bounced of [false, true]) {
+  for (const bounced of hideAdvice ? [] : [false, true]) {
     const points = shot.samples.filter(p => p.bounced === bounced)
     if (bounced) { const landing = shot.samples.findLast(p => !p.bounced); if (landing) points.unshift(landing) }
     ctx.beginPath(); ctx.setLineDash(bounced ? [4, 6] : [])
@@ -96,7 +97,7 @@ export function drawCourt(canvas: HTMLCanvasElement, state: TacticsState, cells:
   const target = screenPoint(state.target, view)
   // A hollow landing guide leaves the actual ball visible as it shrinks at the bounce.
   ctx.strokeStyle = '#ffffffb3'; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3])
-  ring(ctx, target, 9); ctx.stroke(); ctx.setLineDash([])
+  if (!hideAdvice) { ring(ctx, target, 9); ctx.stroke() }; ctx.setLineDash([])
   for (const player of state.players) {
     const p = screenPoint(player, view), radius = clamp(s * 0.52, 22, 28)
     const color = state.ballOwner === player.id ? '#efffa3' : player.team === 'you' ? '#edf8ff' : '#ffbd8f'
