@@ -22,10 +22,17 @@ export async function startEnglishEntry(root: HTMLElement) {
       const { data, error } = await client.functions.invoke(name, { body, signal })
       if (error || !data) throw new Error('Could not connect your account. Please try again.')
       return data
-    })
+    }, 20000, step => { root.dataset.lineStep = step })
     if (destination) window.location.replace(destination)
-  } catch {
-    status.textContent = 'Could not finish connecting. Please try again.'
+  } catch (error) {
+    // Fixed stage and short SDK code only: never log identity/session tokens or
+    // raw provider responses. Helps distinguish LINE/network vs account errors.
+    const rawCode = error && typeof error === 'object' && 'code' in error ? String(error.code) : error instanceof Error ? error.name : 'UNKNOWN'
+    const code = /^[A-Za-z0-9_-]{1,40}$/.test(rawCode) ? rawCode : 'UNKNOWN'
+    console.warn('EnglishSuccess connection failed', root.dataset.lineStep ?? 'setup', code)
+    status.textContent = root.dataset.lineStep === 'line-initialization'
+      ? 'Could not connect to LINE. Please try again in LINE.'
+      : 'Could not finish connecting. Please try again.'
     const back = document.createElement('a')
     back.href = ENGLISH_HOTEL
     back.textContent = 'Back to English Success'

@@ -16,12 +16,14 @@ export async function englishHandshake(
   line: LineSdk,
   invoke: Invoke,
   timeoutMs = 20000,
+  onStep: (step: string) => void = () => {},
 ): Promise<string | null> {
   const controller = new AbortController()
   let timer: ReturnType<typeof setTimeout> | undefined
   const { signal } = controller
   const call: Invoke = async (name, body) => {
     signal.throwIfAborted()
+    onStep(name === 'line-liff-auth' ? 'account-creation' : 'account-recognition')
     const data = await invoke(name, body, signal)
     signal.throwIfAborted()
     if (data.error) throw new Error('Could not connect your account. Please try again.')
@@ -29,10 +31,12 @@ export async function englishHandshake(
   }
   const work = async () => {
     // Do not leave the registered endpoint before primary/secondary init finishes.
+    onStep('line-initialization')
     await line.init({ liffId: SHARED_LIFF_ID, withLoginOnExternalBrowser: false })
     signal.throwIfAborted()
     if (!line.isLoggedIn()) {
       if (entry.attempted) throw new Error('LINE approval was not completed. Please try again.')
+      onStep('line-approval')
       line.login({ redirectUri: englishLoginCallback(entry.signup) })
       return null
     }
