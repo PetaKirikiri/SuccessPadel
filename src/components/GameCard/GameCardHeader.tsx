@@ -1,4 +1,3 @@
-import { CompetitionWeekCalendar } from '../InviteCard/CompetitionWeekCalendar'
 import QRCode from 'qrcode'
 import { useEffect, useState } from 'react'
 import { CircleDot, Pencil } from 'lucide-react'
@@ -205,11 +204,11 @@ function GameCardGameNavButton({
 }
 
 export function GameCardHeader({
-  competitionId,
   gameNumber,
   isLiveNow,
   timeLabel,
   countdown,
+  countdownUrgency = 0,
   countdownLabelText,
   finished,
   collapsed,
@@ -224,11 +223,11 @@ export function GameCardHeader({
   leaderboardActive = false,
   t,
 }: {
-  competitionId?: string
   gameNumber: number
   isLiveNow?: boolean
   timeLabel?: string
   countdown?: string | null
+  countdownUrgency?: number
   countdownLabelText: string
   finished: boolean
   collapsed: boolean
@@ -263,6 +262,7 @@ export function GameCardHeader({
     <div
       className={`game-card-header-timer shrink-0 text-right ${tv ? 'px-3 py-1' : ''}`}
       data-live={isLiveNow ? 'true' : 'false'}
+      data-urgency={countdownUrgency}
       aria-live="polite"
     >
       <p
@@ -288,7 +288,6 @@ export function GameCardHeader({
         <div
           className={`game-card-tv-header-panel relative min-w-0 w-full flex-1 ${headerCarouselMinHeightForSize(size)} ${headerPad}`}
         >
-          {competitionId ? <CompetitionWeekCalendar competitionId={competitionId} presentation="week" /> : null}
           <div className="game-card-tv-header-back absolute inset-y-0 left-0 z-10 flex items-center">
             {onBack ? (
               <GameCardBackButton onClick={onBack} ariaLabel={t('aria.back')} finished={finished} />
@@ -408,6 +407,7 @@ export function GameCardHeader({
             <div
               className="game-card-header-timer shrink-0 text-right"
               data-live={isLiveNow ? 'true' : 'false'}
+              data-urgency={countdownUrgency}
               aria-live="polite"
             >
               <p

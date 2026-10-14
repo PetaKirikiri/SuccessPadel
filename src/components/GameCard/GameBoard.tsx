@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { type LiveCourtGamesScore, type LiveCourtPointFeed } from '../../lib/liveCourtScore'
+import { gameCountdownUrgency } from '../../lib/gameCountdownUrgency'
 import { scheduledTvGame } from '../../lib/scheduledTvGame'
 import { useTranslation } from '../../hooks/useTranslation'
 import type { TranslateFn } from '../../i18n'
@@ -426,6 +427,13 @@ export function GameBoard({
       ? gameCountdown(clock, times, gameMinutes, game.gameNumber, roundTimesByGame)
       : null
     const state = countdownState(clock, times, submitted, game.gameNumber, roundTimesByGame)
+    const urgencyStart = inBreakAfter ? times?.endsAt : times?.startsAt
+    const urgencyEnd = inBreakAfter
+      ? roundTimesByGame?.get(game.gameNumber + 1)?.startsAt
+      : times?.endsAt
+    const countdownUrgency = urgencyStart != null && urgencyEnd != null
+      ? gameCountdownUrgency(clock, urgencyStart, urgencyEnd)
+      : 0
     const collapsed = useCarousel ? false : (collapsedGames[game.gameNumber] ?? false)
     const isCurrentGame =
       isLiveNow ||
@@ -481,6 +489,7 @@ export function GameBoard({
         isLiveNow={isLiveNow}
         isCurrentGame={isCurrentGame}
         countdown={countdown}
+        countdownUrgency={countdownUrgency}
         countdownLabelText={countdownLabel(state, t)}
         collapsed={collapsed}
         onToggleCollapsed={() => toggleCollapsed(game.gameNumber)}

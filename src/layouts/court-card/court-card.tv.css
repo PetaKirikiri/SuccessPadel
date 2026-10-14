@@ -476,3 +476,39 @@ html[data-viewport='tv'] .game-card-court-score-button__value { color:#ffe15a; }
 html[data-viewport='tv'] .game-card-court-player__name { color:#f7f5fc; }
 html[data-viewport='tv'] .game-card-court-player__avatar { background:#514961;color:#f7f5fc;border-color:#766783; }
 html[data-viewport='tv'] .game-card-court-score-divider { background:#514961; }
+
+/* Comic lettering and neutral court markings; preserve each viewport's geometry. */
+html[data-viewport='tv'] .game-card-court-shell { --color-brand-accent-light:#d9c8ee; }
+html[data-viewport='tv'] .game-card-court-header { background:#38264d;border-bottom:2px solid #15101e; }
+html[data-viewport='tv'] .game-card-court-label { font-family:Impact,'Arial Narrow',sans-serif;font-style:italic;font-weight:400;letter-spacing:0.025em;color:#fff3d2;text-shadow:2px 2px 0 #15101e; }
+html[data-viewport='tv'] .game-card-court-score-button { font-family:Arial,Helvetica,sans-serif;font-weight:900;background:#fff3d2;color:#241833;border:2px solid #15101e;border-radius:4px;box-shadow:2px 2px 0 #15101e; }
+html[data-viewport='tv'] .game-card-court-score-button__value { font-family:Arial,Helvetica,sans-serif;font-weight:900;color:#241833;font-variant-numeric:tabular-nums; }
+html[data-viewport='tv'] .game-card-court-label-row a { color:#fff3d2;border-color:#8e77ab;background:#46305f; }
+html[data-viewport='tv'] .game-card-court-match-wrap::before,
+html[data-viewport='tv'] .game-card-court-card-body:not(:has(.game-card-court-match-wrap))::before,
+html[data-viewport='tv'] .game-card-court-match::before { background:#756584; }
+
+/* A small comic caption interrupts the team boundary, never player controls. */
+html[data-viewport='tv'] .game-card-court-match-wrap::after,
+html[data-viewport='tv'] .game-card-court-card-body:not(:has(.game-card-court-match-wrap))::after {
+  content:'VS';
+  position:absolute;
+  left:50%;
+  top:50%;
+  z-index:2;
+  transform:translate(-50%,-50%) rotate(-7deg);
+  display:grid;
+  place-items:center;
+  width:clamp(42px,3.2vw,64px);
+  height:clamp(36px,2.7vw,54px);
+  border:3px solid #15101e;
+  border-radius:3px;
+  background:#ffe15a;
+  color:#241833;
+  box-shadow:3px 3px 0 #15101e;
+  font-family:Impact,'Arial Narrow',sans-serif;
+  font-size:clamp(24px,1.9vw,38px);
+  font-style:italic;
+  line-height:1;
+  pointer-events:none;
+}

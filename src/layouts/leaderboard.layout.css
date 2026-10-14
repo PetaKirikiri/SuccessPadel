@@ -418,3 +418,137 @@ html[data-viewport='tv'] .leaderboard-slot-score > div {
   min-width: 0;
   margin-right: 0;
 }
+
+/* Match-view standings share the comic court palette, not the legacy blue theme. */
+
+html[data-viewport='mobile'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) {
+  --color-brand-bg:#191823;
+  --color-brand-bg-alt:#39294e;
+  --color-brand-surface:#292135;
+  --color-brand-primary:#fff3d2;
+  --color-brand-text:#f7f1ff;
+  --color-brand-ink:#f7f1ff;
+  --color-brand-muted:#c3b2d5;
+  --color-brand-accent:#ffe15a;
+  --color-brand-accent-light:#fff3d2;
+  --color-brand-border:#69527e;
+  background:#292135;
+  color:#f7f1ff;
+  border-color:#15101e;
+}
+html[data-viewport='mobile'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) [data-competition-format] { background:#292135; }
+html[data-viewport='mobile'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) [data-competition-format] > div { border-color:#69527e; }
+html[data-viewport='mobile'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) [data-competition-format] > div > p:first-child { font-family:Impact,'Arial Narrow',sans-serif;font-style:italic;letter-spacing:0.04em;text-transform:uppercase;color:#fff3d2; }
+html[data-viewport='mobile'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li:not(.leaderboard-row--arrived) { background:#292135;border-color:#69527e; }
+html[data-viewport='mobile'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li:nth-child(even):not(.leaderboard-row--arrived) { background:#33273f; }
+html[data-viewport='mobile'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li > span:first-child { font-family:Arial,Helvetica,sans-serif;font-weight:900;color:#d9c8ee; }
+html[data-viewport='mobile'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li:nth-child(-n+3) > span:first-child { color:#ffe15a; }
+html[data-viewport='mobile'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li > span:not(:first-child),
+html[data-viewport='mobile'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) .leaderboard-team-player__name { color:#f7f1ff; }
+html[data-viewport='mobile'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li > div:last-child:not(.leaderboard-slot-score),
+html[data-viewport='mobile'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) .leaderboard-slot-score > div { background:#ffe15a;border:2px solid #15101e;border-radius:4px;color:#241833;box-shadow:2px 2px 0 #15101e; }
+html[data-viewport='mobile'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li > div:last-child:not(.leaderboard-slot-score) > span,
+html[data-viewport='mobile'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) .leaderboard-slot-score > div > span { font-family:Arial,Helvetica,sans-serif;font-weight:900;color:#241833; }
+html[data-viewport='mobile'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li > div:last-child:not(.leaderboard-slot-score),
+html[data-viewport='mobile'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) .leaderboard-slot-score > div { padding:4px 6px; }
+html[data-viewport='mobile'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li > div:last-child:not(.leaderboard-slot-score) > p,
+html[data-viewport='mobile'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) .leaderboard-slot-score > div > p { color:#493857; }
+
+html[data-viewport='tablet'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) {
+  --color-brand-bg:#191823;
+  --color-brand-bg-alt:#39294e;
+  --color-brand-surface:#292135;
+  --color-brand-primary:#fff3d2;
+  --color-brand-text:#f7f1ff;
+  --color-brand-ink:#f7f1ff;
+  --color-brand-muted:#c3b2d5;
+  --color-brand-accent:#ffe15a;
+  --color-brand-accent-light:#fff3d2;
+  --color-brand-border:#69527e;
+  background:#292135;
+  color:#f7f1ff;
+  border-color:#15101e;
+}
+html[data-viewport='tablet'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) [data-competition-format] { background:#292135; }
+html[data-viewport='tablet'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) [data-competition-format] > div { border-color:#69527e; }
+html[data-viewport='tablet'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) [data-competition-format] > div > p:first-child { font-family:Impact,'Arial Narrow',sans-serif;font-style:italic;letter-spacing:0.04em;text-transform:uppercase;color:#fff3d2; }
+html[data-viewport='tablet'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li:not(.leaderboard-row--arrived) { background:#292135;border-color:#69527e; }
+html[data-viewport='tablet'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li:nth-child(even):not(.leaderboard-row--arrived) { background:#33273f; }
+html[data-viewport='tablet'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li > span:first-child { font-family:Arial,Helvetica,sans-serif;font-weight:900;color:#d9c8ee; }
+html[data-viewport='tablet'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li:nth-child(-n+3) > span:first-child { color:#ffe15a; }
+html[data-viewport='tablet'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li > span:not(:first-child),
+html[data-viewport='tablet'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) .leaderboard-team-player__name { color:#f7f1ff; }
+html[data-viewport='tablet'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li > div:last-child:not(.leaderboard-slot-score),
+html[data-viewport='tablet'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) .leaderboard-slot-score > div { background:#ffe15a;border:2px solid #15101e;border-radius:4px;color:#241833;box-shadow:2px 2px 0 #15101e; }
+html[data-viewport='tablet'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li > div:last-child:not(.leaderboard-slot-score) > span,
+html[data-viewport='tablet'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) .leaderboard-slot-score > div > span { font-family:Arial,Helvetica,sans-serif;font-weight:900;color:#241833; }
+html[data-viewport='tablet'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li > div:last-child:not(.leaderboard-slot-score),
+html[data-viewport='tablet'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) .leaderboard-slot-score > div { padding:4px 6px; }
+html[data-viewport='tablet'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li > div:last-child:not(.leaderboard-slot-score) > p,
+html[data-viewport='tablet'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) .leaderboard-slot-score > div > p { color:#493857; }
+
+html[data-viewport='web'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) {
+  --color-brand-bg:#191823;
+  --color-brand-bg-alt:#39294e;
+  --color-brand-surface:#292135;
+  --color-brand-primary:#fff3d2;
+  --color-brand-text:#f7f1ff;
+  --color-brand-ink:#f7f1ff;
+  --color-brand-muted:#c3b2d5;
+  --color-brand-accent:#ffe15a;
+  --color-brand-accent-light:#fff3d2;
+  --color-brand-border:#69527e;
+  background:#292135;
+  color:#f7f1ff;
+  border-color:#15101e;
+}
+html[data-viewport='web'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) [data-competition-format] { background:#292135; }
+html[data-viewport='web'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) [data-competition-format] > div { border-color:#69527e; }
+html[data-viewport='web'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) [data-competition-format] > div > p:first-child { font-family:Impact,'Arial Narrow',sans-serif;font-style:italic;letter-spacing:0.04em;text-transform:uppercase;color:#fff3d2; }
+html[data-viewport='web'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li:not(.leaderboard-row--arrived) { background:#292135;border-color:#69527e; }
+html[data-viewport='web'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li:nth-child(even):not(.leaderboard-row--arrived) { background:#33273f; }
+html[data-viewport='web'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li > span:first-child { font-family:Arial,Helvetica,sans-serif;font-weight:900;color:#d9c8ee; }
+html[data-viewport='web'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li:nth-child(-n+3) > span:first-child { color:#ffe15a; }
+html[data-viewport='web'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li > span:not(:first-child),
+html[data-viewport='web'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) .leaderboard-team-player__name { color:#f7f1ff; }
+html[data-viewport='web'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li > div:last-child:not(.leaderboard-slot-score),
+html[data-viewport='web'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) .leaderboard-slot-score > div { background:#ffe15a;border:2px solid #15101e;border-radius:4px;color:#241833;box-shadow:2px 2px 0 #15101e; }
+html[data-viewport='web'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li > div:last-child:not(.leaderboard-slot-score) > span,
+html[data-viewport='web'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) .leaderboard-slot-score > div > span { font-family:Arial,Helvetica,sans-serif;font-weight:900;color:#241833; }
+html[data-viewport='web'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li > div:last-child:not(.leaderboard-slot-score),
+html[data-viewport='web'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) .leaderboard-slot-score > div { padding:4px 6px; }
+html[data-viewport='web'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li > div:last-child:not(.leaderboard-slot-score) > p,
+html[data-viewport='web'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) .leaderboard-slot-score > div > p { color:#493857; }
+
+html[data-viewport='tv'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) {
+  --color-brand-bg:#191823;
+  --color-brand-bg-alt:#39294e;
+  --color-brand-surface:#292135;
+  --color-brand-primary:#fff3d2;
+  --color-brand-text:#f7f1ff;
+  --color-brand-ink:#f7f1ff;
+  --color-brand-muted:#c3b2d5;
+  --color-brand-accent:#ffe15a;
+  --color-brand-accent-light:#fff3d2;
+  --color-brand-border:#69527e;
+  background:#292135;
+  color:#f7f1ff;
+  border-color:#15101e;
+}
+html[data-viewport='tv'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) [data-competition-format] { background:#292135; }
+html[data-viewport='tv'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) [data-competition-format] > div { border-color:#69527e; }
+html[data-viewport='tv'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) [data-competition-format] > div > p:first-child { font-family:Impact,'Arial Narrow',sans-serif;font-style:italic;letter-spacing:0.04em;text-transform:uppercase;color:#fff3d2; }
+html[data-viewport='tv'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li:not(.leaderboard-row--arrived) { background:#292135;border-color:#69527e; }
+html[data-viewport='tv'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li:nth-child(even):not(.leaderboard-row--arrived) { background:#33273f; }
+html[data-viewport='tv'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li > span:first-child { font-family:Arial,Helvetica,sans-serif;font-weight:900;color:#d9c8ee; }
+html[data-viewport='tv'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li:nth-child(-n+3) > span:first-child { color:#ffe15a; }
+html[data-viewport='tv'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li > span:not(:first-child),
+html[data-viewport='tv'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) .leaderboard-team-player__name { color:#f7f1ff; }
+html[data-viewport='tv'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li > div:last-child:not(.leaderboard-slot-score),
+html[data-viewport='tv'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) .leaderboard-slot-score > div { background:#ffe15a;border:2px solid #15101e;border-radius:4px;color:#241833;box-shadow:2px 2px 0 #15101e; }
+html[data-viewport='tv'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li > div:last-child:not(.leaderboard-slot-score) > span,
+html[data-viewport='tv'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) .leaderboard-slot-score > div > span { font-family:Arial,Helvetica,sans-serif;font-weight:900;color:#241833; }
+html[data-viewport='tv'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li > div:last-child:not(.leaderboard-slot-score),
+html[data-viewport='tv'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) .leaderboard-slot-score > div { padding:4px 6px; }
+html[data-viewport='tv'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li > div:last-child:not(.leaderboard-slot-score) > p,
+html[data-viewport='tv'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) .leaderboard-slot-score > div > p { color:#493857; }

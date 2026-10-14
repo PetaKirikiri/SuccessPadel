@@ -88,6 +88,7 @@ export function GameCard(props: GameCardInputProps) {
     isLiveNow,
     isCurrentGame,
     countdown,
+    countdownUrgency,
     countdownLabelText,
     collapsed,
     onToggleCollapsed,
@@ -178,11 +179,11 @@ export function GameCard(props: GameCardInputProps) {
 
   const header = (
     <GameCardHeader
-      competitionId={competitionId}
       gameNumber={game.gameNumber}
       isLiveNow={isLiveNow}
       timeLabel={displayTimeLabel}
       countdown={countdown}
+      countdownUrgency={countdownUrgency}
       countdownLabelText={countdownLabelText}
       finished={finished}
       collapsed={collapsed}
