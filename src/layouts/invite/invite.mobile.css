@@ -2658,3 +2658,98 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
   background-size: 100% 100%, 7px 7px;
   background-repeat: no-repeat, repeat;
 }
+
+/* Compact event identity, with the week browser beside the account control. */
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header-title {
+  padding-right: 78px;
+}
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-nav:has(.invite-carousel-header-nav--ghost) {
+  grid-template-columns: minmax(0, 1fr);
+}
+html[data-viewport='mobile'] .invite-game-card .invite-carousel-header-nav--ghost {
+  display: none;
+}
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__level {
+  font-family: inherit;
+  font-size: 19px;
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+  text-transform: none;
+}
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__ability-row {
+  min-height: 22px;
+}
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__level-help {
+  height: 24px;
+}
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header-links {
+  margin-top: 3px;
+}
+html[data-viewport='mobile'] .invite-game-card__header-title > .competition-week-browser {
+  position: absolute;
+  right: 39px;
+  top: 0;
+}
+html[data-viewport='mobile'] .competition-week-browser__trigger {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 7px;
+  border: 1px solid #766783;
+  border-radius: 9px;
+  background: #292735;
+  color: #f5d84e;
+}
+html[data-viewport='mobile'] .competition-week-browser__trigger > svg { width: 20px; height: 20px; }
+html[data-viewport='mobile'] .competition-week-dialog {
+  width: min(400px, calc(100vw - 24px));
+  max-height: calc(100dvh - 48px);
+  margin: auto;
+  padding: 0;
+  overflow-y: auto;
+  border: 2px solid #766783;
+  border-radius: 14px;
+  background: #191823;
+  color: #f7f5fc;
+  box-shadow: 0 20px 70px #0009;
+}
+html[data-viewport='mobile'] .competition-week-dialog::backdrop { background: #090910bf; }
+html[data-viewport='mobile'] .competition-week-dialog__body { padding: 14px; }
+html[data-viewport='mobile'] .competition-week-dialog__header,
+html[data-viewport='mobile'] .competition-week-dialog__navigation { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+html[data-viewport='mobile'] .competition-week-dialog__header h2 { margin: 0; font-size: 20px; font-weight: 850; }
+html[data-viewport='mobile'] .competition-week-dialog__header button,
+html[data-viewport='mobile'] .competition-week-dialog__navigation button {
+  display: grid; place-items: center; width: 40px; height: 40px; flex: none; padding: 8px;
+  color: #f7f5fc; background: #292735; border: 1px solid #766783; border-radius: 9px;
+}
+html[data-viewport='mobile'] .competition-week-dialog__navigation { margin: 14px 0 12px; }
+html[data-viewport='mobile'] .competition-week-dialog__navigation strong { font-size: 13px; text-align: center; }
+html[data-viewport='mobile'] .competition-week-dialog__days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+html[data-viewport='mobile'] .competition-week-dialog__days > div { display: grid; justify-items: center; gap: 5px; padding: 7px 0; border: 1px solid transparent; border-radius: 8px; }
+html[data-viewport='mobile'] .competition-week-dialog__days span { color: #bab2c9; font-size: 11px; }
+html[data-viewport='mobile'] .competition-week-dialog__days strong { font-size: 16px; }
+html[data-viewport='mobile'] .competition-week-dialog__days i { width: 5px; height: 5px; border-radius: 50%; background: transparent; }
+html[data-viewport='mobile'] .competition-week-dialog__days > div[data-event='true'] i { background: #f5d84e; }
+html[data-viewport='mobile'] .competition-week-dialog__days > div[data-today='true'] { border-color: #f5d84e; color: #f5d84e; }
+html[data-viewport='mobile'] .competition-week-dialog__today { min-height: 36px; margin: 8px 0; padding: 5px 10px; border: 0; background: transparent; color: #f5d84e; font-size: 12px; font-weight: 700; }
+html[data-viewport='mobile'] .competition-week-dialog__events { display: grid; gap: 8px; padding: 0; margin: 0; list-style: none; }
+html[data-viewport='mobile'] .competition-week-dialog__events a { display: grid; grid-template-columns: 34px minmax(0, 1fr) 18px; align-items: center; gap: 10px; padding: 12px 10px; border: 1px solid #514961; border-radius: 9px; background: #292735; color: #f7f5fc; text-decoration: none; }
+html[data-viewport='mobile'] .competition-week-dialog__events a[aria-current='page'] { border-color: #f5d84e; }
+html[data-viewport='mobile'] .competition-week-dialog__events time { display: grid; text-align: center; color: #f5d84e; }
+html[data-viewport='mobile'] .competition-week-dialog__events time span { font-size: 10px; }
+html[data-viewport='mobile'] .competition-week-dialog__events time strong { font-size: 22px; }
+html[data-viewport='mobile'] .competition-week-dialog__events a > span { display: grid; gap: 3px; }
+html[data-viewport='mobile'] .competition-week-dialog__events a > span > strong { font-size: 14px; line-height: 1.25; }
+html[data-viewport='mobile'] .competition-week-dialog__events small { color: #bab2c9; font-size: 12px; }
+html[data-viewport='mobile'] .competition-week-dialog__events svg { width: 18px; height: 18px; color: #bab2c9; }
+html[data-viewport='mobile'] .competition-week-dialog__empty { padding: 18px 0; color: #bab2c9; text-align: center; font-size: 14px; }
+html[data-viewport='mobile'] .competition-week-dialog button:focus-visible,
+html[data-viewport='mobile'] .competition-week-dialog a:focus-visible,
+html[data-viewport='mobile'] .competition-week-browser__trigger:focus-visible { outline: 2px solid #f5d84e; outline-offset: 3px; }
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-nav:has(.invite-carousel-header-nav--ghost) .invite-game-card__title-slot {
+  grid-column: 1;
+}
