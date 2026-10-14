@@ -167,6 +167,7 @@ export function InviteCard({
   const headerContent = (
     <header className="invite-game-card__header">
       <InviteCardHeaderTitle
+        competitionId={competitionId ?? undefined}
         detailTo={cardDetailTo}
         dateLine={dateCompact}
         timeLine={timeLine}

@@ -1,9 +1,11 @@
+import { CompetitionWeekCalendar } from './CompetitionWeekCalendar'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from '../../hooks/useTranslation'
 import { useInviteCarouselNav } from './InviteCardCarousel'
 
 type InviteCardHeaderTitleProps = {
+  competitionId?: string
   detailTo: string
   dateLine: string
   timeLine: string
@@ -47,6 +49,7 @@ function InviteCarouselHeaderNavButton({
 }
 
 export function InviteCardHeaderTitle({
+  competitionId,
   detailTo,
   dateLine,
   timeLine,
@@ -98,6 +101,7 @@ export function InviteCardHeaderTitle({
         />
       </div>
 
+      {competitionId ? <CompetitionWeekCalendar competitionId={competitionId} /> : null}
       {adminActions ? (
         <div
           className="invite-game-card__title-admin invite-card-admin-controls"

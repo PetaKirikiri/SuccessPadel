@@ -1,3 +1,4 @@
+import { CompetitionWeekCalendar } from '../InviteCard/CompetitionWeekCalendar'
 import QRCode from 'qrcode'
 import { useEffect, useState } from 'react'
 import { CircleDot, Pencil } from 'lucide-react'
@@ -204,6 +205,7 @@ function GameCardGameNavButton({
 }
 
 export function GameCardHeader({
+  competitionId,
   gameNumber,
   isLiveNow,
   timeLabel,
@@ -222,6 +224,7 @@ export function GameCardHeader({
   leaderboardActive = false,
   t,
 }: {
+  competitionId?: string
   gameNumber: number
   isLiveNow?: boolean
   timeLabel?: string
@@ -285,6 +288,7 @@ export function GameCardHeader({
         <div
           className={`game-card-tv-header-panel relative min-w-0 w-full flex-1 ${headerCarouselMinHeightForSize(size)} ${headerPad}`}
         >
+          {competitionId ? <CompetitionWeekCalendar competitionId={competitionId} /> : null}
           <div className="game-card-tv-header-back absolute inset-y-0 left-0 z-10 flex items-center">
             {onBack ? (
               <GameCardBackButton onClick={onBack} ariaLabel={t('aria.back')} finished={finished} />
