@@ -2753,3 +2753,105 @@ html[data-viewport='mobile'] .competition-week-browser__trigger:focus-visible { 
 html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-nav:has(.invite-carousel-header-nav--ghost) .invite-game-card__title-slot {
   grid-column: 1;
 }
+
+/* Compact comic masthead: printed purple burst, yellow caption, heavy ink edges.
+   Keep overflow open so the account menu remains usable. */
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header:has(.invite-game-card__header-links) {
+  padding: 10px 9px 0;
+  border: 3px solid #090910;
+  border-radius: 3px;
+  background-color: #6236a1;
+  background-image:
+    radial-gradient(circle, #23103970 1px, transparent 1.5px),
+    repeating-conic-gradient(from -15deg at 88% 20%, #9f69d738 0deg 12deg, transparent 12deg 29deg);
+  background-size: 5px 5px, 100% 100%;
+  box-shadow: 3px 4px 0 #090910, inset 0 0 0 1px #b387e4;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-link {
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 5px 7px;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__level {
+  display: block;
+  height: auto;
+  -webkit-line-clamp: unset;
+  margin: 0 0 3px;
+  padding: 5px 8px 6px;
+  border: 2px solid #111019;
+  background: #ffe15a;
+  color: #191321;
+  font-family: Impact, 'Arial Narrow', sans-serif;
+  font-size: clamp(20px, 5.7vw, 24px);
+  font-style: italic;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  text-transform: uppercase;
+  box-shadow: 3px 3px 0 #171020;
+  transform: rotate(-1.5deg);
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-link .invite-game-card__schedule-date {
+  color: #fff8e7;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-link .invite-game-card__schedule-time {
+  color: #fff8e7;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__ability {
+  color: #f2e8ff;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__level-help {
+  color: #fff8e7;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header-title > .competition-week-browser {
+  right: 40px;
+  top: 1px;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .competition-week-browser__trigger {
+  border: 2px solid #15101f;
+  border-radius: 5px;
+  background: #ffe15a;
+  color: #251333;
+  box-shadow: 2px 2px 0 #15101f;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__profile-action {
+  border: 2px solid #15101f;
+  border-radius: 5px;
+  background: #f8ecff;
+  color: #3c2159;
+  box-shadow: 2px 2px 0 #15101f;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header-links {
+  width: calc(100% + 18px);
+  margin: 6px -9px 0;
+  padding: 4px;
+  gap: 4px;
+  border-top: 3px solid #15101f;
+  border-bottom: 0;
+  background: #241a35;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header-links > a {
+  min-height: 36px;
+  color: #eee2ff;
+  font-style: italic;
+  letter-spacing: 0.035em;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header-links > a[aria-pressed="true"] {
+  background: #ffe15a;
+  color: #21162d;
+}
