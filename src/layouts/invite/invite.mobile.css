@@ -2913,3 +2913,68 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
 /* The existing duo masthead uses absolute title positioning; reserve its own rail. */
 html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='duos']) .invite-game-card__header:has(.competition-week-strip) { margin-bottom: 64px; overflow: visible; }
 html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='duos']) .competition-week-strip { position: absolute; top: calc(100% + 7px); left: 0; width: 100%; margin: 0; }
+
+/* Event details read as comic captions, with the club heroes beside them. */
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-link .invite-game-card__schedule-date {
+  padding: 4px 6px;
+  border: 2px solid #191321;
+  border-radius: 3px;
+  background: #fff3d2;
+  color: #281b39;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.2;
+  box-shadow: 2px 2px 0 #191321;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-link .invite-game-card__schedule-time {
+  padding: 4px 6px;
+  border: 2px solid #191321;
+  border-radius: 3px;
+  background: #241833;
+  color: #ffe878;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.2;
+  letter-spacing: 0.025em;
+  box-shadow: 2px 2px 0 #191321;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__ability-row {
+  width: max-content;
+  max-width: 100%;
+  gap: 2px;
+  padding: 0 3px 0 7px;
+  margin-top: 2px;
+  border: 1px solid #d2b1ed80;
+  border-radius: 4px;
+  background: #3c205d;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__ability {
+  color: #f8edff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.015em;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__level-help {
+  width: 22px;
+  height: 22px;
+  flex-basis: 22px;
+  color: #ffe878;
+  font-size: 12px;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header:has(.invite-game-card__header-links)::after {
+  content: '';
+  position: absolute;
+  inset: 47px 9px auto auto;
+  width: clamp(80px, calc(100vw - 240px), 126px);
+  height: 78px;
+  background: url('/brand/superhero-americano-duo.png') center top / 100% auto no-repeat;
+  clip-path: none;
+  transform: none;
+  opacity: 1;
+  pointer-events: none;
+}
