@@ -244,3 +244,30 @@ html[data-viewport='mobile'] .competition-pregame[data-competition-format='singl
 html[data-viewport='mobile'] .competition-pregame[data-competition-format='singles'] .competition-pregame__lineup-status:empty {
   display: none;
 }
+
+/* Keep identity and attendance together instead of leaving an empty lower corner. */
+html[data-viewport='mobile'] .competition-pregame[data-competition-format='singles'] .competition-pregame__roster {
+  grid-auto-rows: minmax(74px, auto);
+  gap: 6px;
+}
+html[data-viewport='mobile'] .competition-pregame[data-competition-format='singles'] .competition-pregame__player {
+  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-rows: minmax(18px, auto) 36px;
+  gap: 2px 5px;
+  min-height: 74px;
+  padding: 7px 7px 6px 18px;
+}
+html[data-viewport='mobile'] .competition-pregame[data-competition-format='singles'] .competition-pregame__avatar {
+  grid-row: 1 / 3;
+  align-self: center;
+  width: 34px;
+  height: 34px;
+}
+html[data-viewport='mobile'] .competition-pregame[data-competition-format='singles'] .competition-pregame__name {
+  align-self: end;
+  font-size: 12px;
+}
+html[data-viewport='mobile'] .competition-pregame[data-competition-format='singles'] .competition-pregame__attendance-actions {
+  grid-column: 2;
+  justify-self: start;
+}
