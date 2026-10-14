@@ -1,4 +1,4 @@
-import { englishLoginCallback, englishTicketUrl, ENGLISH_HOTEL, SHARED_LIFF_ID } from './englishEntry'
+import { englishLoginCallback, englishTicketUrl, englishDestination, SHARED_LIFF_ID, type EnglishMode } from './englishEntry'
 
 type LineSdk = {
   init: (config: { liffId: string; withLoginOnExternalBrowser: boolean }) => Promise<unknown>
@@ -12,7 +12,7 @@ type Invoke = (name: string, body: Record<string, unknown>, signal: AbortSignal)
 // Dependency-injected so the real new/returning-user sequence can be exercised
 // without creating test people in the shared production account database.
 export async function englishHandshake(
-  entry: { signup: boolean; attempted: boolean },
+  entry: { signup: boolean; attempted: boolean; mode?: EnglishMode },
   line: LineSdk,
   invoke: Invoke,
   timeoutMs = 20000,
@@ -37,14 +37,14 @@ export async function englishHandshake(
     if (!line.isLoggedIn()) {
       if (entry.attempted) throw new Error('LINE approval was not completed. Please try again.')
       onStep('line-approval')
-      line.login({ redirectUri: englishLoginCallback(entry.signup) })
+      line.login({ redirectUri: englishLoginCallback(entry.signup, entry.mode) })
       return null
     }
     const token = line.getIDToken()
     if (!token) throw new Error('LINE did not share your identity. Please try again.')
     let result = await call('line-liff-recognize', { id_token: token, handoff: true }, signal)
     if (result.recognised === false) {
-      if (!entry.signup) return `${ENGLISH_HOTEL}?line_result=new`
+      if (!entry.signup) return `${englishDestination(entry.mode)}?line_result=new`
       // This is the existing Padel account service. It verifies LINE identity,
       // reuses matching accounts and obtains the name/photo from LINE.
       const registered = await call('line-liff-auth', { id_token: token, access_token: line.getAccessToken() }, signal)
@@ -55,7 +55,7 @@ export async function englishHandshake(
       throw new Error('Could not finish sign-in. Please try again.')
     }
     // Only a single-use ticket crosses origins, never LINE or session tokens.
-    return englishTicketUrl(result.ticket)
+    return englishTicketUrl(result.ticket, entry.mode)
   }
   try {
     return await Promise.race([

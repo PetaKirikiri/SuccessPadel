@@ -1,6 +1,6 @@
 import liff from '@line/liff'
 import { createClient } from '@supabase/supabase-js'
-import { englishEntry, ENGLISH_HOTEL } from './lib/line/englishEntry'
+import { englishEntry, englishDestination } from './lib/line/englishEntry'
 import { englishHandshake } from './lib/line/englishHandshake'
 
 export async function startEnglishEntry(root: HTMLElement) {
@@ -34,7 +34,7 @@ export async function startEnglishEntry(root: HTMLElement) {
       ? 'Could not connect to LINE. Please try again in LINE.'
       : 'Could not finish connecting. Please try again.'
     const back = document.createElement('a')
-    back.href = ENGLISH_HOTEL
+    back.href = englishDestination(englishEntry(window.location.search)?.mode)
     back.textContent = 'Back to English Success'
     root.append(back)
   }
