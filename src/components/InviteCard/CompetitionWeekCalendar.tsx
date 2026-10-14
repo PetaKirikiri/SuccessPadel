@@ -96,8 +96,8 @@ function CompetitionWeekStrip({ competitionId }: { competitionId: string }) {
 export function CompetitionWeekCalendar({ competitionId, presentation = 'icon' }: { competitionId: string; presentation?: 'icon' | 'week' }) {
   const viewport = useViewportBucket()
   const [open, setOpen] = useState(false)
-  if (viewport !== 'mobile') return null
   if (presentation === 'week') return <CompetitionWeekStrip key={competitionId} competitionId={competitionId} />
+  if (viewport !== 'mobile') return null
   return <div className="competition-week-browser" onClick={event => event.stopPropagation()} onPointerDown={event => event.stopPropagation()}>
     <button type="button" className="competition-week-browser__trigger" aria-label="Competition calendar" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}><CalendarDays aria-hidden="true" /></button>
     {open ? <CalendarDialog competitionId={competitionId} onClose={() => setOpen(false)} /> : null}

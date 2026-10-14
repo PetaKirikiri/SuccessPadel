@@ -2359,9 +2359,9 @@ html[data-viewport='mobile'] .invite-game-card__profile-menu button:hover { back
 html[data-viewport='mobile'] .invite-game-card__profile-menu button:focus-visible { outline:2px solid var(--color-brand-accent);outline-offset:-2px;background:var(--color-brand-bg-alt); }
 html[data-viewport='mobile'] .invite-game-card__profile-menu button > svg { width:19px;height:19px;flex:none; }
 
-/* Approved Superhero mobile concept. Scoped to the singles invite surface. */
+/* Competition comic shell: independent of roster format, view, and account permissions. */
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) {
   --color-brand-bg: #191823;
   --color-brand-bg-alt: #292735;
   --color-brand-surface: #292735;
@@ -2373,13 +2373,13 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
   color: #f7f5fc;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__frame {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__frame {
   gap: 9px;
   padding: 6px;
   background: radial-gradient(circle, #74639140 1px, transparent 1.5px) right top / 8px 8px no-repeat, #191823;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header:has(.invite-game-card__header-links) {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__header:has(.invite-game-card__header-links) {
   display: block;
   position: relative;
   min-height: 0;
@@ -2390,21 +2390,21 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
   overflow: visible;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header::before {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__header::before {
   content: none;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header::after {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__header::after {
   content: none;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header-title {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__header-title {
   position: relative;
   display: block;
   padding-right: 36px;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-nav {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__title-nav {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr) 28px;
   align-items: start;
@@ -2412,13 +2412,13 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
   width: 100%;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-slot {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__title-slot {
   display: block;
   width: 100%;
   min-width: 0;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-link {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__title-link {
   position: static;
   display: grid;
   grid-template-columns: max-content max-content;
@@ -2431,11 +2431,11 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
   text-align: left;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-link::before {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__title-link::before {
   content: none;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__level {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__level {
   grid-column: 1 / -1;
   grid-row: 1;
   max-width: 100%;
@@ -2452,7 +2452,7 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
   text-overflow: clip;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-link .invite-game-card__schedule-date {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__title-link .invite-game-card__schedule-date {
   grid-column: 1;
   grid-row: 2;
   display: block;
@@ -2465,7 +2465,7 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
   line-height: 1.4;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-link .invite-game-card__schedule-time {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__title-link .invite-game-card__schedule-time {
   grid-column: 2;
   grid-row: 2;
   justify-self: start;
@@ -2479,15 +2479,15 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
   line-height: 1.4;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__schedule-date::before {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__schedule-date::before {
   content: none;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__schedule-time::before {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__schedule-time::before {
   content: none;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__ability-row {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__ability-row {
   grid-column: 1 / -1;
   grid-row: 3;
   justify-content: start;
@@ -2495,7 +2495,7 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
   margin: 0;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__ability {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__ability {
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -2506,7 +2506,7 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
   line-height: 1.3;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__level-help {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__level-help {
   flex-basis: 28px;
   width: 28px;
   height: 28px;
@@ -2516,7 +2516,7 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
   font-size: 14px;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-carousel-header-nav {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-carousel-header-nav {
   position: static;
   width: 28px;
   height: 36px;
@@ -2531,23 +2531,23 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
   transform: none;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-admin:has(.invite-game-card__profile-action) {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__title-admin:has(.invite-game-card__profile-action) {
   inset: 0 0 auto auto;
   padding: 0;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__profile-action {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__profile-action {
   width: 36px;
   height: 36px;
   color: #f7f5fc;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__profile-icon {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__profile-icon {
   width: 21px;
   height: 21px;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header-links {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__header-links {
   position: static;
   display: flex;
   width: 100%;
@@ -2562,7 +2562,7 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
   background: transparent;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header-links > a {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__header-links > a {
   min-height: 38px;
   padding: 5px;
   border: 0;
@@ -2574,17 +2574,17 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
   text-transform: uppercase;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header-links > a::before {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__header-links > a::before {
   content: none;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header-links > a[aria-pressed='true'] {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__header-links > a[aria-pressed='true'] {
   background: #f5d84e;
   color: #171620;
   clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__roster {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__roster {
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -2592,56 +2592,56 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
   overflow: visible;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .competition-pregame {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .competition-pregame {
   gap: 8px;
   color: #f7f5fc;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .competition-pregame__players {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .competition-pregame__players {
   padding: 0;
   border: 0;
   border-radius: 0;
   background: transparent;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .competition-pregame__rules {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .competition-pregame__rules {
   border: 0;
   background: transparent;
   color: #f7f5fc;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .competition-rules__tile {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .competition-rules__tile {
   border: 2px solid #090910;
   border-radius: 8px;
   background: #292735;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .competition-rules__tile[data-rule=golden] {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .competition-rules__tile[data-rule=golden] {
   background: #3c3525;
   border-color: #f5d84e;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .competition-rules__icon {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .competition-rules__icon {
   color: #c2b1db;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .competition-rules__label {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .competition-rules__label {
   color: #f7f5fc;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .competition-rules__note {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .competition-rules__note {
   color: #bab2c9;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .competition-rules__tile[data-rule=golden] .competition-rules__value {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .competition-rules__tile[data-rule=golden] .competition-rules__value {
   color: #f5d84e;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .competition-pregame__language[aria-pressed=true] {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .competition-pregame__language[aria-pressed=true] {
   box-shadow: inset 0 -2px #f5d84e;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .competition-pregame__error {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .competition-pregame__error {
   color: #ffa7b0;
 }
 
@@ -2653,23 +2653,23 @@ html[data-viewport='mobile'] .hub-root:has(.competition-pregame[data-competition
 html[data-viewport='mobile'] .hub-list:has(.competition-pregame[data-competition-format='singles']) {
   padding: 0 2px;
 }
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__frame {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__frame {
   background-image: radial-gradient(ellipse at center, #191823 62%, transparent), radial-gradient(circle, #74639130 1px, transparent 1.5px);
   background-size: 100% 100%, 7px 7px;
   background-repeat: no-repeat, repeat;
 }
 
 /* Compact event identity, with the week browser beside the account control. */
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header-title {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__header-title {
   padding-right: 78px;
 }
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-nav:has(.invite-carousel-header-nav--ghost) {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__title-nav:has(.invite-carousel-header-nav--ghost) {
   grid-template-columns: minmax(0, 1fr);
 }
 html[data-viewport='mobile'] .invite-game-card .invite-carousel-header-nav--ghost {
   display: none;
 }
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__level {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__level {
   font-family: inherit;
   font-size: 19px;
   font-style: normal;
@@ -2678,13 +2678,13 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
   line-height: 1.15;
   text-transform: none;
 }
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__ability-row {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__ability-row {
   min-height: 22px;
 }
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__level-help {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__level-help {
   height: 24px;
 }
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header-links {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__header-links {
   margin-top: 3px;
 }
 html[data-viewport='mobile'] .invite-game-card__header-title > .competition-week-browser {
@@ -2750,13 +2750,13 @@ html[data-viewport='mobile'] .competition-week-dialog__empty { padding: 18px 0; 
 html[data-viewport='mobile'] .competition-week-dialog button:focus-visible,
 html[data-viewport='mobile'] .competition-week-dialog a:focus-visible,
 html[data-viewport='mobile'] .competition-week-browser__trigger:focus-visible { outline: 2px solid #f5d84e; outline-offset: 3px; }
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-nav:has(.invite-carousel-header-nav--ghost) .invite-game-card__title-slot {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__title-nav:has(.invite-carousel-header-nav--ghost) .invite-game-card__title-slot {
   grid-column: 1;
 }
 
 /* Compact comic masthead: printed purple burst, yellow caption, heavy ink edges.
    Keep overflow open so the account menu remains usable. */
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header:has(.invite-game-card__header-links) {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__header:has(.invite-game-card__header-links) {
   padding: 10px 9px 0;
   border: 3px solid #090910;
   border-radius: 3px;
@@ -2768,12 +2768,12 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
   box-shadow: 3px 4px 0 #090910, inset 0 0 0 1px #b387e4;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-link {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__title-link {
   grid-template-columns: max-content minmax(0, 1fr);
   gap: 5px 7px;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__level {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__level {
   display: block;
   height: auto;
   -webkit-line-clamp: unset;
@@ -2793,32 +2793,32 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
   transform: rotate(-1.5deg);
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-link .invite-game-card__schedule-date {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__title-link .invite-game-card__schedule-date {
   color: #fff8e7;
   font-size: 11px;
   font-weight: 750;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-link .invite-game-card__schedule-time {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__title-link .invite-game-card__schedule-time {
   color: #fff8e7;
   font-size: 11px;
   font-weight: 750;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__ability {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__ability {
   color: #f2e8ff;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__level-help {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__level-help {
   color: #fff8e7;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header-title > .competition-week-browser {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__header-title > .competition-week-browser {
   right: 40px;
   top: 1px;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .competition-week-browser__trigger {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .competition-week-browser__trigger {
   border: 2px solid #15101f;
   border-radius: 5px;
   background: #ffe15a;
@@ -2826,7 +2826,7 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
   box-shadow: 2px 2px 0 #15101f;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__profile-action {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__profile-action {
   border: 2px solid #15101f;
   border-radius: 5px;
   background: #f8ecff;
@@ -2834,7 +2834,7 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
   box-shadow: 2px 2px 0 #15101f;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header-links {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__header-links {
   width: calc(100% + 18px);
   margin: 6px -9px 0;
   padding: 4px;
@@ -2844,14 +2844,14 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
   background: #241a35;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header-links > a {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__header-links > a {
   min-height: 36px;
   color: #eee2ff;
   font-style: italic;
   letter-spacing: 0.035em;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header-links > a[aria-pressed="true"] {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__header-links > a[aria-pressed="true"] {
   background: #ffe15a;
   color: #21162d;
 }
@@ -2909,13 +2909,10 @@ html[data-viewport='mobile'] .competition-week-strip__event:focus-visible,
 html[data-viewport='mobile'] .competition-week-strip__arrow:focus-visible { outline: 2px solid white; outline-offset: -2px; }
 html[data-viewport='mobile'] .invite-game-card:has(.competition-week-strip) .invite-game-card__header-title { padding-right: 42px; }
 html[data-viewport='mobile'] .invite-game-card__header-title > .competition-week-strip { width: calc(100% + 42px); }
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header-title:has(.competition-week-strip) { padding-right: 42px; }
-/* The existing duo masthead uses absolute title positioning; reserve its own rail. */
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='duos']) .invite-game-card__header:has(.competition-week-strip) { margin-bottom: 64px; overflow: visible; }
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='duos']) .competition-week-strip { position: absolute; top: calc(100% + 7px); left: 0; width: 100%; margin: 0; }
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__header-title:has(.competition-week-strip) { padding-right: 42px; }
 
 /* Event details read as comic captions, with the club heroes beside them. */
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-link .invite-game-card__schedule-date {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__title-link .invite-game-card__schedule-date {
   padding: 4px 6px;
   border: 2px solid #191321;
   border-radius: 3px;
@@ -2927,7 +2924,7 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
   box-shadow: 2px 2px 0 #191321;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-link .invite-game-card__schedule-time {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__title-link .invite-game-card__schedule-time {
   padding: 4px 6px;
   border: 2px solid #191321;
   border-radius: 3px;
@@ -2940,7 +2937,7 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
   box-shadow: 2px 2px 0 #191321;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__ability-row {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__ability-row {
   width: max-content;
   max-width: 100%;
   gap: 2px;
@@ -2951,14 +2948,14 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
   background: #3c205d;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__ability {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__ability {
   color: #f8edff;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.015em;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__level-help {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__level-help {
   width: 22px;
   height: 22px;
   flex-basis: 22px;
@@ -2966,10 +2963,10 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
   font-size: 12px;
 }
 
-html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header:has(.invite-game-card__header-links)::after {
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__header:has(.invite-game-card__header-links)::after {
   content: '';
   position: absolute;
-  inset: 42px 6px auto auto;
+  inset: auto 6px 108px auto;
   width: clamp(104px, calc(100vw - 212px), 170px);
   height: 83px;
   background: url('/brand/superhero-americano-duo.png') center top / 100% auto no-repeat;
@@ -2978,3 +2975,18 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
   opacity: 1;
   pointer-events: none;
 }
+
+/* The signed-in editor uses the same card colours as attendance mode. */
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition'] .invite-roster-editor .invite-roster-editor-chip,
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition'] .invite-roster-editor .invite-duo-team-card,
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition'] .invite-roster-editor .duo-team-card {
+  border: 2px solid #090910;
+  border-radius: 4px;
+  background: #292735;
+  color: #f7f5fc;
+  box-shadow: 2px 2px 0 #090910;
+}
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition'] .invite-roster-editor .invite-roster-chip__name,
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition'] .invite-roster-editor .invite-duo-team-label .brand-input { color: #f7f5fc; }
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition'] .invite-roster-editor .invite-duo-team-label { background: #ffe15a; color: #191321; border-radius: 2px; }
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition'] .invite-roster-editor .invite-duo-team-label .brand-input { color: #191321; font-weight: 850; }

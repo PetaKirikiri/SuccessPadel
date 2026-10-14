@@ -1417,3 +1417,82 @@ html[data-viewport='web'] .invite-game-card__profile-menu button { display:flex;
 html[data-viewport='web'] .invite-game-card__profile-menu button:hover { background:var(--color-brand-bg-alt); }
 html[data-viewport='web'] .invite-game-card__profile-menu button:focus-visible { outline:2px solid var(--color-brand-accent);outline-offset:-2px;background:var(--color-brand-bg-alt); }
 html[data-viewport='web'] .invite-game-card__profile-menu button > svg { width:19px;height:19px;flex:none; }
+
+/* Competition comic identity, independent of account appearance. */
+html[data-viewport='web'] .competition-week-strip {
+  position: relative;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) 26px;
+  grid-column: 1 / -1;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  margin-top: 9px;
+}
+html[data-viewport='web'] .competition-week-strip__events {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(66px, 1fr);
+  gap: 5px;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 0 2px 3px 0;
+}
+html[data-viewport='web'] .competition-week-strip__event {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 2px;
+  min-height: 52px;
+  padding: 5px 4px;
+  border: 2px solid #171020;
+  border-radius: 3px;
+  background: #f2e7ff;
+  color: #3e205d;
+  text-decoration: none;
+  box-shadow: 2px 2px 0 #171020;
+}
+html[data-viewport='web'] .competition-week-strip__event strong { font-size: 16px; line-height: 1; font-weight: 900; text-transform: uppercase; }
+html[data-viewport='web'] .competition-week-strip__event time { font-size: 11px; font-weight: 650; }
+html[data-viewport='web'] .competition-week-strip__event[aria-current='page'] { background: #ffe15a; color: #191321; }
+html[data-viewport='web'] .competition-week-strip__arrow {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  min-height: 52px;
+  border: 0;
+  background: transparent;
+  color: #fff5d6;
+}
+html[data-viewport='web'] .competition-week-strip__arrow svg { width: 23px; height: 23px; }
+html[data-viewport='web'] .competition-week-strip__events > p { display: grid; align-content: center; gap: 3px; min-height: 52px; margin: 0; color: #fff5d6; font-size: 12px; text-align: center; }
+html[data-viewport='web'] .competition-week-strip__event:focus-visible,
+html[data-viewport='web'] .competition-week-strip__arrow:focus-visible { outline: 2px solid white; outline-offset: -2px; }
+html[data-viewport='web'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) { --color-brand-bg:#191823;--color-brand-bg-alt:#292735;--color-brand-surface:#292735;--color-brand-border:#514961;--color-brand-ink:#f7f5fc;--color-brand-primary:#f7f5fc;--color-brand-muted:#bab2c9;--color-brand-accent:#ffe15a;background:#191823;color:#f7f5fc; }
+html[data-viewport='web'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__frame { background:#191823;gap:10px; }
+html[data-viewport='web'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__header:has(.invite-game-card__header-links) { min-height:255px;height:255px;flex:0 0 auto;border:3px solid #090910;border-radius:4px;background-color:#6236a1;background-image:radial-gradient(circle,#23103970 1px,transparent 1.5px),repeating-conic-gradient(from -15deg at 88% 20%,#9f69d738 0deg 12deg,transparent 12deg 29deg);background-size:5px 5px,100% 100%;box-shadow:inset 0 0 0 1px #b387e4;overflow:visible; }
+html[data-viewport='web'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__title-link { top:14px;max-width:54%;gap:5px;width:max-content; }
+html[data-viewport='web'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__title-link::before { content:none; }
+html[data-viewport='web'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__level { display:block;width:fit-content;max-width:100%;margin:0 auto;padding:6px 14px;border:2px solid #171020;background:#ffe15a;color:#191321;font:italic 900 26px/1.1 Impact,'Arial Narrow',sans-serif;text-transform:uppercase;box-shadow:3px 3px 0 #171020;white-space:normal;-webkit-line-clamp:unset; }
+html[data-viewport='web'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__schedule-date { padding:4px 8px;border:2px solid #191321;border-radius:3px;background:#fff3d2;color:#281b39;font:850 12px/1.2 Arial,sans-serif; }
+html[data-viewport='web'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__schedule-time { padding:4px 8px;border:2px solid #191321;border-radius:3px;background:#241833;color:#ffe878;font:850 12px/1.2 Arial,sans-serif; }
+html[data-viewport='web'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__ability { background:#3c205d;border:1px solid #a882c9;color:#f8edff;font-size:12px; }
+html[data-viewport='web'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__level-help { background:#3c205d;border-color:#a882c9;color:#ffe878; }
+html[data-viewport='web'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__header-title > .competition-week-strip { position:absolute;top:auto;bottom:48px;left:50%;width:min(370px,52%);margin:0;transform:translateX(-50%);z-index:2; }
+html[data-viewport='web'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__header-links { bottom:6px;background:#241a35;border:2px solid #171020;border-radius:3px;padding:3px; }
+html[data-viewport='web'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__header-links > a { color:#eee2ff;background:transparent;font-weight:850;text-transform:uppercase;border-radius:2px; }
+html[data-viewport='web'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__header-links > a[aria-pressed=true] { background:#ffe15a;color:#191321; }
+html[data-viewport='web'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__profile-action { background:#f8ecff;border:2px solid #171020;border-radius:5px;color:#3c2159; }
+html[data-viewport='web'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__roster { background:#191823;border:0; }
+html[data-viewport='web'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .competition-pregame__players { background:#191823;border-color:#514961; }
+html[data-viewport='web'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .competition-pregame__rules { background:#191823;border-color:#514961;color:#f7f5fc; }
+html[data-viewport='web'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .competition-rules__tile { background:#292735;border:2px solid #090910;border-radius:4px;color:#f7f5fc;box-shadow:inset 0 0 0 1px #514961; }
+html[data-viewport='web'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .competition-rules__tile[data-rule=golden] { background:#3c3525;border-color:#ffe15a; }
+html[data-viewport='web'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .competition-rules__label { color:#f7f5fc; }
+html[data-viewport='web'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .competition-rules__icon { color:#ffe15a; }
+html[data-viewport='web'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor .invite-roster-editor-chip { background:#292735;color:#f7f5fc;border:2px solid #090910; }
+html[data-viewport='web'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor .invite-duo-team-card { background:#292735;color:#f7f5fc;border:2px solid #090910; }
+
+html[data-viewport='web'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__schedule-date { margin-top:0;justify-self:end; }
+html[data-viewport='web'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__schedule-time { margin-top:0;justify-self:start; }
+html[data-viewport='web'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__ability-row { margin-top:0; }

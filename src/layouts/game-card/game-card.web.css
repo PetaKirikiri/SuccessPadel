@@ -163,3 +163,15 @@ html[data-viewport='web'] .game-card-courts-grid {
   }
 
 }
+
+/* Comic match surface, with desktop game geometry preserved. */
+html[data-viewport='web'] .game-card-shell { --color-brand-bg:#191823;--color-brand-bg-alt:#292735;--color-brand-surface:#292735;--color-brand-primary:#f7f5fc;--color-brand-ink:#f7f5fc;--color-brand-muted:#bab2c9;--color-brand-border:#514961;--color-brand-accent:#ffe15a;background:#191823;color:#f7f5fc;border-color:#090910; }
+html[data-viewport='web'] .game-card-courts-body { background:#191823;border-color:#514961; }
+html[data-viewport='web'] .game-card-tv-header-panel:has(.competition-week-strip) { min-height:190px;border:3px solid #090910;background-color:#6236a1;background-image:radial-gradient(circle,#23103970 1px,transparent 1.5px),repeating-conic-gradient(from -15deg at 88% 20%,#9f69d738 0deg 12deg,transparent 12deg 29deg);background-size:5px 5px,100% 100%; }
+html[data-viewport='web'] .game-card-tv-header-panel > .competition-week-strip { position:absolute;bottom:10px;left:50%;width:370px;max-width:60%;margin:0;transform:translateX(-50%); }
+html[data-viewport='web'] .game-card-tv-header-panel:has(.competition-week-strip) .game-card-tv-header-center { bottom:65px; }
+html[data-viewport='web'] .game-card-tv-header-title-row > p { background:#ffe15a;border:2px solid #171020;padding:4px 14px;color:#191321;font-family:Impact,'Arial Narrow',sans-serif;font-style:italic;text-transform:uppercase;box-shadow:3px 3px 0 #171020; }
+html[data-viewport='web'] .game-card-tv-header-time { color:#fff3d2;font-weight:850; }
+html[data-viewport='web'] .game-card-header-timer__value { color:#ffe15a; }
+html[data-viewport='web'] .game-card-header-timer__label { color:#f2e7ff; }
+html[data-viewport='web'] .game-card-tv-header-panel:has(.competition-week-strip)::before { content:'';position:absolute;left:7%;top:8px;width:150px;height:165px;background:url('/brand/superhero-americano-duo.png') center / contain no-repeat;pointer-events:none; }
