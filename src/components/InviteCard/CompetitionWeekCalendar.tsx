@@ -60,11 +60,44 @@ function CalendarDialog({ competitionId, onClose }: { competitionId: string; onC
   )
 }
 
+/** Visible event choices make the invite page an entry point to the whole week. */
+function CompetitionWeekStrip({ competitionId }: { competitionId: string }) {
+  const { rows, loading, error } = useCompetitionHubRows()
+  const [anchor, setAnchor] = useState<string | null>(null)
+  const current = rows.find(row => row.id === competitionId)
+  const days = competitionWeekDays(anchor ?? clubCompetitionDay(current?.starts_at ?? null) ?? clubTodayDateInput())
+  const events = rows.filter(row => {
+    const day = clubCompetitionDay(row.starts_at)
+    return day !== null && day >= days[0] && day <= days[6] && row.status !== 'cancelled'
+  }).sort((a, b) => (a.starts_at ?? '').localeCompare(b.starts_at ?? ''))
+  const label = (day: string, options: Intl.DateTimeFormatOptions) => new Date(`${day}T12:00:00Z`).toLocaleDateString('en-GB', { ...options, timeZone: 'UTC' })
+
+  return <nav className="competition-week-strip" aria-label="Weekly competitions"
+    onClick={event => event.stopPropagation()} onPointerDown={event => event.stopPropagation()}>
+    <button type="button" className="competition-week-strip__arrow" aria-label="Previous competition week" onClick={() => setAnchor(shiftCalendarDay(days[0], -7))}><ChevronLeft aria-hidden="true" /></button>
+    <div className="competition-week-strip__events" aria-live="polite">
+      {loading ? <p role="status">Loading competitions…</p> : error ? <p role="alert">Unable to load this week.</p> : events.length === 0 ?
+        <p>{label(days[0], { day: 'numeric', month: 'short' })}–{label(days[6], { day: 'numeric', month: 'short' })}<span>No competitions</span></p> :
+        events.map(row => {
+          const day = clubCompetitionDay(row.starts_at)!
+          return <Link key={row.id} to={competitionInvitePath(row.id)}
+            className="competition-week-strip__event" aria-current={row.id === competitionId ? 'page' : undefined}
+            aria-label={`${label(day, { weekday: 'long', day: 'numeric', month: 'short' })}, ${row.title}, ${formatClubTime(new Date(row.starts_at!))}`}>
+            <strong>{label(day, { weekday: 'short' })}</strong>
+            <time dateTime={day}>{label(day, { day: 'numeric', month: 'short' })}</time>
+          </Link>
+        })}
+    </div>
+    <button type="button" className="competition-week-strip__arrow" aria-label="Next competition week" onClick={() => setAnchor(shiftCalendarDay(days[0], 7))}><ChevronRight aria-hidden="true" /></button>
+  </nav>
+}
+
 /** Mobile calendar owns its visibility; shared headers keep one rendering path. */
-export function CompetitionWeekCalendar({ competitionId }: { competitionId: string }) {
+export function CompetitionWeekCalendar({ competitionId, presentation = 'icon' }: { competitionId: string; presentation?: 'icon' | 'week' }) {
   const viewport = useViewportBucket()
   const [open, setOpen] = useState(false)
   if (viewport !== 'mobile') return null
+  if (presentation === 'week') return <CompetitionWeekStrip key={competitionId} competitionId={competitionId} />
   return <div className="competition-week-browser" onClick={event => event.stopPropagation()} onPointerDown={event => event.stopPropagation()}>
     <button type="button" className="competition-week-browser__trigger" aria-label="Competition calendar" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}><CalendarDays aria-hidden="true" /></button>
     {open ? <CalendarDialog competitionId={competitionId} onClose={() => setOpen(false)} /> : null}

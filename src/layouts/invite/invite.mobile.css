@@ -2855,3 +2855,61 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
   background: #ffe15a;
   color: #21162d;
 }
+
+
+/* Weekly choices are visible on the invite, not hidden behind a calendar icon. */
+html[data-viewport='mobile'] .competition-week-strip {
+  position: relative;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) 26px;
+  grid-column: 1 / -1;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  margin-top: 9px;
+}
+html[data-viewport='mobile'] .competition-week-strip__events {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(66px, 1fr);
+  gap: 5px;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 0 2px 3px 0;
+}
+html[data-viewport='mobile'] .competition-week-strip__event {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 2px;
+  min-height: 52px;
+  padding: 5px 4px;
+  border: 2px solid #171020;
+  border-radius: 3px;
+  background: #f2e7ff;
+  color: #3e205d;
+  text-decoration: none;
+  box-shadow: 2px 2px 0 #171020;
+}
+html[data-viewport='mobile'] .competition-week-strip__event strong { font-size: 16px; line-height: 1; font-weight: 900; text-transform: uppercase; }
+html[data-viewport='mobile'] .competition-week-strip__event time { font-size: 11px; font-weight: 650; }
+html[data-viewport='mobile'] .competition-week-strip__event[aria-current='page'] { background: #ffe15a; color: #191321; }
+html[data-viewport='mobile'] .competition-week-strip__arrow {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  min-height: 52px;
+  border: 0;
+  background: transparent;
+  color: #fff5d6;
+}
+html[data-viewport='mobile'] .competition-week-strip__arrow svg { width: 23px; height: 23px; }
+html[data-viewport='mobile'] .competition-week-strip__events > p { display: grid; align-content: center; gap: 3px; min-height: 52px; margin: 0; color: #fff5d6; font-size: 12px; text-align: center; }
+html[data-viewport='mobile'] .competition-week-strip__event:focus-visible,
+html[data-viewport='mobile'] .competition-week-strip__arrow:focus-visible { outline: 2px solid white; outline-offset: -2px; }
+html[data-viewport='mobile'] .invite-game-card:has(.competition-week-strip) .invite-game-card__header-title { padding-right: 42px; }
+html[data-viewport='mobile'] .invite-game-card__header-title > .competition-week-strip { width: calc(100% + 42px); }
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header-title:has(.competition-week-strip) { padding-right: 42px; }
+/* The existing duo masthead uses absolute title positioning; reserve its own rail. */
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='duos']) .invite-game-card__header:has(.competition-week-strip) { margin-bottom: 64px; overflow: visible; }
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='duos']) .competition-week-strip { position: absolute; top: calc(100% + 7px); left: 0; width: 100%; margin: 0; }

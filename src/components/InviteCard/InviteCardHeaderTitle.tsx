@@ -101,7 +101,7 @@ export function InviteCardHeaderTitle({
         />
       </div>
 
-      {competitionId ? <CompetitionWeekCalendar competitionId={competitionId} /> : null}
+      {competitionId ? <CompetitionWeekCalendar competitionId={competitionId} presentation="week" /> : null}
       {adminActions ? (
         <div
           className="invite-game-card__title-admin invite-card-admin-controls"
