@@ -183,6 +183,33 @@
       })()
     </script>
     <meta name="theme-color" content="#0b2a4a" />
+    <style id="sp-competition-page-theme">
+      /* Match the competition surface before React, auth, or data have loaded.
+         These are page backgrounds, not viewport layout or card overrides. */
+      html:root[data-page-theme='competition'],
+      html:root[data-page-theme='competition'] body,
+      html:root[data-page-theme='competition'] #root,
+      html:root[data-page-theme='competition'] .viewport-lock,
+      html:root[data-page-theme='competition'] .shell-paper.game-bg {
+        background: #191823;
+      }
+    </style>
+    <script id="sp-competition-page-theme-bootstrap">
+      (function () {
+        function syncPageTheme() {
+          var path = window.location.pathname
+          var competition = path === '/' || /^\/(?:competitive\/?|c\/[^/]+\/?|competitions(?:\/.*)?)$/.test(path)
+          var html = document.documentElement
+          if (competition) html.setAttribute('data-page-theme', 'competition')
+          else html.removeAttribute('data-page-theme')
+          var themeColor = document.querySelector('meta[name="theme-color"]')
+          if (themeColor) themeColor.setAttribute('content', competition ? '#191823' : '#0b2a4a')
+        }
+        syncPageTheme()
+        window.addEventListener('sp:route-theme', syncPageTheme)
+        window.addEventListener('popstate', syncPageTheme)
+      })()
+    </script>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Success Padel</title>
   </head>
