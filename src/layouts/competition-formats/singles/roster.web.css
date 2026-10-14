@@ -91,3 +91,27 @@ html[data-viewport='web'] .competition-pregame[data-competition-format='singles'
 html[data-viewport='web'] .competition-pregame[data-competition-format='singles'] .competition-pregame__attendance-actions .competition-pregame__attendance-no[aria-pressed=true] { background:#ed8793;color:#191321; }
 html[data-viewport='web'] .competition-pregame[data-competition-format='singles'] .competition-pregame__player--confirmed { background:#32332d; }
 html[data-viewport='web'] .competition-pregame[data-competition-format='singles'] .competition-pregame__player--cancelled { background:#3b2835; }
+
+/* Match the compact tick/cross attendance controls used on phones. */
+html[data-viewport='web'] .competition-pregame[data-competition-format='singles'] .competition-pregame__roster .competition-pregame__attendance-actions {
+  grid-template-columns: repeat(2, 36px);
+}
+html[data-viewport='web'] .competition-pregame[data-competition-format='singles'] .competition-pregame__roster .competition-pregame__attendance-actions button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: 1px solid #9f91b5;
+  border-radius: 6px;
+  background: #181720;
+  font-size: 0;
+  font-weight: 850;
+}
+html[data-viewport='web'] .competition-pregame[data-competition-format='singles'] .competition-pregame__roster .competition-pregame__attendance-actions button.competition-pregame__attendance-yes { color: #f5d84e; }
+html[data-viewport='web'] .competition-pregame[data-competition-format='singles'] .competition-pregame__roster .competition-pregame__attendance-actions button.competition-pregame__attendance-no { color: #ff8d97; }
+html[data-viewport='web'] .competition-pregame[data-competition-format='singles'] .competition-pregame__roster .competition-pregame__attendance-yes::after { content: '✓'; font-size: 21px; line-height: 1; }
+html[data-viewport='web'] .competition-pregame[data-competition-format='singles'] .competition-pregame__roster .competition-pregame__attendance-no::after { content: '×'; font-size: 26px; line-height: 1; }
+html[data-viewport='web'] .competition-pregame[data-competition-format='singles'] .competition-pregame__roster .competition-pregame__attendance-actions button.competition-pregame__attendance-yes[aria-pressed=true] { background: #f5d84e; border-color: #f5d84e; color: #181720; }
+html[data-viewport='web'] .competition-pregame[data-competition-format='singles'] .competition-pregame__roster .competition-pregame__attendance-actions button.competition-pregame__attendance-no[aria-pressed=true] { background: #ff8d97; border-color: #ff8d97; color: #181720; }
