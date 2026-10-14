@@ -2969,9 +2969,9 @@ html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-com
 html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header:has(.invite-game-card__header-links)::after {
   content: '';
   position: absolute;
-  inset: 47px 9px auto auto;
-  width: clamp(80px, calc(100vw - 240px), 126px);
-  height: 78px;
+  inset: 42px 6px auto auto;
+  width: clamp(104px, calc(100vw - 212px), 170px);
+  height: 83px;
   background: url('/brand/superhero-americano-duo.png') center top / 100% auto no-repeat;
   clip-path: none;
   transform: none;
