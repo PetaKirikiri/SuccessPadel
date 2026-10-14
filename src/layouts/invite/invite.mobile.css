@@ -2358,3 +2358,303 @@ html[data-viewport='mobile'] .invite-game-card__profile-menu button { display:fl
 html[data-viewport='mobile'] .invite-game-card__profile-menu button:hover { background:var(--color-brand-bg-alt); }
 html[data-viewport='mobile'] .invite-game-card__profile-menu button:focus-visible { outline:2px solid var(--color-brand-accent);outline-offset:-2px;background:var(--color-brand-bg-alt); }
 html[data-viewport='mobile'] .invite-game-card__profile-menu button > svg { width:19px;height:19px;flex:none; }
+
+/* Approved Superhero mobile concept. Scoped to the singles invite surface. */
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) {
+  --color-brand-bg: #191823;
+  --color-brand-bg-alt: #292735;
+  --color-brand-surface: #292735;
+  --color-brand-border: #514961;
+  --color-brand-ink: #f7f5fc;
+  --color-brand-primary: #f7f5fc;
+  --color-brand-muted: #bab2c9;
+  background: #191823;
+  color: #f7f5fc;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__frame {
+  gap: 9px;
+  padding: 6px;
+  background: radial-gradient(circle, #74639140 1px, transparent 1.5px) right top / 8px 8px no-repeat, #191823;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header:has(.invite-game-card__header-links) {
+  display: block;
+  position: relative;
+  min-height: 0;
+  padding: 4px 0 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header::before {
+  content: none;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header::after {
+  content: none;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header-title {
+  position: relative;
+  display: block;
+  padding-right: 36px;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-nav {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 28px;
+  align-items: start;
+  gap: 0;
+  width: 100%;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-slot {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-link {
+  position: static;
+  display: grid;
+  grid-template-columns: max-content max-content;
+  justify-content: start;
+  justify-items: start;
+  gap: 4px 7px;
+  width: 100%;
+  max-width: none;
+  transform: none;
+  text-align: left;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-link::before {
+  content: none;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__level {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  max-width: 100%;
+  color: #f7f5fc;
+  font-family: Impact, 'Arial Narrow', sans-serif;
+  font-style: italic;
+  font-size: clamp(16px, 4.5vw, 20px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-link .invite-game-card__schedule-date {
+  grid-column: 1;
+  grid-row: 2;
+  display: block;
+  width: auto;
+  margin: 0;
+  padding: 0;
+  color: #bab2c9;
+  font-family: inherit;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-link .invite-game-card__schedule-time {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: start;
+  display: block;
+  width: auto;
+  margin: 0;
+  padding: 0;
+  color: #bab2c9;
+  font-family: inherit;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__schedule-date::before {
+  content: none;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__schedule-time::before {
+  content: none;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__ability-row {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  justify-content: start;
+  gap: 5px;
+  margin: 0;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__ability {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #c2b1db;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__level-help {
+  flex-basis: 28px;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  background: transparent;
+  color: #c2b1db;
+  font-size: 14px;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-carousel-header-nav {
+  position: static;
+  width: 28px;
+  height: 36px;
+  min-width: 0;
+  min-height: 36px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #f7f5fc;
+  box-shadow: none;
+  font-size: 28px;
+  transform: none;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__title-admin:has(.invite-game-card__profile-action) {
+  inset: 0 0 auto auto;
+  padding: 0;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__profile-action {
+  width: 36px;
+  height: 36px;
+  color: #f7f5fc;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__profile-icon {
+  width: 21px;
+  height: 21px;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header-links {
+  position: static;
+  display: flex;
+  width: 100%;
+  max-width: none;
+  gap: 3px;
+  margin: 5px 0 0;
+  padding: 0 0 3px;
+  transform: none;
+  border: 0;
+  border-bottom: 1px solid #766783;
+  border-radius: 0;
+  background: transparent;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header-links > a {
+  min-height: 38px;
+  padding: 5px;
+  border: 0;
+  border-radius: 0;
+  color: #e8e3ef;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header-links > a::before {
+  content: none;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__header-links > a[aria-pressed='true'] {
+  background: #f5d84e;
+  color: #171620;
+  clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__roster {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .competition-pregame {
+  gap: 8px;
+  color: #f7f5fc;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .competition-pregame__players {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .competition-pregame__rules {
+  border: 0;
+  background: transparent;
+  color: #f7f5fc;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .competition-rules__tile {
+  border: 2px solid #090910;
+  border-radius: 8px;
+  background: #292735;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .competition-rules__tile[data-rule=golden] {
+  background: #3c3525;
+  border-color: #f5d84e;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .competition-rules__icon {
+  color: #c2b1db;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .competition-rules__label {
+  color: #f7f5fc;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .competition-rules__note {
+  color: #bab2c9;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .competition-rules__tile[data-rule=golden] .competition-rules__value {
+  color: #f5d84e;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .competition-pregame__language[aria-pressed=true] {
+  box-shadow: inset 0 -2px #f5d84e;
+}
+
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .competition-pregame__error {
+  color: #ffa7b0;
+}
+
+/* Keep the phone page background continuous around the comic panels. */
+html[data-viewport='mobile'] .shell-main:has(.competition-pregame[data-competition-format='singles']),
+html[data-viewport='mobile'] .hub-root:has(.competition-pregame[data-competition-format='singles']) {
+  background: #191823;
+}
+html[data-viewport='mobile'] .hub-list:has(.competition-pregame[data-competition-format='singles']) {
+  padding: 0 2px;
+}
+html[data-viewport='mobile'] .invite-game-card:has(.competition-pregame[data-competition-format='singles']) .invite-game-card__frame {
+  background-image: radial-gradient(ellipse at center, #191823 62%, transparent), radial-gradient(circle, #74639130 1px, transparent 1.5px);
+  background-size: 100% 100%, 7px 7px;
+  background-repeat: no-repeat, repeat;
+}
