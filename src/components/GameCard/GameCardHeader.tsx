@@ -288,7 +288,7 @@ export function GameCardHeader({
         <div
           className={`game-card-tv-header-panel relative min-w-0 w-full flex-1 ${headerCarouselMinHeightForSize(size)} ${headerPad}`}
         >
-          {competitionId ? <CompetitionWeekCalendar competitionId={competitionId} /> : null}
+          {competitionId ? <CompetitionWeekCalendar competitionId={competitionId} presentation="week" /> : null}
           <div className="game-card-tv-header-back absolute inset-y-0 left-0 z-10 flex items-center">
             {onBack ? (
               <GameCardBackButton onClick={onBack} ariaLabel={t('aria.back')} finished={finished} />
