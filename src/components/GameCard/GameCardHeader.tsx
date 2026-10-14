@@ -1,6 +1,7 @@
 import QRCode from 'qrcode'
 import { useEffect, useState } from 'react'
-import { CircleDot, Pencil } from 'lucide-react'
+import { Check, CircleDot, Pencil, Share2 } from 'lucide-react'
+import { sharePlayerProfile, type SharePlayerProfileResult } from '../../lib/playerProfileShare'
 import type { TranslateFn } from '../../i18n'
 import type { GameCardSize } from '../../lib/viewBreakpoints'
 import { useTranslation } from '../../hooks/useTranslation'
@@ -14,7 +15,29 @@ const QR_SIZE_HEADER = 44
 function TvPlayQrPanel({ url, header = false }: { url: string; header?: boolean }) {
   const { t } = useTranslation()
   const [src, setSrc] = useState<string | null>(null)
+  const [shareResult, setShareResult] = useState<SharePlayerProfileResult | null>(null)
+  const [sharing, setSharing] = useState(false)
   const size = header ? QR_SIZE_HEADER : QR_SIZE
+
+  useEffect(() => {
+    if (!shareResult) return
+    const timeout = window.setTimeout(() => setShareResult(null), 4000)
+    return () => window.clearTimeout(timeout)
+  }, [shareResult])
+
+  async function shareScoreboard() {
+    if (sharing) return
+    setSharing(true)
+    try {
+      setShareResult(await sharePlayerProfile({
+        url,
+        title: 'Success Padel — Live scoreboard',
+        text: 'Follow the live scores and standings at Success Padel.',
+      }))
+    } finally {
+      setSharing(false)
+    }
+  }
 
   useEffect(() => {
     let active = true
@@ -32,18 +55,30 @@ function TvPlayQrPanel({ url, header = false }: { url: string; header?: boolean 
   }, [url, size])
 
   if (header) {
-    return src ? (
-      <img
-        src={src}
-        alt=""
-        width={size}
-        height={size}
-        className="tv-game-header-qr"
-        title={t('leaderboard.viewAlongHint')}
-      />
-    ) : (
-      <div className="tv-game-header-qr tv-play-qr-skeleton" aria-hidden />
-    )
+    return <>
+      <button
+        type="button"
+        className="game-card-header-share"
+        aria-label={shareResult === 'failed' ? 'Sharing failed. Try sharing the scoreboard again' : 'Share live scoreboard'}
+        disabled={sharing}
+        onClick={(event) => { event.stopPropagation(); void shareScoreboard() }}
+      >
+        {shareResult === 'copied' || shareResult === 'shared' ? <Check aria-hidden /> : <Share2 aria-hidden />}
+        <span aria-live="polite">{shareResult === 'copied' ? 'Copied' : shareResult === 'shared' ? 'Shared' : shareResult === 'failed' ? 'Retry' : 'Share'}</span>
+      </button>
+      {src ? (
+        <img
+          src={src}
+          alt=""
+          width={size}
+          height={size}
+          className="tv-game-header-qr"
+          title={t('leaderboard.viewAlongHint')}
+        />
+      ) : (
+        <div className="tv-game-header-qr tv-play-qr-skeleton" aria-hidden />
+      )}
+    </>
   }
 
   return (
