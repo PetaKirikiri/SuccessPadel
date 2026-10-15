@@ -1,5 +1,27 @@
 /* Leaderboard surface */
 
+/* Rank movement uses the existing rank cell, without adding a grid column. */
+html[data-viewport='mobile'] .leaderboard-rank-movement {
+  display: block; font-family: system-ui, sans-serif; font-size: 0.72em; font-weight: 800; line-height: 1.2; white-space: nowrap;
+}
+html[data-viewport='mobile'] .leaderboard-rank-movement[data-direction='up'] { color: #70ed9c; }
+html[data-viewport='mobile'] .leaderboard-rank-movement[data-direction='down'] { color: #ff8995; }
+html[data-viewport='tablet'] .leaderboard-rank-movement {
+  display: block; font-family: system-ui, sans-serif; font-size: 0.72em; font-weight: 800; line-height: 1.2; white-space: nowrap;
+}
+html[data-viewport='tablet'] .leaderboard-rank-movement[data-direction='up'] { color: #70ed9c; }
+html[data-viewport='tablet'] .leaderboard-rank-movement[data-direction='down'] { color: #ff8995; }
+html[data-viewport='web'] .leaderboard-rank-movement {
+  display: block; font-family: system-ui, sans-serif; font-size: 0.72em; font-weight: 800; line-height: 1.2; white-space: nowrap;
+}
+html[data-viewport='web'] .leaderboard-rank-movement[data-direction='up'] { color: #70ed9c; }
+html[data-viewport='web'] .leaderboard-rank-movement[data-direction='down'] { color: #ff8995; }
+html[data-viewport='tv'] .leaderboard-rank-movement {
+  display: block; font-family: system-ui, sans-serif; font-size: 0.72em; font-weight: 800; line-height: 1.2; white-space: nowrap;
+}
+html[data-viewport='tv'] .leaderboard-rank-movement[data-direction='up'] { color: #70ed9c; }
+html[data-viewport='tv'] .leaderboard-rank-movement[data-direction='down'] { color: #ff8995; }
+
 /* Duo standings: each pair owns one full-height row and one score column. */
 
 /* Duo standings: each pair owns one full-height row and one score column. */
@@ -454,6 +476,16 @@ html[data-viewport='mobile'] :is(.tv-play-standings,.game-card-panel-carousel-sc
 html[data-viewport='mobile'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) ol > li > div:last-child:not(.leaderboard-slot-score) > p,
 html[data-viewport='mobile'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) .leaderboard-slot-score > div > p { color:#493857; }
 
+/* Fit the actual standings panel, not a scrollable list of fixed-height rows. */
+html[data-viewport='tablet'] .game-card-panel-carousel-scroll { display:flex; overflow:hidden; }
+html[data-viewport='tablet'] .game-card-panel-carousel-scroll > [data-competition-format] { display:flex; flex-direction:column; flex:1; min-height:0; }
+html[data-viewport='tablet'] .game-card-panel-carousel-scroll > [data-competition-format] > div { flex-shrink:0; }
+html[data-viewport='tablet'] .game-card-panel-carousel-scroll > [data-competition-format] > ol { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); grid-auto-rows:minmax(0,1fr); flex:1; min-height:0; }
+html[data-viewport='tablet'] .game-card-panel-carousel-scroll > [data-competition-format] > ol > li { padding:3px 6px; min-height:0; grid-template-columns:24px 32px minmax(0,1fr) auto 58px; gap:4px; }
+html[data-viewport='tablet'] .game-card-panel-carousel-scroll > [data-competition-format] > ol > li > img,
+html[data-viewport='tablet'] .game-card-panel-carousel-scroll > [data-competition-format] > ol > li > span:nth-child(2) { width:32px; height:32px; }
+html[data-viewport='tablet'] .game-card-panel-carousel-scroll > [data-competition-format] > ol > li > div:nth-last-child(2) { max-width:36px; flex-wrap:wrap; }
+html[data-viewport='tablet'] .game-card-panel-carousel-scroll > [data-competition-format] > ol > li > div:nth-last-child(2) img { width:18px; height:18px; }
 html[data-viewport='tablet'] :is(.tv-play-standings,.game-card-panel-carousel-scroll) {
   --color-brand-bg:#191823;
   --color-brand-bg-alt:#39294e;

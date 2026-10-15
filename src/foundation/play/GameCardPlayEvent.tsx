@@ -26,6 +26,7 @@ import { americanoScheduleFromSession, competitionRoundTimesByGame } from '../..
 import type { CourtScoreSubmit } from '../../lib/competitionScoreInput'
 import { completeCompetitionLeaderboard, computeAmericanoStandings } from '../../lib/competitionStandings'
 import { computeDuoStandings } from '../../lib/computeDuoStandings'
+import { competitionStandingsHistory } from '../../lib/competitionStandingsHistory'
 import { computeFriendlySessionStandings } from '../../lib/friendlySessionStandings'
 import { duoLabelsForMatch } from '../../lib/competitionFormatPresets'
 import { duoStandings } from '../../lib/competition-formats/duos/standings'
@@ -107,7 +108,7 @@ export function GameCardPlayEvent() {
   const autoStartAttemptedRef = useRef<string | null>(null)
   const scheduleMigrationAttemptedRef = useRef<string | null>(null)
   const competitionScoreSaveQueueRef = useRef(new Map<string, Promise<void>>())
-  const [, setTvGameNumber] = useState<number | undefined>(undefined)
+  const [tvGameNumber, setTvGameNumber] = useState<number | undefined>(undefined)
   const [manualCourtScores, setManualCourtScores] = useState<Map<string, ManualCourtScore>>(
     () => new Map(),
   )
@@ -401,7 +402,13 @@ export function GameCardPlayEvent() {
     teams,
   ])
 
-  const liveStandings = standingsModel.entries
+  const selectedGame = tvGameNumber ?? activeRound?.round_number ?? 1
+  const history = useMemo(() => rounds.length ? competitionStandingsHistory(
+    roster, rounds, courtMatches, selectedGame, isDuo ? teams : undefined,
+  ) : null, [roster, rounds, courtMatches, selectedGame, isDuo, teams])
+  const liveStandings = history
+    ? enrichStandingsWithAvatars(history.entries, leaderboard)
+    : standingsModel.entries
 
   const roundTimesByGame = useMemo(
     () =>
@@ -653,12 +660,13 @@ export function GameCardPlayEvent() {
     standings.length > 0 ? (
       <Leaderboard
         entries={standings}
+        rankMovement={history?.movement ?? {}}
         competitionFormat={standingsModel.format}
         scoreUnit={scoreUnit}
         currentUserId={user?.id ?? null}
         competitionId={id ?? null}
         achievements={achievements}
-        showAchievements={Boolean(achievements)}
+        showAchievements={Boolean(achievements) && selectedGame >= Math.max(...rounds.map(round => round.round_number))}
         flushBottom
         shareTitle={session?.title ?? null}
         highlightedEntryIds={arrivedPlayerIds}
@@ -674,6 +682,7 @@ export function GameCardPlayEvent() {
     standings.length > 0 ? (
       <Leaderboard
         entries={standings}
+        rankMovement={history?.movement ?? {}}
         competitionFormat={standingsModel.format}
         scoreUnit={scoreUnit}
         currentUserId={user?.id ?? null}

@@ -52,7 +52,7 @@ export type CourtMatch = {
   court_id: string
   score_summary: string
   played_at?: string
-  match_players: { team: 'a' | 'b'; is_winner: boolean }[]
+  match_players: { team: 'a' | 'b'; is_winner: boolean; padel_player_id?: string | null }[]
 }
 
 export type ClubCourt = { id: string; name: string; sort_order: number }

@@ -27,10 +27,13 @@ import { learningIdentityForTeam } from '../../lib/spiritAnimals'
 import { learningIdentityForSlot } from '../../lib/slotLearning'
 import { TeamLearningBadge } from '../TeamLearningBadge'
 import { validateStandings, type CompetitionFormat } from '../../lib/competition-formats/contract'
+import { useLeaderboardMovement } from '../../hooks/useLeaderboardMovement'
+import { movementEntryId } from '../../lib/leaderboardMovement'
 
 type Props = {
   competitionFormat?: CompetitionFormat
   entries: LeaderboardEntry[]
+  rankMovement?: Record<string, number>
   compact?: boolean
   scoreUnit?: AmericanoScoringUnit
   scoreColumnLabel?: string
@@ -211,6 +214,7 @@ function TeamPlayersInline({ entry }: { entry: LeaderboardEntry }) {
 
 function LeaderboardRow({
   rank,
+  movement = 0,
   entry,
   isMe,
   badges,
@@ -226,6 +230,7 @@ function LeaderboardRow({
   t,
 }: {
   rank: number
+  movement?: number
   entry: LeaderboardEntry
   isMe: boolean
   badges: Achievement[]
@@ -286,6 +291,15 @@ function LeaderboardRow({
         }`}
       >
         {rank}
+        {movement !== 0 ? (
+          <span
+            className="leaderboard-rank-movement"
+            data-direction={movement > 0 ? 'up' : 'down'}
+            aria-label={`${movement > 0 ? 'Up' : 'Down'} ${Math.abs(movement)} ${Math.abs(movement) === 1 ? 'place' : 'places'}`}
+          >
+            <span aria-hidden="true">{movement > 0 ? '↑' : '↓'}{Math.abs(movement)}</span>
+          </span>
+        ) : null}
       </span>
       {!simpleTeamRow ? (
         <PlayerAvatar
@@ -340,6 +354,7 @@ function LeaderboardRow({
 export function Leaderboard({
   competitionFormat,
   entries,
+  rankMovement,
   compact = false,
   scoreUnit = 'points',
   scoreColumnLabel,
@@ -364,6 +379,11 @@ export function Leaderboard({
   const location = useLocation()
   const [info, setInfo] = useState<AchievementInfo | null>(null)
   const activeEntries = !competitionFormat || validateStandings(competitionFormat, entries) ? entries : []
+  const cachedMovement = useLeaderboardMovement(
+    rankMovement === undefined && competitionId ? `${competitionId}:${competitionFormat ?? 'singles'}` : null,
+    activeEntries,
+  )
+  const movement = rankMovement ?? cachedMovement
   const showingTeamEntries = activeEntries.some((entry) =>
     isDuoLeaderboardEntry(entry.profile_id),
   )
@@ -480,6 +500,7 @@ export function Leaderboard({
             <LeaderboardRow
               key={e.profile_id}
               rank={rank}
+              movement={movement[movementEntryId(source)] ?? 0}
               entry={e}
               isMe={selectedEntryId ? source.profile_id === selectedEntryId : isMe}
               selected={source.profile_id === selectedEntryId}

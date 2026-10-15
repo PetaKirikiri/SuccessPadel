@@ -936,7 +936,7 @@ html[data-viewport='tablet'] .invite-game-card__roster .invite-duo-team-players 
   align-items: center;
 }
 
-html[data-viewport='tablet'] .competition-pregame { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(15rem, 0.8fr); gap: 0.75rem; min-height: 0; height: 100%; color: var(--color-brand-ink); }
+html[data-viewport='tablet'] .competition-pregame { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows:minmax(0,1fr); gap: 0.75rem; min-height: 0; height: 100%; color: var(--color-brand-ink); }
 html[data-viewport='tablet'] .competition-pregame__players,
 html[data-viewport='tablet'] .competition-pregame__rules { min-height: 0; border-radius: 0.85rem; background: color-mix(in srgb, var(--color-brand-surface) 88%, transparent); border: 1px solid var(--color-brand-border); padding: 0.75rem; }
 html[data-viewport='tablet'] .competition-pregame__players { display: flex; flex-direction: column; }

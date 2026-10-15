@@ -1,5 +1,16 @@
 /* Tablet court card layout lock. */
 
+/* Inline-score courts: scores above two full-width team columns, never over names. */
+html[data-viewport='tablet'] .game-card-court-card-body > [aria-label]:not(.game-card-court-match-wrap) { height:100%; }
+html[data-viewport='tablet'] .game-card-court-card-body > [aria-label]:not(.game-card-court-match-wrap) > div {
+  display:grid; height:100%; grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-template-rows:auto minmax(0,1fr); gap:8px; padding:4px;
+}
+html[data-viewport='tablet'] .game-card-court-card-body > [aria-label]:not(.game-card-court-match-wrap) > div > :nth-child(2) { grid-column:1 / -1; grid-row:1; }
+html[data-viewport='tablet'] .game-card-court-card-body > [aria-label]:not(.game-card-court-match-wrap) > div > :first-child,
+html[data-viewport='tablet'] .game-card-court-card-body > [aria-label]:not(.game-card-court-match-wrap) > div > :last-child { grid-row:2; width:100%; display:grid; grid-template-rows:repeat(2,minmax(0,1fr)); align-items:center; }
+html[data-viewport='tablet'] .game-card-court-card-body > [aria-label] button:not([aria-label]) { white-space:normal; overflow-wrap:anywhere; font-size:clamp(13px,1.8vw,18px); }
+
 /* One continuous team boundary; decoration never intercepts score/player taps. */
 html[data-viewport='tablet'] .game-card-court-match-wrap {
   position: relative;

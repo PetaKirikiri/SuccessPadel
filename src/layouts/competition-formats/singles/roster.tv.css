@@ -1,93 +1,302 @@
-/* singles roster — tv only. Shared shell styling is not owned here. */
-html[data-viewport='tv'] [data-competition-format='singles'] .competition-pregame__player[data-reorder-enabled='true'] {
+/* tv singles roster: Superhero panels. Attendance and drag behaviour stay in the presenter. */
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__roster {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(88px, auto);
+  align-content: start;
+  gap: 7px;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0 0 4px;
+  list-style: none;
+}
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__player {
+  --player-colour: #efb394;
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  grid-template-rows: minmax(32px, auto) 36px;
+  align-items: center;
+  gap: 2px 8px;
+  min-width: 0;
+  min-height: 88px;
+  padding: 8px 8px 6px 22px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #f7f5fc;
+  text-align: left;
+}
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__player::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: #090910;
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__player::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  z-index: -1;
+  pointer-events: none;
+  background: #292735;
+  clip-path: polygon(9px 0, calc(100% - 9px) 0, 100% 9px, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
+}
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__player:nth-child(6n + 2) {
+  --player-colour: #c2aedf;
+}
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__player:nth-child(6n + 3) {
+  --player-colour: #a5c9e6;
+}
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__player:nth-child(6n + 4) {
+  --player-colour: #ecca91;
+}
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__player:nth-child(6n + 5) {
+  --player-colour: #b7cbb1;
+}
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__player:nth-child(6n) {
+  --player-colour: #e7afb9;
+}
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__rank {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  top: 2px;
+  left: 2px;
+  width: 25px;
+  height: 20px;
+  padding-right: 3px;
+  background: #f5d84e;
+  color: #12121b;
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1;
+  clip-path: polygon(7px 0, 100% 0, calc(100% - 5px) 100%, 0 100%, 0 7px);
+}
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__avatar {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #ffffff20;
+}
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__avatar--initial {
+  display: grid;
+  place-items: center;
+  background: var(--player-colour);
+  color: #171620;
+  font-size: 20px;
+  font-weight: 750;
+}
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__name {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: start;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
+  overflow: visible;
+  color: #f7f5fc;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.15;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__attendance-actions {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  justify-self: end;
+  display: grid;
+  grid-template-columns: repeat(2, 36px);
+  gap: 4px;
+  min-width: 0;
+}
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__attendance-actions button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: 1px solid #9f91b5;
+  border-radius: 6px;
+  background: #181720;
+  font: inherit;
+  font-size: 0;
+  font-weight: 850;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__attendance-yes {
+  color: #f5d84e;
+}
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__attendance-no {
+  color: #ff8d97;
+}
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__attendance-yes::after {
+  content: '✓';
+  font-size: 21px;
+  line-height: 1;
+}
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__attendance-no::after {
+  content: '×';
+  font-size: 26px;
+  line-height: 1;
+}
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__attendance-yes[aria-pressed=true] {
+  background: #f5d84e;
+  border-color: #f5d84e;
+  color: #181720;
+}
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__attendance-no[aria-pressed=true] {
+  background: #ed8793;
+  border-color: #ed8793;
+  color: #181720;
+}
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__player--confirmed::after {
+  background: #32332d;
+}
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__player--cancelled::after {
+  background: #3b2835;
+}
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__player--cancelled {
+  opacity: 1;
+}
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__attendance-actions button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__attendance-actions button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__name:focus-visible {
+  outline: 2px solid #f5d84e;
+  outline-offset: 2px;
+}
+
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__player[data-reorder-enabled='true'] {
   touch-action: none;
   cursor: grab;
   user-select: none;
 }
 
-html[data-viewport='tv'] [data-competition-format='singles'] .competition-pregame__player[data-dragging='true'] {
-  position: relative;
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__player[data-dragging='true'] {
   z-index: 20;
   cursor: grabbing;
-  box-shadow: 0 12px 26px rgb(0 0 0 / 45%);
-  outline: 2px solid var(--color-brand-primary);
+  outline: 2px solid #f5d84e;
   opacity: 0.96;
   will-change: transform;
 }
 
-html[data-viewport='tv'] [data-competition-format='singles'] .competition-pregame__roster:has([data-dragging='true']) {
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__roster:has([data-dragging='true']) {
   overflow: visible;
 }
 
-html[data-viewport='tv'] [data-competition-format='singles'] .competition-pregame__player[data-drop-target='true'] {
-  outline: 2px solid var(--color-brand-primary);
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__player[data-drop-target='true'] {
+  outline: 2px solid #f5d84e;
   outline-offset: -2px;
 }
 
-html[data-viewport='tv'] [data-competition-format='singles'] .competition-pregame__roster { display: grid; grid-template-columns: 1fr 1fr; gap: 0.42rem; margin: 0.8rem 0 0; padding: 0; list-style: none; overflow: auto; }
-
-html[data-viewport='tv'] [data-competition-format='singles'] .competition-pregame__player { display: grid; grid-template-columns: 1.5rem 2.6rem minmax(0,1fr) auto; align-items: center; gap: 0.5rem; min-width: 0; border-radius: 0.7rem; background: var(--color-brand-bg-alt); padding: 0.42rem 0.55rem; }
-
-html[data-viewport='tv'] [data-competition-format='singles'] .competition-pregame__player--confirmed { background: color-mix(in srgb, #168a52 26%, var(--color-brand-bg-alt)); }
-
-html[data-viewport='tv'] [data-competition-format='singles'] .competition-pregame__player--cancelled { opacity: 0.58; }
-
-html[data-viewport='tv'] [data-competition-format='singles'] .competition-pregame__rank { color: var(--color-brand-muted); font-size: 0.76rem; font-weight: 800; }
-
-html[data-viewport='tv'] [data-competition-format='singles'] .competition-pregame__avatar { width: 2.6rem; height: 2.6rem; border-radius: 999px; object-fit: cover; }
-
-html[data-viewport='tv'] [data-competition-format='singles'] .competition-pregame__avatar--initial { display: grid; place-items: center; background: var(--color-brand-surface); }
-
-/* Keep the profile tap target on the name; surrounding space belongs to card drag. */
-html[data-viewport='tv'] [data-competition-format='singles'] .competition-pregame__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 1rem; font-weight: 750; justify-self: start; width: fit-content; max-width: 100%; }
-
-html[data-viewport='tv'] [data-competition-format='singles'] .competition-pregame__confirm { min-height: 2.25rem; border: 1px solid var(--color-brand-primary); border-radius: 0.6rem; background: transparent; color: var(--color-brand-primary); padding: 0.25rem 0.65rem; font-size: 0.74rem; font-weight: 850; white-space: nowrap; }
-
-html[data-viewport='tv'] [data-competition-format='singles'] .competition-pregame__confirm--confirmed { background: #198d57; border-color: #198d57; color: white; opacity: 1; }
-
-html[data-viewport='tv'] [data-competition-format='singles'] .competition-pregame__confirm { display: flex; align-items: center; gap: 0.45rem; border: 0; background: transparent; color: var(--color-brand-muted); padding: 0.2rem; }
-
-html[data-viewport='tv'] [data-competition-format='singles'] .competition-pregame__confirm-track { position: relative; width: 2.7rem; height: 1.45rem; flex: none; border-radius: 999px; background: color-mix(in srgb, var(--color-brand-muted) 38%, transparent); }
-
-html[data-viewport='tv'] [data-competition-format='singles'] .competition-pregame__confirm-knob { position: absolute; top: 0.15rem; left: 0.15rem; width: 1.15rem; height: 1.15rem; border-radius: 999px; background: white; transition: transform 160ms ease; }
-
-html[data-viewport='tv'] [data-competition-format='singles'] .competition-pregame__confirm--confirmed { background: transparent; border-color: transparent; color: #64e49d; }
-
-html[data-viewport='tv'] [data-competition-format='singles'] .competition-pregame__confirm--confirmed .competition-pregame__confirm-track { background: #198d57; }
-
-html[data-viewport='tv'] [data-competition-format='singles'] .competition-pregame__confirm--confirmed .competition-pregame__confirm-knob { transform: translateX(1.25rem); }
-
-html[data-viewport='tv'] [data-competition-format='singles'] .competition-pregame__roster {
-  margin: 0;
-  flex: 1;
-  gap: 6px;
-  grid-auto-rows: minmax(38px, 1fr);
-  overflow: visible;
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__lineup-status {
+  margin: 0 0 6px;
+  color: #c8bed9;
+  font-size: 12px;
 }
 
-html[data-viewport='tv'] [data-competition-format='singles'] .competition-pregame__player { padding: 4px 8px; }
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__lineup-status:empty {
+  display: none;
+}
 
-html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__roster .competition-pregame__attendance-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; min-width: 0; }
+/* Keep identity and attendance together instead of leaving an empty lower corner. */
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__roster {
+  grid-auto-rows: minmax(74px, auto);
+  gap: 6px;
+}
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__player {
+  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-rows: minmax(18px, auto) 36px;
+  gap: 2px 5px;
+  min-height: 74px;
+  padding: 7px 7px 6px 18px;
+}
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__avatar {
+  grid-row: 1 / 3;
+  align-self: center;
+  width: 34px;
+  height: 34px;
+}
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__name {
+  align-self: end;
+  font-size: 12px;
+}
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__attendance-actions {
+  grid-column: 2;
+  justify-self: start;
+}
 
-html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__roster .competition-pregame__attendance-actions button { min-height: 32px; padding: 4px 6px; border: 1px solid var(--color-brand-border); border-radius: 6px; font: inherit; font-size: 14px; font-weight: 700; line-height: 1.15; white-space: nowrap; background: var(--color-brand-bg); color: var(--color-brand-ink); cursor: pointer; }
-
-html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__roster .competition-pregame__attendance-actions button:focus-visible { outline: 2px solid #7dd3fc; outline-offset: 2px; }
-
-html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__roster .competition-pregame__attendance-actions button:disabled { opacity: 0.65; cursor: wait; }
-
-html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__roster .competition-pregame__attendance-yes[aria-pressed='true'] { background: #16744b; border-color: #4cbb85; color: white; }
-
-html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__roster .competition-pregame__attendance-no[aria-pressed='true'] { background: #762d38; border-color: #d7818d; color: white; }
-
-html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__roster .competition-pregame__player--cancelled { opacity: 1; background: #482d3b; }
-
-/* Comic panels retain this viewport's roster geometry. */
-html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__player { background:#292735;color:#f7f5fc;border-color:#090910;box-shadow:inset 0 0 0 1px #514961;border-radius:4px; }
-html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__name { color:#f7f5fc;font-weight:750; }
-html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__rank { color:#ffe15a;font-weight:900; }
-html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__attendance-actions button { background:#181720;border:1px solid #9f91b5;border-radius:5px;color:#ffe15a; }
-html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__attendance-actions .competition-pregame__attendance-no { color:#ff8d97; }
-html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__attendance-actions .competition-pregame__attendance-yes[aria-pressed=true] { background:#ffe15a;color:#191321; }
-html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__attendance-actions .competition-pregame__attendance-no[aria-pressed=true] { background:#ed8793;color:#191321; }
-html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__player--confirmed { background:#32332d; }
-html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__player--cancelled { background:#3b2835; }
+/* Keep the approved comic identity, sized for this viewport's two-column roster. */
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__roster {
+  flex: 1 1 0;
+  align-content: stretch;
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 6px;
+  min-height: 0;
+}
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__player {
+  grid-template-columns: 42px minmax(0, 1fr);
+  grid-template-rows: minmax(16px, 1fr) minmax(24px, 1fr);
+  min-height: 0;
+  gap: 2px 8px;
+  padding: 6px 10px 6px 26px;
+  box-shadow: none;
+}
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__avatar { width: 42px; height: 42px; }
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__name { font-size: clamp(13px, 1.1vw, 20px); line-height: 1.1; }
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__attendance-actions {
+  align-self: start;
+  grid-template-columns: repeat(2, clamp(24px, 3.35vh, 36px));
+  gap: 5px;
+}
+html[data-viewport='tv'] .competition-pregame[data-competition-format='singles'] .competition-pregame__attendance-actions button {
+  width: clamp(24px, 3.35vh, 36px);
+  height: clamp(24px, 3.35vh, 36px);
+  min-height: 24px;
+}
