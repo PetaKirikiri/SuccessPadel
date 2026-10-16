@@ -248,8 +248,10 @@ export function MembersPage() {
   const load = useCallback(async () => {
     if (firstLoad.current) setInitialLoading(true)
     setLoadError(null)
-    const directory = await supabase.from('public_member_directory')
-      .select('id, display_name, avatar_url, gender, skill_level, history_levels, court_member').order('display_name')
+    const directory = directoryEditable
+      ? await supabase.rpc('list_owner_member_directory', { p_access_token: ownerToken })
+      : await supabase.from('public_member_directory')
+        .select('id, display_name, avatar_url, gender, skill_level, history_levels, court_member, has_line_account, directory_hidden').order('display_name')
     setPublicMembers((directory.data as DirectoryMember[] | null) ?? [])
     if (directory.error) setLoadError('Unable to load the player list. Please refresh and try again.')
     const liveSession = session?.user ? session : await restoreSession()
@@ -303,7 +305,7 @@ export function MembersPage() {
     )
     setInitialLoading(false)
     firstLoad.current = false
-  }, [restoreSession, session])
+  }, [restoreSession, session, directoryEditable, ownerToken])
 
   useEffect(() => {
     void load()

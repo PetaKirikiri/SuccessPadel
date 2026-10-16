@@ -1,4 +1,4 @@
-import { Crown, Users, Venus, Mars, CircleHelp } from 'lucide-react'
+import { Crown, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useState } from 'react'
 import { memberGender, memberLevel, type DirectoryPatch, type DirectoryMember } from '../lib/memberDirectory'
@@ -38,11 +38,19 @@ function MemberControls({ member, onSave }: { member: DirectoryMember; onSave: N
         {([{value:null,label:'Unset'},{value:true,label:'Yes'},{value:false,label:'No'}] as const).map(({value,label}) => <button key={label} type="button" aria-pressed={member.court_member === value} onClick={() => void save({court_member:value})}>{label}</button>)}
       </div>
     </div>
+    <div className="member-directory__setting">Hide profile
+      <div className="member-directory__choices" role="group" aria-label={`Hide profile for ${member.display_name}`}>
+        <button type="button" aria-pressed={!member.directory_hidden} onClick={() => void save({directory_hidden:false})}>Visible</button>
+        <button type="button" aria-pressed={member.directory_hidden} onClick={() => void save({directory_hidden:true})}>Hidden</button>
+      </div>
+    </div>
     <span className="member-directory__save-status" role="status">{feedback}</span>
   </fieldset>
 }
 
-const groups = [{ name: 'Women', Icon: Venus }, { name: 'Men', Icon: Mars }, { name: 'Gender not set', Icon: CircleHelp }] as const
+const genderTabs = ['All', 'Men', 'Women', 'Gender not set'] as const
+const levelTabs = ['All', 'Beginner', 'Low Inter', 'Intermediate', 'Advanced', 'Open', 'Unrated'] as const
+
 
 function MemberAvatar({ member }: { member: DirectoryMember }) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null)
@@ -53,6 +61,22 @@ function MemberAvatar({ member }: { member: DirectoryMember }) {
 }
 
 export function PublicMemberDirectory({ members, canEdit = false, onSave }: DirectoryProps) {
+  const [genderFilter, setGenderFilter] = useState<string>('All')
+  const [levelFilter, setLevelFilter] = useState<string>('All')
+  const [lineFilter, setLineFilter] = useState('all')
+  const [courtFilter, setCourtFilter] = useState('all')
+  const [visibilityFilter, setVisibilityFilter] = useState('all')
+  const genderMembers = members.filter(member => genderFilter === 'All' || memberGender(member.gender) === genderFilter)
+  const entries = genderMembers.filter(member =>
+    (levelFilter === 'All' || memberLevel(member).label === levelFilter) &&
+    (lineFilter === 'all' || member.has_line_account === (lineFilter === 'linked')) &&
+    (courtFilter === 'all' || (courtFilter === 'unset' ? member.court_member === null : member.court_member === (courtFilter === 'yes'))) &&
+    (!canEdit || visibilityFilter === 'all' || member.directory_hidden === (visibilityFilter === 'hidden'))
+  )
+  const hasFilters = genderFilter !== 'All' || levelFilter !== 'All' || lineFilter !== 'all' || courtFilter !== 'all' || (canEdit && visibilityFilter !== 'all')
+  function clearFilters() {
+    setGenderFilter('All'); setLevelFilter('All'); setLineFilter('all'); setCourtFilter('all'); setVisibilityFilter('all')
+  }
   return <section className="member-directory">
     <header className="member-directory__header">
       <Users aria-hidden="true" />
@@ -60,12 +84,38 @@ export function PublicMemberDirectory({ members, canEdit = false, onSave }: Dire
       <span className="member-directory__count">{members.length}</span>
     </header>
     {canEdit ? <p className="member-directory__owner" role="status">Owner editing · changes save automatically</p> : null}
+    <div className="member-directory__filters">
+      <div className="member-directory__tabs" role="group" aria-label="Gender filter">
+        {genderTabs.map(gender => <button key={gender} type="button" aria-pressed={genderFilter === gender} onClick={() => setGenderFilter(gender)}>{gender}<span>{gender === 'All' ? members.length : members.filter(member => memberGender(member.gender) === gender).length}</span></button>)}
+      </div>
+      <div className="member-directory__tabs member-directory__tabs--levels" role="group" aria-label="Level filter">
+        {levelTabs.map(level => <button key={level} type="button" aria-pressed={levelFilter === level} onClick={() => setLevelFilter(level)}>{level}</button>)}
+      </div>
+      <div className="member-directory__filter-row">
+        <label className="member-directory__filter">LINE
+          <select value={lineFilter} onChange={event => setLineFilter(event.target.value)} aria-label="Filter by LINE account">
+            <option value="all">All accounts</option><option value="linked">Linked</option><option value="unlinked">Not linked</option>
+          </select>
+        </label>
+        <label className="member-directory__filter">Court member
+          <select value={courtFilter} onChange={event => setCourtFilter(event.target.value)} aria-label="Filter by court membership">
+            <option value="all">Everyone</option><option value="yes">Member</option><option value="no">Non-member</option><option value="unset">Not set</option>
+          </select>
+        </label>
+        {canEdit ? <label className="member-directory__filter">Visibility
+          <select value={visibilityFilter} onChange={event => setVisibilityFilter(event.target.value)} aria-label="Filter by visibility">
+            <option value="all">All profiles</option><option value="visible">Visible</option><option value="hidden">Hidden</option>
+          </select>
+        </label> : null}
+      </div>
+      <div className="member-directory__results">
+        <span role="status">{entries.length} of {members.length} players</span>
+        {hasFilters ? <button type="button" onClick={clearFilters}>Clear filters</button> : null}
+      </div>
+    </div>
     <p className="member-directory__legend">Estimated = past competition categories, not a skill assessment.</p>
-    {groups.map(({ name, Icon }) => {
-      const entries = members.filter(member => memberGender(member.gender) === name)
-      if (!entries.length) return null
-      return <section className="member-directory__section" key={name} aria-label={name}>
-        <h2><Icon aria-hidden="true" />{name}<span>{entries.length}</span></h2>
+    <section className="member-directory__section" aria-label="Filtered players">
+      {entries.length === 0 ? <p className="member-directory__empty">No players match these filters.</p> : null}
         <ul className="member-directory__grid">{entries.map(member => {
           const level = memberLevel(member)
           return <li className="member-directory__card" key={member.id}>
@@ -76,12 +126,13 @@ export function PublicMemberDirectory({ members, canEdit = false, onSave }: Dire
                   {level.label === 'Advanced' ? <Crown aria-hidden="true" /> : null}{level.label}
                   {level.source ? <small>{level.source}</small> : null}
                 </span>
+                <small className="member-directory__line-status" title="Whether this player has linked LINE to Success Padel">{member.has_line_account ? 'LINE linked' : 'LINE not linked'}</small>
+                {canEdit && member.directory_hidden ? <small className="member-directory__line-status">Hidden profile</small> : null}
               </span>
             </Link>
             {canEdit && onSave ? <MemberControls member={member} onSave={onSave} /> : null}
           </li>
         })}</ul>
       </section>
-    })}
   </section>
 }

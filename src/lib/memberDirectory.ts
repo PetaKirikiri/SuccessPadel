@@ -5,6 +5,8 @@ export type DirectoryMember = {
   gender: string | null
   skill_level: string | null
   history_levels: string[]
+  directory_hidden: boolean
+  has_line_account: boolean
   court_member: boolean | null
 }
 export function memberGender(gender: string | null): 'Women' | 'Men' | 'Gender not set' {
@@ -22,7 +24,7 @@ function levelBand(value: string | null): 'Beginner' | 'Intermediate' | 'Advance
 /** Event participation is evidence of category, not a measured skill rating. */
 export function memberLevel(member: Pick<DirectoryMember, 'skill_level' | 'history_levels'>) {
   const assigned = levelBand(member.skill_level)
-  if (assigned) return { label: assigned, source: 'Assigned', detail: `Recorded level: ${member.skill_level}` }
+  if (assigned) return { label: member.skill_level === 'Low Inter' ? 'Low Inter' : assigned, source: 'Assigned', detail: `Recorded level: ${member.skill_level}` }
   const history = member.history_levels.slice(0, 5).map(levelBand).filter(level => level !== null)
   if (history.length < 2) return { label: 'Unrated', source: '', detail: 'Not enough recorded competition history' }
   const votes = ['Beginner', 'Intermediate', 'Advanced'].map(label => ({ label, count: history.filter(level => level === label).length }))
@@ -31,4 +33,4 @@ export function memberLevel(member: Pick<DirectoryMember, 'skill_level' | 'histo
   return { label: votes[0].label, source: 'Estimated', detail: `${votes[0].count} of ${history.length} recent played competitions in this category; not an assessed ability rating` }
 }
 
-export type DirectoryPatch = Partial<Pick<DirectoryMember, 'gender' | 'skill_level' | 'court_member'>>
+export type DirectoryPatch = Partial<Pick<DirectoryMember, 'gender' | 'skill_level' | 'court_member' | 'directory_hidden'>>
