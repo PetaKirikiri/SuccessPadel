@@ -15,6 +15,8 @@ import { playerProfileShareUrl, sharePlayerProfile } from '../lib/playerProfileS
 import { playerProfilePath } from '../lib/playerProfileSlug'
 import { supabase } from '../lib/supabaseClient'
 import type { Profile } from '../lib/types'
+import type { DirectoryMember } from '../lib/memberDirectory'
+import { PublicMemberDirectory } from './PublicMemberDirectory'
 
 type GuestPlayerRow = {
   id: string
@@ -205,6 +207,8 @@ export function MembersPage() {
   const location = useLocation()
   const createInput = useRef<HTMLInputElement>(null)
   const [members, setMembers] = useState<Profile[]>([])
+  const [publicMembers, setPublicMembers] = useState<DirectoryMember[]>([])
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [linePadelPlayers, setLinePadelPlayers] = useState<GuestPlayerRow[]>([])
   const [guestPlayers, setGuestPlayers] = useState<GuestPlayerRow[]>([])
   const [padelLineByProfileId, setPadelLineByProfileId] = useState<Map<string, string>>(() => new Map())
@@ -228,6 +232,11 @@ export function MembersPage() {
 
   const load = useCallback(async () => {
     if (firstLoad.current) setInitialLoading(true)
+    setLoadError(null)
+    const directory = await supabase.from('public_member_directory')
+      .select('id, display_name, avatar_url, gender, skill_level, history_levels').order('display_name')
+    setPublicMembers((directory.data as DirectoryMember[] | null) ?? [])
+    if (directory.error) setLoadError('Unable to load the player list. Please refresh and try again.')
     const liveSession = session?.user ? session : await restoreSession()
     if (!liveSession?.user) {
       setMembers([])
@@ -466,13 +475,16 @@ export function MembersPage() {
 
   return (
     <div className="space-y-5 px-3 pb-[calc(4.5rem+env(safe-area-inset-bottom))] pt-1 md:px-6">
-      <h1 className="text-lg font-semibold text-brand-primary">{t('members.title')}</h1>
+      <PublicMemberDirectory members={publicMembers} />
+
+      {loadError ? <p role="alert">{loadError}</p> : null}
 
       {canEditLevels ? <p className="member-level-intro">{t('members.levelIntro')}</p> : null}
       {levelError ? <p className="member-level-error">{levelError}</p> : null}
 
       {isAdmin ? createPlayerForm : null}
 
+      {isAdmin ? <details><summary>Manage players</summary>
       <MemberSection
         title={t('members.lineLinked')}
         empty={t('members.noLineMembers')}
@@ -554,7 +566,9 @@ export function MembersPage() {
         })}
       </MemberSection>
 
-      {deleteTarget ? (
+      </details> : null}
+
+      {isAdmin && deleteTarget ? (
         <DeleteConfirm
           title={deleteTarget.name}
           message={

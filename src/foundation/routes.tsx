@@ -198,11 +198,7 @@ function MainAppRoutes() {
         <Route path="players/:playerId" element={<PlayerProfileSurface />} />
         <Route
           path="members"
-          element={
-            <ProtectedRoute>
-              <MembersPage />
-            </ProtectedRoute>
-          }
+          element={<MembersPage />}
         />
         <Route
           path="competitions/:id/edit"
