@@ -5,15 +5,17 @@ export type DirectoryMember = {
   gender: string | null
   skill_level: string | null
   history_levels: string[]
+  court_member: boolean | null
 }
 export function memberGender(gender: string | null): 'Women' | 'Men' | 'Gender not set' {
   if (['female', 'woman', 'women'].includes(gender?.toLowerCase() ?? '')) return 'Women'
   if (['male', 'man', 'men'].includes(gender?.toLowerCase() ?? '')) return 'Men'
   return 'Gender not set'
 }
-function levelBand(value: string | null): 'Beginner' | 'Intermediate' | 'Advanced' | null {
+function levelBand(value: string | null): 'Beginner' | 'Intermediate' | 'Advanced' | 'Open' | null {
   if (value === 'Beginner') return 'Beginner'
   if (value === 'Low Inter' || value === 'Intermediate') return 'Intermediate'
+  if (value === 'Open') return 'Open'
   if (value === 'Advanced') return 'Advanced'
   return null
 }
@@ -28,3 +30,5 @@ export function memberLevel(member: Pick<DirectoryMember, 'skill_level' | 'histo
   if (votes[0].count <= history.length / 2) return { label: 'Unrated', source: '', detail: 'Mixed competition history; needs assessment' }
   return { label: votes[0].label, source: 'Estimated', detail: `${votes[0].count} of ${history.length} recent played competitions in this category; not an assessed ability rating` }
 }
+
+export type DirectoryPatch = Partial<Pick<DirectoryMember, 'gender' | 'skill_level' | 'court_member'>>

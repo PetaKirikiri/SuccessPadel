@@ -22,9 +22,9 @@ if (process.argv.includes('--live')) {
   assert.equal(response.status,200)
   const rows = await response.json()
   assert.ok(rows.length > 0)
-  for (const row of rows) assert.deepEqual(Object.keys(row).sort(),['avatar_url','display_name','gender','history_levels','id','skill_level'])
+  for (const row of rows) assert.deepEqual(Object.keys(row).sort(),['avatar_url','court_member','display_name','gender','history_levels','id','skill_level'])
   const privateField = await fetch(`${base}?select=line_user_id`,{headers})
   assert.equal(privateField.status,400,'Private identifiers are not part of the public schema')
-  console.log(`Anonymous directory verified: ${rows.length} entries; only names, avatars and public profile IDs.`)
+  console.log(`Anonymous directory verified: ${rows.length} entries; public profile fields only; private LINE identifiers excluded.`)
 }
 console.log('Public route and read-only controls passed.')

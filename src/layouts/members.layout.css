@@ -148,3 +148,55 @@ html[data-viewport='tv'] .member-directory__level[data-level='Beginner'] { backg
 html[data-viewport='tv'] .member-directory__level[data-level='Advanced'] { background:#ffe554; }
 html[data-viewport='tv'] .member-directory__level[data-level='Unrated'] { background:#40364c;color:#c5bad3; }
 html[data-viewport='tv'] .member-directory__grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
+
+/* Owner card controls: mobile. */
+html[data-viewport='mobile'] .member-directory__owner { color:#ffe554;font-weight:700;font-size:14px; }
+html[data-viewport='mobile'] .member-directory__controls { border:0;border-top:2px solid #100c19;margin:0;padding:12px 16px;min-width:0; }
+html[data-viewport='mobile'] .member-directory__controls legend { position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%); }
+html[data-viewport='mobile'] .member-directory__setting { display:flex;flex-direction:column;gap:6px;margin:0 0 12px;font-size:13px;font-weight:700; }
+html[data-viewport='mobile'] .member-directory__setting select { background:#21182b;color:#f6f0ff;border:2px solid #9987b0;padding:8px;min-height:40px;border-radius:6px;width:100%; }
+html[data-viewport='mobile'] .member-directory__choices { display:flex;gap:5px; }
+html[data-viewport='mobile'] .member-directory__choices button { flex:1;min-width:0;min-height:40px;border:2px solid #9987b0;background:#21182b;color:#f6f0ff;border-radius:6px;padding:6px;font:inherit;cursor:pointer; }
+html[data-viewport='mobile'] .member-directory__choices button[aria-pressed="true"] { background:#ffe554;color:#21182b;border-color:#ffe554; }
+html[data-viewport='mobile'] .member-directory__choices button:focus-visible { outline:3px solid #a9e5d0;outline-offset:2px; }
+html[data-viewport='mobile'] .member-directory__controls:disabled { opacity:.6; }
+html[data-viewport='mobile'] .member-directory__save-status { display:block;min-height:18px;font-size:12px;color:#c5bad3; }
+
+/* Owner card controls: tablet. */
+html[data-viewport='tablet'] .member-directory__owner { color:#ffe554;font-weight:700;font-size:14px; }
+html[data-viewport='tablet'] .member-directory__controls { border:0;border-top:2px solid #100c19;margin:0;padding:12px 16px;min-width:0; }
+html[data-viewport='tablet'] .member-directory__controls legend { position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%); }
+html[data-viewport='tablet'] .member-directory__setting { display:flex;flex-direction:column;gap:6px;margin:0 0 12px;font-size:13px;font-weight:700; }
+html[data-viewport='tablet'] .member-directory__setting select { background:#21182b;color:#f6f0ff;border:2px solid #9987b0;padding:8px;min-height:40px;border-radius:6px;width:100%; }
+html[data-viewport='tablet'] .member-directory__choices { display:flex;gap:5px; }
+html[data-viewport='tablet'] .member-directory__choices button { flex:1;min-width:0;min-height:40px;border:2px solid #9987b0;background:#21182b;color:#f6f0ff;border-radius:6px;padding:6px;font:inherit;cursor:pointer; }
+html[data-viewport='tablet'] .member-directory__choices button[aria-pressed="true"] { background:#ffe554;color:#21182b;border-color:#ffe554; }
+html[data-viewport='tablet'] .member-directory__choices button:focus-visible { outline:3px solid #a9e5d0;outline-offset:2px; }
+html[data-viewport='tablet'] .member-directory__controls:disabled { opacity:.6; }
+html[data-viewport='tablet'] .member-directory__save-status { display:block;min-height:18px;font-size:12px;color:#c5bad3; }
+
+/* Owner card controls: web. */
+html[data-viewport='web'] .member-directory__owner { color:#ffe554;font-weight:700;font-size:14px; }
+html[data-viewport='web'] .member-directory__controls { border:0;border-top:2px solid #100c19;margin:0;padding:12px 16px;min-width:0; }
+html[data-viewport='web'] .member-directory__controls legend { position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%); }
+html[data-viewport='web'] .member-directory__setting { display:flex;flex-direction:column;gap:6px;margin:0 0 12px;font-size:13px;font-weight:700; }
+html[data-viewport='web'] .member-directory__setting select { background:#21182b;color:#f6f0ff;border:2px solid #9987b0;padding:8px;min-height:40px;border-radius:6px;width:100%; }
+html[data-viewport='web'] .member-directory__choices { display:flex;gap:5px; }
+html[data-viewport='web'] .member-directory__choices button { flex:1;min-width:0;min-height:40px;border:2px solid #9987b0;background:#21182b;color:#f6f0ff;border-radius:6px;padding:6px;font:inherit;cursor:pointer; }
+html[data-viewport='web'] .member-directory__choices button[aria-pressed="true"] { background:#ffe554;color:#21182b;border-color:#ffe554; }
+html[data-viewport='web'] .member-directory__choices button:focus-visible { outline:3px solid #a9e5d0;outline-offset:2px; }
+html[data-viewport='web'] .member-directory__controls:disabled { opacity:.6; }
+html[data-viewport='web'] .member-directory__save-status { display:block;min-height:18px;font-size:12px;color:#c5bad3; }
+
+/* Owner card controls: tv. */
+html[data-viewport='tv'] .member-directory__owner { color:#ffe554;font-weight:700;font-size:14px; }
+html[data-viewport='tv'] .member-directory__controls { border:0;border-top:2px solid #100c19;margin:0;padding:12px 16px;min-width:0; }
+html[data-viewport='tv'] .member-directory__controls legend { position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%); }
+html[data-viewport='tv'] .member-directory__setting { display:flex;flex-direction:column;gap:6px;margin:0 0 12px;font-size:13px;font-weight:700; }
+html[data-viewport='tv'] .member-directory__setting select { background:#21182b;color:#f6f0ff;border:2px solid #9987b0;padding:8px;min-height:40px;border-radius:6px;width:100%; }
+html[data-viewport='tv'] .member-directory__choices { display:flex;gap:5px; }
+html[data-viewport='tv'] .member-directory__choices button { flex:1;min-width:0;min-height:40px;border:2px solid #9987b0;background:#21182b;color:#f6f0ff;border-radius:6px;padding:6px;font:inherit;cursor:pointer; }
+html[data-viewport='tv'] .member-directory__choices button[aria-pressed="true"] { background:#ffe554;color:#21182b;border-color:#ffe554; }
+html[data-viewport='tv'] .member-directory__choices button:focus-visible { outline:3px solid #a9e5d0;outline-offset:2px; }
+html[data-viewport='tv'] .member-directory__controls:disabled { opacity:.6; }
+html[data-viewport='tv'] .member-directory__save-status { display:block;min-height:18px;font-size:12px;color:#c5bad3; }
