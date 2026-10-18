@@ -389,6 +389,8 @@ function MemberSlotNameInput({
       type="text"
       value={text}
       disabled={disabled}
+      placeholder="Enter name…"
+      aria-label="Player name"
       onClick={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}
       onFocus={() => setEditing(true)}

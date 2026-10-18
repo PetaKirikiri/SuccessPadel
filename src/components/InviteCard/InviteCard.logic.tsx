@@ -152,6 +152,7 @@ export function InviteGameCard(props: Props) {
         aria-label={`About ${data.levelLabel} levels`} aria-expanded={pregameView === 'levels'} aria-controls={`level-guide-${row.id}`}
         onClick={event => { event.stopPropagation(); if (pregameView === 'levels') closeLevelGuide(); else setPregameView('levels') }}>?</button> : undefined}
       sessionKind={props.kind}
+      competitionFormat={props.kind === 'competition' ? isDuoCompetition(props.row) ? 'duos' : 'singles' : undefined}
       detailTo={detailTo}
       competitionId={row?.id}
       currentUserId={currentUserId}
@@ -206,7 +207,7 @@ export function InviteGameCard(props: Props) {
         {pregameView === 'levels' ? <CompetitionLevelGuide row={props.row} onClose={closeLevelGuide} /> : null}
         {pregameView === 'review' && hasReview ? <CompetitionReview key={props.row.id} competitionId={props.row.id} userId={currentUserId} /> : null}
         <div className="invite-game-card__pregame-pane" hidden={pregameView === 'levels' || pregameView === 'review'}>
-          {canEditRoster && pregameView === 'players' && (!showOverview || publicSignup) ? (
+          {canEditRoster && pregameView === 'players' ? (
             <InviteCardRosterEditor row={props.row} onSaved={props.onRefresh} publicSignup={publicSignup} />
           ) : (
             <CompetitionPregamePanel row={props.row} view={showOverview ? 'overview' : pregameView === 'rules' ? 'rules' : 'players'} canReorder={canEditSetup} />

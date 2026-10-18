@@ -38,6 +38,7 @@ export type InviteCardProps = {
   footer?: ReactNode
   className?: string
   sessionKind?: 'friendly' | 'competition'
+  competitionFormat?: 'singles' | 'duos'
   gender?: string | null
 }
 
@@ -106,6 +107,7 @@ export function InviteCard({
   footer,
   className = '',
   sessionKind,
+  competitionFormat,
 }: InviteCardProps) {
   const navigate = useNavigate()
   const cardDetailTo = sessionKind === 'competition' ? '' : detailTo
@@ -208,6 +210,7 @@ export function InviteCard({
         cardDetailTo ? 'cursor-pointer' : ''
       } ${className}`}
       data-kind={sessionKind}
+      data-competition-format={competitionFormat}
       role={cardDetailTo ? 'link' : undefined}
       tabIndex={cardDetailTo ? 0 : undefined}
       aria-label={cardDetailTo ? `${title}, ${dateLine}` : undefined}
