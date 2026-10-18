@@ -16,10 +16,12 @@ import {
 import { supabase } from '../../lib/supabaseClient'
 import type { Profile } from '../../lib/types'
 import type { CompetitionRow } from '../../hooks/useCompetitions'
+import { savePublicCompetitionSignup } from '../../lib/publicCompetitionSignup'
 
 type Props = {
   row: CompetitionRow
   onSaved?: () => void
+  publicSignup?: boolean
 }
 
 const FLUSH_MS = 600
@@ -143,7 +145,7 @@ async function loadRosterDirectory() {
   }
 }
 
-export function InviteCardRosterEditor({ row, onSaved }: Props) {
+export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: Props) {
   const { t } = useTranslation()
   const isDuos = isDuoCompetition(row)
   const sessionId = row.id
@@ -163,6 +165,7 @@ export function InviteCardRosterEditor({ row, onSaved }: Props) {
   const [error, setError] = useState<string | null>(null)
 
   const dirtyRef = useRef(false)
+  const editVersion = useRef(0)
   const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const flushingRef = useRef(false)
   const snapshotRef = useRef({
@@ -173,6 +176,7 @@ export function InviteCardRosterEditor({ row, onSaved }: Props) {
     padelPlayerIds,
   })
   const rowRef = useRef(row)
+  const editBaseRow = useRef(row)
   rowRef.current = row
 
   useEffect(() => {
@@ -180,6 +184,7 @@ export function InviteCardRosterEditor({ row, onSaved }: Props) {
   }, [isDuos, duoTeams, playerSlots, profileIds, padelPlayerIds])
 
   useEffect(() => {
+    if (publicSignup) return
     let active = true
     void loadRosterDirectory().then(({ profiles: nextProfiles, padelPlayers: nextPadel }) => {
       if (!active) return
@@ -189,9 +194,10 @@ export function InviteCardRosterEditor({ row, onSaved }: Props) {
     return () => {
       active = false
     }
-  }, [])
+  }, [publicSignup])
 
   useEffect(() => {
+    if (publicSignup) return
     const onProfileSynced = () => {
       void loadRosterDirectory().then(({ profiles: nextProfiles, padelPlayers: nextPadel }) => {
         setProfiles(nextProfiles)
@@ -200,7 +206,7 @@ export function InviteCardRosterEditor({ row, onSaved }: Props) {
     }
     window.addEventListener('successpadel:profile-synced', onProfileSynced)
     return () => window.removeEventListener('successpadel:profile-synced', onProfileSynced)
-  }, [])
+  }, [publicSignup])
 
   useEffect(() => {
     if (profiles.length === 0 && padelPlayers.length === 0) return
@@ -243,7 +249,10 @@ export function InviteCardRosterEditor({ row, onSaved }: Props) {
     setSaving(true)
     setError(null)
     const snap = snapshotRef.current
-    const err = snap.isDuos
+    const version = editVersion.current
+    const err = publicSignup
+      ? await savePublicCompetitionSignup(editBaseRow.current, snap.isDuos ? snap.duoTeams.flatMap(team => team.names) : snap.playerSlots)
+      : snap.isDuos
       ? await saveCompetitionInviteDuoRoster(sessionId, snap.duoTeams)
       : await saveCompetitionInviteSinglesRoster(
           sessionId,
@@ -257,19 +266,28 @@ export function InviteCardRosterEditor({ row, onSaved }: Props) {
       setError(err)
       return false
     }
-    dirtyRef.current = false
+    dirtyRef.current = editVersion.current !== version
     clearInviteRosterDraft(sessionId)
     await Promise.resolve(onSaved?.())
     return true
-  }, [sessionId, onSaved])
+  }, [sessionId, onSaved, publicSignup])
 
   const noteEdit = useCallback(() => {
+    if (!dirtyRef.current) editBaseRow.current = rowRef.current
+    editVersion.current += 1
     dirtyRef.current = true
     if (flushTimer.current) clearTimeout(flushTimer.current)
     flushTimer.current = setTimeout(() => {
       void flushToDb()
     }, FLUSH_MS)
   }, [flushToDb])
+
+  useEffect(() => {
+    if (!saving && dirtyRef.current && !error) {
+      const timer = setTimeout(() => { void flushToDb() }, FLUSH_MS)
+      return () => clearTimeout(timer)
+    }
+  }, [saving, error, flushToDb])
 
   useEffect(() => {
     return () => {
@@ -315,6 +333,7 @@ export function InviteCardRosterEditor({ row, onSaved }: Props) {
     >
       {isDuos ? (
         <DuoTeamSlots
+          disabled={publicSignup && saving}
           teams={duoTeams}
           profiles={profiles}
           padelPlayers={padelPlayers}
@@ -327,6 +346,7 @@ export function InviteCardRosterEditor({ row, onSaved }: Props) {
         />
       ) : (
         <MemberPlayerSlots
+          disabled={publicSignup && saving}
           count={slotCount}
           profiles={profiles}
           padelPlayers={padelPlayers}

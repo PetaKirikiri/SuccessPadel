@@ -9,3 +9,5 @@ additional_redirect_urls = ["http://localhost:5173/auth/callback"]
 # This pre-session endpoint authenticates the LINE ID token with LINE itself.
 [functions.line-liff-recognize]
 verify_jwt = false
+[functions.competition-signup]
+verify_jwt = false

@@ -94,13 +94,15 @@ export function InviteGameCard(props: Props) {
   const data = inviteCardData(source, t, { detailTo, locale })
 
   const canEditSetup = Boolean(props.kind === 'competition' && props.row.status !== 'complete' && isAdmin)
-  // Singles use the draggable lineup for admins in every viewport.
+  const publicSignup = Boolean(props.kind === 'competition' && !isAdmin &&
+    props.row.status === 'open' && !props.row.competition_started_at)
+  // Staff retain the existing editor; guests can edit registration names only.
   const canEditRoster = Boolean(
     props.kind === 'competition' &&
-      isDuoCompetition(props.row) &&
-      props.row.status !== 'complete' &&
+      (publicSignup || isDuoCompetition(props.row)) &&
+      props.row.status === 'open' &&
       !props.row.competition_started_at &&
-      isAdmin,
+      (isAdmin || publicSignup),
   )
   const canManageFriendly = Boolean(
     props.kind === 'friendly' && canEditFriendlySession(props.game, currentUserId, isAdmin),
@@ -204,8 +206,8 @@ export function InviteGameCard(props: Props) {
         {pregameView === 'levels' ? <CompetitionLevelGuide row={props.row} onClose={closeLevelGuide} /> : null}
         {pregameView === 'review' && hasReview ? <CompetitionReview key={props.row.id} competitionId={props.row.id} userId={currentUserId} /> : null}
         <div className="invite-game-card__pregame-pane" hidden={pregameView === 'levels' || pregameView === 'review'}>
-          {canEditRoster && pregameView === 'players' && !showOverview ? (
-            <InviteCardRosterEditor row={props.row} onSaved={props.onRefresh} />
+          {canEditRoster && pregameView === 'players' && (!showOverview || publicSignup) ? (
+            <InviteCardRosterEditor row={props.row} onSaved={props.onRefresh} publicSignup={publicSignup} />
           ) : (
             <CompetitionPregamePanel row={props.row} view={showOverview ? 'overview' : pregameView === 'rules' ? 'rules' : 'players'} canReorder={canEditSetup} />
           )}
