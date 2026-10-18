@@ -64,6 +64,7 @@ export function InviteCardHeaderTitle({
 
   return (
     <div className="invite-game-card__header-title">
+      {competitionId ? <img className="competition-header-logo" src="/brand/logo-padel.webp" alt="Success Padel Samui" /> : null}
       <div className="invite-game-card__title-nav">
         <InviteCarouselHeaderNavButton
           direction="prev"

@@ -11,6 +11,7 @@ type Props = {
   className?: string
   imgClassName?: string
   disabled?: boolean
+  fallbackText?: string
 }
 
 export function PlayerAvatarLink({
@@ -22,6 +23,7 @@ export function PlayerAvatarLink({
   className = '',
   imgClassName = 'h-7 w-7 shrink-0 rounded-full object-cover',
   disabled = false,
+  fallbackText,
 }: Props) {
   const { openProfile, opening } = useOpenPlayerProfile()
   const name = firstDisplayName(displayName || 'Player')
@@ -30,6 +32,7 @@ export function PlayerAvatarLink({
   const avatar = (
     <PlayerAvatar
       displayName={displayName}
+      fallbackText={fallbackText}
       avatarUrl={avatarUrl}
       profileId={profileId}
       imgClassName={imgClassName}

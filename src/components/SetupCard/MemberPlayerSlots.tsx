@@ -36,6 +36,7 @@ type Props = {
   showSlotNumbers?: boolean
   inviteChipLayout?: boolean
   setupRosterLayout?: boolean
+  slotNumberOffset?: number
 }
 
 type Suggestion =
@@ -102,6 +103,7 @@ const PlayerSlotCombobox = memo(function PlayerSlotCombobox({
   showMembers,
   showPlayerProfiles,
   onPick,
+  commitOnBlur = false,
 }: {
   availableMembers: Profile[]
   availablePlayers: PadelPlayerOption[]
@@ -110,11 +112,13 @@ const PlayerSlotCombobox = memo(function PlayerSlotCombobox({
   showMembers: boolean
   showPlayerProfiles: boolean
   onPick: (name: string, profileId: string | null, padelPlayerId: string | null) => void
+  commitOnBlur?: boolean
 }) {
   const [text, setText] = useState(value)
   const [open, setOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)
   const listRef = useRef<HTMLUListElement>(null)
+  const pickedRef = useRef(false)
 
   useEffect(() => {
     setText(value)
@@ -148,6 +152,7 @@ const PlayerSlotCombobox = memo(function PlayerSlotCombobox({
   }, [activeIndex, open])
 
   const pickSuggestion = (item: Suggestion) => {
+    pickedRef.current = true
     if (item.kind === 'member') {
       onPick(item.profile.display_name, item.profile.id, null)
       setText(item.profile.display_name)
@@ -197,6 +202,8 @@ const PlayerSlotCombobox = memo(function PlayerSlotCombobox({
         value={text}
         disabled={disabled}
         role="combobox"
+        placeholder="Enter name…"
+        aria-label="Player name"
         aria-expanded={open}
         aria-autocomplete="list"
         onClick={(e) => e.stopPropagation()}
@@ -204,16 +211,17 @@ const PlayerSlotCombobox = memo(function PlayerSlotCombobox({
         onChange={(e) => {
           const nextText = e.target.value
           setText(nextText)
+          pickedRef.current = false
           // Keep the parent roster current while typing. Actions such as
           // auto-rank must not depend on a separate blur to see the last name.
-          onPick(nextText, null, null)
+          if (!commitOnBlur) onPick(nextText, null, null)
           setOpen(true)
         }}
         onFocus={() => setOpen(true)}
         onBlur={() => {
           window.setTimeout(() => {
             setOpen(false)
-            commit(text)
+            if (!pickedRef.current) commit(text)
           }, 150)
         }}
         onKeyDown={(e) => {
@@ -434,6 +442,7 @@ export function MemberPlayerSlots({
   showSlotNumbers = true,
   inviteChipLayout = false,
   setupRosterLayout = false,
+  slotNumberOffset = 0,
 }: Props) {
   const paddedNames = pad(names, count, '')
   const paddedIds = pad(profileIds, count, null)
@@ -456,7 +465,7 @@ export function MemberPlayerSlots({
     () =>
       Array.from({ length: count }, (_, index) => {
         const taken = new Set(
-          paddedIds.filter((id, i) => i !== index && id).map((id) => id!),
+          [...paddedIds.filter((id, i) => i !== index && id), ...paddedPadelIds.filter((id, i) => i !== index && id)].map((id) => id!),
         )
         const selectedId = paddedIds[index]
         const list = profiles.filter((p) => !taken.has(p.id))
@@ -523,7 +532,7 @@ export function MemberPlayerSlots({
         {Array.from({ length: count }, (_, index) => {
           const profileId = paddedIds[index] ?? null
           const padelPlayerId = paddedPadelIds[index] ?? null
-          const selectedProfile = profileId ? profileById.get(profileId) : null
+          const selectedProfile = profileById.get(profileId ?? padelPlayerId ?? '')
           const selectedPlayer = padelPlayerId ? playerById.get(padelPlayerId) : null
           const selectedAvatar =
             selectedProfile?.avatar_url ??
@@ -557,6 +566,7 @@ export function MemberPlayerSlots({
             {linkAvatarsToProfile ? (
               <PlayerAvatarLink
                 displayName={displayName}
+                fallbackText={inviteChipLayout && !displayName.trim() ? String(slotNumberOffset + index + 1) : undefined}
                 avatarUrl={selectedAvatar}
                 profileId={profileId}
                 padelPlayerId={padelPlayerId}
@@ -572,6 +582,7 @@ export function MemberPlayerSlots({
             )}
             {canPick ? (
               <PlayerSlotCombobox
+                commitOnBlur={inviteChipLayout}
                 availableMembers={availableMembersBySlot[index] ?? []}
                 availablePlayers={availablePlayersBySlot[index] ?? []}
                 value={slotName}

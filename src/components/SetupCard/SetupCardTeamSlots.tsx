@@ -234,6 +234,7 @@ export function DuoTeamSlots({
             }
           >
             <MemberPlayerSlots
+              slotNumberOffset={teamIndex * 2}
               count={2}
               profiles={profiles}
               padelPlayers={padelPlayers}

@@ -129,7 +129,13 @@ function refreshSinglesNames(
   )
 }
 
-async function loadRosterDirectory() {
+async function loadRosterDirectory(publicSignup = false) {
+  if (publicSignup) {
+    const { data, error } = await supabase.from('public_member_directory')
+      .select('id, display_name, avatar_url').order('display_name')
+    if (error) throw error
+    return { profiles: (data ?? []) as Profile[], padelPlayers: [] as PadelPlayerOption[] }
+  }
   const [profilesRes, playersRes] = await Promise.all([
     supabase.from('profiles').select('id, display_name, avatar_url').order('display_name'),
     supabase
@@ -184,13 +190,12 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
   }, [isDuos, duoTeams, playerSlots, profileIds, padelPlayerIds])
 
   useEffect(() => {
-    if (publicSignup) return
     let active = true
-    void loadRosterDirectory().then(({ profiles: nextProfiles, padelPlayers: nextPadel }) => {
+    void loadRosterDirectory(publicSignup).then(({ profiles: nextProfiles, padelPlayers: nextPadel }) => {
       if (!active) return
       setProfiles(nextProfiles)
       setPadelPlayers(nextPadel)
-    })
+    }).catch(() => { if (active) setError('Unable to load members. You can still enter a new name.') })
     return () => {
       active = false
     }
@@ -251,7 +256,9 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
     const snap = snapshotRef.current
     const version = editVersion.current
     const err = publicSignup
-      ? await savePublicCompetitionSignup(editBaseRow.current, snap.isDuos ? snap.duoTeams.flatMap(team => team.names) : snap.playerSlots)
+      ? await savePublicCompetitionSignup(editBaseRow.current,
+          snap.isDuos ? snap.duoTeams.flatMap(team => team.names) : snap.playerSlots,
+          snap.isDuos ? snap.duoTeams.flatMap(team => team.profileIds.map((id, side) => id ?? team.padelPlayerIds[side])) : snap.profileIds.map((id, slot) => id ?? snap.padelPlayerIds[slot]))
       : snap.isDuos
       ? await saveCompetitionInviteDuoRoster(sessionId, snap.duoTeams)
       : await saveCompetitionInviteSinglesRoster(
@@ -339,7 +346,7 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
           padelPlayers={padelPlayers}
           onChange={handleDuoChange}
           layout="grid"
-          nameInputMode="text"
+          nameInputMode={publicSignup ? 'picker' : 'text'}
           linkAvatarsToProfile
           competitionId={sessionId}
           inviteChipLayout
@@ -356,7 +363,7 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
           onChange={handleSinglesChange}
           showMembers
           showPlayerProfiles
-          nameInputMode="text"
+          nameInputMode={publicSignup ? 'picker' : 'text'}
           linkAvatarsToProfile
           competitionId={sessionId}
           showSlotNumbers={false}

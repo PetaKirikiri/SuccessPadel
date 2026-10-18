@@ -1628,3 +1628,8 @@ html[data-viewport='tv'] .invite-game-card:has(.competition-week-strip) .invite-
 html[data-viewport='tv'] .invite-game-card:has(.competition-week-strip) .invite-game-card__schedule-time,
 html[data-viewport='tv'] .invite-game-card:has(.competition-week-strip) .invite-game-card__ability-row { display:none; }
 html[data-viewport='tv'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__header-title > .competition-week-strip { width:min(600px, 66%);bottom:48px; }
+html[data-viewport='tv'] .competition-header-logo { position:absolute;left:18px;bottom:12px;width:94px;height:40px;object-fit:contain;z-index:3; }
+html[data-viewport='tv'] .competition-header-logo { filter:brightness(0) invert(1); }
+html[data-viewport='tv'] .invite-roster-editor .invite-roster-chip__avatar { font-size:18px;font-weight:900; }
+html[data-viewport='tv'] .invite-roster-editor input[role='combobox'] { border:2px solid #a99abb;border-radius:8px;min-height:40px;color:#fff8e7; }
+html[data-viewport='tv'] .invite-roster-editor input[role='combobox']::placeholder { color:#d7cde4;opacity:1; }

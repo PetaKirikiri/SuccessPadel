@@ -3011,3 +3011,8 @@ html[data-viewport='mobile'] .competition-week-strip__hero img { width:32px; }
 html[data-viewport='mobile'] .competition-week-strip__traits { gap:3px;font-size:15px; }
 html[data-viewport='mobile'] .competition-week-strip__traits svg { width:14px;height:14px; }
 html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.competition-week-strip) .invite-game-card__header:has(.invite-game-card__header-links)::after { display:none; }
+html[data-viewport='mobile'] .competition-header-logo { display:block;width:84px;height:28px;object-fit:contain;margin:0 0 6px; }
+html[data-viewport='mobile'] .competition-header-logo { filter:brightness(0) invert(1); }
+html[data-viewport='mobile'] .invite-roster-editor .invite-roster-chip__avatar { font-size:18px;font-weight:900; }
+html[data-viewport='mobile'] .invite-roster-editor input[role='combobox'] { border:2px solid #a99abb;border-radius:8px;min-height:40px;color:#fff8e7; }
+html[data-viewport='mobile'] .invite-roster-editor input[role='combobox']::placeholder { color:#d7cde4;opacity:1; }

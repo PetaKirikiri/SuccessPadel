@@ -13,6 +13,7 @@ type Props = {
   profileId?: string | null
   imgClassName?: string
   pixelated?: boolean
+  fallbackText?: string
 }
 
 function withCacheBust(url: string): string {
@@ -27,6 +28,7 @@ export function PlayerAvatar({
   profileId,
   imgClassName = 'h-7 w-7 shrink-0 rounded-full object-cover',
   pixelated = false,
+  fallbackText,
 }: Props) {
   const { user, profile: authProfile } = useAuth()
   const [broken, setBroken] = useState(false)
@@ -109,7 +111,7 @@ export function PlayerAvatar({
     <span
       className={`flex items-center justify-center rounded-full bg-brand-primary/10 text-[11px] font-semibold text-brand-primary ${imgClassName}`}
     >
-      {initial}
+      {fallbackText ?? initial}
     </span>
   )
 }
