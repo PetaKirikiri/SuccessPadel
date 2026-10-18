@@ -1,7 +1,9 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
-import { CalendarDays, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, Link2, Shuffle, X } from 'lucide-react'
+import { competitionLevelLabel } from '../../lib/competitionLevel'
+import { isDuoCompetition } from '../../lib/competitionFormatPresets'
 import { useViewportBucket } from '../../contexts/ViewportContext'
 import { useCompetitionHubRows } from '../../hooks/useCompetitionHubRows'
 import { clubTodayDateInput, formatClubTime } from '../../lib/courtSchedule'
@@ -80,11 +82,21 @@ function CompetitionWeekStrip({ competitionId }: { competitionId: string }) {
         <p>{label(days[0], { day: 'numeric', month: 'short' })}–{label(days[6], { day: 'numeric', month: 'short' })}<span>No competitions</span></p> :
         events.map(row => {
           const day = clubCompetitionDay(row.starts_at)!
+          const level = competitionLevelLabel(row) ?? 'Level not specified'
+          const fixed = isDuoCompetition(row)
+          const gender = row.gender === 'Women' ? 'Women only' : row.gender === 'Men' ? 'Men only' : fixed ? 'One man and one woman' : 'Open to men and women'
+          const format = fixed ? 'Fixed partners' : 'Rotating partners'
+          const hero = row.gender === 'Women' ? 'female-v4' : row.gender === 'Men' ? 'male-v4' : 'duo'
+          const strength = row.skill_level_max_rank ?? ({ Beginner: 1, 'Low Inter': 2, Intermediate: 3, Inter: 3, 'High Inter': 4, Advanced: 5, 'Advanced Plus': 6 }[row.skill_level ?? ''] ?? 0)
+          const time = `${formatClubTime(new Date(row.starts_at!))}${row.ends_at ? `–${formatClubTime(new Date(row.ends_at))}` : ''}`
           return <Link key={row.id} to={competitionInvitePath(row.id)}
             className="competition-week-strip__event" aria-current={row.id === competitionId ? 'page' : undefined}
-            aria-label={`${label(day, { weekday: 'long', day: 'numeric', month: 'short' })}, ${row.title}, ${formatClubTime(new Date(row.starts_at!))}`}>
+            aria-label={`${label(day, { weekday: 'long', day: 'numeric', month: 'short' })}, ${time}, ${level}, ${gender}, ${format}`} title={`${level} · ${gender} · ${format}`}>
             <strong>{label(day, { weekday: 'short' })}</strong>
             <time dateTime={day}>{label(day, { day: 'numeric', month: 'short' })}</time>
+            <span className="competition-week-strip__time">{time}</span>
+            <span className="competition-week-strip__hero" aria-hidden="true"><img src={`/brand/superhero-americano-${hero}.png`} alt="" /><span className="competition-week-strip__strength">{[1, 2, 3, 4, 5, 6].map(rank => <i key={rank} data-filled={rank <= strength} />)}</span></span>
+            <span className="competition-week-strip__traits" aria-hidden="true"><span>{row.gender === 'Women' ? '♀' : row.gender === 'Men' ? '♂' : '♂♀'}</span>{fixed ? <Link2 /> : <Shuffle />}</span>
           </Link>
         })}
     </div>

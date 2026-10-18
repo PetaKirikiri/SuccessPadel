@@ -2990,3 +2990,24 @@ html[data-viewport='mobile'] .invite-game-card[data-kind='competition'] .invite-
 html[data-viewport='mobile'] .invite-game-card[data-kind='competition'] .invite-roster-editor .invite-duo-team-label .brand-input { color: #f7f5fc; }
 html[data-viewport='mobile'] .invite-game-card[data-kind='competition'] .invite-roster-editor .invite-duo-team-label { background: #ffe15a; color: #191321; border-radius: 2px; }
 html[data-viewport='mobile'] .invite-game-card[data-kind='competition'] .invite-roster-editor .invite-duo-team-label .brand-input { color: #191321; font-weight: 850; }
+/* Unified week cards: date, time, superhero level and eligibility. */
+html[data-viewport='mobile'] .competition-week-strip__events { grid-auto-columns:minmax(0,1fr);overflow:visible; }
+html[data-viewport='mobile'] .competition-week-strip__event { grid-template-columns:minmax(0,1fr);gap:2px;padding:6px 1px;min-width:0; }
+html[data-viewport='mobile'] .competition-week-strip__time { font-size:7.5px;font-weight:800;white-space:nowrap; }
+html[data-viewport='mobile'] .competition-week-strip__hero { display:flex;align-items:center;justify-content:center;gap:5px;height:38px; }
+html[data-viewport='mobile'] .competition-week-strip__hero img { height:100%;width:42px;object-fit:contain; }
+html[data-viewport='mobile'] .competition-week-strip__strength { display:flex;flex-direction:column-reverse;gap:2px; }
+html[data-viewport='mobile'] .competition-week-strip__strength i { display:block;width:12px;height:4px;border:1px solid #40215d;background:transparent; }
+html[data-viewport='mobile'] .competition-week-strip__strength i[data-filled='true'] { background:#6935a1; }
+html[data-viewport='mobile'] .competition-week-strip__traits { display:flex;align-items:center;justify-content:center;gap:12px;font:900 20px/1 Arial,sans-serif; }
+html[data-viewport='mobile'] .competition-week-strip__traits svg { width:18px;height:18px;stroke-width:3; }
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.competition-week-strip) .invite-game-card__title-link .invite-game-card__schedule-date,
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.competition-week-strip) .invite-game-card__title-link .invite-game-card__schedule-time,
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.competition-week-strip) .invite-game-card__title-link .invite-game-card__ability-row { display:none; }
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__header-title:has(.competition-week-strip) { padding-right:0;width:100%; }
+html[data-viewport='mobile'] .invite-game-card__header-title > .competition-week-strip { width:100%;grid-template-columns:14px minmax(0,1fr) 14px;gap:2px; }
+html[data-viewport='mobile'] .competition-week-strip__hero { gap:2px; }
+html[data-viewport='mobile'] .competition-week-strip__hero img { width:32px; }
+html[data-viewport='mobile'] .competition-week-strip__traits { gap:3px;font-size:15px; }
+html[data-viewport='mobile'] .competition-week-strip__traits svg { width:14px;height:14px; }
+html[data-viewport='mobile'] .invite-game-card[data-kind='competition']:has(.competition-week-strip) .invite-game-card__header:has(.invite-game-card__header-links)::after { display:none; }

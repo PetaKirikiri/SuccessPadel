@@ -1613,3 +1613,18 @@ html[data-viewport='tv'] .invite-game-card[data-kind='competition']:has(.invite-
 html[data-viewport='tv'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__schedule-date { margin-top:0;justify-self:end; }
 html[data-viewport='tv'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__schedule-time { margin-top:0;justify-self:start; }
 html[data-viewport='tv'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__ability-row { margin-top:0; }
+/* Unified week cards: date, time, superhero level and eligibility. */
+html[data-viewport='tv'] .competition-week-strip__events { grid-auto-columns:minmax(0,1fr);overflow:visible; }
+html[data-viewport='tv'] .competition-week-strip__event { gap:2px;padding:6px 3px;min-width:0; }
+html[data-viewport='tv'] .competition-week-strip__time { font-size:11px;font-weight:800;white-space:nowrap; }
+html[data-viewport='tv'] .competition-week-strip__hero { display:flex;align-items:center;justify-content:center;gap:5px;height:48px; }
+html[data-viewport='tv'] .competition-week-strip__hero img { height:100%;width:42px;object-fit:contain; }
+html[data-viewport='tv'] .competition-week-strip__strength { display:flex;flex-direction:column-reverse;gap:2px; }
+html[data-viewport='tv'] .competition-week-strip__strength i { display:block;width:12px;height:4px;border:1px solid #40215d;background:transparent; }
+html[data-viewport='tv'] .competition-week-strip__strength i[data-filled='true'] { background:#6935a1; }
+html[data-viewport='tv'] .competition-week-strip__traits { display:flex;align-items:center;justify-content:center;gap:12px;font:900 20px/1 Arial,sans-serif; }
+html[data-viewport='tv'] .competition-week-strip__traits svg { width:18px;height:18px;stroke-width:3; }
+html[data-viewport='tv'] .invite-game-card:has(.competition-week-strip) .invite-game-card__schedule-date,
+html[data-viewport='tv'] .invite-game-card:has(.competition-week-strip) .invite-game-card__schedule-time,
+html[data-viewport='tv'] .invite-game-card:has(.competition-week-strip) .invite-game-card__ability-row { display:none; }
+html[data-viewport='tv'] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-game-card__header-title > .competition-week-strip { width:min(600px, 66%);bottom:48px; }
