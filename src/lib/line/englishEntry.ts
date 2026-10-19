@@ -3,9 +3,10 @@
 export const ENGLISH_HOTEL = 'https://learn-english-coral.vercel.app/hotel'
 export const SHARED_LIFF_ID = '2010311582-o2c1DCnP'
 export const LINE_ENDPOINT = 'https://success-padel-ffzt.vercel.app/login'
-export type EnglishMode = 'hotel' | 'padel' | 'padel-coach'
+export type EnglishMode = 'hotel' | 'english' | 'padel' | 'padel-coach'
 const destinations: Record<EnglishMode, string> = {
   hotel: ENGLISH_HOTEL,
+  english: 'https://learn-english-coral.vercel.app/english',
   padel: 'https://learn-english-coral.vercel.app/padel',
   'padel-coach': 'https://learn-english-coral.vercel.app/padel-coach',
 }
@@ -16,7 +17,7 @@ export function englishEntry(search: string): { signup: boolean; attempted: bool
   let nested = new URLSearchParams()
   try { nested = new URL(direct.get('liff.state') ?? '', LINE_ENDPOINT).searchParams } catch { /* invalid state */ }
   if ([direct, nested].some(params => params.has('lpl') || params.has('sp_return_to'))) return null
-  const params = [direct, nested].find(item => item.get('app') === 'englishsuccess' && ['hotel','padel','padel-coach'].includes(item.get('mode') ?? ''))
+  const params = [direct, nested].find(item => item.get('app') === 'englishsuccess' && ['hotel','english','padel','padel-coach'].includes(item.get('mode') ?? ''))
   return params ? { signup: params.get('intent') === 'signup', attempted: params.get('english_attempt') === '1', ...(params.get('mode') !== 'hotel' ? { mode: params.get('mode') as EnglishMode } : {}) } : null
 }
 
