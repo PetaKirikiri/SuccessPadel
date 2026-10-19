@@ -1516,3 +1516,5 @@ html[data-viewport='web'] .competition-header-logo { filter:brightness(0) invert
 html[data-viewport='web'] .invite-roster-editor .invite-roster-chip__avatar { font-size:18px;font-weight:900; }
 html[data-viewport='web'] .invite-roster-editor input[role='combobox'] { border:2px solid #a99abb;border-radius:8px;min-height:40px;color:#fff8e7; }
 html[data-viewport='web'] .invite-roster-editor input[role='combobox']::placeholder { color:#d7cde4;opacity:1; }
+/* The wide Players overview already includes the rules beside the roster. */
+html[data-viewport='web'] .invite-game-card .invite-game-card__header-links .invite-game-card__rules-jump { display:none; }

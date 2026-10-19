@@ -207,10 +207,11 @@ export function InviteGameCard(props: Props) {
         {pregameView === 'levels' ? <CompetitionLevelGuide row={props.row} onClose={closeLevelGuide} /> : null}
         {pregameView === 'review' && hasReview ? <CompetitionReview key={props.row.id} competitionId={props.row.id} userId={currentUserId} /> : null}
         <div className="invite-game-card__pregame-pane" hidden={pregameView === 'levels' || pregameView === 'review'}>
-          {canEditRoster && pregameView === 'players' ? (
+          {canEditRoster && pregameView === 'players' && !showOverview ? (
             <InviteCardRosterEditor row={props.row} onSaved={props.onRefresh} publicSignup={publicSignup} />
           ) : (
-            <CompetitionPregamePanel row={props.row} view={showOverview ? 'overview' : pregameView === 'rules' ? 'rules' : 'players'} canReorder={canEditSetup} />
+            <CompetitionPregamePanel row={props.row} view={showOverview ? 'overview' : pregameView === 'rules' ? 'rules' : 'players'} canReorder={canEditSetup}
+              rosterContent={canEditRoster && showOverview ? <InviteCardRosterEditor row={props.row} onSaved={props.onRefresh} publicSignup={publicSignup} /> : undefined} />
           )}
         </div>
       </> : undefined}
