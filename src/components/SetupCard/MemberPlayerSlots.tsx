@@ -116,6 +116,7 @@ const PlayerSlotCombobox = memo(function PlayerSlotCombobox({
 }) {
   const [text, setText] = useState(value)
   const [open, setOpen] = useState(false)
+  const [opensUp, setOpensUp] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)
   const listRef = useRef<HTMLUListElement>(null)
   const pickedRef = useRef(false)
@@ -148,7 +149,13 @@ const PlayerSlotCombobox = memo(function PlayerSlotCombobox({
 
   useEffect(() => {
     if (!open || activeIndex < 0) return
-    listRef.current?.children[activeIndex]?.scrollIntoView({ block: 'nearest' })
+    const list = listRef.current
+    const item = list?.children[activeIndex] as HTMLElement | undefined
+    if (!list || !item) return
+    if (item.offsetTop < list.scrollTop) list.scrollTop = item.offsetTop
+    else if (item.offsetTop + item.offsetHeight > list.scrollTop + list.clientHeight) {
+      list.scrollTop = item.offsetTop + item.offsetHeight - list.clientHeight
+    }
   }, [activeIndex, open])
 
   const pickSuggestion = (item: Suggestion) => {
@@ -217,7 +224,13 @@ const PlayerSlotCombobox = memo(function PlayerSlotCombobox({
           if (!commitOnBlur) onPick(nextText, null, null)
           setOpen(true)
         }}
-        onFocus={() => setOpen(true)}
+        onFocus={(event) => {
+          const input = event.currentTarget.getBoundingClientRect()
+          const panel = event.currentTarget.closest('.invite-game-card__roster')?.getBoundingClientRect()
+          const bottom = Math.min(document.documentElement.clientHeight, panel?.bottom ?? Infinity)
+          setOpensUp(bottom - input.bottom < 220 && input.top > 220)
+          setOpen(true)
+        }}
         onBlur={() => {
           window.setTimeout(() => {
             setOpen(false)
@@ -255,6 +268,7 @@ const PlayerSlotCombobox = memo(function PlayerSlotCombobox({
         <ul
           ref={listRef}
           role="listbox"
+          data-placement={opensUp ? 'above' : 'below'}
           className="absolute left-0 right-0 top-full z-30 mt-0.5 max-h-52 overflow-y-auto overscroll-contain rounded-lg border border-brand-border bg-brand-surface py-0.5 shadow-md"
         >
           {suggestions.map((item, i) => {

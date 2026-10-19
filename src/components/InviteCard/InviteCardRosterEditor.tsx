@@ -346,7 +346,7 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
           padelPlayers={padelPlayers}
           onChange={handleDuoChange}
           layout="grid"
-          nameInputMode={publicSignup ? 'picker' : 'text'}
+          nameInputMode="picker"
           linkAvatarsToProfile
           competitionId={sessionId}
           inviteChipLayout
@@ -363,7 +363,7 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
           onChange={handleSinglesChange}
           showMembers
           showPlayerProfiles
-          nameInputMode={publicSignup ? 'picker' : 'text'}
+          nameInputMode="picker"
           linkAvatarsToProfile
           competitionId={sessionId}
           showSlotNumbers={false}
