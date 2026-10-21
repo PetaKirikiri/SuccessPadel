@@ -322,3 +322,15 @@ html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-car
 html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor input.brand-input { box-sizing:border-box;width:100%;min-width:0;min-height:0;height:clamp(24px,3.5vh,40px);padding:3px 8px;border:1px solid #a99abb;border-radius:5px;background:#201c2d;color:#fff8e7;font:500 14px/1.2 Arial,sans-serif; }
 html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor input::placeholder { color:#d7cde4;opacity:1; }
 html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor .invite-roster-editor-chip:focus-within { position:relative;z-index:5;border-color:#ffe15a; }
+
+/* Attendance remains available alongside editable signup names. */
+html[data-viewport='tablet'] [data-competition-format='singles'] .invite-roster-editor .invite-signup-attendance { display:flex;flex-direction:row;flex:none;gap:3px;align-self:center; }
+html[data-viewport='tablet'] [data-competition-format='singles'] .invite-roster-editor .invite-signup-attendance button { min-width:32px;min-height:28px;padding:2px 5px;border:2px solid #100c18;border-radius:5px;background:#241b32;color:#fff4cc;font:700 11px/1.1 Arial,sans-serif;cursor:pointer; }
+html[data-viewport='tablet'] [data-competition-format='singles'] .invite-roster-editor .invite-signup-attendance__yes[aria-pressed='true'] { background:#ffe15a;color:#191321; }
+html[data-viewport='tablet'] [data-competition-format='singles'] .invite-roster-editor .invite-signup-attendance__no[aria-pressed='true'] { background:#ff8297;color:#191321; }
+html[data-viewport='tablet'] [data-competition-format='singles'] .invite-roster-editor .invite-signup-attendance button:disabled { opacity:.4;cursor:default; }
+html[data-viewport='tablet'] [data-competition-format='singles'] .invite-roster-editor .invite-signup-attendance button:focus-visible { outline:3px solid #77cfff;outline-offset:2px; }
+html[data-viewport='tablet'] [data-competition-format='singles'] .invite-roster-editor .invite-signup-attendance button { font-size:0;min-width:24px;min-height:24px;padding:0 3px; }
+html[data-viewport='tablet'] [data-competition-format='singles'] .invite-roster-editor .invite-signup-attendance__yes::after { content:'✓';font:900 18px/1 Arial,sans-serif;color:#ffe15a; }
+html[data-viewport='tablet'] [data-competition-format='singles'] .invite-roster-editor .invite-signup-attendance__no::after { content:'×';font:900 20px/1 Arial,sans-serif;color:#ff8297; }
+html[data-viewport='tablet'] [data-competition-format='singles'] .invite-roster-editor .invite-signup-attendance button[aria-pressed='true']::after { color:#191321; }

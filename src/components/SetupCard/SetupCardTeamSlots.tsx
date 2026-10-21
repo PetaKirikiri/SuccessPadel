@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode, type CSSProperties } from 'react'
 import { MemberPlayerSlots, type PadelPlayerOption } from './MemberPlayerSlots'
 import type { RosterProfileOption as Profile } from '../../lib/inviteRosterDirectory'
 import type { DuoTeamDraft } from '../../lib/competitionDuoTeams'
 import { duoTeamWatermarkUrl } from '../../lib/duoTeamWatermark'
 
 type Props = {
+  renderSlotActions?: (index: number) => ReactNode
   teams: DuoTeamDraft[]
   profiles: Profile[]
   padelPlayers?: PadelPlayerOption[]
@@ -97,6 +98,7 @@ function TeamLabelInput({
 }
 
 export function DuoTeamSlots({
+  renderSlotActions,
   teams,
   profiles,
   padelPlayers,
@@ -234,6 +236,7 @@ export function DuoTeamSlots({
             }
           >
             <MemberPlayerSlots
+              renderSlotActions={renderSlotActions}
               slotNumberOffset={teamIndex * 2}
               count={2}
               profiles={profiles}

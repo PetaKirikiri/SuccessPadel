@@ -4,7 +4,7 @@ import { MemberPlayerSlots, type PadelPlayerOption } from '../../components/Setu
 import { useTranslation } from '../../hooks/useTranslation'
 import { clubDisplayName } from '../../lib/clubMemberDisplay'
 import type { DuoTeamDraft } from '../../lib/competitionDuoTeams'
-import { duoTeamDraftsFromRow, competitionRosterSlots } from '../../lib/competitionGameDisplay'
+import { duoTeamDraftsFromRow, competitionRosterSlots, competitionDuoTeamSlots } from '../../lib/competitionGameDisplay'
 import { isDuoCompetition } from '../../lib/competitionFormatPresets'
 import {
   clearInviteRosterDraft,
@@ -17,6 +17,8 @@ import { supabase } from '../../lib/supabaseClient'
 import { inviteRosterDirectory, type RosterProfileOption as Profile } from '../../lib/inviteRosterDirectory'
 import type { CompetitionRow } from '../../hooks/useCompetitions'
 import { savePublicCompetitionSignup } from '../../lib/publicCompetitionSignup'
+import { useCompetitionAttendance } from '../../hooks/useCompetitionAttendance'
+import { rosterDisplayName } from '../../hooks/useCompetitions'
 
 type Props = {
   row: CompetitionRow
@@ -158,10 +160,7 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
 
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [padelPlayers, setPadelPlayers] = useState<PadelPlayerOption[]>([])
-  const rosterDirectory = useMemo(
-    () => inviteRosterDirectory(row.session_players ?? [], profiles, padelPlayers),
-    [row.session_players, profiles, padelPlayers],
-  )
+  const rosterDirectory = useMemo(() => inviteRosterDirectory(row.session_players ?? [], profiles, padelPlayers), [row.session_players, profiles, padelPlayers])
   const [duoTeams, setDuoTeams] = useState<DuoTeamDraft[]>(() => duoTeamDraftsFromRow(row))
   const [playerSlots, setPlayerSlots] = useState<string[]>(() => singlesFromRow(row).names)
   const [profileIds, setProfileIds] = useState<(string | null)[]>(() =>
@@ -333,7 +332,40 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
     [noteEdit],
   )
 
-  return (
+  const { attendance, busyPlayerId, error: attendanceError, updateAttendance } = useCompetitionAttendance(row.id)
+  const renderSlotActions = (index: number) => {
+    const name = isDuos ? duoTeams[Math.floor(index / 2)]?.names[index % 2] : playerSlots[index]
+    const profileId = isDuos ? duoTeams[Math.floor(index / 2)]?.profileIds[index % 2] : profileIds[index]
+    const padelId = isDuos ? duoTeams[Math.floor(index / 2)]?.padelPlayerIds?.[index % 2] : padelPlayerIds[index]
+    const matches = (row.session_players ?? []).filter(player =>
+      Boolean(name?.trim()) && rosterDisplayName(player).trim() === name?.trim() &&
+      (profileId ? player.profile_id === profileId || player.profiles?.id === profileId || player.padel_players?.profile_id === profileId
+        : padelId ? player.padel_player_id === padelId : !player.profile_id && !player.padel_player_id))
+    const team = isDuos ? competitionDuoTeamSlots(row)[Math.floor(index / 2)] : undefined
+    const pair = team?.pairId ? row.session_pairs?.find(item => item.id === team.pairId) : undefined
+    const pairPlayerId = index % 2 === 0 ? pair?.roster_a_id : pair?.roster_b_id
+    const slotPlayer = pairPlayerId
+      ? matches.find(player => player.id === pairPlayerId)
+      : matches.find(player => player.rank_order === index)
+    const player = slotPlayer ?? (matches.length === 1 ? matches[0] : undefined)
+    const status = player ? attendance[player.id] ?? 'pending' : 'pending'
+    const disabled = !player || saving || busyPlayerId !== null || dirtyRef.current
+    const respond = (next: 'confirmed' | 'cancelled') => {
+      // Blur commits a changed name before this click; never confirm the old occupant.
+      if (!player || dirtyRef.current || flushingRef.current) return
+      void updateAttendance(player.id, status === next ? 'pending' : next)
+    }
+    return <div className="invite-signup-attendance" role="group" aria-label={`${name || 'Empty slot'}: attendance`}>
+      <button type="button" className="invite-signup-attendance__yes" disabled={disabled}
+        aria-label={`${name || 'Empty slot'}: confirm attendance`} aria-pressed={status === 'confirmed'}
+        onClick={() => respond('confirmed')}>Confirm</button>
+      <button type="button" className="invite-signup-attendance__no" disabled={disabled}
+        aria-label={`${name || 'Empty slot'}: can't play`} aria-pressed={status === 'cancelled'}
+        onClick={() => respond('cancelled')}>Can’t play</button>
+    </div>
+  }
+
+  return (<>
     <div
       className="invite-roster-editor"
       onClick={(e) => {
@@ -344,6 +376,7 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
     >
       {isDuos ? (
         <DuoTeamSlots
+          renderSlotActions={renderSlotActions}
           disabled={publicSignup && saving}
           teams={duoTeams}
           profiles={rosterDirectory.profiles}
@@ -357,6 +390,7 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
         />
       ) : (
         <MemberPlayerSlots
+          renderSlotActions={renderSlotActions}
           disabled={publicSignup && saving}
           count={slotCount}
           profiles={rosterDirectory.profiles}
@@ -374,8 +408,9 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
           inviteChipLayout
         />
       )}
+      {attendanceError ? <p role="alert">{attendanceError}</p> : null}
       {error ? <p className="mt-2 text-xs text-red-600">{error}</p> : null}
       {saving ? <p className="sr-only">{t('common.loading')}</p> : null}
-    </div>
+    </div></>
   )
 }

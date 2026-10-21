@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { clubDisplayName } from '../../lib/clubMemberDisplay'
 import type { RosterProfileOption as Profile, RosterPlayerOption } from '../../lib/inviteRosterDirectory'
 import { PlayerAvatarLink } from '../../shared/ProfilePhoto/PlayerAvatarLink'
@@ -6,6 +6,7 @@ import { PlayerAvatarLink } from '../../shared/ProfilePhoto/PlayerAvatarLink'
 export type PadelPlayerOption = RosterPlayerOption
 
 type Props = {
+  renderSlotActions?: (index: number) => ReactNode
   count: number
   profiles: Profile[]
   padelPlayers?: PadelPlayerOption[]
@@ -433,6 +434,7 @@ function MemberSlotNameInput({
 }
 
 export function MemberPlayerSlots({
+  renderSlotActions,
   count,
   profiles,
   padelPlayers = [],
@@ -627,6 +629,7 @@ export function MemberPlayerSlots({
                 }
               />
             )}
+            {renderSlotActions?.(slotNumberOffset + index)}
             <span className="sr-only">Player {index + 1}</span>
           </div>
           )
