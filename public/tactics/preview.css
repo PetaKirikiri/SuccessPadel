@@ -1,0 +1,51 @@
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#17242e;color:#e6f0f4;font-family:Inter,Arial,sans-serif}
+/* Two compact control rails; every other pixel belongs to the court. */
+#court{position:fixed;inset:calc(54px + env(safe-area-inset-top)) 0 calc(52px + env(safe-area-inset-bottom))}
+canvas{display:block;width:100%;height:100%;touch-action:none;outline:none}
+header,#hint{display:none}
+button{color:inherit;font:inherit;cursor:pointer;border:0;-webkit-tap-highlight-color:transparent}
+button:focus-visible{outline:2px solid #a9e5ff;outline-offset:2px}
+svg{height:18px;width:18px}
+nav{display:flex;align-items:center;gap:2px;padding:3px;border:1px solid #ffffff22;border-radius:14px;background:#13222d;user-select:none;max-width:calc(100vw - 12px)}
+nav button{white-space:nowrap;background:transparent;border-radius:10px;min-height:40px;padding:8px 12px;font-size:12px}
+nav button:hover{background:#ffffff18}
+nav button[aria-pressed=true]{background:#d2eaf3;color:#10242e}
+.shot-controls{position:fixed;top:calc(4px + env(safe-area-inset-top));left:50%;transform:translateX(-50%)}
+.shot-controls #hit-ball{background:#ddef9c;color:#203328;min-width:62px}
+.shot-controls #ball-speed{padding:8px;min-width:36px}
+.fullscreen,#rotate{display:grid;place-items:center;width:36px;padding:8px}
+.fullscreen[hidden]{display:none}
+footer{position:fixed;bottom:calc(4px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);user-select:none}
+#status{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);padding:16px 22px;background:#11242fee;border-radius:12px;font-size:14px;max-width:90%;text-align:center}
+#status[hidden]{display:none}
+@media(max-width:360px){nav button{padding:8px 9px}}
+
+.shot-target{position:absolute;transform:translate(-50%,-50%);width:30px;height:30px;padding:0;border:0;border-radius:50%;background:transparent;touch-action:none;cursor:grab}
+.shot-target::before{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:8px;height:8px;border:1px solid #314d3b;border-radius:50%;background:#e8f49c;pointer-events:none}
+.shot-target:active{cursor:grabbing}
+.shot-target[hidden]{display:none}
+
+.spin-control{position:relative;flex:0 0 44px;display:grid;place-items:center;height:40px}
+#spin-ball{position:relative;width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 34% 27%,#f4ffc0,#d7eb79 50%,#718c3e);border:1px solid #e5f2a1;overflow:hidden;touch-action:none;cursor:crosshair;outline-offset:4px}
+.spin-seam{position:absolute;inset:-2px 9px;border-left:2px solid #ffffd49c;border-right:2px solid #ffffd49c;border-radius:50%;transform:rotate(-28deg);pointer-events:none}
+.spin-cross{position:absolute;inset:0;background:linear-gradient(transparent calc(50% - .5px),#23382433 50%,transparent calc(50% + .5px)),linear-gradient(90deg,transparent calc(50% - .5px),#23382433 50%,transparent calc(50% + .5px));pointer-events:none}
+#spin-point{position:absolute;left:50%;top:50%;width:7px;height:7px;border-radius:50%;background:#193745;border:2px solid white;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 1px 3px #0005}
+#spin-value{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+@media(max-width:400px){.shot-controls button{padding:8px 7px;font-size:11px}.shot-controls #hit-ball{min-width:50px}.shot-controls #ball-speed{min-width:30px;padding:6px}.shot-controls .fullscreen{width:30px;padding:6px}}
+/* Four shot choices stay in the existing single-height rail on phones. */
+@media(max-width:480px){.shot-controls{gap:1px}.shot-controls button{padding:8px 5px;font-size:11px}.shot-controls .spin-control{flex-basis:40px}.shot-controls #hit-ball{min-width:44px}.shot-controls #ball-speed{min-width:28px;padding:5px}.shot-controls .fullscreen{width:28px;padding:5px}}
+@media(max-width:360px){.shot-controls button{padding:8px 4px;font-size:10px}.shot-controls .spin-control{flex-basis:34px}.shot-controls #spin-ball{width:32px;height:32px}.shot-controls #hit-ball{min-width:36px}.shot-controls #ball-speed{min-width:26px}.shot-controls .fullscreen{width:26px}}
+
+
+.height-control{position:fixed;right:calc(8px + env(safe-area-inset-right));top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:7px;width:38px;padding:8px 3px;border:1px solid #ffffff22;border-radius:16px;background:#13222de8;user-select:none}
+#shot-height{writing-mode:vertical-lr;direction:rtl;width:24px;height:clamp(80px,28vh,180px);margin:0;accent-color:#ddef9c;cursor:ns-resize;touch-action:none}
+#shot-height-value{font-size:10px;color:#dce9ed;white-space:nowrap}
+
+.coverage-key{position:fixed;left:10px;bottom:calc(61px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:10px;padding:6px 9px;border-radius:8px;background:#13222de8;font-size:10px;pointer-events:none}
+.coverage-key[hidden]{display:none}
+.coverage-key__covered,.coverage-key__exposed{display:flex;align-items:center;gap:4px}
+.coverage-key__covered::before,.coverage-key__exposed::before{content:"";width:7px;height:7px;border-radius:50%;background:#5ce19b}
+.coverage-key__exposed::before{background:#f8746f}
+.coverage-key__note{color:#a9bbc5;font-size:9px}
+@media(max-width:480px){footer nav button{padding:8px 7px;font-size:11px}.coverage-key{left:6px;gap:7px}}

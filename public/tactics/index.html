@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Success Padel · Court 3D</title>
+  <base href="/tactics/" />
+  <link rel="stylesheet" href="./preview.css" />
+</head>
+<body>
+  <main id="court" aria-label="Interactive three-dimensional padel court"></main>
+  <header><span class="brand">SUCCESS <strong>PADEL</strong></span><span class="preview-label">COURT STUDY / 01</span></header>
+  <div id="status" role="status">Building your court…</div>
+  <nav class="shot-controls" aria-label="Ball trajectory">
+    <div class="spin-control">
+      <div id="spin-ball" tabindex="0" role="group" aria-label="Spin: drag the point. Top for topspin, bottom for backspin, centre for no spin. Arrow keys adjust; Home centres." title="Spin · drag the point; tap centre to reset">
+        <span class="spin-seam"></span><span class="spin-cross"></span><span id="spin-point"></span>
+      </div>
+      <output id="spin-value" aria-live="polite">No spin</output>
+    </div>
+    <button data-shot="backhand" aria-pressed="true">Backhand</button>
+    <button data-shot="forehand" aria-pressed="false">Forehand</button>
+    <button data-shot="lob" aria-pressed="false">Lob</button>
+    <button data-shot="smash" aria-pressed="false">Smash</button>
+    <button id="hit-ball" aria-label="Pause ball flight">Pause</button>
+    <button id="ball-speed" aria-label="Half speed" aria-pressed="false">½×</button>
+  <button id="fullscreen" class="fullscreen" aria-label="Enter fullscreen" title="Fullscreen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg></button>
+  </nav>
+  <aside class="height-control" aria-label="Shot height">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3v18M7 8l5-5 5 5M7 16l5 5 5-5"/></svg>
+    <input id="shot-height" type="range" min="1" max="8" step="0.1" value="1.2" aria-label="Ball height over the net" aria-orientation="vertical" />
+    <output id="shot-height-value" for="shot-height">1.2m</output>
+  </aside>
+  <footer>
+    <p id="hint">Drag to explore · Scroll or pinch to zoom</p>
+    <nav aria-label="Camera views">
+      <button data-view="orbit" aria-pressed="true">3D view</button>
+      <button data-view="top" aria-pressed="false">Overhead</button>
+      <button data-view="player" aria-pressed="false">Player view</button>
+      <button id="coverage-toggle" aria-pressed="true" title="Defending pair's estimated reach before the first bounce">Coverage</button>
+      <button id="rotate" aria-label="Rotate court automatically" aria-pressed="false" title="Auto rotate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 11a8 8 0 1 0-2 6M20 4v7h-7"/></svg></button>
+    </nav>
+  </footer>
+  <div id="coverage-key" class="coverage-key" title="Reach estimate for the defending pair. Green means a reachable lane, not a guaranteed return. Glass rebounds are not included.">
+    <span class="coverage-key__covered">Covered</span><span class="coverage-key__exposed">Exposed</span><span class="coverage-key__note">Reach estimate</span>
+  </div>
+  <script type="module" src="./court.js"></script>
+</body>
+</html>
