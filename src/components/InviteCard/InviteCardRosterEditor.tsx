@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DuoTeamSlots } from '../../components/SetupCard/SetupCardTeamSlots'
 import { MemberPlayerSlots, type PadelPlayerOption } from '../../components/SetupCard/MemberPlayerSlots'
 import { useTranslation } from '../../hooks/useTranslation'
@@ -14,7 +14,7 @@ import {
   saveCompetitionInviteSinglesRoster,
 } from '../../lib/saveCompetitionInviteRoster'
 import { supabase } from '../../lib/supabaseClient'
-import type { Profile } from '../../lib/types'
+import { inviteRosterDirectory, type RosterProfileOption as Profile } from '../../lib/inviteRosterDirectory'
 import type { CompetitionRow } from '../../hooks/useCompetitions'
 import { savePublicCompetitionSignup } from '../../lib/publicCompetitionSignup'
 
@@ -158,6 +158,10 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
 
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [padelPlayers, setPadelPlayers] = useState<PadelPlayerOption[]>([])
+  const rosterDirectory = useMemo(
+    () => inviteRosterDirectory(row.session_players ?? [], profiles, padelPlayers),
+    [row.session_players, profiles, padelPlayers],
+  )
   const [duoTeams, setDuoTeams] = useState<DuoTeamDraft[]>(() => duoTeamDraftsFromRow(row))
   const [playerSlots, setPlayerSlots] = useState<string[]>(() => singlesFromRow(row).names)
   const [profileIds, setProfileIds] = useState<(string | null)[]>(() =>
@@ -342,8 +346,8 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
         <DuoTeamSlots
           disabled={publicSignup && saving}
           teams={duoTeams}
-          profiles={profiles}
-          padelPlayers={padelPlayers}
+          profiles={rosterDirectory.profiles}
+          padelPlayers={rosterDirectory.padelPlayers}
           onChange={handleDuoChange}
           layout="grid"
           nameInputMode="picker"
@@ -355,8 +359,8 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
         <MemberPlayerSlots
           disabled={publicSignup && saving}
           count={slotCount}
-          profiles={profiles}
-          padelPlayers={padelPlayers}
+          profiles={rosterDirectory.profiles}
+          padelPlayers={rosterDirectory.padelPlayers}
           names={playerSlots}
           profileIds={profileIds}
           padelPlayerIds={padelPlayerIds}

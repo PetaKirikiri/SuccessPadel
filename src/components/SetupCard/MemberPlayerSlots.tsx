@@ -1,15 +1,9 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { clubDisplayName } from '../../lib/clubMemberDisplay'
-import type { Profile } from '../../lib/types'
+import type { RosterProfileOption as Profile, RosterPlayerOption } from '../../lib/inviteRosterDirectory'
 import { PlayerAvatarLink } from '../../shared/ProfilePhoto/PlayerAvatarLink'
 
-export type PadelPlayerOption = {
-  id: string
-  display_name: string
-  profile_id: string | null
-  line_picture_url?: string | null
-  profiles?: Pick<Profile, 'id' | 'display_name' | 'avatar_url'> | null
-}
+export type PadelPlayerOption = RosterPlayerOption
 
 type Props = {
   count: number

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { MemberPlayerSlots, type PadelPlayerOption } from './MemberPlayerSlots'
-import type { Profile } from '../../lib/types'
+import type { RosterProfileOption as Profile } from '../../lib/inviteRosterDirectory'
 import type { DuoTeamDraft } from '../../lib/competitionDuoTeams'
 import { duoTeamWatermarkUrl } from '../../lib/duoTeamWatermark'
 
