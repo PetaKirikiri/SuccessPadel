@@ -6,7 +6,6 @@ import type { LeaderboardEntry } from '../../lib/leaderboardTypes'
 import { DeleteConfirm } from '../../shared/Modal/DeleteConfirm'
 import { LineAppBookmark } from '../../foundation/line/LineAppBookmark'
 import { LinePlayerLinkModal } from '../../shared/Modal/LinePlayerLinkModal'
-import { LinePlayerLinkPanel } from '../../foundation/line/LinePlayerLinkPanel'
 import { PlayerMatchHistory } from '../../foundation/profile/PlayerMatchHistory'
 import { PlayerProfileBanner } from '../../foundation/profile/PlayerProfileBanner'
 import { PlayerProfileCard } from '../../foundation/profile/PlayerProfileCard'
@@ -326,10 +325,6 @@ export function PlayerProfileSurface() {
     user,
   ])
 
-  const showInlineLineSetup = Boolean(
-    needsPlayerSignup && linkablePadelPlayerId && !canEditProfile && canConnectLine && !inClient,
-  )
-
   const playerNotFound = Boolean(
     !loading &&
       resolved &&
@@ -412,15 +407,6 @@ export function PlayerProfileSurface() {
     window.addEventListener('successpadel:profile-synced', onProfileSynced)
     return () => window.removeEventListener('successpadel:profile-synced', onProfileSynced)
   }, [user?.id, playerId])
-
-  useEffect(() => {
-    if (!showInlineLineSetup || !playerId) return
-    const poll = window.setInterval(() => {
-      void resolvePlayerProfile(playerId).then(setResolved)
-      if (user?.id) void refreshProfile()
-    }, 3000)
-    return () => window.clearInterval(poll)
-  }, [showInlineLineSetup, playerId, user?.id, refreshProfile])
 
   const canShareProfile = isAdmin && needsPlayerSignup
 
@@ -573,9 +559,9 @@ export function PlayerProfileSurface() {
                   ) : undefined}
                   avatarUrl={avatarUrl}
                   memberSince={isOwnProfile ? null : memberSince}
-                  canAddLine={canConnectLine && !showInlineLineSetup}
+                  canAddLine={canConnectLine}
                   onAddLine={
-                    canConnectLine && linkablePadelPlayerId && !showInlineLineSetup
+                    canConnectLine && linkablePadelPlayerId
                       ? () => setLinkTarget({ id: linkablePadelPlayerId, name: displayName })
                       : undefined
                   }
@@ -639,24 +625,6 @@ export function PlayerProfileSurface() {
                       t={t}
                     />
                   )}
-                </>
-              ) : showInlineLineSetup && linkablePadelPlayerId ? (
-                <>
-                  <LinePlayerLinkPanel
-                    embedded
-                    competitionId={competitionId}
-                    padelPlayerId={linkablePadelPlayerId}
-                    playerName={displayName}
-                  />
-                  {resolved?.profile ? (
-                    <PlayerProfileDetailsDisplay
-                      profile={resolved.profile}
-                      fallbackName={displayName}
-                      competitionStats={competitionStats}
-                      badges={badges}
-                      t={t}
-                    />
-                  ) : null}
                 </>
               ) : (
                 <PlayerProfileDetailsDisplay
