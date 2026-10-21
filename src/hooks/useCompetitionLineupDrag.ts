@@ -4,7 +4,7 @@ import { clearCompetitionHubCache } from './useCompetitionHubRows'
 import { lineupSnapshot, moveLineupPlayer, nearestLineupSlot, occupantsInFixedSlots } from '../lib/competitionLineupOrder'
 import { supabase } from '../lib/supabaseClient'
 
-export function useCompetitionLineupDrag(sessionId: string, source: CompetitionPlayer[], enabled: boolean) {
+export function useCompetitionLineupDrag(sessionId: string, source: CompetitionPlayer[], enabled: boolean, saveOrder?: (snapshot: CompetitionPlayer[], ordered: CompetitionPlayer[]) => Promise<string | null>) {
   const [players, setPlayers] = useState(source)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
@@ -104,8 +104,10 @@ export function useCompetitionLineupDrag(sessionId: string, source: CompetitionP
       // race writes or refresh the visible list between acknowledgements.
       while (pending.current.length) {
         active = pending.current[0]!
-        if (!permitted.current) throw new Error('Administrator access is required.')
-        const { error } = await supabase.rpc('reorder_competition_slot_occupants', {
+        if (!permitted.current) throw new Error('Reordering is no longer available.')
+        const { error } = saveOrder
+          ? { error: await saveOrder(active.snapshot, active.ordered).then(message => message ? { message } : null) }
+          : await supabase.rpc('reorder_competition_slot_occupants', {
           p_session_id: sessionId,
           p_expected_slots: lineupSnapshot(active.snapshot),
           p_occupant_order: active.ordered.map((player) => player.id),

@@ -1,4 +1,4 @@
-import type { CompetitionRow } from '../hooks/useCompetitions'
+import type { CompetitionPlayer, CompetitionRow } from '../hooks/useCompetitions'
 import { competitionRosterSlots } from './competitionGameDisplay'
 import { supabase } from './supabaseClient'
 
@@ -19,6 +19,20 @@ export async function savePublicCompetitionSignup(row: CompetitionRow, names: st
   const changes = publicSignupChanges(row, names, memberIds)
   if (!changes.length) return null
   const { data, error } = await supabase.functions.invoke('competition-signup', { body: { sessionId: row.id, changes } })
+  if (error) {
+    try { return (await error.context.json()).error ?? error.message } catch { return error.message }
+  }
+  return data?.error ?? null
+}
+
+/** Reorder existing occupants atomically, retaining their linked accounts and photos. */
+export async function savePublicInviteOrder(sessionId: string, snapshot: CompetitionPlayer[], ordered: CompetitionPlayer[]): Promise<string | null> {
+  const { data, error } = await supabase.functions.invoke('competition-signup', { body: {
+    sessionId, action: 'reorder',
+    expectedSlots: snapshot.map(p => ({ id: p.id, rank_order: p.rank_order,
+      profile_id: p.profile_id ?? null, padel_player_id: p.padel_player_id ?? null, guest_name: p.guest_name ?? null })),
+    occupantOrder: ordered.map(p => p.id),
+  } })
   if (error) {
     try { return (await error.context.json()).error ?? error.message } catch { return error.message }
   }

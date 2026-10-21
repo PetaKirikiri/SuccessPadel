@@ -318,3 +318,18 @@ html[data-viewport='tv'] [data-competition-format='singles'] .invite-roster-edit
 html[data-viewport='tv'] [data-competition-format='singles'] .invite-roster-editor .invite-signup-attendance__no[aria-pressed='true'] { background:#ff8297;color:#191321; }
 html[data-viewport='tv'] [data-competition-format='singles'] .invite-roster-editor .invite-signup-attendance button:disabled { opacity:.4;cursor:default; }
 html[data-viewport='tv'] [data-competition-format='singles'] .invite-roster-editor .invite-signup-attendance button:focus-visible { outline:3px solid #77cfff;outline-offset:2px; }
+/* The avatar is the pickup target; slot numbers stay fixed while players move. */
+html[data-viewport='tv'] [data-competition-format='singles'] .invite-roster-editor-chip__drag-avatar {
+  display: flex; flex: 0 0 auto; align-items: center; justify-content: center;
+  cursor: grab; touch-action: none; user-select: none;
+}
+html[data-viewport='tv'] [data-competition-format='singles'] .invite-roster-editor-chip__number {
+  flex: 0 0 16px; text-align: center; color: #ffe15a;
+  font: 800 12px/1 Arial, sans-serif; font-variant-numeric: tabular-nums;
+}
+html[data-viewport='tv'] [data-competition-format='singles'] .invite-roster-editor-chip[data-dragging='true'] {
+  position: relative; z-index: 20; outline: 2px solid #ffe15a; cursor: grabbing;
+}
+html[data-viewport='tv'] [data-competition-format='singles'] .invite-roster-editor-chip[data-drop-target='true'] {
+  outline: 2px solid #ffe15a; outline-offset: -2px;
+}

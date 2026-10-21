@@ -354,4 +354,18 @@ html[data-viewport='web'] [data-competition-format='singles'] .invite-roster-edi
 }
 html[data-viewport='web'] [data-competition-format='singles'] .invite-roster-editor .invite-signup-attendance button::after {
   font-size: clamp(18px, 65cqh, 40px);
+/* The avatar is the pickup target; slot numbers stay fixed while players move. */
+html[data-viewport='web'] [data-competition-format='singles'] .invite-roster-editor-chip__drag-avatar {
+  display: flex; flex: 0 0 auto; align-items: center; justify-content: center;
+  cursor: grab; touch-action: none; user-select: none;
+}
+html[data-viewport='web'] [data-competition-format='singles'] .invite-roster-editor-chip__number {
+  flex: 0 0 16px; text-align: center; color: #ffe15a;
+  font: 800 12px/1 Arial, sans-serif; font-variant-numeric: tabular-nums;
+}
+html[data-viewport='web'] [data-competition-format='singles'] .invite-roster-editor-chip[data-dragging='true'] {
+  position: relative; z-index: 20; outline: 2px solid #ffe15a; cursor: grabbing;
+}
+html[data-viewport='web'] [data-competition-format='singles'] .invite-roster-editor-chip[data-drop-target='true'] {
+  outline: 2px solid #ffe15a; outline-offset: -2px;
 }

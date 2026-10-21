@@ -1,6 +1,7 @@
 import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { clubDisplayName } from '../../lib/clubMemberDisplay'
 import type { RosterProfileOption as Profile, RosterPlayerOption } from '../../lib/inviteRosterDirectory'
+import type { RosterDrag } from '../competition-formats/rosterContract'
 import { PlayerAvatarLink } from '../../shared/ProfilePhoto/PlayerAvatarLink'
 
 export type PadelPlayerOption = RosterPlayerOption
@@ -8,6 +9,7 @@ export type PadelPlayerOption = RosterPlayerOption
 type Props = {
   renderSlotActions?: (index: number) => ReactNode
   count: number
+  lineup?: RosterDrag & { slotIds: (string | null)[] }
   profiles: Profile[]
   padelPlayers?: PadelPlayerOption[]
   names: string[]
@@ -436,6 +438,7 @@ function MemberSlotNameInput({
 export function MemberPlayerSlots({
   renderSlotActions,
   count,
+  lineup,
   profiles,
   padelPlayers = [],
   names,
@@ -559,9 +562,28 @@ export function MemberPlayerSlots({
             selectedProfile,
             selectedPlayer,
           )
+          const lineupId = lineup?.slotIds[index]
+          const dragIndex = lineup?.slotIds.filter(Boolean).indexOf(lineupId ?? null) ?? -1
+          const draggable = Boolean(lineup?.enabled && lineupId)
           return (
           <div
             key={index}
+            data-lineup-player={lineupId || undefined}
+            data-lineup-session={competitionId || undefined}
+            data-reorder-enabled={draggable}
+            data-dragging={Boolean(lineupId && lineup?.draggingId === lineupId)}
+            data-drop-target={Boolean(lineupId && lineup?.targetId === lineupId)}
+            tabIndex={draggable ? 0 : undefined}
+            aria-label={draggable ? `${displayName}, position ${index + 1}. Drag the profile picture or use arrow keys to reorder.` : undefined}
+            onPointerDown={event => {
+              if (draggable && event.target instanceof Element && event.target.closest('.invite-roster-editor-chip__drag-avatar')) {
+                lineup?.pointerDown(event, dragIndex)
+              }
+            }}
+            onPointerMove={lineup?.pointerMove} onPointerUp={lineup?.pointerUp}
+            onPointerCancel={lineup?.cancel} onLostPointerCapture={lineup?.cancel}
+            onKeyDown={event => { if (draggable) lineup?.keyDown(event, dragIndex) }}
+            onDragStart={event => { if (lineup) event.preventDefault() }}
             className={
               setupRosterLayout
                 ? 'setup-player-slot'
@@ -571,12 +593,14 @@ export function MemberPlayerSlots({
             }
           >
             {showSlotNumbers ? (
-              <span className={setupRosterLayout ? 'setup-player-slot__number' : 'w-5 shrink-0 text-center text-[10px] tabular-nums text-brand-muted'}>
+              <span className={lineup ? 'invite-roster-editor-chip__number' : setupRosterLayout ? 'setup-player-slot__number' : 'w-5 shrink-0 text-center text-[10px] tabular-nums text-brand-muted'}>
                 {index + 1}
               </span>
             ) : null}
             {linkAvatarsToProfile ? (
               <PlayerAvatarLink
+                disabled={Boolean(lineup)}
+                className={lineup ? 'invite-roster-editor-chip__drag-avatar' : undefined}
                 displayName={displayName}
                 fallbackText={inviteChipLayout && !displayName.trim() ? String(slotNumberOffset + index + 1) : undefined}
                 avatarUrl={selectedAvatar}

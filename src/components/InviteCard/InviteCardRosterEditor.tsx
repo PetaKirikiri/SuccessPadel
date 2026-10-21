@@ -16,9 +16,10 @@ import {
 import { supabase } from '../../lib/supabaseClient'
 import { inviteRosterDirectory, type RosterProfileOption as Profile } from '../../lib/inviteRosterDirectory'
 import type { CompetitionRow } from '../../hooks/useCompetitions'
-import { savePublicCompetitionSignup } from '../../lib/publicCompetitionSignup'
 import { useCompetitionAttendance } from '../../hooks/useCompetitionAttendance'
 import { rosterDisplayName } from '../../hooks/useCompetitions'
+import { useCompetitionLineupDrag } from '../../hooks/useCompetitionLineupDrag'
+import { savePublicCompetitionSignup, savePublicInviteOrder } from '../../lib/publicCompetitionSignup'
 
 type Props = {
   row: CompetitionRow
@@ -158,9 +159,22 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
   const isDuos = isDuoCompetition(row)
   const sessionId = row.id
 
+  const [editing, setEditing] = useState(false)
+  const [nameFocused, setNameFocused] = useState(false)
+  const source = useMemo(() => [...(row.session_players ?? [])].sort((a, b) =>
+    (a.rank_order ?? 999) - (b.rank_order ?? 999) || a.id.localeCompare(b.id)), [row.session_players])
+  const reorderEnabled = publicSignup && !isDuos && !editing && !nameFocused && row.status === 'open' && !row.competition_started_at
+  const lineup = useCompetitionLineupDrag(sessionId, source, reorderEnabled,
+    (snapshot, ordered) => savePublicInviteOrder(sessionId, snapshot, ordered))
+  const displayedRow = useMemo(() => publicSignup && !isDuos ? { ...row, session_players: lineup.players } : row,
+    [row, publicSignup, isDuos, lineup.players])
+
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [padelPlayers, setPadelPlayers] = useState<PadelPlayerOption[]>([])
-  const rosterDirectory = useMemo(() => inviteRosterDirectory(row.session_players ?? [], profiles, padelPlayers), [row.session_players, profiles, padelPlayers])
+  const rosterDirectory = useMemo(
+    () => inviteRosterDirectory(displayedRow.session_players ?? [], profiles, padelPlayers),
+    [displayedRow.session_players, profiles, padelPlayers],
+  )
   const [duoTeams, setDuoTeams] = useState<DuoTeamDraft[]>(() => duoTeamDraftsFromRow(row))
   const [playerSlots, setPlayerSlots] = useState<string[]>(() => singlesFromRow(row).names)
   const [profileIds, setProfileIds] = useState<(string | null)[]>(() =>
@@ -186,7 +200,7 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
   })
   const rowRef = useRef(row)
   const editBaseRow = useRef(row)
-  rowRef.current = row
+  rowRef.current = displayedRow
 
   useEffect(() => {
     snapshotRef.current = { isDuos, duoTeams, playerSlots, profileIds, padelPlayerIds }
@@ -229,6 +243,8 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
 
   useEffect(() => {
     dirtyRef.current = false
+    setEditing(false)
+    setNameFocused(false)
     clearInviteRosterDraft(sessionId)
     const next = draftFromRow(rowRef.current, isDuos)
     if (next.isDuos) setDuoTeams(next.duoTeams)
@@ -241,7 +257,7 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
 
   useEffect(() => {
     if (dirtyRef.current) return
-    const next = draftFromRow(row, isDuos)
+    const next = draftFromRow(displayedRow, isDuos)
     if (next.isDuos) {
       setDuoTeams(next.duoTeams)
     } else {
@@ -249,7 +265,7 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
       setProfileIds(padArray(next.profileIds, next.slotCount, null))
       setPadelPlayerIds(padArray(next.padelPlayerIds, next.slotCount, null))
     }
-  }, [row, isDuos])
+  }, [displayedRow, isDuos])
 
   const flushToDb = useCallback(async () => {
     if (!dirtyRef.current || flushingRef.current) return false
@@ -277,6 +293,7 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
       return false
     }
     dirtyRef.current = editVersion.current !== version
+    setEditing(dirtyRef.current)
     clearInviteRosterDraft(sessionId)
     await Promise.resolve(onSaved?.())
     return true
@@ -286,6 +303,7 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
     if (!dirtyRef.current) editBaseRow.current = rowRef.current
     editVersion.current += 1
     dirtyRef.current = true
+    setEditing(true)
     if (flushTimer.current) clearTimeout(flushTimer.current)
     flushTimer.current = setTimeout(() => {
       void flushToDb()
@@ -332,12 +350,12 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
     [noteEdit],
   )
 
-  const { attendance, busyPlayerId, error: attendanceError, updateAttendance } = useCompetitionAttendance(row.id)
+  const { attendance, busyPlayerId, error: attendanceError, updateAttendance } = useCompetitionAttendance(row.id, !lineup.saving)
   const renderSlotActions = (index: number) => {
     const name = isDuos ? duoTeams[Math.floor(index / 2)]?.names[index % 2] : playerSlots[index]
     const profileId = isDuos ? duoTeams[Math.floor(index / 2)]?.profileIds[index % 2] : profileIds[index]
     const padelId = isDuos ? duoTeams[Math.floor(index / 2)]?.padelPlayerIds?.[index % 2] : padelPlayerIds[index]
-    const matches = (row.session_players ?? []).filter(player =>
+    const matches = (displayedRow.session_players ?? []).filter(player =>
       Boolean(name?.trim()) && rosterDisplayName(player).trim() === name?.trim() &&
       (profileId ? player.profile_id === profileId || player.profiles?.id === profileId || player.padel_players?.profile_id === profileId
         : padelId ? player.padel_player_id === padelId : !player.profile_id && !player.padel_player_id))
@@ -349,7 +367,7 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
       : matches.find(player => player.rank_order === index)
     const player = slotPlayer ?? (matches.length === 1 ? matches[0] : undefined)
     const status = player ? attendance[player.id] ?? 'pending' : 'pending'
-    const disabled = !player || saving || busyPlayerId !== null || dirtyRef.current
+    const disabled = !player || saving || lineup.saving || lineup.draggingId !== null || busyPlayerId !== null || dirtyRef.current
     const respond = (next: 'confirmed' | 'cancelled') => {
       // Blur commits a changed name before this click; never confirm the old occupant.
       if (!player || dirtyRef.current || flushingRef.current) return
@@ -368,6 +386,8 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
   return (<>
     <div
       className="invite-roster-editor"
+      onFocusCapture={event => { if (event.target instanceof HTMLInputElement) setNameFocused(true) }}
+      onBlurCapture={event => { if (event.target instanceof HTMLInputElement) setNameFocused(false) }}
       onClick={(e) => {
         e.preventDefault()
         e.stopPropagation()
@@ -391,7 +411,9 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
       ) : (
         <MemberPlayerSlots
           renderSlotActions={renderSlotActions}
-          disabled={publicSignup && saving}
+          disabled={publicSignup && (saving || lineup.saving || lineup.draggingId !== null)}
+          lineup={publicSignup ? { ...lineup, enabled: reorderEnabled && busyPlayerId === null, slotIds: Array.from({ length: slotCount }, (_, index) =>
+            lineup.players.find(p => p.rank_order === index)?.id ?? null) } : undefined}
           count={slotCount}
           profiles={rosterDirectory.profiles}
           padelPlayers={rosterDirectory.padelPlayers}
@@ -404,11 +426,12 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
           nameInputMode="picker"
           linkAvatarsToProfile
           competitionId={sessionId}
-          showSlotNumbers={false}
+          showSlotNumbers={publicSignup}
           inviteChipLayout
         />
       )}
       {attendanceError ? <p role="alert">{attendanceError}</p> : null}
+      {publicSignup && !isDuos ? <p className="competition-pregame__lineup-status" role="status" aria-live="polite">{lineup.saving ? 'Saving order…' : lineup.message}</p> : null}
       {error ? <p className="mt-2 text-xs text-red-600">{error}</p> : null}
       {saving ? <p className="sr-only">{t('common.loading')}</p> : null}
     </div></>

@@ -1,0 +1,5 @@
+/* Fixture viewport only; production appearance uses its normal invite shell. */
+html body #root .invite-game-card { width: 100%; height: 94vh; }
+html body #root .invite-game-card__frame { height: 100%; display: block; }
+html body #root .competition-pregame { height: 100%; display: block; }
+html body #root .competition-pregame__players { height: 100%; }

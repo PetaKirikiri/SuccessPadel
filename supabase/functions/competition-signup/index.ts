@@ -15,9 +15,13 @@ Deno.serve(async (req) => {
     const raw = await req.text()
     if (raw.length > 32768) throw new Error('Request too large')
     const body = JSON.parse(raw)
-    if (!/^[0-9a-f-]{36}$/i.test(body.sessionId ?? '') || !Array.isArray(body.changes)) throw new Error('Invalid registration')
+    if (!/^[0-9a-f-]{36}$/i.test(body.sessionId ?? '')) throw new Error('Invalid registration')
+    const reorder = body.action === 'reorder'
+    if (reorder ? !Array.isArray(body.expectedSlots) || !Array.isArray(body.occupantOrder) : !Array.isArray(body.changes)) throw new Error('Invalid registration')
     const client = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
-    const { error } = await client.rpc('public_competition_member_signup', { p_session_id: body.sessionId, p_changes: body.changes })
+    const { error } = reorder
+      ? await client.rpc('public_competition_signup_reorder', { p_session_id: body.sessionId, p_expected_slots: body.expectedSlots, p_occupant_order: body.occupantOrder })
+      : await client.rpc('public_competition_member_signup', { p_session_id: body.sessionId, p_changes: body.changes })
     if (error) return new Response(JSON.stringify({ error: error.message }), { status: 409, headers })
     return new Response(JSON.stringify({ saved: true }), { headers })
   } catch {
