@@ -24,7 +24,7 @@ const UUID_RE =
 const channelId = (import.meta.env.VITE_LINE_CHANNEL_ID as string | undefined)?.trim() || undefined
 
 export function hasLinePlayerLink(): boolean {
-  return Boolean(channelId && hasLiffId())
+  return hasLiffId()
 }
 
 /** Same callback as normal LINE login — must be registered in LINE Developers. */
@@ -261,7 +261,6 @@ export async function createLinePlayerLinkRequest(
   competitionId: string | null,
   padelPlayerId: string,
 ): Promise<{ request?: LinePlayerLinkRequest; error?: string }> {
-  if (!channelId) return { error: 'LINE login is not configured' }
   if (!hasLiffId()) return { error: 'LINE app link is not configured' }
 
   const buildRequest = (linkToken: string): LinePlayerLinkRequest => {
@@ -279,7 +278,9 @@ export async function createLinePlayerLinkRequest(
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const { data: linkToken, error } = await supabase.rpc('create_player_line_link_request', {
-      p_competition_id: competitionId,
+      // This permanent token identifies the player, not a roster membership.
+      // Competition context remains in the LIFF URL for the return journey.
+      p_competition_id: null,
       p_padel_player_id: padelPlayerId,
     })
 
