@@ -27,7 +27,7 @@ const row = () => ({id:'fixture-only', status:'open', partnership_mode:'american
   scoring_config:{competition_player_mode:'singles'}, session_players:saved, session_pairs:[], competition_started_at:null}) as CompetitionRow
 let fail = false
 supabase.rpc = (async () => ({data:[row()],error:null})) as typeof supabase.rpc
-supabase.from = (() => ({select:()=>({order:async()=>({data:[],error:null})})})) as typeof supabase.from
+supabase.from = (() => ({select:()=>({order:async()=>({data:[],error:null}),eq:async()=>({data:[],error:null})})})) as typeof supabase.from
 const invoke = async (_name: string, {body}: any) => {
   if (fail) return {data:{error:'Test save rejected'},error:null}
   if(body.action !== 'reorder') return {data:{error:'Name editing not simulated'},error:null}

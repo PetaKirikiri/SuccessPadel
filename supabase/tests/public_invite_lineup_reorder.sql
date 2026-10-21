@@ -18,7 +18,9 @@ begin
  select gen_random_uuid(),sid,rank_order,profile_id,padel_player_id,guest_name,guest_email from session_players where session_id=source_id;
  select jsonb_agg(to_jsonb(p) order by rank_order,id) into original from session_players p where session_id=sid;
  select jsonb_agg(jsonb_build_object('id',id,'profile_id',profile_id,'padel_player_id',padel_player_id,'guest_name',guest_name,'rank_order',rank_order) order by rank_order,id),array_agg(id order by rank_order desc,id desc) into expected,ids from session_players where session_id=sid;
+ insert into competition_attendance(roster_entry_id,session_id,status) values(ids[1],sid,'confirmed');
  perform public_competition_signup_reorder(sid,expected,ids);
+ if (select status from competition_attendance where roster_entry_id=ids[cardinality(ids)]) <> 'confirmed' then raise exception 'Attendance did not follow player'; end if;
  if (select array_agg(coalesce(profile_id::text,padel_player_id::text,guest_name) order by rank_order) from session_players where session_id=sid) is distinct from (select array_agg(coalesce(value->>'profile_id',value->>'padel_player_id',value->>'guest_name') order by (value->>'rank_order')::int desc) from jsonb_array_elements(original)) then raise exception 'Occupants not reversed'; end if;
  if (select count(*) from competition_signup_history where session_id=sid) <> 1 then raise exception 'Missing audit'; end if;
  rejected:=false;

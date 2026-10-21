@@ -300,8 +300,8 @@ html[data-viewport='mobile'] [data-competition-format='singles'] .invite-roster-
   cursor: grab; touch-action: none; user-select: none;
 }
 html[data-viewport='mobile'] [data-competition-format='singles'] .invite-roster-editor-chip__number {
-  flex: 0 0 16px; text-align: center; color: #ffe15a;
-  font: 800 12px/1 Arial, sans-serif; font-variant-numeric: tabular-nums;
+  flex: 0 0 20px; text-align: center; color: #ffe15a;
+  font: 900 14px/1 Arial, sans-serif; font-variant-numeric: tabular-nums;
 }
 html[data-viewport='mobile'] [data-competition-format='singles'] .invite-roster-editor-chip[data-dragging='true'] {
   position: relative; z-index: 20; outline: 2px solid #ffe15a; cursor: grabbing;

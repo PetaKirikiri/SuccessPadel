@@ -340,12 +340,24 @@ html[data-viewport='tablet'] [data-competition-format='singles'] .invite-roster-
   cursor: grab; touch-action: none; user-select: none;
 }
 html[data-viewport='tablet'] [data-competition-format='singles'] .invite-roster-editor-chip__number {
-  flex: 0 0 16px; text-align: center; color: #ffe15a;
-  font: 800 12px/1 Arial, sans-serif; font-variant-numeric: tabular-nums;
+  flex: 0 0 20px; text-align: center; color: #ffe15a;
+  font: 900 14px/1 Arial, sans-serif; font-variant-numeric: tabular-nums;
 }
 html[data-viewport='tablet'] [data-competition-format='singles'] .invite-roster-editor-chip[data-dragging='true'] {
   position: relative; z-index: 20; outline: 2px solid #ffe15a; cursor: grabbing;
 }
 html[data-viewport='tablet'] [data-competition-format='singles'] .invite-roster-editor-chip[data-drop-target='true'] {
   outline: 2px solid #ffe15a; outline-offset: -2px;
+}
+
+/* Give the editable roster the remaining tablet pane, rather than a zero-height flex basis. */
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card:has(.invite-roster-editor) .invite-game-card__frame {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card:has(.invite-roster-editor) .invite-game-card__roster {
+  max-height: none;
+  overflow-y: auto;
+}
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card .invite-roster-editor {
+  min-height: 554px;
 }
