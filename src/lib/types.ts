@@ -63,6 +63,8 @@ export type ScoringConfig = {
   /** Friendly organized-game compatibility only. */
   game_minutes?: number
   competition_player_mode?: 'singles' | 'duos'
+  /** Explicit eligibility for fixed-partner events; legacy events retain their existing label. */
+  pair_gender_rule?: 'open' | 'mixed'
   league_id?: string
   league_week?: number
   teams?: Array<{ label: string; roster_ids: [string, string] }>

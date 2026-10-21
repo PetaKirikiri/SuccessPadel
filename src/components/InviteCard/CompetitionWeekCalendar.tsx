@@ -84,7 +84,7 @@ function CompetitionWeekStrip({ competitionId }: { competitionId: string }) {
           const day = clubCompetitionDay(row.starts_at)!
           const level = competitionLevelLabel(row) ?? 'Level not specified'
           const fixed = isDuoCompetition(row)
-          const gender = row.gender === 'Women' ? 'Women only' : row.gender === 'Men' ? 'Men only' : fixed ? 'One man and one woman' : 'Open to men and women'
+          const gender = row.gender === 'Women' ? 'Women only' : row.gender === 'Men' ? 'Men only' : fixed && row.scoring_config?.pair_gender_rule !== 'open' ? 'One man and one woman' : 'Open to men and women'
           const format = fixed ? 'Fixed partners' : 'Rotating partners'
           const hero = row.gender === 'Women' ? 'female-v4' : row.gender === 'Men' ? 'male-v4' : 'duo'
           const strength = row.skill_level_max_rank ?? ({ Beginner: 1, 'Low Inter': 2, Intermediate: 3, Inter: 3, 'High Inter': 4, Advanced: 5, 'Advanced Plus': 6 }[row.skill_level ?? ''] ?? 0)
