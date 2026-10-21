@@ -6,6 +6,7 @@ import { enrichCompetitionPlayersAvatars } from '../lib/competitionRosterAvatars
 import { mergeShowdownIntoRounds } from '../lib/competitionRoundShowdown'
 import type { LeaderboardEntry } from '../lib/leaderboardTypes'
 import { normalizeLeaderboardEntries } from '../lib/leaderboardEntries'
+import { attachLeaderboardRosterIdentity } from '../lib/leaderboardRosterIdentity'
 import type { CompetitionPlayer, CompetitionSessionPair } from './useCompetitions'
 import type { ClubCourt, CompetitionRound, CourtMatch } from './useCompetitionRun'
 import type { GameSession } from '../lib/types'
@@ -41,7 +42,8 @@ function normalizeCompetition(d: PublicCompetition, roster: CompetitionPlayer[])
     matches: d.matches ?? [],
     courts: d.courts ?? [],
     session_pairs: d.session_pairs ?? [],
-    leaderboard: normalizeLeaderboardEntries((d.leaderboard ?? []).map(entry => {
+    leaderboard: normalizeLeaderboardEntries(attachLeaderboardRosterIdentity(d.leaderboard ?? [],
+      (d.matches ?? []).flatMap(match => match.match_players)).map(entry => {
       const slot = roster.find(player => player.id === entry.profile_id ||
         (player.profile_id && [entry.profile_id, entry.member_profile_id].includes(player.profile_id)) ||
         (player.padel_player_id && [entry.profile_id, entry.padel_player_id].includes(player.padel_player_id)))

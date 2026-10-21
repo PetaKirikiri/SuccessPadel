@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import type { LeaderboardEntry } from '../lib/leaderboardTypes'
 import { normalizeLeaderboardEntries } from '../lib/leaderboardEntries'
+import { attachLeaderboardRosterIdentity } from '../lib/leaderboardRosterIdentity'
 import type { CompetitionPlayer } from './useCompetitions'
 import type { GameSession } from '../lib/types'
 
@@ -52,7 +53,7 @@ export type CourtMatch = {
   court_id: string
   score_summary: string
   played_at?: string
-  match_players: { team: 'a' | 'b'; is_winner: boolean; padel_player_id?: string | null }[]
+  match_players: { team: 'a' | 'b'; is_winner: boolean; padel_player_id?: string | null; profile_id?: string | null; roster_entry_id?: string | null }[]
 }
 
 export type ClubCourt = { id: string; name: string; sort_order: number }
@@ -92,7 +93,7 @@ export function useCompetitionRun(sessionId: string | undefined) {
         .order('round_number'),
       supabase
         .from('matches')
-        .select('competition_round_id, court_id, score_summary, match_players(team, is_winner)')
+        .select('competition_round_id, court_id, score_summary, match_players(team, is_winner, roster_entry_id, profile_id, padel_player_id)')
         .eq('session_id', sessionId)
         .not('competition_round_id', 'is', null),
       supabase
@@ -119,7 +120,10 @@ export function useCompetitionRun(sessionId: string | undefined) {
     setRoster((rosterRes.data as unknown as CompetitionPlayer[]) ?? [])
 
     if (!leaderboardRes.error && leaderboardRes.data) {
-      setLeaderboard(normalizeLeaderboardEntries(leaderboardRes.data as LeaderboardEntry[]))
+      setLeaderboard(normalizeLeaderboardEntries(attachLeaderboardRosterIdentity(
+        leaderboardRes.data as LeaderboardEntry[],
+        (matchesRes.data ?? []).flatMap(match => match.match_players),
+      )))
     }
 
     if (!courtsRes.error && courtsRes.data) {
