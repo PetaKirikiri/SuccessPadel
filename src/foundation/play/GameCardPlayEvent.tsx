@@ -734,7 +734,7 @@ export function GameCardPlayEvent() {
         roster={roster}
         rosterNameById={rosterNameById}
         tvCarousel={columns.length > 0}
-        viewAlongUrl={isTvLayout ? viewAlongUrl : null}
+        viewAlongUrl={isTvLayout || viewport === 'mobile' ? viewAlongUrl : null}
         onTvGameChange={setTvGameNumber}
         onTvBack={() => navigate(id ? competitionInvitePath(id) : '/competitive')}
         leaderboardBody={!hasSideLeaderboard ? leaderboardStandard : undefined}
