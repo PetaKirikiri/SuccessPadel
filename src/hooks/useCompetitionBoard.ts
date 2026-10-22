@@ -251,6 +251,9 @@ export function useCompetitionBoard(
         scheduleSeed,
       )
       plannedGames = gamesFromStoredSchedule(paddedRoster, duoSchedule, courtNames, rosterNameById, roster)
+    } else if (!isDuo && storedSchedule.length > 0) {
+      // A saved singles draw is authoritative, including custom pool rotations.
+      plannedGames = gamesFromStoredSchedule(paddedRoster, storedSchedule, courtNames, rosterNameById, roster)
     } else {
       // Same technique as invite / friendly preview: build from current roster indices + rosterDisplayName.
       plannedGames = planRankedSchedule(
