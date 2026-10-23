@@ -221,7 +221,7 @@ Do **not** use `vercel deploy` or npx vercel for routine releases unless the use
 
 Peta’s Mac LAN IP (checked 2026-06-14): **`172.20.10.2`** on iPhone hotspot (`en0`). Re-check with `ipconfig getifaddr en0` after switching networks. An old `npm run dev` session may still print a stale address like `192.168.1.70` — ignore it; use the **Network** line from `npm run dev:phone`.
 
-**LINE LIFF in the LINE app always loads production** (`https://success-padel-ffzt.vercel.app`) unless you change the LIFF Endpoint in LINE Developers. Local IP is for Safari/phone browser testing only.
+**LINE LIFF in the LINE app always loads production** (`https://successpadel.app`) unless you change the LIFF Endpoint in LINE Developers. Local IP is for Safari/phone browser testing only.
 
 ## Local dev debug ingest
 

@@ -2,7 +2,7 @@
 // entry belongs to EnglishSuccess; player QR claims and Padel links are untouched.
 export const ENGLISH_HOTEL = 'https://learn-english-coral.vercel.app/hotel'
 export const SHARED_LIFF_ID = '2010311582-o2c1DCnP'
-export const LINE_ENDPOINT = 'https://success-padel-ffzt.vercel.app/login'
+export const LINE_ENDPOINT = 'https://successpadel.app/login'
 export type EnglishMode = 'hotel' | 'english' | 'padel' | 'padel-coach'
 const destinations: Record<EnglishMode, string> = {
   hotel: ENGLISH_HOTEL,

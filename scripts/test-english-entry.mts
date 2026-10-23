@@ -65,7 +65,7 @@ for (const entry of [signin, signup]) {
   assert.deepEqual(test.calls, ['init'])
   assert.equal(test.logins.length, 1)
   const callback = new URL(test.logins[0])
-  assert.equal(callback.origin, 'https://success-padel-ffzt.vercel.app')
+  assert.equal(callback.origin, 'https://successpadel.app')
   assert.equal(callback.pathname, '/login')
   assert.deepEqual(englishEntry(callback.search), { ...entry, attempted: true })
   await assert.rejects(englishHandshake({ ...entry, attempted: true }, test.line, test.invoke), /approval was not completed/)

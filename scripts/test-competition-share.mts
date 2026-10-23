@@ -1,3 +1,4 @@
+import { shareSiteOrigin, competitionViewAlongUrl, friendlyViewAlongUrl } from '../src/lib/siteUrl'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
@@ -6,6 +7,9 @@ import { competitionScheduleDisplay } from '../src/lib/competitionGameDisplay'
 import { competitionIdFromRequest, handleCompetitionPage, injectCompetitionMetadata, loadPublicCompetition, stripShareMetadata } from '../server/sharing/competitionPage'
 
 const id = 'c1a8521c-0716-4294-b98f-0cfb48fdee7d'
+assert.equal(shareSiteOrigin(), 'https://successpadel.app')
+assert.equal(competitionViewAlongUrl(id), `https://successpadel.app/competitions/${id}?view=leaderboard`)
+assert.equal(friendlyViewAlongUrl(id), `https://successpadel.app/friendly/${id}?view=leaderboard`)
 const row = {
   id, title: 'Duo Americano · Intermediate–High Intermediate',
   starts_at: '2026-10-02T11:05:00Z', ends_at: '2026-10-02T13:00:00Z', starts_on: '2026-10-02',

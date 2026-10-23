@@ -1,4 +1,4 @@
-const PRODUCTION_ORIGIN = 'https://www.successpadel.app'
+const PRODUCTION_ORIGIN = 'https://successpadel.app'
 
 /** True when viewing the app on a dev machine / tunnel (not production Vercel). */
 export function isDevHost(): boolean {
@@ -32,7 +32,12 @@ export function siteOrigin(): string {
 
 function configuredSiteOrigin(): string | null {
   const configured = import.meta.env.VITE_SITE_URL as string | undefined
-  return configured?.trim() ? configured.trim().replace(/\/$/, '') : null
+  if (!configured?.trim()) return null
+  const origin = configured.trim().replace(/\/$/, '')
+  try {
+    if (new URL(origin).hostname.endsWith('.vercel.app')) return PRODUCTION_ORIGIN
+  } catch { return null }
+  return origin
 }
 
 function isLineHostedPage(): boolean {
@@ -40,9 +45,9 @@ function isLineHostedPage(): boolean {
   return host === 'liff.line.me' || host.endsWith('.line.me')
 }
 
-/** Origin for share/publish links — always production when developing locally. */
+/** Public links use our canonical domain, never a deployment host or build setting. */
 export function shareSiteOrigin(): string {
-  return configuredSiteOrigin() ?? (isLocalDev() ? PRODUCTION_ORIGIN : window.location.origin)
+  return PRODUCTION_ORIGIN
 }
 
 /** Safari handshake must never target liff.line.me — only the real site origin. */
