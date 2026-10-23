@@ -74,7 +74,7 @@ html[data-viewport='tv'] .tv-play-view .tv-play-standings [data-competition-form
 
 html[data-viewport='tv'] .tv-play-standings [data-competition-format='duos'] .leaderboard-team-simple {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(4.5rem, 0.8fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.35rem;
   min-width: 0;
@@ -101,7 +101,7 @@ html[data-viewport='tv'] .tv-play-standings [data-competition-format='duos'] .le
 }
 
 html[data-viewport='tv'] .tv-play-standings [data-competition-format='duos'] .leaderboard-team-player__name {
-  font-size: clamp(0.8rem, 0.9vw, 1.1rem);
+  font-size: clamp(1.1rem, 1.2vw, 1.65rem);
   line-height: 1.2;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -136,8 +136,8 @@ html[data-viewport='tv'] .tv-play-standings [data-competition-format='duos'] .le
   margin-top: 0;
 }
 
-html[data-viewport='tv'] .tv-play-standings [data-competition-format='duos'] ol > li:has(.leaderboard-team-simple) {
-  grid-template-columns: 1.35rem minmax(0, 1fr) minmax(6.5rem, 8rem) 4.25rem;
+html[data-viewport='tv'] .tv-play-view .tv-play-standings [data-competition-format='duos'] ol > li[role='button']:has(.leaderboard-team-simple):not(:has(.team-learning-badge--leaderboard)) {
+  grid-template-columns: 1.5rem minmax(0, 1fr) 3.5rem;
 }
 
 html[data-viewport='tv'] [data-competition-format='duos'] .leaderboard-team-simple {
@@ -154,4 +154,26 @@ html[data-viewport='tv'] [data-competition-format='duos'] .leaderboard-team-simp
   min-width: 0;
   max-width: 8rem;
   overflow: hidden;
+}
+
+/* Keep the score at the right edge even when there is no team badge. */
+html[data-viewport='tv'] .tv-play-view .tv-play-standings [data-competition-format='duos'] ol > li[role='button']:has(.leaderboard-team-simple):not(:has(.team-learning-badge--leaderboard)) > div:last-child {
+  grid-column: 3;
+  justify-self: end;
+  width: 3.5rem;
+}
+
+/* Keep round-to-round movement readable from across the court. */
+html[data-viewport='tv'] .tv-play-standings [data-competition-format='duos'] .leaderboard-rank-movement {
+  font-size: clamp(0.9rem, 1vw, 1.3rem);
+  font-weight: 900;
+  line-height: 1.2;
+  margin-top: 0.2rem;
+  text-shadow: 1px 1px 0 #101016;
+}
+html[data-viewport='tv'] .tv-play-standings [data-competition-format='duos'] .leaderboard-rank-movement[data-direction='up'] {
+  color: #70ed9c;
+}
+html[data-viewport='tv'] .tv-play-standings [data-competition-format='duos'] .leaderboard-rank-movement[data-direction='down'] {
+  color: #ff8995;
 }
