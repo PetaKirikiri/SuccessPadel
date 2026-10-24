@@ -25,6 +25,7 @@ import { MembersPage } from './MembersPage'
 import { CameraScoreTrackerShell } from '../components/CameraScoreTracker'
 import { OfflineSoloCompetition } from '../surfaces/offline-competition/OfflineSoloCompetition'
 const RainModePreview = lazy(() => import('../surfaces/rain-test/RainModePreview'))
+const CoachingPage = lazy(() => import('../surfaces/coaching/CoachingPage'))
 const TacticsPage = lazy(() => import('../surfaces/tactics/TacticsPage'))
 const Tactics3DRedirect = lazy(() => import('../surfaces/tactics/Tactics3DRedirect'))
 
@@ -238,6 +239,7 @@ function AppFrame({ children }: { children: React.ReactNode }) {
 export function AppRoutes() {
   return (
     <Routes>
+      <Route path="/coaching" element={<Suspense fallback={null}><CoachingPage /></Suspense>} />
       <Route path="/tactics" element={<Suspense fallback={null}><Tactics3DRedirect /></Suspense>} />
       <Route path="/tactics-2d" element={<Suspense fallback={null}><TacticsPage /></Suspense>} />
       <Route
