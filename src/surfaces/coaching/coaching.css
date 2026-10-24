@@ -112,7 +112,6 @@
 
 .clinic-heading>div{align-self:center;padding-bottom:18px}
 .clinic-hero-price{display:flex;align-items:baseline;flex-wrap:wrap;gap:7px;margin-top:24px;color:#526783}
-.clinic-hero-price>span:first-child{flex-basis:100%;font-size:12px;margin-bottom:2px}
 .clinic-hero-price>strong{font:750 38px/1.05 system-ui,sans-serif;letter-spacing:-1px;color:#102440}
 .clinic-hero-price small{font-size:17px;letter-spacing:0}.clinic-hero-price>span:last-child{font-size:12px}
 .clinic-coaching-visual figcaption{gap:20px;flex-wrap:wrap}
