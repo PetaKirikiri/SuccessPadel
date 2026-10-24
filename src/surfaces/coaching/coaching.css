@@ -144,3 +144,13 @@
 .clinic-report-map{display:flex;align-items:center;padding:20px 16px}
 .clinic-between-heading:has(+.clinic-performance-report){margin-bottom:20px}
 .clinic-performance-report .clinic-report-body{align-items:stretch}
+
+/* Booking stays beside the live places count and uses the shared account flow. */
+.clinic-coaching-visual figcaption .clinic-booking-action{flex-basis:100%;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:12px}
+.clinic-booking-count{display:inline-flex;align-items:center;gap:8px;font-size:16px;font-weight:650}
+.clinic-book-now{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:8px;padding:12px 22px;background:#1754f4;color:#fff;font-family:inherit;font-weight:700;font-size:16px;line-height:1.2;cursor:pointer;min-height:44px}
+.clinic-book-now:disabled{opacity:.55;cursor:default}.clinic-book-now:focus-visible,.clinic-account-setup:focus-visible,.clinic-booking-close:focus-visible{outline:3px solid #00a5ca;outline-offset:3px}
+.clinic-book-now svg{width:20px;height:20px}.clinic-account-setup{flex-basis:100%;font-size:13px;color:#526783;text-align:center;text-decoration:underline;text-underline-offset:3px}
+.clinic-booking-error{color:#a33127;font-size:14px;flex-basis:100%}.clinic-booking-error button{border:0;background:none;color:inherit;text-decoration:underline;cursor:pointer}
+.clinic-booking-dialog{width:min(420px,calc(100vw - 32px));box-sizing:border-box;border:1px solid #c7d7f4;border-radius:16px;padding:28px;color:#102440;background:#fff;max-height:90dvh;overflow:auto}
+.clinic-booking-dialog::backdrop{background:#10244099}.clinic-booking-dialog h2{font-size:26px;margin:0 0 16px}.clinic-booking-dialog p{font-size:16px;line-height:1.5;margin:10px 0}.clinic-booking-name{font-weight:700}.clinic-booking-detail{font-weight:650;color:#1754f4}.clinic-booking-dialog-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px}.clinic-booking-close{background:none;border:1px solid #c7d7f4;border-radius:8px;padding:12px 20px;min-height:44px;color:#102440;cursor:pointer}.clinic-offer-book-link{color:#dfff36;font-weight:650;text-decoration:underline;text-underline-offset:4px}

@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import thai from './th.json'
+import { CoachingBooking } from './CoachingBooking'
 import { Link } from 'react-router-dom'
-import { Sprout, Target, Trophy, Clock3, Users, Coins, CalendarDays, MapPin, Layers, Shield, Network, MessageCircle, Swords, Hand, Move, BookOpen, Repeat2, RotateCcw, Footprints, ArrowUpRight, MessagesSquare, ShieldCheck, ClipboardCheck, Dumbbell } from 'lucide-react'
+import { Sprout, Target, Trophy, Clock3, Coins, CalendarDays, MapPin, Layers, Shield, Network, MessageCircle, Swords, Hand, Move, BookOpen, Repeat2, RotateCcw, Footprints, ArrowUpRight, MessagesSquare, ShieldCheck, ClipboardCheck, Dumbbell } from 'lucide-react'
 import './coaching.css'
 
 const levels = [
@@ -47,7 +48,7 @@ export default function CoachingPage() {
   return <main className="clinic-page" lang={language}>
 
     <section className="clinic-sheet"><div className="clinic-topbar"><Link className="clinic-hero-logo" to="/competitive" aria-label={t('Success Padel home')}><img src="/brand/logo-padel.webp" alt="Success Padel Samui" /></Link><nav className="clinic-language" aria-label="Language / ภาษา"><button type="button" lang="en" aria-pressed={language === 'en'} onClick={() => chooseLanguage('en')}>🇬🇧 English</button><button type="button" lang="th" aria-pressed={language === 'th'} onClick={() => chooseLanguage('th')}>🇹🇭 ไทย</button></nav></div>
-      <header className="clinic-heading"><div><h1>{t('Improve your padel.')}<em>{t('Without the guesswork.')}</em></h1><p>{t('Small-group coaching. Priority for our competition players.')}</p><div className="clinic-hero-price"><strong><small>{t('Only')}</small> 500 <small>{t('THB')}</small></strong><span>{t('per person')}</span></div></div><figure className="clinic-coaching-visual"><img src="/coaching/group-clinic-minimal.png" alt={t('Illustration of four players practising on a blue padel court with a coach watching beside the entrance')}/><figcaption><span className="clinic-hero-places"><Users aria-hidden="true"/><span>{t('Only 4 places')}</span></span><span><ClipboardCheck aria-hidden="true"/><strong>1</strong> {t("coach")}</span><span><Clock3 aria-hidden="true"/><strong>60</strong> {t("min")}</span></figcaption></figure></header>
+      <header className="clinic-heading"><div><h1>{t('Improve your padel.')}<em>{t('Without the guesswork.')}</em></h1><p>{t('Small-group coaching. Priority for our competition players.')}</p><div className="clinic-hero-price"><strong><small>{t('Only')}</small> 500 <small>{t('THB')}</small></strong><span>{t('per person')}</span></div></div><figure className="clinic-coaching-visual"><img src="/coaching/group-clinic-minimal.png" alt={t('Illustration of four players practising on a blue padel court with a coach watching beside the entrance')}/><figcaption><CoachingBooking t={t} language={language}/><span><ClipboardCheck aria-hidden="true"/><strong>1</strong> {t("coach")}</span><span><Clock3 aria-hidden="true"/><strong>60</strong> {t("min")}</span></figcaption></figure></header>
       <section className="clinic-purpose" aria-labelledby="clinic-purpose-title">
         <h2 id="clinic-purpose-title">{t('One hour with your coach.')} <em>{t('A week of support.')}</em></h2>
         <ol className="clinic-week-steps">
@@ -100,7 +101,7 @@ export default function CoachingPage() {
         <div className="clinic-week-review" id="clinic-week-review"><div className="clinic-review-copy"><span className="clinic-stage-label">{t('04 · A WEEK LATER')}</span><h3>{t('A week later. See what’s changed.')}</h3><p>{t('Recheck with your coach, review your progress and adjust your practice.')}</p></div><figure className="clinic-review-visual"><ClinicStepVisual step={3} t={t}/></figure></div>
       </section>
       <section className="clinic-gym-support" aria-labelledby="clinic-gym-title"><Dumbbell aria-hidden="true"/><div><h2 id="clinic-gym-title">{t('Build the fitness your game needs.')}</h2><p>{t('If fitness or physical limitations hold you back, explore personalised training with Coach Boon at Success Gym.')}</p><span>{t('Optional gym packages · purchased separately')}</span></div></section>
-      <section className="clinic-offer-simple" aria-label={t('Beginner trial')}><div><span className="clinic-trial-kicker">{t('FIRST BEGINNER TRIAL')}</span><h2>{t('Be one of the first 4.')}</h2><p>{t('Ask the club team to book your trial.')}</p></div><div className="clinic-offer-price"><strong>500 <small>{t('THB')}</small></strong><span>{t('/ person')}</span></div></section>
+      <section className="clinic-offer-simple" aria-label={t('Beginner trial')}><div><span className="clinic-trial-kicker">{t('FIRST BEGINNER TRIAL')}</span><h2>{t('Be one of the first 4.')}</h2><a className="clinic-offer-book-link" href="#clinic-booking">{t('Book your place')}</a></div><div className="clinic-offer-price"><strong>500 <small>{t('THB')}</small></strong><span>{t('/ person')}</span></div></section>
 <footer className="clinic-practical"><div><CalendarDays aria-hidden="true"/><p><strong>{t("First class planned for next week")}</strong><span>{t("Date and time to be confirmed.")}</span></p></div><div><MapPin aria-hidden="true"/><p><strong>Success Padel Samui</strong><span>{t("Coaching with David.")}</span></p></div><div><MessageCircle aria-hidden="true"/><p><strong>{t("Help shape what comes next.")}</strong><span>{t("Try the class. Tell us what helped.")}</span></p></div></footer>
     </section>
   </main>

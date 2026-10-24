@@ -4,6 +4,7 @@ import { safeReturnPath, originalReturnPath, lineReturnEntryUrl, carriedReturnPa
 import { recogniseExistingLineMember } from '../supabase/functions/_shared/lineRecognition'
 
 const destinations = [
+  '/coaching?book=1',
   '/c/9df4f70a',
   '/c/eeea4cc0',
   '/c/another-event',

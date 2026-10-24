@@ -10,7 +10,7 @@ export function safeReturnPath(value: string | null | undefined): string | null 
   try {
     const url = new URL(value, PLAYER_LINK_APP_ORIGIN)
     if (url.origin !== PLAYER_LINK_APP_ORIGIN || url.username || url.password) return null
-    if (!/^\/(?:c\/[^/]+|competitive|competitions(?:\/[^/]+)?|players\/[^/]+|friendly(?:\/[^/]+)?|profile)\/?$/.test(url.pathname)) return null
+    if (!/^\/(?:c\/[^/]+|competitive|competitions(?:\/[^/]+)?|players\/[^/]+|friendly(?:\/[^/]+)?|profile|coaching)\/?$/.test(url.pathname)) return null
     for (const key of [...url.searchParams.keys()]) {
       if (key.startsWith('liff.') || ['code', 'state', 'sp_line_attempt', LINE_RETURN_PARAM].includes(key)) url.searchParams.delete(key)
     }
