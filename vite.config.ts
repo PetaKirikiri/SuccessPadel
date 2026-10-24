@@ -84,6 +84,7 @@ export default defineConfig({
     ...(phoneDev ? [basicSsl()] : []),
   ],
   build: {
+    manifest: true,
     cssTarget: 'chrome61',
   },
   server: {

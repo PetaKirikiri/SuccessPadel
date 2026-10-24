@@ -67,46 +67,6 @@
         width: auto !important;
         max-width: 9rem !important;
       }
-      #sp-legacy-notice {
-        display: none;
-        position: fixed;
-        inset: 0;
-        z-index: 2147483647;
-        box-sizing: border-box;
-        padding: 2rem;
-        background: #fdfaf5;
-        color: #3a3a3a;
-        text-align: center;
-        font-family: Roboto, ui-sans-serif, system-ui, sans-serif;
-      }
-      #sp-legacy-notice h1 {
-        margin: 0 0 0.75rem;
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #602d24;
-      }
-      html.dark #sp-legacy-notice {
-        color: #f5f8fb;
-        background: #0b2a4a;
-      }
-      html.dark #sp-legacy-notice h1 {
-        color: #7dd3fc;
-      }
-      #sp-legacy-notice p {
-        margin: 0 0 0.75rem;
-        font-size: 1rem;
-        line-height: 1.5;
-        max-width: 28rem;
-        margin-left: auto;
-        margin-right: auto;
-      }
-      #sp-legacy-notice img {
-        display: block;
-        height: 2.5rem;
-        width: auto;
-        max-width: 9rem;
-        margin: 0 auto 1.25rem;
-      }
     </style>
     <script>
       ;(function () {
@@ -214,18 +174,6 @@
     <title>Success Padel</title>
   </head>
   <body>
-    <div id="sp-legacy-notice">
-      <img src="/brand/logo-padel.webp" alt="Success Padel" />
-      <h1>TV browser not supported</h1>
-      <p>
-        This LG TV browser is too old for Success Padel. The app needs a recent Chrome, Safari, or
-        Firefox (2023+).
-      </p>
-      <p>
-        Open <strong>successpadel.app</strong> on your phone, then cast or mirror to the TV — or plug
-        in a laptop with HDMI.
-      </p>
-    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
