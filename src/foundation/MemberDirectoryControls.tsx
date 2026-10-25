@@ -118,7 +118,7 @@ export function MemberDirectoryControls({ member, onSave, onUploadPhoto, onDelet
         <div className="member-directory__quick-field"><span>Member</span>
           <div className="member-directory__icon-toggle" role="group" aria-label={`Court membership for ${member.display_name}`}>
             <button type="button" aria-label="Court member" title="Court member" aria-pressed={member.court_member === true} onClick={() => void save({court_member:true})}><MembershipIcon member /></button>
-            <button type="button" aria-label="Not a court member" title="Not a court member" aria-pressed={member.court_member === false} onClick={() => void save({court_member:false})}><MembershipIcon member={false} /></button>
+            <button type="button" aria-label="Not a court member" title="Not a court member" aria-pressed={member.court_member !== true} onClick={() => void save({court_member:false})}><MembershipIcon member={false} /></button>
           </div>
         </div>
         <label className="member-directory__quick-field"><span>Country</span>
@@ -154,7 +154,7 @@ export function MemberDirectoryControls({ member, onSave, onUploadPhoto, onDelet
   </fieldset>
 }
 
-function MembershipIcon({ member }: { member: boolean }) {
+export function MembershipIcon({ member }: { member: boolean }) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <rect x="2" y="4" width="20" height="16" rx="2" />
     <path d="M2 8h20M6 12h3M6 16h2" />

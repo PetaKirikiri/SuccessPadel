@@ -1014,3 +1014,103 @@ html[data-viewport='web'] .member-directory__controls .member-directory__icon-to
 html[data-viewport='tv'] .member-directory__controls .member-directory__icon-toggle button[aria-label='Male'][aria-pressed='true'] { background:#66b5ff;color:#172131; }
 html[data-viewport='tv'] .member-directory__controls .member-directory__icon-toggle button:is([aria-label='Female'],[aria-label='On holiday'],[aria-label='Not a court member'])[aria-pressed='true'] { background:#ff7b86;color:#172131; }
 html[data-viewport='tv'] .member-directory__controls .member-directory__icon-toggle button:is([aria-label='Local / resident'],[aria-label='Court member'])[aria-pressed='true'] { background:#55dba0;color:#172131; }
+
+/* Direct directory filter buttons: mobile. */
+html[data-viewport='mobile'] .member-directory__toolbar { display:flex;flex-wrap:wrap;gap:8px;align-items:center; }
+html[data-viewport='mobile'] .member-directory__search { flex:1 1 200px;max-width:320px; }
+html[data-viewport='mobile'] .member-directory__quick-filters { display:flex;flex-wrap:wrap;gap:8px; }
+html[data-viewport='mobile'] .member-directory__filter-buttons { display:flex;flex-wrap:wrap;gap:2px;padding:3px;border:1px solid #695776;border-radius:9px;background:#21182b; }
+html[data-viewport='mobile'] .member-directory__filter-buttons button { display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:6px 10px;border:0;border-radius:6px;background:transparent;color:#c5bad3;font:inherit;font-size:13px;cursor:pointer; }
+html[data-viewport='mobile'] .member-directory__filter-buttons button:hover { background:#3c304b;color:#fff; }
+html[data-viewport='mobile'] .member-directory__filter-buttons button[aria-pressed='true'] { background:#ffe554;color:#172131; }
+html[data-viewport='mobile'] .member-directory__filter-buttons button[data-filter='Men'][aria-pressed='true'] { background:#66b5ff; }
+html[data-viewport='mobile'] .member-directory__filter-buttons button:is([data-filter='Women'],[data-filter='holiday'],[data-filter='no'])[aria-pressed='true'] { background:#ff7b86; }
+html[data-viewport='mobile'] .member-directory__filter-buttons button:is([data-filter='local'],[data-filter='yes'])[aria-pressed='true'] { background:#55dba0; }
+html[data-viewport='mobile'] .member-directory__filter-buttons button:focus-visible { outline:3px solid #a9e5d0;outline-offset:1px; }
+
+/* Direct directory filter buttons: tablet. */
+html[data-viewport='tablet'] .member-directory__toolbar { display:flex;flex-wrap:wrap;gap:8px;align-items:center; }
+html[data-viewport='tablet'] .member-directory__search { flex:1 1 200px;max-width:320px; }
+html[data-viewport='tablet'] .member-directory__quick-filters { display:flex;flex-wrap:wrap;gap:8px; }
+html[data-viewport='tablet'] .member-directory__filter-buttons { display:flex;flex-wrap:wrap;gap:2px;padding:3px;border:1px solid #695776;border-radius:9px;background:#21182b; }
+html[data-viewport='tablet'] .member-directory__filter-buttons button { display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:6px 10px;border:0;border-radius:6px;background:transparent;color:#c5bad3;font:inherit;font-size:13px;cursor:pointer; }
+html[data-viewport='tablet'] .member-directory__filter-buttons button:hover { background:#3c304b;color:#fff; }
+html[data-viewport='tablet'] .member-directory__filter-buttons button[aria-pressed='true'] { background:#ffe554;color:#172131; }
+html[data-viewport='tablet'] .member-directory__filter-buttons button[data-filter='Men'][aria-pressed='true'] { background:#66b5ff; }
+html[data-viewport='tablet'] .member-directory__filter-buttons button:is([data-filter='Women'],[data-filter='holiday'],[data-filter='no'])[aria-pressed='true'] { background:#ff7b86; }
+html[data-viewport='tablet'] .member-directory__filter-buttons button:is([data-filter='local'],[data-filter='yes'])[aria-pressed='true'] { background:#55dba0; }
+html[data-viewport='tablet'] .member-directory__filter-buttons button:focus-visible { outline:3px solid #a9e5d0;outline-offset:1px; }
+
+/* Direct directory filter buttons: web. */
+html[data-viewport='web'] .member-directory__toolbar { display:flex;flex-wrap:wrap;gap:8px;align-items:center; }
+html[data-viewport='web'] .member-directory__search { flex:1 1 200px;max-width:320px; }
+html[data-viewport='web'] .member-directory__quick-filters { display:flex;flex-wrap:wrap;gap:8px; }
+html[data-viewport='web'] .member-directory__filter-buttons { display:flex;flex-wrap:wrap;gap:2px;padding:3px;border:1px solid #695776;border-radius:9px;background:#21182b; }
+html[data-viewport='web'] .member-directory__filter-buttons button { display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:6px 10px;border:0;border-radius:6px;background:transparent;color:#c5bad3;font:inherit;font-size:13px;cursor:pointer; }
+html[data-viewport='web'] .member-directory__filter-buttons button:hover { background:#3c304b;color:#fff; }
+html[data-viewport='web'] .member-directory__filter-buttons button[aria-pressed='true'] { background:#ffe554;color:#172131; }
+html[data-viewport='web'] .member-directory__filter-buttons button[data-filter='Men'][aria-pressed='true'] { background:#66b5ff; }
+html[data-viewport='web'] .member-directory__filter-buttons button:is([data-filter='Women'],[data-filter='holiday'],[data-filter='no'])[aria-pressed='true'] { background:#ff7b86; }
+html[data-viewport='web'] .member-directory__filter-buttons button:is([data-filter='local'],[data-filter='yes'])[aria-pressed='true'] { background:#55dba0; }
+html[data-viewport='web'] .member-directory__filter-buttons button:focus-visible { outline:3px solid #a9e5d0;outline-offset:1px; }
+
+/* Direct directory filter buttons: tv. */
+html[data-viewport='tv'] .member-directory__toolbar { display:flex;flex-wrap:wrap;gap:8px;align-items:center; }
+html[data-viewport='tv'] .member-directory__search { flex:1 1 200px;max-width:320px; }
+html[data-viewport='tv'] .member-directory__quick-filters { display:flex;flex-wrap:wrap;gap:8px; }
+html[data-viewport='tv'] .member-directory__filter-buttons { display:flex;flex-wrap:wrap;gap:2px;padding:3px;border:1px solid #695776;border-radius:9px;background:#21182b; }
+html[data-viewport='tv'] .member-directory__filter-buttons button { display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:6px 10px;border:0;border-radius:6px;background:transparent;color:#c5bad3;font:inherit;font-size:13px;cursor:pointer; }
+html[data-viewport='tv'] .member-directory__filter-buttons button:hover { background:#3c304b;color:#fff; }
+html[data-viewport='tv'] .member-directory__filter-buttons button[aria-pressed='true'] { background:#ffe554;color:#172131; }
+html[data-viewport='tv'] .member-directory__filter-buttons button[data-filter='Men'][aria-pressed='true'] { background:#66b5ff; }
+html[data-viewport='tv'] .member-directory__filter-buttons button:is([data-filter='Women'],[data-filter='holiday'],[data-filter='no'])[aria-pressed='true'] { background:#ff7b86; }
+html[data-viewport='tv'] .member-directory__filter-buttons button:is([data-filter='local'],[data-filter='yes'])[aria-pressed='true'] { background:#55dba0; }
+html[data-viewport='tv'] .member-directory__filter-buttons button:focus-visible { outline:3px solid #a9e5d0;outline-offset:1px; }
+
+html[data-viewport='mobile'] .member-directory__filter-count { display:inline-flex;align-items:center;justify-content:center;min-width:22px;padding:2px 5px;border-radius:4px;background:#ffffff18;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums; }
+html[data-viewport='mobile'] .member-directory__filter-buttons button[aria-pressed='true'] .member-directory__filter-count { background:#17213118; }
+
+html[data-viewport='tablet'] .member-directory__filter-count { display:inline-flex;align-items:center;justify-content:center;min-width:22px;padding:2px 5px;border-radius:4px;background:#ffffff18;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums; }
+html[data-viewport='tablet'] .member-directory__filter-buttons button[aria-pressed='true'] .member-directory__filter-count { background:#17213118; }
+
+html[data-viewport='web'] .member-directory__filter-count { display:inline-flex;align-items:center;justify-content:center;min-width:22px;padding:2px 5px;border-radius:4px;background:#ffffff18;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums; }
+html[data-viewport='web'] .member-directory__filter-buttons button[aria-pressed='true'] .member-directory__filter-count { background:#17213118; }
+
+html[data-viewport='tv'] .member-directory__filter-count { display:inline-flex;align-items:center;justify-content:center;min-width:22px;padding:2px 5px;border-radius:4px;background:#ffffff18;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums; }
+html[data-viewport='tv'] .member-directory__filter-buttons button[aria-pressed='true'] .member-directory__filter-count { background:#17213118; }
+
+/* Match the player-card icon segments: mobile. */
+html[data-viewport='mobile'] .member-directory__filter-buttons { padding:0;gap:0;border-radius:15px;overflow:hidden; }
+html[data-viewport='mobile'] .member-directory__filter-buttons button { border-radius:0;gap:5px;padding:6px 9px; }
+html[data-viewport='mobile'] .member-directory__filter-buttons button+button { box-shadow:inset 1px 0 #776686; }
+html[data-viewport='mobile'] .member-directory__filter-buttons button svg { width:21px;height:21px;flex-shrink:0; }
+html[data-viewport='mobile'] .member-directory__filter-buttons button[data-filter='unlinked'] svg { opacity:.35; }
+html[data-viewport='mobile'] .member-directory__filter-count { background:none;padding:0;min-width:16px; }
+html[data-viewport='mobile'] .member-directory__filter-buttons button[aria-pressed='true'] .member-directory__filter-count { background:none; }
+
+/* Match the player-card icon segments: tablet. */
+html[data-viewport='tablet'] .member-directory__filter-buttons { padding:0;gap:0;border-radius:15px;overflow:hidden; }
+html[data-viewport='tablet'] .member-directory__filter-buttons button { border-radius:0;gap:5px;padding:6px 9px; }
+html[data-viewport='tablet'] .member-directory__filter-buttons button+button { box-shadow:inset 1px 0 #776686; }
+html[data-viewport='tablet'] .member-directory__filter-buttons button svg { width:21px;height:21px;flex-shrink:0; }
+html[data-viewport='tablet'] .member-directory__filter-buttons button[data-filter='unlinked'] svg { opacity:.35; }
+html[data-viewport='tablet'] .member-directory__filter-count { background:none;padding:0;min-width:16px; }
+html[data-viewport='tablet'] .member-directory__filter-buttons button[aria-pressed='true'] .member-directory__filter-count { background:none; }
+
+/* Match the player-card icon segments: web. */
+html[data-viewport='web'] .member-directory__filter-buttons { padding:0;gap:0;border-radius:15px;overflow:hidden; }
+html[data-viewport='web'] .member-directory__filter-buttons button { border-radius:0;gap:5px;padding:6px 9px; }
+html[data-viewport='web'] .member-directory__filter-buttons button+button { box-shadow:inset 1px 0 #776686; }
+html[data-viewport='web'] .member-directory__filter-buttons button svg { width:21px;height:21px;flex-shrink:0; }
+html[data-viewport='web'] .member-directory__filter-buttons button[data-filter='unlinked'] svg { opacity:.35; }
+html[data-viewport='web'] .member-directory__filter-count { background:none;padding:0;min-width:16px; }
+html[data-viewport='web'] .member-directory__filter-buttons button[aria-pressed='true'] .member-directory__filter-count { background:none; }
+
+/* Match the player-card icon segments: tv. */
+html[data-viewport='tv'] .member-directory__filter-buttons { padding:0;gap:0;border-radius:15px;overflow:hidden; }
+html[data-viewport='tv'] .member-directory__filter-buttons button { border-radius:0;gap:5px;padding:6px 9px; }
+html[data-viewport='tv'] .member-directory__filter-buttons button+button { box-shadow:inset 1px 0 #776686; }
+html[data-viewport='tv'] .member-directory__filter-buttons button svg { width:21px;height:21px;flex-shrink:0; }
+html[data-viewport='tv'] .member-directory__filter-buttons button[data-filter='unlinked'] svg { opacity:.35; }
+html[data-viewport='tv'] .member-directory__filter-count { background:none;padding:0;min-width:16px; }
+html[data-viewport='tv'] .member-directory__filter-buttons button[aria-pressed='true'] .member-directory__filter-count { background:none; }
