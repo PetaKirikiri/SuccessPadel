@@ -1114,3 +1114,23 @@ html[data-viewport='tv'] .member-directory__filter-buttons button svg { width:21
 html[data-viewport='tv'] .member-directory__filter-buttons button[data-filter='unlinked'] svg { opacity:.35; }
 html[data-viewport='tv'] .member-directory__filter-count { background:none;padding:0;min-width:16px; }
 html[data-viewport='tv'] .member-directory__filter-buttons button[aria-pressed='true'] .member-directory__filter-count { background:none; }
+
+/* Standalone player directory: mobile. */
+html[data-viewport='mobile'] .member-directory-shell { flex:1;min-height:0;min-width:0;width:100%;overflow-y:auto;overflow-x:hidden;background:#1b1825;color:#f6f0ff; }
+html[data-viewport='mobile'] .member-directory-page { min-height:100%;padding:0; }
+html[data-viewport='mobile'] .member-directory-page > .member-directory { border:0;min-height:100%; }
+
+/* Standalone player directory: tablet. */
+html[data-viewport='tablet'] .member-directory-shell { flex:1;min-height:0;min-width:0;width:100%;overflow-y:auto;overflow-x:hidden;background:#1b1825;color:#f6f0ff; }
+html[data-viewport='tablet'] .member-directory-page { min-height:100%;padding:0; }
+html[data-viewport='tablet'] .member-directory-page > .member-directory { border:0;min-height:100%; }
+
+/* Standalone player directory: web. */
+html[data-viewport='web'] .member-directory-shell { flex:1;min-height:0;min-width:0;width:100%;overflow-y:auto;overflow-x:hidden;background:#1b1825;color:#f6f0ff; }
+html[data-viewport='web'] .member-directory-page { min-height:100%;padding:0; }
+html[data-viewport='web'] .member-directory-page > .member-directory { border:0;min-height:100%; }
+
+/* Standalone player directory: tv. */
+html[data-viewport='tv'] .member-directory-shell { flex:1;min-height:0;min-width:0;width:100%;overflow-y:auto;overflow-x:hidden;background:#1b1825;color:#f6f0ff; }
+html[data-viewport='tv'] .member-directory-page { min-height:100%;padding:0; }
+html[data-viewport='tv'] .member-directory-page > .member-directory { border:0;min-height:100%; }

@@ -549,7 +549,7 @@ export function MembersPage({ view = 'players' }: { view?: 'players' | 'rankings
   if (view === 'rankings') return <MemberRankings onSave={saveDirectoryAttributes} onDelete={deleteDirectoryPlayer} onUploadPhoto={(id, file) => uploadDirectoryAvatar(id, file, ownerToken)} members={publicMembers} loading={initialLoading} error={loadError || accessError} canEdit={directoryEditable} ownerToken={ownerToken} />
 
   return (
-    <div className="space-y-5 px-3 pb-[calc(4.5rem+env(safe-area-inset-bottom))] pt-1 md:px-6">
+    <div className="member-directory-page">
       <PublicMemberDirectory members={publicMembers} canEdit={directoryEditable} onSave={saveDirectoryAttributes} onDelete={deleteDirectoryPlayer} onUploadPhoto={(id, file) => uploadDirectoryAvatar(id, file, ownerToken)} />
       {accessError ? <p role="alert">{accessError}</p> : null}
 

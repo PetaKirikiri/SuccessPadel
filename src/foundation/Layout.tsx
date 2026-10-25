@@ -24,6 +24,10 @@ export function Layout() {
     (loc.pathname.startsWith('/competitions/') && isPlaySession && !isCompetitionSetup)
   const needsFillViewport = isGamesHub || isPlaySession || isCompetitionSetup || isCompetitionEntry
 
+  if (loc.pathname === '/members' || loc.pathname === '/members/') {
+    return <main className="member-directory-shell" data-scroll-y><Outlet /></main>
+  }
+
   if (isGestureRoute) {
     return <Outlet />
   }
