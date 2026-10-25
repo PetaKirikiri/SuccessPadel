@@ -1,21 +1,21 @@
 import * as THREE from './vendor/three.module.js';
 import {simulateShot,normalizeSpin} from './ballFlight.js';
 import {reviewShot} from './shotAudit.js';
-import {addHittingPlayer} from './player.js';
+import {addRobotPlayer} from './robotPlayer.js';
 import {trajectoryPath} from './trajectoryPath.js';
 import {createBallVisual,rotationTrack} from './ballVisual.js';
 import {updateBallView} from './overheadHeight.js';
 
-export function addBallPreview(scene){
-  let player=addHittingPlayer(scene),hitterIndex=0;
-  const partner=addHittingPlayer(scene);
+export async function addBallPreview(scene){
+  const allPlayers=await Promise.all(Array.from({length:4},()=>addRobotPlayer(scene)));
+  let player=allPlayers[0],hitterIndex=0;
+  const partner=allPlayers[1];
   partner.ready(2.5,7.3,0);
   let waitingPlayers=[partner];
-  for(const x of [-2.5,2.5]) {
-    const defender=addHittingPlayer(scene,{shirtColor:'#ed906b'});
+  for(const [index,x] of [-2.5,2.5].entries()) {
+    const defender=allPlayers[index+2];
     defender.ready(x,-7.5,Math.PI);waitingPlayers.push(defender);
   }
-  const allPlayers=[player,partner,...waitingPlayers.slice(1)];
   const positions=allPlayers.map(p=>{const v=p.getFrame().position;return [v.x,v.z];});
   let landing=[1.6,-7],editing=false,spin={x:0,y:0},height=null;
   const setupListeners=new Set();

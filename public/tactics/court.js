@@ -184,7 +184,12 @@ for(let y=.045;y<.87;y+=.045){weave.push(-5,y,.006,5,y,.006);}
 const weaveGeo=new THREE.BufferGeometry();weaveGeo.setAttribute('position',new THREE.Float32BufferAttribute(weave,3));
 scene.add(new THREE.LineSegments(weaveGeo,new THREE.LineBasicMaterial({color:'#0b171c',transparent:true,opacity:.65})));
 
-const ballPreview=addBallPreview(scene);
+let ballPreview;
+try{ballPreview=await addBallPreview(scene);}
+catch(error){
+  status.hidden=false;status.textContent='The player models could not load. Reload the court to try again.';
+  throw error;
+}
 addCoverage(scene,ballPreview);
 addSpinControl(contact=>ballPreview.setSpin(contact));
 addHeightControl(ballPreview);
