@@ -198,6 +198,7 @@ function MainAppRoutes() {
         <Route path="competitions" element={<Navigate to="/competitive" replace />} />
         <Route path="coaches-comment" element={<CoachesCommentPage />} />
         <Route path="players/:playerId" element={<PlayerProfileSurface />} />
+        <Route path="rankings" element={<MembersPage view="rankings" />} />
         <Route
           path="members"
           element={<MembersPage />}

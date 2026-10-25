@@ -35,6 +35,26 @@ begin
       perform public.set_member_directory_attributes(id,'{"gender":"invalid"}',repeat('a',64));
       raise exception 'Invalid value accepted';
     exception when raise_exception then if sqlerrm<>'Invalid gender' then raise; end if; end;
+    begin
+      perform public.set_member_directory_attributes(id,'{"display_name":null}',repeat('a',64));
+      raise exception 'Null name accepted';
+    exception when raise_exception then if sqlerrm<>'Name must be 1–100 characters' then raise; end if; end;
+    begin
+      perform public.set_member_directory_attributes(id,'{"display_name":"  "}',repeat('a',64));
+      raise exception 'Empty name accepted';
+    exception when raise_exception then if sqlerrm<>'Name must be 1–100 characters' then raise; end if; end;
+    begin
+      perform public.set_member_directory_attributes(id,'{"avatar_url":"javascript:alert(1)"}',repeat('a',64));
+      raise exception 'Unsafe photo accepted';
+    exception when raise_exception then if sqlerrm<>'Invalid photo URL' then raise; end if; end;
+    begin
+      perform public.set_member_directory_attributes(id,'{"display_name":"Forbidden"}',null);
+      raise exception 'Anonymous identity edit accepted';
+    exception when insufficient_privilege then null; end;
+    select * into row from public.set_member_directory_attributes(id,'{"display_name":"  ทดสอบ player  ","avatar_url":"https://example.com/photo.png"}',repeat('a',64));
+    if row.display_name <> 'ทดสอบ player' or row.avatar_url <> 'https://example.com/photo.png' then raise exception 'Identity save failed'; end if;
+    select * into row from public.set_member_directory_attributes(id,'{"avatar_url":null}',repeat('a',64));
+    if row.avatar_url is not null or row.display_name <> 'ทดสอบ player' then raise exception 'Photo removal changed name'; end if;
     select * into row from public.set_member_directory_attributes(id,'{"gender":"Female","skill_level":"Advanced","court_member":true}',repeat('a',64));
     if row.gender<>'Female' or row.skill_level<>'Advanced' or row.court_member is not true then raise exception 'Save mismatch'; end if;
     select * into row from public.set_member_directory_attributes(id,'{"court_member":false}',repeat('a',64));

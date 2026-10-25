@@ -11,3 +11,7 @@ additional_redirect_urls = ["http://localhost:5173/auth/callback"]
 verify_jwt = false
 [functions.competition-signup]
 verify_jwt = false
+
+# Both signed-in staff and owner capabilities are validated inside the handler.
+[functions.member-directory-avatar]
+verify_jwt = false

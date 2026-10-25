@@ -1,3 +1,7 @@
+import { MemberRankings } from './MemberRankings'
+import { directoryOwnerToken, rememberDirectoryOwner, OWNER_ACCESS_KEY } from '../lib/memberDirectoryAccess'
+import type { MemberContacts } from '../lib/memberContacts'
+import { uploadDirectoryAvatar } from '../lib/memberDirectoryAvatar'
 import { Share2, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
@@ -198,14 +202,29 @@ function MemberSection({
   )
 }
 
-export function MembersPage() {
+export function MembersPage({ view = 'players' }: { view?: 'players' | 'rankings' }) {
   const { t } = useTranslation()
   const { user, profile, loading: authLoading, session, restoreSession } = useAuth()
   const isAdmin = canManageMembers(authLoading, user?.id, profile)
   // Enable only after admin_set_player_skill_level is available in production.
   const canEditLevels = isAdmin && import.meta.env.VITE_MEMBER_LEVEL_EDITING === 'true'
   const location = useLocation()
-  const ownerToken = new URLSearchParams(location.hash.slice(1)).get('owner')
+  const [ownerAccessRevision, setOwnerAccessRevision] = useState(0)
+  const ownerToken = useMemo(() => {
+    // Owner links are browser access, not single-tab access. Retain the old
+    // session value only until it has been verified and migrated below.
+    try {
+      return directoryOwnerToken(location.hash, window.localStorage)
+        ?? directoryOwnerToken(location.hash, window.sessionStorage)
+    } catch { return new URLSearchParams(location.hash.slice(1)).get('owner') }
+  }, [location.hash, ownerAccessRevision])
+  useEffect(() => {
+    function syncOwnerAccess(event: StorageEvent) {
+      if (event.key === OWNER_ACCESS_KEY || event.key === null) setOwnerAccessRevision(value => value + 1)
+    }
+    window.addEventListener('storage', syncOwnerAccess)
+    return () => window.removeEventListener('storage', syncOwnerAccess)
+  }, [])
   const [directoryEditable, setDirectoryEditable] = useState(false)
   const [accessError, setAccessError] = useState<string | null>(null)
   useEffect(() => {
@@ -213,10 +232,16 @@ export function MembersPage() {
     setDirectoryEditable(false)
     setAccessError(null)
     if (!ownerToken && !isAdmin) return
-    void supabase.rpc('can_edit_member_directory', { p_access_token: ownerToken }).then(({ data, error }) => {
+    void Promise.resolve(supabase.rpc('can_edit_member_directory', { p_access_token: ownerToken })).then(({ data, error }) => {
       if (!active) return
       setDirectoryEditable(!error && data === true)
+      if (!error && ownerToken) {
+        rememberDirectoryOwner(data === true ? ownerToken : null, window.localStorage)
+        rememberDirectoryOwner(null, window.sessionStorage)
+      }
       if (error || data !== true) setAccessError('Editing is locked. This owner link may have expired or been revoked.')
+    }).catch(() => {
+      if (active) setAccessError('Could not verify editing access. Reload to try again.')
     })
     return () => { active = false }
   }, [ownerToken, isAdmin, user?.id])
@@ -238,6 +263,7 @@ export function MembersPage() {
   const [levelBusyId, setLevelBusyId] = useState<string | null>(null)
   const [levelError, setLevelError] = useState<string | null>(null)
   const firstLoad = useRef(true)
+  const loadSequence = useRef(0)
 
   useEffect(() => {
     if (!isAdmin || initialLoading || new URLSearchParams(location.search).get('add') !== '1') return
@@ -246,15 +272,24 @@ export function MembersPage() {
   }, [isAdmin, initialLoading, location.search])
 
   const load = useCallback(async () => {
+    const request = ++loadSequence.current
     if (firstLoad.current) setInitialLoading(true)
     setLoadError(null)
-    const directory = directoryEditable
-      ? await supabase.rpc('list_owner_member_directory', { p_access_token: ownerToken })
-      : await supabase.from('public_member_directory')
-        .select('id, display_name, avatar_url, gender, skill_level, history_levels, court_member, has_line_account, directory_hidden').order('display_name')
-    setPublicMembers((directory.data as DirectoryMember[] | null) ?? [])
+    const directoryRequest = directoryEditable
+      ? supabase.rpc('list_owner_member_directory', { p_access_token: ownerToken })
+      : supabase.from('public_member_directory')
+        .select('id, display_name, avatar_url, gender, skill_level, history_levels, court_member, has_line_account, directory_hidden, country, residency_status').order('display_name')
+    const [directory, contacts] = await Promise.all([
+      directoryRequest,
+      directoryEditable ? supabase.rpc('list_member_directory_contacts', { p_access_token: ownerToken }) : Promise.resolve(null),
+    ])
+    if (request !== loadSequence.current) return
+    const contactMap = new Map(((contacts?.data ?? []) as MemberContacts[]).map(c => [c.id, c]))
+    setPublicMembers(((directory.data as DirectoryMember[] | null) ?? []).map(member => ({ ...member, ...contactMap.get(member.id), contacts_loaded: directoryEditable && !contacts?.error })))
+    if (contacts?.error) setLoadError('Contact details could not load. Refresh to try again.')
     if (directory.error) setLoadError('Unable to load the player list. Please refresh and try again.')
     const liveSession = session?.user ? session : await restoreSession()
+    if (request !== loadSequence.current) return
     if (!liveSession?.user) {
       setMembers([])
       setLinePadelPlayers([])
@@ -276,6 +311,7 @@ export function MembersPage() {
         .select('id, display_name, profile_id, line_user_id, line_picture_url, skill_level')
         .order('display_name'),
     ])
+    if (request !== loadSequence.current) return
     setMembers((profilesRes.data as Profile[]) ?? [])
     const lineMap = new Map<string, string>()
     const skillByPadelId = new Map<string, string | null>()
@@ -309,6 +345,7 @@ export function MembersPage() {
 
   useEffect(() => {
     void load()
+    return () => { loadSequence.current += 1 }
   }, [load])
 
   useEffect(() => {
@@ -457,13 +494,21 @@ export function MembersPage() {
 
   const saveDirectoryAttributes = async (id: string, patch: DirectoryPatch) => {
     if (!directoryEditable) throw new Error('Owner access required')
-    const { data, error } = await supabase.rpc('set_member_directory_attributes', {
+    const isContactEdit = Object.keys(patch).some(key => key === 'line_contact_url' || key === 'whatsapp_number')
+    const { data, error } = await supabase.rpc(isContactEdit ? 'set_member_directory_contacts' : 'set_member_directory_attributes', {
       p_member_id: id, p_patch: patch, p_access_token: ownerToken,
     })
     if (error) throw new Error(error.message)
     const updated = (data as DirectoryMember[] | null)?.[0]
     if (!updated) throw new Error('No saved player returned. Refresh and try again.')
-    setPublicMembers(current => current.map(member => member.id === id ? updated : member))
+    setPublicMembers(current => current.map(member => member.id === id ? { ...member, ...updated } : member))
+  }
+
+  const deleteDirectoryPlayer = async (id: string) => {
+    if (!directoryEditable) throw new Error('Owner access required')
+    const { error } = await supabase.rpc('delete_member_directory_player', { p_member_id: id, p_access_token: ownerToken })
+    if (error) throw new Error(error.message)
+    setPublicMembers(current => current.filter(member => member.id !== id))
   }
 
   const renderMemberRow = (member: Profile) => {
@@ -501,9 +546,11 @@ export function MembersPage() {
     )
   }
 
+  if (view === 'rankings') return <MemberRankings onSave={saveDirectoryAttributes} onDelete={deleteDirectoryPlayer} onUploadPhoto={(id, file) => uploadDirectoryAvatar(id, file, ownerToken)} members={publicMembers} loading={initialLoading} error={loadError || accessError} canEdit={directoryEditable} ownerToken={ownerToken} />
+
   return (
     <div className="space-y-5 px-3 pb-[calc(4.5rem+env(safe-area-inset-bottom))] pt-1 md:px-6">
-      <PublicMemberDirectory members={publicMembers} canEdit={directoryEditable} onSave={saveDirectoryAttributes} />
+      <PublicMemberDirectory members={publicMembers} canEdit={directoryEditable} onSave={saveDirectoryAttributes} onDelete={deleteDirectoryPlayer} onUploadPhoto={(id, file) => uploadDirectoryAvatar(id, file, ownerToken)} />
       {accessError ? <p role="alert">{accessError}</p> : null}
 
       {loadError ? <p role="alert">{loadError}</p> : null}
