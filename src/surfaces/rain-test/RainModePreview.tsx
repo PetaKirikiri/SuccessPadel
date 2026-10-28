@@ -97,8 +97,9 @@ function RainBoard({ record }: { record: RainDrawRecord }) {
               {next.game.courts.map(court => <table className="rain-preview__next-table" key={court.courtLabel}>
                 <caption>{court.courtLabel}</caption>
                 <tbody>
-                  <tr><td>{court.teamA[0]}</td><td>{court.teamA[1]}</td></tr>
-                  <tr><td>{court.teamB[0]}</td><td>{court.teamB[1]}</td></tr>
+                  <tr><td><strong>{court.teamA[0]} + {court.teamA[1]}</strong></td></tr>
+                  <tr className="rain-preview__next-versus"><td>vs</td></tr>
+                  <tr><td><strong>{court.teamB[0]} + {court.teamB[1]}</strong></td></tr>
                 </tbody>
               </table>)}
             </div>
