@@ -26,6 +26,7 @@ import { CameraScoreTrackerShell } from '../components/CameraScoreTracker'
 import { OfflineSoloCompetition } from '../surfaces/offline-competition/OfflineSoloCompetition'
 const RainModePreview = lazy(() => import('../surfaces/rain-test/RainModePreview'))
 const CoachingPage = lazy(() => import('../surfaces/coaching/CoachingPage'))
+const ClinicPage = lazy(() => import('../surfaces/clinic/ClinicPage'))
 const TacticsPage = lazy(() => import('../surfaces/tactics/TacticsPage'))
 const Tactics3DRedirect = lazy(() => import('../surfaces/tactics/Tactics3DRedirect'))
 
@@ -241,6 +242,8 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/coaching" element={<Suspense fallback={null}><CoachingPage /></Suspense>} />
+      <Route path="/clinic" element={<Suspense fallback={null}><ClinicPage /></Suspense>} />
+      <Route path="/coaching/clinic" element={<Navigate to="/clinic" replace />} />
       <Route path="/tactics" element={<Suspense fallback={null}><Tactics3DRedirect /></Suspense>} />
       <Route path="/tactics-2d" element={<Suspense fallback={null}><TacticsPage /></Suspense>} />
       <Route

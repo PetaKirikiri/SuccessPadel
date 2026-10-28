@@ -1,0 +1,381 @@
+.clinic-offer {
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: #edf3fd;
+  color: #102746;
+  font-family: "Noto Sans Thai", "IBM Plex Sans Thai", system-ui, sans-serif;
+}
+
+.clinic-offer__sheet {
+  width: min(1180px, calc(100% - 32px));
+  margin: 24px auto;
+  overflow: hidden;
+  border: 1px solid #c9d8ef;
+  border-top: 7px solid #155bea;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(14, 43, 85, .12);
+}
+
+.clinic-offer__topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px 32px 8px;
+}
+
+.clinic-offer__topbar img {
+  display: block;
+  width: 138px;
+  height: auto;
+}
+
+.clinic-offer__topbar span,
+.clinic-offer__eyebrow,
+.clinic-offer__section-title p {
+  color: #155bea;
+  font-size: .78rem;
+  font-weight: 900;
+  letter-spacing: .16em;
+}
+
+.clinic-offer__top-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.clinic-offer__language {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid #c9d8ef;
+  border-radius: 10px;
+  background: #f5f8fe;
+}
+
+.clinic-offer__language button {
+  min-width: 70px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: #536987;
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.clinic-offer__language button[aria-pressed="true"] {
+  background: #155bea;
+  color: #fff;
+}
+
+.clinic-offer__hero {
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) minmax(420px, 1.1fr);
+  align-items: center;
+  gap: 28px;
+  padding: 12px 34px 28px 48px;
+}
+
+.clinic-offer__hero-copy h1 {
+  margin: 14px 0 18px;
+  font-size: clamp(2.3rem, 4.7vw, 4.7rem);
+  line-height: 1.05;
+  letter-spacing: -.055em;
+}
+
+.clinic-offer__hero-copy h1 em {
+  color: #155bea;
+  font-style: normal;
+}
+
+.clinic-offer__lead {
+  max-width: 580px;
+  margin: 0;
+  color: #536987;
+  font-size: clamp(1rem, 1.6vw, 1.3rem);
+  line-height: 1.65;
+}
+
+.clinic-offer__visual {
+  margin: 0;
+  min-width: 0;
+}
+
+.clinic-offer__visual img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.clinic-offer__price {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 28px;
+  margin: 0 34px;
+  padding: 22px 28px;
+  border-radius: 18px;
+  background: #132f60;
+  color: #fff;
+}
+
+.clinic-offer__price > div,
+.clinic-offer__price > p {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 0;
+}
+
+.clinic-offer__price svg {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  color: #dfff29;
+}
+
+.clinic-offer__price p span,
+.clinic-offer__price p strong,
+.clinic-offer__price p small {
+  display: block;
+}
+
+.clinic-offer__price p span {
+  color: #aebdd6;
+  font-size: .8rem;
+  font-weight: 800;
+}
+
+.clinic-offer__price p strong {
+  color: #dfff29;
+  font-size: clamp(2rem, 4vw, 3.8rem);
+  line-height: 1;
+}
+
+.clinic-offer__price p small {
+  margin-top: 4px;
+  color: #fff;
+  font-size: .88rem;
+}
+
+.clinic-offer__price > p {
+  max-width: 300px;
+  font-size: .96rem;
+  font-weight: 750;
+  line-height: 1.5;
+}
+
+.clinic-offer__price > p svg {
+  width: 26px;
+  height: 26px;
+}
+
+.clinic-offer__conditions {
+  padding: 46px 34px 42px;
+}
+
+.clinic-offer__section-title {
+  text-align: center;
+}
+
+.clinic-offer__section-title p {
+  margin: 0 0 8px;
+}
+
+.clinic-offer__section-title h2,
+.clinic-offer__booking h2 {
+  margin: 0;
+  font-size: clamp(1.65rem, 3vw, 2.55rem);
+  line-height: 1.2;
+}
+
+.clinic-offer__condition-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.clinic-offer__condition-grid article {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 12px;
+  min-width: 0;
+  padding: 20px 16px;
+  border: 1px solid #d8e3f3;
+  border-radius: 16px;
+  background: #f5f8fe;
+}
+
+.clinic-offer__condition-grid svg {
+  width: 28px;
+  height: 28px;
+  color: #155bea;
+}
+
+.clinic-offer__condition-grid strong,
+.clinic-offer__condition-grid span {
+  display: block;
+}
+
+.clinic-offer__condition-grid strong {
+  font-size: 1rem;
+}
+
+.clinic-offer__condition-grid span {
+  margin-top: 4px;
+  color: #647693;
+  font-size: .84rem;
+  line-height: 1.5;
+}
+
+.clinic-offer__booking {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 20px;
+  padding: 30px 34px;
+  background: #155bea;
+  color: #fff;
+}
+
+.clinic-offer__booking > svg {
+  width: 46px;
+  height: 46px;
+  color: #dfff29;
+}
+
+.clinic-offer__booking p,
+.clinic-offer__booking span {
+  margin: 0;
+}
+
+.clinic-offer__booking p {
+  color: #dfff29;
+  font-size: .8rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.clinic-offer__booking span {
+  display: block;
+  margin-top: 6px;
+  color: #dfe9ff;
+  font-size: .94rem;
+}
+
+.clinic-offer__booking > strong {
+  padding: 15px 18px;
+  border-radius: 12px;
+  background: #dfff29;
+  color: #102746;
+  text-align: center;
+  white-space: nowrap;
+}
+
+@media (max-width: 850px) {
+  .clinic-offer__sheet {
+    width: min(100% - 18px, 680px);
+    margin: 9px auto;
+    border-radius: 18px;
+  }
+
+  .clinic-offer__topbar {
+    padding: 16px 18px 4px;
+  }
+
+  .clinic-offer__topbar img {
+    width: 108px;
+  }
+
+  .clinic-offer__topbar span {
+    font-size: .66rem;
+  }
+
+  .clinic-offer__top-actions {
+    align-items: flex-end;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .clinic-offer__language button {
+    min-width: 60px;
+    min-height: 32px;
+    padding: 0 8px;
+    font-size: .74rem;
+  }
+
+  .clinic-offer__hero {
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding: 18px 20px 12px;
+  }
+
+  .clinic-offer__visual {
+    order: -1;
+    margin: -8px -6px 2px;
+  }
+
+  .clinic-offer__hero-copy h1 {
+    margin: 8px 0 12px;
+    font-size: clamp(2.25rem, 11vw, 3.6rem);
+  }
+
+  .clinic-offer__price {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin: 8px 14px 0;
+    padding: 20px;
+  }
+
+  .clinic-offer__price > p {
+    max-width: none;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, .18);
+  }
+
+  .clinic-offer__conditions {
+    padding: 34px 14px 28px;
+  }
+
+  .clinic-offer__condition-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-top: 20px;
+  }
+
+  .clinic-offer__condition-grid article {
+    grid-template-columns: 1fr;
+    padding: 16px 14px;
+  }
+
+  .clinic-offer__booking {
+    grid-template-columns: auto 1fr;
+    padding: 24px 20px;
+  }
+
+  .clinic-offer__booking > strong {
+    grid-column: 1 / -1;
+    white-space: normal;
+  }
+}
+
+@media (max-width: 420px) {
+  .clinic-offer__lead {
+    font-size: .95rem;
+  }
+
+  .clinic-offer__condition-grid article {
+    padding: 14px 12px;
+  }
+
+  .clinic-offer__condition-grid span {
+    font-size: .78rem;
+  }
+}
