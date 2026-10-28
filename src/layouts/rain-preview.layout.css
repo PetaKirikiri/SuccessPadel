@@ -31,6 +31,11 @@ html:is([data-viewport='mobile'], [data-viewport='tablet'], [data-viewport='web'
   .rain-preview__rest-heading > div { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; }
   .rain-preview__rest-heading h2 { margin: 0; font-size: 20px; font-weight: 800; }
   .rain-preview__rest-heading p { margin: 0; font-size: 13px; color: #d9c8a7; }
+  .rain-preview__next-courts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 6px; }
+  .rain-preview__next-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: clamp(14px, 1.3vw, 22px); }
+  .rain-preview__next-table caption { text-align: left; color: #ffcf78; font-size: .85em; font-weight: 700; padding-bottom: 4px; }
+  .rain-preview__next-table td { width: 50%; padding: 6px; overflow-wrap: anywhere; }
+  .rain-preview__next-table tr + tr { border-top: 1px solid #719bb4; }
   .rain-preview__rest-players { list-style: none; margin: 8px 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; min-height: 0; }
   .rain-preview__rest-players li { display: flex; align-items: center; gap: 8px; min-width: 0; }
   .rain-preview__rest-players strong { font-size: clamp(15px, 1.3vw, 22px); overflow-wrap: anywhere; line-height: 1.15; }

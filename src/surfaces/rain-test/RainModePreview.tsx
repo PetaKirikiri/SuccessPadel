@@ -1,15 +1,13 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Armchair, Repeat2 } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { GameCard } from '../../components/GameCard'
 import type { GameCardSession } from '../../components/GameCard/types'
 import { useTranslation } from '../../hooks/useTranslation'
-import { PlayerAvatar } from '../../shared/ProfilePhoto/PlayerAvatar'
 import { rainCountdown } from './rainCountdown'
 import { readRainViewedGame, saveRainViewedGame } from './rainViewedGame'
-import { unpackRainDraw, rainReturnTime, type RainDrawRecord } from './rainDraw'
+import { unpackRainDraw, type RainDrawRecord } from './rainDraw'
 import { supabase } from '../../lib/supabaseClient'
-import { useAuth } from '../../hooks/useAuth'
 import { rainScoreKey } from './rainScores'
 import { useRainScores } from './useRainScores'
 import { rainStandings } from './rainStandings'
@@ -39,47 +37,12 @@ export default function RainModePreview() {
     })
     return () => { mounted = false }
   }, [competition, reload])
-  return record ? <RainBoard key={`${record.session_id}:${reload}`} record={record} refresh={() => setReload(n => n + 1)} />
+  return record ? <RainBoard key={`${record.session_id}:${reload}`} record={record} />
     : <main className="rain-preview"><p className="rain-preview__notice" role="status">{error || 'Loading rain mode…'}</p>{error && <button type="button" onClick={() => setReload(n => n + 1)}>Retry</button>}</main>
 }
 
-function RainSettings({ record, refresh }: { record: RainDrawRecord; refresh: () => void }) {
-  const { user, profile } = useAuth()
-  const settings = record.draw.settings
-  const [message, setMessage] = useState('')
-  const [busy, setBusy] = useState(false)
-  if (!settings) return null
-  const admin = Boolean(user?.id && profile?.id === user.id && profile.is_admin)
-  return <details className="rain-preview__rest">
-    <summary>Rain settings · {settings.roundCount} × {settings.gameMinutes} min · {settings.changeoverMinutes} min changeover</summary>
-    <p>{record.draw.date} · {record.draw.courtLabels.join(' + ')} · {record.draw.players.length} players</p>
-    <p>{settings.playersStayingPerCourt} stay on each court · Same court throughout · New partners · Maximum {settings.maxConsecutiveGames} consecutive games</p>
-    {settings.finalFullSwap && <p>Final game: all eight resting players come on. Five games each.</p>}
-    {admin ? <form onSubmit={async event => {
-      event.preventDefault(); setBusy(true); setMessage('')
-      const values = new FormData(event.currentTarget)
-      try {
-        const { error } = await supabase.rpc('update_rain_mode_timing', {
-          p_session_id: record.session_id, p_fingerprint: record.fingerprint,
-          p_start: String(values.get('start')), p_game_minutes: Number(values.get('game')),
-          p_break_minutes: Number(values.get('break')),
-        })
-        if (error) throw error
-        refresh()
-      } catch (cause) { setMessage(cause instanceof Error ? cause.message : (cause as { message?: string }).message || 'Could not save timing.') }
-      finally { setBusy(false) }
-    }}>
-      <label>First game <input name="start" type="time" defaultValue={settings.startTime} required disabled={busy} /></label>
-      <label>Game minutes <input name="game" type="number" min="5" max="60" defaultValue={settings.gameMinutes} required disabled={busy} /></label>
-      <label>Changeover minutes <input name="break" type="number" min="1" max="30" defaultValue={settings.changeoverMinutes} required disabled={busy} /></label>
-      <button type="submit" disabled={busy}>{busy ? 'Saving…' : 'Save timing'}</button>
-      <p>Finish by {settings.cutoff}. Timing locks after the first score. Player assignments stay unchanged.</p>
-      {message && <p role="alert">{message}</p>}
-    </form> : <p>First game {settings.startTime} · Finish by {settings.cutoff}</p>}
-  </details>
-}
 
-function RainBoard({ record, refresh }: { record: RainDrawRecord; refresh: () => void }) {
+function RainBoard({ record }: { record: RainDrawRecord }) {
   const { t } = useTranslation()
   const [rounds] = useState(() => unpackRainDraw(record))
   const competitionId = record.session_id
@@ -116,7 +79,6 @@ function RainBoard({ record, refresh }: { record: RainDrawRecord; refresh: () =>
           </svg>)}
         </div>
       </header>
-      <RainSettings record={record} refresh={refresh} />
       {!round ? <p className="rain-preview__notice" role="status">Loading tonight’s players…</p> : <>
         <div className="rain-preview__board">
           <div className="rain-preview__play">
@@ -129,13 +91,18 @@ function RainBoard({ record, refresh }: { record: RainDrawRecord; refresh: () =>
               canEdit={ready} onCompetitionCourtGamesSaved={saveScore}
               tvNav={{ onPrev: () => setSelected(index => Math.max(0, index - 1)), onNext: () => setSelected(index => Math.min(rounds.length - 1, index + 1)), atStart: selected === 0, atEnd: selected === rounds.length - 1 }} />
           </section>
-          <aside className="rain-preview__rest" aria-label="Players sitting out this game">
-            <div className="rain-preview__rest-heading"><Armchair aria-hidden="true" /><div><h2>Sitting out</h2><p>Game {selected + 1} · {round.game.timeLabel}</p></div></div>
-            <ul className="rain-preview__rest-players">
-              {round.resting.map(player => <li key={player.rosterId}><PlayerAvatar displayName={player.name} avatarUrl={player.avatarUrl} imgClassName="rain-preview__avatar" /><strong>{player.name}<small> · {rainReturnTime(rounds, selected, player.rosterId!) ?? 'Finished'}</small></strong></li>)}
-            </ul>
-            <div className="rain-preview__return"><Repeat2 aria-hidden="true" /><span>{next ? <>Next game <strong>{next.startsAt}</strong> · Off: {round.game.courts.flatMap(c => [...c.teamAPlayers!, ...c.teamBPlayers!]).filter(p => next.resting.some(r => r.rosterId === p.rosterId)).map(p => p.name).join(', ')} · On: {round.resting.filter(p => !next.resting.some(r => r.rosterId === p.rosterId)).map(p => p.name).join(', ')}</> : <>Last round · Rotation complete</>}</span></div>
-          </aside>
+          {next && <aside className="rain-preview__rest" aria-label={`Next game ${next.game.gameNumber}`}>
+            <div className="rain-preview__rest-heading"><div><h2>Next · {next.startsAt}</h2></div></div>
+            <div className="rain-preview__next-courts">
+              {next.game.courts.map(court => <table className="rain-preview__next-table" key={court.courtLabel}>
+                <caption>{court.courtLabel}</caption>
+                <tbody>
+                  <tr><td>{court.teamA[0]}</td><td>{court.teamA[1]}</td></tr>
+                  <tr><td>{court.teamB[0]}</td><td>{court.teamB[1]}</td></tr>
+                </tbody>
+              </table>)}
+            </div>
+          </aside>}
           </div>
           <aside className="rain-preview__leaderboard" aria-label="Rain mode leaderboard">
             <Leaderboard competitionFormat="singles" entries={rainStandings(rounds, scores)} compact embedded scoreUnit="games" headerTitle="Leaderboard" showAchievements={false} />
