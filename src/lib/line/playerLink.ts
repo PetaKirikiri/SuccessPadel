@@ -158,8 +158,8 @@ export async function completeLinePlayerLinkInLiff(
 }
 
 /** Safari URL: sign in + land on the competition scoreboard. */
-export function playerLinkScoreboardHandoffUrl(handoffToken: string): string {
-  return lineHandoffCompleteUrl(handoffToken)
+export function playerLinkScoreboardHandoffUrl(handoffToken: string, linkToken?: string, competitionId?: string | null): string {
+  return lineHandoffCompleteUrl(handoffToken, linkToken, competitionId)
 }
 
 /** External browser only — starts LINE OAuth for player link. */
@@ -360,10 +360,34 @@ export async function completeLinePlayerLinkFromUrl(
   }
 }
 
-export async function consumeLineHandoffToken(handoffToken: string): Promise<{
+type HandoffResult = { competitionId: string | null; error?: string }
+const handoffAttempts = new Map<string, Promise<HandoffResult>>()
+
+/** Share one consumption across effect reruns; never send a one-use token twice. */
+export function consumeLineHandoffToken(handoffToken: string): Promise<HandoffResult> {
+  const existing = handoffAttempts.get(handoffToken)
+  if (existing) return existing
+  const attempt = finishPlayerHandoff(handoffToken).finally(() => {
+    handoffAttempts.delete(handoffToken)
+  })
+  handoffAttempts.set(handoffToken, attempt)
+  return attempt
+}
+
+async function finishPlayerHandoff(handoffToken: string): Promise<{
   competitionId: string | null
   error?: string
 }> {
+  // Receipt contains no credentials and is only useful with a server-verified session.
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(handoffToken))
+  const receiptKey = `sp-handoff-done-${Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('')}`
+  try {
+    const saved = JSON.parse(localStorage.getItem(receiptKey) ?? 'null')
+    if (saved?.userId) {
+      const { data, error } = await supabase.auth.getUser()
+      if (!error && data.user?.id === saved.userId) return { competitionId: saved.competitionId ?? null }
+    }
+  } catch { /* Storage is optional; a fresh handshake can recover instead. */ }
   const { data, error: fnError } = await supabase.functions.invoke('line-handoff-complete', {
     body: { handoff_token: handoffToken },
   })
@@ -395,6 +419,9 @@ export async function consumeLineHandoffToken(handoffToken: string): Promise<{
   }
 
   rememberBrowserSession(confirmed.session)
+  try {
+    localStorage.setItem(receiptKey, JSON.stringify({ userId: confirmed.session.user.id, competitionId: payload.competition_id ?? null }))
+  } catch { /* Private browsing may disable storage. */ }
   await syncProfileForUser(confirmed.session.user)
   clearClaimPadelPlayer()
 

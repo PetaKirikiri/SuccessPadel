@@ -69,7 +69,7 @@ export function LinePlayerLinkEntryHandler() {
         }
 
         setPhase('success')
-        const scoreboardUrl = playerLinkScoreboardHandoffUrl(handoffToken)
+        const scoreboardUrl = playerLinkScoreboardHandoffUrl(handoffToken, linkToken, competitionId)
         stopOpen = scheduleForceExternalOpen(scoreboardUrl)
         return
       }
@@ -113,5 +113,6 @@ export function LinePlayerLinkEntryHandler() {
 }
 
 export function isPlayerLinkHandoffSearch(search: string): boolean {
+  if (new URLSearchParams(search).has('handoffToken')) return false
   return Boolean(linkTokenFromLocation(search)) && !lineOAuthCallbackCode(search)
 }

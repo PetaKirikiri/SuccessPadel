@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { consumeLineHandoffToken, resolveCompetitionPathAfterLink } from '../lib/line/playerLink'
+import { consumeLineHandoffToken, linePlayerLinkQrUrl, resolveCompetitionPathAfterLink } from '../lib/line/playerLink'
+import { lineSignInEntryUrl } from '../lib/line/liff'
 
 export function LineAuthComplete() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const handoffToken = searchParams.get('handoffToken')
+  const linkToken = searchParams.get('lpl')
+  const contextId = searchParams.get('cid')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(true)
 
@@ -19,20 +22,39 @@ export function LineAuthComplete() {
     let active = true
 
     void (async () => {
+      try {
       const { competitionId, error: err } = await consumeLineHandoffToken(handoffToken)
       if (!active) return
       if (err) {
+        if (/handoff token already used|invalid handoff token|expired/i.test(err)) {
+          const destination = resolveCompetitionPathAfterLink(contextId)
+          const resumeUrl = linkToken?.startsWith('lpl_')
+            ? linePlayerLinkQrUrl(linkToken, contextId)
+            : lineSignInEntryUrl(destination)
+          // Re-verify LINE identity. A used token is never authentication.
+          // Bound automatic recovery so a broken phone flow cannot redirect forever.
+          const lastRecovery = Number(sessionStorage.getItem('sp-player-handoff-recovering') ?? 0)
+          if (resumeUrl && Date.now() - lastRecovery > 60_000) {
+            sessionStorage.setItem('sp-player-handoff-recovering', String(Date.now()))
+            window.location.replace(resumeUrl)
+            return
+          }
+        }
         setError(err)
         setBusy(false)
         return
       }
-      navigate(resolveCompetitionPathAfterLink(competitionId), { replace: true })
+      sessionStorage.removeItem('sp-player-handoff-recovering')
+      navigate(resolveCompetitionPathAfterLink(competitionId ?? contextId), { replace: true })
+      } catch {
+        if (active) { setError('Could not finish sign-in. Please try scanning again.'); setBusy(false) }
+      }
     })()
 
     return () => {
       active = false
     }
-  }, [handoffToken, navigate])
+  }, [handoffToken, linkToken, contextId, navigate])
 
   if (busy) {
     return (
@@ -47,8 +69,7 @@ export function LineAuthComplete() {
       <div className="login-panel max-w-sm space-y-3 text-center">
         <p className="text-sm text-red-600">{error}</p>
         <p className="text-xs text-brand-muted">
-          The link may have expired or already been used. Go back to the leaderboard and tap
-          &ldquo;Link to my account&rdquo; again.
+          Your phone sign-in has not finished. Scan the player’s QR again in LINE to continue.
         </p>
         <Link to="/" className="brand-btn inline-block px-4 py-2 text-sm">
           Back to app

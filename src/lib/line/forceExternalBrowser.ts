@@ -89,13 +89,26 @@ export function scheduleForceExternalOpen(
 ): () => void {
   const timers: number[] = []
   let tried = 0
+  let stopped = false
+  let opening = false
+
+  const cleanup = () => {
+    stopped = true
+    for (const id of timers) window.clearTimeout(id)
+    document.removeEventListener('touchstart', onGesture, { capture: true })
+    document.removeEventListener('pointerdown', onGesture, { capture: true })
+    document.removeEventListener('click', onGesture, { capture: true })
+    document.getElementById('sp-ext-open-btn')?.remove()
+  }
 
   const attempt = () => {
+    if (stopped || opening) return
+    opening = true
     tried += 1
     void forceOpenInSystemBrowser(url).then((ok) => {
+      if (ok) cleanup()
       if (!ok && tried >= RETRY_MS.length) onExhausted?.()
-    })
-    programmaticExternalOpen(url)
+    }).catch(() => { onExhausted?.() }).finally(() => { opening = false })
   }
 
   for (const delay of RETRY_MS) {
@@ -107,11 +120,5 @@ export function scheduleForceExternalOpen(
   document.addEventListener('pointerdown', onGesture, { capture: true })
   document.addEventListener('click', onGesture, { capture: true })
 
-  return () => {
-    for (const id of timers) window.clearTimeout(id)
-    document.removeEventListener('touchstart', onGesture, { capture: true })
-    document.removeEventListener('pointerdown', onGesture, { capture: true })
-    document.removeEventListener('click', onGesture, { capture: true })
-    document.getElementById('sp-ext-open-btn')?.remove()
-  }
+  return cleanup
 }

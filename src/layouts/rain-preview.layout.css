@@ -25,6 +25,12 @@ html:is([data-viewport='mobile'], [data-viewport='tablet'], [data-viewport='web'
   .rain-preview__courts .game-card-racetrack { overflow: clip; }
   .rain-preview__leaderboard { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: auto; border: 1px solid #365b77; border-radius: 14px; background: #12375a; }
   .rain-preview__leaderboard ol > li { flex: 1 0 38px; max-height: none; }
+  .rain-preview__leaderboard { position: relative; isolation: isolate; }
+  .rain-preview__leaderboard > [data-competition-format] { background: transparent; }
+  .rain-preview__leaderboard-weather { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; opacity: .4; background-image: repeating-linear-gradient(110deg, transparent 0 48px, #7dd3fc22 49px 50px, transparent 51px 100px); }
+  .rain-preview__leaderboard-weather .rain-preview__cloud { width: 150px; height: 100px; top: 12%; left: 8%; }
+  .rain-preview__leaderboard-weather .rain-preview__cloud:nth-child(2) { top: 43%; left: 48%; }
+  .rain-preview__leaderboard-weather .rain-preview__cloud:nth-child(3) { top: 76%; left: 12%; }
   .rain-preview__rest { display: flex; flex-direction: column; flex-shrink: 0; min-height: 0; padding: 12px 16px; border: 1px solid #b38a42; border-radius: 14px; background: #243b48; }
   .rain-preview__rest-heading { display: flex; gap: 14px; align-items: center; color: #ffcf78; }
   .rain-preview__rest-heading > svg { width: 24px; height: 24px; flex-shrink: 0; }
@@ -88,6 +94,12 @@ html[data-viewport='web'] {
   /* Short windows scroll instead of hiding the second player in each team. */
   .rain-preview__board { min-height: 600px; }
 }
+
+html[data-viewport='web'] .rain-preview__courts .game-card-shell .game-card-tv-header-panel .game-card-tv-header-actions { container-type: size; }
+html[data-viewport='web'] .rain-preview__courts .game-card-shell .game-card-tv-header-panel .game-card-header-share { display: none; }
+html[data-viewport='web'] .rain-preview__courts .game-card-shell .game-card-tv-header-panel .game-card-tv-header-actions > .tv-game-header-qr { position: absolute; top: 10%; right: 0; left: auto; width: 80cqh; height: 80%; margin: 0; object-fit: contain; border-radius: 4px; }
+html[data-viewport='web'] .rain-preview__courts .game-card-shell .game-card-tv-header-panel .game-card-header-timer { left: auto; right: calc(80cqh + 12px); width: 27%; }
+html[data-viewport='web'] .rain-preview__courts .game-card-shell .game-card-tv-header-panel .game-card-tv-header-center { left: 22%; right: 48%; }
 
 html[data-viewport='tv'] {
   .rain-preview__board { min-height: 650px; }

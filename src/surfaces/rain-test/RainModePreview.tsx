@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft } from 'lucide-react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { GameCard } from '../../components/GameCard'
 import type { GameCardSession } from '../../components/GameCard/types'
 import { useTranslation } from '../../hooks/useTranslation'
@@ -69,17 +68,6 @@ function RainBoard({ record, openLatest }: { record: RainDrawRecord; openLatest:
   }
   return (
     <main className="rain-preview">
-      <header className="rain-preview__header">
-        <Link className="rain-preview__back" to={`/competitions/${competitionId}`} aria-label="Back to competition"><ArrowLeft /></Link>
-        <img className="rain-preview__logo" src="/brand/logo-padel.webp" alt="Success Padel" />
-        <div className="rain-preview__sky" aria-hidden="true">
-          {[0, 1, 2].map(cloud => <svg key={cloud} className="rain-preview__cloud" viewBox="0 0 120 80" focusable="false">
-            <path className="rain-preview__cloud-body" d="M24 44a14 14 0 0 1-1-28 22 22 0 0 1 42-5 17 17 0 0 1 28 14 10 10 0 0 1-1 20Z" />
-            <g className="rain-preview__drops"><path d="m30 52-5 10m27-10-5 10m27-10-5 10m27-10-5 10" /></g>
-            <g className="rain-preview__drops rain-preview__drops--second"><path d="m39 49-5 10m27-10-5 10m27-10-5 10" /></g>
-          </svg>)}
-        </div>
-      </header>
       {!round ? <p className="rain-preview__notice" role="status">Loading tonight’s players…</p> : <>
         <div className="rain-preview__board">
           <div className="rain-preview__play">
@@ -108,6 +96,13 @@ function RainBoard({ record, openLatest }: { record: RainDrawRecord; openLatest:
           </aside>}
           </div>
           <aside className="rain-preview__leaderboard" aria-label="Rain mode leaderboard">
+            <div className="rain-preview__leaderboard-weather" aria-hidden="true">
+              {[0, 1, 2].map(cloud => <svg key={cloud} className="rain-preview__cloud" viewBox="0 0 120 80" focusable="false">
+                <path className="rain-preview__cloud-body" d="M24 44a14 14 0 0 1-1-28 22 22 0 0 1 42-5 17 17 0 0 1 28 14 10 10 0 0 1-1 20Z" />
+                <g className="rain-preview__drops"><path d="m30 52-5 10m27-10-5 10m27-10-5 10m27-10-5 10" /></g>
+                <g className="rain-preview__drops rain-preview__drops--second"><path d="m39 49-5 10m27-10-5 10m27-10-5 10" /></g>
+              </svg>)}
+            </div>
             <Leaderboard competitionFormat="singles" entries={rainStandings(rounds, scores)} compact embedded scoreUnit="games" headerTitle="Leaderboard" showAchievements={false} />
           </aside>
         </div>
