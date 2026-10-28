@@ -1,16 +1,9 @@
 // Player-facing rain plan for Wednesday 28 October 2026. No live event writes.
 // Names follow the supplied Wednesday roster; numbers retain that roster order.
+import {games as rotationGames, timing, roundTime} from '../tests/rain-rotation/rotation.mjs';
+export {timing};
 export const players=['Lyri','Kie','Bas','Kevin','Yoan','Martin','Lena','Jansuda',"P’Nart Laemdin",'Puu','Run',"P’Nart Bonkai",'Fabian','Cora','Mathias','Kyle'];
-export const games=[
- [[[1,2],[3,4]],[[5,6],[7,8]]],
- [[[3,9],[4,10]],[[7,11],[8,12]]],
- [[[9,13],[10,14]],[[11,15],[12,16]]],
- [[[13,1],[14,2]],[[15,5],[16,6]]],
- [[[1,3],[2,4]],[[5,7],[6,8]]],
- [[[3,10],[4,9]],[[7,12],[8,11]]],
- [[[10,13],[9,14]],[[12,15],[11,16]]],
- [[[13,2],[14,1]],[[15,6],[16,5]]]
-];
+export const games=rotationGames;
 // Orient the same teams with the least movement by continuing players.
 // Prefer keeping their exact spot, then their side; never move between courts.
 export const displayGames=[];
@@ -36,7 +29,7 @@ export function playerState(i,c,n){
  return Math.floor(before/2)===Math.floor(after/2)?'staying':'switching';
 }
 export const clock=n=>`${Math.floor(n/60)}:${String(n%60).padStart(2,'0')}`;
-export const start=i=>18*60+10+i*13;
+export const start=i=>roundTime(i).start;
 export const onCourt=i=>games[i].flat(2);
 export function roundDetails(i){
  const playing=onCourt(i),previous=i?onCourt(i-1):[];

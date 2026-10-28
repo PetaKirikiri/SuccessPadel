@@ -1,5 +1,5 @@
 // Isolated illustration: no app imports, storage, network calls or live event IDs.
-export const timing={start:18*60+10,cutoff:20*60,gameMinutes:10,transitionMinutes:3};
+export const timing={start:18*60+10,cutoff:20*60,gameMinutes:10,transitionMinutes:1};
 export const roundCount=Math.floor((timing.cutoff-timing.start+timing.transitionMinutes)/(timing.gameMinutes+timing.transitionMinutes));
 export function roundTime(index){
  const start=timing.start+index*(timing.gameMinutes+timing.transitionMinutes);
@@ -36,6 +36,9 @@ function mixedSchedule(){
  }
  record(schedule[0]);
  for(let round=1;round<roundCount;round++){
+  // Final game: all eight resting players return, balancing everyone at five
+  // games. Pair within the rest cohorts here for a fifth unique partner.
+  if(round===9){schedule.push([[[9,10],[13,14]],[[11,12],[15,16]]]);break;}
   const entering=arrivals[(round-1)%4];
   const leaving=round===1?[1,2,5,6]:arrivals[(round+1)%4];
   // Keep the continuing players on their court; pair each with a new arrival.
@@ -61,7 +64,7 @@ export function playerTime(player,through=games.length-1){
  return {game,wait:roundTime(through).end-timing.start-game};
 }
 
-if(typeof document!=='undefined'){
+if(typeof document!=='undefined'&&document.querySelector('#courts')){
  let index=0;
  const chip=(n,entering=false)=>`<span class="player${entering?' entering':''}">${n}</span>`;
  function render(){
