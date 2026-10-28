@@ -1,4 +1,4 @@
-import { readRainScores, validRainScore, type RainScore, type RainScores } from './rainScores'
+import { readRainScores, validRainScore, validRainScoreKey, type RainScore, type RainScores } from './rainScores'
 
 export type OnlineRainScore = {
   game_number: number; court_slot: number; team_a: number | null; team_b: number | null; revision: number
@@ -30,9 +30,12 @@ export class RainScoreSync {
   private key: string
   private remote: RainScoreRemote
   private notify: (view: RainSyncView) => void
+  private roundCount: number
 
   constructor(storage: Pick<Storage, 'getItem' | 'setItem'>, key: string,
-    remote: RainScoreRemote, notify: (view: RainSyncView) => void) {
+    remote: RainScoreRemote, notify: (view: RainSyncView) => void, roundCount = 9) {
+    if (!Number.isInteger(roundCount) || roundCount < 1 || roundCount > 20) throw new Error('Invalid rain round count')
+    this.roundCount = roundCount
     this.storage = storage
     this.key = key
     this.remote = remote
@@ -44,7 +47,7 @@ export class RainScoreSync {
         const saved = JSON.parse(raw)
         if (saved.version !== 1 || !saved.pending || !saved.rows) throw new Error('Invalid saved scores')
         for (const [id, edit] of Object.entries(saved.pending) as [string, Edit][]) {
-          if (!/^[1-9]:rain-court-[12]$/.test(id) || !validRainScore(edit.score) || !Number.isInteger(edit.revision) || edit.revision < 0) throw new Error('Invalid pending score')
+          if (!validRainScoreKey(id) || Number(id.split(':')[0]) > roundCount || !validRainScore(edit.score) || !Number.isInteger(edit.revision) || edit.revision < 0) throw new Error('Invalid pending score')
           this.pending[id] = edit
           this.token = Math.max(this.token, edit.token)
         }
@@ -119,7 +122,10 @@ export class RainScoreSync {
     try {
       const rows = await this.remote.read()
       if (this.stopped) return
-      if (rows.length !== 18 || new Set(rows.map(rowKey)).size !== 18) throw new Error('The saved draw is incomplete.')
+      if (rows.length !== this.roundCount * 2 || new Set(rows.map(rowKey)).size !== this.roundCount * 2
+        || rows.some(row => !Number.isInteger(row.game_number) || row.game_number < 1 || row.game_number > this.roundCount
+          || ![1, 2].includes(row.court_slot) || !Number.isInteger(row.revision) || row.revision < 0
+          || (row.team_a === null ? row.team_b !== null : !validRainScore(rowScore(row))))) throw new Error('The saved draw is incomplete.')
       this.rows = Object.fromEntries(rows.map(row => [rowKey(row), row]))
       for (const [key, score] of Object.entries(this.legacy)) {
         const row = this.rows[key]

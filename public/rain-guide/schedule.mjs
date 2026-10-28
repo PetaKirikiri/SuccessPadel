@@ -2,7 +2,7 @@
 // Names follow the supplied Wednesday roster; numbers retain that roster order.
 import {games as rotationGames, timing, roundTime} from '../tests/rain-rotation/rotation.mjs';
 export {timing};
-export const players=['Lyri','Kie','Bas','Kevin','Yoan','Martin','Lena','Jansuda',"P’Nart Laemdin",'Puu','Run',"P’Nart Bonkai",'Fabian','Cora','Mathias','Kyle'];
+export const players=['Lyri','Kie','Bas','Kevin','Yoan','Martin','Lena','Mamasung',"P’Nart Laemdin",'Puu','Run',"P’Nart Bonkai",'Fabian','Cora','Mathias','Kyle'];
 export const games=rotationGames;
 // Orient the same teams with the least movement by continuing players.
 // Prefer keeping their exact spot, then their side; never move between courts.

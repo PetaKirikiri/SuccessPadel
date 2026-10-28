@@ -1,0 +1,486 @@
+{
+  "version": 2,
+  "competitionId": "2f68ceb5-b51f-4926-a853-713f4d0eeeec",
+  "date": "2026-10-28",
+  "timezone": "Asia/Bangkok",
+  "source": "Approved ten-game rain guide mapped to existing Wednesday roster IDs",
+  "courtLabels": [
+    "Court 1",
+    "Court 2"
+  ],
+  "courtIds": [
+    "rain-court-1",
+    "rain-court-2"
+  ],
+  "settings": {
+    "startTime": "18:10",
+    "cutoff": "20:00",
+    "gameMinutes": 10,
+    "changeoverMinutes": 1,
+    "roundCount": 10,
+    "playersStayingPerCourt": 2,
+    "keepSameCourt": true,
+    "maxConsecutiveGames": 2,
+    "finalFullSwap": true
+  },
+  "players": [
+    {
+      "name": "Lyri",
+      "rosterId": "98c57d68-1aed-4e18-bb6e-74ec2a25df36",
+      "id": null,
+      "avatarUrl": null
+    },
+    {
+      "name": "Kie",
+      "rosterId": "72afee3b-bf75-461e-a613-da748fd9a925",
+      "id": null,
+      "avatarUrl": null
+    },
+    {
+      "name": "Bas",
+      "rosterId": "aecc025f-55d2-4b36-b783-2f92fb4b04bf",
+      "id": "97a6d872-edd8-45d9-86ba-762155d1a29c",
+      "avatarUrl": "https://bknorpjoyxucrihnpyda.supabase.co/storage/v1/object/public/avatars/97a6d872-edd8-45d9-86ba-762155d1a29c/avatar.jpg?v=1791369483562"
+    },
+    {
+      "name": "Kevin",
+      "rosterId": "df79fb59-9fd5-4675-8dc6-743cbb5fb8a9",
+      "id": null,
+      "avatarUrl": null
+    },
+    {
+      "name": "Yoan",
+      "rosterId": "99f42be0-d3c0-4c50-a776-d899a6cd32de",
+      "id": null,
+      "avatarUrl": null
+    },
+    {
+      "name": "Martin",
+      "rosterId": "b549f594-856d-4fa6-8614-e8262a933a65",
+      "id": null,
+      "avatarUrl": null
+    },
+    {
+      "name": "Lena ลูกเทรนพี่ตอง",
+      "rosterId": "dc487bd4-e99e-4b4c-af9c-dd0d4d23e2b1",
+      "id": null,
+      "avatarUrl": null
+    },
+    {
+      "name": "Mamasung",
+      "rosterId": "5de60c79-da31-43c7-9613-320628db8ba2",
+      "id": "32477b92-6711-4bda-803f-4464623d77e8",
+      "avatarUrl": "https://profile.line-scdn.net/0hjBkR8H3cNW1GKyYJkmpLEjZ7NgdlWmx_PkR6W3cpP1t8SXI6a0otD3MrPFR9Gno9aE8uCSd5Yw1KOEILWH3JWUEbaFx7GnA7aklziA"
+    },
+    {
+      "name": "Nart Laemdin",
+      "rosterId": "c087d920-610d-4270-9df8-3a6d6045415f",
+      "id": null,
+      "avatarUrl": null
+    },
+    {
+      "name": "Puu",
+      "rosterId": "6bcce6f8-5415-4b00-aad6-1f35a6968515",
+      "id": null,
+      "avatarUrl": null
+    },
+    {
+      "name": "Run",
+      "rosterId": "301521f3-1ee0-405d-9d07-4f6af563e1bc",
+      "id": null,
+      "avatarUrl": null
+    },
+    {
+      "name": "Nart Bonkai",
+      "rosterId": "f3dc94fc-ef62-44b5-bd6d-0312733914e4",
+      "id": null,
+      "avatarUrl": null
+    },
+    {
+      "name": "Fabian",
+      "rosterId": "d222c877-e3dc-4163-9893-5690d716c32a",
+      "id": null,
+      "avatarUrl": null
+    },
+    {
+      "name": "Cora",
+      "rosterId": "8ce6e31d-b595-4acf-b1bd-f145a39a5c50",
+      "id": null,
+      "avatarUrl": null
+    },
+    {
+      "name": "Mathias",
+      "rosterId": "f2f678f9-34ca-474a-819e-936673919017",
+      "id": "c7696759-3b53-4328-99c5-16f512a7011d",
+      "avatarUrl": "https://bknorpjoyxucrihnpyda.supabase.co/storage/v1/object/public/avatars/c7696759-3b53-4328-99c5-16f512a7011d/avatar-upload-1792145569230.png"
+    },
+    {
+      "name": "Kyle",
+      "rosterId": "762d3382-2570-453c-a366-feb3d6ee9eed",
+      "id": null,
+      "avatarUrl": null
+    }
+  ],
+  "rounds": [
+    {
+      "startsAt": "18:10",
+      "endsAt": "18:20",
+      "courts": [
+        [
+          [
+            "Lyri",
+            "Kie"
+          ],
+          [
+            "Bas",
+            "Kevin"
+          ]
+        ],
+        [
+          [
+            "Yoan",
+            "Martin"
+          ],
+          [
+            "Lena ลูกเทรนพี่ตอง",
+            "Mamasung"
+          ]
+        ]
+      ],
+      "resting": [
+        "Nart Laemdin",
+        "Puu",
+        "Run",
+        "Nart Bonkai",
+        "Fabian",
+        "Cora",
+        "Mathias",
+        "Kyle"
+      ]
+    },
+    {
+      "startsAt": "18:21",
+      "endsAt": "18:31",
+      "courts": [
+        [
+          [
+            "Puu",
+            "Kevin"
+          ],
+          [
+            "Bas",
+            "Nart Laemdin"
+          ]
+        ],
+        [
+          [
+            "Nart Bonkai",
+            "Mamasung"
+          ],
+          [
+            "Lena ลูกเทรนพี่ตอง",
+            "Run"
+          ]
+        ]
+      ],
+      "resting": [
+        "Lyri",
+        "Kie",
+        "Yoan",
+        "Martin",
+        "Fabian",
+        "Cora",
+        "Mathias",
+        "Kyle"
+      ]
+    },
+    {
+      "startsAt": "18:32",
+      "endsAt": "18:42",
+      "courts": [
+        [
+          [
+            "Puu",
+            "Cora"
+          ],
+          [
+            "Fabian",
+            "Nart Laemdin"
+          ]
+        ],
+        [
+          [
+            "Nart Bonkai",
+            "Kyle"
+          ],
+          [
+            "Mathias",
+            "Run"
+          ]
+        ]
+      ],
+      "resting": [
+        "Lyri",
+        "Kie",
+        "Bas",
+        "Kevin",
+        "Yoan",
+        "Martin",
+        "Lena ลูกเทรนพี่ตอง",
+        "Mamasung"
+      ]
+    },
+    {
+      "startsAt": "18:43",
+      "endsAt": "18:53",
+      "courts": [
+        [
+          [
+            "Kie",
+            "Cora"
+          ],
+          [
+            "Fabian",
+            "Lyri"
+          ]
+        ],
+        [
+          [
+            "Martin",
+            "Kyle"
+          ],
+          [
+            "Mathias",
+            "Yoan"
+          ]
+        ]
+      ],
+      "resting": [
+        "Bas",
+        "Kevin",
+        "Lena ลูกเทรนพี่ตอง",
+        "Mamasung",
+        "Nart Laemdin",
+        "Puu",
+        "Run",
+        "Nart Bonkai"
+      ]
+    },
+    {
+      "startsAt": "18:54",
+      "endsAt": "19:04",
+      "courts": [
+        [
+          [
+            "Kie",
+            "Kevin"
+          ],
+          [
+            "Bas",
+            "Lyri"
+          ]
+        ],
+        [
+          [
+            "Martin",
+            "Mamasung"
+          ],
+          [
+            "Lena ลูกเทรนพี่ตอง",
+            "Yoan"
+          ]
+        ]
+      ],
+      "resting": [
+        "Nart Laemdin",
+        "Puu",
+        "Run",
+        "Nart Bonkai",
+        "Fabian",
+        "Cora",
+        "Mathias",
+        "Kyle"
+      ]
+    },
+    {
+      "startsAt": "19:05",
+      "endsAt": "19:15",
+      "courts": [
+        [
+          [
+            "Nart Laemdin",
+            "Kevin"
+          ],
+          [
+            "Bas",
+            "Puu"
+          ]
+        ],
+        [
+          [
+            "Run",
+            "Mamasung"
+          ],
+          [
+            "Lena ลูกเทรนพี่ตอง",
+            "Nart Bonkai"
+          ]
+        ]
+      ],
+      "resting": [
+        "Lyri",
+        "Kie",
+        "Yoan",
+        "Martin",
+        "Fabian",
+        "Cora",
+        "Mathias",
+        "Kyle"
+      ]
+    },
+    {
+      "startsAt": "19:16",
+      "endsAt": "19:26",
+      "courts": [
+        [
+          [
+            "Nart Laemdin",
+            "Cora"
+          ],
+          [
+            "Fabian",
+            "Puu"
+          ]
+        ],
+        [
+          [
+            "Run",
+            "Kyle"
+          ],
+          [
+            "Mathias",
+            "Nart Bonkai"
+          ]
+        ]
+      ],
+      "resting": [
+        "Lyri",
+        "Kie",
+        "Bas",
+        "Kevin",
+        "Yoan",
+        "Martin",
+        "Lena ลูกเทรนพี่ตอง",
+        "Mamasung"
+      ]
+    },
+    {
+      "startsAt": "19:27",
+      "endsAt": "19:37",
+      "courts": [
+        [
+          [
+            "Lyri",
+            "Cora"
+          ],
+          [
+            "Fabian",
+            "Kie"
+          ]
+        ],
+        [
+          [
+            "Yoan",
+            "Kyle"
+          ],
+          [
+            "Mathias",
+            "Martin"
+          ]
+        ]
+      ],
+      "resting": [
+        "Bas",
+        "Kevin",
+        "Lena ลูกเทรนพี่ตอง",
+        "Mamasung",
+        "Nart Laemdin",
+        "Puu",
+        "Run",
+        "Nart Bonkai"
+      ]
+    },
+    {
+      "startsAt": "19:38",
+      "endsAt": "19:48",
+      "courts": [
+        [
+          [
+            "Lyri",
+            "Kevin"
+          ],
+          [
+            "Bas",
+            "Kie"
+          ]
+        ],
+        [
+          [
+            "Yoan",
+            "Mamasung"
+          ],
+          [
+            "Lena ลูกเทรนพี่ตอง",
+            "Martin"
+          ]
+        ]
+      ],
+      "resting": [
+        "Nart Laemdin",
+        "Puu",
+        "Run",
+        "Nart Bonkai",
+        "Fabian",
+        "Cora",
+        "Mathias",
+        "Kyle"
+      ]
+    },
+    {
+      "startsAt": "19:49",
+      "endsAt": "19:59",
+      "courts": [
+        [
+          [
+            "Nart Laemdin",
+            "Puu"
+          ],
+          [
+            "Fabian",
+            "Cora"
+          ]
+        ],
+        [
+          [
+            "Run",
+            "Nart Bonkai"
+          ],
+          [
+            "Mathias",
+            "Kyle"
+          ]
+        ]
+      ],
+      "resting": [
+        "Lyri",
+        "Kie",
+        "Bas",
+        "Kevin",
+        "Yoan",
+        "Martin",
+        "Lena ลูกเทรนพี่ตอง",
+        "Mamasung"
+      ]
+    }
+  ]
+}
