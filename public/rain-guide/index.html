@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width,initial-scale=1">
+ <title>Rain mode · Success Padel</title>
+ <meta name="description" content="Our two-court Americano rain format: 16 players, rotating partners, four matches each. First round 18:10. Finish by 20:00.">
+ <meta property="og:title" content="Rain mode · Success Padel">
+ <meta property="og:description" content="Two courts. 16 players. New partners every game. See how the rain-mode rotation works.">
+ <meta property="og:type" content="website">
+ <link rel="stylesheet" href="/rain-guide/rain-mode.css">
+ <link rel="stylesheet" href="/rain-guide/languages.css">
+ <link rel="stylesheet" href="/rain-guide/weather.css">
+</head>
+<body>
+ <div class="rain-atmosphere" aria-hidden="true">
+  <div class="rain-cloud cloud-one"></div><div class="rain-cloud cloud-two"></div><div class="rain-cloud cloud-three"></div>
+  <div class="rain-layer rain-distant"></div><div class="rain-layer rain-near"></div>
+ </div>
+ <main>
+  <header>
+   <img src="/brand/logo-padel.webp" alt="Success Padel Samui" width="170" height="90">
+   <span class="event-type">AMERICANO</span>
+  </header>
+  <nav class="languages" aria-label="Language">
+   <button type="button" data-lang="en" lang="en" aria-pressed="true">English</button>
+   <button type="button" data-lang="th" lang="th" aria-pressed="false">ไทย</button>
+   <button type="button" data-lang="fr" lang="fr" aria-pressed="false">Français</button>
+   <button type="button" data-lang="ru" lang="ru" aria-pressed="false">Русский</button>
+  </nav>
+  <section class="intro">
+   <p class="eyebrow">IF RAIN MODE IS ACTIVATED</p>
+   <h1>Rain mode</h1>
+   <p>If rain leaves us with only two playable courts, we’ll use this rotation for all 16 players.</p>
+   <div class="timing"><div><span>First round</span><strong>18:10</strong></div><div><span>Finish by</span><strong>20:00</strong></div></div>
+  </section>
+  <section class="allocation rhythm" aria-label="Your playing time">
+   <div><strong>4</strong><span class="play-label">games each</span></div>
+   <span class="rhythm-arrow" aria-hidden="true">×</span>
+   <div><strong>10<span class="unit"> min</span></strong><span class="rest-label">per game</span></div>
+   <p class="rhythm-note">40 minutes playing each · 3-minute changeovers</p>
+  </section>
+  <section class="rotation-example" aria-labelledby="example-title">
+   <h2 id="example-title">See the rotation</h2>
+   <div id="example-rounds"></div>
+  </section>
+  <section class="rotation" id="how-it-works">
+   <h2>How it works</h2>
+   <ol>
+    <li><strong>Eight play. Eight rest.</strong><span>Two matches run at the same time, one on each court.</span></li>
+    <li><strong>After game 1: two off each court.</strong><span>Four players come off. Four waiting players come on—two to each court.</span></li>
+    <li><strong>After game 2: played two? Come off. Waited two? Come on.</strong><span>The two players on each court who have played both games come off. The four who have waited for both games come on.</span></li>
+    <li><strong>Same court. New partners.</strong><span>Keep rotating four off and four on. Stay assigned to the same court; switch sides within it only to mix partners.</span></li>
+   </ol>
+  </section>
+  <section class="schedule">
+   <h2>Eight rounds</h2>
+   <dl>
+    <div><dt>1</dt><dd>18:10–18:20</dd></div>
+    <div><dt>2</dt><dd>18:23–18:33</dd></div>
+    <div><dt>3</dt><dd>18:36–18:46</dd></div>
+    <div><dt>4</dt><dd>18:49–18:59</dd></div>
+    <div><dt>5</dt><dd>19:02–19:12</dd></div>
+    <div><dt>6</dt><dd>19:15–19:25</dd></div>
+    <div><dt>7</dt><dd>19:28–19:38</dd></div>
+    <div><dt>8</dt><dd>19:41–19:51</dd></div>
+   </dl>
+   <p>Scheduled finish <strong>19:51</strong>. Nine minutes spare for overruns, with a <strong>20:00 cutoff</strong>.</p>
+  </section>
+  <footer>Please be ready before 18:10. Rain mode is a fallback format, not confirmation that play will go ahead.</footer>
+ </main>
+ <script type="module" src="/rain-guide/languages.mjs"></script>
+</body>
+</html>

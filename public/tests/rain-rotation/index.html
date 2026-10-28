@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rain rotation · Success Padel</title><link rel="stylesheet" href="./rotation.css"><link rel="stylesheet" href="./time-panel.css"></head>
+<body>
+<main>
+ <header><div><p class="brand">SUCCESS PADEL</p><h1>Rain rotation</h1></div><span class="format">10 min play<br>3 min change</span></header>
+ <p id="event-time" class="event-time"></p>
+ <nav class="stepper" aria-label="Game progression"><button id="previous" aria-label="Previous game">←</button><div><h2 id="game-title"></h2><p id="game-time"></p></div><button id="next">Next game →</button></nav>
+ <div id="timeline" class="timeline" aria-label="Choose a game"></div>
+ <p id="change-time" class="change-time"></p>
+ <section id="courts" class="courts" aria-label="Court lineups" aria-live="polite"></section>
+ <section class="time-panel" aria-labelledby="time-title"><h2 id="time-title"></h2><div id="totals" class="totals"></div></section>
+</main><script type="module" src="./rotation.mjs"></script>
+</body></html>

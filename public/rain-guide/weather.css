@@ -1,0 +1,23 @@
+/* Decorative weather never intercepts the page or reduces text contrast. */
+body{background:radial-gradient(ellipse at 50% 0,#354053 0,#222235 42%,#151725 100%);min-height:100vh}
+main{position:relative;z-index:1}
+.rain-atmosphere{position:fixed;inset:0;overflow:hidden;pointer-events:none;user-select:none;z-index:0;contain:strict}
+.rain-cloud{position:absolute;width:440px;height:105px;border-radius:50%;background:#8492aa;opacity:.2;filter:blur(9px);animation:cloud-drift 30s ease-in-out infinite alternate}
+.rain-cloud:before,.rain-cloud:after{content:'';position:absolute;border-radius:50%;background:inherit}
+.rain-cloud:before{width:210px;height:155px;left:52px;bottom:12px}
+.rain-cloud:after{width:260px;height:190px;right:25px;bottom:0}
+.cloud-one{top:75px;left:-170px}
+.cloud-two{top:150px;right:-200px;opacity:.15;animation-duration:37s;animation-direction:alternate-reverse}
+.cloud-three{top:35px;left:40%;width:380px;opacity:.12;animation-duration:45s}
+.rain-layer{position:absolute;inset:-120px -100px;transform:rotate(12deg);background-repeat:repeat;will-change:background-position}
+.rain-distant{opacity:.17;background-image:linear-gradient(180deg,transparent 0 78%,#a9c4e1 79% 89%,transparent 90%);background-size:29px 125px;mask-image:repeating-linear-gradient(90deg,#000 0 1px,transparent 1px 29px);animation:rain-fall 1.5s linear infinite}
+.rain-near{opacity:.22;background-image:linear-gradient(180deg,transparent 0 68%,#c7ddec 70% 91%,transparent 93%);background-size:73px 175px;mask-image:repeating-linear-gradient(90deg,transparent 0 13px,#000 13px 14px,transparent 14px 73px);animation:rain-near-fall .95s linear infinite}
+.intro{position:relative;overflow:hidden;background:linear-gradient(135deg,#3a3159f5,#26364ef5);border-color:#66748a;box-shadow:0 16px 50px #080c1c40}
+.intro:after{content:'';position:absolute;right:-26px;top:-38px;width:180px;height:95px;background:#a9b9d02b;border-radius:50%;box-shadow:-65px 22px 0 4px #a9b9d018;pointer-events:none}
+.languages button{background:#252b3bee}.example-game,.schedule{background:#252030f5}
+.rotation{background:#191d2bdb;border-radius:16px;padding:24px 20px 0;margin-top:26px}
+.rhythm-note,footer{color:#d0ccdf}header img{filter:brightness(0) invert(1)}
+@keyframes rain-fall{from{background-position:0 0}to{background-position:0 125px}}
+@keyframes rain-near-fall{from{background-position:0 0}to{background-position:0 175px}}
+@keyframes cloud-drift{from{transform:translateX(-25px)}to{transform:translateX(85px)}}
+@media(prefers-reduced-motion:reduce){.rain-cloud,.rain-layer{animation:none}.rain-layer{opacity:.08;will-change:auto}}

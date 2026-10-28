@@ -36,6 +36,8 @@
     { "source": "/coaching/", "destination": "/coaching/index.html" },
     { "source": "/rain-mode", "destination": "/index.html" },
     { "source": "/rain-mode/", "destination": "/index.html" },
+    { "source": "/rain-guide", "destination": "/rain-guide/index.html" },
+    { "source": "/rain-guide/", "destination": "/rain-guide/index.html" },
     { "source": "/tactics", "destination": "/tactics/index.html" },
     { "source": "/tactics/", "destination": "/tactics/index.html" },
     { "source": "/rules", "destination": "/rain-policy/index.html" },
