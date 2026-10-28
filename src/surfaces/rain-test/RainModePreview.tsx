@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
-import QRCode from 'qrcode'
 import { Link, useSearchParams } from 'react-router-dom'
 import { GameCard } from '../../components/GameCard'
 import type { GameCardSession } from '../../components/GameCard/types'
 import { useTranslation } from '../../hooks/useTranslation'
 import { rainCountdown } from './rainCountdown'
-import { readRainViewedGame, saveRainViewedGame } from './rainViewedGame'
+import { currentRainGame, readRainViewedGame, saveRainViewedGame } from './rainViewedGame'
 import { unpackRainDraw, type RainDrawRecord } from './rainDraw'
 import { supabase } from '../../lib/supabaseClient'
 import { rainScoreKey } from './rainScores'
@@ -38,27 +37,18 @@ export default function RainModePreview() {
     })
     return () => { mounted = false }
   }, [competition, reload])
-  return record ? <RainBoard key={`${record.session_id}:${reload}`} record={record} />
+  return record ? <RainBoard key={`${record.session_id}:${reload}:${params.get('live')}`} record={record} openLatest={params.get('live') === '1'} />
     : <main className="rain-preview"><p className="rain-preview__notice" role="status">{error || 'Loading rain mode…'}</p>{error && <button type="button" onClick={() => setReload(n => n + 1)}>Retry</button>}</main>
 }
 
 
-function RainBoard({ record }: { record: RainDrawRecord }) {
+function RainBoard({ record, openLatest }: { record: RainDrawRecord; openLatest: boolean }) {
   const { t } = useTranslation()
   const [rounds] = useState(() => unpackRainDraw(record))
   const competitionId = record.session_id
-  const publicUrl = `https://successpadel.app/rain-mode?competition=${encodeURIComponent(competitionId)}`
-  const [qrSrc, setQrSrc] = useState('')
-  useEffect(() => {
-    let active = true
-    setQrSrc('')
-    void QRCode.toDataURL(publicUrl, { width: 480, margin: 4, errorCorrectionLevel: 'M', color: { dark: '#000000', light: '#ffffff' } })
-      .then(src => { if (active) setQrSrc(src) })
-      .catch(() => { if (active) setQrSrc('') })
-    return () => { active = false }
-  }, [publicUrl])
+  const publicUrl = `https://successpadel.app/rain-mode?competition=${encodeURIComponent(competitionId)}&live=1`
   const courtIds = new Map(record.draw.courtLabels.map((label, index) => [label, record.draw.courtIds[index]!]))
-  const [selected, setSelected] = useState(() => readRainViewedGame(competitionId, rounds.length))
+  const [selected, setSelected] = useState(() => openLatest ? currentRainGame(record.draw.date, rounds) : readRainViewedGame(competitionId, rounds.length))
   const [clock, setClock] = useState(Date.now)
   useEffect(() => {
     const interval = window.setInterval(() => setClock(Date.now()), 1000)
@@ -95,6 +85,7 @@ function RainBoard({ record }: { record: RainDrawRecord }) {
           <div className="rain-preview__play">
           <section className="rain-preview__courts" aria-label={`Game ${selected + 1}: eight players on court`}>
             <GameCard key={round.game.gameNumber} game={round.game} session={previewSession}
+              viewAlongUrl={publicUrl}
               displayTimeLabel={round.game.timeLabel} scoreUnit="games" finished={false}
               isLiveNow={timer?.live ?? false} isCurrentGame={timer?.live ?? false}
               countdown={timer?.value} countdownLabelText={timer?.label ?? ''} collapsed={false}
@@ -117,10 +108,6 @@ function RainBoard({ record }: { record: RainDrawRecord }) {
           </aside>}
           </div>
           <aside className="rain-preview__leaderboard" aria-label="Rain mode leaderboard">
-            <a className="rain-preview__share" href={publicUrl} target="_blank" rel="noopener noreferrer">
-              {qrSrc && <img src={qrSrc} width="120" height="120" alt="Scan to view tonight’s scores and lineups" />}
-              <span>Scores &amp; lineups<small>successpadel.app</small></span>
-            </a>
             <Leaderboard competitionFormat="singles" entries={rainStandings(rounds, scores)} compact embedded scoreUnit="games" headerTitle="Leaderboard" showAchievements={false} />
           </aside>
         </div>

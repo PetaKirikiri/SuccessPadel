@@ -1,5 +1,11 @@
 type ViewStorage = Pick<Storage, 'getItem' | 'setItem'>
 
+/** First unfinished round, including the upcoming round during changeover. */
+export function currentRainGame(date: string, rounds: { endsAt: string }[], now = Date.now()): number {
+  const index = rounds.findIndex(round => now < Date.parse(`${date}T${round.endsAt.length === 5 ? round.endsAt + ':00' : round.endsAt}+07:00`))
+  return index < 0 ? Math.max(0, rounds.length - 1) : index
+}
+
 const viewKey = (competitionId: string) => `success-padel:rain-viewed-game:v1:${competitionId}`
 
 /** Viewing preference only; never reads or writes the score ledger. */
