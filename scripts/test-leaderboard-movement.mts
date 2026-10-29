@@ -1,3 +1,4 @@
+import { standingsDisplayRank } from '../src/lib/competitionAchievements'
 import assert from 'node:assert/strict'
 import { readMovementSnapshot, updateMovement, movementEntryId } from '../src/lib/leaderboardMovement'
 import type { LeaderboardEntry } from '../src/lib/leaderboardTypes'
@@ -32,3 +33,6 @@ for (const prefix of ['player:', 'duo:']) {
 assert.equal(movementEntryId({ profile_id: 'new-account', roster_entry_id: 'same-slot' } as LeaderboardEntry), 'same-slot')
 for (const bad of [null, 'oops', '{}', '{"version":1,"scores":"","ranks":[],"movement":{}}']) assert.equal(readMovementSnapshot(bad), null)
 console.log('Rank movement passed: singles/duos, up/down, ties, corrections, refresh, metadata, loading, roster changes, immutable scores.')
+
+const tonight = [18, 18, 14, 14, 13, 9, 8, 8, 7, 7].map(total_points => ({ total_points, games: 5 }))
+assert.deepEqual(tonight.map((_, i) => standingsDisplayRank(tonight, i)), [1, 1, 2, 2, 3, 4, 5, 5, 6, 6])

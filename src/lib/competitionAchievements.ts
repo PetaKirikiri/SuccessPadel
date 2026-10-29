@@ -262,16 +262,15 @@ export function podiumAchievementForPoints(
   return podiumMedalForRowIndex(tierIndex)
 }
 
-/** Display rank by points (1, 1, 3…) — not table row index. */
+/** Display rank by distinct point totals (1, 1, 2, 2, 3…) — not table row index. */
 export function standingsDisplayRank(entries: PointsStandingsRow[], index: number): number {
   const row = entries[index]
   if (!row || row.games <= 0) return index + 1
-  let rank = 1
-  for (let i = 0; i < index; i++) {
-    const prev = entries[i]!
-    if (prev.games > 0 && prev.total_points > row.total_points) rank++
-  }
-  return rank
+  const higherScores = new Set(
+    entries.filter((entry) => entry.games > 0 && entry.total_points > row.total_points)
+      .map((entry) => entry.total_points),
+  )
+  return higherScores.size + 1
 }
 
 /** @deprecated Use podiumAchievementForPoints — rank alone ignores tied scores. */
