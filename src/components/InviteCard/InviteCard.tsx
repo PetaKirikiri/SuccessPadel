@@ -75,7 +75,7 @@ function cleanInviteTitle(title: string, dateLine: string, timeLine: string): st
     .join(' · ')
 
   const displayTitle = cleaned || title
-  return /^superhero americano match\s*!*$/i.test(displayTitle)
+  return /^superhero americano match\s*!*(?:\s*\(men\/women\))?$/i.test(displayTitle)
     ? 'Superhero Americano'
     : displayTitle
 }

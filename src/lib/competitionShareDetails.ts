@@ -19,7 +19,7 @@ function validDate(value: string | null | undefined): Date | null {
 export function competitionShareDetails(row: ShareCompetition) {
   const level = competitionLevelLabel(row)
   const name = competitionInviteTitle(row.title, level)
-    .replace(/^superhero americano match\s*!*$/i, 'Superhero Americano')
+    .replace(/^superhero americano match\s*!*(?:\s*\(men\/women\))?$/i, 'Superhero Americano')
   const start = validDate(row.starts_at)
   // A date-only competition must never shift to yesterday on a server in UTC.
   const date = start ?? validDate(row.starts_on ? `${row.starts_on}T12:00:00+07:00` : null)
