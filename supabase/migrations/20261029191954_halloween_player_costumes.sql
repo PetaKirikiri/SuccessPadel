@@ -1,0 +1,2 @@
+-- Unshipped long-press prototype superseded by 20261030133831_halloween_costume_descriptions.sql.
+-- The roster field and avatar queue share that single implementation.

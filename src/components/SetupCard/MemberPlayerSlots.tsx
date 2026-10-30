@@ -8,6 +8,7 @@ export type PadelPlayerOption = RosterPlayerOption
 
 type Props = {
   renderSlotActions?: (index: number) => ReactNode
+  renderSlotDetails?: (index: number) => ReactNode
   count: number
   lineup?: RosterDrag & { slotIds: (string | null)[] }
   profiles: Profile[]
@@ -437,6 +438,7 @@ function MemberSlotNameInput({
 
 export function MemberPlayerSlots({
   renderSlotActions,
+  renderSlotDetails,
   count,
   lineup,
   profiles,
@@ -654,6 +656,7 @@ export function MemberPlayerSlots({
               />
             )}
             {renderSlotActions?.(slotNumberOffset + index)}
+            {renderSlotDetails?.(slotNumberOffset + index)}
             <span className="sr-only">Player {index + 1}</span>
           </div>
           )

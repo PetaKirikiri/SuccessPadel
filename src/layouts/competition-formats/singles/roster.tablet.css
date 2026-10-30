@@ -361,3 +361,51 @@ html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-car
 html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card .invite-roster-editor {
   min-height: 554px;
 }
+
+/* Saved mixed groups: men down the blue side, women down the pink side. */
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-mixed-roster='true'] > div > div {
+  display: grid; grid-template-columns: repeat(2,minmax(0,1fr));
+  grid-template-rows: 28px repeat(8,minmax(0,1fr));
+  grid-auto-flow: row dense; gap: 6px 12px;
+}
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-mixed-roster='true'] > div > div::before, html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-mixed-roster='true'] > div > div::after {
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 5px; padding: 5px 8px; font: 800 13px/1 Arial,sans-serif; letter-spacing: .08em;
+}
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-mixed-roster='true'] > div > div::before { content: '♂ MEN'; background: #173c5b; color: #a7dcff; grid-column:1;grid-row:1; }
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-mixed-roster='true'] > div > div::after { content: '♀ WOMEN'; background: #542c47; color: #ffb8d7; grid-column:2;grid-row:1; }
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-mixed-roster='true'] .invite-roster-editor-chip:has([data-mixed-side='men']) { grid-column:1; background:#173c5b; border-color:#3278a4; }
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-mixed-roster='true'] .invite-roster-editor-chip:has([data-mixed-side='women']) { grid-column:2; background:#542c47; border-color:#bd5c8a; }
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-mixed-roster='true'] .invite-roster-editor-chip:has([data-mixed-side='men']) input.brand-input { background:#102a41; border-color:#6fa3c6; }
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-mixed-roster='true'] .invite-roster-editor-chip:has([data-mixed-side='women']) input.brand-input { background:#3a1c31; border-color:#b9819e; }
+
+/* Halloween cards reserve the second row for the player's saved costume. */
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-halloween-costumes='true'] > div > div { grid-template-rows: 20px repeat(8,minmax(0,1fr)); align-items:stretch; gap:2px 8px; }
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-halloween-costumes='true'] .invite-roster-editor-chip {
+  display:grid; grid-template-columns:22px clamp(28px,4vh,48px) minmax(0,1fr) auto;
+  grid-template-rows:repeat(2,minmax(0,1fr)); align-content:stretch; align-items:stretch;
+  min-height:0; height:100%; gap:2px 4px; padding:2px 4px; container-type:size;
+}
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-halloween-costumes='true'] .invite-roster-editor-chip > .invite-roster-editor-chip__number { grid-column:1;grid-row:1 / 3;align-self:center;font-size:14px; }
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-halloween-costumes='true'] .invite-roster-editor-chip > .invite-roster-editor-chip__drag-avatar { grid-column:2;grid-row:1 / 3;align-self:stretch; }
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-halloween-costumes='true'] .invite-roster-editor-chip .invite-roster-chip__avatar { width:clamp(28px,4vh,48px);height:clamp(28px,4vh,48px);font-size:20px; }
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-halloween-costumes='true'] .invite-roster-editor-chip > div:has(> input.brand-input), html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-halloween-costumes='true'] .invite-roster-editor-chip > input.brand-input { grid-column:3;grid-row:1;align-self:stretch; }
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-halloween-costumes='true'] .invite-roster-editor-chip input.brand-input { height:100%;min-height:0;font-size:clamp(12px,24cqh,16px);padding:1px 5px; }
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-halloween-costumes='true'] .invite-roster-editor-chip > .invite-signup-attendance { grid-column:4;grid-row:1;align-self:stretch;flex-direction:row;gap:3px; }
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-halloween-costumes='true'] .invite-roster-editor-chip .invite-signup-attendance button { width:24px;height:100%;min-width:24px;min-height:0; }
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-halloween-costumes='true'] .invite-roster-editor-chip .invite-signup-attendance button::after { font-size:20px; }
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-halloween-costumes='true'] .invite-roster-editor-chip > .halloween-costume-field { grid-column:3 / 5;grid-row:2;position:relative;min-width:0; }
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-halloween-costumes='true'] .halloween-costume-field input {
+  box-sizing:border-box;width:100%;height:100%;min-height:0;min-width:0;padding:1px 35px 1px 5px;
+  border:1px solid #b8a2bf66;border-radius:4px;background:#100e1d55;color:#fff6eb;font:400 clamp(11px,22cqh,14px)/1.2 Arial,sans-serif;
+}
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-halloween-costumes='true'] .halloween-costume-field input::placeholder { color:#ded1df;opacity:.8; }
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-halloween-costumes='true'] .halloween-costume-field input:focus { outline:2px solid #ffe15a;outline-offset:1px; }
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-halloween-costumes='true'] .halloween-costume-field input:disabled { opacity:.5; }
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-halloween-costumes='true'] .halloween-costume-field__status { position:absolute;right:6px;top:50%;transform:translateY(-50%);font:500 9px/1 Arial,sans-serif;color:#c3eed8;pointer-events:none; }
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-halloween-costumes='true'] .halloween-costume-field__error { position:absolute;top:100%;left:0;right:0;z-index:10;padding:6px;background:#4e2333;color:#fff;font:500 12px/1.3 Arial,sans-serif; }
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-halloween-costumes='true'] .halloween-costume-field__error button { color:#ffe15a;text-decoration:underline; }
+
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-halloween-costumes='true'] { overflow:visible;padding:0; }
+
+html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-halloween-costumes='true'] > div > div::before, html[data-viewport='tablet'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-halloween-costumes='true'] > div > div::after { padding:2px 6px;font-size:11px; }

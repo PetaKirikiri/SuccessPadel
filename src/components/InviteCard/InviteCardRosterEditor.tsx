@@ -1,3 +1,6 @@
+import { HalloweenCostumeInput } from './HalloweenCostumeInput'
+import { useHalloweenCostumes } from '../../hooks/useHalloweenCostumes'
+import { competitionSkin } from '../../lib/competitionSkin'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DuoTeamSlots } from '../../components/SetupCard/SetupCardTeamSlots'
 import { MemberPlayerSlots, type PadelPlayerOption } from '../../components/SetupCard/MemberPlayerSlots'
@@ -158,6 +161,19 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
   const { t } = useTranslation()
   const isDuos = isDuoCompetition(row)
   const sessionId = row.id
+  const halloween = competitionSkin(row.title) === 'halloween'
+  const rosterVersion = (row.session_players ?? []).map(p => [p.id, p.profile_id, p.padel_player_id, p.guest_name].join(':')).join('|')
+  const costumes = useHalloweenCostumes(sessionId, halloween, rosterVersion)
+  // Presentation follows the saved mixed draw groups, never names or profile guesses.
+  const mixedGroups = row.scoring_config?.operation_format === 'mixed-americano'
+    ? row.scoring_config.mixed_groups : undefined
+  const mixedSides = !isDuos && mixedGroups?.length === 2 && mixedGroups.every(group => group.length === 8)
+    ? new Map(mixedGroups.flatMap((group, side) => group.map(id => [id, side === 0 ? 'men' : 'women'] as const)))
+    : undefined
+  const mixedSideBySlot = new Map((row.session_players ?? []).map(player =>
+    [player.rank_order, mixedSides?.get(player.id)]))
+  const showMixedSides = mixedSides?.size === 16 && (row.session_players ?? []).length === 16 &&
+    [...mixedSideBySlot.values()].every(Boolean)
 
   const [editing, setEditing] = useState(false)
   const [nameFocused, setNameFocused] = useState(false)
@@ -373,7 +389,8 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
       if (!player || dirtyRef.current || flushingRef.current) return
       void updateAttendance(player.id, status === next ? 'pending' : next)
     }
-    return <div className="invite-signup-attendance" role="group" aria-label={`${name || 'Empty slot'}: attendance`}>
+    return <div className="invite-signup-attendance" data-mixed-side={showMixedSides ? mixedSideBySlot.get(index) : undefined}
+      role="group" aria-label={`${showMixedSides ? `${mixedSideBySlot.get(index)}: ` : ''}${name || 'Empty slot'}: attendance`}>
       <button type="button" className="invite-signup-attendance__yes" disabled={disabled}
         aria-label={`${name || 'Empty slot'}: confirm attendance`} aria-pressed={status === 'confirmed'}
         onClick={() => respond('confirmed')}>Confirm</button>
@@ -386,6 +403,8 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
   return (<>
     <div
       className="invite-roster-editor"
+      data-mixed-roster={showMixedSides || undefined}
+      data-halloween-costumes={halloween || undefined}
       onFocusCapture={event => { if (event.target instanceof HTMLInputElement) setNameFocused(true) }}
       onBlurCapture={event => { if (event.target instanceof HTMLInputElement) setNameFocused(false) }}
       onClick={(e) => {
@@ -410,6 +429,15 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
         />
       ) : (
         <MemberPlayerSlots
+          renderSlotDetails={halloween ? index => {
+            const rosterId = row.session_players?.find(p => p.rank_order === index)?.id
+            const costume = costumes.records.find(c => c.roster_id === rosterId)
+            const named = Boolean(playerSlots[index]?.trim()) && !/^(Open place \d+|Player)$/.test(playerSlots[index].trim())
+            return costume && costumes.canEdit ? <HalloweenCostumeInput key={costume.subject_key} sessionId={sessionId}
+              costume={costume} token={costumes.token} disabled={!named || saving || dirtyRef.current} />
+              : <div className="halloween-costume-field"><input aria-label={`Halloween costume for ${playerSlots[index] || 'player'}`}
+                  placeholder="Halloween costume…" title="Owner access required to edit costumes" disabled /></div>
+          } : undefined}
           renderSlotActions={renderSlotActions}
           disabled={publicSignup && (saving || lineup.saving || lineup.draggingId !== null)}
           lineup={publicSignup ? { ...lineup, enabled: reorderEnabled && busyPlayerId === null, slotIds: Array.from({ length: slotCount }, (_, index) =>
@@ -430,6 +458,7 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
           inviteChipLayout
         />
       )}
+      {costumes.error && halloween ? <p role="alert">{costumes.error}</p> : null}
       {attendanceError ? <p role="alert">{attendanceError}</p> : null}
       {publicSignup && !isDuos ? <p className="competition-pregame__lineup-status" role="status" aria-live="polite">{lineup.saving ? 'Saving order…' : lineup.message}</p> : null}
       {error ? <p className="mt-2 text-xs text-red-600">{error}</p> : null}
