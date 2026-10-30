@@ -68,6 +68,9 @@ export type ScoringConfig = {
   league_id?: string
   league_week?: number
   teams?: Array<{ label: string; roster_ids: [string, string] }>
+  operation_format?: 'rotating-americano' | 'fixed-pairs' | 'mixed-americano'
+  schedule_court_ids?: string[]
+  mixed_groups?: [string[], string[]]
   schedule?: unknown
   schedule_seed?: number
   schedule_version?: number

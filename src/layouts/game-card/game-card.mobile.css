@@ -314,3 +314,9 @@ html[data-viewport='mobile'] .game-card-tv-header-panel:has(.game-card-tv-header
 html[data-viewport='mobile'] .game-card-header-share svg { width: 18px; height: 18px; }
 html[data-viewport='mobile'] .game-card-header-share:focus-visible { outline: 3px solid #ffe15a; outline-offset: 3px; }
 html[data-viewport='mobile'] .game-card-header-share:disabled { opacity: .65; cursor: wait; }
+
+/* Seasonal presentation only; shared GameCard owns all match behaviour. */
+html[data-viewport='mobile'] [data-competition-skin='halloween'] .game-card-tv-header-panel { background: #211029 url('/brand/halloween/haunted-night.png') center / cover; border-color: #ed862b; }
+html[data-viewport='mobile'] [data-competition-skin='halloween'] .game-card-tv-header-panel:has(.game-card-tv-header-title-row)::before { background-image:url('/brand/halloween/logo-pumpkin.png'); }
+html[data-viewport='mobile'] [data-competition-skin='halloween'] .game-card-tv-header-title-row > p { background-color:#ff922e; color:#211029; }
+html[data-viewport='mobile'] [data-competition-skin='halloween'].competition-week-strip__event { background:#24112f; border-color:#ff922e; color:#ffe2b7; }

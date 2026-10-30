@@ -1,3 +1,4 @@
+const HalloweenNightPage = lazy(() => import('../surfaces/halloween/HalloweenNightPage'))
 import { CoachesCommentPage } from './coaching/CoachesCommentPage'
 import { lazy, Suspense } from 'react'
 const StreamMatchPage = lazy(() => import('../features/streaming/StreamMatchPage').then(m => ({ default: m.StreamMatchPage })))
@@ -242,6 +243,7 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/coaching" element={<Suspense fallback={null}><CoachingPage /></Suspense>} />
+      <Route path="/halloween" element={<Suspense fallback={null}><HalloweenNightPage /></Suspense>} />
       <Route path="/clinic" element={<Suspense fallback={null}><ClinicPage /></Suspense>} />
       <Route path="/coaching/clinic" element={<Navigate to="/clinic" replace />} />
       <Route path="/tactics" element={<Suspense fallback={null}><Tactics3DRedirect /></Suspense>} />

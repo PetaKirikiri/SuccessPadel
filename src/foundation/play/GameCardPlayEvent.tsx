@@ -1,3 +1,4 @@
+import { competitionSkin } from '../../lib/competitionSkin'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { PadelLoading } from '../../shared/Loading/PadelLoading'
@@ -769,7 +770,7 @@ export function GameCardPlayEvent() {
   if (loading && !session) return <PadelLoading />
 
   return (
-    <div className={`play-session-root flex min-h-0 flex-1 flex-col overflow-hidden${hasSideLeaderboard ? ' game-bg' : ''}`}>
+    <div data-competition-skin={competitionSkin(session?.title)} className={`play-session-root flex min-h-0 flex-1 flex-col overflow-hidden${hasSideLeaderboard ? ' game-bg' : ''}`}>
       {hasSideLeaderboard ? (
         <div className="tv-play-view flex min-h-0 flex-1 flex-col overflow-hidden">
           <PlayTvView

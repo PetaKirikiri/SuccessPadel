@@ -1,3 +1,4 @@
+import { competitionSkin } from '../../lib/competitionSkin'
 import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
@@ -50,7 +51,7 @@ function CalendarDialog({ competitionId, onClose }: { competitionId: string; onC
         {loading ? <p role="status">Loading competitions…</p> : error ? <p role="alert">{error}</p> : events.length === 0 ? <p className="competition-week-dialog__empty">No competitions this week.</p> :
           <ul className="competition-week-dialog__events">
             {events.map(row => <li key={row.id}>
-              <Link to={competitionInvitePath(row.id)} aria-current={row.id === competitionId ? 'page' : undefined} onClick={onClose}>
+              <Link to={competitionSkin(row.title) === 'halloween' ? `/halloween?competition=${row.id}` : competitionInvitePath(row.id)} aria-current={row.id === competitionId ? 'page' : undefined} onClick={onClose}>
                 <time dateTime={row.starts_at!}><span>{dayLabel(clubCompetitionDay(row.starts_at)!, { weekday: 'short' })}</span><strong>{Number(clubCompetitionDay(row.starts_at)!.slice(-2))}</strong></time>
                 <span><strong>{row.title}</strong><small>{formatClubTime(new Date(row.starts_at!))}{row.ends_at ? `–${formatClubTime(new Date(row.ends_at))}` : ''}</small></span>
                 <ChevronRight aria-hidden="true" />
@@ -89,13 +90,13 @@ function CompetitionWeekStrip({ competitionId }: { competitionId: string }) {
           const hero = row.gender === 'Women' ? 'female-v4' : row.gender === 'Men' ? 'male-v4' : 'duo'
           const strength = row.skill_level_max_rank ?? ({ Beginner: 1, 'Low Inter': 2, Intermediate: 3, Inter: 3, 'High Inter': 4, Advanced: 5, 'Advanced Plus': 6 }[row.skill_level ?? ''] ?? 0)
           const time = `${formatClubTime(new Date(row.starts_at!))}${row.ends_at ? `–${formatClubTime(new Date(row.ends_at))}` : ''}`
-          return <Link key={row.id} to={competitionInvitePath(row.id)}
-            className="competition-week-strip__event" aria-current={row.id === competitionId ? 'page' : undefined}
-            aria-label={`${label(day, { weekday: 'long', day: 'numeric', month: 'short' })}, ${time}, ${level}, ${gender}, ${format}`} title={`${level} · ${gender} · ${format}`}>
-            <strong>{label(day, { weekday: 'short' })}</strong>
+          return <Link key={row.id} to={competitionSkin(row.title) === 'halloween' ? `/halloween?competition=${row.id}` : competitionInvitePath(row.id)}
+            data-competition-skin={competitionSkin(row.title)} className="competition-week-strip__event" aria-current={row.id === competitionId ? 'page' : undefined}
+            aria-label={`${label(day, { weekday: 'long', day: 'numeric', month: 'short' })}, ${time}, ${level}, ${gender}, ${format}`} title={`${row.title} · ${level} · ${gender} · ${format}`}>
+            <strong>{label(day, { weekday: 'short' })}{competitionSkin(row.title) === 'halloween' ? ' 🎃' : ''}</strong>
             <time dateTime={day}>{label(day, { day: 'numeric', month: 'short' })}</time>
             <span className="competition-week-strip__time">{time}</span>
-            <span className="competition-week-strip__hero" aria-hidden="true"><img src={`/brand/superhero-americano-${hero}.png`} alt="" /><span className="competition-week-strip__strength">{[1, 2, 3, 4, 5, 6].map(rank => <i key={rank} data-filled={rank <= strength} />)}</span></span>
+            <span className="competition-week-strip__hero" aria-hidden="true"><img src={competitionSkin(row.title) === 'halloween' ? '/brand/halloween/logo-pumpkin.png' : `/brand/superhero-americano-${hero}.png`} alt="" /><span className="competition-week-strip__strength">{[1, 2, 3, 4, 5, 6].map(rank => <i key={rank} data-filled={rank <= strength} />)}</span></span>
             <span className="competition-week-strip__traits" aria-hidden="true"><span>{row.gender === 'Women' ? '♀' : row.gender === 'Men' ? '♂' : '♂♀'}</span>{fixed ? <Link2 /> : <Shuffle />}</span>
           </Link>
         })}

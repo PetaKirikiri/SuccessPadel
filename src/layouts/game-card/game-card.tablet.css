@@ -132,3 +132,9 @@ html[data-viewport='tablet'] .game-card-header-timer[data-urgency='18'] { --time
 html[data-viewport='tablet'] .game-card-header-timer[data-urgency='19'] { --timer-colour:rgb(255,103,107); }
 html[data-viewport='tablet'] .game-card-header-timer[data-urgency='20'] { --timer-colour:rgb(255,89,109); }
 html[data-viewport='tablet'] .game-card-shell .game-card-tv-header-panel .game-card-header-timer[data-urgency] .game-card-header-timer__value { color:var(--timer-colour,#74f0a3);transition:color 1s linear; }
+
+/* Seasonal presentation only; shared GameCard owns all match behaviour. */
+html[data-viewport='tablet'] [data-competition-skin='halloween'] .game-card-tv-header-panel { background: #211029 url('/brand/halloween/haunted-night.png') center / cover; border-color: #ed862b; }
+html[data-viewport='tablet'] [data-competition-skin='halloween'] .game-card-tv-header-panel:has(.game-card-tv-header-title-row)::before { background-image:url('/brand/halloween/logo-pumpkin.png'); }
+html[data-viewport='tablet'] [data-competition-skin='halloween'] .game-card-tv-header-title-row > p { background-color:#ff922e; color:#211029; }
+html[data-viewport='tablet'] [data-competition-skin='halloween'].competition-week-strip__event { background:#24112f; border-color:#ff922e; color:#ffe2b7; }
