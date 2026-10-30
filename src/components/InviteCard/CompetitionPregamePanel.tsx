@@ -39,7 +39,8 @@ export function CompetitionPregamePanel({ row, view = 'players', canReorder = fa
   const mode = competitionPlayerMode(row.scoring_config)
   const recognizedAdmin = !authLoading && Boolean(user?.id && profile?.id === user.id && profile?.is_admin)
   const reorderEnabled = canReorder && recognizedAdmin && mode !== 'duos'
-  const lineup = useCompetitionLineupDrag(row.id, roster, reorderEnabled && busyPlayerId === null)
+  const lineup = useCompetitionLineupDrag(row.id, roster, reorderEnabled && busyPlayerId === null, undefined,
+    row.scoring_config?.operation_format === 'mixed-americano' ? row.scoring_config.mixed_groups ?? [] : undefined)
   const rosterModel = useMemo(() => {
     if (mode !== 'duos') return { players: lineup.players, teams: [], error: null }
     const ranks = new Map(roster.map((player) => [player.id, player.rank_order ?? 0]))

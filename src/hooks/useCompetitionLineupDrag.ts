@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent, type KeyboardEvent } from 'react'
 import type { CompetitionPlayer, CompetitionRow } from './useCompetitions'
 import { clearCompetitionHubCache } from './useCompetitionHubRows'
-import { lineupSnapshot, moveLineupPlayer, nearestLineupSlot, occupantsInFixedSlots } from '../lib/competitionLineupOrder'
+import { lineupLaneIndices, lineupSnapshot, moveLineupPlayer, nearestLineupSlot, occupantsInFixedSlots } from '../lib/competitionLineupOrder'
 import { supabase } from '../lib/supabaseClient'
 
-export function useCompetitionLineupDrag(sessionId: string, source: CompetitionPlayer[], enabled: boolean, saveOrder?: (snapshot: CompetitionPlayer[], ordered: CompetitionPlayer[]) => Promise<string | null>) {
+export function useCompetitionLineupDrag(sessionId: string, source: CompetitionPlayer[], enabled: boolean, saveOrder?: (snapshot: CompetitionPlayer[], ordered: CompetitionPlayer[]) => Promise<string | null>, groups?: readonly (readonly string[])[]) {
   const [players, setPlayers] = useState(source)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
@@ -22,7 +22,7 @@ export function useCompetitionLineupDrag(sessionId: string, source: CompetitionP
   const refreshRequest = useRef(0)
   const recovering = useRef(false)
   const drag = useRef<{
-    from: number; to: number; snapshot: CompetitionPlayer[]; element: HTMLElement;
+    from: number; to: number; lane: number[] | undefined; snapshot: CompetitionPlayer[]; element: HTMLElement;
     x: number; y: number; animation: Animation | null;
     previews: Map<HTMLElement, Animation>; previewTo: number | null;
     cards: HTMLElement[]; footprints: DOMRect[]; container: HTMLElement;
@@ -87,8 +87,10 @@ export function useCompetitionLineupDrag(sessionId: string, source: CompetitionP
 
   const saveMove = async (snapshot: CompetitionPlayer[], from: number, to: number) => {
     if (!enabled || recovering.current || from === to) return
+    const lane = lineupLaneIndices(snapshot, from, groups)
+    if (lane && (!lane.includes(from) || !lane.includes(to))) return
     revision.current += 1
-    const ordered = moveLineupPlayer(snapshot, from, to)
+    const ordered = moveLineupPlayer(snapshot, from, to, lane)
     setMessage('')
     // Update once on drop; acknowledging the save must not reload the hub or
     // replace the cards again, which would interrupt scrolling and dragging.
@@ -142,6 +144,8 @@ export function useCompetitionLineupDrag(sessionId: string, source: CompetitionP
     const hit = event.currentTarget.ownerDocument.elementFromPoint(event.clientX, event.clientY)
     if (!hit || !event.currentTarget.contains(hit)) return
     if (hit.closest('button, a, input, select, textarea, [role="button"], [contenteditable="true"]')) return
+    const lane = lineupLaneIndices(latestPlayers.current, index, groups)
+    if (lane && !lane.includes(index)) return
     event.preventDefault()
     event.stopPropagation()
     event.currentTarget.setPointerCapture(event.pointerId)
@@ -150,7 +154,7 @@ export function useCompetitionLineupDrag(sessionId: string, source: CompetitionP
     const containerRect = container.getBoundingClientRect()
     const cards = Array.from(container.querySelectorAll<HTMLElement>('[data-lineup-player]'))
       .filter(element => element.dataset.lineupSession === sessionId)
-    drag.current = { from: index, to: index, snapshot: latestPlayers.current, element: event.currentTarget,
+    drag.current = { from: index, to: index, lane, snapshot: latestPlayers.current, element: event.currentTarget,
       x: event.clientX, y: event.clientY, animation: null, previews: new Map(), previewTo: null,
       cards, footprints: cards.map(element => element.getBoundingClientRect()), container,
       containerLeft: containerRect.left, containerTop: containerRect.top,
@@ -164,8 +168,8 @@ export function useCompetitionLineupDrag(sessionId: string, source: CompetitionP
     const dx = rect.left - current.containerLeft - (current.container.scrollLeft - current.scrollLeft)
     const dy = rect.top - current.containerTop - (current.container.scrollTop - current.scrollTop)
     return {
-      to: nearestLineupSlot(current.footprints, x - dx, y - dy),
-      transform: `translate(${x - current.x - dx}px, ${y - current.y - dy}px)`,
+      to: nearestLineupSlot(current.footprints, current.lane ? current.x - dx : x - dx, y - dy, current.lane),
+      transform: `translate(${current.lane ? 0 : x - current.x - dx}px, ${y - current.y - dy}px)`,
     }
   }
   const pointerMove = (event: PointerEvent<HTMLElement>) => {
@@ -182,7 +186,7 @@ export function useCompetitionLineupDrag(sessionId: string, source: CompetitionP
       current.previews.forEach(animation => animation.cancel())
       current.previews.clear()
       current.previewTo = current.to
-      const order = moveLineupPlayer(cards.map((_, index) => index), current.from, current.to)
+      const order = moveLineupPlayer(cards.map((_, index) => index), current.from, current.to, current.lane)
       const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : 140
       order.forEach((originalIndex, slotIndex) => {
         if (originalIndex === current.from) return
@@ -233,11 +237,17 @@ export function useCompetitionLineupDrag(sessionId: string, source: CompetitionP
   const keyDown = (event: KeyboardEvent<HTMLElement>, index: number) => {
     if (event.target !== event.currentTarget) return
     if (event.key === 'Escape') { cancel(); return }
+    const lane = lineupLaneIndices(latestPlayers.current, index, groups)
+    if (lane && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) { event.preventDefault(); return }
     const delta = event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? -1
       : event.key === 'ArrowDown' || event.key === 'ArrowRight' ? 1 : 0
     if (!delta) return
     event.preventDefault()
-    void saveMove(latestPlayers.current, index, Math.max(0, Math.min(latestPlayers.current.length - 1, index + delta)))
+    const positions = lane ?? latestPlayers.current.map((_, position) => position)
+    const current = positions.indexOf(index)
+    if (current < 0) return
+    const next = positions[Math.max(0, Math.min(positions.length - 1, current + delta))]!
+    void saveMove(latestPlayers.current, index, next)
   }
   return { players, saving, message, targetId, draggingId, pointerDown, pointerMove, pointerUp, cancel, keyDown }
 }

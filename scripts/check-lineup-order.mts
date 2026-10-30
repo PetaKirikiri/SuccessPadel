@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { lineupSnapshot, moveLineupPlayer, nearestLineupSlot, occupantsInFixedSlots } from '../src/lib/competitionLineupOrder'
+import { lineupLaneIndices, lineupSnapshot, moveLineupPlayer, nearestLineupSlot, occupantsInFixedSlots } from '../src/lib/competitionLineupOrder'
 import type { CompetitionPlayer } from '../src/hooks/useCompetitions'
 
 const slots = ['A', 'B', 'C', 'D'].map((name, rank_order) => ({
@@ -39,3 +39,34 @@ for (let from = 0; from < 16; from++) {
 }
 assert.equal(nearestLineupSlot([], 0, 0), -1)
 console.log('check:lineup-order ok')
+
+// Mixed rosters use saved slot groups, never names or inferred gender.
+const groups = [sixteen.slice(0, 8), sixteen.slice(8)].map(group => group.map(p => p.id))
+for (let from = 0; from < 16; from++) {
+  const lane = lineupLaneIndices(sixteen, from, groups)!
+  assert.equal(lane.length, 8)
+  for (let to = 0; to < 16; to++) {
+    const next = occupantsInFixedSlots(sixteen, moveLineupPlayer(sixteen, from, to, lane))
+    if (!lane.includes(to)) assert.deepEqual(next, sixteen)
+    else assert.equal(next[to]!.padel_player_id, sixteen[from]!.padel_player_id)
+    for (let i = 0; i < 16; i++) {
+      if (!lane.includes(i)) assert.deepEqual(next[i], sixteen[i])
+      assert.equal(next[i]!.id, sixteen[i]!.id)
+    }
+  }
+}
+const columns = sixteen.map((_, i) => ({ left: i < 8 ? 0 : 210, right: i < 8 ? 200 : 410,
+  top: (i % 8) * 80, bottom: (i % 8) * 80 + 70 }))
+assert.equal(nearestLineupSlot(columns, 300, 35, lineupLaneIndices(sixteen, 0, groups)), 0)
+assert.equal(nearestLineupSlot(columns, 100, 595, lineupLaneIndices(sixteen, 8, groups)), 15)
+assert.deepEqual(lineupLaneIndices(sixteen, 0, []), [])
+assert.deepEqual(lineupLaneIndices(sixteen, 0, [groups[0]!, groups[0]!]), [])
+assert.equal(lineupLaneIndices(sixteen, 0), undefined)
+// Groups can be interleaved in DOM/storage order: never shift the other lane.
+const interleaved = [sixteen.filter((_, i) => i % 2 === 0), sixteen.filter((_, i) => i % 2 === 1)]
+  .map(group => group.map(p => p.id))
+const evenLane = lineupLaneIndices(sixteen, 0, interleaved)!
+const interleavedMoved = moveLineupPlayer(sixteen, 0, 14, evenLane)
+assert.equal(interleavedMoved[14], sixteen[0])
+for (let i = 1; i < 16; i += 2) assert.equal(interleavedMoved[i], sixteen[i])
+console.log('check:mixed-lineup-lanes ok')

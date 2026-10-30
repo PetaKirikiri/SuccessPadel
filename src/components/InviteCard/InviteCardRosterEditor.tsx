@@ -166,7 +166,7 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
   const costumes = useHalloweenCostumes(sessionId, halloween, rosterVersion)
   // Presentation follows the saved mixed draw groups, never names or profile guesses.
   const mixedGroups = row.scoring_config?.operation_format === 'mixed-americano'
-    ? row.scoring_config.mixed_groups : undefined
+    ? row.scoring_config.mixed_groups ?? [] : undefined
   const mixedSides = !isDuos && mixedGroups?.length === 2 && mixedGroups.every(group => group.length === 8)
     ? new Map(mixedGroups.flatMap((group, side) => group.map(id => [id, side === 0 ? 'men' : 'women'] as const)))
     : undefined
@@ -181,7 +181,7 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
     (a.rank_order ?? 999) - (b.rank_order ?? 999) || a.id.localeCompare(b.id)), [row.session_players])
   const reorderEnabled = publicSignup && !isDuos && !editing && !nameFocused && row.status === 'open' && !row.competition_started_at
   const lineup = useCompetitionLineupDrag(sessionId, source, reorderEnabled,
-    (snapshot, ordered) => savePublicInviteOrder(sessionId, snapshot, ordered))
+    (snapshot, ordered) => savePublicInviteOrder(sessionId, snapshot, ordered), mixedGroups)
   const displayedRow = useMemo(() => publicSignup && !isDuos ? { ...row, session_players: lineup.players } : row,
     [row, publicSignup, isDuos, lineup.players])
 
