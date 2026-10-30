@@ -99,7 +99,6 @@ export function InviteGameCard(props: Props) {
   // Staff retain the existing editor; guests can edit registration names only.
   const canEditRoster = Boolean(
     props.kind === 'competition' &&
-      (publicSignup || isDuoCompetition(props.row)) &&
       props.row.status === 'open' &&
       !props.row.competition_started_at &&
       (isAdmin || publicSignup),
