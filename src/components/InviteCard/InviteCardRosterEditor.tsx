@@ -162,8 +162,6 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
   const isDuos = isDuoCompetition(row)
   const sessionId = row.id
   const halloween = competitionSkin(row.title) === 'halloween'
-  const rosterVersion = (row.session_players ?? []).map(p => [p.id, p.profile_id, p.padel_player_id, p.guest_name].join(':')).join('|')
-  const costumes = useHalloweenCostumes(sessionId, halloween, rosterVersion)
   // Presentation follows the saved mixed draw groups, never names or profile guesses.
   const mixedGroups = row.scoring_config?.operation_format === 'mixed-americano'
     ? row.scoring_config.mixed_groups ?? [] : undefined
@@ -179,11 +177,13 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
   const [nameFocused, setNameFocused] = useState(false)
   const source = useMemo(() => [...(row.session_players ?? [])].sort((a, b) =>
     (a.rank_order ?? 999) - (b.rank_order ?? 999) || a.id.localeCompare(b.id)), [row.session_players])
-  const reorderEnabled = publicSignup && !isDuos && !editing && !nameFocused && row.status === 'open' && !row.competition_started_at
+  const reorderEnabled = !isDuos && !editing && !nameFocused && row.status === 'open' && !row.competition_started_at
   const lineup = useCompetitionLineupDrag(sessionId, source, reorderEnabled,
     (snapshot, ordered) => savePublicInviteOrder(sessionId, snapshot, ordered), mixedGroups)
-  const displayedRow = useMemo(() => publicSignup && !isDuos ? { ...row, session_players: lineup.players } : row,
-    [row, publicSignup, isDuos, lineup.players])
+  const displayedRow = useMemo(() => !isDuos ? { ...row, session_players: lineup.players } : row,
+    [row, isDuos, lineup.players])
+  const rosterVersion = (displayedRow.session_players ?? []).map(p => [p.id, p.profile_id, p.padel_player_id, p.guest_name].join(':')).join('|')
+  const costumes = useHalloweenCostumes(sessionId, halloween && !lineup.saving && !lineup.draggingId, rosterVersion)
 
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [padelPlayers, setPadelPlayers] = useState<PadelPlayerOption[]>([])
@@ -430,18 +430,18 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
       ) : (
         <MemberPlayerSlots
           renderSlotDetails={halloween ? index => {
-            const rosterId = row.session_players?.find(p => p.rank_order === index)?.id
+            const rosterId = displayedRow.session_players?.find(p => p.rank_order === index)?.id
             const costume = costumes.records.find(c => c.roster_id === rosterId)
             const named = Boolean(playerSlots[index]?.trim()) && !/^(Open place \d+|Player)$/.test(playerSlots[index].trim())
             return costume && costumes.canEdit ? <HalloweenCostumeInput key={costume.subject_key} sessionId={sessionId}
-              costume={costume} token={costumes.token} disabled={!named || saving || dirtyRef.current} />
+              costume={costume} token={costumes.token} disabled={!named || saving || lineup.saving || lineup.draggingId !== null || dirtyRef.current} />
               : <div className="halloween-costume-field"><input aria-label={`Halloween costume for ${playerSlots[index] || 'player'}`}
                   placeholder="Halloween costume…" title="Owner access required to edit costumes" disabled /></div>
           } : undefined}
           renderSlotActions={renderSlotActions}
-          disabled={publicSignup && (saving || lineup.saving || lineup.draggingId !== null)}
-          lineup={publicSignup ? { ...lineup, enabled: reorderEnabled && busyPlayerId === null, slotIds: Array.from({ length: slotCount }, (_, index) =>
-            lineup.players.find(p => p.rank_order === index)?.id ?? null) } : undefined}
+          disabled={saving || lineup.saving || lineup.draggingId !== null}
+          lineup={{ ...lineup, enabled: reorderEnabled && busyPlayerId === null, slotIds: Array.from({ length: slotCount }, (_, index) =>
+            lineup.players.find(p => p.rank_order === index)?.id ?? null) }}
           count={slotCount}
           profiles={rosterDirectory.profiles}
           padelPlayers={rosterDirectory.padelPlayers}
@@ -454,13 +454,13 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
           nameInputMode="picker"
           linkAvatarsToProfile
           competitionId={sessionId}
-          showSlotNumbers={publicSignup}
+          showSlotNumbers
           inviteChipLayout
         />
       )}
       {costumes.error && halloween ? <p role="alert">{costumes.error}</p> : null}
       {attendanceError ? <p role="alert">{attendanceError}</p> : null}
-      {publicSignup && !isDuos ? <p className="competition-pregame__lineup-status" role="status" aria-live="polite">{lineup.saving ? 'Saving order…' : lineup.message}</p> : null}
+      {!isDuos ? <p className="competition-pregame__lineup-status" role="status" aria-live="polite">{lineup.saving ? 'Saving order…' : lineup.message}</p> : null}
       {error ? <p className="mt-2 text-xs text-red-600">{error}</p> : null}
       {saving ? <p className="sr-only">{t('common.loading')}</p> : null}
     </div></>
