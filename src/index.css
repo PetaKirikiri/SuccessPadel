@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import './layouts/index.css';
+@import './styles/halloween-event.css';
 
 @custom-variant dark (&:where(.dark, .dark *));
 @custom-variant viewport-mobile (&:where(html[data-viewport="mobile"] *));
