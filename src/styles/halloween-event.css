@@ -117,3 +117,60 @@ html[data-viewport] .play-session-root[data-competition-skin='halloween'] .tv-pl
 }
 html[data-viewport] .play-session-root[data-competition-skin='halloween'] .tv-play-standings-body ol > li:nth-child(even) { background:#201a13; }
 html[data-viewport] .play-session-root[data-competition-skin='halloween'] .tv-court-card button { border-color:#8b653c; }
+
+/* One seasonal treatment across the existing event, retaining lane colours. */
+html[data-viewport] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame):has([data-halloween-costumes='true']) {
+  --halloween-ink:#100e0c;
+  --halloween-bone:#f6e6cd;
+  border-color:#78502e;
+  background:#100e0c;
+  color:var(--halloween-bone);
+}
+html[data-viewport] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame):has([data-halloween-costumes='true']) :is(.competition-pregame__players,.competition-pregame__rules,.invite-game-card__roster) {
+  background:#14110e;
+  border-color:#65452c;
+  color:#f6e6cd;
+}
+html[data-viewport] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame):has([data-halloween-costumes='true']) .invite-game-card__header::before,
+html[data-viewport] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame):has([data-halloween-costumes='true']) .invite-game-card__header::after {
+  clip-path:none; mask:none; transform:none;
+  background-image:url('/brand/halloween/pumpkin-lantern.svg');
+  background-size:contain; background-repeat:no-repeat; background-position:center bottom;
+  width:clamp(48px,8vw,112px); height:clamp(42px,7vw,92px);
+  bottom:8px; top:auto; opacity:.9;
+}
+html[data-viewport] .invite-game-card[data-kind='competition']:has([data-halloween-costumes='true']) .competition-week-strip__event {
+  background:linear-gradient(145deg,#29221b,#15120f); border-color:#6f5036; color:#d4c1a9;
+  box-shadow:inset 0 1px #c6935630;
+}
+html[data-viewport] .invite-game-card[data-kind='competition']:has([data-halloween-costumes='true']) .competition-week-strip__event[aria-current='page'] {
+  background:linear-gradient(145deg,#9a4317,#3a1e0e); border-color:#ffae53; color:#fff0d8;
+  box-shadow:inset 0 0 24px #ff901c26,0 0 16px #ff781d30;
+}
+html[data-viewport] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame):has([data-halloween-costumes='true']) :is(.invite-game-card__level,.invite-game-card__header-links button[aria-pressed='true']) {
+  background:#f79835; color:#211309; border-color:#ffbd72; box-shadow:0 2px 0 #482511;
+}
+html[data-viewport] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame):has([data-halloween-costumes='true']) .invite-game-card__header-links {
+  background:#17120e; border-color:#79502e;
+}
+html[data-viewport] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame):has([data-halloween-costumes='true']) :is(.invite-game-card__header-links button,.invite-game-card__matches-link) { color:#f6e6cd; }
+html[data-viewport] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame):has([data-halloween-costumes='true']) .competition-rules__tile {
+  background-image:url('/brand/halloween/court-cobweb.svg'),radial-gradient(ellipse at bottom,#56301344,transparent 75%),linear-gradient(145deg,#282018,#15120f);
+  background-size:68px 52px,100% 100%,cover; background-position:top right,center,center; background-repeat:no-repeat;
+  border-color:#715031; color:#f5e5ce; box-shadow:inset 0 1px #d6a46c20;
+}
+html[data-viewport] .invite-game-card[data-kind='competition']:has(.invite-game-card__frame):has([data-halloween-costumes='true']) .competition-rules__tile[data-rule='golden'] {
+  border-color:#ffab48; background-color:#34200d; box-shadow:inset 0 0 32px #e77a1826;
+}
+html[data-viewport] .invite-game-card[data-kind='competition']:has([data-halloween-costumes='true']) :is(.competition-rules__icon,.competition-rules__value,.invite-roster-editor-chip__number) { color:#ffb35c; }
+html[data-viewport] .invite-game-card[data-kind='competition'][data-competition-format='singles']:has(.invite-game-card__frame):has([data-halloween-costumes='true']) .invite-roster-editor[data-mixed-roster='true'] .invite-roster-editor-chip {
+  background-image:url('/brand/halloween/court-cobweb.svg'),linear-gradient(110deg,#08090b55,#08090b99);
+  background-size:42px 34px,cover; background-position:right top,center; background-repeat:no-repeat;
+  box-shadow:inset 0 1px #ffffff12,0 2px 5px #0004;
+}
+html[data-viewport] .invite-game-card[data-kind='competition'][data-competition-format='singles']:has(.invite-game-card__frame):has([data-halloween-costumes='true']) .invite-roster-editor[data-mixed-roster='true'] .invite-roster-editor-chip input.brand-input {
+  background:#0c0d10a6; color:#fff0db; border-color:#a7a09a55;
+}
+html[data-viewport] .invite-game-card[data-kind='competition']:has([data-halloween-costumes='true']) .halloween-costume-field input { background:#100f12a6; border-color:#b9a78e40; color:#f5dfc0; }
+html[data-viewport] .invite-game-card[data-kind='competition']:has([data-halloween-costumes='true']) :is(.invite-signup-attendance__yes,.invite-signup-attendance__no) { background:#191511; border-color:#8b633e; }
+html[data-viewport] .invite-game-card[data-kind='competition']:has([data-halloween-costumes='true']) :is(button,a):hover { border-color:#ffc17a; }
