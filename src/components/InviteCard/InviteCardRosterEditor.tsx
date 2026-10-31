@@ -28,6 +28,8 @@ type Props = {
   row: CompetitionRow
   onSaved?: () => void
   publicSignup?: boolean
+  readOnly?: boolean
+  canReorderSaved?: boolean
 }
 
 const FLUSH_MS = 600
@@ -157,7 +159,7 @@ async function loadRosterDirectory(publicSignup = false) {
   }
 }
 
-export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: Props) {
+export function InviteCardRosterEditor({ row, onSaved, publicSignup = false, readOnly = false, canReorderSaved = false }: Props) {
   const { t } = useTranslation()
   const isDuos = isDuoCompetition(row)
   const sessionId = row.id
@@ -177,9 +179,9 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
   const [nameFocused, setNameFocused] = useState(false)
   const source = useMemo(() => [...(row.session_players ?? [])].sort((a, b) =>
     (a.rank_order ?? 999) - (b.rank_order ?? 999) || a.id.localeCompare(b.id)), [row.session_players])
-  const reorderEnabled = !isDuos && !editing && !nameFocused && row.status === 'open' && !row.competition_started_at
+  const reorderEnabled = !isDuos && !editing && !nameFocused && (canReorderSaved || (!readOnly && row.status === 'open' && !row.competition_started_at))
   const lineup = useCompetitionLineupDrag(sessionId, source, reorderEnabled,
-    (snapshot, ordered) => savePublicInviteOrder(sessionId, snapshot, ordered), mixedGroups)
+    canReorderSaved ? undefined : (snapshot, ordered) => savePublicInviteOrder(sessionId, snapshot, ordered), mixedGroups)
   const displayedRow = useMemo(() => !isDuos ? { ...row, session_players: lineup.players } : row,
     [row, isDuos, lineup.players])
   const rosterVersion = (displayedRow.session_players ?? []).map(p => [p.id, p.profile_id, p.padel_player_id, p.guest_name].join(':')).join('|')
@@ -284,7 +286,7 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
   }, [displayedRow, isDuos])
 
   const flushToDb = useCallback(async () => {
-    if (!dirtyRef.current || flushingRef.current) return false
+    if (readOnly || !dirtyRef.current || flushingRef.current) return false
     flushingRef.current = true
     setSaving(true)
     setError(null)
@@ -313,7 +315,7 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
     clearInviteRosterDraft(sessionId)
     await Promise.resolve(onSaved?.())
     return true
-  }, [sessionId, onSaved, publicSignup])
+  }, [sessionId, onSaved, publicSignup, readOnly])
 
   const noteEdit = useCallback(() => {
     if (!dirtyRef.current) editBaseRow.current = rowRef.current
@@ -416,7 +418,7 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
       {isDuos ? (
         <DuoTeamSlots
           renderSlotActions={renderSlotActions}
-          disabled={publicSignup && saving}
+          disabled={readOnly || (publicSignup && saving)}
           teams={duoTeams}
           profiles={rosterDirectory.profiles}
           padelPlayers={rosterDirectory.padelPlayers}
@@ -439,7 +441,7 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false }: P
                   placeholder="Halloween costume…" title="Owner access required to edit costumes" disabled /></div>
           } : undefined}
           renderSlotActions={renderSlotActions}
-          disabled={saving || lineup.saving || lineup.draggingId !== null}
+          disabled={readOnly || saving || lineup.saving || lineup.draggingId !== null}
           lineup={{ ...lineup, enabled: reorderEnabled && busyPlayerId === null, slotIds: Array.from({ length: slotCount }, (_, index) =>
             lineup.players.find(p => p.rank_order === index)?.id ?? null) }}
           count={slotCount}

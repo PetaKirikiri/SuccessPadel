@@ -26,6 +26,7 @@ import { useViewportBucket } from '../../contexts/ViewportContext'
 import { InviteProfileAction } from './InviteProfileAction'
 import { CompetitionReview } from './CompetitionReview'
 import { competitionReviewAvailable } from '../../lib/competitionReview'
+import { competitionSkin } from '../../lib/competitionSkin'
 
 type CompetitionProps = {
   kind: 'competition'
@@ -103,6 +104,9 @@ export function InviteGameCard(props: Props) {
       !props.row.competition_started_at &&
       (isAdmin || publicSignup),
   )
+  // Keep the event's roster presentation after rounds have been prepared.
+  const showHalloweenRoster = Boolean(row && competitionSkin(row.title) === 'halloween')
+  const showRosterEditor = canEditRoster || showHalloweenRoster
   const canManageFriendly = Boolean(
     props.kind === 'friendly' && canEditFriendlySession(props.game, currentUserId, isAdmin),
   )
@@ -206,11 +210,11 @@ export function InviteGameCard(props: Props) {
         {pregameView === 'levels' ? <CompetitionLevelGuide row={props.row} onClose={closeLevelGuide} /> : null}
         {pregameView === 'review' && hasReview ? <CompetitionReview key={props.row.id} competitionId={props.row.id} userId={currentUserId} /> : null}
         <div className="invite-game-card__pregame-pane" hidden={pregameView === 'levels' || pregameView === 'review'}>
-          {canEditRoster && pregameView === 'players' && !showOverview ? (
-            <InviteCardRosterEditor row={props.row} onSaved={props.onRefresh} publicSignup={publicSignup} />
+          {showRosterEditor && pregameView === 'players' && !showOverview ? (
+            <InviteCardRosterEditor row={props.row} onSaved={props.onRefresh} publicSignup={publicSignup} readOnly={!canEditRoster} canReorderSaved={canEditSetup} />
           ) : (
             <CompetitionPregamePanel row={props.row} view={showOverview ? 'overview' : pregameView === 'rules' ? 'rules' : 'players'} canReorder={canEditSetup}
-              rosterContent={canEditRoster && showOverview ? <InviteCardRosterEditor row={props.row} onSaved={props.onRefresh} publicSignup={publicSignup} /> : undefined} />
+              rosterContent={showRosterEditor && showOverview ? <InviteCardRosterEditor row={props.row} onSaved={props.onRefresh} publicSignup={publicSignup} readOnly={!canEditRoster} canReorderSaved={canEditSetup} /> : undefined} />
           )}
         </div>
       </> : undefined}
