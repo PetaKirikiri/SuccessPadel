@@ -174,3 +174,24 @@ html[data-viewport] .invite-game-card[data-kind='competition'][data-competition-
 html[data-viewport] .invite-game-card[data-kind='competition']:has([data-halloween-costumes='true']) .halloween-costume-field input { background:#100f12a6; border-color:#b9a78e40; color:#f5dfc0; }
 html[data-viewport] .invite-game-card[data-kind='competition']:has([data-halloween-costumes='true']) :is(.invite-signup-attendance__yes,.invite-signup-attendance__no) { background:#191511; border-color:#8b633e; }
 html[data-viewport] .invite-game-card[data-kind='competition']:has([data-halloween-costumes='true']) :is(button,a):hover { border-color:#ffc17a; }
+
+/* Halloween player selection: dark enamel, warm metal and coloured lane rails. */
+html[data-viewport] .invite-game-card[data-kind='competition'][data-competition-format='singles']:has(.invite-game-card__frame):has([data-halloween-costumes='true']) .invite-roster-editor[data-mixed-roster='true'] .invite-roster-editor-chip {
+  background-color:#17120e;
+  background-image:linear-gradient(115deg,#bb681329,transparent 30%),linear-gradient(180deg,#2c241c,#100f0e);
+  border-radius:12px 3px 12px 3px;
+  border-top-color:#a98050;
+  border-bottom-color:#3e2b1b;
+  border-left-width:5px;
+  box-shadow:inset 0 0 0 2px #080807,0 3px 7px #0007;
+}
+html[data-viewport] .invite-game-card[data-kind='competition'][data-competition-format='singles']:has(.invite-game-card__frame):has([data-halloween-costumes='true']) .invite-roster-editor-chip input.brand-input {
+  background:transparent; border-color:transparent; border-bottom-color:#b08a5838;
+  color:#fff0d8; font-weight:650;
+}
+html[data-viewport] .invite-game-card[data-kind='competition']:has([data-halloween-costumes='true']) .halloween-costume-field input {
+  background:#08080666; border:1px dashed #bc8c4a88; color:#ffce91;
+}
+html[data-viewport] .invite-game-card[data-kind='competition']:has([data-halloween-costumes='true']) .invite-roster-editor-chip__drag-avatar img {
+  border-radius:50%; box-shadow:0 0 0 2px #d38b36,0 0 13px #e9822333;
+}
