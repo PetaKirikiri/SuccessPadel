@@ -856,6 +856,7 @@ export function CourtMatchCell({
       <PlayerAvatarLink
         displayName={player.name}
         avatarUrl={displayAvatarUrl}
+        rosterId={player.rosterId}
         profileId={player.id}
         padelPlayerId={player.padelPlayerId}
         imgClassName={avatarClass}

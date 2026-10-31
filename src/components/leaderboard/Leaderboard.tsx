@@ -304,6 +304,9 @@ function LeaderboardRow({
       {!simpleTeamRow ? (
         <PlayerAvatar
           displayName={entry.display_name}
+          profileId={entry.member_profile_id ?? (entry.is_guest ? null : entry.profile_id)}
+          padelPlayerId={entry.padel_player_id}
+          rosterId={entry.roster_entry_id}
           avatarUrl={entry.avatar_url}
           imgClassName={`rounded-full object-cover ring-1 ring-brand-border/60 ${
             compact ? 'h-8 w-8' : 'h-7 w-7 md:h-10 md:w-10'

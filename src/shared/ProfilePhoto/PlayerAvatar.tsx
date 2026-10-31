@@ -1,3 +1,4 @@
+import { useHalloweenPortrait } from '../../hooks/useHalloweenPortrait'
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { firstDisplayName } from '../../lib/leaderboardEntries'
@@ -11,6 +12,8 @@ type Props = {
   profile?: ProfileAvatarFields | null
   avatarUrl?: string | null
   profileId?: string | null
+  padelPlayerId?: string | null
+  rosterId?: string | null
   imgClassName?: string
   pixelated?: boolean
   fallbackText?: string
@@ -26,6 +29,8 @@ export function PlayerAvatar({
   profile,
   avatarUrl: avatarUrlProp,
   profileId,
+  padelPlayerId,
+  rosterId,
   imgClassName = 'h-7 w-7 shrink-0 rounded-full object-cover',
   pixelated = false,
   fallbackText,
@@ -39,7 +44,9 @@ export function PlayerAvatar({
 
   const name = firstDisplayName(displayName || 'Player')
   const initial = name[0]?.toUpperCase() ?? '?'
-  const resolvedUrl = avatarUrlProp ?? (profile ? resolveProfileAvatarUrl(profile) : null)
+  const costumePortrait = useHalloweenPortrait(profileId, padelPlayerId, rosterId)
+  const ordinaryUrl = avatarUrlProp ?? (profile ? resolveProfileAvatarUrl(profile) : null)
+  const resolvedUrl = costumePortrait ?? ordinaryUrl
 
   useEffect(() => {
     setSrc(resolvedUrl)
@@ -48,6 +55,11 @@ export function PlayerAvatar({
   }, [resolvedUrl])
 
   const handleError = () => {
+    if (costumePortrait && src === costumePortrait) {
+      setSrc(ordinaryUrl)
+      setBroken(!ordinaryUrl)
+      return
+    }
     const current = src ?? resolvedUrl
     if (!current) {
       setBroken(true)

@@ -8,6 +8,7 @@ type Props = {
   profileId?: string | null
   padelPlayerId?: string | null
   competitionId?: string | null
+  rosterId?: string | null
   className?: string
   imgClassName?: string
   disabled?: boolean
@@ -20,6 +21,7 @@ export function PlayerAvatarLink({
   profileId,
   padelPlayerId,
   competitionId,
+  rosterId,
   className = '',
   imgClassName = 'h-7 w-7 shrink-0 rounded-full object-cover',
   disabled = false,
@@ -35,6 +37,8 @@ export function PlayerAvatarLink({
       fallbackText={fallbackText}
       avatarUrl={avatarUrl}
       profileId={profileId}
+      padelPlayerId={padelPlayerId}
+      rosterId={rosterId}
       imgClassName={imgClassName}
       pixelated={avatarUrl?.includes('/pixel.png') ?? false}
     />
