@@ -118,7 +118,7 @@ export function nextScheduleSeed(current: number, playerCount: number): number {
 }
 
 export function courtPlayerFromRoster(sp: CompetitionPlayer): CourtPlayer {
-  if (isOpenSlotId(sp.id)) {
+  if (isOpenSlotId(sp.id) && !sp.profile_id && !sp.padel_player_id && !sp.guest_name?.trim()) {
     return { id: null, rosterId: null, name: OPEN_SLOT_NAME, avatarUrl: null, gameCharacterId: null }
   }
   const profileId =
@@ -208,7 +208,7 @@ function nameForRosterId(
   id: string,
   rosterNameById?: Map<string, string>,
 ): string {
-  if (isOpenSlotId(id)) return OPEN_SLOT_NAME
+  if (isOpenSlotId(id) && !roster.some((p) => p.id === id && (p.profile_id || p.padel_player_id || p.guest_name?.trim()))) return OPEN_SLOT_NAME
   const fromMap = rosterNameById?.get(id)?.trim()
   if (fromMap && fromMap !== 'Player') return fromMap
   const player = roster.find((p) => p.id === id)
@@ -230,8 +230,8 @@ function courtPlayerForRosterId(
   id: string,
   rosterNameById?: Map<string, string>,
 ): CourtPlayer {
-  if (isOpenSlotId(id)) return { id: null, rosterId: null, name: OPEN_SLOT_NAME, avatarUrl: null }
   const player = roster.find((p) => p.id === id)
+  if (isOpenSlotId(id) && !player) return { id: null, rosterId: null, name: OPEN_SLOT_NAME, avatarUrl: null }
   const name = nameForRosterId(roster, id, rosterNameById)
   return player
     ? { ...courtPlayerFromRoster(player), rosterId: id, name }
