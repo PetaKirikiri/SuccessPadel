@@ -19,8 +19,8 @@ assert.deepEqual(first.movement,{})
 assert.equal(first.entries[0].total_points,4)
 const second = competitionStandingsHistory(roster,rounds,matches,2)!
 assert.equal(second.entries[0].total_points,8,'Future results excluded')
-assert.equal(second.movement.c,2)
-assert.equal(second.movement.a,-2)
+assert.equal(second.movement.c,1, 'Movement follows the displayed dense ranks')
+assert.equal(second.movement.a,-1)
 assert.deepEqual(competitionStandingsHistory(roster,rounds,matches,2),second,'Independent of navigation/cache')
 assert.equal(JSON.stringify({roster,rounds,matches}),original,'Inputs remain untouched')
 const changed = structuredClone(rounds)
@@ -39,3 +39,20 @@ assert.equal(duo.movement['duo:c:d'],1)
 assert.equal(duo.movement['duo:a:b'],-1)
 assert.deepEqual(competitionStandingsHistory(roster,rounds,[],2)!.movement,{})
 console.log('History passed: cutoff, ties, up/down, refresh, saved identities, duos, no results and immutable inputs.')
+
+for (const teams of [undefined, [
+  {label:'Team 1',roster_ids:['a','b']}, {label:'Team 2',roster_ids:['c','d']},
+]]) {
+  const scored = matches.slice(0, 2)
+  const last = competitionStandingsHistory(roster, rounds, scored, 2, teams)!
+  const next = competitionStandingsHistory(roster, rounds, scored, 3, teams)!
+  assert.deepEqual(next.movement, last.movement, 'Advancing to an unscored game preserves arrows')
+  assert.deepEqual(competitionStandingsHistory(roster, rounds, scored, 3, teams), next, 'Refresh reconstructs arrows')
+  const noRankChange = [...scored, { ...matches[2], score_summary: '1-1' }]
+  assert.deepEqual(competitionStandingsHistory(roster, rounds, noRankChange, 3, teams)!.movement, last.movement,
+    'A scored game without position changes preserves arrows')
+  const reversed = competitionStandingsHistory(roster, rounds, matches, 3, teams)!
+  assert.equal(reversed.movement[teams ? 'duo:a:b' : 'a'], 1, 'New movement replaces the old direction')
+  assert.deepEqual(competitionStandingsHistory(roster, rounds, matches, 2, teams), last, 'Earlier game still uses its own history')
+}
+console.log('Persistent movement passed: singles/duos, next game, refresh, unchanged ranks and reversed ranks.')

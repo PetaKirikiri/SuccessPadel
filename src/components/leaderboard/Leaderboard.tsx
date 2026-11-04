@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
+import { Trophy } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { PlayerAvatar } from '../../shared/ProfilePhoto/PlayerAvatar'
 import { useTranslation } from '../../hooks/useTranslation'
+import { useViewportBucket } from '../../contexts/ViewportContext'
 import type { TranslateFn } from '../../i18n'
 import {
   ACHIEVEMENT_IMAGE,
@@ -245,7 +247,8 @@ function LeaderboardRow({
   onSelectAchievement: (info: AchievementInfo) => void
   t: TranslateFn
 }) {
-  const record = entryRecord(entry)
+  const viewport = useViewportBucket()
+  const record = compact && viewport !== 'tv' ? null : entryRecord(entry)
   const slotIdentity = learningIdentityForSlot(entry.roster_entry_id)
   const learningIdentity = entry.teamLearningIdentity ?? learningIdentityForTeam(
     entry.player_a_name,
@@ -290,7 +293,16 @@ function LeaderboardRow({
           rank <= 3 ? 'text-brand-accent' : 'text-brand-muted'
         }`}
       >
-        {rank}
+        {viewport === 'tv' && rank >= 1 && rank <= 3 ? (
+          <span
+            className="leaderboard-rank-cup"
+            data-rank={rank}
+            role="img"
+            aria-label={`${rank === 1 ? '1st place, gold' : rank === 2 ? '2nd place, silver' : '3rd place, bronze'} cup`}
+          >
+            <Trophy aria-hidden="true" />
+          </span>
+        ) : rank}
         {movement !== 0 ? (
           <span
             className="leaderboard-rank-movement"
@@ -345,10 +357,10 @@ function LeaderboardRow({
       {!simpleTeamRow && slotIdentity ? (
         <div className="leaderboard-slot-score">
           <img className="leaderboard-slot-score__icon" src={slotIdentity.imageUrl} alt={slotIdentity.english} draggable={false} />
-          <ScoreWithRecord score={entry.total_points} record={compact ? null : record} compact={compact} t={t} />
+          <ScoreWithRecord score={entry.total_points} record={record} compact={compact} t={t} />
         </div>
       ) : (
-        <ScoreWithRecord score={entry.total_points} record={compact ? null : record} compact={compact} t={t} />
+        <ScoreWithRecord score={entry.total_points} record={record} compact={compact} t={t} />
       )}
     </li>
   )

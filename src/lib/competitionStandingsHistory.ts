@@ -3,7 +3,7 @@ import type { CompetitionRound, CourtMatch } from '../hooks/useCompetitionRun'
 import type { CompetitionTeamConfig } from './competitionFormatPresets'
 import { computeAmericanoStandings } from './competitionStandings'
 import { computeDuoStandings } from './computeDuoStandings'
-import { updateMovement } from './leaderboardMovement'
+import { updateMovement, type MovementSnapshot } from './leaderboardMovement'
 
 /** Reconstruct the selected game's standings from saved results, not browser history.
  * Saved participants take priority over a subsequently edited round lineup.
@@ -39,10 +39,17 @@ export function competitionStandingsHistory(
   const calculate = (selected: CompetitionRound[]) => teams
     ? computeDuoStandings(roster, selected, matches, teams)
     : computeAmericanoStandings(roster, selected, matches)
-  const entries = calculate(historyRounds)
-  const before = calculate(historyRounds.filter(round => round.round_number < gameNumber))
-  const baseline = updateMovement(null, before)
-  const movement = updateMovement(baseline, entries)?.movement ?? {}
-  // Before the first result there is no established position to move from.
-  return { entries, movement: before.some(entry => entry.games > 0) ? movement : {} }
+  // Replay saved games so advancing to an unscored game (or refreshing) keeps
+  // each entrant's last movement. Never establish movement from an unplayed table.
+  let entries = calculate([])
+  let snapshot: MovementSnapshot | null = null
+  let movement: Record<string, number> = {}
+  const gameNumbers = [...new Set(historyRounds.map(round => round.round_number))].sort((a, b) => a - b)
+  for (const number of gameNumbers) {
+    const hadResults = entries.some(entry => entry.games > 0)
+    entries = calculate(historyRounds.filter(round => round.round_number <= number))
+    snapshot = updateMovement(hadResults ? snapshot : null, entries)
+    if (hadResults) movement = snapshot?.movement ?? {}
+  }
+  return { entries, movement }
 }

@@ -37,8 +37,9 @@ export function updateMovement(
     // Names, avatars, attendance and harmless tie ordering are not score changes.
     return previous
   }
+  // Keep the last direction until this entrant changes position again.
   const movement = Object.fromEntries(Object.entries(ranks).map(([id, rank]) => [
-    id, sameRoster ? previous.ranks[id]! - rank : 0,
+    id, sameRoster ? (previous.ranks[id]! - rank || previous.movement[id] || 0) : 0,
   ]))
   return { version: 1, scores, ranks, movement }
 }

@@ -21,7 +21,7 @@ for (const prefix of ['player:', 'duo:']) {
   assert.equal(updateMovement(moved, changed.map(e => ({ ...e, display_name: 'Renamed', avatar_url: 'photo' }))), moved)
   assert.equal(updateMovement(moved, []), moved, 'Loading does not destroy the baseline')
   const unchangedRanks = updateMovement(moved, [row('c', 9), row('a', 6), row('b', 4)])!
-  assert.deepEqual(Object.values(unchangedRanks.movement), [0, 0, 0], 'Next score clears stale arrows')
+  assert.deepEqual(unchangedRanks.movement, moved.movement, 'Scores that preserve ranks keep the last movement')
   const corrected = updateMovement(moved, initial)!
   assert.equal(corrected.movement[prefix + 'c'], -2, 'Score corrections can move down')
   const tied = updateMovement(baseline, [row('b', 6), row('a', 6), row('c', 2)])!
