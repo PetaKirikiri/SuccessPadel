@@ -30,8 +30,6 @@ export type SinglesRosterProps = AttendanceControls & {
   format: 'singles'
   players: readonly AttendancePlayer[]
   drag: RosterDrag
-  capacity?: number
-  canFillVacancies?: boolean
 }
 export type DuosRosterProps = AttendanceControls & {
   format: 'duos'

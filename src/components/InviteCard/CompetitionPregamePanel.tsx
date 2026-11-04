@@ -86,7 +86,6 @@ export function CompetitionPregamePanel({ row, view = 'players', canReorder = fa
         ) : (
           <CompetitionRoster format="singles" sessionId={row.id}
             players={rosterModel.players.map(attendancePlayer)} drag={{ ...lineup, enabled: reorderEnabled }}
-            capacity={Math.max(row.max_players ?? 0, row.target_players ?? 0)} canFillVacancies={recognizedAdmin}
             busyPlayerId={busyPlayerId} disabled={busyPlayerId !== null || lineup.saving || lineup.draggingId !== null}
             onAttendance={updateAttendance} />
         )}

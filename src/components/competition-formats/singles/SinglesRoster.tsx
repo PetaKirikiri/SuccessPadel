@@ -2,7 +2,7 @@ import { PlayerNameLink } from '../../../shared/ProfilePhoto/PlayerNameLink'
 import type { SinglesRosterProps } from '../rosterContract'
 
 /** UI/layout lock: singles roster appearance belongs to its four format CSS files. */
-export function SinglesRoster({ players, drag, sessionId, busyPlayerId, disabled, onAttendance, capacity = players.length, canFillVacancies = false }: SinglesRosterProps) {
+export function SinglesRoster({ players, drag, sessionId, busyPlayerId, disabled, onAttendance }: SinglesRosterProps) {
   return (
     <ol className="competition-pregame__roster" data-fixed-pairs={false} aria-label="Players" aria-busy={drag.saving}>
       {players.map((player, index) => (
@@ -29,18 +29,6 @@ export function SinglesRoster({ players, drag, sessionId, busyPlayerId, disabled
           </div>
         </li>
       ))}
-      {Array.from({ length: Math.max(0, capacity - players.length) }, (_, offset) => {
-        const position = players.length + offset + 1
-        return (
-          <li className="competition-pregame__player competition-pregame__player--pending" key={`open-${position}`}
-            aria-label={`Open player slot ${position}`}>
-            <span className="competition-pregame__rank">{position}</span>
-            <span className="competition-pregame__avatar competition-pregame__avatar--initial" aria-hidden="true">?</span>
-            {canFillVacancies ? <a className="competition-pregame__name" href={`/competitions/${sessionId}/edit`}>Open · Add player</a>
-              : <span className="competition-pregame__name">Open</span>}
-          </li>
-        )
-      })}
     </ol>
   )
 }
