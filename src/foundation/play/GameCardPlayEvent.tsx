@@ -154,7 +154,7 @@ export function GameCardPlayEvent() {
   } = usePublicCompetition(id, {
     pollMs: 20_000,
   })
-  const { columns, liveCourtsByGame, roundIdForGame, courtIdByLabel, scoreUnit, playTo, matchForCourt, isDuo, teams } =
+  const { paddedRoster, columns, liveCourtsByGame, roundIdForGame, courtIdByLabel, scoreUnit, playTo, matchForCourt, isDuo, teams } =
     useCompetitionBoard(session, rounds, roster, clubCourts, courtMatches, sessionPairs, leaderboard)
   const courtIdToLabel = useMemo(() => {
     const map = new Map<string, string>()
@@ -378,6 +378,19 @@ export function GameCardPlayEvent() {
     if (isDuo) {
       return duoStandings(effectiveDuoStandings, teams.length)
     }
+    // Preview standings share the exact playing slots used by the court draw.
+    // Vacancies are presentation-only and never become registered players.
+    if (!started && rounds.length === 0) {
+      const previewRoster = paddedRoster.map(player => ({
+        ...player,
+        guest_name: player.id.startsWith('00000000-0000-4000-8000-')
+          ? `Player ${(player.rank_order ?? 0) + 1}` : player.guest_name,
+      }))
+      const scores = leaderboard.length > 0 ? leaderboard
+        : effectivePlayerStandings.length > 0 ? effectivePlayerStandings
+        : manualStandings.length > 0 ? manualStandings : gestureStandings
+      return singlesStandings(completeCompetitionLeaderboard(previewRoster, scores))
+    }
     // Persisted match_players are the scoring authority. Recomputing against the
     // current round roster can attribute historical scores to the wrong player
     // after an explicit roster substitution, even though the saved match is intact.
@@ -392,6 +405,8 @@ export function GameCardPlayEvent() {
     }
     return singlesStandings(enrichStandingsWithAvatars(gestureStandings, leaderboard))
   }, [
+    paddedRoster,
+    started,
     effectiveDuoStandings,
     effectivePlayerStandings,
     gestureStandings,

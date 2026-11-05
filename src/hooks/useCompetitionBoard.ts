@@ -361,6 +361,7 @@ export function useCompetitionBoard(
   )
 
   return {
+    paddedRoster,
     isAmericano,
     isDuo,
     teams,
