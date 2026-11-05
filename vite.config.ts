@@ -2,6 +2,7 @@ import os from 'node:os'
 import { readFile } from 'node:fs/promises'
 import postcss from 'postcss'
 import cssHasPseudo from 'css-has-pseudo'
+import { tvCssRuntimePlugin } from './scripts/tvCssRuntime.mjs'
 import { defineConfig, loadEnv, type Plugin } from 'vite'
 import { handleFeedback } from './server/coaching/feedback.mjs'
 import { handleCompetitionPage } from './server/sharing/competitionPage'
@@ -84,6 +85,7 @@ export default defineConfig({
     tailwindcss(),
     viteDebugIngestPlugin(),
     legacyTvCssPlugin(),
+    tvCssRuntimePlugin(),
     // HTTPS for phone/iPad camera over LAN — getUserMedia needs a secure origin.
     ...(phoneDev ? [basicSsl()] : []),
   ],
