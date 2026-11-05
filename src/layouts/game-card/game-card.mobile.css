@@ -345,42 +345,67 @@ html[data-viewport='mobile'] .play-session-root[data-competition-skin='halloween
 html[data-viewport='mobile'] .play-session-root[data-competition-skin='halloween'] .game-card-shell .game-card-court-match__side > div > .touch-manipulation > img, html[data-viewport='mobile'] .play-session-root[data-competition-skin='halloween'] .game-card-shell .game-card-court-match__side > div > .touch-manipulation > span { width:100%;height:100%;border-radius:3px;object-fit:cover;object-position:center 20%;mask-image:linear-gradient(#000 75%,transparent); }
 html[data-viewport='mobile'] .play-session-root[data-competition-skin='halloween'] .game-card-shell .game-card-court-match__side > div > button:not(.touch-manipulation) { order:1;width:100%;text-align:center;font-size:12px;line-height:1.2;background:#100d0b;color:#f4dfbd; }
 
-/* Fill the visible phone screen, sharing spare height between every court.
-   Minimum court sizes preserve scrolling on short screens and larger draws. */
-html[data-viewport='mobile'] .game-card-shell {
-  min-height: calc(var(--app-height, 100vh) - 4px);
+/* One visible phone screen: header stays fixed, courts share the remainder. */
+html[data-viewport='mobile'] .shell-main--play {
+  overflow: hidden;
 }
+html[data-viewport='mobile'] .shell-main--play > *,
+html[data-viewport='mobile'] .shell-main--play > * > *,
+html[data-viewport='mobile'] .shell-main--play .play-session-root,
+html[data-viewport='mobile'] .play-game-carousel,
+html[data-viewport='mobile'] .game-card-racetrack,
+html[data-viewport='mobile'] .game-card-shell,
 html[data-viewport='mobile'] .game-card-panel-carousel-track,
 html[data-viewport='mobile'] .game-card-panel-carousel-track > .invite-card-carousel-item {
-  flex: 1 0 auto;
+  min-height: 0;
+  height: 100%;
+  flex: 1 1 0%;
+  overflow-y: hidden;
 }
 html[data-viewport='mobile'] .game-card-courts-body {
   display: flex;
   flex-direction: column;
-  flex: 1 0 auto;
-  padding: 8px;
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow: hidden;
+  padding: 6px;
 }
 html[data-viewport='mobile'] .game-card-courts-stack {
   display: grid;
-  grid-auto-rows: minmax(240px, 1fr);
-  gap: 10px;
-  flex: 1 0 auto;
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 8px;
+  flex: 1 1 0%;
+  min-height: 0;
 }
 html[data-viewport='mobile'] .game-card-courts-stack > .game-card-court-shell {
   display: flex;
   flex-direction: column;
   margin: 0;
-  min-height: 240px;
+  min-height: 0;
 }
 html[data-viewport='mobile'] .game-card-courts-stack .game-card-court-card-body {
   display: flex;
   flex-direction: column;
-  flex: 1 0 auto;
+  padding: 6px 8px;
+  min-height: 0;
+  flex: 1 1 0%;
 }
 html[data-viewport='mobile'] .game-card-courts-stack .game-card-court-match-wrap,
 html[data-viewport='mobile'] .game-card-courts-stack .game-card-court-match {
-  flex: 1 0 auto;
+  min-height: 0;
+  flex: 1 1 0%;
+  gap: 4px;
 }
 html[data-viewport='mobile'] .game-card-courts-stack .game-card-court-match__side {
   align-self: center;
+}
+html[data-viewport='mobile'] .game-card-courts-stack .game-card-court-match__side > div {
+  min-height: 0;
+}
+@media (max-height: 650px) {
+  html[data-viewport='mobile'] .game-card-courts-stack .game-card-court-label-row { min-height: 36px; }
+  html[data-viewport='mobile'] .game-card-courts-stack .game-card-court-score-button { min-height: 40px; height: 40px; padding: 2px 8px; }
+  html[data-viewport='mobile'] .game-card-courts-stack .game-card-court-match__side > div > button > img,
+  html[data-viewport='mobile'] .game-card-courts-stack .game-card-court-match__side > div > button > span,
+  html[data-viewport='mobile'] .game-card-courts-stack .game-card-court-match__side > div > span > span { width: 36px; height: 36px; min-width: 36px; }
 }
