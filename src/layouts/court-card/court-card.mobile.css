@@ -415,3 +415,23 @@ html[data-viewport='mobile'] .game-card-court-player__avatar { width: 40px; heig
 html[data-viewport='mobile'] .game-card-court-player__name { font-size: clamp(16px, 4.6vw, 20px); line-height: 1.15; overflow-wrap: anywhere; }
 html[data-viewport='mobile'] .game-card-court-score-button { min-width: 68px; min-height: 48px; }
 html[data-viewport='mobile'] .game-card-court-score-button__value { font-size: 34px; }
+
+/* Full player rows use the shared avatar/name links, not the compact hooks. */
+html[data-viewport='mobile'] .game-card-court-match__side > div > button:not(:has(img)) {
+  font-size: 22px;
+  line-height: 1.15;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+html[data-viewport='mobile'] .game-card-court-match__side > div > button > img,
+html[data-viewport='mobile'] .game-card-court-match__side > div > button > span,
+html[data-viewport='mobile'] .game-card-court-match__side > div > span > span {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  font-size: 20px;
+}
+html[data-viewport='mobile'] .game-card-court-match__side > div {
+  min-height: 58px;
+  gap: 7px;
+}
