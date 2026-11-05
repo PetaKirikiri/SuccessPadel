@@ -1,6 +1,7 @@
 import os from 'node:os'
 import { readFile } from 'node:fs/promises'
 import postcss from 'postcss'
+import cssHasPseudo from 'css-has-pseudo'
 import { defineConfig, loadEnv, type Plugin } from 'vite'
 import { handleFeedback } from './server/coaching/feedback.mjs'
 import { handleCompetitionPage } from './server/sharing/competitionPage'
@@ -40,10 +41,13 @@ function legacyTvCssPlugin(): Plugin {
   return {
     name: 'success-padel-legacy-tv-css',
     enforce: 'post',
-    generateBundle(_, bundle) {
+    async generateBundle(_, bundle) {
       for (const asset of Object.values(bundle)) {
         if (asset.type !== 'asset' || !asset.fileName.endsWith('.css')) continue
-        asset.source = flattenCssLayers(String(asset.source))
+        const compatible = await postcss([cssHasPseudo({ preserve: true })]).process(
+          flattenCssLayers(String(asset.source)), { from: undefined },
+        )
+        asset.source = compatible.css
       }
     },
   }

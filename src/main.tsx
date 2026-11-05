@@ -1,9 +1,12 @@
 import { StrictMode } from 'react'
+import cssHasPseudo from 'css-has-pseudo/browser'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import { suppressVercelToolbar } from './lib/suppressVercelToolbar'
 import { englishEntry, ENGLISH_HOTEL } from './lib/line/englishEntry'
 
+// Native browsers retain their CSS path; older TV engines track relational selectors.
+cssHasPseudo(document, { observedAttributes: ['data-viewport', 'data-kind', 'data-competition-format', 'data-fixed-pairs', 'data-dragging', 'hidden'] })
 suppressVercelToolbar()
 
 const root = document.getElementById('root')!
