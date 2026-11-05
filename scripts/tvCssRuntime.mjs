@@ -1,6 +1,6 @@
 /** Narrow optimization of css-has-pseudo's legacy browser runtime.
  * Its repeated zoom workaround forces full-page layout on LG for every match.
- * Attribute changes already invalidate selectors; unchanged matches need no write.
+ * Keep its legacy redraw when matches change; unchanged matches need no write.
  * Fail the build if the upstream implementation changes, rather than silently
  * losing either compatibility or this performance fix.
  */
@@ -10,7 +10,7 @@ export function optimizeTvCssRuntime(source) {
   if (!source.includes(write) || source.split(zoom).length !== 3) {
     throw new Error('css-has-pseudo runtime changed; review TV performance optimization')
   }
-  return source.replace(write, '!t.hasAttribute(r.attributeName)&&'+write).split(zoom).join('')
+  return source.replace(write + zoom, '!t.hasAttribute(r.attributeName)&&(' + write + zoom + ')')
 }
 export function tvCssRuntimePlugin() {
   return {
