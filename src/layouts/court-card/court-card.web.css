@@ -359,3 +359,8 @@ html[data-viewport='web'] .game-card-court-label-row a { color:#fff3d2;border-co
 html[data-viewport='web'] .game-card-court-match-wrap::before,
 html[data-viewport='web'] .game-card-court-card-body:not(:has(.game-card-court-match-wrap))::before,
 html[data-viewport='web'] .game-card-court-match::before { background:#756584; }
+
+/* Keep each pair and its score on the same solid half of the court. */
+html[data-viewport='web'] .play-session-root .game-card-court-card-body {
+  background: linear-gradient(to right, #18394d 0%, #18394d 50%, #493247 50%, #493247 100%);
+}

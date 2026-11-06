@@ -234,3 +234,17 @@ html[data-viewport='tv'] .play-session-root[data-competition-skin='halloween'] .
 html[data-viewport='tv'] .play-session-root[data-competition-skin='halloween'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer) .game-card-header-timer__value { font-size:clamp(54px,9vh,100px); }
 
 html[data-viewport='tv'] .play-session-root[data-competition-skin='halloween'] .game-card-shell .game-card-tv-header-actions > .tv-game-header-qr { width:64px;height:64px;top:60px; }
+
+/* Reserve a square for the match QR, then give the clock the remaining width. */
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel .game-card-tv-header-back,
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel a[aria-label="Open gesture score tracker"],
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel .game-card-header-share { display: none; }
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer) .game-card-tv-header-actions { inset: 0; }
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer) .game-card-tv-header-actions > .tv-game-header-qr {
+  display: block; position: absolute; width: clamp(76px, 8%, 128px); height: auto;
+  left: 1.5%; top: 50%; right: auto; transform: translateY(-50%); margin: 0;
+}
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer)::before, html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer)::after { display: none; }
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer) .game-card-tv-header-center { left: 11%; right: 56%; }
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer) .game-card-header-timer { inset: 0 3% 0 44%; }
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer) .game-card-header-timer__value { font-size: clamp(76px, 10vw, 164px); line-height: .92; }

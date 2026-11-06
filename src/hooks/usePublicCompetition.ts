@@ -85,14 +85,17 @@ export function usePublicCompetition(sessionId: string | undefined, options?: Op
   const refresh = useCallback(async (_silent = false) => {
     if (!sessionId) return
     await snapshots.refresh(key, async () => {
-      const [{ data, error: err }, { data: pairsData, error: pairsErr }] = await Promise.all([
+      const [{ data, error: err }, { data: pairsData, error: pairsErr }, signupSlots] = await Promise.all([
         supabase.rpc('get_public_competition', { p_session_id: sessionId }),
         supabase.rpc('get_public_competition_session_pairs', { p_session_id: sessionId }),
+        supabase.rpc('competition_signup_slots', { p_session_id: sessionId }),
       ])
       if (err || pairsErr) throw new Error(err?.message ?? pairsErr?.message ?? 'Failed to load competition')
       if (!data) throw new Error('Not found')
       const d = data as PublicCompetition
-      return normalizeCompetition({ ...d, session_pairs: (pairsData as CompetitionSessionPair[]) ?? d.session_pairs }, d.roster ?? [])
+      const eligible = new Set((signupSlots.data ?? []).map((slot: { roster_id: string }) => slot.roster_id))
+      const roster = (d.roster ?? []).map(player => ({ ...player, canLinkLine: eligible.has(player.id) }))
+      return normalizeCompetition({ ...d, session_pairs: (pairsData as CompetitionSessionPair[]) ?? d.session_pairs }, roster)
     })
     const current = snapshots.read(key).data
     if (!current) return

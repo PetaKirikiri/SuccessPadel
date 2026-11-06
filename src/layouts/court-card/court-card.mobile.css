@@ -435,3 +435,8 @@ html[data-viewport='mobile'] .game-card-court-match__side > div {
   min-height: 58px;
   gap: 7px;
 }
+
+/* Keep each pair and its score on the same solid half of the court. */
+html[data-viewport='mobile'] .play-session-root .game-card-court-card-body {
+  background: linear-gradient(to right, #18394d 0%, #18394d 50%, #493247 50%, #493247 100%);
+}

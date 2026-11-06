@@ -134,6 +134,7 @@ export function courtPlayerFromRoster(sp: CompetitionPlayer): CourtPlayer {
     profile: profileId ? profile : null,
     gender: rosterEntryGender(sp),
   })
+  player.canLinkLine = sp.canLinkLine
   const lineAvatar = sp.padel_players?.line_picture_url?.trim()
   if (!player.avatarUrl && lineAvatar) return { ...player, avatarUrl: lineAvatar }
   return player
