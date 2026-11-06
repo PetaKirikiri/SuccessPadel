@@ -518,20 +518,6 @@ html[data-viewport='tv'] .play-session-root .game-card-court-card-body {
   background: linear-gradient(to right, #18394d 0%, #18394d 50%, #493247 50%, #493247 100%);
 }
 
-/* Place the personal scan target at the inside edge of its player's row. */
-html[data-viewport='tv'] .game-card-court-match__side { align-self: stretch; min-height: 0; }
-html[data-viewport='tv'] .game-card-court-match__side > div { width: 100%; height: 100%; min-height: 0; }
-html[data-viewport='tv'] .game-card-court-match__side .court-signup-code {
-  display: grid; place-items: center; width: clamp(52px, 4.3vw, 96px);
-  max-width: 6.4vh; height: auto; aspect-ratio: 1; border: 0; border-radius: 4px;
-  background: white; color: #172030; overflow: hidden;
-}
-html[data-viewport='tv'] .game-card-court-match__side .court-signup-code img { display: block; width: 100%; height: auto; }
-html[data-viewport='tv'] .game-card-court-match__side--left .court-signup-code { order: 1; margin-left: auto; }
-html[data-viewport='tv'] .game-card-court-match__side--right .court-signup-code { order: -1; margin-right: auto; }
-html[data-viewport='tv'] .game-card-court-card-body:has(.court-signup-code)::after,
-html[data-viewport='tv'] .game-card-court-match-wrap:has(.court-signup-code)::after { display: none; }
-
 /* Size the scoreboard to each court, including the shorter two-row draw. */
 html[data-viewport='tv'] .game-card-court-shell .game-card-court-label {
   font-size: clamp(24px, min(8cqw, 13cqh), 88px);
@@ -544,13 +530,9 @@ html[data-viewport='tv'] .game-card-court-shell .game-card-court-player__name {
   white-space: normal;
   overflow-wrap: anywhere;
 }
-html[data-viewport='tv'] .game-card-court-shell .game-card-court-player__avatar:not(.court-signup-code) {
+html[data-viewport='tv'] .game-card-court-shell .game-card-court-player__avatar {
   width: clamp(34px, min(11cqw, 18cqh), 112px);
   height: clamp(34px, min(11cqw, 18cqh), 112px);
-}
-html[data-viewport='tv'] .game-card-court-shell .game-card-court-match__side .court-signup-code {
-  width: clamp(40px, min(14cqw, 22cqh), 144px);
-  max-width: none;
 }
 
 html[data-viewport='tv'] .game-card-court-shell .game-card-court-match__side > div { column-gap: clamp(4px, 1cqw, 12px); }

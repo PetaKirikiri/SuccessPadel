@@ -1,9 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { LinePlayerLinkModal } from '../../shared/Modal/LinePlayerLinkModal'
-import { supabase } from '../../lib/supabaseClient'
-import { isPlayerUuid } from '../../lib/playerProfileSlug'
-import { CourtSignupCode } from './CourtSignupCode'
+import { Link, useNavigate } from 'react-router-dom'
 import { ChevronsUpDown } from 'lucide-react'
 import { displayCourtLabel } from '../../lib/courtDisplay'
 import type { TranslateFn } from '../../i18n'
@@ -765,15 +761,6 @@ export function CourtMatchCell({
   colorNamesByGender?: boolean
   t: TranslateFn
 }) {
-  const { id: eventId } = useParams()
-  const [signupPlayer, setSignupPlayer] = useState<{ rosterId: string; playerId: string } | null>(null)
-  const [signupError, setSignupError] = useState<string | null>(null)
-  const openSignup = async (rosterId: string) => {
-    setSignupError(null)
-    const { data, error } = await supabase.rpc('court_signup_player', { p_session_id: eventId, p_roster_id: rosterId })
-    if (error || !data) setSignupError(rosterId)
-    else setSignupPlayer({ rosterId, playerId: data })
-  }
   const [editingScoreSide, setEditingScoreSide] = useState<'a' | 'b' | null>(null)
   const fallbackNames = compactDisplayNames([
     teamA[0] ?? '',
@@ -865,24 +852,8 @@ export function CourtMatchCell({
         className={nameClass(player, align)}
       />
     )
-    const canShowSignup = player.canLinkLine && isPlayerUuid(eventId) && isPlayerUuid(player.rosterId)
-    const signupControl = canShowSignup ? (
-      <>
-        <button type="button" className={`court-signup-code ${avatarClass}`} aria-label={`Show LINE signup QR for ${player.name}`}
-          title={`Connect ${player.name} with LINE`}
-          onClick={event => { event.stopPropagation(); void openSignup(player.rosterId!) }}>
-          <CourtSignupCode key={player.rosterId} eventId={eventId!} rosterId={player.rosterId!} />
-        </button>
-        {signupPlayer && signupPlayer.rosterId === player.rosterId && (
-          <LinePlayerLinkModal competitionId={eventId ?? null} padelPlayerId={signupPlayer.playerId}
-            playerName={player.name} onClose={() => setSignupPlayer(null)} />
-        )}
-        {signupError === player.rosterId && <small role="alert">QR unavailable. Try again.</small>}
-      </>
-    ) : null
     const avatarEl = (
-      <>
-      {(!canShowSignup || displayAvatarUrl) && <PlayerAvatarLink
+      <PlayerAvatarLink
         displayName={player.name}
         avatarUrl={displayAvatarUrl}
         rosterId={player.rosterId}
@@ -890,9 +861,7 @@ export function CourtMatchCell({
         padelPlayerId={player.padelPlayerId}
         imgClassName={avatarClass}
         disabled={!isRegistered}
-      />}
-      {signupControl}
-      </>
+      />
     )
 
     return (

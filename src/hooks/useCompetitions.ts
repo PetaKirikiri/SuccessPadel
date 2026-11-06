@@ -13,7 +13,6 @@ type CompetitionProfileSnapshot = Pick<Profile, 'id' | 'display_name' | 'avatar_
   Partial<Pick<Profile, 'avatar_mode' | 'pixel_avatar' | 'gender'>>
 
 export type CompetitionPlayer = {
-  canLinkLine?: boolean
   id: string
   profile_id: string | null
   padel_player_id: string | null
