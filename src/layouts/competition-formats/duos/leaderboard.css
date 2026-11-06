@@ -177,3 +177,19 @@ html[data-viewport='tv'] .tv-play-standings [data-competition-format='duos'] .le
 html[data-viewport='tv'] .tv-play-standings [data-competition-format='duos'] .leaderboard-rank-movement[data-direction='down'] {
   color: #ff8995;
 }
+
+html[data-viewport='web'] .tv-play-standings [data-competition-format='duos'] .leaderboard-team-player {
+  --portrait: clamp(28px, min(3.4vw, 5vh), 70px);
+  grid-template-columns: var(--portrait) minmax(0, 1fr);
+}
+html[data-viewport='web'] .tv-play-standings [data-competition-format='duos'] .leaderboard-team-player > :first-child { width: var(--portrait); height: var(--portrait); }
+html[data-viewport='web'] .tv-play-standings [data-competition-format='duos'] .leaderboard-team-player .leaderboard-team-player__name { font-size: clamp(16px, 1.8vw, 38px); line-height: 1.05; white-space: normal; }
+html[data-viewport='web'] .tv-play-standings [data-competition-format='duos'] li[role='button'] > div:last-child > span:first-child { font-size: clamp(28px, 3vw, 64px); line-height: 1; }
+
+html[data-viewport='tv'] .tv-play-standings [data-competition-format='duos'] .leaderboard-team-player {
+  --portrait: clamp(28px, min(3.4vw, 5vh), 70px);
+  grid-template-columns: var(--portrait) minmax(0, 1fr);
+}
+html[data-viewport='tv'] .tv-play-standings [data-competition-format='duos'] .leaderboard-team-player > :first-child { width: var(--portrait); height: var(--portrait); }
+html[data-viewport='tv'] .tv-play-standings [data-competition-format='duos'] .leaderboard-team-player .leaderboard-team-player__name { font-size: clamp(16px, 1.8vw, 38px); line-height: 1.05; white-space: normal; }
+html[data-viewport='tv'] .tv-play-standings [data-competition-format='duos'] li[role='button'] > div:last-child > span:first-child { font-size: clamp(28px, 3vw, 64px); line-height: 1; }
