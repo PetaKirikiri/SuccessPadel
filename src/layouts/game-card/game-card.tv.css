@@ -246,8 +246,8 @@ html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-c
   content: '';
   display: block;
   position: absolute;
-  inset: 6% auto 6% 1%;
-  width: 22%;
+  inset: 2% auto 2% 1%;
+  width: 27%;
   height: auto;
   transform: none;
   background: #fff3d2;
@@ -255,7 +255,7 @@ html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-c
   mask: url('/brand/success-padel-silver-source.png') center / contain no-repeat;
   pointer-events: none;
 }
-html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer) .game-card-tv-header-center { left: 23%; right: 46%; }
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer) .game-card-tv-header-center { left: 29%; right: 39%; }
 html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer) .game-card-header-timer { inset: 0 1% 0 55%; align-items: flex-end; text-align: right; }
 html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer) .game-card-header-timer__value { font-size: clamp(64px, 9.8vw, 154px); line-height: .92; }
 html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer) .game-card-tv-header-title-row > p { font-size: clamp(46px, 5.6vw, 128px); }
