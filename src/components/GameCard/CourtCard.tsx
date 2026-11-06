@@ -3,7 +3,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { LinePlayerLinkModal } from '../../shared/Modal/LinePlayerLinkModal'
 import { supabase } from '../../lib/supabaseClient'
 import { isPlayerUuid } from '../../lib/playerProfileSlug'
-import { ChevronsUpDown, QrCode } from 'lucide-react'
+import { CourtSignupCode } from './CourtSignupCode'
+import { ChevronsUpDown } from 'lucide-react'
 import { displayCourtLabel } from '../../lib/courtDisplay'
 import type { TranslateFn } from '../../i18n'
 import type { AmericanoScoringUnit } from '../../lib/competitionPresets'
@@ -867,10 +868,10 @@ export function CourtMatchCell({
     const canShowSignup = player.canLinkLine && isPlayerUuid(eventId) && isPlayerUuid(player.rosterId)
     const signupControl = canShowSignup ? (
       <>
-        <button type="button" className={avatarClass} aria-label={`Show LINE signup QR for ${player.name}`}
+        <button type="button" className={`court-signup-code ${avatarClass}`} aria-label={`Show LINE signup QR for ${player.name}`}
           title={`Connect ${player.name} with LINE`}
           onClick={event => { event.stopPropagation(); void openSignup(player.rosterId!) }}>
-          <QrCode aria-hidden="true" />
+          <CourtSignupCode key={player.rosterId} eventId={eventId!} rosterId={player.rosterId!} />
         </button>
         {signupPlayer && signupPlayer.rosterId === player.rosterId && (
           <LinePlayerLinkModal competitionId={eventId ?? null} padelPlayerId={signupPlayer.playerId}
