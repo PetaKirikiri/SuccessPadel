@@ -25,6 +25,7 @@ import { ResetPassword } from './ResetPassword'
 import { MembersPage } from './MembersPage'
 import { CameraScoreTrackerShell } from '../components/CameraScoreTracker'
 import { OfflineSoloCompetition } from '../surfaces/offline-competition/OfflineSoloCompetition'
+const OpenDuoGuide = lazy(() => import('../surfaces/open-duo/OpenDuoGuide'))
 const RainModePreview = lazy(() => import('../surfaces/rain-test/RainModePreview'))
 const CoachingPage = lazy(() => import('../surfaces/coaching/CoachingPage'))
 const ClinicPage = lazy(() => import('../surfaces/clinic/ClinicPage'))
@@ -93,6 +94,7 @@ function FriendlySessionEditRoute() {
 function MainAppRoutes() {
   return (
     <Routes>
+      <Route path="/open-duo" element={<Suspense fallback={null}><OpenDuoGuide /></Suspense>} />
       <Route path="/rain-mode" element={<Suspense fallback={null}><RainModePreview /></Suspense>} />
       <Route path="/rain-test" element={<Navigate to="/rain-mode" replace />} />
       <Route path="/offline-tonight" element={<OfflineSoloCompetition />} />

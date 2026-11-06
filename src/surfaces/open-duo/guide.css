@@ -1,0 +1,20 @@
+.duo-guide { width:100%; height:100%; overflow:auto; padding:clamp(16px,4vw,56px); background:#181520; color:#fff6de; font-family:Arial,sans-serif; }
+.duo-guide > * { max-width:1200px; margin-inline:auto; }
+.duo-guide-hero { display:flex; align-items:center; justify-content:space-between; padding:clamp(16px,3vw,36px); background:radial-gradient(#50326f 1px,transparent 2px) 0 0/7px 7px,#40245b; border-bottom:5px solid #ffdf58; }
+.duo-guide-hero img { width:clamp(72px,19vw,200px); }
+.duo-guide a { color:#ffdf58; text-decoration:underline; }
+.duo-guide-hero p { margin:18px 0 6px; letter-spacing:.12em; font-size:.78rem; font-weight:bold; }
+.duo-guide h1 { font-size:clamp(30px,6vw,76px); line-height:1; margin:0 0 10px; }
+.duo-guide-rules,.duo-guide-courts { display:grid; gap:8px; }
+.duo-guide-rules { grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); margin-block:16px 28px; }
+.duo-guide-rules > div,.duo-guide-courts article { display:grid; align-content:center; gap:5px; padding:16px; background:#30243d; }
+.duo-guide-rules svg { color:#ffdf58; }
+.duo-guide-rules span,.duo-guide footer { color:#e2d8e6; }
+.duo-guide h2 { font-size:2rem; font-weight:bold; }
+.duo-guide-round { margin-block:14px; border:1px solid #62546c; }
+.duo-guide-round header { display:flex; justify-content:space-between; padding:8px 14px; background:#ffdf58; color:#24152e; }
+.duo-guide-round h3,.duo-guide-round h4 { font-weight:800; }
+.duo-guide-courts { grid-template-columns:repeat(auto-fit,minmax(min(100%,205px),1fr)); gap:2px; }
+.duo-guide-courts article { background:linear-gradient(100deg,#213c43,#1a3039); text-align:center; }
+.duo-guide-courts h4 { color:#a4e7d6; }
+.duo-guide-courts small { color:#ffdf58; }

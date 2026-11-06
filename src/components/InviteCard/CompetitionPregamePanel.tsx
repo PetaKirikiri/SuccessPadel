@@ -94,7 +94,7 @@ export function CompetitionPregamePanel({ row, view = 'players', canReorder = fa
       </section>}
 
       {view !== 'players' && <aside id={`tonights-rules-${row.id}`} className="competition-pregame__rules competition-pregame__rules--visual" aria-label={copy.title} lang={language} dir={language === 'he' ? 'rtl' : 'ltr'}>
-        <h3 className="competition-pregame__heading">{copy.title}</h3>
+        <h3 className="competition-pregame__heading">{copy.title} {row.id === '9a06edcd-fb79-4cb2-9ddc-0aa0360e2003' && <a href="/open-duo">Rules &amp; court lineup ↗</a>}</h3>
         <div className="competition-pregame__languages" role="group" aria-label="Rules language" dir="ltr">
           {rulesLanguages.map((item) => (
             <button type="button" className="competition-pregame__language" key={item.id} lang={item.id}
