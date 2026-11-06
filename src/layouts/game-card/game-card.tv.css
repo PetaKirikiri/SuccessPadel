@@ -256,6 +256,9 @@ html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel[data-countd
   pointer-events: none;
 }
 html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel[data-countdown] .game-card-tv-header-center { left: 29%; right: 39%; }
-html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel[data-countdown] .game-card-header-timer { top: 0; right: 1%; bottom: 0; left: 55%; align-items: flex-end; text-align: right; }
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel[data-countdown] .game-card-header-timer { top: 0; right: 1%; bottom: 0; left: 55%; align-items: flex-end; text-align: right; pointer-events: none; }
 html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel[data-countdown] .game-card-header-timer__value { font-size: 9.8vw; font-size: clamp(64px, 9.8vw, 154px); line-height: .92; }
 html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel[data-countdown] .game-card-tv-header-title-row > p { font-size: 5.6vw; font-size: clamp(46px, 5.6vw, 128px); }
+
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel[data-game-navigation] .game-card-tv-header-center { z-index: 11; pointer-events: none; }
+html[data-viewport='tv'] .game-card-tv-header-center .game-card-header-nav-btn { pointer-events: auto; }
