@@ -321,6 +321,8 @@ export function GameCardHeader({
     return (
       <div className={headerShellClass}>
         <div
+          data-game-navigation=""
+          data-countdown={countdown ? 'true' : undefined}
           className={`game-card-tv-header-panel relative min-w-0 w-full flex-1 ${headerCarouselMinHeightForSize(size)} ${headerPad}`}
         >
           <div className="game-card-tv-header-back absolute inset-y-0 left-0 z-10 flex items-center">

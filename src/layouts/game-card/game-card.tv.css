@@ -124,13 +124,13 @@ html[data-viewport='tv'] .game-card-courts-body {
 /* Comic match surface, with desktop game geometry preserved. */
 html[data-viewport='tv'] .game-card-shell { --color-brand-bg:#191823;--color-brand-bg-alt:#292735;--color-brand-surface:#292735;--color-brand-primary:#f7f5fc;--color-brand-ink:#f7f5fc;--color-brand-muted:#bab2c9;--color-brand-border:#514961;--color-brand-accent:#ffe15a;background:#191823;color:#f7f5fc;border-color:#090910; }
 html[data-viewport='tv'] .game-card-courts-body { background:#191823;border-color:#514961; }
-html[data-viewport='tv'] .game-card-tv-header-panel:has(.game-card-tv-header-title-row) { min-height:190px;border:3px solid #090910;background-color:#6236a1;background-image:radial-gradient(circle,#23103970 1px,transparent 1.5px),repeating-conic-gradient(from -15deg at 88% 20%,#9f69d738 0deg 12deg,transparent 12deg 29deg);background-size:5px 5px,100% 100%; }
-html[data-viewport='tv'] .game-card-tv-header-panel:has(.game-card-tv-header-title-row) .game-card-tv-header-center { bottom:0; }
+html[data-viewport='tv'] .game-card-tv-header-panel[data-game-navigation] { min-height:190px;border:3px solid #090910;background-color:#6236a1;background-image:radial-gradient(circle,#23103970 1px,transparent 1.5px),repeating-conic-gradient(from -15deg at 88% 20%,#9f69d738 0deg 12deg,transparent 12deg 29deg);background-size:5px 5px,100% 100%; }
+html[data-viewport='tv'] .game-card-tv-header-panel[data-game-navigation] .game-card-tv-header-center { bottom:0; }
 html[data-viewport='tv'] .game-card-tv-header-title-row > p { background:#ffe15a;border:2px solid #171020;padding:4px 14px;color:#191321;font-family:Impact,'Arial Narrow',sans-serif;font-style:italic;text-transform:uppercase;box-shadow:3px 3px 0 #171020; }
 html[data-viewport='tv'] .game-card-tv-header-time { color:#fff3d2;font-weight:850; }
 html[data-viewport='tv'] .game-card-header-timer__value { color:#ffe15a; }
 html[data-viewport='tv'] .game-card-header-timer__label { color:#f2e7ff; }
-html[data-viewport='tv'] .game-card-tv-header-panel:has(.game-card-tv-header-title-row)::before { content:'';position:absolute;left:7%;top:8px;width:150px;height:165px;background:url('/brand/superhero-americano-duo.png') center / contain no-repeat;pointer-events:none; }
+html[data-viewport='tv'] .game-card-tv-header-panel[data-game-navigation]::before { content:'';position:absolute;left:7%;top:8px;width:150px;height:165px;background:url('/brand/superhero-americano-duo.png') center / contain no-repeat;pointer-events:none; }
 
 /* Countdown urgency follows elapsed fraction of the persisted round. */
 html[data-viewport='tv'] .game-card-header-timer[data-urgency='0'] { --timer-colour:rgb(116,240,163); }
@@ -157,18 +157,18 @@ html[data-viewport='tv'] .game-card-header-timer[data-urgency='20'] { --timer-co
 html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel .game-card-header-timer[data-urgency] .game-card-header-timer__value { color:var(--timer-colour,#74f0a3);transition:color 1s linear; }
 
 /* Distance-readable countdown takes priority over the game title. */
-html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer) { min-height:200px; }
-html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer) .game-card-tv-header-center { left:33%;right:32%;top:0;bottom:0; }
-html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer) .game-card-tv-header-title-row > p { font-size:clamp(64px,5.7vw,120px);line-height:1.05; }
-html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer) .game-card-tv-header-time { font-size:clamp(22px,1.6vw,30px);line-height:1.1; }
-html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer) .game-card-tv-header-actions { inset:0 54px 0 0;min-height:0;align-items:flex-start;padding:0;pointer-events:none; }
-html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer) .game-card-tv-header-actions > * { pointer-events:auto; }
-html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer) .game-card-header-timer { position:absolute;inset:0 0 0 73%;padding:0;text-align:center;display:flex;flex-direction:column;justify-content:center; }
-html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer) .game-card-header-timer__label { font-size:14px;letter-spacing:0.12em;margin:0 0 4px; }
-html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer) .game-card-header-timer__value { font-family:Arial,sans-serif;font-size:clamp(72px,7vw,144px);font-weight:900;line-height:1;letter-spacing:-0.055em;margin:0;font-variant-numeric:tabular-nums;text-shadow:0 4px 0 #171020; }
-html[data-viewport='tv'] .game-card-tv-header-panel:has(.game-card-tv-header-title-row)::before { display:none; }
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel[data-countdown] { min-height:200px; }
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel[data-countdown] .game-card-tv-header-center { left:33%;right:32%;top:0;bottom:0; }
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel[data-countdown] .game-card-tv-header-title-row > p { font-size:clamp(64px,5.7vw,120px);line-height:1.05; }
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel[data-countdown] .game-card-tv-header-time { font-size:clamp(22px,1.6vw,30px);line-height:1.1; }
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel[data-countdown] .game-card-tv-header-actions { top: 0; right: 54px; bottom: 0; left: 0;min-height:0;align-items:flex-start;padding:0;pointer-events:none; }
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel[data-countdown] .game-card-tv-header-actions > * { pointer-events:auto; }
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel[data-countdown] .game-card-header-timer { position:absolute;top: 0; right: 0; bottom: 0; left: 73%;padding:0;text-align:center;display:flex;flex-direction:column;justify-content:center; }
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel[data-countdown] .game-card-header-timer__label { font-size:14px;letter-spacing:0.12em;margin:0 0 4px; }
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel[data-countdown] .game-card-header-timer__value { font-family:Arial,sans-serif;font-size:clamp(72px,7vw,144px);font-weight:900;line-height:1;letter-spacing:-0.055em;margin:0;font-variant-numeric:tabular-nums;text-shadow:0 4px 0 #171020; }
+html[data-viewport='tv'] .game-card-tv-header-panel[data-game-navigation]::before { display:none; }
 /* Club identity, sharing, game navigation and countdown have separate space. */
-html[data-viewport='tv'] .game-card-tv-header-panel:has(.game-card-tv-header-title-row)::after {
+html[data-viewport='tv'] .game-card-tv-header-panel[data-game-navigation]::after {
   content:'';
   position:absolute;
   left:3%;
@@ -207,7 +207,7 @@ html[data-viewport='tv'] .game-card-header-share:disabled { opacity:0.65;cursor:
 
 /* Seasonal presentation only; shared GameCard owns all match behaviour. */
 html[data-viewport='tv'] [data-competition-skin='halloween'] .game-card-tv-header-panel { background: #211029 url('/brand/halloween/haunted-night.png') center / cover; border-color: #ed862b; }
-html[data-viewport='tv'] [data-competition-skin='halloween'] .game-card-tv-header-panel:has(.game-card-tv-header-title-row)::before { background-image:url('/brand/halloween/logo-pumpkin.png'); }
+html[data-viewport='tv'] [data-competition-skin='halloween'] .game-card-tv-header-panel[data-game-navigation]::before { background-image:url('/brand/halloween/logo-pumpkin.png'); }
 html[data-viewport='tv'] [data-competition-skin='halloween'] .game-card-tv-header-title-row > p { background-color:#ff922e; color:#211029; }
 html[data-viewport='tv'] [data-competition-skin='halloween'].competition-week-strip__event { background:#24112f; border-color:#ff922e; color:#ffe2b7; }
 
@@ -230,8 +230,8 @@ html[data-viewport='tv'] .play-session-root[data-competition-skin='halloween'] .
 html[data-viewport='tv'] .play-session-root[data-competition-skin='halloween'] .game-card-shell .game-card-court-label { font-size:12px; }
 html[data-viewport='tv'] .play-session-root[data-competition-skin='halloween'] .game-card-shell .game-card-court-score-button { min-height:34px;height:34px;width:52px;font-size:24px; }
 html[data-viewport='tv'] .play-session-root[data-competition-skin='halloween'] .game-card-shell .game-card-court-score-button__value { font-size:24px; }
-html[data-viewport='tv'] .play-session-root[data-competition-skin='halloween'] .game-card-shell .game-card-tv-header-panel:has(.game-card-tv-header-title-row) { min-height:90px;height:16vh;max-height:150px; }
-html[data-viewport='tv'] .play-session-root[data-competition-skin='halloween'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer) .game-card-header-timer__value { font-size:clamp(54px,9vh,100px); }
+html[data-viewport='tv'] .play-session-root[data-competition-skin='halloween'] .game-card-shell .game-card-tv-header-panel[data-game-navigation] { min-height:90px;height:16vh;max-height:150px; }
+html[data-viewport='tv'] .play-session-root[data-competition-skin='halloween'] .game-card-shell .game-card-tv-header-panel[data-countdown] .game-card-header-timer__value { font-size:clamp(54px,9vh,100px); }
 
 html[data-viewport='tv'] .play-session-root[data-competition-skin='halloween'] .game-card-shell .game-card-tv-header-actions > .tv-game-header-qr { width:64px;height:64px;top:60px; }
 
@@ -239,14 +239,14 @@ html[data-viewport='tv'] .play-session-root[data-competition-skin='halloween'] .
 html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel .game-card-tv-header-back,
 html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel a[aria-label="Open gesture score tracker"],
 html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel .game-card-header-share { display: none; }
-html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer) .game-card-tv-header-actions { inset: 0; }
-html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer) .game-card-tv-header-actions > .tv-game-header-qr { display: none; }
-html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer)::before { display: none; }
-html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer)::after {
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel[data-countdown] .game-card-tv-header-actions { top: 0; right: 0; bottom: 0; left: 0; }
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel[data-countdown] .game-card-tv-header-actions > .tv-game-header-qr { display: none; }
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel[data-countdown]::before { display: none; }
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel[data-countdown]::after {
   content: '';
   display: block;
   position: absolute;
-  inset: 2% auto 2% 1%;
+  top: 2%; right: auto; bottom: 2%; left: 1%;
   width: 27%;
   height: auto;
   transform: none;
@@ -255,7 +255,7 @@ html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-c
   mask: url('/brand/success-padel-silver-source.png') center / contain no-repeat;
   pointer-events: none;
 }
-html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer) .game-card-tv-header-center { left: 29%; right: 39%; }
-html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer) .game-card-header-timer { inset: 0 1% 0 55%; align-items: flex-end; text-align: right; }
-html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer) .game-card-header-timer__value { font-size: clamp(64px, 9.8vw, 154px); line-height: .92; }
-html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel:has(.game-card-header-timer) .game-card-tv-header-title-row > p { font-size: clamp(46px, 5.6vw, 128px); }
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel[data-countdown] .game-card-tv-header-center { left: 29%; right: 39%; }
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel[data-countdown] .game-card-header-timer { top: 0; right: 1%; bottom: 0; left: 55%; align-items: flex-end; text-align: right; }
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel[data-countdown] .game-card-header-timer__value { font-size: 9.8vw; font-size: clamp(64px, 9.8vw, 154px); line-height: .92; }
+html[data-viewport='tv'] .game-card-shell .game-card-tv-header-panel[data-countdown] .game-card-tv-header-title-row > p { font-size: 5.6vw; font-size: clamp(46px, 5.6vw, 128px); }
