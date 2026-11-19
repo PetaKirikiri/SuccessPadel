@@ -345,7 +345,7 @@ html[data-viewport='mobile'] .play-session-root[data-competition-skin='halloween
 html[data-viewport='mobile'] .play-session-root[data-competition-skin='halloween'] .game-card-shell .game-card-court-match__side > div > .touch-manipulation > img, html[data-viewport='mobile'] .play-session-root[data-competition-skin='halloween'] .game-card-shell .game-card-court-match__side > div > .touch-manipulation > span { width:100%;height:100%;border-radius:3px;object-fit:cover;object-position:center 20%;mask-image:linear-gradient(#000 75%,transparent); }
 html[data-viewport='mobile'] .play-session-root[data-competition-skin='halloween'] .game-card-shell .game-card-court-match__side > div > button:not(.touch-manipulation) { order:1;width:100%;text-align:center;font-size:12px;line-height:1.2;background:#100d0b;color:#f4dfbd; }
 
-/* One visible phone screen: header stays fixed, courts share the remainder. */
+/* Keep the header visible and scroll complete court cards below it. */
 html[data-viewport='mobile'] .shell-main--play {
   overflow: hidden;
 }
@@ -367,14 +367,14 @@ html[data-viewport='mobile'] .game-card-courts-body {
   flex-direction: column;
   flex: 1 1 0%;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: auto;
   padding: 6px;
 }
 html[data-viewport='mobile'] .game-card-courts-stack {
   display: grid;
-  grid-auto-rows: minmax(0, 1fr);
+  grid-auto-rows: max-content;
   gap: 8px;
-  flex: 1 1 0%;
+  flex: none;
   min-height: 0;
 }
 html[data-viewport='mobile'] .game-card-courts-stack > .game-card-court-shell {
@@ -388,12 +388,12 @@ html[data-viewport='mobile'] .game-card-courts-stack .game-card-court-card-body 
   flex-direction: column;
   padding: 6px 8px;
   min-height: 0;
-  flex: 1 1 0%;
+  flex: auto;
 }
 html[data-viewport='mobile'] .game-card-courts-stack .game-card-court-match-wrap,
 html[data-viewport='mobile'] .game-card-courts-stack .game-card-court-match {
   min-height: 0;
-  flex: 1 1 0%;
+  flex: auto;
   gap: 4px;
 }
 html[data-viewport='mobile'] .game-card-courts-stack .game-card-court-match__side {
