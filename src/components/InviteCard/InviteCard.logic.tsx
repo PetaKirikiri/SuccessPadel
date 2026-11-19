@@ -104,9 +104,9 @@ export function InviteGameCard(props: Props) {
       !props.row.competition_started_at &&
       (isAdmin || publicSignup),
   )
-  // Keep the event's roster presentation after rounds have been prepared.
+  // Keep numbered singles slots visible after the draw is prepared.
   const showHalloweenRoster = Boolean(row && competitionSkin(row.title) === 'halloween')
-  const showRosterEditor = canEditRoster || showHalloweenRoster
+  const showRosterEditor = Boolean(row && !isDuoCompetition(row)) || canEditRoster || showHalloweenRoster
   const canManageFriendly = Boolean(
     props.kind === 'friendly' && canEditFriendlySession(props.game, currentUserId, isAdmin),
   )
