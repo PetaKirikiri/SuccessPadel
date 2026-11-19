@@ -32,6 +32,7 @@ const COMPETITION_RUN_PATH = /^\/competitions\/[^/]+\/run$/
 
 /** Profile/sign-in lives in AppBottomNav only — never a fixed top-right chip. */
 export function hasAppBottomNav(pathname: string): boolean {
+  if (/^\/rankings\/?$/i.test(pathname)) return false
   if (isGesturePadRoute(pathname)) return false
   if (COMPETITION_RUN_PATH.test(pathname)) return false
   return true
