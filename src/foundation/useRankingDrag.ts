@@ -24,11 +24,20 @@ export function useRankingDrag(onDrop: (id: string, target: string, after: boole
     ghost.current?.remove()
     active.current?.board?.style.removeProperty('--ranking-gap-width')
   }, [])
-  function locate() {
+  function locate(force = false) {
     const drag = active.current
     if (!drag?.moved) return
+    if (!force && drag.x === drag.measuredX && drag.y === drag.measuredY) return
     drag.measuredX = drag.x
     drag.measuredY = drag.y
+    const visualHit = document.elementFromPoint(drag.x, drag.y)
+    const preview = visualHit?.closest<HTMLElement>('.member-rankings__tile[data-insert]')
+    const cardBounds = preview?.querySelector(':scope > button')?.getBoundingClientRect()
+    const inGap = cardBounds && (drag.after ? drag.x >= cardBounds.right : drag.x <= cardBounds.left)
+    if (preview && preview.dataset.rankId === drag.target && inGap) return
+
+    // Measure without the preview spacing so reflow cannot select a different slot.
+    drag.board?.setAttribute('data-measuring-drop', '')
     const hit = document.elementFromPoint(drag.x, drag.y)
     const tier = hit?.closest<HTMLElement>('.member-rankings__tier')
     let row = hit?.closest<HTMLElement>('.member-rankings__tile[data-rank-id]')
@@ -49,6 +58,7 @@ export function useRankingDrag(onDrop: (id: string, target: string, after: boole
     const bounds = row?.querySelector(':scope > button')?.getBoundingClientRect()
     drag.target = row?.dataset.rankId ?? tier?.dataset.rankId ?? null
     drag.after = Boolean(bounds && drag.x >= bounds.left + bounds.width / 2)
+    drag.board?.removeAttribute('data-measuring-drop')
     setOver(drag.target)
     setAfter(drag.after)
   }
@@ -63,7 +73,7 @@ export function useRankingDrag(onDrop: (id: string, target: string, after: boole
         if (drag.scroller) drag.scroller.scrollBy(0, step)
         else window.scrollBy(0, step)
       }
-      locate()
+      locate(Boolean(step))
     }
     frame.current = requestAnimationFrame(tick)
   }
@@ -100,10 +110,10 @@ export function useRankingDrag(onDrop: (id: string, target: string, after: boole
   function end(event: PointerEvent<HTMLButtonElement>) {
     const drag = active.current
     if (!drag || drag.pointer !== event.pointerId) return
-    if (drag.moved && (!drag.target || Math.hypot(event.clientX - drag.measuredX, event.clientY - drag.measuredY) > 5)) {
+    if (drag.moved && (!drag.target || Math.hypot(event.clientX - drag.measuredX, event.clientY - drag.measuredY) > 0)) {
       drag.x = event.clientX
       drag.y = event.clientY
-      locate()
+      locate(true)
     }
     const commit = drag.moved && drag.target !== drag.id
     cleanup()

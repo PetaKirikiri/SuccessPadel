@@ -272,3 +272,7 @@ html[data-viewport='tv'] .member-rankings__boards button:nth-child(3)[aria-press
 .member-rankings__tile[data-insert='before']::after { left: 0; }
 .member-rankings__tile[data-insert='after']::after { right: 0; }
 .member-rankings__tier[data-drop-at-end='true'] .member-rankings__tiles::after { content: ''; }
+
+.member-rankings[data-measuring-drop] .member-rankings__tile[data-insert] { padding-inline: 0; }
+.member-rankings[data-measuring-drop] .member-rankings__tile[data-insert]::after,
+.member-rankings[data-measuring-drop] .member-rankings__tier[data-drop-at-end='true'] .member-rankings__tiles::after { display: none; }
