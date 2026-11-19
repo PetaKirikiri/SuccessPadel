@@ -68,6 +68,19 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
     try { return JSON.parse(localStorage.getItem('success-padel:ranking-tiers') ?? '{}') ?? {} }
     catch { return {} }
   })
+  const [hidden, setHidden] = useState<string[]>(() => {
+    try {
+      const saved: unknown = JSON.parse(localStorage.getItem('success-padel:hidden-tier-players') ?? '[]')
+      return Array.isArray(saved) ? saved.filter(id => typeof id === 'string') : []
+    } catch { return [] }
+  })
+  const [menuPlayer, setMenuPlayer] = useState<string | null>(null)
+  function saveHidden(next: string[]) {
+    setHidden(next)
+    setMenuPlayer(null)
+    try { localStorage.setItem('success-padel:hidden-tier-players', JSON.stringify(next)) }
+    catch { /* The current page still reflects the change. */ }
+  }
   const [orderMessage, setOrderMessage] = useState('')
   const request = useRef<AbortController | null>(null)
   const memberIds = members.filter(member => eligibleForRanking(member, 'all')).map(member => member.id).sort().join(',')
@@ -97,7 +110,7 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
   }, [refresh])
   const eligible = members.filter(m => eligibleForRanking(m, board))
   const byId = new Map(eligible.map(m => [m.id, m]))
-  const suggested = ranks.filter(record => byId.has(record.id))
+  const suggested = ranks.filter(record => byId.has(record.id) && !(canEdit && hidden.includes(record.id)))
     .sort((a, b) => startingScore(b) - startingScore(a) || b.games - a.games || a.id.localeCompare(b.id))
   const order = canEdit ? placements[board] ?? {} : {}
   const assigned = new Set(TIERS.flatMap(tier => order[tier] ?? []))
@@ -130,12 +143,21 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
   }
   const drag = useRankingDrag(reorder)
   const isLoading = loading || rankLoading
-  return <section className="member-rankings">
+  useEffect(() => {
+    if (!menuPlayer) return
+    const dismiss = () => setMenuPlayer(null)
+    window.addEventListener('click', dismiss)
+    return () => window.removeEventListener('click', dismiss)
+  }, [menuPlayer])
+  return <section className="member-rankings" onKeyDown={event => {
+    if (event.key === 'Escape') setMenuPlayer(null)
+  }}>
     <nav className="member-rankings__navigation" aria-label="Players and rankings"><Link to={`/members${ownerToken ? `#owner=${encodeURIComponent(ownerToken)}` : ''}`}>Players</Link><span aria-current="page">Rankings</span></nav>
     <header className="member-rankings__header"><Trophy aria-hidden="true" /><div><p>SUCCESS PADEL</p><h1>PLAYER RANKINGS</h1></div><span>{isLoading ? '—' : suggested.length}</span></header>
     <div className="member-rankings__boards" role="group" aria-label="Ranking lists">{(['all', 'men', 'women'] as const).map(value => <button key={value} type="button" aria-pressed={board === value} disabled={Boolean(drag.dragging)} onClick={() => { setBoard(value); setSearch(''); setOrderMessage('') }}>{value === 'all' ? 'All' : value === 'men' ? 'Men' : 'Women'}</button>)}</div>
     <p>Scored games in the past two months. Rankings are provisional.</p>
     <div className="member-rankings__toolbar">
+      {canEdit && hidden.length > 0 ? <button type="button" onClick={() => saveHidden([])}>Restore hidden players ({hidden.length})</button> : null}
       <label className="member-rankings__search"><Search aria-hidden="true" /><input type="search" aria-label="Search ranked players" placeholder="Search players" value={search} onChange={e => setSearch(e.target.value)} /></label>
     </div>
     {error || rankError ? <div className="member-rankings__empty" role="alert">{error || rankError}{rankError ? <button type="button" onClick={() => void refresh()}>Retry</button> : null}</div> : isLoading ? <p role="status">Loading rankings…</p> : <>
@@ -150,15 +172,24 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
                 <strong>{member.display_name}</strong>
               </>
               return <div className="member-rankings__tile" key={id} data-rank-id={id} data-dragging={drag.dragging === id} data-drop-target={drag.over === id && drag.dragging !== id}>
-                {canEdit ? <button type="button" disabled={!canReorder} aria-label={`Move ${member.display_name}`} title="Drag to move. Use left and right to reorder, or up and down to change tier."
+                {canEdit ? <button type="button" disabled={!canReorder} aria-label={`Move ${member.display_name}`} title="Drag to move or right-click for options."
+                  onContextMenu={event => { event.preventDefault(); drag.cancel(); setMenuPlayer(id) }}
                   onPointerDown={event => drag.start(event, id)} onPointerMove={drag.move} onPointerUp={drag.end}
                   onPointerCancel={drag.cancel} onLostPointerCapture={drag.cancel} onKeyDown={event => {
+                    if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+                      event.preventDefault()
+                      setMenuPlayer(id)
+                      return
+                    }
                     const position = ids.indexOf(id)
                     const targets = { ArrowLeft: ids[position - 1], ArrowRight: ids[position + 1], ArrowUp: tiers[index - 1]?.tier, ArrowDown: tiers[index + 1]?.tier }
                     if (event.key === 'Escape') drag.cancel()
                     const target = targets[event.key as keyof typeof targets]
                     if (target) { event.preventDefault(); reorder(id, target) }
                   }}>{content}</button> : <div>{content}</div>}
+                {canEdit && menuPlayer === id ? <div className="member-rankings__tile-menu">
+                  <button type="button" autoFocus onClick={() => saveHidden([...hidden, id])}>Remove from board</button>
+                </div> : null}
               </div>
             })}
           </div>
