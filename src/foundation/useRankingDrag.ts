@@ -85,9 +85,6 @@ export function useRankingDrag(onDrop: (id: string, target: string, after: boole
   function end(event: PointerEvent<HTMLButtonElement>) {
     const drag = active.current
     if (!drag || drag.pointer !== event.pointerId) return
-    drag.x = event.clientX
-    drag.y = event.clientY
-    locate()
     const commit = drag.moved && drag.target !== drag.id
     cleanup()
     if (commit && drag.target) onDrop(drag.id, drag.target, drag.after)

@@ -84,48 +84,99 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
   const [orderMessage, setOrderMessage] = useState('')
   const [revision, setRevision] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
+  type BoardState = { placements: typeof placements; addedMembers: string[]; hidden: string[] }
+  type PendingSave = { next: BoardState; message: string }
+  const pendingKey = 'success-padel:pending-tier-board'
+  const pending = useRef<PendingSave | null>(null)
+  const serverRevision = useRef<number | null>(null)
   const writeInProgress = useRef(false)
-  const loadShared = useCallback(async () => {
-    if (!canEdit) return
-    const { data, error } = await supabase.rpc('access_member_tier_board', { p_access_token: ownerToken })
-    if (error) {
-      setOrderMessage('Could not load shared board. Reload to retry.')
-      return
-    }
-    if (data.board) {
-      setPlacements(data.board.placements)
-      setAddedMembers(data.board.addedMembers)
-      setHidden(data.board.hidden)
-    }
-    setRevision(data.revision)
-    setOrderMessage('')
-  }, [canEdit, ownerToken])
-  useEffect(() => { void loadShared() }, [loadShared])
+  const [syncFailed, setSyncFailed] = useState(false)
 
-  async function saveShared(next: { placements: typeof placements; addedMembers: string[]; hidden: string[] }, message: string) {
-    if (!canEdit || revision === null || writeInProgress.current) return
-    writeInProgress.current = true
-    setSaving(true)
-    setOrderMessage('Saving…')
+  const showBoard = useCallback((next: BoardState) => {
     setPlacements(next.placements)
     setAddedMembers(next.addedMembers)
     setHidden(next.hidden)
+  }, [])
+
+  const rememberPending = useCallback(() => {
     try {
-      const { data, error } = await supabase.rpc('access_member_tier_board', {
-        p_access_token: ownerToken, p_revision: revision, p_board: next,
-      })
-      if (error) throw error
-      setRevision(data.revision)
-      setOrderMessage(message)
+      if (pending.current) {
+        localStorage.setItem(pendingKey, JSON.stringify({ ...pending.current, revision: serverRevision.current }))
+      } else {
+        localStorage.removeItem(pendingKey)
+      }
+    } catch { /* The in-memory draft remains available. */ }
+  }, [pendingKey])
+
+  const syncBoard = useCallback(async () => {
+    if (!canEdit || serverRevision.current === null || writeInProgress.current || !pending.current) return
+    writeInProgress.current = true
+    setSaving(true)
+    setSyncFailed(false)
+    setOrderMessage('Syncing…')
+    try {
+      while (pending.current) {
+        const savingNow: PendingSave = pending.current
+        const { data, error }: { data: any; error: unknown } = await supabase.rpc('access_member_tier_board', {
+          p_access_token: ownerToken, p_revision: serverRevision.current, p_board: savingNow.next,
+        })
+        if (error) throw error
+        serverRevision.current = data.revision
+        setRevision(data.revision)
+        if (pending.current === savingNow) {
+          pending.current = null
+          setOrderMessage(savingNow.message)
+        }
+        rememberPending()
+      }
     } catch {
-      setPlacements(placements)
-      setAddedMembers(addedMembers)
-      setHidden(hidden)
-      setOrderMessage('Change wasn’t saved. Reload the shared board and try again.')
+      setSyncFailed(true)
+      setOrderMessage('Kept on this device. Shared sync failed.')
     } finally {
       writeInProgress.current = false
       setSaving(false)
     }
+  }, [canEdit, ownerToken, rememberPending])
+
+  const loadShared = useCallback(async () => {
+    if (!canEdit) return
+    const { data, error }: { data: any; error: unknown } = await supabase.rpc('access_member_tier_board', { p_access_token: ownerToken })
+    if (error) {
+      setOrderMessage('Could not load shared board. Reload to retry.')
+      return
+    }
+    let draft: (PendingSave & { revision: number }) | null = null
+    try { draft = JSON.parse(localStorage.getItem(pendingKey) ?? 'null') }
+    catch { /* A damaged draft cannot be restored. */ }
+    setRevision(data.revision)
+    if (draft && draft.revision !== data.revision) {
+      showBoard(draft.next)
+      setOrderMessage('Local changes kept. The shared board changed on another device.')
+      return
+    }
+    serverRevision.current = data.revision
+    if (draft) {
+      pending.current = { next: draft.next, message: draft.message }
+      showBoard(draft.next)
+      void syncBoard()
+    } else {
+      if (data.board) showBoard(data.board)
+      setOrderMessage('')
+    }
+  }, [canEdit, ownerToken, pendingKey, showBoard, syncBoard])
+  useEffect(() => { void loadShared() }, [loadShared])
+
+  function saveShared(next: BoardState, message: string) {
+    if (!canEdit || revision === null) return
+    showBoard(next)
+    if (serverRevision.current === null) {
+      try { localStorage.setItem(pendingKey, JSON.stringify({ next, message, revision: -1 })) }
+      catch { /* The in-memory draft remains available. */ }
+      return
+    }
+    pending.current = { next, message }
+    rememberPending()
+    void syncBoard()
   }
   function saveHidden(next: string[]) {
     setMenuPlayer(null)
@@ -188,7 +239,7 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
     }).map(record => record.id)
     return { tier, ids: [...saved, ...initial] }
   })
-  const canReorder = canEdit && revision !== null && !saving
+  const canReorder = canEdit && revision !== null
   function reorder(id: string, target: string, after = false) {
     if (!canReorder || id === target) return
     const destination = tiers.find(row => target === row.tier || row.ids.includes(target))
@@ -268,5 +319,6 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
       ))}
     </>}
     {orderMessage ? <p role="status" className="member-rankings__feedback">{orderMessage}</p> : null}
+    {syncFailed ? <button type="button" onClick={() => void syncBoard()}>Retry sync</button> : null}
   </section>
 }
