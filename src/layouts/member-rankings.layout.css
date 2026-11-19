@@ -234,3 +234,14 @@ html[data-viewport='tv'] .member-rankings__boards button:nth-child(2) { backgrou
 html[data-viewport='tv'] .member-rankings__boards button:nth-child(3) { background:#482b3b;color:#ffadb5; }
 html[data-viewport='tv'] .member-rankings__boards button:nth-child(2)[aria-pressed='true'] { background:#66b5ff;color:#172131; }
 html[data-viewport='tv'] .member-rankings__boards button:nth-child(3)[aria-pressed='true'] { background:#ff7b86;color:#172131; }
+
+.member-rankings__tier { margin-block: 8px; border: 1px solid #64546d; border-radius: 8px; background: #241e30; }
+.member-rankings__tier h2 { margin: 0; padding: 7px 10px; font-size: .9rem; background: #443051; border-radius: 7px 7px 0 0; }
+.member-rankings__tiles { display: flex; flex-wrap: wrap; gap: 5px; min-height: 44px; padding: 6px; }
+.member-rankings__tile { max-width: 100%; }
+.member-rankings__tile > button, .member-rankings__tile > div { display: flex; align-items: center; gap: 5px; padding: 3px 7px 3px 3px; min-height: 34px; max-width: 100%; border: 1px solid #695575; border-radius: 6px; background: #352841; color: #fff; font: inherit; font-size: .8rem; }
+.member-rankings__tile > button:not(:disabled) { cursor: grab; touch-action: none; user-select: none; }
+.member-rankings__tile img, .member-rankings__tile span { width: 24px; height: 24px; flex: none; border-radius: 50%; object-fit: cover; }
+.member-rankings__tile span { display: grid; place-items: center; background: #594467; }
+.member-rankings__tile[data-dragging='true'] { opacity: .5; }
+.member-rankings__tier[data-drop-target='true'], .member-rankings__tile[data-drop-target='true'] { outline: 2px solid #ffe554; }

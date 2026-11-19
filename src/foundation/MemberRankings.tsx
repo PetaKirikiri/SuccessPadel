@@ -1,10 +1,10 @@
 import { Search, Trophy } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { type DirectoryMember, type DirectoryPatch } from '../lib/memberDirectory'
+import { type DirectoryMember } from '../lib/memberDirectory'
 import { eligibleForRanking, type RankingBoard } from '../lib/memberRankingBoard'
 import { supabase } from '../lib/supabaseClient'
-import { MemberDirectoryCard } from './PublicMemberDirectory'
+import { useRankingDrag } from './useRankingDrag'
 import '../layouts/member-rankings.layout.css'
 import '../layouts/members.layout.css'
 
@@ -52,18 +52,23 @@ function startingScore(record: MatchRecord): number {
   return (record.wins + record.draws / 2 + 2) / (record.games + 4)
 }
 
+const TIERS = ['Advanced', 'High Intermediate', 'Intermediate', 'Low Intermediate', 'Beginner'] as const
+
 type Props = {
   members: DirectoryMember[]; canEdit: boolean; ownerToken: string | null; loading: boolean; error: string | null
-  onSave?: (id: string, patch: DirectoryPatch) => Promise<void>
-  onDelete?: (id: string) => Promise<void>
-  onUploadPhoto?: (id: string, file: File) => Promise<string>
 }
-export function MemberRankings({ members, canEdit, ownerToken, loading, error, onSave, onDelete, onUploadPhoto }: Props) {
+
+export function MemberRankings({ members, canEdit, ownerToken, loading, error }: Props) {
   const [board, setBoard] = useState<RankingBoard>('all')
   const [ranks, setRanks] = useState<MatchRecord[]>([])
   const [rankLoading, setRankLoading] = useState(true)
   const [rankError, setRankError] = useState('')
   const [search, setSearch] = useState('')
+  const [placements, setPlacements] = useState<Partial<Record<RankingBoard, Record<string, string[]>>>>(() => {
+    try { return JSON.parse(localStorage.getItem('success-padel:ranking-tiers') ?? '{}') ?? {} }
+    catch { return {} }
+  })
+  const [orderMessage, setOrderMessage] = useState('')
   const request = useRef<AbortController | null>(null)
   const memberIds = members.filter(member => eligibleForRanking(member, 'all')).map(member => member.id).sort().join(',')
   const ids = useMemo(() => memberIds ? memberIds.split(',') : [], [memberIds])
@@ -92,28 +97,74 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error, o
   }, [refresh])
   const eligible = members.filter(m => eligibleForRanking(m, board))
   const byId = new Map(eligible.map(m => [m.id, m]))
-  const homeRanks = ranks.filter(record => byId.has(record.id))
+  const suggested = ranks.filter(record => byId.has(record.id))
     .sort((a, b) => startingScore(b) - startingScore(a) || b.games - a.games || a.id.localeCompare(b.id))
-  const rows = homeRanks.map((record, index) => ({ ...record, position: index + 1, member: byId.get(record.id)! }))
-    .filter(({ member }) => member.display_name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))
+  const order = canEdit ? placements[board] ?? {} : {}
+  const assigned = new Set(TIERS.flatMap(tier => order[tier] ?? []))
+  const tiers = TIERS.map(tier => {
+    const saved = (order[tier] ?? []).filter(id => suggested.some(record => record.id === id))
+    const initial = suggested.filter(record => {
+      const level = byId.get(record.id)?.skill_level
+      const startingTier = level === 'Low Inter' ? 'Low Intermediate' : TIERS.find(value => value === level) ?? 'Beginner'
+      return startingTier === tier && !assigned.has(record.id)
+    }).map(record => record.id)
+    return { tier, ids: [...saved, ...initial] }
+  })
+  const canReorder = canEdit && !search.trim()
+  function reorder(id: string, target: string) {
+    if (!canReorder || id === target) return
+    const destination = tiers.find(row => target === row.tier || row.ids.includes(target))
+    if (!destination || !tiers.some(row => row.ids.includes(id))) return
+    const nextBoard = Object.fromEntries(tiers.map(row => [row.tier, row.ids.filter(player => player !== id)]))
+    const originalIndex = destination.ids.indexOf(target)
+    const nextIds = nextBoard[destination.tier]
+    nextIds.splice(originalIndex < 0 ? nextIds.length : originalIndex, 0, id)
+    const next = { ...placements, [board]: nextBoard }
+    setPlacements(next)
+    try {
+      localStorage.setItem('success-padel:ranking-tiers', JSON.stringify(next))
+      setOrderMessage('Order saved on this device.')
+    } catch {
+      setOrderMessage('Order changed for this session.')
+    }
+  }
+  const drag = useRankingDrag(reorder)
   const isLoading = loading || rankLoading
   return <section className="member-rankings">
     <nav className="member-rankings__navigation" aria-label="Players and rankings"><Link to={`/members${ownerToken ? `#owner=${encodeURIComponent(ownerToken)}` : ''}`}>Players</Link><span aria-current="page">Rankings</span></nav>
-    <header className="member-rankings__header"><Trophy aria-hidden="true" /><div><p>SUCCESS PADEL</p><h1>PLAYER RANKINGS</h1></div><span>{isLoading ? '—' : homeRanks.length}</span></header>
-    <div className="member-rankings__boards" role="group" aria-label="Ranking lists">{(['all', 'men', 'women'] as const).map(value => <button key={value} type="button" aria-pressed={board === value} onClick={() => { setBoard(value); setSearch('') }}>{value === 'all' ? 'All' : value === 'men' ? 'Men' : 'Women'}</button>)}</div>
+    <header className="member-rankings__header"><Trophy aria-hidden="true" /><div><p>SUCCESS PADEL</p><h1>PLAYER RANKINGS</h1></div><span>{isLoading ? '—' : suggested.length}</span></header>
+    <div className="member-rankings__boards" role="group" aria-label="Ranking lists">{(['all', 'men', 'women'] as const).map(value => <button key={value} type="button" aria-pressed={board === value} disabled={Boolean(drag.dragging)} onClick={() => { setBoard(value); setSearch(''); setOrderMessage('') }}>{value === 'all' ? 'All' : value === 'men' ? 'Men' : 'Women'}</button>)}</div>
     <p>Scored games in the past two months. Rankings are provisional.</p>
     <div className="member-rankings__toolbar">
       <label className="member-rankings__search"><Search aria-hidden="true" /><input type="search" aria-label="Search ranked players" placeholder="Search players" value={search} onChange={e => setSearch(e.target.value)} /></label>
     </div>
     {error || rankError ? <div className="member-rankings__empty" role="alert">{error || rankError}{rankError ? <button type="button" onClick={() => void refresh()}>Retry</button> : null}</div> : isLoading ? <p role="status">Loading rankings…</p> : <>
-      <ol className="member-rankings__list">{rows.map(({ id, position, member, games, wins, draws }) => <li className="member-rankings__card-row" key={id}>
-        <div className="member-rankings__rank-handle">
-          <strong className="member-rankings__position" aria-label={`Rank ${position}`}>{position}</strong>
-          <span>{wins} won · {draws} drawn · {games} played</span>
-        </div>
-        <div className="member-directory__card" data-editable={canEdit}><MemberDirectoryCard member={member} canEdit={canEdit} onSave={onSave} onDelete={onDelete} onUploadPhoto={onUploadPhoto} /></div>
-      </li>)}</ol>
-      {!rows.length ? <p className="member-rankings__empty">{search.trim() ? 'No matching players.' : 'No scored games in the past two months.'}</p> : null}
+      {tiers.map(({ tier, ids }, index) => (
+        <section className="member-rankings__tier" key={tier} aria-label={tier} data-rank-id={tier} data-drop-target={drag.over === tier}>
+          <h2>{tier}</h2>
+          <div className="member-rankings__tiles">
+            {ids.filter(id => byId.get(id)?.display_name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())).map(id => {
+              const member = byId.get(id)!
+              const content = <>
+                {member.avatar_url ? <img src={member.avatar_url} alt="" loading="lazy" draggable={false} /> : <span aria-hidden="true">{member.display_name.trim().slice(0, 1).toUpperCase()}</span>}
+                <strong>{member.display_name}</strong>
+              </>
+              return <div className="member-rankings__tile" key={id} data-rank-id={id} data-dragging={drag.dragging === id} data-drop-target={drag.over === id && drag.dragging !== id}>
+                {canEdit ? <button type="button" disabled={!canReorder} aria-label={`Move ${member.display_name}`} title="Drag to move. Use left and right to reorder, or up and down to change tier."
+                  onPointerDown={event => drag.start(event, id)} onPointerMove={drag.move} onPointerUp={drag.end}
+                  onPointerCancel={drag.cancel} onLostPointerCapture={drag.cancel} onKeyDown={event => {
+                    const position = ids.indexOf(id)
+                    const targets = { ArrowLeft: ids[position - 1], ArrowRight: ids[position + 1], ArrowUp: tiers[index - 1]?.tier, ArrowDown: tiers[index + 1]?.tier }
+                    if (event.key === 'Escape') drag.cancel()
+                    const target = targets[event.key as keyof typeof targets]
+                    if (target) { event.preventDefault(); reorder(id, target) }
+                  }}>{content}</button> : <div>{content}</div>}
+              </div>
+            })}
+          </div>
+        </section>
+      ))}
     </>}
+    {orderMessage ? <p role="status" className="member-rankings__feedback">{orderMessage}</p> : null}
   </section>
 }
