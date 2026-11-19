@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type PointerEvent } from 'react'
 export function useRankingDrag(onDrop: (id: string, target: string, after: boolean) => void) {
   const [dragging, setDragging] = useState<string | null>(null)
   const [over, setOver] = useState<string | null>(null)
-  const active = useRef<{ id: string; target: string | null; after: boolean; x: number; y: number; startX: number; startY: number; moved: boolean; scroller: HTMLElement | null; handle: HTMLButtonElement; board: HTMLElement | null; pointer: number } | null>(null)
+  const active = useRef<{ id: string; target: string | null; after: boolean; measuredX: number; measuredY: number; x: number; y: number; startX: number; startY: number; moved: boolean; scroller: HTMLElement | null; handle: HTMLButtonElement; board: HTMLElement | null; pointer: number } | null>(null)
   const [after, setAfter] = useState(false)
   const ghost = useRef<HTMLElement | null>(null)
   const frame = useRef<number | null>(null)
@@ -27,6 +27,8 @@ export function useRankingDrag(onDrop: (id: string, target: string, after: boole
   function locate() {
     const drag = active.current
     if (!drag?.moved) return
+    drag.measuredX = drag.x
+    drag.measuredY = drag.y
     const hit = document.elementFromPoint(drag.x, drag.y)
     const tier = hit?.closest<HTMLElement>('.member-rankings__tier')
     let row = hit?.closest<HTMLElement>('.member-rankings__tile[data-rank-id]')
@@ -70,7 +72,7 @@ export function useRankingDrag(onDrop: (id: string, target: string, after: boole
     let scroller: HTMLElement | null = event.currentTarget.parentElement
     while (scroller && !(scroller.scrollHeight > scroller.clientHeight && /auto|scroll/.test(getComputedStyle(scroller).overflowY))) scroller = scroller.parentElement
     event.currentTarget.setPointerCapture(event.pointerId)
-    active.current = { id, target: id, after: false, x: event.clientX, y: event.clientY, startX: event.clientX, startY: event.clientY, moved: false, scroller, handle: event.currentTarget, board: event.currentTarget.closest('.member-rankings'), pointer: event.pointerId }
+    active.current = { id, target: id, after: false, measuredX: event.clientX, measuredY: event.clientY, x: event.clientX, y: event.clientY, startX: event.clientX, startY: event.clientY, moved: false, scroller, handle: event.currentTarget, board: event.currentTarget.closest('.member-rankings'), pointer: event.pointerId }
     frame.current = requestAnimationFrame(tick)
   }
   function move(event: PointerEvent<HTMLButtonElement>) {
@@ -98,7 +100,7 @@ export function useRankingDrag(onDrop: (id: string, target: string, after: boole
   function end(event: PointerEvent<HTMLButtonElement>) {
     const drag = active.current
     if (!drag || drag.pointer !== event.pointerId) return
-    if (drag.moved && (!drag.target || Math.hypot(event.clientX - drag.x, event.clientY - drag.y) > 5)) {
+    if (drag.moved && (!drag.target || Math.hypot(event.clientX - drag.measuredX, event.clientY - drag.measuredY) > 5)) {
       drag.x = event.clientX
       drag.y = event.clientY
       locate()
