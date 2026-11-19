@@ -418,3 +418,14 @@ html[data-viewport='web'] [data-competition-format='singles'].invite-game-card[d
 html[data-viewport='web'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-halloween-costumes='true'] { overflow:visible;padding:0; }
 
 html[data-viewport='web'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-halloween-costumes='true'] > div > div::before, html[data-viewport='web'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame) .invite-roster-editor[data-halloween-costumes='true'] > div > div::after { padding:2px 6px;font-size:11px; }
+
+/* Each started group of four signups highlights one court's worth of slots. */
+html[data-viewport='web'] [data-competition-format='singles'].invite-game-card[data-kind='competition']:has(.invite-game-card__frame)
+  .invite-roster-editor:not([data-halloween-costumes='true']) :is(
+    :has(> .invite-roster-editor-chip[data-lineup-player]) > .invite-roster-editor-chip:nth-child(-n+4),
+    :has(> .invite-roster-editor-chip:nth-child(5 of [data-lineup-player])) > .invite-roster-editor-chip:nth-child(-n+8),
+    :has(> .invite-roster-editor-chip:nth-child(9 of [data-lineup-player])) > .invite-roster-editor-chip:nth-child(-n+12),
+    :has(> .invite-roster-editor-chip:nth-child(13 of [data-lineup-player])) > .invite-roster-editor-chip:nth-child(-n+16)
+  ) {
+  background: #284537;
+}
