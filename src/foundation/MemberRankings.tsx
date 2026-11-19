@@ -1,7 +1,7 @@
-import { Search, Trophy } from 'lucide-react'
+import { Trophy } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { type DirectoryMember } from '../lib/memberDirectory'
+import { memberGender, type DirectoryMember } from '../lib/memberDirectory'
 import { eligibleForRanking, type RankingBoard } from '../lib/memberRankingBoard'
 import { supabase } from '../lib/supabaseClient'
 import { useRankingDrag } from './useRankingDrag'
@@ -63,7 +63,13 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
   const [ranks, setRanks] = useState<MatchRecord[]>([])
   const [rankLoading, setRankLoading] = useState(true)
   const [rankError, setRankError] = useState('')
-  const [search, setSearch] = useState('')
+  const [selectedMember, setSelectedMember] = useState('')
+  const [addedMembers, setAddedMembers] = useState<string[]>(() => {
+    try {
+      const saved: unknown = JSON.parse(localStorage.getItem('success-padel:added-tier-members') ?? '[]')
+      return Array.isArray(saved) ? saved.filter(id => typeof id === 'string') : []
+    } catch { return [] }
+  })
   const [placements, setPlacements] = useState<Partial<Record<RankingBoard, Record<string, string[]>>>>(() => {
     try { return JSON.parse(localStorage.getItem('success-padel:ranking-tiers') ?? '{}') ?? {} }
     catch { return {} }
@@ -108,10 +114,33 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
     void refresh()
     return () => request.current?.abort()
   }, [refresh])
-  const eligible = members.filter(m => eligibleForRanking(m, board))
-  const byId = new Map(eligible.map(m => [m.id, m]))
-  const suggested = ranks.filter(record => byId.has(record.id) && !(canEdit && hidden.includes(record.id)))
-    .sort((a, b) => startingScore(b) - startingScore(a) || b.games - a.games || a.id.localeCompare(b.id))
+  const isOnBoard = (member: DirectoryMember) =>
+    board === 'all' || memberGender(member.gender) === (board === 'men' ? 'Men' : 'Women')
+  const manual = new Set(canEdit ? addedMembers : [])
+  const eligible = members.filter(member => eligibleForRanking(member, board) || (manual.has(member.id) && isOnBoard(member)))
+  const byId = new Map(eligible.map(member => [member.id, member]))
+  const recentIds = new Set(ranks.map(record => record.id))
+  const manualRecords = addedMembers.filter(id => manual.has(id) && !recentIds.has(id))
+    .map(id => ({ id, games: 0, wins: 0, draws: 0 }))
+  const suggested = [...ranks, ...manualRecords].filter(record => byId.has(record.id) && !(canEdit && hidden.includes(record.id)))
+    .sort((a, b) => Number(b.games > 0) - Number(a.games > 0) || startingScore(b) - startingScore(a) || b.games - a.games || a.id.localeCompare(b.id))
+  const visibleIds = new Set(suggested.map(record => record.id))
+  const available = members.filter(member => isOnBoard(member) && !visibleIds.has(member.id))
+    .sort((a, b) => a.display_name.localeCompare(b.display_name))
+  function addMember() {
+    const member = available.find(candidate => candidate.id === selectedMember)
+    if (!canEdit || !member) return
+    const next = [...new Set([...addedMembers, member.id])]
+    setAddedMembers(next)
+    saveHidden(hidden.filter(id => id !== member.id))
+    setSelectedMember('')
+    try {
+      localStorage.setItem('success-padel:added-tier-members', JSON.stringify(next))
+      setOrderMessage(`${member.display_name} added on this device.`)
+    } catch {
+      setOrderMessage(`${member.display_name} added for this session.`)
+    }
+  }
   const order = canEdit ? placements[board] ?? {} : {}
   const assigned = new Set(TIERS.flatMap(tier => order[tier] ?? []))
   const tiers = TIERS.map(tier => {
@@ -123,7 +152,7 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
     }).map(record => record.id)
     return { tier, ids: [...saved, ...initial] }
   })
-  const canReorder = canEdit && !search.trim()
+  const canReorder = canEdit
   function reorder(id: string, target: string) {
     if (!canReorder || id === target) return
     const destination = tiers.find(row => target === row.tier || row.ids.includes(target))
@@ -154,18 +183,25 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
   }}>
     <nav className="member-rankings__navigation" aria-label="Players and rankings"><Link to={`/members${ownerToken ? `#owner=${encodeURIComponent(ownerToken)}` : ''}`}>Players</Link><span aria-current="page">Rankings</span></nav>
     <header className="member-rankings__header"><Trophy aria-hidden="true" /><div><p>SUCCESS PADEL</p><h1>PLAYER RANKINGS</h1></div><span>{isLoading ? '—' : suggested.length}</span></header>
-    <div className="member-rankings__boards" role="group" aria-label="Ranking lists">{(['all', 'men', 'women'] as const).map(value => <button key={value} type="button" aria-pressed={board === value} disabled={Boolean(drag.dragging)} onClick={() => { setBoard(value); setSearch(''); setOrderMessage('') }}>{value === 'all' ? 'All' : value === 'men' ? 'Men' : 'Women'}</button>)}</div>
-    <p>Scored games in the past two months. Rankings are provisional.</p>
+    <div className="member-rankings__boards" role="group" aria-label="Ranking lists">{(['all', 'men', 'women'] as const).map(value => <button key={value} type="button" aria-pressed={board === value} disabled={Boolean(drag.dragging)} onClick={() => { setBoard(value); setSelectedMember(''); setOrderMessage('') }}>{value === 'all' ? 'All' : value === 'men' ? 'Men' : 'Women'}</button>)}</div>
+    <p>Based on scored games in the past two months and members added by staff.</p>
     <div className="member-rankings__toolbar">
       {canEdit && hidden.length > 0 ? <button type="button" onClick={() => saveHidden([])}>Restore hidden players ({hidden.length})</button> : null}
-      <label className="member-rankings__search"><Search aria-hidden="true" /><input type="search" aria-label="Search ranked players" placeholder="Search players" value={search} onChange={e => setSearch(e.target.value)} /></label>
+      {canEdit ? <div className="member-rankings__add">
+        <select aria-label="Existing member to add" value={selectedMember} disabled={isLoading}
+          onChange={event => setSelectedMember(event.target.value)}>
+          <option value="">Choose an existing member</option>
+          {available.map(member => <option key={member.id} value={member.id}>{member.display_name}</option>)}
+        </select>
+        <button type="button" onClick={addMember} disabled={isLoading || !selectedMember}>Add member</button>
+      </div> : null}
     </div>
     {error || rankError ? <div className="member-rankings__empty" role="alert">{error || rankError}{rankError ? <button type="button" onClick={() => void refresh()}>Retry</button> : null}</div> : isLoading ? <p role="status">Loading rankings…</p> : <>
       {tiers.map(({ tier, ids }, index) => (
         <section className="member-rankings__tier" key={tier} aria-label={tier} data-rank-id={tier} data-drop-target={drag.over === tier}>
           <h2>{tier}</h2>
           <div className="member-rankings__tiles">
-            {ids.filter(id => byId.get(id)?.display_name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())).map(id => {
+            {ids.map(id => {
               const member = byId.get(id)!
               const content = <>
                 {member.avatar_url ? <img src={member.avatar_url} alt="" loading="lazy" draggable={false} /> : <span aria-hidden="true">{member.display_name.trim().slice(0, 1).toUpperCase()}</span>}
