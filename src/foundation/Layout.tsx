@@ -24,7 +24,7 @@ export function Layout() {
     (loc.pathname.startsWith('/competitions/') && isPlaySession && !isCompetitionSetup)
   const needsFillViewport = isGamesHub || isPlaySession || isCompetitionSetup || isCompetitionEntry
 
-  if (loc.pathname === '/members' || loc.pathname === '/members/') {
+  if (/^\/(members|rankings)\/?$/i.test(loc.pathname)) {
     return <main className="member-directory-shell" data-scroll-y><Outlet /></main>
   }
 

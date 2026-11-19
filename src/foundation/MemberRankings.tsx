@@ -81,13 +81,53 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
     } catch { return [] }
   })
   const [menuPlayer, setMenuPlayer] = useState<string | null>(null)
-  function saveHidden(next: string[]) {
-    setHidden(next)
-    setMenuPlayer(null)
-    try { localStorage.setItem('success-padel:hidden-tier-players', JSON.stringify(next)) }
-    catch { /* The current page still reflects the change. */ }
-  }
   const [orderMessage, setOrderMessage] = useState('')
+  const [revision, setRevision] = useState<number | null>(null)
+  const [saving, setSaving] = useState(false)
+  const writeInProgress = useRef(false)
+  const loadShared = useCallback(async () => {
+    if (!canEdit) return
+    const { data, error } = await supabase.rpc('access_member_tier_board', { p_access_token: ownerToken })
+    if (error) {
+      setOrderMessage('Could not load shared board. Reload to retry.')
+      return
+    }
+    if (data.board) {
+      setPlacements(data.board.placements)
+      setAddedMembers(data.board.addedMembers)
+      setHidden(data.board.hidden)
+    }
+    setRevision(data.revision)
+    setOrderMessage('')
+  }, [canEdit, ownerToken])
+  useEffect(() => { void loadShared() }, [loadShared])
+
+  async function saveShared(next: { placements: typeof placements; addedMembers: string[]; hidden: string[] }, message: string) {
+    if (!canEdit || revision === null || writeInProgress.current) return
+    writeInProgress.current = true
+    setSaving(true)
+    setOrderMessage('Saving…')
+    try {
+      const { data, error } = await supabase.rpc('access_member_tier_board', {
+        p_access_token: ownerToken, p_revision: revision, p_board: next,
+      })
+      if (error) throw error
+      setRevision(data.revision)
+      setPlacements(next.placements)
+      setAddedMembers(next.addedMembers)
+      setHidden(next.hidden)
+      setOrderMessage(message)
+    } catch {
+      setOrderMessage('Change wasn’t saved. Reload the shared board and try again.')
+    } finally {
+      writeInProgress.current = false
+      setSaving(false)
+    }
+  }
+  function saveHidden(next: string[]) {
+    setMenuPlayer(null)
+    void saveShared({ placements, addedMembers, hidden: next }, 'Board saved.')
+  }
   const request = useRef<AbortController | null>(null)
   const memberIds = members.filter(member => eligibleForRanking(member, 'all')).map(member => member.id).sort().join(',')
   const ids = useMemo(() => memberIds ? memberIds.split(',') : [], [memberIds])
@@ -131,15 +171,8 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
     const member = available.find(candidate => candidate.id === selectedMember)
     if (!canEdit || !member) return
     const next = [...new Set([...addedMembers, member.id])]
-    setAddedMembers(next)
-    saveHidden(hidden.filter(id => id !== member.id))
     setSelectedMember('')
-    try {
-      localStorage.setItem('success-padel:added-tier-members', JSON.stringify(next))
-      setOrderMessage(`${member.display_name} added on this device.`)
-    } catch {
-      setOrderMessage(`${member.display_name} added for this session.`)
-    }
+    void saveShared({ placements, addedMembers: next, hidden: hidden.filter(id => id !== member.id) }, `${member.display_name} added. Board saved.`)
   }
   const order = canEdit ? placements[board] ?? {} : {}
   const assigned = new Set(TIERS.flatMap(tier => order[tier] ?? []))
@@ -152,7 +185,7 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
     }).map(record => record.id)
     return { tier, ids: [...saved, ...initial] }
   })
-  const canReorder = canEdit
+  const canReorder = canEdit && revision !== null && !saving
   function reorder(id: string, target: string, after = false) {
     if (!canReorder || id === target) return
     const destination = tiers.find(row => target === row.tier || row.ids.includes(target))
@@ -166,13 +199,7 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
       nextBoard[tier].push(...(order[tier] ?? []).filter(player => !visibleIds.has(player)))
     }
     const next = { ...placements, [board]: nextBoard }
-    setPlacements(next)
-    try {
-      localStorage.setItem('success-padel:ranking-tiers', JSON.stringify(next))
-      setOrderMessage(`${byId.get(id)?.display_name ?? 'Player'} moved to ${destination.tier} · saved on this device.`)
-    } catch {
-      setOrderMessage('Order changed for this session.')
-    }
+    void saveShared({ placements: next, addedMembers, hidden }, `${byId.get(id)?.display_name ?? 'Player'} moved to ${destination.tier}. Board saved.`)
   }
   const drag = useRankingDrag(reorder)
   const isLoading = loading || rankLoading
@@ -189,14 +216,16 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
     <header className="member-rankings__header"><Trophy aria-hidden="true" /><div><h1>PLAYER RANKINGS</h1></div><span>{isLoading ? '—' : suggested.length}</span></header>
     <div className="member-rankings__boards" role="group" aria-label="Ranking lists">{(['all', 'men', 'women'] as const).map(value => <button key={value} type="button" aria-pressed={board === value} disabled={Boolean(drag.dragging)} onClick={() => { setBoard(value); setSelectedMember(''); setOrderMessage('') }}>{value === 'all' ? 'All' : value === 'men' ? 'Men' : 'Women'}</button>)}</div>
     <div className="member-rankings__toolbar">
-      {canEdit && hidden.length > 0 ? <button type="button" onClick={() => saveHidden([])}>Restore hidden players ({hidden.length})</button> : null}
+      {canEdit && revision === 0 && (Object.keys(placements).length > 0 || hidden.length > 0 || addedMembers.length > 0)
+        ? <button type="button" disabled={saving} onClick={() => void saveShared({ placements, addedMembers, hidden }, 'Board saved across devices.')}>Save this browser’s board</button> : null}
+      {canEdit && hidden.length > 0 ? <button type="button" disabled={!canReorder} onClick={() => saveHidden([])}>Restore hidden players ({hidden.length})</button> : null}
       {canEdit ? <div className="member-rankings__add">
         <select aria-label="Existing member to add" value={selectedMember} disabled={isLoading}
           onChange={event => setSelectedMember(event.target.value)}>
           <option value="">Choose an existing member</option>
           {available.map(member => <option key={member.id} value={member.id}>{member.display_name}</option>)}
         </select>
-        <button type="button" onClick={addMember} disabled={isLoading || !selectedMember}>Add member</button>
+        <button type="button" onClick={addMember} disabled={isLoading || !canReorder || !selectedMember}>Add member</button>
       </div> : null}
     </div>
     {error || rankError ? <div className="member-rankings__empty" role="alert">{error || rankError}{rankError ? <button type="button" onClick={() => void refresh()}>Retry</button> : null}</div> : isLoading ? <p role="status">Loading rankings…</p> : <>
