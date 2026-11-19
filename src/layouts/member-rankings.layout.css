@@ -235,13 +235,18 @@ html[data-viewport='tv'] .member-rankings__boards button:nth-child(3) { backgrou
 html[data-viewport='tv'] .member-rankings__boards button:nth-child(2)[aria-pressed='true'] { background:#66b5ff;color:#172131; }
 html[data-viewport='tv'] .member-rankings__boards button:nth-child(3)[aria-pressed='true'] { background:#ff7b86;color:#172131; }
 
-.member-rankings__tier { margin-block: 8px; border: 1px solid #64546d; border-radius: 8px; background: #241e30; }
-.member-rankings__tier h2 { margin: 0; padding: 7px 10px; font-size: .9rem; background: #443051; border-radius: 7px 7px 0 0; }
-.member-rankings__tiles { display: flex; flex-wrap: wrap; gap: 5px; min-height: 44px; padding: 6px; }
+.member-rankings__tier { --tier-color: #b9a6d4; margin-block: 14px; border: 1px solid #64546d; border-left: 4px solid var(--tier-color); border-radius: 8px; background: #241e30; }
+.member-rankings__tier:nth-of-type(1) { --tier-color: #f3d272; }
+.member-rankings__tier:nth-of-type(2) { --tier-color: #a4cdfb; }
+.member-rankings__tier:nth-of-type(3) { --tier-color: #9fe0bd; }
+.member-rankings__tier:nth-of-type(4) { --tier-color: #cbb5f1; }
+.member-rankings__tier:nth-of-type(5) { --tier-color: #f4b5a6; }
+.member-rankings__tier h2 { margin: 0; padding: 9px 12px; font-size: 1.05rem; font-weight: 800; background: var(--tier-color); color: #201a29; border-radius: 7px 7px 0 0; }
+.member-rankings__tiles { display: flex; flex-wrap: wrap; gap: 7px; min-height: 48px; padding: 8px; }
 .member-rankings__tile { position: relative; max-width: 100%; }
-.member-rankings__tile > button, .member-rankings__tile > div { display: flex; align-items: center; gap: 5px; padding: 3px 7px 3px 3px; min-height: 42px; max-width: 100%; border: 1px solid #695575; border-radius: 6px; background: #352841; color: #fff; font: inherit; font-size: .9rem; }
+.member-rankings__tile > button, .member-rankings__tile > div { display: flex; align-items: center; gap: 7px; padding: 4px 9px 4px 4px; min-height: 58px; max-width: 100%; border: 1px solid #695575; border-radius: 6px; background: #352841; color: #fff; font: inherit; font-size: .9rem; }
 .member-rankings__tile > button:not(:disabled) { cursor: grab; touch-action: none; user-select: none; }
-.member-rankings__tile img, .member-rankings__tile span { width: 30px; height: 30px; flex: none; border-radius: 50%; object-fit: cover; }
+.member-rankings__tile img, .member-rankings__tile span { width: 48px; height: 48px; flex: none; border-radius: 50%; object-fit: cover; }
 .member-rankings__tile span { display: grid; place-items: center; background: #594467; }
 .member-rankings__tile[data-dragging='true'] { opacity: .5; }
 .member-rankings__tier[data-drop-target='true'], .member-rankings__tile[data-drop-target='true'] { outline: 2px solid #ffe554; }

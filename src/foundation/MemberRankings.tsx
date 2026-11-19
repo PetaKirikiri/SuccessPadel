@@ -186,9 +186,8 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
     if (event.key === 'Escape') setMenuPlayer(null)
   }}>
     <nav className="member-rankings__navigation" aria-label="Players and rankings"><Link to={`/members${ownerToken ? `#owner=${encodeURIComponent(ownerToken)}` : ''}`}>Players</Link><span aria-current="page">Rankings</span></nav>
-    <header className="member-rankings__header"><Trophy aria-hidden="true" /><div><p>SUCCESS PADEL</p><h1>PLAYER RANKINGS</h1></div><span>{isLoading ? '—' : suggested.length}</span></header>
+    <header className="member-rankings__header"><Trophy aria-hidden="true" /><div><h1>PLAYER RANKINGS</h1></div><span>{isLoading ? '—' : suggested.length}</span></header>
     <div className="member-rankings__boards" role="group" aria-label="Ranking lists">{(['all', 'men', 'women'] as const).map(value => <button key={value} type="button" aria-pressed={board === value} disabled={Boolean(drag.dragging)} onClick={() => { setBoard(value); setSelectedMember(''); setOrderMessage('') }}>{value === 'all' ? 'All' : value === 'men' ? 'Men' : 'Women'}</button>)}</div>
-    <p>Based on scored games in the past two months and members added by staff.</p>
     <div className="member-rankings__toolbar">
       {canEdit && hidden.length > 0 ? <button type="button" onClick={() => saveHidden([])}>Restore hidden players ({hidden.length})</button> : null}
       {canEdit ? <div className="member-rankings__add">
@@ -212,7 +211,7 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
                 <strong>{member.display_name}</strong>
               </>
               return <div className="member-rankings__tile" key={id} data-rank-id={id} data-dragging={drag.dragging === id} data-insert={drag.over === id && drag.dragging !== id ? (drag.after ? 'after' : 'before') : undefined}>
-                {canEdit ? <button type="button" disabled={!canReorder} aria-label={`Move ${member.display_name}`} title="Drag to move or right-click for options."
+                {canEdit ? <button type="button" disabled={!canReorder} aria-label={`Move ${member.display_name}`}
                   onContextMenu={event => { event.preventDefault(); drag.cancel(); setMenuPlayer(id) }}
                   onPointerDown={event => drag.start(event, id)} onPointerMove={drag.move} onPointerUp={drag.end}
                   onPointerCancel={drag.cancel} onLostPointerCapture={drag.cancel} onKeyDown={event => {
