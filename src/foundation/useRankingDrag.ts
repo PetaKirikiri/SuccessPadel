@@ -27,11 +27,25 @@ export function useRankingDrag(onDrop: (id: string, target: string, after: boole
   function locate() {
     const drag = active.current
     if (!drag?.moved) return
-    const row = document.elementFromPoint(drag.x, drag.y)?.closest<HTMLElement>('[data-rank-id]')
-    const id = row?.dataset.rankId
-    const card = row?.querySelector(':scope > button')
-    const bounds = card?.getBoundingClientRect()
-    drag.target = id ?? null
+    const hit = document.elementFromPoint(drag.x, drag.y)
+    const tier = hit?.closest<HTMLElement>('.member-rankings__tier')
+    let row = hit?.closest<HTMLElement>('.member-rankings__tile[data-rank-id]')
+    if (!row && tier) {
+      let nearest = Infinity
+      for (const tile of tier.querySelectorAll<HTMLElement>('.member-rankings__tile[data-rank-id]')) {
+        if (tile.dataset.rankId === drag.id) continue
+        const bounds = tile.getBoundingClientRect()
+        const dx = Math.max(bounds.left - drag.x, 0, drag.x - bounds.right)
+        const dy = Math.max(bounds.top - drag.y, 0, drag.y - bounds.bottom)
+        const distance = dx * dx + dy * dy
+        if (distance < nearest) {
+          nearest = distance
+          row = tile
+        }
+      }
+    }
+    const bounds = row?.querySelector(':scope > button')?.getBoundingClientRect()
+    drag.target = row?.dataset.rankId ?? tier?.dataset.rankId ?? null
     drag.after = Boolean(bounds && drag.x >= bounds.left + bounds.width / 2)
     setOver(drag.target)
     setAfter(drag.after)
@@ -46,8 +60,8 @@ export function useRankingDrag(onDrop: (id: string, target: string, after: boole
       if (step) {
         if (drag.scroller) drag.scroller.scrollBy(0, step)
         else window.scrollBy(0, step)
-        locate()
       }
+      locate()
     }
     frame.current = requestAnimationFrame(tick)
   }
@@ -80,11 +94,15 @@ export function useRankingDrag(onDrop: (id: string, target: string, after: boole
       ghost.current.style.left = `${drag.x + 12}px`
       ghost.current.style.top = `${drag.y + 12}px`
     }
-    locate()
   }
   function end(event: PointerEvent<HTMLButtonElement>) {
     const drag = active.current
     if (!drag || drag.pointer !== event.pointerId) return
+    if (drag.moved && (!drag.target || Math.hypot(event.clientX - drag.x, event.clientY - drag.y) > 5)) {
+      drag.x = event.clientX
+      drag.y = event.clientY
+      locate()
+    }
     const commit = drag.moved && drag.target !== drag.id
     cleanup()
     if (commit && drag.target) onDrop(drag.id, drag.target, drag.after)
