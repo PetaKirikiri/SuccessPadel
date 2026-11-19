@@ -201,7 +201,7 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
     </div>
     {error || rankError ? <div className="member-rankings__empty" role="alert">{error || rankError}{rankError ? <button type="button" onClick={() => void refresh()}>Retry</button> : null}</div> : isLoading ? <p role="status">Loading rankings…</p> : <>
       {tiers.map(({ tier, ids }, index) => (
-        <section className="member-rankings__tier" key={tier} aria-label={tier} data-rank-id={tier} data-drop-target={drag.over === tier || Boolean(drag.over && ids.includes(drag.over) && drag.over !== drag.dragging)}>
+        <section className="member-rankings__tier" key={tier} aria-label={tier} data-rank-id={tier} data-drop-at-end={drag.over === tier} data-drop-target={drag.over === tier || Boolean(drag.over && ids.includes(drag.over) && drag.over !== drag.dragging)}>
           <h2>{tier}</h2>
           <div className="member-rankings__tiles">
             {ids.map(id => {

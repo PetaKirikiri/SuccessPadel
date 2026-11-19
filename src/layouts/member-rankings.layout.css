@@ -258,3 +258,12 @@ html[data-viewport='tv'] .member-rankings__boards button:nth-child(3)[aria-press
 .member-rankings__tile[data-insert='after']::after { right: -4px; }
 .member-rankings__drag-preview { position: fixed; z-index: 1000; pointer-events: none; transform: rotate(3deg); filter: drop-shadow(0 5px 10px #000a); }
 .member-rankings__drag-preview > div { border-color: #ffe554; }
+
+.member-rankings:not([data-measuring-drop]) .member-rankings__tile[data-insert] { display: flex; align-items: stretch; gap: 7px; }
+.member-rankings:not([data-measuring-drop]) .member-rankings__tile[data-insert]::after,
+.member-rankings:not([data-measuring-drop]) .member-rankings__tier[data-drop-at-end='true'] .member-rankings__tiles::after {
+  content: ''; position: static; box-sizing: border-box; flex: 0 1 var(--ranking-gap-width, 96px);
+  min-height: 58px; border: 2px dashed #ffe554; border-radius: 6px; background: #ffe55420; pointer-events: none;
+}
+.member-rankings:not([data-measuring-drop]) .member-rankings__tile[data-insert='before']::after { order: -1; }
+.member-rankings[data-measuring-drop] .member-rankings__tile[data-insert]::after { display: none; }
