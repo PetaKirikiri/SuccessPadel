@@ -247,3 +247,9 @@ html[data-viewport='tv'] .member-rankings__boards button:nth-child(3)[aria-press
 .member-rankings__tier[data-drop-target='true'], .member-rankings__tile[data-drop-target='true'] { outline: 2px solid #ffe554; }
 .member-rankings__tile > .member-rankings__tile-menu { position: absolute; top: 100%; left: 0; z-index: 5; width: max-content; max-width: none; padding: 4px; box-shadow: 0 4px 12px #0008; }
 .member-rankings__tile-menu button { border: 0; border-radius: 4px; padding: 7px 9px; background: #542c43; color: #fff; cursor: pointer; }
+
+.member-rankings__tile[data-insert]::after { content: ''; position: absolute; top: 0; bottom: 0; width: 3px; border-radius: 3px; background: #ffe554; pointer-events: none; }
+.member-rankings__tile[data-insert='before']::after { left: -4px; }
+.member-rankings__tile[data-insert='after']::after { right: -4px; }
+.member-rankings__drag-preview { position: fixed; z-index: 1000; pointer-events: none; transform: rotate(3deg); filter: drop-shadow(0 5px 10px #000a); }
+.member-rankings__drag-preview > div { border-color: #ffe554; }

@@ -153,19 +153,23 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
     return { tier, ids: [...saved, ...initial] }
   })
   const canReorder = canEdit
-  function reorder(id: string, target: string) {
+  function reorder(id: string, target: string, after = false) {
     if (!canReorder || id === target) return
     const destination = tiers.find(row => target === row.tier || row.ids.includes(target))
     if (!destination || !tiers.some(row => row.ids.includes(id))) return
     const nextBoard = Object.fromEntries(tiers.map(row => [row.tier, row.ids.filter(player => player !== id)]))
-    const originalIndex = destination.ids.indexOf(target)
+    const originalIndex = nextBoard[destination.tier].indexOf(target)
     const nextIds = nextBoard[destination.tier]
-    nextIds.splice(originalIndex < 0 ? nextIds.length : originalIndex, 0, id)
+    nextIds.splice(originalIndex < 0 ? nextIds.length : originalIndex + Number(after), 0, id)
+    if (tiers.every(row => row.ids.join(',') === nextBoard[row.tier].join(','))) return
+    for (const tier of TIERS) {
+      nextBoard[tier].push(...(order[tier] ?? []).filter(player => !visibleIds.has(player)))
+    }
     const next = { ...placements, [board]: nextBoard }
     setPlacements(next)
     try {
       localStorage.setItem('success-padel:ranking-tiers', JSON.stringify(next))
-      setOrderMessage('Order saved on this device.')
+      setOrderMessage(`${byId.get(id)?.display_name ?? 'Player'} moved to ${destination.tier} · saved on this device.`)
     } catch {
       setOrderMessage('Order changed for this session.')
     }
@@ -198,7 +202,7 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
     </div>
     {error || rankError ? <div className="member-rankings__empty" role="alert">{error || rankError}{rankError ? <button type="button" onClick={() => void refresh()}>Retry</button> : null}</div> : isLoading ? <p role="status">Loading rankings…</p> : <>
       {tiers.map(({ tier, ids }, index) => (
-        <section className="member-rankings__tier" key={tier} aria-label={tier} data-rank-id={tier} data-drop-target={drag.over === tier}>
+        <section className="member-rankings__tier" key={tier} aria-label={tier} data-rank-id={tier} data-drop-target={drag.over === tier || Boolean(drag.over && ids.includes(drag.over) && drag.over !== drag.dragging)}>
           <h2>{tier}</h2>
           <div className="member-rankings__tiles">
             {ids.map(id => {
@@ -207,7 +211,7 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
                 {member.avatar_url ? <img src={member.avatar_url} alt="" loading="lazy" draggable={false} /> : <span aria-hidden="true">{member.display_name.trim().slice(0, 1).toUpperCase()}</span>}
                 <strong>{member.display_name}</strong>
               </>
-              return <div className="member-rankings__tile" key={id} data-rank-id={id} data-dragging={drag.dragging === id} data-drop-target={drag.over === id && drag.dragging !== id}>
+              return <div className="member-rankings__tile" key={id} data-rank-id={id} data-dragging={drag.dragging === id} data-insert={drag.over === id && drag.dragging !== id ? (drag.after ? 'after' : 'before') : undefined}>
                 {canEdit ? <button type="button" disabled={!canReorder} aria-label={`Move ${member.display_name}`} title="Drag to move or right-click for options."
                   onContextMenu={event => { event.preventDefault(); drag.cancel(); setMenuPlayer(id) }}
                   onPointerDown={event => drag.start(event, id)} onPointerMove={drag.move} onPointerUp={drag.end}
@@ -221,7 +225,7 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
                     const targets = { ArrowLeft: ids[position - 1], ArrowRight: ids[position + 1], ArrowUp: tiers[index - 1]?.tier, ArrowDown: tiers[index + 1]?.tier }
                     if (event.key === 'Escape') drag.cancel()
                     const target = targets[event.key as keyof typeof targets]
-                    if (target) { event.preventDefault(); reorder(id, target) }
+                    if (target) { event.preventDefault(); reorder(id, target, event.key === 'ArrowRight') }
                   }}>{content}</button> : <div>{content}</div>}
                 {canEdit && menuPlayer === id ? <div className="member-rankings__tile-menu">
                   <button type="button" autoFocus onClick={() => saveHidden([...hidden, id])}>Remove from board</button>
