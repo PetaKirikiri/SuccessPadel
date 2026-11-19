@@ -27,14 +27,12 @@ export function useRankingDrag(onDrop: (id: string, target: string, after: boole
   function locate() {
     const drag = active.current
     if (!drag?.moved) return
-    // Hit-test the unshifted layout so opening a gap cannot change its own target.
-    drag.board?.setAttribute('data-measuring-drop', '')
     const row = document.elementFromPoint(drag.x, drag.y)?.closest<HTMLElement>('[data-rank-id]')
     const id = row?.dataset.rankId
+    const card = row?.querySelector(':scope > button')
+    const bounds = card?.getBoundingClientRect()
     drag.target = id ?? null
-    const rect = row?.getBoundingClientRect()
-    drag.after = Boolean(rect && row?.classList.contains('member-rankings__tile') && drag.x >= rect.left + rect.width / 2)
-    drag.board?.removeAttribute('data-measuring-drop')
+    drag.after = Boolean(bounds && drag.x >= bounds.left + bounds.width / 2)
     setOver(drag.target)
     setAfter(drag.after)
   }
@@ -87,6 +85,9 @@ export function useRankingDrag(onDrop: (id: string, target: string, after: boole
   function end(event: PointerEvent<HTMLButtonElement>) {
     const drag = active.current
     if (!drag || drag.pointer !== event.pointerId) return
+    drag.x = event.clientX
+    drag.y = event.clientY
+    locate()
     const commit = drag.moved && drag.target !== drag.id
     cleanup()
     if (commit && drag.target) onDrop(drag.id, drag.target, drag.after)

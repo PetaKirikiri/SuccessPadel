@@ -107,17 +107,20 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
     writeInProgress.current = true
     setSaving(true)
     setOrderMessage('Saving…')
+    setPlacements(next.placements)
+    setAddedMembers(next.addedMembers)
+    setHidden(next.hidden)
     try {
       const { data, error } = await supabase.rpc('access_member_tier_board', {
         p_access_token: ownerToken, p_revision: revision, p_board: next,
       })
       if (error) throw error
       setRevision(data.revision)
-      setPlacements(next.placements)
-      setAddedMembers(next.addedMembers)
-      setHidden(next.hidden)
       setOrderMessage(message)
     } catch {
+      setPlacements(placements)
+      setAddedMembers(addedMembers)
+      setHidden(hidden)
       setOrderMessage('Change wasn’t saved. Reload the shared board and try again.')
     } finally {
       writeInProgress.current = false
