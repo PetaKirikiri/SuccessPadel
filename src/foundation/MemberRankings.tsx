@@ -52,6 +52,19 @@ function startingScore(record: MatchRecord): number {
   return (record.wins + record.draws / 2 + 2) / (record.games + 4)
 }
 
+const namedPlayerPrefix = 'ranking-name:'
+
+function rankingPlayerFromId(id: string): DirectoryMember | null {
+  const match = /^ranking-name:(all|men|women):(.+)$/u.exec(id)
+  if (!match) return null
+  return {
+    id, display_name: match[2], avatar_url: null,
+    gender: match[1] === 'men' ? 'male' : match[1] === 'women' ? 'female' : null,
+    skill_level: null, history_levels: [], directory_hidden: false,
+    has_line_account: false, court_member: null,
+  }
+}
+
 const TIERS = ['Advanced', 'High Intermediate', 'Intermediate', 'Low Intermediate', 'Beginner'] as const
 
 type Props = {
@@ -228,7 +241,11 @@ export function MemberRankings({ members, ownerToken, loading, error }: Props) {
   const isOnBoard = (member: DirectoryMember) =>
     board === 'all' || memberGender(member.gender) === (board === 'men' ? 'Men' : 'Women')
   const manual = new Set(addedMembers)
-  const eligible = members.filter(member => eligibleForRanking(member, board) || (manual.has(member.id) && isOnBoard(member)))
+  const boardMembers = [...members, ...addedMembers.flatMap(id => {
+    const player = rankingPlayerFromId(id)
+    return player ? [player] : []
+  })]
+  const eligible = boardMembers.filter(member => eligibleForRanking(member, board) || (manual.has(member.id) && isOnBoard(member)))
   const byId = new Map(eligible.map(member => [member.id, member]))
   const recentIds = new Set(ranks.map(record => record.id))
   const manualRecords = addedMembers.filter(id => manual.has(id) && !recentIds.has(id))
@@ -236,19 +253,31 @@ export function MemberRankings({ members, ownerToken, loading, error }: Props) {
   const suggested = [...ranks, ...manualRecords].filter(record => byId.has(record.id) && !hidden.includes(record.id))
     .sort((a, b) => Number(b.games > 0) - Number(a.games > 0) || startingScore(b) - startingScore(a) || b.games - a.games || a.id.localeCompare(b.id))
   const visibleIds = new Set(suggested.map(record => record.id))
-  const available = members.filter(member => isOnBoard(member) && !visibleIds.has(member.id))
+  const available = boardMembers.filter(member => isOnBoard(member) && !visibleIds.has(member.id))
     .sort((a, b) => a.display_name.localeCompare(b.display_name))
   const [addedTile, setAddedTile] = useState('')
   useEffect(() => {
-    if (!addedTile) return
+    if (!addedTile || loading || rankLoading) return
     document.querySelector(`.member-rankings__tile[data-rank-id="${CSS.escape(addedTile)}"]`)
       ?.scrollIntoView({ block: 'nearest' })
     setAddedTile('')
-  }, [addedTile])
+  }, [addedTile, loading, rankLoading])
 
   async function addMember() {
-    const member = available.find(candidate => candidate.id === selectedMember)
-    if (!member || revision === null || writeInProgress.current) return
+    const name = selectedMember.trim().replace(/\s+/g, ' ')
+    if (!name || revision === null || writeInProgress.current) return
+    const matches = boardMembers.filter(candidate =>
+      isOnBoard(candidate) && candidate.display_name.toLowerCase() === name.toLowerCase())
+    if (matches.length > 1) {
+      setOrderMessage('More than one player has that name.')
+      return
+    }
+    const member = matches[0] ?? { id: `${namedPlayerPrefix}${board}:${name}`, display_name: name }
+    if (visibleIds.has(member.id)) {
+      setOrderMessage(`${member.display_name} is already on this board.`)
+      setAddedTile(member.id)
+      return
+    }
     const addTo = (state: BoardState): BoardState => ({
       ...state,
       addedMembers: [...new Set([...state.addedMembers, member.id])],
@@ -349,14 +378,15 @@ export function MemberRankings({ members, ownerToken, loading, error }: Props) {
       {revision === 0 && (Object.keys(placements).length > 0 || hidden.length > 0 || addedMembers.length > 0)
         ? <button type="button" disabled={saving || adding} onClick={() => void saveShared({ placements, addedMembers, hidden }, 'Board saved across devices.')}>Save this browser’s board</button> : null}
       {hidden.length > 0 ? <button type="button" disabled={!canReorder} onClick={() => saveHidden([])}>Restore hidden ({hidden.length})</button> : null}
-      {<div className="member-rankings__add">
-        <select aria-label="Existing member to add" value={selectedMember} disabled={loading || adding}
-          onChange={event => setSelectedMember(event.target.value)}>
-          <option value="">Choose member</option>
-          {available.map(member => <option key={member.id} value={member.id}>{member.display_name}</option>)}
-        </select>
-        <button type="button" onClick={addMember} disabled={loading || saving || adding || revision === null || !selectedMember}>Add member</button>
-      </div>}
+      <form className="member-rankings__add" onSubmit={event => { event.preventDefault(); void addMember() }}>
+        <input type="text" aria-label="Player name" placeholder="Type player name" list="ranking-member-names"
+          value={selectedMember} maxLength={80} disabled={adding}
+          onChange={event => setSelectedMember(event.target.value)} />
+        <datalist id="ranking-member-names">
+          {available.map(member => <option key={member.id} value={member.display_name} />)}
+        </datalist>
+        <button type="submit" disabled={loading || saving || adding || !selectedMember.trim() || revision === null}>Add player</button>
+      </form>
     </div>
     {orderMessage ? <p role="status" className="member-rankings__feedback">{orderMessage}</p> : null}
     {conflict || syncFailed ? <button type="button" disabled={saving || adding} onClick={() => {
@@ -371,7 +401,8 @@ export function MemberRankings({ members, ownerToken, loading, error }: Props) {
       void loadShared()
     }}>Use shared board</button> : null}
     {syncFailed ? <button type="button" disabled={adding} onClick={() => void syncBoard()}>Retry sync</button> : null}
-    {error || rankError ? <div className="member-rankings__empty" role="alert">{error || rankError}{rankError ? <button type="button" onClick={() => void refresh()}>Retry</button> : null}</div> : isLoading ? <p role="status">Loading rankings…</p> : <>
+    {rankError && <div className="member-rankings__empty" role="alert">{rankError}<button type="button" onClick={() => void refresh()}>Retry</button></div>}
+    {error ? <div className="member-rankings__empty" role="alert">{error}</div> : isLoading ? <p role="status">Loading rankings…</p> : <>
       {tiers.map(({ tier, ids }, index) => (
         <section className="member-rankings__tier" key={tier} aria-label={tier} data-rank-id={tier} data-drop-at-end={drag.over === tier} data-drop-target={drag.over === tier || Boolean(drag.over && ids.includes(drag.over) && drag.over !== drag.dragging)}>
           <h2>{tier}</h2>
