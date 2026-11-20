@@ -12,7 +12,7 @@ function savedMapping(): Mapping | null {
   } catch { return null }
 }
 
-export function ShutterRemote({ onAction, clicker, scope }: { clicker?: boolean; scope: string; onAction: (ours: boolean, subtract: boolean) => void }) {
+export function ShutterRemote({ onAction, clicker, scope, paused }: { paused?: boolean; clicker?: boolean; scope: string; onAction: (ours: boolean, subtract: boolean) => void }) {
   const [learnedMapping, setMapping] = useState(savedMapping)
   const bridgeKey = 'mac-clicker-enabled:' + scope
   const [enabled, setEnabled] = useState(() => {
@@ -40,7 +40,7 @@ export function ShutterRemote({ onAction, clicker, scope }: { clicker?: boolean;
   callback.current = onAction
 
   useEffect(() => {
-    if (!enabled && !testing && step === null) return
+    if (paused || (!enabled && !testing && step === null)) return
     let pending: Button | null = null
     let timer = 0
     const clear = () => { window.clearTimeout(timer); pending = null }
@@ -180,7 +180,7 @@ export function ShutterRemote({ onAction, clicker, scope }: { clicker?: boolean;
       window.removeEventListener('blur', cancel)
       document.removeEventListener('visibilitychange', cancel)
     }
-  }, [mapping, enabled, step, testing, macBridge, clicker])
+  }, [mapping, enabled, step, testing, macBridge, clicker, paused])
 
   return <details><summary>Shutter remote</summary>
     {import.meta.env.DEV && <button type="button" aria-pressed={macBridge} onClick={() => {

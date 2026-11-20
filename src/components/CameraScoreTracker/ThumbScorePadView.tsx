@@ -1,4 +1,6 @@
-import { useRef, type RefObject } from 'react'
+import { ScorerInputTest } from './ScorerInputTest'
+
+import { useRef, useState, type RefObject } from 'react'
 import { ShutterRemote } from './ShutterRemote'
 import './courtScoreDisplay.css'
 import type { EngineStatus } from '../../lib/gestureFingerDetect'
@@ -53,6 +55,7 @@ type Props = {
 export function ThumbScorePadView({ clicker, serving, onRemote, remoteScope, videoRef, status, error, ourPoints, theirPoints,
   ourGames, theirGames, timerValue, onWin, onLose, onUndo, onReset,
   undoDisabled = false, restartCamera, goBack, zoom = 1, onZoomChange, zoomCanvasRef }: Props) {
+  const [inputTesting, setInputTesting] = useState(false)
   const controls = useRef<HTMLDialogElement>(null)
   const choosing = clicker && serving === null
   const odd = (ourPoints + theirPoints) % 2 === 1
@@ -76,9 +79,11 @@ export function ThumbScorePadView({ clicker, serving, onRemote, remoteScope, vid
       </section>
       <button data-setup={choosing || undefined} className="court-score-display__time" type="button" onClick={() => controls.current?.showModal()}
         aria-label={`Time ${timerValue}. Open scorer controls`} title="Open scorer controls"><span>{choosing ? '⚙' : timerValue}</span></button>
+      {clicker && <ScorerInputTest active={inputTesting} setActive={setInputTesting} />}
+
       <dialog ref={controls} className="court-score-controls" aria-label="Scorer controls">
         <button type="button" autoFocus onClick={() => controls.current?.close()}>Back to score</button>
-        <ShutterRemote key={remoteScope} scope={remoteScope} clicker={clicker} onAction={onRemote} />
+        <ShutterRemote key={remoteScope} scope={remoteScope} clicker={clicker} paused={inputTesting} onAction={onRemote} />
         <button type="button" disabled={undoDisabled} onClick={onUndo}>Undo last point</button>
         {onReset && <button type="button" onClick={onReset}>Reset practice score</button>}
         {onZoomChange && <fieldset><legend>Camera zoom</legend>{RECOGNITION_ZOOMS.map(value =>

@@ -127,3 +127,25 @@
 .clicker-corner[data-corner="top-right"] { top: 0; right: 0; transform: rotate(90deg); }
 .clicker-corner[data-corner="bottom-right"] { bottom: 0; right: 0; transform: rotate(180deg); }
 .clicker-corner[data-corner="bottom-left"] { bottom: 0; left: 0; transform: rotate(270deg); }
+.scorer-input-test {
+  position: absolute;
+  z-index: 3;
+  inset-inline-end: max(8px, env(safe-area-inset-right));
+  inset-block-end: max(8px, env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: white;
+  font: 600 14px/1.2 system-ui;
+}
+.scorer-input-test button, .scorer-input-test span {
+  background: #172042;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+.scorer-input-test button { min-height: 44px; }
+.scorer-input-test__log {
+  max-width: 75vw;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
