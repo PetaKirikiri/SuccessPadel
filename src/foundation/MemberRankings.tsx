@@ -84,6 +84,7 @@ export function MemberRankings({ members, ownerToken, loading, error }: Props) {
   const [orderMessage, setOrderMessage] = useState('')
   const [revision, setRevision] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
+  const [adding, setAdding] = useState(false)
   type BoardState = { placements: typeof placements; addedMembers: string[]; hidden: string[] }
   type PendingSave = { next: BoardState; message: string }
   const pendingKey = 'success-padel:pending-tier-board'
@@ -167,7 +168,6 @@ export function MemberRankings({ members, ownerToken, loading, error }: Props) {
       void syncBoard()
     } else {
       if (data.board) showBoard(data.board)
-      setOrderMessage('')
     }
   }, [pendingKey, showBoard, syncBoard])
   useEffect(() => {
@@ -183,7 +183,7 @@ export function MemberRankings({ members, ownerToken, loading, error }: Props) {
   }, [loadShared])
 
   function saveShared(next: BoardState, message: string) {
-    if (revision === null) return
+    if (revision === null || adding) return
     readGeneration.current++
     showBoard(next)
     if (serverRevision.current === null) {
@@ -238,12 +238,71 @@ export function MemberRankings({ members, ownerToken, loading, error }: Props) {
   const visibleIds = new Set(suggested.map(record => record.id))
   const available = members.filter(member => isOnBoard(member) && !visibleIds.has(member.id))
     .sort((a, b) => a.display_name.localeCompare(b.display_name))
-  function addMember() {
+  const [addedTile, setAddedTile] = useState('')
+  useEffect(() => {
+    if (!addedTile) return
+    document.querySelector(`.member-rankings__tile[data-rank-id="${CSS.escape(addedTile)}"]`)
+      ?.scrollIntoView({ block: 'nearest' })
+    setAddedTile('')
+  }, [addedTile])
+
+  async function addMember() {
     const member = available.find(candidate => candidate.id === selectedMember)
-    if (!member) return
-    const next = [...new Set([...addedMembers, member.id])]
-    setSelectedMember('')
-    void saveShared({ placements, addedMembers: next, hidden: hidden.filter(id => id !== member.id) }, `${member.display_name} added. Board saved.`)
+    if (!member || revision === null || writeInProgress.current) return
+    const addTo = (state: BoardState): BoardState => ({
+      ...state,
+      addedMembers: [...new Set([...state.addedMembers, member.id])],
+      hidden: state.hidden.filter(id => id !== member.id),
+    })
+    const localBoard = { placements, addedMembers, hidden }
+    writeInProgress.current = true
+    readGeneration.current++
+    setAdding(true)
+    setOrderMessage(`Adding ${member.display_name}…`)
+    try {
+      // Merge only this member into the latest shared board. A concurrent
+      // reorder can advance the revision between the read and write.
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const { data: latest, error: readError } = await supabase.rpc('access_member_tier_board', {})
+        if (readError || !latest) throw readError ?? new Error('Shared board unavailable')
+        const next = addTo(latest.board ?? { placements: {}, addedMembers: [], hidden: [] })
+        const { data, error: writeError } = await supabase.rpc('access_member_tier_board', {
+          p_revision: latest.revision,
+          p_board: next,
+        })
+        if (writeError?.message.includes('changed on another device') && attempt < 2) continue
+        if (writeError || !data) throw writeError ?? new Error('Shared board unavailable')
+
+        if (pending.current || conflict) {
+          // A failed reorder is a separate draft. Keep its original revision
+          // so it cannot overwrite newer shared changes.
+          if (pending.current) {
+            pending.current = { ...pending.current, next: addTo(pending.current.next) }
+            rememberPending()
+          }
+          if (conflict) {
+            try {
+              const draft = JSON.parse(localStorage.getItem(pendingKey) ?? 'null')
+              if (draft) localStorage.setItem(pendingKey, JSON.stringify({ ...draft, next: addTo(draft.next) }))
+            } catch { /* The shared addition has already been saved. */ }
+          }
+          showBoard(addTo(localBoard))
+        } else {
+          serverRevision.current = data.revision
+          setRevision(data.revision)
+          showBoard(data.board ?? next)
+        }
+        setSelectedMember('')
+        setOrderMessage(`${member.display_name} added to rankings.`)
+        setAddedTile(member.id)
+        return
+      }
+    } catch {
+      setOrderMessage(`Could not add ${member.display_name}. Try again.`)
+    } finally {
+      writeInProgress.current = false
+      setAdding(false)
+    }
   }
   const order = placements[board] ?? {}
   const assigned = new Set(TIERS.flatMap(tier => order[tier] ?? []))
@@ -256,7 +315,7 @@ export function MemberRankings({ members, ownerToken, loading, error }: Props) {
     }).map(record => record.id)
     return { tier, ids: [...saved, ...initial] }
   })
-  const canReorder = revision !== null && serverRevision.current !== null
+  const canReorder = revision !== null && serverRevision.current !== null && !adding
   function reorder(id: string, target: string, after = false) {
     if (!canReorder || id === target) return
     const destination = tiers.find(row => target === row.tier || row.ids.includes(target))
@@ -286,21 +345,21 @@ export function MemberRankings({ members, ownerToken, loading, error }: Props) {
     <nav className="member-rankings__navigation" aria-label="Players and rankings"><Link to={`/members${ownerToken ? `#owner=${encodeURIComponent(ownerToken)}` : ''}`}>Players</Link><span aria-current="page">Rankings</span></nav>
     <header className="member-rankings__header"><Trophy aria-hidden="true" /><div><h1>PLAYER RANKINGS</h1></div><span>{isLoading ? '—' : suggested.length}</span></header>
     <div className="member-rankings__toolbar">
-      <div className="member-rankings__boards" role="group" aria-label="Ranking lists">{(['all', 'men', 'women'] as const).map(value => <button key={value} type="button" aria-pressed={board === value} disabled={Boolean(drag.dragging)} onClick={() => { setBoard(value); setSelectedMember(''); setOrderMessage('') }}>{value === 'all' ? 'All' : value === 'men' ? 'Men' : 'Women'}</button>)}</div>
+      <div className="member-rankings__boards" role="group" aria-label="Ranking lists">{(['all', 'men', 'women'] as const).map(value => <button key={value} type="button" aria-pressed={board === value} disabled={adding || Boolean(drag.dragging)} onClick={() => { setBoard(value); setSelectedMember(''); setOrderMessage('') }}>{value === 'all' ? 'All' : value === 'men' ? 'Men' : 'Women'}</button>)}</div>
       {revision === 0 && (Object.keys(placements).length > 0 || hidden.length > 0 || addedMembers.length > 0)
-        ? <button type="button" disabled={saving} onClick={() => void saveShared({ placements, addedMembers, hidden }, 'Board saved across devices.')}>Save this browser’s board</button> : null}
+        ? <button type="button" disabled={saving || adding} onClick={() => void saveShared({ placements, addedMembers, hidden }, 'Board saved across devices.')}>Save this browser’s board</button> : null}
       {hidden.length > 0 ? <button type="button" disabled={!canReorder} onClick={() => saveHidden([])}>Restore hidden ({hidden.length})</button> : null}
       {<div className="member-rankings__add">
-        <select aria-label="Existing member to add" value={selectedMember} disabled={isLoading}
+        <select aria-label="Existing member to add" value={selectedMember} disabled={loading || adding}
           onChange={event => setSelectedMember(event.target.value)}>
           <option value="">Choose member</option>
           {available.map(member => <option key={member.id} value={member.id}>{member.display_name}</option>)}
         </select>
-        <button type="button" onClick={addMember} disabled={isLoading || !canReorder || !selectedMember}>Add member</button>
+        <button type="button" onClick={addMember} disabled={loading || saving || adding || revision === null || !selectedMember}>Add member</button>
       </div>}
     </div>
     {orderMessage ? <p role="status" className="member-rankings__feedback">{orderMessage}</p> : null}
-    {conflict || syncFailed ? <button type="button" disabled={saving} onClick={() => {
+    {conflict || syncFailed ? <button type="button" disabled={saving || adding} onClick={() => {
       try {
         const draft = localStorage.getItem(pendingKey)
         if (draft) localStorage.setItem(pendingKey + ':backup', draft)
@@ -311,7 +370,7 @@ export function MemberRankings({ members, ownerToken, loading, error }: Props) {
       setSyncFailed(false)
       void loadShared()
     }}>Use shared board</button> : null}
-    {syncFailed ? <button type="button" onClick={() => void syncBoard()}>Retry sync</button> : null}
+    {syncFailed ? <button type="button" disabled={adding} onClick={() => void syncBoard()}>Retry sync</button> : null}
     {error || rankError ? <div className="member-rankings__empty" role="alert">{error || rankError}{rankError ? <button type="button" onClick={() => void refresh()}>Retry</button> : null}</div> : isLoading ? <p role="status">Loading rankings…</p> : <>
       {tiers.map(({ tier, ids }, index) => (
         <section className="member-rankings__tier" key={tier} aria-label={tier} data-rank-id={tier} data-drop-at-end={drag.over === tier} data-drop-target={drag.over === tier || Boolean(drag.over && ids.includes(drag.over) && drag.over !== drag.dragging)}>
