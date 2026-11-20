@@ -79,6 +79,7 @@ export function ThumbScorePadView({ clicker, serving, onRemote, remoteScope, vid
       </section>
       <button data-setup={choosing || undefined} className="court-score-display__time" type="button" onClick={() => controls.current?.showModal()}
         aria-label={`Time ${timerValue}. Open scorer controls`} title="Open scorer controls"><span>{choosing ? '⚙' : timerValue}</span></button>
+      {clicker && error && <p className="clicker-score-save-error" role="alert">{error}</p>}
       {clicker && <ScorerInputTest active={inputTesting} setActive={setInputTesting} />}
 
       <dialog ref={controls} className="court-score-controls" aria-label="Scorer controls">
@@ -90,7 +91,7 @@ export function ThumbScorePadView({ clicker, serving, onRemote, remoteScope, vid
           <button key={value} aria-label={`Recognition zoom ${value}×`} type="button" aria-pressed={zoom === value} onClick={() => onZoomChange(value)}>{value}×</button>
         )}</fieldset>}
         {restartCamera && status !== 'running' && <button type="button" onClick={restartCamera}>Start camera</button>}
-        {error && <p role="alert">{error}</p>}
+        {!clicker && error && <p role="alert">{error}</p>}
         <button type="button" onClick={goBack}>Leave scorer</button>
       </dialog>
     </main>
