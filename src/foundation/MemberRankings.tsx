@@ -257,15 +257,22 @@ export function MemberRankings({ members, ownerToken, loading, error }: Props) {
     .sort((a, b) => a.display_name.localeCompare(b.display_name))
   const [addedTile, setAddedTile] = useState('')
   useEffect(() => {
-    if (!addedTile || loading || rankLoading) return
+    if (!addedTile) return
     document.querySelector(`.member-rankings__tile[data-rank-id="${CSS.escape(addedTile)}"]`)
       ?.scrollIntoView({ block: 'nearest' })
     setAddedTile('')
-  }, [addedTile, loading, rankLoading])
+  }, [addedTile])
 
   async function addMember() {
     const name = selectedMember.trim().replace(/\s+/g, ' ')
-    if (!name || revision === null || writeInProgress.current) return
+    if (!name) {
+      setOrderMessage('Type a player name first.')
+      return
+    }
+    if (writeInProgress.current) {
+      setOrderMessage('Another rankings change is saving. Try again in a moment.')
+      return
+    }
     const matches = boardMembers.filter(candidate =>
       isOnBoard(candidate) && candidate.display_name.toLowerCase() === name.toLowerCase())
     if (matches.length > 1) {
@@ -326,8 +333,11 @@ export function MemberRankings({ members, ownerToken, loading, error }: Props) {
         setAddedTile(member.id)
         return
       }
-    } catch {
-      setOrderMessage(`Could not add ${member.display_name}. Try again.`)
+    } catch (error) {
+      const reason = error && typeof error === 'object' && 'message' in error && typeof error.message === 'string'
+        ? error.message
+        : 'The shared board did not respond.'
+      setOrderMessage(`Could not add ${member.display_name}. ${reason}`)
     } finally {
       writeInProgress.current = false
       setAdding(false)
@@ -385,7 +395,7 @@ export function MemberRankings({ members, ownerToken, loading, error }: Props) {
         <datalist id="ranking-member-names">
           {available.map(member => <option key={member.id} value={member.display_name} />)}
         </datalist>
-        <button type="submit" disabled={loading || saving || adding || !selectedMember.trim() || revision === null}>Add player</button>
+        <button type="submit" disabled={adding}>{adding ? 'Adding…' : 'Add player'}</button>
       </form>
     </div>
     {orderMessage ? <p role="status" className="member-rankings__feedback">{orderMessage}</p> : null}
@@ -402,8 +412,9 @@ export function MemberRankings({ members, ownerToken, loading, error }: Props) {
     }}>Use shared board</button> : null}
     {syncFailed ? <button type="button" disabled={adding} onClick={() => void syncBoard()}>Retry sync</button> : null}
     {rankError && <div className="member-rankings__empty" role="alert">{rankError}<button type="button" onClick={() => void refresh()}>Retry</button></div>}
-    {error ? <div className="member-rankings__empty" role="alert">{error}</div> : isLoading ? <p role="status">Loading rankings…</p> : <>
-      {tiers.map(({ tier, ids }, index) => (
+    {error && <div className="member-rankings__empty" role="alert">{error}</div>}
+    {isLoading && <p role="status">Loading rankings…</p>}
+    {tiers.map(({ tier, ids }, index) => (
         <section className="member-rankings__tier" key={tier} aria-label={tier} data-rank-id={tier} data-drop-at-end={drag.over === tier} data-drop-target={drag.over === tier || Boolean(drag.over && ids.includes(drag.over) && drag.over !== drag.dragging)}>
           <h2>{tier}</h2>
           <div className="member-rankings__tiles">
@@ -436,8 +447,7 @@ export function MemberRankings({ members, ownerToken, loading, error }: Props) {
             })}
           </div>
         </section>
-      ))}
-    </>}
+    ))}
 
   </section>
 }
