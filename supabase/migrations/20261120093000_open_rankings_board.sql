@@ -14,11 +14,11 @@ begin
        or octet_length(p_board::text) > 100000 then
       raise exception 'Invalid tier board';
     end if;
-    if jsonb_path_exists(p_board, '$.placements.* ? (@.type() != "object")')
-      or jsonb_path_exists(p_board, '$.placements.*.* ? (@.type() != "array")')
-      or jsonb_path_exists(p_board, '$.placements.*.*[*] ? (@.type() != "string")')
-      or jsonb_path_exists(p_board, '$.hidden[*] ? (@.type() != "string")')
-      or jsonb_path_exists(p_board, '$.addedMembers[*] ? (@.type() != "string")') then
+    if jsonb_path_exists(p_board, 'strict $.placements.* ? (@.type() != "object")')
+      or jsonb_path_exists(p_board, 'strict $.placements.*.* ? (@.type() != "array")')
+      or jsonb_path_exists(p_board, 'strict $.placements.*.*[*] ? (@.type() != "string")')
+      or jsonb_path_exists(p_board, 'strict $.hidden[*] ? (@.type() != "string")')
+      or jsonb_path_exists(p_board, 'strict $.addedMembers[*] ? (@.type() != "string")') then
       raise exception 'Invalid ranking placements';
     end if;
     update public.member_tier_board_state
