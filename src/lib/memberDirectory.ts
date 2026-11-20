@@ -28,3 +28,7 @@ export function memberLevel(member: Pick<DirectoryMember, 'skill_level' | 'histo
 }
 
 export type DirectoryPatch = Partial<Pick<DirectoryMember, 'gender' | 'skill_level' | 'court_member' | 'directory_hidden' | 'display_name' | 'avatar_url' | 'line_contact_url' | 'whatsapp_number' | 'country' | 'residency_status'>>
+
+export function playerNameMatches(displayName: string, query: string): boolean {
+  return displayName.toLowerCase().includes(query.trim().toLowerCase())
+}

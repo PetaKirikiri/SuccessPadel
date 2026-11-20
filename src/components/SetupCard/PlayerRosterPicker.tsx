@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { playerNameMatches } from '../../lib/memberDirectory'
 import type { Profile } from '../../lib/types'
 
 type Props = {
@@ -14,7 +15,7 @@ export function PlayerRosterPicker({ profiles, selected, onChange, max = 16 }: P
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return profiles
-    return profiles.filter((p) => p.display_name.toLowerCase().includes(q))
+    return profiles.filter((p) => playerNameMatches(p.display_name, q))
   }, [profiles, query])
 
   const toggle = (id: string) => {

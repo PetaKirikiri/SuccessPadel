@@ -1,7 +1,7 @@
 import { Trophy } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { memberGender, type DirectoryMember } from '../lib/memberDirectory'
+import { playerNameMatches, memberGender, type DirectoryMember } from '../lib/memberDirectory'
 import { eligibleForRanking, type RankingBoard } from '../lib/memberRankingBoard'
 import { supabase } from '../lib/supabaseClient'
 import { useRankingDrag } from './useRankingDrag'
@@ -77,6 +77,7 @@ export function MemberRankings({ members, ownerToken, loading, error }: Props) {
   const [rankLoading, setRankLoading] = useState(true)
   const [rankError, setRankError] = useState('')
   const [selectedMember, setSelectedMember] = useState('')
+  const [selectedMemberId, setSelectedMemberId] = useState('')
   const [addedMembers, setAddedMembers] = useState<string[]>(() => {
     try {
       const saved: unknown = JSON.parse(localStorage.getItem('success-padel:added-tier-members') ?? '[]')
@@ -253,8 +254,9 @@ export function MemberRankings({ members, ownerToken, loading, error }: Props) {
   const suggested = [...ranks, ...manualRecords].filter(record => byId.has(record.id) && !hidden.includes(record.id))
     .sort((a, b) => Number(b.games > 0) - Number(a.games > 0) || startingScore(b) - startingScore(a) || b.games - a.games || a.id.localeCompare(b.id))
   const visibleIds = new Set(suggested.map(record => record.id))
-  const available = boardMembers.filter(member => isOnBoard(member) && !visibleIds.has(member.id))
-    .sort((a, b) => a.display_name.localeCompare(b.display_name))
+  const matchingMembers = selectedMember.trim()
+    ? boardMembers.filter(member => playerNameMatches(member.display_name, selectedMember))
+    : []
   const [addedTile, setAddedTile] = useState('')
   useEffect(() => {
     if (!addedTile) return
@@ -273,13 +275,14 @@ export function MemberRankings({ members, ownerToken, loading, error }: Props) {
       setOrderMessage('Another rankings change is saving. Try again in a moment.')
       return
     }
-    const matches = boardMembers.filter(candidate =>
-      isOnBoard(candidate) && candidate.display_name.toLowerCase() === name.toLowerCase())
-    if (matches.length > 1) {
-      setOrderMessage('More than one player has that name.')
+    const exact = matchingMembers.filter(candidate => candidate.display_name.toLowerCase() === name.toLowerCase())
+    const selected = matchingMembers.find(candidate => candidate.id === selectedMemberId)
+    const existing = selected ?? (exact.length === 1 ? exact[0] : undefined)
+    if (!existing && matchingMembers.length) {
+      setOrderMessage('Choose a matching player from the list.')
       return
     }
-    const member = matches[0] ?? { id: `${namedPlayerPrefix}${board}:${name}`, display_name: name }
+    const member = existing ?? { id: `${namedPlayerPrefix}${board}:${name}`, display_name: name }
     if (visibleIds.has(member.id)) {
       setOrderMessage(`${member.display_name} is already on this board.`)
       setAddedTile(member.id)
@@ -328,7 +331,9 @@ export function MemberRankings({ members, ownerToken, loading, error }: Props) {
           setRevision(data.revision)
           showBoard(data.board ?? next)
         }
+        if (existing && !isOnBoard(existing)) setBoard('all')
         setSelectedMember('')
+        setSelectedMemberId('')
         setOrderMessage(`${member.display_name} added to rankings.`)
         setAddedTile(member.id)
         return
@@ -384,17 +389,21 @@ export function MemberRankings({ members, ownerToken, loading, error }: Props) {
     <nav className="member-rankings__navigation" aria-label="Players and rankings"><Link to={`/members${ownerToken ? `#owner=${encodeURIComponent(ownerToken)}` : ''}`}>Players</Link><span aria-current="page">Rankings</span></nav>
     <header className="member-rankings__header"><Trophy aria-hidden="true" /><div><h1>PLAYER RANKINGS</h1></div><span>{isLoading ? '—' : suggested.length}</span></header>
     <div className="member-rankings__toolbar">
-      <div className="member-rankings__boards" role="group" aria-label="Ranking lists">{(['all', 'men', 'women'] as const).map(value => <button key={value} type="button" aria-pressed={board === value} disabled={adding || Boolean(drag.dragging)} onClick={() => { setBoard(value); setSelectedMember(''); setOrderMessage('') }}>{value === 'all' ? 'All' : value === 'men' ? 'Men' : 'Women'}</button>)}</div>
+      <div className="member-rankings__boards" role="group" aria-label="Ranking lists">{(['all', 'men', 'women'] as const).map(value => <button key={value} type="button" aria-pressed={board === value} disabled={adding || Boolean(drag.dragging)} onClick={() => { setBoard(value); setSelectedMember(''); setSelectedMemberId(''); setOrderMessage('') }}>{value === 'all' ? 'All' : value === 'men' ? 'Men' : 'Women'}</button>)}</div>
       {revision === 0 && (Object.keys(placements).length > 0 || hidden.length > 0 || addedMembers.length > 0)
         ? <button type="button" disabled={saving || adding} onClick={() => void saveShared({ placements, addedMembers, hidden }, 'Board saved across devices.')}>Save this browser’s board</button> : null}
       {hidden.length > 0 ? <button type="button" disabled={!canReorder} onClick={() => saveHidden([])}>Restore hidden ({hidden.length})</button> : null}
       <form className="member-rankings__add" onSubmit={event => { event.preventDefault(); void addMember() }}>
-        <input type="text" aria-label="Player name" placeholder="Type player name" list="ranking-member-names"
+        <input type="text" aria-label="Player name" placeholder="Search or type player name"
           value={selectedMember} maxLength={80} disabled={adding}
-          onChange={event => setSelectedMember(event.target.value)} />
-        <datalist id="ranking-member-names">
-          {available.map(member => <option key={member.id} value={member.display_name} />)}
-        </datalist>
+          onChange={event => { setSelectedMember(event.target.value); setSelectedMemberId('') }} />
+        {matchingMembers.length > 0 && (
+          <select aria-label="Matching players" value={selectedMemberId} disabled={adding}
+            onChange={event => setSelectedMemberId(event.target.value)}>
+            <option value="">Choose matching player</option>
+            {matchingMembers.map(member => <option key={member.id} value={member.id}>{member.display_name}</option>)}
+          </select>
+        )}
         <button type="submit" disabled={adding}>{adding ? 'Adding…' : 'Add player'}</button>
       </form>
     </div>
