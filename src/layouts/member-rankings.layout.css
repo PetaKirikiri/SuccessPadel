@@ -279,10 +279,14 @@ html[data-viewport='tv'] .member-rankings__boards button:nth-child(3)[aria-press
 
 html[data-viewport] .member-rankings__toolbar {
   flex-wrap: nowrap;
-  overflow-x: auto;
+  overflow: visible;
   white-space: nowrap;
 }
 html[data-viewport] .member-rankings__toolbar > * { flex: 0 0 auto; }
 html[data-viewport] .member-rankings__toolbar .member-rankings__boards { margin: 0; }
 html[data-viewport] .member-rankings__toolbar .member-rankings__add { flex-wrap: nowrap; width: auto; }
-html[data-viewport] .member-rankings__toolbar select { width: 10em; }
+html[data-viewport] .member-rankings__add [role='combobox'] { width: 11em; }
+html[data-viewport] .member-rankings__add [role='listbox'] { margin: 0; list-style: none; }
+html[data-viewport] .member-rankings__add [role='option'] { white-space: normal; justify-content: flex-start; }
+html[data-viewport='mobile'] .member-rankings__toolbar,
+html[data-viewport='tablet'] .member-rankings__toolbar { flex-wrap: wrap; }

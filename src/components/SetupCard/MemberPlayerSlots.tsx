@@ -93,7 +93,7 @@ function SlotAvatar({ url, name }: { url: string | null; name: string }) {
   )
 }
 
-const PlayerSlotCombobox = memo(function PlayerSlotCombobox({
+export const PlayerSlotCombobox = memo(function PlayerSlotCombobox({
   availableMembers,
   availablePlayers,
   value,
@@ -102,6 +102,7 @@ const PlayerSlotCombobox = memo(function PlayerSlotCombobox({
   showPlayerProfiles,
   onPick,
   commitOnBlur = false,
+  placeholder = 'Enter name…',
 }: {
   availableMembers: Profile[]
   availablePlayers: PadelPlayerOption[]
@@ -111,6 +112,7 @@ const PlayerSlotCombobox = memo(function PlayerSlotCombobox({
   showPlayerProfiles: boolean
   onPick: (name: string, profileId: string | null, padelPlayerId: string | null) => void
   commitOnBlur?: boolean
+  placeholder?: string
 }) {
   const [text, setText] = useState(value)
   const [open, setOpen] = useState(false)
@@ -207,7 +209,7 @@ const PlayerSlotCombobox = memo(function PlayerSlotCombobox({
         value={text}
         disabled={disabled}
         role="combobox"
-        placeholder="Enter name…"
+        placeholder={placeholder}
         aria-label="Player name"
         aria-expanded={open}
         aria-autocomplete="list"

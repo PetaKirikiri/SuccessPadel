@@ -1,3 +1,4 @@
+import { PlayerSlotCombobox } from '../components/SetupCard/MemberPlayerSlots'
 import { Trophy } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -394,16 +395,10 @@ export function MemberRankings({ members, ownerToken, loading, error }: Props) {
         ? <button type="button" disabled={saving || adding} onClick={() => void saveShared({ placements, addedMembers, hidden }, 'Board saved across devices.')}>Save this browser’s board</button> : null}
       {hidden.length > 0 ? <button type="button" disabled={!canReorder} onClick={() => saveHidden([])}>Restore hidden ({hidden.length})</button> : null}
       <form className="member-rankings__add" onSubmit={event => { event.preventDefault(); void addMember() }}>
-        <input type="text" aria-label="Player name" placeholder="Search or type player name"
-          value={selectedMember} maxLength={80} disabled={adding}
-          onChange={event => { setSelectedMember(event.target.value); setSelectedMemberId('') }} />
-        {matchingMembers.length > 0 && (
-          <select aria-label="Matching players" value={selectedMemberId} disabled={adding}
-            onChange={event => setSelectedMemberId(event.target.value)}>
-            <option value="">Choose matching player</option>
-            {matchingMembers.map(member => <option key={member.id} value={member.id}>{member.display_name}</option>)}
-          </select>
-        )}
+        <PlayerSlotCombobox availableMembers={boardMembers} availablePlayers={[]}
+          value={selectedMember} disabled={adding} showMembers showPlayerProfiles={false}
+          placeholder="Search or type player name"
+          onPick={(name, memberId) => { setSelectedMember(name.slice(0, 80)); setSelectedMemberId(memberId ?? '') }} />
         <button type="submit" disabled={adding}>{adding ? 'Adding…' : 'Add player'}</button>
       </form>
     </div>
