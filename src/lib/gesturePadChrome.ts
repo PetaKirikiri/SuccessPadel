@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect } from 'react'
 
 export function isGesturePadRoute(pathname: string): boolean {
   return (
+    /^\/score\/?$/.test(pathname) ||
     pathname.replace(/\/$/, '').endsWith('/clicker-scoreboard') ||
     /\/gesture-pad\/?$/.test(pathname) ||
     /\/gesture-score\/?$/.test(pathname) ||

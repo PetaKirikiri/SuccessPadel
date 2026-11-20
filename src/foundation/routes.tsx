@@ -144,7 +144,8 @@ function MainAppRoutes() {
           </div>
         }
       />
-      <Route path="/clicker-scoreboard" element={<Suspense fallback={null}><ClickerScoreboardRoute /></Suspense>} />
+      <Route path="/clicker-scoreboard" element={<Navigate to="/score" replace />} />
+      <Route path="/score" element={<Suspense fallback={null}><ClickerScoreboardRoute /></Suspense>} />
       <Route
         path="/gesture-score-pad"
         element={

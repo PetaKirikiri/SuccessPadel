@@ -91,7 +91,7 @@ export function ProfileChip({ returnTo, className = '', navItem = false }: Props
 
   const goClickerScoreboard = () => {
     setMenuOpen(false)
-    navigate('/clicker-scoreboard')
+    navigate('/score')
   }
 
   return (
@@ -177,7 +177,7 @@ export function ProfileChip({ returnTo, className = '', navItem = false }: Props
               className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-medium text-brand-primary transition hover:bg-brand-bg-alt active:bg-brand-bg-alt"
             >
               <Gamepad2 className="h-4 w-4 shrink-0 text-brand-accent" strokeWidth={2.4} aria-hidden />
-              Scorer
+              Score
             </button>
             <div className="px-3 py-2.5">
               <p className="mb-2 text-left text-xs font-semibold uppercase tracking-wide text-brand-muted">
