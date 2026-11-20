@@ -37,15 +37,22 @@ export function GestureScorePadPage() {
   const engineRef = useRef<GestureCameraEngine | null>(null)
   const { zoom, setZoom, zoomCanvasRef, prepareThumbFrame } = useGestureRecognitionZoom()
   const applyPadActionRef = useRef<(action: PadAction) => void>(() => {})
-  const scoreRef = useRef<ScoreSnapshot>({ ourPoints: 0, theirPoints: 0, ourGames: 0, theirGames: 0 })
+  const [initialScore] = useState<ScoreSnapshot>(() => {
+    const preview = new URLSearchParams(window.location.search).get('preview') === '3-4'
+    return { ourPoints: preview ? 3 : 0, theirPoints: preview ? 3 : 0, ourGames: preview ? 3 : 0, theirGames: preview ? 4 : 0 }
+  })
+  const firstServer = useRef<Team | null>(new URLSearchParams(window.location.search).get('preview') === '3-4' ? 'them' : null)
+  const [openingServer, setOpeningServer] = useState(firstServer.current)
+  const scoreRef = useRef(initialScore)
+  const rallyHistory = useRef<(Team | 'reset')[]>([])
   const historyRef = useRef<ScoreSnapshot[]>([])
 
   const [status, setStatus] = useState<Status>('idle')
   const [error, setError] = useState<string | null>(null)
-  const [ourPoints, setOurPoints] = useState(0)
-  const [theirPoints, setTheirPoints] = useState(0)
-  const [ourGames, setOurGames] = useState(0)
-  const [theirGames, setTheirGames] = useState(0)
+  const [ourPoints, setOurPoints] = useState(initialScore.ourPoints)
+  const [theirPoints, setTheirPoints] = useState(initialScore.theirPoints)
+  const [ourGames, setOurGames] = useState(initialScore.ourGames)
+  const [theirGames, setTheirGames] = useState(initialScore.theirGames)
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
 
   const applyScoreSnapshot = (snapshot: ScoreSnapshot) => {
@@ -57,7 +64,7 @@ export function GestureScorePadPage() {
   }
 
   const pushScoreSnapshot = () => {
-    historyRef.current = [...historyRef.current.slice(-19), { ...scoreRef.current }]
+    historyRef.current = [...historyRef.current, { ...scoreRef.current }]
   }
 
   const undoLastAction = () => {
@@ -93,6 +100,13 @@ export function GestureScorePadPage() {
   }
 
   const applyPadAction = (action: PadAction) => {
+    if (!firstServer.current && (action === 'win' || action === 'lose')) {
+      firstServer.current = action === 'win' ? 'us' : 'them'
+      setOpeningServer(firstServer.current)
+      return
+    }
+    if (action === 'undo') rallyHistory.current.pop()
+    else rallyHistory.current.push(action === 'reset' ? 'reset' : action === 'win' ? 'us' : 'them')
     if (action === 'reset') {
       pushScoreSnapshot()
       applyScoreSnapshot({ ourPoints: 0, theirPoints: 0, ourGames: 0, theirGames: 0 })
@@ -152,6 +166,23 @@ export function GestureScorePadPage() {
   }
 
   return <ThumbScorePadView
+    serving={openingServer && ((ourGames + theirGames) % 2 === 0 ? openingServer : openingServer === 'us' ? 'them' : 'us')}
+    remoteScope="practice"
+    onRemote={(ours, subtract) => {
+      if (!subtract) return applyPadAction(ours ? 'win' : 'lose')
+      const rallies = rallyHistory.current
+      const index = rallies.lastIndexOf(ours ? 'us' : 'them')
+      if (index < 0 || index < rallies.lastIndexOf('reset')) return
+      const later = rallies.slice(index + 1)
+      applyScoreSnapshot(historyRef.current[index]!)
+      historyRef.current.length = index
+      rallies.length = index
+      for (const team of later) {
+        rallies.push(team)
+        applyPadelPoint(team === 'us' ? 'us' : 'them')
+      }
+      gestureScoreBeep()
+    }}
     zoom={zoom} onZoomChange={setZoom} zoomCanvasRef={zoomCanvasRef}
     videoRef={videoRef} status={status} error={error}
     ourPoints={ourPoints} theirPoints={theirPoints} ourGames={ourGames} theirGames={theirGames}

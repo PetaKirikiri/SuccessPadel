@@ -29,7 +29,11 @@ for (const file of ['CameraScoreTrackerPractice.tsx', 'CameraScoreTracker.logic.
   assert.match(source, /new GestureCameraEngine\(/)
   assert.match(source, /engineRef.current = engine\s+(?:\/\/[^\n]*\n\s*)?void engine.start\(\)/, 'Both scorer entries auto-start once mounted')
   assert.match(source, /prepareThumbFrame,/)
-  assert.match(source, /zoom=\{zoom\} onZoomChange=\{setZoom\} zoomCanvasRef=\{zoomCanvasRef\}/)
+  if (file === 'CameraScoreTracker.logic.tsx') {
+    assert.match(source, /if \(!scorerReady \|\| clicker\) return/)
+    assert.ok(source.includes('onZoomChange={clicker ? undefined : setZoom}'))
+    assert.ok(source.includes('zoomCanvasRef={clicker ? undefined : zoomCanvasRef}'))
+  } else assert.match(source, /zoom=\{zoom\} onZoomChange=\{setZoom\} zoomCanvasRef=\{zoomCanvasRef\}/)
 }
 
 const noop = () => {}
@@ -37,6 +41,7 @@ const zoomHook = readFileSync(new URL('../src/hooks/useGestureRecognitionZoom.ts
 assert.match(zoomHook, /useState<RecognitionZoom>\(2\)/)
 assert.match(zoomHook, /useRef<RecognitionZoom>\(2\)/)
 const props = {
+  remoteScope: "practice", onRemote: noop,
   videoRef: { current: null }, status: 'idle' as const, error: null,
   ourPoints: 1, theirPoints: 2, ourGames: 3, theirGames: 4, timerValue: '12:34',
   onWin: noop, onLose: noop, onUndo: noop, restartCamera: noop, goBack: noop,
@@ -45,12 +50,13 @@ const linked = renderToStaticMarkup(createElement(ThumbScorePadView, props))
 const practice = renderToStaticMarkup(createElement(ThumbScorePadView, { ...props, onReset: noop }))
 const classes = (html: string) => [...html.matchAll(/class="([^"]*)"/g)].map(match => match[1])
 assert.deepEqual(classes(linked), classes(practice), 'Linked and practice presentation must have identical geometry')
-for (const label of ['Thumbs up — point for our team', 'Thumbs down — point for other team', 'Undo last score action', 'Back']) {
-  assert.ok(linked.includes(`aria-label="${label}"`))
+const display = linked.split('<dialog')[0]!
+for (const label of ['Games', 'Current points', 'Our points 15. Add one point', 'Other points 30. Add one point', 'Time 12:34. Open scorer controls']) {
+  assert.ok(display.includes(`aria-label="${label}"`))
 }
-assert.ok(linked.includes('12:34'))
-assert.match(linked, /disabled=""[^>]*aria-label="Reset score"/,
-  'A linked court must not pretend to reset shared scores without a persistence operation')
+assert.doesNotMatch(display, /Undo last point|Learn buttons|Reset practice score/)
+assert.doesNotMatch(linked, /Reset practice score/)
+assert.match(practice, /Reset practice score/)
 assert.match(renderToStaticMarkup(createElement(ThumbScorePadView, { ...props, error: 'Save failed' })), /Save failed/)
 const zoomed = renderToStaticMarkup(createElement(ThumbScorePadView, { ...props, zoom: 2, onZoomChange: noop }))
 assert.match(zoomed, /data-recognition-zoom="2"/)

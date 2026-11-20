@@ -56,6 +56,10 @@ const ManualScoreCourtRoute = lazy(() =>
   })),
 )
 
+const ClickerScoreboardRoute = lazy(() =>
+  import('../components/CameraScoreTracker/ClickerScoreboardPage').then(module => ({ default: module.ClickerScoreboardPage })),
+)
+
 const GestureScorePadRoute = lazy(() =>
   import('../components/CameraScoreTracker/CameraScoreTrackerPractice').then((module) => ({
     default: module.GestureScorePadPage,
@@ -140,6 +144,7 @@ function MainAppRoutes() {
           </div>
         }
       />
+      <Route path="/clicker-scoreboard" element={<Suspense fallback={null}><ClickerScoreboardRoute /></Suspense>} />
       <Route
         path="/gesture-score-pad"
         element={
@@ -179,7 +184,15 @@ function MainAppRoutes() {
           }
         />
         <Route
+          path="friendly/:id/games/:gameNumber/courts/:courtSlug/clicker-scoreboard"
+          element={<GestureScoreCourtEntry />}
+        />
+        <Route
           path="friendly/:id/games/:gameNumber/courts/:courtSlug/gesture-score"
+          element={<GestureScoreCourtEntry />}
+        />
+        <Route
+          path="friendly/:id/games/:gameNumber/clicker-scoreboard"
           element={<GestureScoreCourtEntry />}
         />
         <Route
@@ -188,7 +201,15 @@ function MainAppRoutes() {
         />
         <Route path="friendly/:id" element={<GameCardPlaySession />} />
         <Route
+          path="competitions/:id/games/:gameNumber/courts/:courtId/clicker-scoreboard"
+          element={<GestureScoreCourtEntry />}
+        />
+        <Route
           path="competitions/:id/games/:gameNumber/courts/:courtId/gesture-score"
+          element={<GestureScoreCourtEntry />}
+        />
+        <Route
+          path="competitions/:id/games/:gameNumber/clicker-scoreboard"
           element={<GestureScoreCourtEntry />}
         />
         <Route

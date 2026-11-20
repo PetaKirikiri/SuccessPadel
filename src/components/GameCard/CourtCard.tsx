@@ -9,7 +9,6 @@ import { compactDisplayNames } from '../../lib/leaderboardEntries'
 import type { CourtPlayer } from '../../lib/americanoSchedule'
 import type { GameCardSize } from '../../lib/viewBreakpoints'
 import { isTvSize } from './gameCardSizes'
-import { warmupGestureScoreCamera } from '../../lib/gestureScoreCamera'
 import { ScoreTrackerIcon } from '../../shared/Button/ScoreTrackerIcon'
 import { PlayerAvatarLink } from '../../shared/ProfilePhoto/PlayerAvatarLink'
 import { PlayerNameLink } from '../../shared/ProfilePhoto/PlayerNameLink'
@@ -28,7 +27,7 @@ export function stopCardNav(e: { stopPropagation: () => void }) {
 function CourtGestureScoreButton({
   href,
   live = false,
-  ariaLabel = 'Live gesture scoring',
+  ariaLabel = 'Clicker scoreboard',
   variant = 'icon',
   label,
   showLabel = false,
@@ -42,7 +41,6 @@ function CourtGestureScoreButton({
 }) {
   const onPress = (e: { stopPropagation: () => void }) => {
     stopCardNav(e)
-    warmupGestureScoreCamera()
   }
 
   if (variant === 'bar') {
@@ -166,10 +164,10 @@ export function courtGestureScoreHref({
 }): string | undefined {
   if (!gestureScoreEnabled || !sessionId) return undefined
   if (friendly) {
-    return `/friendly/${sessionId}/games/${gameNumber}/courts/${encodeURIComponent(courtLabel)}/gesture-score`
+    return `/friendly/${sessionId}/games/${gameNumber}/courts/${encodeURIComponent(courtLabel)}/clicker-scoreboard`
   }
   if (competitionId && courtId) {
-    return `/competitions/${competitionId}/games/${gameNumber}/courts/${courtId}/gesture-score`
+    return `/competitions/${competitionId}/games/${gameNumber}/courts/${courtId}/clicker-scoreboard`
   }
   return undefined
 }
@@ -1087,8 +1085,8 @@ function CourtLabelRow({
           <CourtGestureScoreButton
             href={gestureScoreHref}
             live={gestureScoreLive}
-            ariaLabel={t('court.scoreTrackerAria')}
-            label={t('court.startScoring')}
+            ariaLabel="Clicker scoreboard"
+            label="Clicker scoreboard"
             showLabel={!gridCell && size !== 'mobile'}
           />
         ) : null}

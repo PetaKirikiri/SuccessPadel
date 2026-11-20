@@ -24,6 +24,7 @@ import {
   gestureCameraPlayEnded,
   planGestureCameraPoint,
   planGestureCameraUndo,
+  undoGestureTeamRally,
   persistPlannedGestureCameraLog,
   rosterFromCourt,
   scoreFromLog,
@@ -95,6 +96,7 @@ export function GestureScoreCourtPage() {
     searchParams.get('gestureDetect') === '1' || searchParams.get('detect') === '1'
   const ballDebug =
     searchParams.get('ballDebug') === '1' || searchParams.get('tennisBallDebug') === '1'
+  const clicker = location.pathname.replace(/\/$/, '').endsWith('/clicker-scoreboard')
   const friendlyRoute = location.pathname.includes('/friendly/')
   const { id, gameNumber, courtId, courtSlug } = useParams()
   const { user, session: authSession, loading: authLoading, restoreSession } = useAuth()
@@ -291,14 +293,16 @@ export function GestureScoreCourtPage() {
   useEffect(() => {
     if (!id || !Number.isFinite(gameNum) || !selectedCourtValue) return
     const courtSegment = encodeURIComponent(selectedCourtValue)
+    const scorer = clicker ? 'clicker-scoreboard' : 'gesture-score'
     const nextPath = friendlyRoute
-      ? `/friendly/${id}/games/${gameNum}/courts/${courtSegment}/gesture-score`
-      : `/competitions/${id}/games/${gameNum}/courts/${courtSegment}/gesture-score`
+      ? `/friendly/${id}/games/${gameNum}/courts/${courtSegment}/${scorer}`
+      : `/competitions/${id}/games/${gameNum}/courts/${courtSegment}/${scorer}`
     const nextUrl = `${nextPath}${location.search}`
     if (`${location.pathname}${location.search}` !== nextUrl) {
       navigate(nextUrl, { replace: true })
     }
   }, [
+    clicker,
     friendlyRoute,
     gameNum,
     id,
@@ -574,7 +578,7 @@ export function GestureScoreCourtPage() {
   )
 
   const applyFingerAction = useCallback(
-    (action: FingerAction) => {
+    (action: FingerAction, undoTeam?: 'a' | 'b') => {
       const engine = engineRef.current
       if (!cameraCtx) return
       const prior = localLogRef.current
@@ -582,7 +586,7 @@ export function GestureScoreCourtPage() {
       let ended = false
 
       if (action === 'undo') {
-        const undone = planGestureCameraUndo(cameraCtx, prior)
+        const undone = undoTeam ? undoGestureTeamRally(cameraCtx, prior, undoTeam) : planGestureCameraUndo(cameraCtx, prior)
         if (!undone || undone === prior) {
           engine?.markScoreBlocked(performance.now())
           return
@@ -612,7 +616,7 @@ export function GestureScoreCourtPage() {
   )
 
   applyFingerActionRef.current = (action) => {
-    applyFingerAction(action)
+    applyFingerAction(ourTeam === 'b' && action !== 'undo' ? (action === 'team1' ? 'team2' : 'team1') : action)
   }
 
   useEffect(() => {
@@ -655,7 +659,7 @@ export function GestureScoreCourtPage() {
   const scorerReady = Boolean(courtSetupKey && canOpenGestureScore && cameraCtx)
 
   useEffect(() => {
-    if (!scorerReady) return
+    if (!scorerReady || clicker) return
 
     let cancelled = false
     let engine: GestureCameraEngine | null = null
@@ -694,7 +698,7 @@ export function GestureScoreCourtPage() {
       engine?.stop()
       engineRef.current = null
     }
-  }, [scorerReady, setCameraStatus, prepareThumbFrame])
+  }, [clicker, scorerReady, setCameraStatus, prepareThumbFrame])
 
   useEffect(() => {
     if (detectPreview) document.documentElement.dataset.gestureDetectPreview = 'true'
@@ -705,19 +709,40 @@ export function GestureScoreCourtPage() {
     }
   }, [detectPreview])
 
+  const [serveChoice, setServeChoice] = useState<{ court: string; team: 'a' | 'b'; game: number } | null>(null)
+  const gameTotal = gamesA + gamesB
+  const selected = serveChoice?.court === courtSetupKey ? serveChoice : null
+  const server = selected && ((gameTotal - selected.game) % 2 === 0 ? selected.team : selected.team === 'a' ? 'b' : 'a')
+  function selectOrScore(team: 'a' | 'b') {
+    if (clicker && !selected && courtSetupKey) {
+      setServeChoice({ court: courtSetupKey, team, game: gameTotal })
+      return
+    }
+    if (!matchEndedRef.current) applyFingerAction(team === 'a' ? 'team1' : 'team2')
+  }
+
   if (!scorerReady && !pageLoading) {
     return <Navigate to={friendlyRoute && id ? `/friendly/${id}` : id ? `/competitions/${id}` : '/friendly'} replace />
   }
 
   return scorerReady ? (
     <ThumbScorePadView
-      zoom={zoom} onZoomChange={setZoom} zoomCanvasRef={zoomCanvasRef}
-      videoRef={videoRef} status={status} error={scoreSaveError ?? cameraError}
-      ourPoints={pointsA} theirPoints={pointsB} ourGames={gamesA} theirGames={gamesB}
-      timerValue={currentTimerValue ?? '0:00'} restartCamera={startCamera}
+      clicker={clicker}
+      serving={clicker ? (server ? (server === ourTeam ? 'us' : 'them') : null) : undefined}
+      remoteScope={courtSetupKey!}
+      onRemote={(ours, subtract) => {
+        const left = clicker ? !ours : ours
+        const team = left ? cameraCtx!.ourTeam : cameraCtx!.ourTeam === 'a' ? 'b' : 'a'
+        if (subtract) applyFingerAction('undo', team)
+        else selectOrScore(team)
+      }}
+      zoom={zoom} onZoomChange={clicker ? undefined : setZoom} zoomCanvasRef={clicker ? undefined : zoomCanvasRef}
+      videoRef={clicker ? undefined : videoRef} status={status} error={scoreSaveError ?? cameraError}
+      ourPoints={ourTeam === 'b' ? pointsB : pointsA} theirPoints={ourTeam === 'b' ? pointsA : pointsB} ourGames={ourTeam === 'b' ? gamesB : gamesA} theirGames={ourTeam === 'b' ? gamesA : gamesB}
+      timerValue={currentTimerValue ?? '0:00'} restartCamera={clicker ? undefined : startCamera}
       goBack={() => { stopCamera(); navigate(friendlyRoute ? `/friendly/${id}` : `/competitions/${id}`) }}
-      onWin={() => applyFingerAction('team1')}
-      onLose={() => applyFingerAction('team2')}
+      onWin={() => selectOrScore(ourTeam === 'b' ? 'b' : 'a')}
+      onLose={() => selectOrScore(ourTeam === 'b' ? 'a' : 'b')}
       onUndo={() => applyFingerAction('undo')}
       undoDisabled={pointHistory.length === 0}
     />

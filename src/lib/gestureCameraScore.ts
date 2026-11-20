@@ -510,6 +510,28 @@ export function planGestureCameraUndo(
   return snapshotLog(ctx, scoreAfter, pointEvents, false, priorLog)
 }
 
+/** Correct the latest rally for one team, replaying later rallies from its prior score. */
+export function undoGestureTeamRally(ctx: GestureCameraContext, log: MatchGestureLog | null, team: MatchTeam) {
+  if (!log) return null
+  const events = log.pointEvents
+  let index = events.length - 1
+  while (index >= 0) {
+    const event = events[index]!
+    if ([MANUAL_GAMES_GESTURE_ID, MANUAL_POINTS_GESTURE_ID].includes(event.winnerGestureId)) return log
+    if (event.winner === team) break
+    index--
+  }
+  if (index < 0) return log
+  const remaining = events.slice(0, index)
+  let score = events[index - 1]?.scoreAfter ?? events[index]?.scoreBefore ?? { ...INITIAL_TENNIS_SCORE }
+  for (const event of events.slice(index + 1)) {
+    const after = applyTennisPoint(score, event.winner)
+    remaining.push({ ...event, scoreBefore: { ...score }, scoreAfter: after })
+    score = after
+  }
+  return snapshotLog(ctx, score, remaining, isGestureMatchComplete(score, ctx.playTo), log)
+}
+
 export async function syncGestureCameraPointForTeam(
   ctx: GestureCameraContext,
   winner: MatchTeam,

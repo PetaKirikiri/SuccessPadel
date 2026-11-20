@@ -373,7 +373,7 @@ export function GameCardHeader({
             {gestureScoreHref ? (
               <GameCardGestureScoreButton
                 href={gestureScoreHref}
-                ariaLabel="Open gesture score tracker"
+                ariaLabel="Open clicker scoreboard"
                 finished={finished}
               />
             ) : null}
@@ -462,7 +462,7 @@ export function GameCardHeader({
           {gestureScoreHref ? (
             <GameCardGestureScoreButton
               href={gestureScoreHref}
-              ariaLabel="Open gesture score tracker"
+              ariaLabel="Open clicker scoreboard"
               finished={finished}
             />
           ) : null}

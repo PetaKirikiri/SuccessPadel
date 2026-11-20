@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Camera } from 'lucide-react'
+import { Gamepad2 } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import { useSignInChip } from '../../hooks/useSignInChip'
 import { useTranslation } from '../../hooks/useTranslation'
@@ -89,9 +89,9 @@ export function ProfileChip({ returnTo, className = '', navItem = false }: Props
     navigate('/members')
   }
 
-  const goGestureScore = () => {
+  const goClickerScoreboard = () => {
     setMenuOpen(false)
-    navigate('/gesture-score-pad')
+    navigate('/clicker-scoreboard')
   }
 
   return (
@@ -173,11 +173,11 @@ export function ProfileChip({ returnTo, className = '', navItem = false }: Props
             <button
               type="button"
               role="menuitem"
-              onClick={goGestureScore}
+              onClick={goClickerScoreboard}
               className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-medium text-brand-primary transition hover:bg-brand-bg-alt active:bg-brand-bg-alt"
             >
-              <Camera className="h-4 w-4 shrink-0 text-brand-accent" strokeWidth={2.4} aria-hidden />
-              Gesture score
+              <Gamepad2 className="h-4 w-4 shrink-0 text-brand-accent" strokeWidth={2.4} aria-hidden />
+              Scorer
             </button>
             <div className="px-3 py-2.5">
               <p className="mb-2 text-left text-xs font-semibold uppercase tracking-wide text-brand-muted">

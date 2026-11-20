@@ -171,9 +171,9 @@ export function GameCard(props: GameCardInputProps) {
   const gestureScoreHref =
     gestureScoreEnabled && !finished && sessionId
       ? friendly
-        ? `/friendly/${sessionId}/games/${game.gameNumber}/gesture-score`
+        ? `/friendly/${sessionId}/games/${game.gameNumber}/clicker-scoreboard`
         : competitionId
-          ? `/competitions/${competitionId}/games/${game.gameNumber}/gesture-score`
+          ? `/competitions/${competitionId}/games/${game.gameNumber}/clicker-scoreboard`
           : undefined
       : undefined
 
