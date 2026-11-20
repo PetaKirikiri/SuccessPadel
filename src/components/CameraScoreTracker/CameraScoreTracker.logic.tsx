@@ -728,7 +728,7 @@ export function GestureScoreCourtPage() {
   return scorerReady ? (
     <ThumbScorePadView
       clicker={clicker}
-      serving={clicker ? (server ? (server === ourTeam ? 'us' : 'them') : null) : undefined}
+      serving={clicker ? (server ? (server === (ourTeam ?? 'a') ? 'us' : 'them') : null) : undefined}
       remoteScope={courtSetupKey!}
       onRemote={(ours, subtract) => {
         const left = clicker ? !ours : ours
