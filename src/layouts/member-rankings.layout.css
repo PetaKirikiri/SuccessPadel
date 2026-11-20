@@ -276,3 +276,13 @@ html[data-viewport='tv'] .member-rankings__boards button:nth-child(3)[aria-press
 .member-rankings[data-measuring-drop] .member-rankings__tile[data-insert] { padding-inline: 0; }
 .member-rankings[data-measuring-drop] .member-rankings__tile[data-insert]::after,
 .member-rankings[data-measuring-drop] .member-rankings__tier[data-drop-at-end='true'] .member-rankings__tiles::after { display: none; }
+
+html[data-viewport] .member-rankings__toolbar {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+html[data-viewport] .member-rankings__toolbar > * { flex: 0 0 auto; }
+html[data-viewport] .member-rankings__toolbar .member-rankings__boards { margin: 0; }
+html[data-viewport] .member-rankings__toolbar .member-rankings__add { flex-wrap: nowrap; width: auto; }
+html[data-viewport] .member-rankings__toolbar select { width: 10em; }

@@ -90,6 +90,7 @@ export function MemberRankings({ members, ownerToken, loading, error }: Props) {
   const pending = useRef<PendingSave | null>(null)
   const serverRevision = useRef<number | null>(null)
   const writeInProgress = useRef(false)
+  const [conflict, setConflict] = useState(false)
   const [syncFailed, setSyncFailed] = useState(false)
 
   const showBoard = useCallback((next: BoardState) => {
@@ -154,6 +155,7 @@ export function MemberRankings({ members, ownerToken, loading, error }: Props) {
     setRevision(data.revision)
     if (draft && draft.revision !== data.revision) {
       serverRevision.current = null
+      setConflict(true)
       showBoard(draft.next)
       setOrderMessage('Local changes kept. The shared board changed on another device.')
       return
@@ -283,20 +285,33 @@ export function MemberRankings({ members, ownerToken, loading, error }: Props) {
   }}>
     <nav className="member-rankings__navigation" aria-label="Players and rankings"><Link to={`/members${ownerToken ? `#owner=${encodeURIComponent(ownerToken)}` : ''}`}>Players</Link><span aria-current="page">Rankings</span></nav>
     <header className="member-rankings__header"><Trophy aria-hidden="true" /><div><h1>PLAYER RANKINGS</h1></div><span>{isLoading ? '—' : suggested.length}</span></header>
-    <div className="member-rankings__boards" role="group" aria-label="Ranking lists">{(['all', 'men', 'women'] as const).map(value => <button key={value} type="button" aria-pressed={board === value} disabled={Boolean(drag.dragging)} onClick={() => { setBoard(value); setSelectedMember(''); setOrderMessage('') }}>{value === 'all' ? 'All' : value === 'men' ? 'Men' : 'Women'}</button>)}</div>
     <div className="member-rankings__toolbar">
+      <div className="member-rankings__boards" role="group" aria-label="Ranking lists">{(['all', 'men', 'women'] as const).map(value => <button key={value} type="button" aria-pressed={board === value} disabled={Boolean(drag.dragging)} onClick={() => { setBoard(value); setSelectedMember(''); setOrderMessage('') }}>{value === 'all' ? 'All' : value === 'men' ? 'Men' : 'Women'}</button>)}</div>
       {revision === 0 && (Object.keys(placements).length > 0 || hidden.length > 0 || addedMembers.length > 0)
         ? <button type="button" disabled={saving} onClick={() => void saveShared({ placements, addedMembers, hidden }, 'Board saved across devices.')}>Save this browser’s board</button> : null}
-      {hidden.length > 0 ? <button type="button" disabled={!canReorder} onClick={() => saveHidden([])}>Restore hidden players ({hidden.length})</button> : null}
+      {hidden.length > 0 ? <button type="button" disabled={!canReorder} onClick={() => saveHidden([])}>Restore hidden ({hidden.length})</button> : null}
       {<div className="member-rankings__add">
         <select aria-label="Existing member to add" value={selectedMember} disabled={isLoading}
           onChange={event => setSelectedMember(event.target.value)}>
-          <option value="">Choose an existing member</option>
+          <option value="">Choose member</option>
           {available.map(member => <option key={member.id} value={member.id}>{member.display_name}</option>)}
         </select>
         <button type="button" onClick={addMember} disabled={isLoading || !canReorder || !selectedMember}>Add member</button>
       </div>}
     </div>
+    {orderMessage ? <p role="status" className="member-rankings__feedback">{orderMessage}</p> : null}
+    {conflict || syncFailed ? <button type="button" disabled={saving} onClick={() => {
+      try {
+        const draft = localStorage.getItem(pendingKey)
+        if (draft) localStorage.setItem(pendingKey + ':backup', draft)
+        localStorage.removeItem(pendingKey)
+      } catch { setOrderMessage('Could not back up your local changes.'); return }
+      pending.current = null
+      setConflict(false)
+      setSyncFailed(false)
+      void loadShared()
+    }}>Use shared board</button> : null}
+    {syncFailed ? <button type="button" onClick={() => void syncBoard()}>Retry sync</button> : null}
     {error || rankError ? <div className="member-rankings__empty" role="alert">{error || rankError}{rankError ? <button type="button" onClick={() => void refresh()}>Retry</button> : null}</div> : isLoading ? <p role="status">Loading rankings…</p> : <>
       {tiers.map(({ tier, ids }, index) => (
         <section className="member-rankings__tier" key={tier} aria-label={tier} data-rank-id={tier} data-drop-at-end={drag.over === tier} data-drop-target={drag.over === tier || Boolean(drag.over && ids.includes(drag.over) && drag.over !== drag.dragging)}>
@@ -333,7 +348,6 @@ export function MemberRankings({ members, ownerToken, loading, error }: Props) {
         </section>
       ))}
     </>}
-    {orderMessage ? <p role="status" className="member-rankings__feedback">{orderMessage}</p> : null}
-    {syncFailed ? <button type="button" onClick={() => void syncBoard()}>Retry sync</button> : null}
+
   </section>
 }
