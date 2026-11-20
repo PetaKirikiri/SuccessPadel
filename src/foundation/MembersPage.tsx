@@ -546,7 +546,7 @@ export function MembersPage({ view = 'players' }: { view?: 'players' | 'rankings
     )
   }
 
-  if (view === 'rankings') return <MemberRankings members={publicMembers} loading={initialLoading} error={loadError || accessError} canEdit={directoryEditable} ownerToken={ownerToken} />
+  if (view === 'rankings') return <MemberRankings members={publicMembers} loading={initialLoading} error={loadError} ownerToken={ownerToken} />
 
   return (
     <div className="member-directory-page">

@@ -55,10 +55,10 @@ function startingScore(record: MatchRecord): number {
 const TIERS = ['Advanced', 'High Intermediate', 'Intermediate', 'Low Intermediate', 'Beginner'] as const
 
 type Props = {
-  members: DirectoryMember[]; canEdit: boolean; ownerToken: string | null; loading: boolean; error: string | null
+  members: DirectoryMember[]; ownerToken: string | null; loading: boolean; error: string | null
 }
 
-export function MemberRankings({ members, canEdit, ownerToken, loading, error }: Props) {
+export function MemberRankings({ members, ownerToken, loading, error }: Props) {
   const [board, setBoard] = useState<RankingBoard>('all')
   const [ranks, setRanks] = useState<MatchRecord[]>([])
   const [rankLoading, setRankLoading] = useState(true)
@@ -109,7 +109,7 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
   }, [pendingKey])
 
   const syncBoard = useCallback(async () => {
-    if (!canEdit || serverRevision.current === null || writeInProgress.current || !pending.current) return
+    if (serverRevision.current === null || writeInProgress.current || !pending.current) return
     writeInProgress.current = true
     setSaving(true)
     setSyncFailed(false)
@@ -118,7 +118,7 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
       while (pending.current) {
         const savingNow: PendingSave = pending.current
         const { data, error }: { data: any; error: unknown } = await supabase.rpc('access_member_tier_board', {
-          p_access_token: ownerToken, p_revision: serverRevision.current, p_board: savingNow.next,
+          p_revision: serverRevision.current, p_board: savingNow.next,
         })
         if (error) throw error
         serverRevision.current = data.revision
@@ -136,11 +136,14 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
       writeInProgress.current = false
       setSaving(false)
     }
-  }, [canEdit, ownerToken, rememberPending])
+  }, [rememberPending])
 
+  const readGeneration = useRef(0)
   const loadShared = useCallback(async () => {
-    if (!canEdit) return
-    const { data, error }: { data: any; error: unknown } = await supabase.rpc('access_member_tier_board', { p_access_token: ownerToken })
+    if (pending.current || writeInProgress.current) return
+    const generation = ++readGeneration.current
+    const { data, error }: { data: any; error: unknown } = await supabase.rpc('access_member_tier_board', {})
+    if (generation !== readGeneration.current || pending.current || writeInProgress.current) return
     if (error) {
       setOrderMessage('Could not load shared board. Reload to retry.')
       return
@@ -150,6 +153,7 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
     catch { /* A damaged draft cannot be restored. */ }
     setRevision(data.revision)
     if (draft && draft.revision !== data.revision) {
+      serverRevision.current = null
       showBoard(draft.next)
       setOrderMessage('Local changes kept. The shared board changed on another device.')
       return
@@ -163,11 +167,22 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
       if (data.board) showBoard(data.board)
       setOrderMessage('')
     }
-  }, [canEdit, ownerToken, pendingKey, showBoard, syncBoard])
-  useEffect(() => { void loadShared() }, [loadShared])
+  }, [pendingKey, showBoard, syncBoard])
+  useEffect(() => {
+    void loadShared()
+    const refreshVisible = () => { if (!document.hidden) void loadShared() }
+    const interval = window.setInterval(refreshVisible, 15000)
+    window.addEventListener('focus', refreshVisible)
+    return () => {
+      window.clearInterval(interval)
+      readGeneration.current++
+      window.removeEventListener('focus', refreshVisible)
+    }
+  }, [loadShared])
 
   function saveShared(next: BoardState, message: string) {
-    if (!canEdit || revision === null) return
+    if (revision === null) return
+    readGeneration.current++
     showBoard(next)
     if (serverRevision.current === null) {
       try { localStorage.setItem(pendingKey, JSON.stringify({ next, message, revision: -1 })) }
@@ -210,25 +225,25 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
   }, [refresh])
   const isOnBoard = (member: DirectoryMember) =>
     board === 'all' || memberGender(member.gender) === (board === 'men' ? 'Men' : 'Women')
-  const manual = new Set(canEdit ? addedMembers : [])
+  const manual = new Set(addedMembers)
   const eligible = members.filter(member => eligibleForRanking(member, board) || (manual.has(member.id) && isOnBoard(member)))
   const byId = new Map(eligible.map(member => [member.id, member]))
   const recentIds = new Set(ranks.map(record => record.id))
   const manualRecords = addedMembers.filter(id => manual.has(id) && !recentIds.has(id))
     .map(id => ({ id, games: 0, wins: 0, draws: 0 }))
-  const suggested = [...ranks, ...manualRecords].filter(record => byId.has(record.id) && !(canEdit && hidden.includes(record.id)))
+  const suggested = [...ranks, ...manualRecords].filter(record => byId.has(record.id) && !hidden.includes(record.id))
     .sort((a, b) => Number(b.games > 0) - Number(a.games > 0) || startingScore(b) - startingScore(a) || b.games - a.games || a.id.localeCompare(b.id))
   const visibleIds = new Set(suggested.map(record => record.id))
   const available = members.filter(member => isOnBoard(member) && !visibleIds.has(member.id))
     .sort((a, b) => a.display_name.localeCompare(b.display_name))
   function addMember() {
     const member = available.find(candidate => candidate.id === selectedMember)
-    if (!canEdit || !member) return
+    if (!member) return
     const next = [...new Set([...addedMembers, member.id])]
     setSelectedMember('')
     void saveShared({ placements, addedMembers: next, hidden: hidden.filter(id => id !== member.id) }, `${member.display_name} added. Board saved.`)
   }
-  const order = canEdit ? placements[board] ?? {} : {}
+  const order = placements[board] ?? {}
   const assigned = new Set(TIERS.flatMap(tier => order[tier] ?? []))
   const tiers = TIERS.map(tier => {
     const saved = (order[tier] ?? []).filter(id => suggested.some(record => record.id === id))
@@ -239,7 +254,7 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
     }).map(record => record.id)
     return { tier, ids: [...saved, ...initial] }
   })
-  const canReorder = canEdit && revision !== null
+  const canReorder = revision !== null && serverRevision.current !== null
   function reorder(id: string, target: string, after = false) {
     if (!canReorder || id === target) return
     const destination = tiers.find(row => target === row.tier || row.ids.includes(target))
@@ -270,17 +285,17 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
     <header className="member-rankings__header"><Trophy aria-hidden="true" /><div><h1>PLAYER RANKINGS</h1></div><span>{isLoading ? '—' : suggested.length}</span></header>
     <div className="member-rankings__boards" role="group" aria-label="Ranking lists">{(['all', 'men', 'women'] as const).map(value => <button key={value} type="button" aria-pressed={board === value} disabled={Boolean(drag.dragging)} onClick={() => { setBoard(value); setSelectedMember(''); setOrderMessage('') }}>{value === 'all' ? 'All' : value === 'men' ? 'Men' : 'Women'}</button>)}</div>
     <div className="member-rankings__toolbar">
-      {canEdit && revision === 0 && (Object.keys(placements).length > 0 || hidden.length > 0 || addedMembers.length > 0)
+      {revision === 0 && (Object.keys(placements).length > 0 || hidden.length > 0 || addedMembers.length > 0)
         ? <button type="button" disabled={saving} onClick={() => void saveShared({ placements, addedMembers, hidden }, 'Board saved across devices.')}>Save this browser’s board</button> : null}
-      {canEdit && hidden.length > 0 ? <button type="button" disabled={!canReorder} onClick={() => saveHidden([])}>Restore hidden players ({hidden.length})</button> : null}
-      {canEdit ? <div className="member-rankings__add">
+      {hidden.length > 0 ? <button type="button" disabled={!canReorder} onClick={() => saveHidden([])}>Restore hidden players ({hidden.length})</button> : null}
+      {<div className="member-rankings__add">
         <select aria-label="Existing member to add" value={selectedMember} disabled={isLoading}
           onChange={event => setSelectedMember(event.target.value)}>
           <option value="">Choose an existing member</option>
           {available.map(member => <option key={member.id} value={member.id}>{member.display_name}</option>)}
         </select>
         <button type="button" onClick={addMember} disabled={isLoading || !canReorder || !selectedMember}>Add member</button>
-      </div> : null}
+      </div>}
     </div>
     {error || rankError ? <div className="member-rankings__empty" role="alert">{error || rankError}{rankError ? <button type="button" onClick={() => void refresh()}>Retry</button> : null}</div> : isLoading ? <p role="status">Loading rankings…</p> : <>
       {tiers.map(({ tier, ids }, index) => (
@@ -294,7 +309,7 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
                 <strong>{member.display_name}</strong>
               </>
               return <div className="member-rankings__tile" key={id} data-rank-id={id} data-dragging={drag.dragging === id} data-insert={drag.over === id && drag.dragging !== id ? (drag.after ? 'after' : 'before') : undefined}>
-                {canEdit ? <button type="button" disabled={!canReorder} aria-label={`Move ${member.display_name}`}
+                {canReorder ? <button type="button" disabled={!canReorder} aria-label={`Move ${member.display_name}`}
                   onContextMenu={event => { event.preventDefault(); drag.cancel(); setMenuPlayer(id) }}
                   onPointerDown={event => drag.start(event, id)} onPointerMove={drag.move} onPointerUp={drag.end}
                   onPointerCancel={drag.cancel} onLostPointerCapture={drag.cancel} onKeyDown={event => {
@@ -309,7 +324,7 @@ export function MemberRankings({ members, canEdit, ownerToken, loading, error }:
                     const target = targets[event.key as keyof typeof targets]
                     if (target) { event.preventDefault(); reorder(id, target, event.key === 'ArrowRight') }
                   }}>{content}</button> : <div>{content}</div>}
-                {canEdit && menuPlayer === id ? <div className="member-rankings__tile-menu">
+                {menuPlayer === id ? <div className="member-rankings__tile-menu">
                   <button type="button" autoFocus onClick={() => saveHidden([...hidden, id])}>Remove from board</button>
                 </div> : null}
               </div>
