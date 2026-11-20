@@ -83,7 +83,6 @@ export function GameCard(props: GameCardInputProps) {
     game,
     session,
     displayTimeLabel,
-    previousRoundId,
     scoreUnit,
     finished,
     isLiveNow,
@@ -220,7 +219,6 @@ export function GameCard(props: GameCardInputProps) {
         courtsForGame={courtsForGame}
         courtIdByLabel={courtIdByLabel}
         gameRoundId={gameRoundId}
-        previousRoundId={previousRoundId}
         matchForCourt={matchForCourt}
         setDraft={scoring.setDraft}
         submitCourt={scoring.hasScoring ? scoring.submitCourt : undefined}

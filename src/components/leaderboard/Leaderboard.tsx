@@ -1,3 +1,5 @@
+import { Flame as LastGameFlame } from 'lucide-react'
+import './lastGameScore.css'
 import { useMemo, useState } from 'react'
 import { Trophy } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -126,11 +128,13 @@ function entryRecord(
 
 function ScoreWithRecord({
   score,
+  lastGameScore,
   record,
   compact = false,
   t,
 }: {
   score: number
+  lastGameScore?: number
   record: { wins: number; losses: number; draws: number } | null
   compact?: boolean
   t: TranslateFn
@@ -150,6 +154,11 @@ function ScoreWithRecord({
       >
         {score}
       </span>
+      {lastGameScore !== undefined && (
+        <span className="leaderboard-last-game-score" aria-label={`Last game added ${lastGameScore}`}>
+          +{lastGameScore}{lastGameScore === 8 && <LastGameFlame aria-hidden="true" />}
+        </span>
+      )}
       {record ? (
         <p className="mt-0.5 flex items-center gap-1.5 text-[10px] font-medium tabular-nums text-brand-muted md:text-[11px]">
           <span title={t('leaderboard.wins')}>
@@ -357,10 +366,10 @@ function LeaderboardRow({
       {!simpleTeamRow && slotIdentity ? (
         <div className="leaderboard-slot-score">
           <img className="leaderboard-slot-score__icon" src={slotIdentity.imageUrl} alt={slotIdentity.english} draggable={false} />
-          <ScoreWithRecord score={entry.total_points} record={record} compact={compact} t={t} />
+          <ScoreWithRecord score={entry.total_points} lastGameScore={entry.last_game_score} record={record} compact={compact} t={t} />
         </div>
       ) : (
-        <ScoreWithRecord score={entry.total_points} record={record} compact={compact} t={t} />
+        <ScoreWithRecord score={entry.total_points} lastGameScore={entry.last_game_score} record={record} compact={compact} t={t} />
       )}
     </li>
   )

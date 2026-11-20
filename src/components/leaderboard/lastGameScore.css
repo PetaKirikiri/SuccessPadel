@@ -1,0 +1,25 @@
+.leaderboard-last-game-score {
+  display: inline-flex;
+  align-items: center;
+  gap: .15em;
+  margin-block-start: .18em;
+  font-size: .75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.leaderboard-last-game-score svg {
+  width: 1em;
+  height: 1em;
+  color: #ff8a3d;
+  fill: #ffc04c;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .leaderboard-last-game-score svg {
+    transform-origin: center bottom;
+    animation: leaderboard-score-flame 650ms ease-in-out infinite alternate;
+  }
+}
+@keyframes leaderboard-score-flame {
+  from { transform: scale(.9) rotate(-7deg); }
+  to { transform: scale(1.12) rotate(7deg); }
+}

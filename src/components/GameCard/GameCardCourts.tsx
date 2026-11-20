@@ -1,5 +1,3 @@
-import { Flame } from 'lucide-react'
-import './previousCourtScore.css'
 import { useRef, useState, useSyncExternalStore } from 'react'
 import { useCourtsGridMetrics } from '../../hooks/useCourtsGridMetrics'
 import {
@@ -65,7 +63,6 @@ export function GameCardCourts({
   courtsForGame,
   courtIdByLabel,
   gameRoundId,
-  previousRoundId,
   matchForCourt,
   setDraft,
   submitCourt,
@@ -101,7 +98,6 @@ export function GameCardCourts({
   courtScoreRows: GameCardCourtRow[]
   courtsForGame: LiveCourt[]
   courtIdByLabel?: Map<string, string>
-  previousRoundId?: string
   gameRoundId?: string
   matchForCourt?: MatchForCourt
   setDraft: (courtKey: string, side: 'teamA' | 'teamB', value: string) => void
@@ -240,10 +236,6 @@ export function GameCardCourts({
           gameRoundId && courtId && matchForCourt
             ? matchForCourt(gameRoundId, courtId)
             : undefined
-
-        const previousMatch = previousRoundId && courtId
-          ? matchForCourt?.(previousRoundId, courtId)
-          : undefined
 
         const manualHref = courtManualScoreHref({
           manualScoreEnabled,
@@ -553,18 +545,6 @@ export function GameCardCourts({
               colorNamesByGender={Boolean(duoTeamLabels)}
               t={t}
             />
-            {previousRoundId && (
-              <div className="previous-court-score">
-                <span>Previous game</span>
-                {previousMatch?.score_summary && previousMatch.teamAPoints != null && previousMatch.teamBPoints != null
-                  ? <strong>
-                    {[previousMatch.teamAPoints, previousMatch.teamBPoints].map((score, index) => (
-                      <span key={index}>{index === 1 && '–'}{score}{score === 8 && <Flame aria-hidden="true" />}</span>
-                    ))}
-                  </strong>
-                  : <span>—</span>}
-              </div>
-            )}
           </CourtCard>
         )
       })}

@@ -14,6 +14,7 @@ export type LeaderboardEntry = {
   display_name: string
   avatar_url?: string | null
   total_points: number
+  last_game_score?: number
   games: number
   wins?: number
   losses?: number

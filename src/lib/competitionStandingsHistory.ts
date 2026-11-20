@@ -42,14 +42,22 @@ export function competitionStandingsHistory(
   // Replay saved games so advancing to an unscored game (or refreshing) keeps
   // each entrant's last movement. Never establish movement from an unplayed table.
   let entries = calculate([])
+  const lastGameScores = new Map<string, number>()
   let snapshot: MovementSnapshot | null = null
   let movement: Record<string, number> = {}
   const gameNumbers = [...new Set(historyRounds.map(round => round.round_number))].sort((a, b) => a - b)
   for (const number of gameNumbers) {
+    const previous = new Map(entries.map(entry => [entry.profile_id, entry]))
     const hadResults = entries.some(entry => entry.games > 0)
     entries = calculate(historyRounds.filter(round => round.round_number <= number))
+    for (const entry of entries) {
+      const prior = previous.get(entry.profile_id)
+      if (entry.games > (prior?.games ?? 0)) {
+        lastGameScores.set(entry.profile_id, entry.total_points - (prior?.total_points ?? 0))
+      }
+    }
     snapshot = updateMovement(hadResults ? snapshot : null, entries)
     if (hadResults) movement = snapshot?.movement ?? {}
   }
-  return { entries, movement }
+  return { entries, movement, lastGameScores }
 }
