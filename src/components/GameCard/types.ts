@@ -74,6 +74,7 @@ export type GameCardProps = {
   game: ScoringGame
   session: GameCardSession
   size: GameCardSize
+  previousRoundId?: string
   displayTimeLabel: string
   scoreUnit: AmericanoScoringUnit
   finished: boolean

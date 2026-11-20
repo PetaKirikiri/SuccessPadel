@@ -484,6 +484,7 @@ export function GameBoard({
         game={game}
         session={session}
         displayTimeLabel={displayTimeLabel}
+        previousRoundId={!friendly && competitionId ? roundIdForGame?.(game.gameNumber - 1) : undefined}
         scoreUnit={scoreUnit}
         finished={finished}
         isLiveNow={isLiveNow}
