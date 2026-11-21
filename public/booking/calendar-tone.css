@@ -1,0 +1,25 @@
+body { --ink: #214660; --mint: #e5f4ff; --green: #286b98; --cream: white; --line: #d4e5f0; }
+body .sidebar { background: #e7f5ff; border-color: #c8e1f3; }
+.sidebar .section-nav button { color: #365d76; gap: 5px; }
+.sidebar .section-nav button:hover { background: #d5ecfc; }
+.sidebar .section-nav button.active { background: white; color: #18577f; box-shadow: inset 3px 0 #4ba7dd; }
+.sidebar .section-nav img { width: 30px; height: 30px; object-fit: contain; mix-blend-mode: multiply; }
+.sidebar .section-nav button:focus-visible { outline: 2px solid #2675a7; }
+body .calendar-row .time-label { font-variant-numeric: tabular-nums; color: #567084; }
+body .hour-start .time-label { color: #214660; }
+body .hour-start > * { border-top-color: #c4dceb; }
+body .calendar-head,
+body .calendar-head > div { background: #7dd3fc; color: #123f60; border-color: #8edafb; }
+body .calendar-head small { color: #205577; }
+
+body .booking-week-strip { background: white; border: 1px solid #c9e4f4; border-radius: 12px; padding: 3px; gap: 2px; }
+body .booking-week-strip button.week-day,
+body .booking-week-strip button.week-arrow { background: white; color: #224d69; border-color: transparent; box-shadow: none; }
+body .booking-week-strip button.week-day small { color: #4f6879; }
+body .booking-week-strip button.week-day:hover,
+body .booking-week-strip button.week-arrow:hover { background: #e3f5ff; }
+body .booking-week-strip button.week-day:is([aria-pressed="true"],[aria-checked="true"]) { background: #0969ac; border-color: #0969ac; color: white; }
+body .booking-week-strip button.week-day:is([aria-pressed="true"],[aria-checked="true"]) small { color: white; }
+body .booking-week-strip button.week-day[aria-current="date"] small::after { background: currentColor; }
+.sidebar .section-nav [data-section="pilates"] img { transform: scale(1.15); }
+body .calendar-row .calendar-cell:not(.reserved):hover { background: #def1ff; }
