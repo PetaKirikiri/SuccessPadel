@@ -16,8 +16,6 @@
     }
   ],
   "rewrites": [
-    { "source": "/booking", "destination": "/booking/index.html" },
-    { "source": "/booking/", "destination": "/booking/index.html" },
     { "source": "/c/:inviteCode", "destination": "/api/competition-share?inviteCode=:inviteCode" },
     { "source": "/c/:inviteCode/", "destination": "/api/competition-share?inviteCode=:inviteCode" },
     {
@@ -43,6 +41,8 @@
     { "source": "/tactics", "destination": "/tactics/index.html" },
     { "source": "/tactics/", "destination": "/tactics/index.html" },
     { "source": "/rules", "destination": "/rain-policy/index.html" },
+    { "source": "/booking", "destination": "/booking/index.html" },
+    { "source": "/booking/", "destination": "/booking/index.html" },
     { "source": "/rules/", "destination": "/rain-policy/index.html" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
