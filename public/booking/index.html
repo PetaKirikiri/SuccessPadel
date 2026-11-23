@@ -1934,40 +1934,6 @@ newBookingButton.onclick=()=>{
   document.querySelector('#'+section+' .board-create').click();
 };
 tools.append(newBookingButton);
-const bookingProfile=document.createElement('div');
-bookingProfile.className='booking-header-profile';
-bookingProfile.hidden=true;
-tools.append(bookingProfile);
-function refreshBookingProfile(){
-  bookingProfile.hidden=true;
-  bookingProfile.replaceChildren();
-  let session;
-  try{session=JSON.parse(localStorage.getItem('success-padel-auth')||'null')}catch{return}
-  if(!session?.user?.id||session.user.is_anonymous||!(session.expires_at>Date.now()/1000))return;
-  const user=session.user,metadata=user.user_metadata||{};
-  const name=[metadata.display_name,metadata.full_name,metadata.name,user.email]
-    .find(value=>typeof value==='string'&&value.trim())?.trim();
-  const face=document.createElement('span');
-  face.className='booking-portrait';
-  face.textContent=name?name.split(/\s+/).slice(0,2).map(part=>part[0]).join('').toUpperCase():'•';
-  const avatar=[metadata.avatar_url,metadata.picture].find(value=>typeof value==='string'&&value.startsWith('https://'));
-  if(avatar){
-    const photo=new Image();
-    photo.alt='';photo.referrerPolicy='no-referrer';photo.src=avatar;photo.onerror=()=>photo.remove();
-    face.append(photo);
-  }
-  bookingProfile.append(face);
-  if(name){
-    const label=document.createElement('span');
-    label.className='booking-profile-name';label.textContent=name;
-    bookingProfile.append(label);
-  }
-  bookingProfile.hidden=false;
-}
-refreshBookingProfile();
-window.addEventListener('storage',event=>{if(event.key==='success-padel-auth'||event.key===null)refreshBookingProfile()});
-window.addEventListener('focus',refreshBookingProfile);
-
 searchBar.append(customerForm,tools);
 
 const searchInput=searchBar.querySelector('input');

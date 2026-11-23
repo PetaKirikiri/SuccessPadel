@@ -54,7 +54,7 @@ export default async function handler(req, res) {
       const account = new Map([
         ['peta', {email:process.env.BOOKING_OWNER_EMAIL, role:'owner'}],
         ['kett', {email:process.env.BOOKING_KETT_EMAIL, role:'owner'}],
-        ['successpadel', {email:process.env.BOOKING_FRONT_DESK_EMAIL, role:'front_desk'}],
+        ['successpadel', {email:'booking-front-desk@successpadel.local', role:'front_desk'}],
       ]).get(username);
       if (!account?.email) return send(401, {error:'Staff sign-in failed.'});
       const {data, error} = await client().auth.signInWithPassword({email:account.email, password:body.password});
@@ -110,10 +110,28 @@ export default async function handler(req, res) {
       }
     }
 
+    if (action === 'staff-password') {
+      if (role !== 'owner') return send(403, {error:'Admin access required.'});
+      const response = await fetch(`${url}/functions/v1/booking-front-desk-password`, {
+        method:'POST',
+        headers:{apikey:key, Authorization:`Bearer ${token}`, 'Content-Type':'application/json'},
+        body:JSON.stringify({password:body.password}),
+      });
+      return send(response.status, await response.json());
+    }
+
     if (action === 'roster') {
       const {data, error} = await db.from('booking_member_roster').select('members,revision').eq('id',1).single();
       if (error) return send(503, {error:'Could not load members.'});
-      return send(200, {...data, role});
+      const profileName = role === 'front_desk' ? 'SuccessPadel' :
+        user.email?.toLowerCase() === process.env.BOOKING_KETT_EMAIL?.toLowerCase() ? 'Kett' : 'Peta';
+      const avatar = user.user_metadata?.avatar_url;
+      const profile = {
+        name:profileName,
+        avatar:role === 'owner' && typeof avatar === 'string' &&
+          /^https:\/\/lh3\.googleusercontent\.com\//.test(avatar) ? avatar : null,
+      };
+      return send(200, {...data, role, profile});
     }
     if (action === 'loan' || action === 'save-loan') {
       if (role !== 'owner') return send(403, {error:'Owner access required.'});
