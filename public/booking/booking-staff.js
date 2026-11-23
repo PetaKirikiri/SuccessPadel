@@ -197,9 +197,12 @@ loadStaffWorkspace().then(() => {
   const query = new URLSearchParams(location.search);
   const status = query.get('signin');
   if (!status) return;
+  const fragment = new URLSearchParams(location.hash.slice(1));
+  const errorCode = fragment.get('error_code') ?? fragment.get('error');
+  const reference = /^[a-z_]{1,60}$/.test(errorCode ?? '') ? ' (' + errorCode + ')' : '';
   query.delete('signin');
   history.replaceState(null, '', location.pathname + (query.size ? '?' + query : ''));
   if (!staffAccess.hidden) staffError.textContent = status === 'google-denied'
     ? 'Select an approved Bookings admin Google account.'
-    : 'Google sign-in failed. Try again.';
+    : 'Google sign-in failed. Try again.' + reference;
 });
