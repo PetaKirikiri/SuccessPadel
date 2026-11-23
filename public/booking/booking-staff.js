@@ -193,4 +193,13 @@ const staffSignOut = memberNode('button', 'Sign out', 'secondary');
 staffSignOut.type = 'button';
 staffSignOut.onclick = signOutBookingStaff;
 tools.append(staffSignOut);
-loadStaffWorkspace();
+loadStaffWorkspace().then(() => {
+  const query = new URLSearchParams(location.search);
+  const status = query.get('signin');
+  if (!status) return;
+  query.delete('signin');
+  history.replaceState(null, '', location.pathname + (query.size ? '?' + query : ''));
+  if (!staffAccess.hidden) staffError.textContent = status === 'google-denied'
+    ? 'Select an approved Bookings admin Google account.'
+    : 'Google sign-in failed. Try again.';
+});

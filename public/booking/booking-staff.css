@@ -14,3 +14,5 @@ body[data-booking-locked] > :is(.app, dialog) { display: none !important; }
 .staff-access output:not(:empty) { display: block; margin-top: .75rem; color: #8b2638; }
 .staff-access > button { margin-top: .75rem; }
 body[data-booking-role="front_desk"] :is([data-section="sales"], #sales) { display: none !important; }
+
+.booking-google-sign-in { display: inline-block; margin-bottom: 1rem; text-decoration: none; }

@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { bookingGoogle } from '../server/booking/google.mjs';
 
 const cookie = '__Host-booking_staff';
 const cookieAttributes = 'Path=/; Secure; HttpOnly; SameSite=Strict';
@@ -6,7 +7,8 @@ const cookieAttributes = 'Path=/; Secure; HttpOnly; SameSite=Strict';
 function writeSession(res, session) {
   const token = session?.access_token ?? '';
   const age = token ? Math.min(Number(session.expires_in) || 3600, 3600) : 0;
-  res.setHeader('Set-Cookie', `${cookie}=${token}; ${cookieAttributes}; Max-Age=${age}`);
+  const existing = res.getHeader('Set-Cookie');
+  res.setHeader('Set-Cookie', [...(existing ? [existing].flat() : []), `${cookie}=${token}; ${cookieAttributes}; Max-Age=${age}`]);
 }
 
 export default async function handler(req, res) {
@@ -22,6 +24,7 @@ export default async function handler(req, res) {
   const url = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
   const key = process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) return send(503, {error: 'Staff sign-in unavailable.'});
+  if (req.method === 'GET' && req.query?.google) return bookingGoogle(req,res,url,key,writeSession);
   const token = req.headers.cookie?.split(';').map(part => part.trim())
     .find(part => part.startsWith(cookie + '='))?.slice(cookie.length + 1);
   const body = req.body ?? {};
@@ -73,34 +76,37 @@ export default async function handler(req, res) {
     // The token has already been validated by Supabase Auth.
     const assurance = JSON.parse(Buffer.from(token.split('.')[1], 'base64url')).aal;
     if (role === 'owner' && assurance !== 'aal2') {
-      const factor = user.factors?.find(item => item.factor_type === 'totp' && item.status === 'verified');
-      async function mfa(path, payload) {
-        const response = await fetch(`${url}/auth/v1/factors${path}`, {
-          method:'POST', headers:{apikey:key, Authorization:`Bearer ${token}`, 'Content-Type':'application/json'},
-          body:JSON.stringify(payload),
-        });
-        if (!response.ok) throw new Error('Authenticator request failed');
-        return response.json();
-      }
-      if (action === 'enroll' && !user.factors?.some(item => item.status === 'verified')) {
-        const enrolled = await mfa('', {factor_type:'totp'});
-        return send(200, {factorId:enrolled.id, secret:enrolled.totp.secret});
-      }
-      if (action === 'verify') {
-        const factorId = factor?.id ?? body.factorId;
-        if (!/^[\da-f-]{36}$/i.test(factorId ?? '') || !/^\d{6}$/.test(body.code ?? '')) {
-          return send(400, {error:'Enter a six-digit code.'});
+      const {data:googleVerified} = await db.rpc('booking_has_google_session');
+      if (googleVerified !== true) {
+        const factor = user.factors?.find(item => item.factor_type === 'totp' && item.status === 'verified');
+        async function mfa(path, payload) {
+          const response = await fetch(`${url}/auth/v1/factors${path}`, {
+            method:'POST', headers:{apikey:key, Authorization:`Bearer ${token}`, 'Content-Type':'application/json'},
+            body:JSON.stringify(payload),
+          });
+          if (!response.ok) throw new Error('Authenticator request failed');
+          return response.json();
         }
-        try {
-          const challenge = await mfa('/' + factorId + '/challenge', {});
-          const session = await mfa('/' + factorId + '/verify', {challenge_id:challenge.id, code:body.code});
-          writeSession(res, session);
-          return send(200, {});
-        } catch {
-          return send(400, {error:'Authenticator code was rejected.'});
+        if (action === 'enroll' && !user.factors?.some(item => item.status === 'verified')) {
+          const enrolled = await mfa('', {factor_type:'totp'});
+          return send(200, {factorId:enrolled.id, secret:enrolled.totp.secret});
         }
+        if (action === 'verify') {
+          const factorId = factor?.id ?? body.factorId;
+          if (!/^[\da-f-]{36}$/i.test(factorId ?? '') || !/^\d{6}$/.test(body.code ?? '')) {
+            return send(400, {error:'Enter a six-digit code.'});
+          }
+          try {
+            const challenge = await mfa('/' + factorId + '/challenge', {});
+            const session = await mfa('/' + factorId + '/verify', {challenge_id:challenge.id, code:body.code});
+            writeSession(res, session);
+            return send(200, {});
+          } catch {
+            return send(400, {error:'Authenticator code was rejected.'});
+          }
+        }
+        return send(403, {mfa:true, factorId:factor?.id ?? null, error:'Authenticator verification required.'});
       }
-      return send(403, {mfa:true, factorId:factor?.id ?? null, error:'Authenticator verification required.'});
     }
 
     if (action === 'roster') {
