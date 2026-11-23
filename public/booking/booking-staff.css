@@ -1,0 +1,16 @@
+body[data-booking-locked] > :is(.app, dialog) { display: none !important; }
+.staff-access {
+  width: min(100% - 2rem, 25rem);
+  margin: 12vh auto;
+  padding: 1.5rem;
+  border: 1px solid #dfd8eb;
+  border-radius: 1rem;
+  background: white;
+}
+.staff-access h1 { margin: 0 0 1rem; }
+.staff-access form:not([hidden]), .staff-access label:not([hidden]) { display: grid; gap: .5rem; }
+.staff-access form:not([hidden]) { gap: 1rem; }
+.staff-access input { padding: .6rem; border: 1px solid #bdb5cc; border-radius: .4rem; }
+.staff-access output:not(:empty) { display: block; margin-top: .75rem; color: #8b2638; }
+.staff-access > button { margin-top: .75rem; }
+body[data-booking-role="front_desk"] :is([data-section="sales"], #sales) { display: none !important; }
