@@ -199,7 +199,9 @@ loadStaffWorkspace().then(() => {
   if (!status) return;
   const fragment = new URLSearchParams(location.hash.slice(1));
   const errorCode = fragment.get('error_code') ?? fragment.get('error');
-  const reference = /^[a-z_]{1,60}$/.test(errorCode ?? '') ? ' (' + errorCode + ')' : '';
+  const description = fragment.get('error_description') ?? '';
+  const category = description.match(/invalid_client|invalid_grant|unauthorized_client|redirect_uri_mismatch|exchange external code|external provider|database error|saving new user|updating user|state.*expired|error finding flow/i)?.[0];
+  const reference = category ? ' (' + category + ')' : /^[a-z_]{1,60}$/.test(errorCode ?? '') ? ' (' + errorCode + ')' : '';
   query.delete('signin');
   history.replaceState(null, '', location.pathname + (query.size ? '?' + query : ''));
   if (!staffAccess.hidden) staffError.textContent = status === 'google-denied'
