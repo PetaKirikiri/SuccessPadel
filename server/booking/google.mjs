@@ -35,13 +35,21 @@ export async function bookingGoogle(req, res, url, key, writeSession) {
   }
   res.setHeader('Set-Cookie', `${verifierCookie}=; ${verifierAttributes}; Max-Age=0`);
   if (req.query.google !== 'callback' || typeof req.query.code !== 'string' || !verifier) {
+    const errorCode = typeof req.query.error_code === 'string' && /^[a-z_]{1,60}$/.test(req.query.error_code)
+      ? req.query.error_code : 'none';
+    console.warn('booking_google_callback_incomplete', {
+      codeReceived: typeof req.query.code === 'string', verifierReceived: Boolean(verifier), errorCode,
+    });
     return res.redirect(303, '/booking/?signin=google-error');
   }
+  let step = 'exchange';
   try {
     const {data:{session}, error} = await auth.auth.exchangeCodeForSession(req.query.code);
     if (error || !session?.provider_token) throw new Error('Missing Google session');
+    step = 'supabase-user';
     const {data:{user}, error:userError} = await auth.auth.getUser(session.access_token);
     if (userError || !user) throw new Error('Invalid staff session');
+    step = 'google-userinfo';
     const response = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
       headers:{Authorization:`Bearer ${session.provider_token}`},
     });
@@ -52,6 +60,7 @@ export async function bookingGoogle(req, res, url, key, writeSession) {
     if (identity.email_verified !== true || !allowed.includes(email) || user.email?.toLowerCase() !== email || !linked) {
       return res.redirect(303, '/booking/?signin=google-denied');
     }
+    step = 'session-proof';
     const claims = JSON.parse(Buffer.from(session.access_token.split('.')[1], 'base64url'));
     if (!claims.session_id || claims.sub !== user.id) throw new Error('Invalid session binding');
     const expires = Math.min(claims.exp, Math.floor(Date.now()/1000) + 3500);
@@ -62,6 +71,7 @@ export async function bookingGoogle(req, res, url, key, writeSession) {
     writeSession(res,session);
     return res.redirect(303, '/booking/');
   } catch {
+    console.warn('booking_google_callback_failed', {step});
     return res.redirect(303, '/booking/?signin=google-error');
   }
 }
