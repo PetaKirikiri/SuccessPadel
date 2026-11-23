@@ -7,8 +7,9 @@ const googleClientId = '924798055254-tm25nh3dtlhharjesk99l47bcrurhi68.apps.googl
 
 export function beginBookingGoogle(res) {
   const nonce = randomBytes(32).toString('hex');
-  res.setHeader('Set-Cookie', `${nonceCookie}=${nonce}; ${cookieAttributes}; Max-Age=900`);
-  return res.status(200).json({clientId:googleClientId, nonce:hashNonce(nonce)});
+  const challenge = hashNonce(nonce);
+  res.setHeader('Set-Cookie', `${nonceCookie}_${challenge}=${nonce}; ${cookieAttributes}; Max-Age=900`);
+  return res.status(200).json({clientId:googleClientId, nonce:challenge});
 }
 
 function hashNonce(nonce) {
@@ -23,14 +24,11 @@ export async function completeBookingGoogle(req, res, url, key, writeSession) {
   const signingKey = process.env.BOOKING_GOOGLE_SESSION_KEY;
   const allowed = [process.env.BOOKING_OWNER_EMAIL, process.env.BOOKING_KETT_EMAIL]
     .filter(Boolean).map(email => email.trim().toLowerCase());
-  const nonce = req.headers.cookie?.split(';').map(part => part.trim())
-    .find(part => part.startsWith(nonceCookie + '='))?.slice(nonceCookie.length + 1);
   const credential = req.body?.credential;
   if (!signingKey || !allowed.length || req.headers.host !== 'successpadel.app') {
     return res.status(503).json({error:'Google sign-in unavailable.'});
   }
-  res.setHeader('Set-Cookie', `${nonceCookie}=; ${cookieAttributes}; Max-Age=0`);
-  if (!/^[a-f0-9]{64}$/.test(nonce ?? '') || typeof credential !== 'string' || credential.length > 8192) {
+  if (typeof credential !== 'string' || credential.length > 8192) {
     return res.status(400).json({error:'Reload the page and try Google sign-in again.'});
   }
 
@@ -38,6 +36,17 @@ export async function completeBookingGoogle(req, res, url, key, writeSession) {
   try {
     // These checks reject irrelevant tokens early. Supabase verifies the signature below.
     const identity = claimsFrom(credential);
+    if (typeof identity.nonce !== 'string' || !/^[a-f0-9]{64}$/.test(identity.nonce)) {
+      return res.status(400).json({error:'Try Google sign-in again.'});
+    }
+    const cookies = req.headers.cookie?.split(';').map(part => part.trim()) ?? [];
+    const matchingCookie = [nonceCookie + '_' + identity.nonce, nonceCookie].find(name => {
+      const value = cookies.find(part => part.startsWith(name + '='))?.slice(name.length + 1);
+      return /^[a-f0-9]{64}$/.test(value ?? '') && hashNonce(value) === identity.nonce;
+    });
+    if (!matchingCookie) return res.status(400).json({error:'Try Google sign-in again.'});
+    const nonce = cookies.find(part => part.startsWith(matchingCookie + '=')).slice(matchingCookie.length + 1);
+    res.setHeader('Set-Cookie', `${matchingCookie}=; ${cookieAttributes}; Max-Age=0`);
     const email = typeof identity.email === 'string' ? identity.email.toLowerCase() : '';
     if (!allowed.includes(email) || identity.email_verified !== true) {
       return res.status(403).json({error:'Select an approved Bookings admin Google account.'});

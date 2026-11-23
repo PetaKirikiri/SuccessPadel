@@ -297,6 +297,7 @@ staffPasswordForm.onsubmit = async event => {
 };
 const googleSignInContainer = document.getElementById('booking-google-sign-in');
 let googleScript;
+let signingInWithGoogle = false;
 
 function loadGoogleIdentity() {
   googleScript ??= new Promise((resolve,reject) => {
@@ -325,13 +326,19 @@ async function showGoogleSignIn() {
     client_id:config.clientId,
     nonce:config.nonce,
     callback:async response => {
+      if (signingInWithGoogle || staffAccess.hidden) return;
+      signingInWithGoogle = true;
       staffError.textContent = '';
       try {
         await staffRequest('google-sign-in', {credential:response.credential});
         await loadStaffWorkspace();
       } catch (error) {
+        await loadStaffWorkspace();
+        if (staffAccess.hidden) return;
         staffError.textContent = error.message || 'Google sign-in failed. Try again.';
         await showGoogleSignIn().catch(retryGoogleSignIn);
+      } finally {
+        signingInWithGoogle = false;
       }
     },
   });
