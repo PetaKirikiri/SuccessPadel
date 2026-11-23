@@ -1,25 +1,652 @@
-body { --ink: #214660; --mint: #e5f4ff; --green: #286b98; --cream: white; --line: #d4e5f0; }
-body .sidebar { background: #e7f5ff; border-color: #c8e1f3; }
-.sidebar .section-nav button { color: #365d76; gap: 5px; }
-.sidebar .section-nav button:hover { background: #d5ecfc; }
-.sidebar .section-nav button.active { background: white; color: #18577f; box-shadow: inset 3px 0 #4ba7dd; }
-.sidebar .section-nav img { width: 30px; height: 30px; object-fit: contain; mix-blend-mode: multiply; }
-.sidebar .section-nav button:focus-visible { outline: 2px solid #2675a7; }
-body .calendar-row .time-label { font-variant-numeric: tabular-nums; color: #567084; }
-body .hour-start .time-label { color: #214660; }
-body .hour-start > * { border-top-color: #c4dceb; }
-body .calendar-head,
-body .calendar-head > div { background: #7dd3fc; color: #123f60; border-color: #8edafb; }
-body .calendar-head small { color: #205577; }
+html body {
+  --ink:#173d56; --muted:#547086; --mint:#e2f4fc; --green:#086ba8;
+  --cream:#f3f9fc; --paper:#fff; --line:#d6e5ed; --accent:#0079c2;
+  --club-blue:#066ba7;
+  --club-panel:linear-gradient(135deg,#d6effd,#eff8fd 80%);
+  --club-key:linear-gradient(150deg,#fff,#f1f8fd);
+  --club-depth:-2px -2px 5px #ffffffc9,2px 3px 6px #557b952e;
+  --lift: -3px -4px 9px #ffffffeb, 3px 5px 10px #6a8fa42e;
+  --recess: inset 2px 3px 6px #7fa0b437, inset -2px -2px 5px white;
+  color:var(--ink); background:#e6f3fa;
+  padding:4px;
+}
+body .app {
+  display:block; margin:auto; width:100%; max-width:1480px; min-height:90vh;
+  background:#f3f9fc; border:1px solid #faffff; border-radius:14px;
+  box-shadow:-9px -9px 28px #ffffffba, 10px 15px 32px #557e9826;
+  padding:8px 12px;
+}
+body .sidebar {
+  position:static; height:auto; width:auto; padding:0; border:0; background:none;
+  grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:24px;
+}
+.club-brand { display:flex; align-items:center; gap:14px; }
+.club-brand img { width:auto; height:32px; filter:brightness(0) saturate(100%) invert(19%) sepia(36%) saturate(1021%) hue-rotate(158deg); }
+.club-brand img + img { border-left:1px solid #a5bac9; padding-left:14px; }
+body .section-nav { display:flex; gap:4px; }
+body .sidebar .section-nav button {
+  background:transparent; color:#4a677a; border-radius:24px; font-size:13px; padding:9px 14px;
+}
+body .sidebar .section-nav button:is(:hover,.active) { background:white; color:#006eaa; box-shadow:var(--lift); }
+.sport-switch {
+  display:inline-flex; grid-column:1/-1; align-items:center; justify-self:start; gap:5px;
+  padding:6px; border-radius:60px; background:#e4f0f7; box-shadow:var(--recess);
+}
+.sport-switch button {
+  display:flex; align-items:center; gap:12px; border-radius:40px; padding:6px 22px 6px 7px;
+  color:#476779; font-weight:650; font-size:18px; background:transparent;
+}
+.sport-disc {
+  display:grid; place-items:center; width:49px; height:49px; border-radius:50%;
+}
+.sport-switch .active { background:#f8fcff; color:#0c4a72; box-shadow:var(--lift); }
+.sport-switch .active .sport-disc {
+  background:white; box-shadow:inset 0 0 0 2px var(--accent),0 2px 5px #608ba73d;
+}
+.club-icon { display:block; width:34px; height:34px; background:url('/booking/club-icons.png?v=pose') 0 0 / 200% 200%; mix-blend-mode:multiply; }
+.club-icon-pilates { background-position:100% 0; }
+body .content { width:100%; padding:8px 0 0; }
+body .booking-week-toolbar { display:flex; align-items:center; gap:24px; margin:0 0 12px; }
+body .booking-week-toolbar[hidden], body .booking-week-toolbar.coach-original-toolbar { display:none; }
+.calendar-month { flex:none; font-size:clamp(17px,2vw,26px); font-weight:650; letter-spacing:-.045em; margin:0; }
+body .booking-week-strip { display:grid; gap:3px; align-items:center; min-width:0; }
+body .booking-week-toolbar .booking-week-strip button:is(.week-day,.week-arrow) {
+  border:none; background:transparent; color:#49697d; border-radius:16px; box-shadow:none;
+}
+body .booking-week-strip button.week-day { padding:7px 2px; font-size:12px; }
+body .booking-week-strip button.week-day small { color:#49697d; }
+body .booking-week-strip button:is(.week-day,.week-arrow):hover { background:#e4f1f8; }
+body .booking-week-toolbar .booking-week-strip button.week-day:is([aria-pressed=true],[aria-checked=true]) {
+  color:#fff; background:var(--accent); box-shadow:inset 0 1px 1px #ffffff50,0 3px 7px #18699a33;
+}
+body .booking-week-toolbar .booking-week-strip button.week-day:is([aria-pressed=true],[aria-checked=true]) small { color:white; }
+body .booking-week-strip button.week-day[aria-current=date] small::after { background:currentColor; }
+body #court-calendar, body #pilates-calendar { border:1px solid #d5e6ef; border-radius:14px; }
+body .calendar-head, body .calendar-head > div { color:#21465c; background:#e1f1f9; border-color:#d0e4ee; }
+body .calendar-head small { color:#567385; }
+body .calendar-row > * { border-right-color:#e1ebf0; }
+body .calendar-row .time-label { color:#547182; font-variant-numeric:tabular-nums; }
+body .hour-start .time-label { color:#1f435a; }
+body #court-calendar .calendar-row .time-label.outdoor-rate-rail { background:#edf7fb; color:#325b72; }
+body .calendar-row .calendar-cell:not(.reserved):enabled:is(:hover,:focus-visible,:active) {
+  background:#d5eeff; box-shadow:inset 3px 0 var(--accent);
+}
+body :is(.card,.table-card,.pricing-group,.package-account) { background:white; border-color:var(--line); box-shadow:none; }
+body .modal { box-shadow:0 20px 70px #1c425435; border:1px solid #fff; border-radius:18px; }
+body .primary { color:white; background:var(--accent); border-radius:12px; box-shadow:0 2px 5px #08669926; }
+body .secondary { color:#234b64; background:#f6fbfe; border:1px solid var(--line); }
+body :is(.pricing-tabs,.customer-tabs) button[aria-selected=true] { color:#006fae; border-color:#1683be; background:#ebf6fc; }
+body :is(.field input,.field select,.field textarea,.customer-filter,.pricing-input) { color:var(--ink); border:1px solid var(--line); background-color:#f7fbfd; }
+body :is(button,input,select,textarea):focus-visible { outline:2px solid #0074af; outline-offset:2px; }
+@media(max-width:760px) {
+  html body { padding:8px; }
+  body .app { padding:14px; border-radius:20px; }
+  body .sidebar { gap:16px 8px; }
+  .club-brand { gap:8px; flex-wrap:wrap; }
+  .club-brand img { height:25px; }
+  .club-brand img + img { padding-left:8px; }
+  body .sidebar .section-nav button { font-size:12px; padding:8px 5px; }
+  body .booking-week-toolbar { align-items:stretch; flex-direction:column; gap:8px; }
+  .sport-switch button { font-size:16px; gap:8px; padding-right:16px; }
+  .sport-disc { width:40px; height:40px; }
+  .club-icon { width:29px; height:29px; }
+  body .booking-week-strip { grid-template-columns:18px repeat(7,minmax(0,1fr)) 18px; gap:1px; }
+  body .booking-week-strip button.week-day { border-radius:10px; font-size:11px; }
+  body #court-calendar,body #pilates-calendar { min-width:300px; }
+}
 
-body .booking-week-strip { background: white; border: 1px solid #c9e4f4; border-radius: 12px; padding: 3px; gap: 2px; }
-body .booking-week-strip button.week-day,
-body .booking-week-strip button.week-arrow { background: white; color: #224d69; border-color: transparent; box-shadow: none; }
-body .booking-week-strip button.week-day small { color: #4f6879; }
-body .booking-week-strip button.week-day:hover,
-body .booking-week-strip button.week-arrow:hover { background: #e3f5ff; }
-body .booking-week-strip button.week-day:is([aria-pressed="true"],[aria-checked="true"]) { background: #0969ac; border-color: #0969ac; color: white; }
-body .booking-week-strip button.week-day:is([aria-pressed="true"],[aria-checked="true"]) small { color: white; }
-body .booking-week-strip button.week-day[aria-current="date"] small::after { background: currentColor; }
-.sidebar .section-nav [data-section="pilates"] img { transform: scale(1.15); }
-body .calendar-row .calendar-cell:not(.reserved):hover { background: #def1ff; }
+
+body .sidebar { grid-template-columns:1fr auto 1fr; grid-template-areas:"brand sports tools"; }
+.club-brand { grid-area:brand; }
+.sport-switch { grid-area:sports; }
+body .section-nav { grid-area:tools; justify-self:end; }
+body .sport-switch button { font-size:14px; padding:4px 14px 4px 6px; gap:6px; }
+body .sport-disc { width:31px; height:31px; }
+body .sport-disc .club-icon { width:23px; height:23px; }
+body .modal { background:linear-gradient(145deg,#fff,#eff8fd); box-shadow:-1px -1px 0 white,8px 14px 42px #153d5b40; }
+body .modal .field :is(input,select) { box-shadow:inset 1px 2px 3px #6587a01a; }
+body .calendar-scroll { border-radius:15px; box-shadow:var(--lift); }
+@media(max-width:900px) {
+  body .sidebar { grid-template-columns:1fr auto; grid-template-areas:"brand tools" "sports sports"; }
+}
+
+/* Keep the resource headings and day selector in view while the timetable scrolls. */
+body .app:has(:is(#dashboard,#pilates).active .calendar-scroll:not([hidden])) {
+  display:flex; flex-direction:column; height:calc(100dvh - 8px); min-height:0;
+}
+.app:has(:is(#dashboard,#pilates).active .calendar-scroll:not([hidden])) :is(.main,.content,.page.active) {
+  display:flex; flex-direction:column; flex:1; min-height:0;
+}
+body .sidebar { flex:none; }
+body :is(#dashboard,#pilates) .calendar-scroll:not([hidden]) {
+  flex:1; min-height:0; overflow:auto; border:1px solid var(--line);
+}
+body :is(#court-calendar,#pilates-calendar) { overflow:visible; border:0; }
+body :is(#court-calendar,#pilates-calendar) .calendar-head { position:sticky; top:0; z-index:3; }
+body :is(#court-calendar,#pilates-calendar) .calendar-row { min-height:24px; }
+body .booking-week-toolbar { margin-bottom:6px; }
+@media(max-width:760px) {
+  html body { padding:2px; }
+  body .app { padding:6px; border-radius:10px; }
+  body .app:has(:is(#dashboard,#pilates).active .calendar-scroll:not([hidden])) { height:calc(100dvh - 4px); }
+  body .sidebar { gap:6px; }
+}
+
+/* A court-day is one continuous time axis. Each rendered interval gets an equal
+   share of the space between the resource headings and closing time. */
+body :is(#court-calendar,#pilates-calendar) {
+  display:flex; flex-direction:column; height:100%; box-sizing:border-box;
+}
+body :is(#court-calendar,#pilates-calendar)::after {
+  content:attr(data-closes); flex:none; width:70px; text-align:center;
+  font:650 11px/16px 'DM Sans',sans-serif; color:var(--ink);
+}
+body :is(#court-calendar,#pilates-calendar) .calendar-head { flex:none; }
+body :is(#court-calendar,#pilates-calendar) .calendar-head > div {
+  padding:4px 2px; font-size:13px; line-height:18px;
+}
+body :is(#court-calendar,#pilates-calendar) .calendar-head small {
+  display:inline; margin-left:6px; font-size:11px;
+}
+body :is(#court-calendar,#pilates-calendar) .calendar-row {
+  flex:1 1 0; min-height:0; grid-template-rows:minmax(0,1fr);
+}
+body :is(#court-calendar,#pilates-calendar) .calendar-row > * {
+  min-height:0; padding-block:0; border-bottom:0; border-top:0;
+}
+body :is(#court-calendar,#pilates-calendar) .calendar-row.hour-start > * {
+  box-shadow:inset 0 1px #dfe9ef;
+}
+body :is(#court-calendar,#pilates-calendar) .time-label {
+  line-height:14px; font-size:11px; white-space:nowrap;
+}
+body :is(#court-calendar,#pilates-calendar) .calendar-row:not(.hour-start) .time-label {
+  color:transparent;
+}
+body #court-calendar .time-label[data-rate]::after { position:relative; z-index:1; line-height:11px; }
+body #court-calendar .court-event {
+  height:calc(var(--slots) * 100% - 5px); inset:2px 7px auto;
+  padding:1px 9px; gap:1px; justify-content:center;
+}
+body #court-calendar .court-event .event-heading { flex-wrap:nowrap; }
+body #court-calendar .court-event .event-heading strong { font-size:11px; }
+body #court-calendar .court-event span { line-height:13px; }
+body :is(#court-calendar,#pilates-calendar) .calendar-cell:not(.reserved):enabled:is(:hover,:focus-visible) {
+  background:transparent; box-shadow:none;
+}
+body :is(#court-calendar,#pilates-calendar) .hour-start .calendar-cell:not(.reserved):enabled:is(:hover,:focus-visible) {
+  box-shadow:inset 0 1px #dfe9ef;
+}
+body .booking-week-toolbar .booking-week-strip button.week-day { display:flex; justify-content:center; align-items:center; gap:4px; }
+/* The staff dashboard owns navigation; the main column owns the day. */
+body .app,
+body .app:has(:is(#dashboard,#pilates).active .calendar-scroll:not([hidden])) {
+  display:grid; grid-template-columns:clamp(136px,13vw,186px) minmax(0,1fr);
+  gap:clamp(12px,1.4vw,22px); align-items:start; padding:7px clamp(10px,1.1vw,18px);
+}
+body .app:has(:is(#dashboard,#pilates).active .calendar-scroll:not([hidden])) {
+  grid-template-rows:minmax(0,1fr); align-items:stretch;
+}
+body .sidebar {
+  grid-template-columns:minmax(0,1fr); grid-template-areas:"brand" "sports" "tools";
+  grid-auto-rows:max-content; align-items:start; align-content:start; gap:16px;
+  padding:7px 4px; overflow-y:auto; max-height:calc(100dvh - 22px);
+}
+.sidebar .club-brand { flex-wrap:wrap; gap:6px; }
+body .sidebar :is(.sport-switch,.section-nav) { width:100%; flex-direction:column; align-items:stretch; }
+body .sidebar .section-nav button { text-align:left; }
+body .content { padding-top:0; }
+@media(max-width:760px) {
+  body .app,body .app:has(:is(#dashboard,#pilates).active .calendar-scroll:not([hidden])) {
+    grid-template-columns:76px minmax(0,1fr); gap:4px; padding:3px;
+  }
+  body .sidebar { gap:8px; padding:3px 1px; }
+  .sidebar .club-brand { justify-content:center; }
+  .sidebar .club-brand img { height:18px; }
+  .sidebar .club-brand img + img { border:0; padding:0; }
+  body .sidebar .sport-switch { padding:2px; gap:2px; border-radius:12px; }
+  body .sidebar .sport-switch button { gap:2px; padding:3px; font-size:12px; }
+  body .sidebar .sport-disc { width:22px; height:22px; }
+  body .sidebar .sport-disc .club-icon { width:16px; height:16px; }
+  body :is(#court-calendar,#pilates-calendar) { min-width:0; }
+  body :is(#court-calendar,#pilates-calendar) .calendar-head small { display:block; margin:0; }
+}
+@media(max-width:560px) {
+  body :is(#court-calendar,#pilates-calendar)::after { width:58px; }
+}
+
+/* The week selector and resource labels are the two rows of one calendar header. */
+body .booking-week-toolbar:not(.coach-original-toolbar):not([hidden]) {
+  display:flex; flex-flow:row nowrap; align-items:center; flex:none; gap:12px;
+  min-width:0; margin:0; padding:4px 12px;
+  border:0; border-radius:14px 14px 0 0;
+  background:#fff;
+}
+body .calendar-month { font-size:15px; font-weight:650; color:var(--ink); letter-spacing:-.025em; }
+body .booking-week-toolbar .booking-week-strip {
+  flex:1; min-width:0; width:auto; padding:0;
+  background:transparent; box-shadow:none;
+}
+body .booking-week-toolbar .booking-week-strip button.week-day {
+  gap:5px; padding:2px 0; border:1px solid transparent; border-radius:9px;
+  font-size:12px; font-weight:500; color:#425970;
+}
+.booking-week-toolbar .week-day-long { display:none; }
+.booking-week-toolbar .week-day-short { display:inline; }
+body .booking-week-toolbar .booking-week-strip .week-day small {
+  color:inherit; font-size:14px; line-height:22px; font-weight:650; font-variant-numeric:tabular-nums;
+}
+body .booking-week-toolbar .booking-week-strip button.week-day:hover { background:#f6fbff; }
+.staff-nav button[aria-current=page] {
+  background:#ccecff; color:#075783; border-color:#b2def6; box-shadow:inset 3px 0 #087bb2;
+}
+body .booking-week-toolbar .booking-week-strip button.week-day:is([aria-pressed=true],[aria-checked=true]) small { color:inherit; }
+body .booking-week-toolbar .booking-week-strip .week-day[aria-current=date] small::after {
+  background:currentColor; width:4px; height:4px; margin-left:3px;
+}
+body .booking-week-toolbar .booking-week-strip button.week-arrow {
+  justify-self:center; width:24px; border-radius:8px; background:transparent; color:#385f79;
+}
+body .booking-week-toolbar .booking-week-strip button.week-arrow:hover { background:var(--club-key); }
+body :is(#dashboard,#pilates) .calendar-scroll:not([hidden]) { border-radius:0 0 14px 14px; }
+body .sidebar .sport-switch {
+  background:transparent; box-shadow:none; gap:10px; padding:4px;
+}
+body .sidebar .sport-switch button {
+  border-radius:15px; gap:10px; padding:5px; font-size:14px;
+}
+body .sidebar .sport-disc {
+  width:38px; height:38px; border-radius:50%;
+  background:linear-gradient(145deg,#fff,#e1edf5);
+  box-shadow:-3px -3px 6px white,3px 4px 7px #69879d35;
+}
+body .sidebar .sport-switch button.active {
+  background:linear-gradient(145deg,#fbfdff,#e5eff7); box-shadow:var(--lift);
+}
+body .sidebar .sport-switch button.active .sport-disc {
+  outline:2px solid #1694d0; outline-offset:-3px; background:#fbfdff;
+}
+body .sidebar .section-nav { border-top:1px solid var(--line); padding-top:12px; gap:6px; }
+body :is(#court-calendar,#pilates-calendar) .calendar-head > div {
+  background:#f7fbfe; color:var(--ink); padding:5px 16px;
+  border-right-color:transparent; box-shadow:inset 0 -1px #dce8ef; text-align:left;
+}
+body :is(#court-calendar,#pilates-calendar) .calendar-head > div:first-child { text-align:center; }
+body #court-calendar .calendar-head small { margin-left:7px; font-size:11px; color:#537083; }
+body #court-calendar .court-event {
+  box-shadow:0 1px 2px #23465d0f; border-radius:7px;
+}
+body .calendar-scroll { box-shadow:0 2px 5px #66849b20; }
+@media(max-width:1050px) {
+  body .week-day-short { display:inline; }
+  body .week-day-long { display:none; }
+}
+@media(max-width:760px) {
+  body .booking-week-toolbar:not(.coach-original-toolbar):not([hidden]) { flex-wrap:wrap; gap:1px; }
+  body .calendar-month { font-size:12px; }
+  body .booking-week-toolbar .booking-week-strip { flex-basis:100%; }
+  body .booking-week-toolbar .booking-week-strip button.week-day { display:grid; gap:0; font-size:10px; }
+  body .booking-week-toolbar .booking-week-strip .week-day small { min-width:17px; height:17px; line-height:17px; font-size:12px; }
+  body .sidebar .sport-switch { gap:5px; padding:1px; }
+  body .sidebar .sport-switch button { flex-direction:column; gap:2px; font-size:12px; }
+  body .sidebar .sport-disc { width:26px; height:26px; }
+}
+body .booking-week-toolbar .booking-week-strip button.week-arrow { padding:0; height:26px; }
+body #court-calendar .calendar-row .court-event[data-kind] {
+  background:var(--booking-tint,#d3e1eb); color:var(--booking-ink,#253f53);
+  border:0; border-left:3px solid var(--booking-mark,#638399);
+}
+body .court-event[data-kind=member] { --booking-mark:#057cb9; --booking-tint:#9cdcff; --booking-ink:#063b58; }
+body .court-event[data-kind=lesson] { --booking-mark:#7655ae; --booking-tint:#d8c6f6; --booking-ink:#3c285d; }
+
+/* One navigation scale, one pressed state, and one light source. */
+body .sidebar {
+  grid-template-areas:"brand" "navigation"; gap:20px; padding:14px 8px;
+  background:linear-gradient(165deg,#b8e7fc 0,#ecf8fd 104px,#f9fcfe 170px);
+  border-radius:15px; box-shadow:inset 1px 1px 0 #fff,inset -1px -1px 0 #dbe8f0;
+}
+.sidebar .club-brand { padding-inline:4px; gap:8px; }
+.staff-nav { grid-area:navigation; display:grid; gap:5px; }
+.staff-nav button {
+  display:grid; grid-template-columns:24px 1fr; align-items:center; gap:12px;
+  width:100%; min-height:40px; padding:7px 10px; text-align:left;
+  border:1px solid transparent; border-radius:11px; background:transparent;
+  color:#425970; font-size:13px; font-weight:600; line-height:1.2;
+}
+.staff-nav button::before {
+  content:""; width:24px; height:24px; background:currentColor;
+  mask:url('/booking/staff-glyphs.png') var(--glyph,0% 0%) / 300% 200% no-repeat;
+}
+.staff-nav [data-section=pilates] { --glyph:50% 0%; }
+.staff-nav [data-section=coaches] { --glyph:100% 0%; }
+.staff-nav [data-section=customers] { --glyph:0% 100%; }
+.staff-nav [data-section=pricing] { --glyph:50% 100%; }
+.staff-nav-rule { height:1px; margin:7px 8px; background:#cddfe9; box-shadow:0 1px white; }
+.staff-nav button:hover { background:#f6fbff; color:#124d74; }
+body :is(.staff-nav button,.week-day,.week-arrow,.primary,.secondary):enabled:active {
+  transform:translateY(1px); box-shadow:inset 1px 2px 3px #31577430;
+}
+body #court-calendar .court-event .event-heading { justify-content:space-between; gap:5px; }
+body #court-calendar .court-event .event-heading strong { font-size:12px; }
+body #court-calendar .court-event > span:last-child { font-weight:500; }
+@media(max-width:760px) {
+  body .sidebar { padding:7px 2px; gap:12px; }
+  .sidebar .club-brand { padding:0; gap:3px; }
+  .staff-nav { gap:3px; }
+  .staff-nav button { grid-template-columns:1fr; justify-items:center; gap:4px; padding:6px 0; font-size:11px; }
+  .staff-nav button::before { width:21px; height:21px; }
+}
+
+@media(max-width:760px) {
+  body :is(#court-calendar,#pilates-calendar) .calendar-head > div { padding-inline:3px; text-align:center; }
+  body #court-calendar .calendar-head small { margin-left:0; }
+}
+
+body :is(#court-calendar,#pilates-calendar) .calendar-row > .calendar-cell { border-right-color:#eaf0f4; }
+body :is(#court-calendar,#pilates-calendar) .calendar-row.hour-start .time-label {
+  color:#405f73; font-weight:550;
+}
+body #court-calendar .court-event .event-heading { white-space:nowrap; }
+body #court-calendar .court-event .event-heading strong { font-weight:650; white-space:nowrap; }
+body #court-calendar .court-event small, body #court-calendar .court-event > span:last-child {
+  color:inherit; font-weight:450;
+}
+@media(max-height:660px), (max-width:760px) {
+  body #court-calendar .court-event { inset-inline:2px; padding-inline:3px; gap:0; }
+}
+
+/* The full day button remains a target; the raised surface hugs its label. */
+body .booking-week-toolbar .booking-week-strip button.week-day:is([aria-pressed],[aria-checked]) {
+  background:transparent; box-shadow:none; border:0; padding:0;
+}
+.week-selection {
+  display:inline-flex; gap:5px; align-items:center; justify-content:center;
+  border-radius:9px; padding:2px 10px; border:1px solid transparent;
+}
+.week-day:is([aria-pressed=true],[aria-checked=true]) .week-selection {
+  color:white; background:var(--club-blue); border-color:transparent;
+}
+body #court-calendar .calendar-row .court-event[data-kind=open] {
+  background:white; border:1px dashed #8eb9ac; color:#46675c; box-shadow:none;
+}
+body #court-calendar .court-event[data-kind=open] .event-heading { color:#28634f; }
+.court-daytime-rate { display:inline-block; margin-left:8px; color:#506c7b; font-size:10px; white-space:nowrap; }
+body :is(#court-calendar,#pilates-calendar) .calendar-cell[data-slot-time]:not(.court-coaching-offer):is(:hover,:focus-visible) {
+  position:relative; overflow:visible; z-index:3;
+}
+body :is(#court-calendar,#pilates-calendar) .calendar-cell[data-slot-time]:not(.court-coaching-offer)::after {
+  position:absolute; top:50%; transform:translateY(-50%); left:4px;
+  padding:1px 4px; border-radius:4px; background:#e7f3fa; color:#1e526e;
+  font:600 10px/13px 'DM Sans',sans-serif; pointer-events:none; white-space:nowrap;
+}
+@media (hover:hover) {
+  body :is(#court-calendar,#pilates-calendar) .calendar-cell[data-slot-time]:not(.court-coaching-offer):hover::after {
+    content:attr(data-slot-time);
+    left:clamp(0px,calc(var(--pointer-x,0px) + 8px),calc(100% - 55px));
+  }
+}
+body :is(#court-calendar,#pilates-calendar) .calendar-cell[data-slot-time]:not(.court-coaching-offer):focus-visible::after {
+  content:attr(data-slot-time);
+}
+@media(max-width:900px) {
+  .court-daytime-rate { display:block; margin:0; font-size:9px; }
+}
+@media(max-width:760px) {
+  .week-selection { flex-direction:column; gap:0; padding:1px; max-width:100%; }
+  .week-selection small { white-space:normal; }
+}
+
+/* Court numbers are the signs at the head of the four booking lanes. */
+body #court-calendar .calendar-head .court-sign {
+  display:grid; grid-template-columns:auto 1fr; align-content:center; align-items:baseline;
+  gap:2px 7px; padding:4px 9px;
+  background:#cfeafa; border-right:1px solid #fff9; box-shadow:inset 0 -2px #93c8e4;
+}
+body #court-calendar .calendar-head .court-sign[data-setting=Outdoor] {
+  background:#73c9f0; box-shadow:inset 0 -2px #3ba9d9;
+}
+.court-id {
+  grid-column:1/-1; display:block; font:650 25px/1.05 'DM Sans',sans-serif;
+  color:#083d5c; letter-spacing:-.04em;
+}
+.court-id strong { color:inherit; font-weight:750; }
+body #court-calendar .court-sign small { margin:0; color:#244f69; font:600 10px/13px 'DM Sans',sans-serif; }
+.court-sign .court-daytime-rate { margin:0; color:#244f69; font-size:10px; line-height:13px; }
+.staff-nav [data-section=coaches], .staff-nav [data-section=customers], .staff-nav [data-section=pricing] { font-weight:500; }
+@media(hover:hover) {
+  .staff-nav button:not([aria-current=page]):hover, .week-day[aria-pressed=false]:hover .week-selection {
+    background:#eaf5fb;
+  }
+}
+.staff-nav button:enabled:active, .week-day:enabled:active .week-selection {
+  box-shadow:inset 1px 2px 3px #31577430;
+}
+@media(max-width:760px) {
+  body #court-calendar .calendar-head .court-sign { grid-template-columns:1fr; justify-items:center; gap:1px; padding:3px 1px; }
+  .court-id { font-size:16px; }
+  .court-sign .court-daytime-rate { font-size:8px; }
+}
+
+/* Staff dialogs share the calendar's ink, sky-blue surface and court heading scale. */
+body dialog.modal-back,
+body dialog.availability-menu {
+  inset: 0;
+  margin: auto;
+  width: min(480px, calc(100% - 24px));
+  height: fit-content;
+  max-height: calc(100dvh - 24px);
+  max-width: none;
+  padding: 0;
+  overflow: auto;
+  border: 1px solid #c4dbe8;
+  border-radius: 18px;
+  color: var(--ink);
+  background: white;
+  box-shadow: 0 16px 54px #143d5a38;
+}
+body dialog.modal-back[open] { display: block; }
+body dialog::backdrop { background: rgb(20 55 78 / 24%); }
+body dialog .modal {
+  position: relative;
+  width: 100%;
+  max-width: none;
+  max-height: none;
+  padding: 22px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: white;
+}
+body dialog .modal h2 {
+  padding-right: 40px;
+  margin: 0 0 18px;
+  color: #174665;
+  font: 700 24px/1.12 'DM Sans', sans-serif;
+  letter-spacing: -.035em;
+}
+body dialog :is(.modal, .compact-booking) .close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 30px;
+  height: 30px;
+  color: #315f78;
+  background: #f3faff;
+  border: 1px solid #cbdfea;
+  font-size: 19px;
+  line-height: 1;
+}
+body :is(.booking-dialog,.availability-menu) .modal {
+  background: linear-gradient(110deg,#d9effc,#f0f9fe) top / 100% 90px no-repeat, white;
+}
+body :is(.booking-dialog,.availability-menu) .modal h2 { margin-bottom: 5px; font-size: 28px; }
+.slot-context { font-size: 14px; color: #365c73; font-variant-numeric: tabular-nums; }
+body .booking-dialog .form-grid {
+  margin-top: 34px;
+  grid-template-columns: minmax(0,1.55fr) minmax(0,1fr);
+  gap: 15px 14px;
+}
+body dialog .modal .field { min-width: 0; align-content: start; gap: 5px; }
+body dialog .modal :is(.field label,label.field) {
+  color: #365b73;
+  font: 600 12px/1.4 'DM Sans',sans-serif;
+}
+body dialog .modal .field :is(input:not([type=checkbox]),select) {
+  min-width: 0;
+  width: 100%;
+  height: 39px;
+  padding: 7px 10px;
+  border: 1px solid #bcd3e1;
+  border-radius: 8px;
+  box-shadow: none;
+  color: var(--ink);
+  background-color: white;
+  font: 500 14px/1.25 'DM Sans',sans-serif;
+}
+body dialog .modal .field :is(select:disabled,input[readonly]) { background: #f1f6f9; }
+body dialog .booking-adjustment {
+  grid-column: 1/-1;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+body dialog .booking-adjustment .field {
+  grid-template-columns: auto minmax(72px,100px);
+  align-items: center;
+  gap: 8px;
+}
+body dialog .booking-adjustment .check { font-size: 13px; margin: 0; }
+body dialog input[type=checkbox] { width: 16px; height: 16px; margin: 0; accent-color: var(--club-blue); }
+body .booking-dialog .modal-actions {
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px -22px -22px;
+  padding: 14px 22px;
+  border-top: 1px solid var(--line);
+  background: #f3f9fd;
+}
+body .booking-dialog .price-preview { margin: 0; padding: 0; border: 0; }
+body .booking-dialog .price-preview span { display: block; color: var(--muted); font-weight: 600; }
+body .booking-dialog .price-preview b { font: 700 22px/1.2 'DM Sans',sans-serif; }
+body dialog .modal-actions .primary,
+body dialog .availability-actions button { width: auto; min-height: 38px; padding: 9px 18px; border-radius: 9px; }
+body dialog .primary:enabled:hover { background: #056da8; }
+body dialog .secondary:enabled:hover, body dialog .close:hover { background: #e7f4fc; }
+.booking-error:not(:empty), body .app .coach-week + [role=alert] { color: #95372e; margin: 12px 0 0; font-size: 13px; }
+body dialog.modal-back:has(.member-editor) { width: min(550px,calc(100% - 24px)); }
+body .member-editor .customer-photo-field {
+  grid-template-columns: auto minmax(0,1fr) auto;
+  gap: 6px 10px;
+  align-items: center;
+}
+.customer-photo-field label { grid-column: 1/-1; }
+body .member-editor #member-preview {
+  grid-row: 2;
+  grid-column: 1;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+body .member-editor #member-photo { grid-column: 2; grid-row: 2; height: auto; padding: 6px; }
+body .member-editor #member-preview[hidden] ~ button { display: none; }
+body .customer-photo-field:has(#member-preview[hidden]) #member-photo { grid-column: 1/-1; }
+body .member-editor #member-remove-photo { grid-row: 2; font-size: 12px; }
+body .member-editor #member-feedback:empty { margin: 0; }
+body .package-account .package-purchase-total { align-items: baseline; flex-wrap: wrap; margin-top: 6px; }
+body .package-account .modal-actions { margin-top: 8px; }
+
+body dialog.availability-menu { width: min(360px,calc(100% - 24px)); }
+body .availability-menu .availability-actions { margin-top: 32px; display: flex; justify-content: space-between; }
+body .availability-menu .secondary { color: #873b36; background: white; }
+body .app:has(.page.active .coach-day-calendar) {
+  height: calc(100dvh - 8px);
+  min-height: 0;
+  grid-template-rows: minmax(0,1fr);
+  align-items: stretch;
+}
+.app:has(.page.active .coach-day-calendar) :is(.main,.content,.page.active) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+body .coach-week {
+  flex: none;
+  margin: 0;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px 12px 0 0;
+  background: var(--club-panel);
+}
+body .coach-week .secondary { padding: 3px 10px; }
+body .page .coach-day-calendar {
+  --coach-time-width: 62px;
+  flex: 1;
+  min-height: 0;
+  grid-template-columns: var(--coach-time-width) repeat(7,minmax(0,1fr));
+  grid-template-rows: 28px repeat(60,minmax(0,1fr)) 16px;
+  border-radius: 0 0 12px 12px;
+  border-color: var(--line);
+  background: white;
+}
+body .coach-day-calendar .calendar-head.calendar-head {
+  grid-template-columns: var(--coach-time-width) repeat(7,minmax(0,1fr));
+}
+body .coach-day-calendar .calendar-head > div { padding: 4px 1px; font-size: 12px; }
+body .coach-day-calendar .calendar-row > * {
+  padding: 0;
+  min-height: 0;
+  border: 0;
+  border-right: 1px solid #deebf2;
+}
+body .coach-day-calendar .calendar-row.hour-start > * { border-top: 1px solid #d6e5ef; }
+body .coach-day-calendar .time-label, .coach-closing-time {
+  font: 600 10px/12px 'DM Sans', sans-serif;
+  text-align: center;
+  background: #f3f9fd;
+}
+.coach-closing-time { grid-column: 1/-1; padding-left: 4px; text-align: left; border-top: 1px solid var(--line); }
+body .coach-day-calendar .calendar-row .availability-block {
+  border: 1px solid #96c9e3;
+  border-left: 3px solid var(--club-blue);
+  padding: 2px;
+  background: #e1f2fb !important;
+  color: #124e71;
+}
+body .coach-day-calendar .calendar-cell[aria-disabled=true] { background: #f2f5f8 !important; }
+body .coach-day-calendar .calendar-cell[data-slot]:not(.availability-block):is(:focus-visible,:hover) {
+  position: relative; overflow: visible; z-index: 2;
+}
+.coach-day-calendar .calendar-cell[data-slot]:not(.availability-block):is(:focus-visible,:hover)::after {
+  content: attr(data-slot-time);
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+  background: #165978; color: white; padding: 1px 4px; border-radius: 4px;
+  white-space: nowrap; font: 600 10px/13px 'DM Sans',sans-serif; pointer-events: none;
+}
+body .pricing-tabs {
+  width: fit-content;
+  max-width: 100%;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: #eaf5fc;
+}
+body .pricing-tabs button { border: 1px solid transparent; border-radius: 8px; padding: 7px 12px; }
+body .pricing-tabs button[aria-selected=true] { border-color: #c8deeb; background: white; color: var(--club-blue); }
+@media (max-width: 560px) {
+  body dialog .modal { padding: 16px; }
+  body .booking-dialog .form-grid { gap: 12px 8px; grid-template-columns: minmax(0,1.5fr) minmax(0,1fr); }
+  body .booking-dialog .field.full { grid-column: 1/-1; }
+  body .booking-dialog .modal-actions { margin: 14px -16px -16px; padding: 12px 16px; }
+  body .booking-dialog .form-grid { margin-top: 30px; }
+  body :is(.booking-dialog,.availability-menu) .modal { background-size: 100% 80px; }
+  body .page .coach-day-calendar { --coach-time-width: 44px; }
+  body .coach-day-calendar .calendar-head > div { font-size: 10px; }
+}
+@media (max-width: 430px) {
+  .booking-dialog .field:has(#p-service) { grid-column: 1/-1; }
+  .booking-dialog .field:has(#p-duration) { grid-column: 1; }
+}
