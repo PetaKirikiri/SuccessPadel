@@ -193,18 +193,45 @@ const staffSignOut = memberNode('button', 'Sign out', 'secondary');
 staffSignOut.type = 'button';
 staffSignOut.onclick = signOutBookingStaff;
 tools.append(staffSignOut);
-loadStaffWorkspace().then(() => {
-  const query = new URLSearchParams(location.search);
-  const status = query.get('signin');
-  if (!status) return;
-  const fragment = new URLSearchParams(location.hash.slice(1));
-  const errorCode = fragment.get('error_code') ?? fragment.get('error');
-  const description = fragment.get('error_description') ?? '';
-  const category = description.match(/invalid_client|invalid_grant|unauthorized_client|redirect_uri_mismatch|exchange external code|external provider|database error|saving new user|updating user|state.*expired|error finding flow/i)?.[0];
-  const reference = category ? ' (' + category + ')' : /^[a-z_]{1,60}$/.test(errorCode ?? '') ? ' (' + errorCode + ')' : '';
-  query.delete('signin');
-  history.replaceState(null, '', location.pathname + (query.size ? '?' + query : ''));
-  if (!staffAccess.hidden) staffError.textContent = status === 'google-denied'
-    ? 'Select an approved Bookings admin Google account.'
-    : 'Google sign-in failed. Try again.' + reference;
+const googleSignInContainer = document.getElementById('booking-google-sign-in');
+let googleScript;
+
+function loadGoogleIdentity() {
+  googleScript ??= new Promise((resolve,reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.append(script);
+  });
+  return googleScript;
+}
+
+async function showGoogleSignIn() {
+  if (staffAccess.hidden || staffSignIn.hidden) return;
+  const configResponse = await fetch(staffEndpoint + '?google=config', {cache:'no-store'});
+  if (!configResponse.ok) throw new Error('Google sign-in unavailable.');
+  const config = await configResponse.json();
+  await loadGoogleIdentity();
+  google.accounts.id.initialize({
+    client_id:config.clientId,
+    nonce:config.nonce,
+    callback:async response => {
+      staffError.textContent = '';
+      try {
+        await staffRequest('google-sign-in', {credential:response.credential});
+        await loadStaffWorkspace();
+      } catch (error) {
+        staffError.textContent = error.message || 'Google sign-in failed. Try again.';
+        await showGoogleSignIn().catch(() => {});
+      }
+    },
+  });
+  googleSignInContainer.replaceChildren();
+  googleSignInContainer.hidden = false;
+  google.accounts.id.renderButton(googleSignInContainer,{theme:'outline',size:'large',text:'signin_with'});
+}
+
+loadStaffWorkspace().then(() => showGoogleSignIn()).catch(() => {
+  if (!staffAccess.hidden) staffError.textContent = 'Google sign-in unavailable. Reload to try again.';
 });

@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { bookingGoogle } from '../server/booking/google.mjs';
+import { beginBookingGoogle, completeBookingGoogle } from '../server/booking/google.mjs';
 
 const cookie = '__Host-booking_staff';
 const cookieAttributes = 'Path=/; Secure; HttpOnly; SameSite=Strict';
@@ -24,11 +24,12 @@ export default async function handler(req, res) {
   const url = process.env.BOOKING_SUPABASE_URL;
   const key = process.env.BOOKING_SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) return send(503, {error: 'Staff sign-in unavailable.'});
-  if (req.method === 'GET' && req.query?.google) return bookingGoogle(req,res,url,key,writeSession);
+  if (req.method === 'GET' && req.query?.google === 'config') return beginBookingGoogle(res);
   const token = req.headers.cookie?.split(';').map(part => part.trim())
     .find(part => part.startsWith(cookie + '='))?.slice(cookie.length + 1);
   const body = req.body ?? {};
   const action = req.method === 'GET' ? 'roster' : body.action;
+  if (action === 'google-sign-in') return completeBookingGoogle(req,res,url,key,writeSession);
   if (action === 'logout') {
     writeSession(res, null);
     return send(200, {});

@@ -1,67 +1,66 @@
-import {createHmac} from 'node:crypto';
+import {createHash, createHmac, randomBytes} from 'node:crypto';
 import {createClient} from '@supabase/supabase-js';
 
-const callback = 'https://successpadel.app/api/booking-staff?google=callback';
-const verifierCookie = '__Host-booking_google';
-const verifierAttributes = 'Path=/; Secure; HttpOnly; SameSite=Lax';
+const nonceCookie = '__Host-booking_google_nonce';
+const cookieAttributes = 'Path=/; Secure; HttpOnly; SameSite=Strict';
+const googleClientId = '924798055254-tm25nh3dtlhharjesk99l47bcrurhi68.apps.googleusercontent.com';
 
-export async function bookingGoogle(req, res, url, key, writeSession) {
+export function beginBookingGoogle(res) {
+  const nonce = randomBytes(32).toString('hex');
+  res.setHeader('Set-Cookie', `${nonceCookie}=${nonce}; ${cookieAttributes}; Max-Age=900`);
+  return res.status(200).json({clientId:googleClientId, nonce:hashNonce(nonce)});
+}
+
+function hashNonce(nonce) {
+  return createHash('sha256').update(nonce).digest('hex');
+}
+
+function claimsFrom(token) {
+  return JSON.parse(Buffer.from(token.split('.')[1], 'base64url'));
+}
+
+export async function completeBookingGoogle(req, res, url, key, writeSession) {
   const signingKey = process.env.BOOKING_GOOGLE_SESSION_KEY;
   const allowed = [process.env.BOOKING_OWNER_EMAIL, process.env.BOOKING_KETT_EMAIL]
     .filter(Boolean).map(email => email.trim().toLowerCase());
+  const nonce = req.headers.cookie?.split(';').map(part => part.trim())
+    .find(part => part.startsWith(nonceCookie + '='))?.slice(nonceCookie.length + 1);
+  const credential = req.body?.credential;
   if (!signingKey || !allowed.length || req.headers.host !== 'successpadel.app') {
-    return res.redirect(303, '/booking/?signin=google-unavailable');
+    return res.status(503).json({error:'Google sign-in unavailable.'});
   }
-  const verifier = req.headers.cookie?.split(';').map(part => part.trim())
-    .find(part => part.startsWith(verifierCookie + '='))?.slice(verifierCookie.length + 1);
-  let nextVerifier;
-  const auth = createClient(url, key, {auth:{
-    flowType:'pkce', persistSession:true, autoRefreshToken:false, detectSessionInUrl:false,
-    storage:{
-      getItem:name => name.endsWith('-code-verifier') && verifier ? decodeURIComponent(verifier) : null,
-      setItem:(name, value) => {if (name.endsWith('-code-verifier')) nextVerifier = value;},
-      removeItem:() => {},
-    },
-  }});
-  if (req.query.google === 'start') {
-    const {data, error} = await auth.auth.signInWithOAuth({
-      provider:'google', options:{redirectTo:callback, skipBrowserRedirect:true, queryParams:{prompt:'select_account'}},
-    });
-    if (!error && data.url && /^[\w"\-./]+$/.test(nextVerifier ?? '')) {
-      res.setHeader('Set-Cookie', `${verifierCookie}=${encodeURIComponent(nextVerifier)}; ${verifierAttributes}; Max-Age=600`);
-      return res.redirect(303, data.url);
-    }
-    return res.redirect(303, '/booking/?signin=google-error');
+  res.setHeader('Set-Cookie', `${nonceCookie}=; ${cookieAttributes}; Max-Age=0`);
+  if (!/^[a-f0-9]{64}$/.test(nonce ?? '') || typeof credential !== 'string' || credential.length > 8192) {
+    return res.status(400).json({error:'Reload the page and try Google sign-in again.'});
   }
-  res.setHeader('Set-Cookie', `${verifierCookie}=; ${verifierAttributes}; Max-Age=0`);
-  if (req.query.google !== 'callback' || typeof req.query.code !== 'string' || !verifier) {
-    const errorCode = typeof req.query.error_code === 'string' && /^[a-z_]{1,60}$/.test(req.query.error_code)
-      ? req.query.error_code : 'none';
-    console.warn('booking_google_callback_incomplete', {
-      codeReceived: typeof req.query.code === 'string', verifierReceived: Boolean(verifier), errorCode,
-    });
-    return res.redirect(303, '/booking/?signin=google-error');
-  }
-  let step = 'exchange';
+
+  let step = 'identity';
   try {
-    const {data:{session}, error} = await auth.auth.exchangeCodeForSession(req.query.code);
-    if (error || !session?.provider_token) throw new Error('Missing Google session');
-    step = 'supabase-user';
-    const {data:{user}, error:userError} = await auth.auth.getUser(session.access_token);
-    if (userError || !user) throw new Error('Invalid staff session');
-    step = 'google-userinfo';
-    const response = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
-      headers:{Authorization:`Bearer ${session.provider_token}`},
-    });
-    if (!response.ok) throw new Error('Google identity unavailable');
-    const identity = await response.json();
+    // These checks reject irrelevant tokens early. Supabase verifies the signature below.
+    const identity = claimsFrom(credential);
     const email = typeof identity.email === 'string' ? identity.email.toLowerCase() : '';
-    const linked = user.identities?.some(item => item.provider === 'google' && item.identity_data?.sub === identity.sub);
-    if (identity.email_verified !== true || !allowed.includes(email) || user.email?.toLowerCase() !== email || !linked) {
-      return res.redirect(303, '/booking/?signin=google-denied');
+    if (!allowed.includes(email) || identity.email_verified !== true) {
+      return res.status(403).json({error:'Select an approved Bookings admin Google account.'});
     }
-    step = 'session-proof';
-    const claims = JSON.parse(Buffer.from(session.access_token.split('.')[1], 'base64url'));
+    if (identity.aud !== googleClientId || identity.nonce !== hashNonce(nonce) ||
+        !['https://accounts.google.com','accounts.google.com'].includes(identity.iss) ||
+        (email !== 'successpadelsamui@gmail.com' && identity.hd !== email.split('@')[1])) {
+      return res.status(401).json({error:'Google could not verify this sign-in.'});
+    }
+
+    step = 'supabase-token';
+    const auth = createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+    const {data,error} = await auth.auth.signInWithIdToken({provider:'google',token:credential,nonce});
+    const {session,user} = data ?? {};
+    if (error || !session || !user) {
+      console.warn('booking_google_token_rejected', {status:error?.status, code:error?.code});
+      return res.status(401).json({error:'Google sign-in could not be verified. Try again.'});
+    }
+    const linked = user.identities?.some(item => item.provider === 'google' && item.identity_data?.sub === identity.sub);
+    if (!linked || user.email?.toLowerCase() !== email) throw new Error('Google identity mismatch');
+
+    step = 'booking-session';
+    const claims = claimsFrom(session.access_token);
     if (!claims.session_id || claims.sub !== user.id) throw new Error('Invalid session binding');
     const expires = Math.min(claims.exp, Math.floor(Date.now()/1000) + 3500);
     const proof = createHmac('sha256',signingKey).update(`booking-google-v1:${user.id}:${claims.session_id}:${expires}`).digest('hex');
@@ -69,9 +68,9 @@ export async function bookingGoogle(req, res, url, key, writeSession) {
     const {data:accepted, error:proofError} = await db.rpc('booking_accept_google_session',{proof,expires});
     if (proofError || accepted !== true) throw new Error('Booking access denied');
     writeSession(res,session);
-    return res.redirect(303, '/booking/');
+    return res.status(200).json({});
   } catch {
-    console.warn('booking_google_callback_failed', {step});
-    return res.redirect(303, '/booking/?signin=google-error');
+    console.warn('booking_google_signin_failed', {step});
+    return res.status(401).json({error:'Google sign-in failed. Try again.'});
   }
 }
