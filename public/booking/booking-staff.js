@@ -49,6 +49,12 @@ function lockStaffWorkspace() {
   staffCancel.hidden = true;
 }
 
+function comparableRosterMember(record) {
+  // The PDF import omitted blank optional fields in older browsers.
+  const populated = Object.fromEntries(Object.entries(record).filter(([, value]) => value !== ''));
+  return comparableMember(populated);
+}
+
 function comparableMember(record) {
   return JSON.stringify(record, (_, value) =>
     value && typeof value === 'object' && !Array.isArray(value)
@@ -99,7 +105,7 @@ async function loadStaffWorkspace() {
         const verified = new Set(roster.members.map(member => member.id));
         if (!candidates.every(member => verified.has(member.id))) throw new Error('Member import could not be verified.');
       }
-      if (candidates.every(member => roster.members.some(saved => saved.id === member.id && comparableMember(saved) === comparableMember(member)))) {
+      if (candidates.every(member => roster.members.some(saved => saved.id === member.id && comparableRosterMember(saved) === comparableRosterMember(member)))) {
         localStorage.removeItem(legacyMemberKey);
       }
     }
