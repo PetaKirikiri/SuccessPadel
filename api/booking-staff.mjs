@@ -21,8 +21,8 @@ export default async function handler(req, res) {
     return send(403, {error: 'Request denied.'});
   }
 
-  const url = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
-  const key = process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  const url = process.env.BOOKING_SUPABASE_URL;
+  const key = process.env.BOOKING_SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) return send(503, {error: 'Staff sign-in unavailable.'});
   if (req.method === 'GET' && req.query?.google) return bookingGoogle(req,res,url,key,writeSession);
   const token = req.headers.cookie?.split(';').map(part => part.trim())
