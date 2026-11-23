@@ -1698,6 +1698,58 @@ deletedCustomersButton.setAttribute('aria-pressed','false');
 const customerDeleteError=document.createElement('output');
 customerDeleteError.setAttribute('role','alert');
 membersSearch.after(deletedCustomersButton,customerDeleteError);
+const rosterImport = document.createElement('input');
+rosterImport.type = 'file';
+rosterImport.accept = '.json,application/json';
+rosterImport.hidden = true;
+const rosterImportButton = memberNode('button', 'Import members', 'secondary');
+rosterImportButton.type = 'button';
+const rosterImportError = document.createElement('output');
+rosterImportError.setAttribute('role', 'alert');
+customerPage.querySelector('.members-directory__heading').append(rosterImportButton, rosterImport, rosterImportError);
+rosterImportButton.onclick = () => rosterImport.click();
+rosterImport.onchange = async () => {
+  const file = rosterImport.files[0];
+  rosterImport.value = '';
+  if (!file) return;
+  rosterImportError.textContent = '';
+  try {
+    const roster = JSON.parse(await file.text());
+    if (!Array.isArray(roster) || !roster.length) throw new Error('Invalid roster');
+    const next = memberRecords.slice();
+    const identity = value => String(value ?? '').trim().toLocaleLowerCase();
+    for (const row of roster) {
+      const card = String(row?.cardNumber ?? '').trim();
+      const name = typeof row?.name === 'string' ? row.name.trim() : '';
+      if (!/^\d+$/.test(card) || !name) throw new Error('Invalid record');
+      const id = 'padel-card-' + card;
+      const fields = Object.fromEntries([...membershipDetailFields, 'phone', 'signup', 'membershipExpiry']
+        .filter(key => typeof row[key] === 'string' && row[key].trim())
+        .map(key => [key, row[key].trim()]));
+      const matches = next.filter(member => identity(member.name) === identity(name) ||
+        (identity(member.name) === identity(fields.nickname) && fields.phone &&
+         member.phone?.replace(/\D/g, '') === fields.phone.replace(/\D/g, '')));
+      const existing = next.find(member => member.id === id || member.cardNumber === card) ??
+        (matches.length === 1 ? matches[0] : null);
+      if (existing && (existing.id === id || existing.cardNumber === card)) continue;
+      const services = [...new Set([...(existing?.services ?? []), 'padel'])];
+      const member = {...existing, ...fields, id: existing?.id ?? id, name, services, type: 'Member'};
+      if (existing) next[next.indexOf(existing)] = member;
+      else next.push(member);
+    }
+    localStorage.setItem('success-booking-members-v1', JSON.stringify(next));
+    memberRecords = next;
+    showDeletedCustomers = false;
+    deletedCustomersButton.setAttribute('aria-pressed', 'false');
+    deletedCustomersButton.textContent = 'Deleted customers';
+    membersSearch.value = '';
+    customerTabs.querySelector('[data-customer-tab="padel"]').click();
+    customerFilter.value = 'all';
+    drawMembers();
+  } catch {
+    rosterImportError.textContent = 'Could not import members. Select a valid roster file.';
+  }
+};
 deletedCustomersButton.onclick=()=>{
   showDeletedCustomers=!showDeletedCustomers;
   deletedCustomersButton.setAttribute('aria-pressed',String(showDeletedCustomers));
