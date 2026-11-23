@@ -26,9 +26,9 @@
 </head>
 <body data-booking-locked>
 <link rel="stylesheet" href="/booking/booking-staff.css">
-<section id="staff-access" class="staff-access">
+<section id="staff-access" class="staff-access" hidden>
   <h1>Staff sign-in</h1>
-  <div id="booking-google-sign-in" class="booking-google-sign-in" hidden></div>
+  <div id="booking-google-sign-in" class="booking-google-sign-in" aria-busy="true"><button type="button" class="secondary" disabled>Loading Google sign-in…</button></div>
   <form id="staff-sign-in">
     <label>Username <input name="username" autocomplete="username" required></label>
     <label>Password <input name="password" type="password" autocomplete="current-password" required></label>
@@ -2928,4 +2928,4 @@ body .sales-register .sales-totals[hidden]{display:none}
 .member-form-section:first-child{border-top:0;padding-top:0}
 body dialog .member-editor{max-height:90dvh;overflow:auto}
 #member-monthsRemaining{align-self:center;padding:8px;background:#f5f2fa;border-radius:6px}
-</style><script src="/booking/booking-staff.js"></script></body></html>
+</style><script src="/booking/booking-staff.js?v=google-ready"></script></body></html>

@@ -47,6 +47,7 @@ function lockStaffWorkspace() {
   drawMembers();
   staffAccess.hidden = false;
   staffSignIn.hidden = false;
+  googleSignInContainer.hidden = false;
   staffAuthenticator.hidden = true;
   staffCancel.hidden = true;
 }
@@ -126,6 +127,7 @@ async function loadStaffWorkspace() {
     if (error.mfa) {
       factorId = error.factorId;
       staffSignIn.hidden = true;
+      googleSignInContainer.hidden = true;
       staffAuthenticator.hidden = false;
       staffEnroll.hidden = Boolean(factorId);
       staffCancel.hidden = false;
@@ -300,8 +302,14 @@ function loadGoogleIdentity() {
   googleScript ??= new Promise((resolve,reject) => {
     const script = document.createElement('script');
     script.src = 'https://accounts.google.com/gsi/client';
-    script.onload = resolve;
-    script.onerror = reject;
+    const timeout = setTimeout(() => script.onerror(), 8000);
+    script.onload = () => { clearTimeout(timeout); resolve(); };
+    script.onerror = () => {
+      clearTimeout(timeout);
+      script.remove();
+      googleScript = undefined;
+      reject(new Error('Google sign-in unavailable.'));
+    };
     document.head.append(script);
   });
   return googleScript;
@@ -323,15 +331,27 @@ async function showGoogleSignIn() {
         await loadStaffWorkspace();
       } catch (error) {
         staffError.textContent = error.message || 'Google sign-in failed. Try again.';
-        await showGoogleSignIn().catch(() => {});
+        await showGoogleSignIn().catch(retryGoogleSignIn);
       }
     },
   });
   googleSignInContainer.replaceChildren();
-  googleSignInContainer.hidden = false;
+  googleSignInContainer.removeAttribute('aria-busy');
   google.accounts.id.renderButton(googleSignInContainer,{theme:'outline',size:'large',text:'signin_with'});
 }
 
-loadStaffWorkspace().then(() => showGoogleSignIn()).catch(() => {
-  if (!staffAccess.hidden) staffError.textContent = 'Google sign-in unavailable. Reload to try again.';
-});
+function retryGoogleSignIn() {
+  if (staffAccess.hidden || staffSignIn.hidden) return;
+  const button = memberNode('button', 'Retry Google sign-in', 'secondary');
+  button.type = 'button';
+  button.onclick = () => {
+    button.disabled = true;
+    button.textContent = 'Loading Google sign-in…';
+    googleSignInContainer.setAttribute('aria-busy', 'true');
+    showGoogleSignIn().catch(retryGoogleSignIn);
+  };
+  googleSignInContainer.removeAttribute('aria-busy');
+  googleSignInContainer.replaceChildren(button);
+}
+
+loadStaffWorkspace().then(showGoogleSignIn).catch(retryGoogleSignIn);
