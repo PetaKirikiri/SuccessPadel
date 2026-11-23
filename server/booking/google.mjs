@@ -51,13 +51,24 @@ export async function completeBookingGoogle(req, res, url, key, writeSession) {
     step = 'supabase-token';
     const auth = createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
     const {data,error} = await auth.auth.signInWithIdToken({provider:'google',token:credential,nonce});
-    const {session,user} = data ?? {};
-    if (error || !session || !user) {
+    const {session} = data ?? {};
+    if (error || !session) {
       console.warn('booking_google_token_rejected', {status:error?.status, code:error?.code});
       return res.status(401).json({error:'Google sign-in could not be verified. Try again.'});
     }
-    const linked = user.identities?.some(item => item.provider === 'google' && item.identity_data?.sub === identity.sub);
-    if (!linked || user.email?.toLowerCase() !== email) throw new Error('Google identity mismatch');
+    step = 'provider-link';
+    const {data:account,error:accountError} = await auth.auth.getUser(session.access_token);
+    const user = account?.user;
+    const linked = user?.identities?.some(item => item.provider === 'google' &&
+      (item.identity_data?.sub === identity.sub || item.id === identity.sub));
+    if (accountError || !user || !linked || user.email?.toLowerCase() !== email) {
+      console.warn('booking_google_identity_mismatch', {
+        accountFound:Boolean(user), emailMatches:user?.email?.toLowerCase() === email,
+        hasGoogleIdentity:Boolean(user?.identities?.some(item => item.provider === 'google')),
+        subjectMatches:Boolean(linked),
+      });
+      throw new Error('Google identity mismatch');
+    }
 
     step = 'booking-session';
     const claims = claimsFrom(session.access_token);
