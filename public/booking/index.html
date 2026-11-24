@@ -672,7 +672,7 @@ function coachMatchesLevel(coach,level) {
   if (!level) return true;
   const levels = [...lessonLevel.options].map(option=>option.value);
   const maximum = coachProfiles[coach]?.maxLevel;
-  return Boolean(maximum) && levels.indexOf(level) <= levels.indexOf(maximum);
+  return !maximum || levels.indexOf(level) <= levels.indexOf(maximum);
 }
 let selectedCoach=coachList[0];
 let coachView='calendar';
@@ -2375,6 +2375,7 @@ function renderCourtReceipt(booking){
   if(savedCourtPayment.children.length===1)savedCourtPayment.append(memberNode('span','Receipt details unavailable'));
 }
 modal.addEventListener('close',()=>{
+  if(pickingLessonTime)return;
   selectedLessonSlot = null;
   savedSplit=[];
   splitToggle.disabled=false;
@@ -2411,7 +2412,7 @@ form.querySelector('.price-preview').before(courtAcknowledgment);
 const rulesConsent=courtAcknowledgment.querySelector('button');
 const rulesLink=courtAcknowledgment.querySelector('.court-policy-help');
 rulesLink.onclick=event=>{event.preventDefault();courtRules.showModal()};
-modal.addEventListener('close',()=>{ rulesConsent.setAttribute('aria-pressed','false'); });
+modal.addEventListener('close',()=>{ if(!pickingLessonTime)rulesConsent.setAttribute('aria-pressed','false'); });
 rulesConsent.onclick=()=>{
   rulesConsent.setAttribute('aria-pressed',String(rulesConsent.getAttribute('aria-pressed')!=='true'));
   bookingError(modal,'');
@@ -2637,63 +2638,74 @@ for (const calendar of [document.getElementById('court-calendar'), pGrid, timeLi
   calendar.addEventListener('pointerleave', clearHighlight);
 }
 
-const lessonPicker=document.createElement('dialog');
-lessonPicker.className='lesson-picker';
-lessonPicker.setAttribute('aria-label','Available coaching times');
-const pickerDate=document.createElement('input');
-pickerDate.type='date';
-pickerDate.setAttribute('aria-label','Coaching date');
-const backToLesson=memberNode('button','Back to booking','secondary');
-backToLesson.type='button';
-const pickerHeader=document.createElement('header');
-pickerHeader.append(pickerDate,backToLesson);
-const lessonChoices=document.createElement('div');
-lessonChoices.className='lesson-choices';
-lessonPicker.append(pickerHeader,lessonChoices);
-document.body.append(lessonPicker);
-function renderLessonChoices(){
-  const options=[];
-  const seen=new Set();
-  const reservations=storedRows('success-padel-bookings');
+let pickingLessonTime = false;
+const courtCalendar = document.getElementById('court-calendar');
+const returnToBooking = memberNode('button','Back to booking','secondary');
+returnToBooking.type='button';
+returnToBooking.hidden=true;
+day.parentElement.append(returnToBooking);
+function finishLessonPicker(){
+  pickingLessonTime=false;
+  returnToBooking.hidden=true;
+  courtCalendar.classList.remove('select-lesson-slot');
+  draw();
+  modal.showModal();
+}
+returnToBooking.onclick=finishLessonPicker;
+function renderLessonCalendar(){
+  const byTime=new Map();
+  const reservations=displayedCourtBookings();
   for(const court of coachingCourts){
-    for(const {time,coaches} of availableLessonTimes(pickerDate.value,court,Number(product.value),reservations)){
-      for(const coach of coaches){
-        const key=time+' '+coach;
-        if(seen.has(key)||!coachMatchesLevel(coach,lessonLevel.value)) continue;
-        seen.add(key);
-        options.push({time,coach,court});
-      }
+    for(const slot of availableLessonTimes(day.value,court,Number(product.value),reservations)){
+      const coaches=slot.coaches.filter(name=>coachMatchesLevel(name,lessonLevel.value));
+      if(!coaches.length)continue;
+      if(!byTime.has(slot.time))byTime.set(slot.time,new Map());
+      byTime.get(slot.time).set(court,coaches);
     }
   }
-  lessonChoices.replaceChildren();
-  for(const {time,coach,court} of options.sort((a,b)=>a.time.localeCompare(b.time)||a.coach.localeCompare(b.coach))){
-    const profile=coachProfiles[coach];
-    const choice=memberNode('button',null,'lesson-choice');
-    choice.type='button';
-    choice.append(memberNode('strong',clockLabel(time)+' · '+coach),memberNode('span',profile.languages),memberNode('span',profile.levels));
-    choice.onclick=()=>{
-      dateInput.value=pickerDate.value;
-      timeInput.value=time;
-      type.value='indoor';
-      setResources(court);
-      selectedLessonSlot={date:pickerDate.value,time,court};
-      updateActivity();
-      if(![...coachSelect.options].some(option=>option.value===coach)){renderLessonChoices();return}
-      coachSelect.value=coach;
-      refreshPackageChoices('padel');
-      lessonPicker.close();
-    };
-    lessonChoices.append(choice);
+  const heading=memberNode('div',null,'calendar-head');
+  heading.append(...['Time',...coachingCourts].map(text=>memberNode('div',text)));
+  courtCalendar.replaceChildren(heading);
+  for(const time of [...byTime.keys()].sort()){
+    const row=memberNode('div',null,'calendar-row');
+    row.append(memberNode('div',clockLabel(time),'time-label'));
+    for(const court of coachingCourts){
+      const cell=memberNode('div');
+      for(const coach of byTime.get(time).get(court)||[]){
+        const choice=memberNode('button',coach,'secondary');
+        choice.type='button';
+        choice.setAttribute('aria-label',[coach,court,clockLabel(time)].join(' · '));
+        choice.onclick=()=>{
+          dateInput.value=day.value;
+          timeInput.value=time;
+          type.value='indoor';
+          setResources(court);
+          selectedLessonSlot={date:day.value,time,court};
+          updateActivity();
+          coachSelect.value=coach;
+          refreshPackageChoices('padel');
+          finishLessonPicker();
+        };
+        cell.append(choice);
+      }
+      row.append(cell);
+    }
+    courtCalendar.append(row);
   }
-  if(!options.length) lessonChoices.append(memberNode('p','No available coaching slots'));
+  if(!byTime.size)courtCalendar.append(memberNode('p','No available coaching slots'));
 }
+const drawRegularCourtCalendar=draw;
+draw=()=>pickingLessonTime?renderLessonCalendar():drawRegularCourtCalendar();
+day.onchange=draw;
 chooseLessonTime.onclick=()=>{
-  pickerDate.value=dateInput.value;
-  renderLessonChoices();
-  lessonPicker.showModal();
+  pickingLessonTime=true;
+  modal.close();
+  sidebar.querySelector('[data-section="dashboard"]').click();
+  day.value=dateInput.value;
+  courtCalendar.classList.add('select-lesson-slot');
+  returnToBooking.hidden=false;
+  draw();
 };
-pickerDate.onchange=renderLessonChoices;
-backToLesson.onclick=()=>lessonPicker.close();
 document.getElementById('save').addEventListener('click', event => {
   if (activity.value !== 'coaching' || editingCourt || selectedLessonSlot && coachSelect.value) return;
   event.stopImmediatePropagation();
@@ -3966,4 +3978,4 @@ body .sales-register .sales-totals[hidden]{display:none}
 .member-form-section:first-child{border-top:0;padding-top:0}
 body dialog .member-editor{max-height:90dvh;overflow:auto}
 #member-monthsRemaining{align-self:center;padding:8px;background:#f5f2fa;border-radius:6px}
-</style><script src="/booking/booking-staff.js?v=kett-google-verification"></script><link rel="stylesheet" href="/booking/admin-navigation.css?v=calendar-coaching"><script src="/booking/admin-navigation.js?v=populated-shop-filters"></script><link rel="stylesheet" href="/booking/dialogs.css?v=calendar-coaching"><link rel="stylesheet" href="/booking/admin-tables.css?v=shop-filter-grid"></body></html>
+</style><script src="/booking/booking-staff.js?v=kett-google-verification"></script><link rel="stylesheet" href="/booking/admin-navigation.css?v=calendar-coaching"><script src="/booking/admin-navigation.js?v=populated-shop-filters"></script><link rel="stylesheet" href="/booking/dialogs.css?v=calendar-coaching"><link rel="stylesheet" href="/booking/admin-tables.css?v=shop-filter-grid"><style>#court-calendar.select-lesson-slot .calendar-head,#court-calendar.select-lesson-slot .calendar-row{grid-template-columns:70px repeat(2,minmax(0,1fr))}#court-calendar.select-lesson-slot button{margin:3px}</style></body></html>
