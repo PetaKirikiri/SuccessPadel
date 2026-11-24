@@ -15,24 +15,44 @@ const shopSearch = document.createElement('input');
 shopSearch.type = 'search';
 shopSearch.placeholder = 'Find product';
 shopSearch.setAttribute('aria-label', 'Find product');
-shopHeader.append(shopSearch);
+const shopControls = memberNode('div', null, 'pricing-header-controls');
+const shopFilterDialog = createBookingFilterDialog('shop-filters-title', 'Shop filters');
+shopFilterDialog.classList.add('shop-filter-dialog');
+const shopFilterGroups = shopFilterDialog.querySelector('.sales-filter-groups');
+const shopSearchLabel = memberNode('label', 'Find product', 'field shop-filter-search');
+shopSearch.removeAttribute('placeholder');
+shopSearchLabel.append(shopSearch);
+shopFilterGroups.before(shopSearchLabel);
+let shopCategory = '';
+function renderShopFilters() {
+  shopFilterGroups.replaceChildren();
+  const populated = new Set(retailProducts().map(retailCategory));
+  const categories = retailCategories.filter(([key]) => populated.has(key));
+  appendBookingFilterGroup(shopFilterGroups, 'Product category',
+    [['', 'All products'], ...categories],
+    shopCategory, value => { shopCategory = value; }, () => {
+      shopFilterButton.setAttribute('aria-label', 'Filter products' +
+        (shopCategory ? ' · ' + retailCategories.find(([key]) => key === shopCategory)[1] : ''));
+      renderShopFilters();
+      renderShop();
+    });
+}
+const shopFilterButton = bookingFilterLauncher('Filter', 'filter', () => {
+  renderShopFilters();
+  shopFilterDialog.showModal();
+});
+shopFilterButton.setAttribute('aria-label', 'Filter products');
+shopControls.append(shopFilterButton);
+shopHeader.append(shopControls);
 const shopCatalog = memberNode('div', null, 'racket-catalog');
 shopPage.append(shopHeader, shopCatalog);
 document.querySelector('.content').append(shopPage);
 
-const shopCatalogPhotos = new Set([
-  'nox-balance-fresh-shorts',
-  'nox-red-white-tank',
-  'head-white-wristband',
-  'head-padel-pro-s-plus',
-  'pocari-sweat',
-  'heineken-beer',
-  'wilder-hydration',
-]);
-
 function renderShop() {
   const query = shopSearch.value.trim().toLowerCase();
-  const cards = retailProducts().filter(product => product.name.toLowerCase().includes(query)).map(product => {
+  const cards = retailProducts().filter(product =>
+    (!shopCategory || retailCategory(product) === shopCategory) &&
+    product.name.toLowerCase().includes(query)).map(product => {
     if (retailCategory(product) === 'rackets') return renderRacketCard(product);
     const card = memberNode('article', null, 'racket-card');
     const heading = memberNode('div', null, 'racket-card-heading');
@@ -42,12 +62,8 @@ function renderShop() {
       const visual = memberNode('div', null, 'shop-product-photo');
       const image = document.createElement('img');
       const original = '/booking/photos/shop/' + photo.id + '.jpg';
-      if (shopCatalogPhotos.has(photo.id)) {
-        image.addEventListener('error', () => { image.src = original; }, { once: true });
-        image.src = '/booking/photos/shop/catalog/' + photo.id + '.png';
-      } else {
-        image.src = original;
-      }
+      image.addEventListener('error', () => { image.src = original; }, {once:true});
+      image.src = '/booking/photos/shop/catalog-white/' + photo.id + '.jpg';
       image.alt = product.name;
       image.loading = 'lazy';
       visual.append(image);

@@ -731,3 +731,17 @@ body #coaches .personal-calendar > [hidden] { display: none; }
   min-height: 0;
   object-fit: contain;
 }
+
+body #court-calendar .calendar-row .court-event[data-member-booking] {
+  background: #dcf2e4 !important;
+  border-color: #a8d4b7 !important;
+  color: #194b34 !important;
+}
+
+body #court-calendar .court-event .court-payment-icon[data-state],
+body #coaches .coach-card-footer .court-payment-icon[data-state] {
+  width: 20px;
+  font-size: 19px;
+  line-height: 1;
+  font-weight: 800;
+}

@@ -114,3 +114,19 @@ body dialog#sales-receipt-dialog .sales-receipt-panel dl {
   align-items: center;
   gap: 5px;
 }
+
+.payment-review-evidence {
+  display: grid;
+  gap: 8px;
+  margin-block: 12px;
+}
+
+.payment-review-evidence label {
+  display: grid;
+  gap: 6px;
+}
+
+.payment-review-evidence input {
+  width: 100%;
+  min-width: 0;
+}
