@@ -170,7 +170,7 @@ export default async function handler(req, res) {
       if (error) return send(503,{error:'Could not save calendar.'});
       if(!data)return send(409,{error:'Calendar changed. Reload and try again.'});
       const notified=await sendLessonNotices(changes,enabled);
-      return send(200,{...data,lessonCancellations:output.lessonCancellations,notificationWarning:!notified});
+      return send(200,{...data,lessonCancellations:output.lessonCancellations,courtCancellations:output.courtCancellations,notificationWarning:!notified});
     }
     if (action === 'roster' && req.query?.demo === 'samples') {
       if (role !== 'owner') return send(403, {error:'Owner access required.'});

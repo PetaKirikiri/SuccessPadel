@@ -73,7 +73,7 @@ async function writeCalendarRows(key, rows, cancellation) {
   calendarWriting = true;
   try {
     const result = await staffRequest('save-calendar',{key,rows,cancellation,revision:calendarDataset.revision});
-    calendarDataset = {records:{...calendarDataset.records,[key]:rows,lessonCancellations:result.lessonCancellations||calendarDataset.records.lessonCancellations||[]},revision:result.revision};
+    calendarDataset = {records:{...calendarDataset.records,[key]:rows,lessonCancellations:result.lessonCancellations??calendarDataset.records.lessonCancellations??[],courtCancellations:result.courtCancellations??calendarDataset.records.courtCancellations??[]},revision:result.revision};
     if(result.notificationWarning)window.alert("Calendar saved. LINE delivery incomplete.");
   } finally {
     calendarWriting = false;
@@ -3243,7 +3243,7 @@ function renderDailySales(bills, range, methods, matches) {
   const table = salesPage.querySelector('.sales-table');
   table.classList.remove('sales-coaching-table');
   const headers = table.querySelector('thead tr');
-  headers.replaceChildren(...[showDate?'Date and time':'Time', 'Item or service', 'Payment method', 'Amount']
+  headers.replaceChildren(...[showDate?'Date and time':'Time', 'Item or service', 'Payment method or status', 'Amount']
     .map(label => memberNode('th',label)));
   const body = table.querySelector('tbody');
   body.replaceChildren();
@@ -3260,6 +3260,22 @@ function renderDailySales(bills, range, methods, matches) {
       receipt:{payer:payment.payer, bank:payment.bank, reference:payment.reference,bankSlip:payment.bankSlip,confirmedBy:payment.confirmedBy},
     }];
   }));
+  for (const bill of bills) {
+    const booking = bill.booking;
+    const timestamp = Date.parse(booking?.cancelledAt);
+    if (!Number.isFinite(timestamp)) continue;
+    const cancelledDate = salesReceiptDate.format(timestamp);
+    if (cancelledDate < from || cancelledDate > to) continue;
+    const bookedFor = booking.date && booking.time
+      ? memberDate(booking.date)+' · '+clockLabel(booking.time)
+      : '';
+    entries.push({
+      timestamp,
+      item:bill.item,
+      method:'Cancelled',
+      cancellationDetails:[bill.customer, bookedFor, booking.reason].filter(Boolean).join(' · '),
+    });
+  }
   const sampleDate=bookingSamples?.date ?? bangkokToday();
   if ((bookingFixtures || bookingDatabaseDemo || bookingSamples) && sampleDate>=from && sampleDate<=to) {
     for (const [time,item,method,amount,receipt,court,group] of (bookingSamples?.sales ?? (bookingDatabaseDemo ? bookingDemoSales : previewSalesTransactions))) {
@@ -3273,9 +3289,10 @@ function renderDailySales(bills, range, methods, matches) {
     const row = body.insertRow();
     const time = salesReceiptTime.format(entry.timestamp);
     const when = showDate ? memberDate(salesReceiptDate.format(entry.timestamp))+' · '+time : time;
-    for (const value of [when, entry.item, entry.method, formatPrice(entry.amount)]) {
+    for (const value of [when, entry.item, entry.method, entry.amount === undefined ? '—' : formatPrice(entry.amount)]) {
       row.insertCell().textContent = value;
     }
+    if (entry.cancellationDetails) row.cells[1].append(memberNode('small',entry.cancellationDetails,'customer-meta'));
     if (entry.sample) row.cells[1].append(memberNode('small','Sample','sales-sample-label'));
     if (entry.method === 'QR code' || entry.method === 'Credit card') {
       const button = memberNode('button',entry.method,'secondary sales-receipt-button');
@@ -3285,7 +3302,7 @@ function renderDailySales(bills, range, methods, matches) {
       button.onclick = () => openSalesReceipt(entry);
       row.cells[2].replaceChildren(button);
     }
-    cents += Math.round(entry.amount * 100);
+    if (Number.isFinite(entry.amount)) cents += Math.round(entry.amount * 100);
   }
   if (!entries.length) {
     const empty = body.insertRow().insertCell();
@@ -3309,6 +3326,12 @@ function renderSales(){
   const date=salesDate.value;
   const bills=[];
   const dailyLedger=!showingCoachPayouts;
+  const cancellations = calendarDataset?.records;
+  const padelSalesBookings = dailyLedger ? [
+    ...displayedCourtBookings(),
+    ...(cancellations?.courtCancellations ?? []),
+    ...(cancellations?.lessonCancellations ?? []),
+  ] : null;
   salesPage.querySelector('h2').textContent=showingCoachPayouts?'Coach payouts':'Sales';
   salesPeriodButton.hidden=showingCoachPayouts;
   salesFiltersButton.hidden=showingCoachPayouts;
@@ -3321,7 +3344,7 @@ function renderSales(){
   salesPage.querySelector('tfoot')?.remove();
   salesPage.querySelector('.sales-table-summary')?.remove();
   for(const [key,label] of [['success-padel-bookings','Padel'],['success-pilates-bookings','Pilates']]){
-    for(const booking of (dailyLedger && label==='Padel' ? displayedCourtBookings() : storedRows(key))){
+    for(const booking of (dailyLedger && label==='Padel' ? padelSalesBookings : storedRows(key))){
       if((!dailyLedger&&booking.date!==date)||booking.eventId)continue;
       const payout=label==='Padel'?coachPayout(booking):null;
       const previewCharge=booking.preview&&payout
