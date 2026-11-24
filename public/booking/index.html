@@ -158,7 +158,7 @@ document.getElementById('save').onclick=async()=>{bookings=storedRows('success-p
   const changed=nextDate!==old.date||nextTime!==old.time||nextCourt!==old.court||nextDuration!==old.duration||coach!==(old.coach||null)||nextCustomer!==old.customer;
   const nextPrice=bookingIsPaid(old)&&Number.isFinite(old.price)?old.price:changed?rate():old.price??rate();
   if(!Number.isFinite(nextPrice))return bookingError(modal,'Price unavailable.');
-  const updated={...records[index],date:nextDate,time:nextTime,court:nextCourt,duration:nextDuration,coach,playerLevel:coach?lessonLevel.value||null:null,coachingNote:coach?coachingNote.value.trim()||null:null,activity:activity.value,product:coach?(product.value==='60'?'normal-coaching':'coaching-match'):null,customer:nextCustomer,customerId:nextCustomer===old.customer?old.customerId:padelCustomerId(),players:newCourtPlayers.value.slice(1).filter(Boolean),membership:courtMemberRate().member?'Member':'Non-member',paid:bookingIsPaid(old),paidAmount:bookingIsPaid(old)?old.paidAmount??old.price:undefined,splitPayments:undefined,price:nextPrice,...splitBookingFields(nextPrice)};
+  const updated={...records[index],date:nextDate,time:nextTime,court:nextCourt,duration:nextDuration,coach,coachingNote:coach?coachingNote.value.trim()||null:null,activity:activity.value,product:coach?(product.value==='60'?'normal-coaching':'coaching-match'):null,customer:nextCustomer,customerId:nextCustomer===old.customer?old.customerId:padelCustomerId(),players:newCourtPlayers.value.slice(1).filter(Boolean),membership:courtMemberRate().member?'Member':'Non-member',paid:bookingIsPaid(old),paidAmount:bookingIsPaid(old)?old.paidAmount??old.price:undefined,splitPayments:undefined,price:nextPrice,...splitBookingFields(nextPrice)};
   if(!bookingIsPaid(old)&&!updated.splitPayments?.length&&!confirmBookingPayment(updated,padelPayment.value,'save'))return;
   if(old.databaseSample){
     records[index]=updated;
@@ -169,7 +169,7 @@ document.getElementById('save').onclick=async()=>{bookings=storedRows('success-p
   }
   day.value=nextDate;
   close();refreshBookingCalendars();drawMembers();return;
-}if(activity.value==='coaching'&&!coachingCourts.includes(resource.value))return bookingError(modal,'Choose a covered court for coaching.');if(activity.value==='coaching'&&!eligibleCoaches(dateInput.value,timeInput.value,Number(product.value),bookings).includes(coach))return bookingError(modal,'Coach unavailable');const walkIn=customer.value==='New customer';if(walkIn&&!walkName.value.trim()){walkName.focus();walkName.reportValidity();return}if(!rows.includes(timeInput.value))return bookingError(modal,'Choose a quarter-hour start time.');if(![30,60,90,120].includes(parseInt(duration.value)))return bookingError(modal,'Choose a listed duration.');const credit=bookingPackage('padel');if(credit===false)return bookingError(modal,'Package unavailable.');const b={id:crypto.randomUUID(),bookedBy:bookingOperator(),coach,playerLevel:coach?lessonLevel.value||null:null,coachingNote:coach?coachingNote.value.trim()||null:null,activity:activity.value,product:activity.value==='coaching'?(product.value==='60'?'normal-coaching':'coaching-match'):null,date:dateInput.value,time:timeInput.value,court:resource.value,duration:parseInt(duration.value),membership:courtMemberRate().member?'Member':'Non-member',customer:walkIn?walkName.value.trim():customer.value.split(' · ')[0],customerId:padelCustomerId(),players:newCourtPlayers.value.slice(1).filter(Boolean),packageId:credit?.id||null,...(credit?testPayment('package',walkIn?walkName.value.trim():customer.value.split(' · ')[0]):{paid:false,requestedPaymentMethod:padelPayment.value}),price:credit?0:override.checked?Number(amount.value):rate()};Object.assign(b,splitBookingFields(b.price));if(!b.date||!Number.isFinite(b.price)||b.price<0||minutes(b.time)+b.duration>closingMinute)return bookingError(modal,'Check the booking date, duration and price.');if(bookings.some(x=>bookingOccursOn(x,b.date)&&x.court===b.court&&minutes(x.time)<minutes(b.time)+b.duration&&minutes(b.time)<minutes(x.time)+x.duration))return bookingError(modal,'Court already booked');if(!credit&&!b.splitPayments?.length&&!confirmBookingPayment(b,padelPayment.value,'save'))return;const next=[...bookings,b];try{await writeCalendarRows('success-padel-bookings',next)}catch{return bookingError(modal,'Could not save booking.')}bookings=next;day.value=b.date;draw();close();drawMembers()};
+}if(activity.value==='coaching'&&!coachingCourts.includes(resource.value))return bookingError(modal,'Choose a covered court for coaching.');if(activity.value==='coaching'&&!eligibleCoaches(dateInput.value,timeInput.value,Number(product.value),bookings).includes(coach))return bookingError(modal,'Coach unavailable');const walkIn=customer.value==='New customer';if(walkIn&&!walkName.value.trim()){walkName.focus();walkName.reportValidity();return}if(!rows.includes(timeInput.value))return bookingError(modal,'Choose a quarter-hour start time.');if(![30,60,90,120].includes(parseInt(duration.value)))return bookingError(modal,'Choose a listed duration.');const credit=bookingPackage('padel');if(credit===false)return bookingError(modal,'Package unavailable.');const b={id:crypto.randomUUID(),bookedBy:bookingOperator(),coach,coachingNote:coach?coachingNote.value.trim()||null:null,activity:activity.value,product:activity.value==='coaching'?(product.value==='60'?'normal-coaching':'coaching-match'):null,date:dateInput.value,time:timeInput.value,court:resource.value,duration:parseInt(duration.value),membership:courtMemberRate().member?'Member':'Non-member',customer:walkIn?walkName.value.trim():customer.value.split(' · ')[0],customerId:padelCustomerId(),players:newCourtPlayers.value.slice(1).filter(Boolean),packageId:credit?.id||null,...(credit?testPayment('package',walkIn?walkName.value.trim():customer.value.split(' · ')[0]):{paid:false,requestedPaymentMethod:padelPayment.value}),price:credit?0:override.checked?Number(amount.value):rate()};Object.assign(b,splitBookingFields(b.price));if(!b.date||!Number.isFinite(b.price)||b.price<0||minutes(b.time)+b.duration>closingMinute)return bookingError(modal,'Check the booking date, duration and price.');if(bookings.some(x=>bookingOccursOn(x,b.date)&&x.court===b.court&&minutes(x.time)<minutes(b.time)+b.duration&&minutes(b.time)<minutes(x.time)+x.duration))return bookingError(modal,'Court already booked');if(!credit&&!b.splitPayments?.length&&!confirmBookingPayment(b,padelPayment.value,'save'))return;const next=[...bookings,b];try{await writeCalendarRows('success-padel-bookings',next)}catch{return bookingError(modal,'Could not save booking.')}bookings=next;day.value=b.date;draw();close();drawMembers()};
 const originalDraw=draw;draw=function(){originalDraw();const calendarRows=[...document.querySelectorAll('.calendar-row')];calendarRows.forEach((row,i)=>{row.classList.toggle('hour-start',i%4===0);row.querySelectorAll('.calendar-cell.reserved').forEach(cell=>{if(!cell.textContent)cell.classList.add('reserved-continuation');const courtIndex=[...row.children].indexOf(cell)-1;const next=calendarRows[i+1]?.children[courtIndex+1];if(next?.classList.contains('reserved')&&!next.textContent)cell.classList.add('reserved-continues')})})};
 modal.querySelector('p').remove(); type.querySelector('option[value="coach"]').remove(); document.getElementById('new').remove(); duration.innerHTML=[30,60,90,120].map(n=>`<option ${n===60?'selected':''}>${n} min</option>`).join(''); setResources();draw();
 const sidebar=document.querySelector('.sidebar');sidebar.style.display='grid';
@@ -511,24 +511,11 @@ function eligibleCoaches(date,time,length,reservations,availability=storedRows(a
     return covered >= end;
   });
 }
-const lessonLevelField = document.createElement('label');
-lessonLevelField.className = 'field full';
-lessonLevelField.hidden = true;
-lessonLevelField.innerHTML = '<span class="booking-field-caption">Player level</span><select><option value="">Select level</option></select>';
-lessonLevelField.firstElementChild.prepend(bookingIcon('level'));
-const lessonLevel = lessonLevelField.querySelector('select');
-for (const level of ['Beginner','Low intermediate','Intermediate','Advanced','Professional']) {
-  lessonLevel.add(new Option(level,level));
-}
 const coachingNoteField = document.createElement('label');
 coachingNoteField.className = 'field full coaching-note-field';
 coachingNoteField.hidden = true;
 coachingNoteField.innerHTML = 'Is there anything specific you want to cover? (optional)<textarea maxlength="500" rows="3"></textarea>';
 const coachingNote = coachingNoteField.querySelector('textarea');
-lessonLevel.onchange = () => {
-  updateActivity();
-  refreshPackageChoices('padel');
-};
 const activityChoices=document.createElement('fieldset');
 activityChoices.className='activity-choices';
 activityChoices.innerHTML='<legend>Booking type</legend>';
@@ -544,7 +531,7 @@ for(const option of activity.options){
   };
 }
 activityField.hidden=true;
-activityField.closest('.form-grid').prepend(activityChoices, productChoices, lessonLevelField, lessonTimeField);
+activityField.closest('.form-grid').prepend(activityChoices, productChoices, lessonTimeField);
 function updateActivity() {
   for(const radio of activityChoices.querySelectorAll('input')){
     radio.checked=radio.value===activity.value;
@@ -558,7 +545,6 @@ function updateActivity() {
     button.setAttribute('aria-pressed',String(button.dataset.product===product.value));
   }
   coachingNoteField.hidden = !coaching;
-  lessonLevelField.hidden = !coaching;
   coachField.hidden = !coaching || (!editingCourt && !selectedLessonSlot);
   resource.closest('.field').hidden = coaching && !editingCourt;
   if (editingCourt) {
@@ -567,19 +553,19 @@ function updateActivity() {
     type.value = coachingCourts.includes(resource.value) ? 'indoor' : 'outdoor';
   }
   form.classList.toggle('new-coaching-booking',coaching && !editingCourt);
-  lessonTimeField.hidden = !coaching || Boolean(editingCourt) || !lessonLevel.value;
+  lessonTimeField.hidden = !coaching || Boolean(editingCourt);
   if (coaching) {
     const selected = coachSelect.value;
     const date = dateInput.value, length = Number(product.value);
     const reservations = storedRows('success-padel-bookings').filter(row=>!editingCourt||!sameCourtBooking(row,editingCourt));
     let names;
     if (editingCourt) {
-      names = eligibleCoaches(date,timeInput.value,length,reservations).filter(coach=>coachMatchesLevel(coach,lessonLevel.value));
+      names = eligibleCoaches(date,timeInput.value,length,reservations);
     } else {
       const slot = selectedLessonSlot;
       names = slot && slot.date === date
         ? availableLessonTimes(date, slot.court, length, reservations)
-          .find(option => option.time === slot.time)?.coaches.filter(coach => lessonLevel.value && coachMatchesLevel(coach, lessonLevel.value)) ?? []
+          .find(option => option.time === slot.time)?.coaches ?? []
         : [];
       if (!names.length) selectedLessonSlot = null;
       coachField.hidden = !selectedLessonSlot;
@@ -605,9 +591,8 @@ start = (court, time) => {
   activity.value = 'play';
   selectedLessonSlot = null;
   product.value = '60';
-  lessonLevel.value = '';
   coachingNote.value = '';
-  lessonLevelField.querySelector('.booking-package-status')?.remove();
+  coachField.querySelector('.booking-package-status')?.remove();
   duration.value = '60 min';
   updateActivity();
   startBooking(court, time);
@@ -672,12 +657,6 @@ const coachProfiles = {
   Bia: {languages:'English, Thai', languageCodes:'EN / TH', levels:'Beginner', maxLevel:'Beginner'},
   Tong: {languages:'English, Thai', languageCodes:'EN / TH', levels:'Beginner to low intermediate', maxLevel:'Low intermediate'},
 };
-function coachMatchesLevel(coach,level) {
-  if (!level) return true;
-  const levels = [...lessonLevel.options].map(option=>option.value);
-  const maximum = coachProfiles[coach]?.maxLevel;
-  return !maximum || levels.indexOf(level) <= levels.indexOf(maximum);
-}
 let selectedCoach=coachList[0];
 let coachView='calendar';
 const coachDates=new Map();
@@ -2261,7 +2240,7 @@ const courtSaveButton=document.getElementById('save');
 function courtBookingEditState(){
   return JSON.stringify([
     dateInput.value,timeInput.value,activity.value,resource.value,duration.value,
-    activity.value==='coaching'?[coachSelect.value,product.value,lessonLevel.value,coachingNote.value.trim()]:null,
+    activity.value==='coaching'?[coachSelect.value,product.value,coachingNote.value.trim()]:null,
     newCourtPlayers.value
   ]);
 }
@@ -2312,7 +2291,6 @@ function editCourtBooking(booking){
   if(booking.coach){
     activity.value='coaching';
     setResources(booking.court,coachingCourts);
-    lessonLevel.value=booking.playerLevel||'';
     coachingNote.value=booking.coachingNote||'';
     product.value=booking.duration===90?'90':'60';
     updateActivity();
@@ -2338,7 +2316,7 @@ function editCourtBooking(booking){
   const packageStatus = coachingPackageStatus(booking);
   if (packageStatus) {
     const status = memberNode('p',packageStatus,'booking-package-status');
-    lessonLevelField.append(status);
+    coachField.append(status);
   }
   rulesConsent.setAttribute('aria-pressed','true');
   document.getElementById('save').textContent='Save changes';
@@ -2678,7 +2656,7 @@ function renderLessonCalendar(){
   const reservations=displayedCourtBookings();
   for(const court of coachingCourts){
     for(const slot of availableLessonTimes(day.value,court,Number(product.value),reservations)){
-      const coaches=slot.coaches.filter(name=>coachMatchesLevel(name,lessonLevel.value));
+      const coaches=slot.coaches;
       if(!coaches.length)continue;
       if(!byTime.has(slot.time))byTime.set(slot.time,new Map());
       byTime.get(slot.time).set(court,coaches);
@@ -2732,7 +2710,7 @@ chooseLessonTime.onclick=()=>{
 document.getElementById('save').addEventListener('click', event => {
   if (activity.value !== 'coaching' || editingCourt || selectedLessonSlot && coachSelect.value) return;
   event.stopImmediatePropagation();
-  bookingError(modal, lessonLevel.value ? 'Choose an available time.' : 'Select a player level.');
+  bookingError(modal, 'Choose an available time.');
 }, true);
 
 // Restore navigation after the calendar defaults, preview data and all staff tabs exist.
