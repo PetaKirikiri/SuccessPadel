@@ -2997,7 +2997,7 @@ seedTodayLessonAvailability();
 const salesPage=document.createElement('section');
 salesPage.id='sales';
 salesPage.className='page sales-register booking-admin-page';
-salesPage.innerHTML=`<header class="booking-page-header"><h2>Sales</h2><div class="sales-header-controls"><label>Date <input type="date"></label></div></header>
+salesPage.innerHTML=`<header class="booking-page-header"><h2>Reports</h2><div class="sales-header-controls"><label>Date <input type="date"></label></div></header>
 <div class="sales-filters">
   <label hidden>Coach <select><option value="">All coaches</option></select></label>
 </div>
@@ -3045,13 +3045,13 @@ const salesPeriods = [
 ];
 let salesPeriod='today';
 const salesHeaderControls=salesPage.querySelector('.sales-header-controls');
-const salesFiltersDialog=createBookingFilterDialog('sales-filters-title','Sales filters');
+const salesFiltersDialog=createBookingFilterDialog('sales-filters-title','Report filters');
 const salesFilterGroups=salesFiltersDialog.querySelector('.sales-filter-groups');
 let salesFilterMode = 'filters';
 let salesActivity = 'all';
 function openSalesFilterDialog(mode) {
   salesFilterMode=mode;
-  salesFiltersDialog.querySelector('h2').textContent=mode==='period'?'Sales period':'Sales filters';
+  salesFiltersDialog.querySelector('h2').textContent=mode==='period'?'Report period':'Report filters';
   drawSalesFilterChoices();
   salesFiltersDialog.showModal();
 }
@@ -3060,6 +3060,20 @@ const salesFiltersButton=bookingFilterLauncher('Filter','filter',()=>openSalesFi
 salesHeaderDate.before(salesPeriodButton,salesFiltersButton,salesCoach.closest('label'),salesLoanBalance);
 salesPage.querySelector('.sales-filters').remove();
 
+const reportCategories=document.createElement('div');
+reportCategories.setAttribute('role','group');
+reportCategories.setAttribute('aria-label','Report category');
+reportCategories.className='report-categories';
+for(const [value,label] of salesCategories){
+  const button=bookingFilterChoice(label,value==='all',filterIcon(value));
+  button.dataset.category=value;
+  button.onclick=()=>{
+    activeSalesCategory=value;
+    renderSales();
+  };
+  reportCategories.append(button);
+}
+salesPage.querySelector('header').after(reportCategories);
 function resetSalesFilters(){
   activeSalesCategory='all';
   salesActivity='all';
@@ -3107,7 +3121,7 @@ function drawSalesFilterChoices() {
 document.querySelector('.content').append(salesPage);
 const salesDate=salesPage.querySelector('input');
 salesDate.value=bangkokToday();
-const salesNav=memberNode('button','Sales');
+const salesNav=memberNode('button','Reports');
 salesNav.dataset.section='sales';
 sidebar.querySelector('.staff-nav').append(salesNav);
 salesNav.onclick=()=>{showingCoachPayouts=false;resetSalesFilters();selectStaffSection(salesNav);renderSales()};
@@ -3402,10 +3416,12 @@ function renderDailySales(bills, range, methods, matches) {
 
 function renderSales(){
   const date=salesDate.value;
+  reportCategories.hidden=showingCoachPayouts;
+  for(const button of reportCategories.children)button.setAttribute('aria-pressed',String(button.dataset.category===activeSalesCategory));
   const bills=[];
   const dailyLedger=!showingCoachPayouts;
   const padelSalesBookings = dailyLedger ? [...displayedCourtBookings(), ...bookingCancellations()] : null;
-  salesPage.querySelector('h2').textContent=showingCoachPayouts?'Coach payouts':'Sales';
+  salesPage.querySelector('h2').textContent=showingCoachPayouts?'Coach payouts':'Reports';
   salesPeriodButton.hidden=showingCoachPayouts;
   salesFiltersButton.hidden=showingCoachPayouts;
   salesCoach.closest('label').hidden=!showingCoachPayouts;
@@ -4107,5 +4123,5 @@ body .sales-register .sales-totals[hidden]{display:none}
 .member-form-section:first-child{border-top:0;padding-top:0}
 body dialog .member-editor{max-height:90dvh;overflow:auto}
 #member-monthsRemaining{align-self:center;padding:8px;background:#f5f2fa;border-radius:6px}
-.booking-dialog label[hidden]{display:none}
+.report-categories:not([hidden]){display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 16px}.booking-dialog label[hidden]{display:none}
 </style><script src="/booking/booking-staff.js?v=progressive-bookings"></script><link rel="stylesheet" href="/booking/admin-navigation.css?v=calendar-coaching"><script src="/booking/admin-navigation.js?v=populated-shop-filters"></script><link rel="stylesheet" href="/booking/dialogs.css?v=calendar-coaching"><link rel="stylesheet" href="/booking/admin-tables.css?v=shop-filter-grid"><style>#court-calendar.select-lesson-slot .calendar-head,#court-calendar.select-lesson-slot .calendar-row{grid-template-columns:70px repeat(2,minmax(0,1fr))}#court-calendar.select-lesson-slot{align-content:start;grid-auto-rows:auto}#court-calendar.select-lesson-slot .calendar-row>div:has(.court-coaching-offer){display:grid;align-content:start}#court-calendar.select-lesson-slot .court-coaching-offer{display:block;width:100%;height:auto;padding:3px}#court-calendar.select-lesson-slot .court-event{position:relative;inset:auto;width:100%;height:auto;min-height:48px}</style></body></html>
