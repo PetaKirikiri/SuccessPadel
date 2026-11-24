@@ -1324,6 +1324,7 @@ pDay.onchange=pDraw;pDraw();
 const pricingKey='success-booking-pricing-sheet-v2';
 const priceDefaults={outdoorRegular:800,outdoorMember:400,indoorRegular:1000,indoorMember:800,outdoorDaytime:600,coaching:2000,coachingMatch:2400,coachingFive:9000,coachingPackage:15000,privatePilates:1500,duoPilates:2200,groupPilates:800,privatePackage:6500,groupPackage:2950,annualMembership:3500,racketRental:100,ballRental:100};
 let pricing={...priceDefaults};try{const saved=JSON.parse(localStorage.getItem(pricingKey)||'{}');for(const key of Object.keys(pricing))if(saved[key]===null||(typeof saved[key]==='number'&&Number.isFinite(saved[key])&&saved[key]>=0))pricing[key]=saved[key];if(!Number.isFinite(saved.outdoorDaytime)&&Number.isFinite(saved.outdoorRegularHappy)&&saved.outdoorRegularHappy>=0)pricing.outdoorDaytime=saved.outdoorRegularHappy;if(pricing.outdoorDaytime===null)pricing.outdoorDaytime=priceDefaults.outdoorDaytime}catch{}
+const hasOutdoorHappyHour = court => court !== 'Court 1' && court !== 'Court 2';
 const happyHourStart = '10:00';
 const happyHourEnd = '16:00';
 const courtRateRows = [
@@ -1334,8 +1335,10 @@ const courtRateRows = [
 ];
 const priceGroups=[
   ['Padel courts',courtRateRows.map(([name,key])=>[name,key,'Per hour'])],
-  ['Happy Hour · '+clockLabel(happyHourStart)+'–'+clockLabel(happyHourEnd),
-    [['Outdoor non-member','outdoorDaytime','Per hour']]],['Padel coaching',[['Normal coaching','coaching','60 min'],['Coaching match','coachingMatch','90 min'],['5 lessons','coachingFive','30 days'],['10 lessons','coachingPackage','90 days']]],['Pilates',[['Private 1:1','privatePilates','Session'],['Private 1:2','duoPilates','2 people'],['Group Reformer','groupPilates','Person'],['Private 1:1 × 5','privatePackage','30 days'],['Group Reformer × 5','groupPackage','14 days']]],['Membership & equipment',[['Annual membership','annualMembership','Year'],['Racket rental','racketRental','Racket'],['Ball rental','ballRental','3 balls']]]];
+  ...(courtNames.some(court => !coachingCourts.includes(court) && hasOutdoorHappyHour(court))
+    ? [['Happy Hour · '+clockLabel(happyHourStart)+'–'+clockLabel(happyHourEnd),
+      [['Outdoor non-member','outdoorDaytime','Per hour']]]]
+    : []),['Padel coaching',[['Normal coaching','coaching','60 min'],['Coaching match','coachingMatch','90 min'],['5 lessons','coachingFive','30 days'],['10 lessons','coachingPackage','90 days']]],['Pilates',[['Private 1:1','privatePilates','Session'],['Private 1:2','duoPilates','2 people'],['Group Reformer','groupPilates','Person'],['Private 1:1 × 5','privatePackage','30 days'],['Group Reformer × 5','groupPackage','14 days']]],['Membership & equipment',[['Annual membership','annualMembership','Year'],['Racket rental','racketRental','Racket'],['Ball rental','ballRental','3 balls']]]];
 const pricingPage=document.createElement('section');pricingPage.className='page booking-admin-page';pricingPage.id='pricing';pricingPage.innerHTML='<header class="booking-page-header"><h1>Pricing</h1><div class="pricing-header-controls"><button type="button" class="primary" id="new-price-item">New price</button></div></header><div id="pricing-error" role="alert"></div><div id="pricing-groups" role="tabpanel"></div>';document.querySelector('.content').append(pricingPage);
 let activePricingTab='all';
 let activePricingGroup='';
@@ -1674,15 +1677,15 @@ function courtMemberRate(){
 function happyHourMinutes(start,duration){
   return Math.max(0,Math.min(start+duration,minutes(happyHourEnd))-Math.max(start,minutes(happyHourStart)));
 }
-function courtBookingPrice(isIndoor,member,startTime,durationMinutes,rates){
+function courtBookingPrice(court,isIndoor,member,startTime,durationMinutes,rates){
   const key=isIndoor?(member?'indoorMember':'indoorRegular'):(member?'outdoorMember':'outdoorRegular');
   const start=minutes(startTime);
-  const happyMinutes=isIndoor||member?0:happyHourMinutes(start,durationMinutes);
+  const happyMinutes=isIndoor||member||!hasOutdoorHappyHour(court)?0:happyHourMinutes(start,durationMinutes);
   const standardRate=rates[key];
   const happyRate=rates.outdoorDaytime??standardRate;
   return Math.round((standardRate*(durationMinutes-happyMinutes)+happyRate*happyMinutes)/60*100)/100;
 }
-rate=()=>{if(activity.value==='coaching'){const total=pricing[product.value==='60'?'coaching':'coachingMatch'];return total===null?NaN:total}return courtBookingPrice(type.value==='indoor',courtMemberRate().member,timeInput.value,parseInt(duration.value),pricing)};
+rate=()=>{if(activity.value==='coaching'){const total=pricing[product.value==='60'?'coaching':'coachingMatch'];return total===null?NaN:total}return courtBookingPrice(resource.value,type.value==='indoor',courtMemberRate().member,timeInput.value,parseInt(duration.value),pricing)};
 refreshPrice=()=>{const value=rate();amount.value=Number.isFinite(value)?value:'';price.textContent=Number.isFinite(value)?formatPrice(value):'Not set'};customer.onchange=duration.onchange=refreshPrice;type.onchange=()=>{setResources();refreshPrice()};
 function savePriceInput(input){const key=input.dataset.key;if(!key)return;const error=document.getElementById('pricing-error');const raw=input.value.trim();const value=raw===''?null:Number(raw);if(value!==null&&(!Number.isFinite(value)||value<0||!Number.isInteger(value))||value===null&&priceDefaults[key]!==null){error.textContent='Enter a valid price.';input.setAttribute('aria-invalid','true');return}const next={...pricing,[key]:value};try{localStorage.setItem(pricingKey,JSON.stringify(next))}catch{error.textContent='Could not save price.';return}pricing=next;error.textContent='';input.removeAttribute('aria-invalid');applyPriceConfig()}
 pricingPage.addEventListener('change',event=>{if(event.target.matches('[data-key]'))savePriceInput(event.target)});pricingPage.addEventListener('keydown',event=>{if(event.key==='Enter'&&event.target.matches('[data-key]')){event.preventDefault();savePriceInput(event.target);event.target.blur()}});applyPriceConfig();renderPricing();
@@ -2232,7 +2235,7 @@ refreshPrice=()=>{
   refreshCourtTotal();
   updateCourtRateFeedback();
   updateSplitRows();
-  happyHourPriceLabel.hidden=activity.value!=='play'||!['Court 1','Court 2'].includes(resource.value)||
+  happyHourPriceLabel.hidden=activity.value!=='play'||coachingCourts.includes(resource.value)||!hasOutdoorHappyHour(resource.value)||
     courtMemberRate().member||override.checked||!happyHourMinutes(minutes(timeInput.value),parseInt(duration.value));
   happyHourPriceLabel.textContent='Happy Hour · '+formatPrice(pricing.outdoorDaytime)+'/hr';
 };
