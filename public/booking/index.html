@@ -168,7 +168,7 @@ document.getElementById('save').onclick=async()=>{bookings=storedRows('success-p
   }
   day.value=nextDate;
   close();refreshBookingCalendars();drawMembers();return;
-}if(activity.value==='coaching'&&!coachingCourts.includes(resource.value))return bookingError(modal,'Choose a covered court for coaching.');if(activity.value==='coaching'&&!eligibleCoaches(dateInput.value,timeInput.value,Number(product.value),bookings).includes(coach))return bookingError(modal,'Coach unavailable');const walkIn=customer.value==='New customer';if(walkIn&&!walkName.value.trim()){walkName.focus();walkName.reportValidity();return}if(!rows.includes(timeInput.value))return bookingError(modal,'Choose a quarter-hour start time.');if(![30,60,90,120].includes(parseInt(duration.value)))return bookingError(modal,'Choose a listed duration.');const credit=bookingPackage('padel');if(credit===false)return bookingError(modal,'Package unavailable.');const b={id:crypto.randomUUID(),bookedBy:bookingOperator(),coach,coachingNote:coach?coachingNote.value.trim()||null:null,activity:activity.value,product:activity.value==='coaching'?(product.value==='60'?'normal-coaching':'coaching-match'):null,date:dateInput.value,time:timeInput.value,court:resource.value,duration:parseInt(duration.value),membership:courtMemberRate().member?'Member':'Non-member',customer:walkIn?walkName.value.trim():customer.value.split(' · ')[0],customerId:padelCustomerId(),players:newCourtPlayers.value.slice(1).filter(Boolean),packageId:credit?.id||null,...(credit?testPayment('package',walkIn?walkName.value.trim():customer.value.split(' · ')[0]):{paid:false,requestedPaymentMethod:padelPayment.value}),price:credit?0:override.checked?Number(amount.value):rate()};Object.assign(b,splitBookingFields(b.price));if(!b.date||!Number.isFinite(b.price)||b.price<0||minutes(b.time)+b.duration>closingMinute)return bookingError(modal,'Check the booking date, duration and price.');if(bookings.some(x=>bookingOccursOn(x,b.date)&&x.court===b.court&&minutes(x.time)<minutes(b.time)+b.duration&&minutes(b.time)<minutes(x.time)+x.duration))return bookingError(modal,'Court already booked');if(!credit&&!b.splitPayments?.length&&!confirmBookingPayment(b,padelPayment.value,'save'))return;const next=[...bookings,b];try{await writeCalendarRows('success-padel-bookings',next)}catch{return bookingError(modal,'Could not save booking.')}bookings=next;day.value=b.date;draw();close();drawMembers()};
+}if(activity.value==='coaching'&&!coachingCourts.includes(resource.value))return bookingError(modal,'Choose a covered court for coaching.');if(activity.value==='coaching'&&!eligibleCoaches(dateInput.value,timeInput.value,Number(product.value),bookings).includes(coach))return bookingError(modal,'Coach unavailable');const walkIn=customer.value==='New customer';if(walkIn&&!walkName.value.trim()){walkName.focus();walkName.reportValidity();return}if(!rows.includes(timeInput.value))return bookingError(modal,'Choose a quarter-hour start time.');if(![30,60,90,120].includes(parseInt(duration.value)))return bookingError(modal,'Choose a listed duration.');const credit=bookingPackage('padel');if(credit===false)return bookingError(modal,'Package unavailable.');const b={id:crypto.randomUUID(),createdAt:new Date().toISOString(),bookedBy:bookingOperator(),coach,coachingNote:coach?coachingNote.value.trim()||null:null,activity:activity.value,product:activity.value==='coaching'?(product.value==='60'?'normal-coaching':'coaching-match'):null,date:dateInput.value,time:timeInput.value,court:resource.value,duration:parseInt(duration.value),membership:courtMemberRate().member?'Member':'Non-member',customer:walkIn?walkName.value.trim():customer.value.split(' · ')[0],customerId:padelCustomerId(),players:newCourtPlayers.value.slice(1).filter(Boolean),packageId:credit?.id||null,...(credit?testPayment('package',walkIn?walkName.value.trim():customer.value.split(' · ')[0]):{paid:false,requestedPaymentMethod:padelPayment.value}),price:credit?0:override.checked?Number(amount.value):rate()};Object.assign(b,splitBookingFields(b.price));if(!b.date||!Number.isFinite(b.price)||b.price<0||minutes(b.time)+b.duration>closingMinute)return bookingError(modal,'Check the booking date, duration and price.');if(bookings.some(x=>bookingOccursOn(x,b.date)&&x.court===b.court&&minutes(x.time)<minutes(b.time)+b.duration&&minutes(b.time)<minutes(x.time)+x.duration))return bookingError(modal,'Court already booked');if(!credit&&!b.splitPayments?.length&&!confirmBookingPayment(b,padelPayment.value,'save'))return;const next=[...bookings,b];try{await writeCalendarRows('success-padel-bookings',next)}catch{return bookingError(modal,'Could not save booking.')}bookings=next;day.value=b.date;draw();close();drawMembers()};
 const originalDraw=draw;draw=function(){originalDraw();const calendarRows=[...document.querySelectorAll('.calendar-row')];calendarRows.forEach((row,i)=>{row.classList.toggle('hour-start',i%4===0);row.querySelectorAll('.calendar-cell.reserved').forEach(cell=>{if(!cell.textContent)cell.classList.add('reserved-continuation');const courtIndex=[...row.children].indexOf(cell)-1;const next=calendarRows[i+1]?.children[courtIndex+1];if(next?.classList.contains('reserved')&&!next.textContent)cell.classList.add('reserved-continues')})})};
 modal.querySelector('p').remove(); type.querySelector('option[value="coach"]').remove(); document.getElementById('new').remove(); duration.innerHTML=[30,60,90,120].map(n=>`<option ${n===60?'selected':''}>${n} min</option>`).join(''); setResources();draw();
 const sidebar=document.querySelector('.sidebar');sidebar.style.display='grid';
@@ -3003,7 +3003,7 @@ salesPage.innerHTML=`<header class="booking-page-header"><h2>Sales</h2><div clas
 </div>
 <div class="sales-totals"></div><div class="sales-methods"></div>
 <div class="table-wrap sales-table booking-data-table"><table class="table"><thead><tr><th>Customer</th><th>Sale</th><th>Total</th><th>Received</th><th>Balance</th><th>Payments</th></tr></thead><tbody></tbody></table></div>`;
-const salesCategories=[['all','All sales'],['courts','Courts'],['coaches','Coaches'],['pilates','Pilates'],['products','Products']];
+const salesCategories=[['all','All sales'],['courts','Courts'],['coaches','Coaching'],['pilates','Pilates'],['products','Products'],...retailCategories];
 let activeSalesCategory='all';
 let showingCoachPayouts=false;
 const coachLoanKey='booking-david-loan-v1';
@@ -3040,7 +3040,7 @@ for(const coach of coachList)salesCoach.add(new Option(coach,coach));
 salesCoach.onchange=renderSales;
 const salesHeaderDate = salesPage.querySelector('header input[type="date"]').closest('label');
 const salesPeriods = [
-  ['today','Today'],['week','Last week'],['month','Last month'],
+  ['today','Today'],['seven','Last 7 days'],['week','Last week'],['month','Last month'],
   ['quarter','Last quarter'],['year','Last year'],['date','Specific date'],
 ];
 let salesPeriod='today';
@@ -3060,6 +3060,12 @@ const salesFiltersButton=bookingFilterLauncher('Filter','filter',()=>openSalesFi
 salesHeaderDate.before(salesPeriodButton,salesFiltersButton,salesCoach.closest('label'),salesLoanBalance);
 salesPage.querySelector('.sales-filters').remove();
 
+function resetSalesFilters(){
+  activeSalesCategory='all';
+  salesActivity='all';
+  salesCoach.value='';
+  for(const key of Object.keys(salesSelections))salesSelections[key]='';
+}
 function drawSalesFilterChoices() {
   salesFilterGroups.replaceChildren();
   const addGroup=(label,options,selected,choose)=>appendBookingFilterGroup(
@@ -3069,11 +3075,28 @@ function drawSalesFilterChoices() {
     if (salesPeriod==='date') salesFilterGroups.append(salesHeaderDate);
     return;
   }
-  addGroup('Activity',[['all','All activity'],['payments','Payments'],['cancellations','Cancellations']],
+  if(activeSalesCategory!=='all'||salesActivity!=='all'){
+    const clear=memberNode('button','Clear filters','secondary');
+    clear.type='button';
+    clear.onclick=()=>{resetSalesFilters();renderSales();drawSalesFilterChoices()};
+    salesFilterGroups.append(clear);
+  }
+  addGroup('Activity',[['all','All activity'],['bookings','Bookings'],['payments','Payments'],['cancellations','Cancellations']],
     salesActivity,value=>{salesActivity=value;});
   addGroup('Category',salesCategories,activeSalesCategory,value=>{activeSalesCategory=value;});
   if (activeSalesCategory==='coaches') {
     addGroup('Coach',[['','All coaches'],...coachList.map(name=>[name,name])],salesCoach.value,value=>{salesCoach.value=value;});
+  }
+  if (retailCategories.some(([key])=>key===activeSalesCategory)) {
+    const names=new Set(retailProducts().filter(p=>p.category===activeSalesCategory).map(p=>p.name));
+    for(const [,item,,,,court,group] of salesTransactionRows()){
+      if(!court && (!group || group.category==='retail')){
+        const product=salesRetailItem(item);
+        if(product.group===activeSalesCategory)names.add(product.name);
+      }
+    }
+    addGroup('Item',[['','All items'],...Array.from(names).sort().map(name=>[name,name])],
+      salesSelections[activeSalesCategory]||'',value=>{salesSelections[activeSalesCategory]=value});
   }
   const dimension=salesDimensions[activeSalesCategory];
   if (dimension) {
@@ -3087,7 +3110,7 @@ salesDate.value=bangkokToday();
 const salesNav=memberNode('button','Sales');
 salesNav.dataset.section='sales';
 sidebar.querySelector('.staff-nav').append(salesNav);
-salesNav.onclick=()=>{showingCoachPayouts=false;selectStaffSection(salesNav);renderSales()};
+salesNav.onclick=()=>{showingCoachPayouts=false;resetSalesFilters();selectStaffSection(salesNav);renderSales()};
 salesDate.onchange=renderSales;
 function openCoachPayouts(coach){
   if (bookingStaffRole!=='owner') return;
@@ -3248,6 +3271,7 @@ function salesDateRange(period, specificDate) {
   const [year,month,day] = today.split('-').map(Number);
   const current = new Date(Date.UTC(year,month-1,day));
   const iso = date => date.toISOString().slice(0,10);
+  if (period==='seven') return [dateOffset(today,-6),today];
   if (period==='week') {
     const monday = dateOffset(today,-((current.getUTCDay()+6)%7));
     return [dateOffset(monday,-7),dateOffset(monday,-1)];
@@ -3260,11 +3284,21 @@ function salesDateRange(period, specificDate) {
       : [new Date(Date.UTC(year-1,0,1)),new Date(Date.UTC(year,0,0))];
   return [iso(start),iso(end)];
 }
+function salesTransactionRows(){
+  return bookingSamples?.sales ?? (bookingDatabaseDemo ? bookingDemoSales : previewSalesTransactions);
+}
+function salesRetailItem(item){
+  const name=item.replace(/\s*×\s*\d+$/,'').trim();
+  const product=retailProducts().find(p=>p.name.toLowerCase()===name.toLowerCase());
+  const sampleGroups={'Water':'drinks','Iced coffee':'drinks','Electrolyte drink':'drinks','Sparkling water':'drinks','Racket rental':'rackets'};
+  return {category:'retail',name,group:product?.category||sampleGroups[name]||'other'};
+}
 function saleMatchesFilter(category,selected,coach,entry) {
   if (category==='all') return true;
+  if(retailCategories.some(([key])=>key===category)) return entry.category==='retail' && entry.group===category && (!selected || selected===entry.name);
   if (category==='products') {
     return ['retail','memberships','packages'].includes(entry.category) &&
-      (!selected || (entry.group||entry.category)===selected);
+      (!selected || entry.category===selected || entry.group===selected);
   }
   return entry.category===category && (!selected || entry.group===selected) &&
     (category!=='coaches'||!coach||entry.coach===coach);
@@ -3280,7 +3314,7 @@ function renderDailySales(bills, range, methods, matches) {
     .map(label => memberNode('th',label)));
   const body = table.querySelector('tbody');
   body.replaceChildren();
-  const entries = salesActivity === 'cancellations' ? [] : bills.flatMap(bill => bill.payments.flatMap(payment => {
+  const entries = ['all','payments'].includes(salesActivity) ? bills.flatMap(bill => bill.payments.flatMap(payment => {
     const timestamp = Date.parse(payment.receivedAt);
     if (!Number.isFinite(timestamp) || !Number.isFinite(payment.amount) ||
         salesReceiptDate.format(timestamp) < from || salesReceiptDate.format(timestamp) > to) return [];
@@ -3292,8 +3326,17 @@ function renderDailySales(bills, range, methods, matches) {
       sample:Boolean(bill.booking?.preview),
       receipt:{payer:payment.payer, bank:payment.bank, reference:payment.reference,bankSlip:payment.bankSlip,confirmedBy:payment.confirmedBy},
     }];
-  }));
-  for (const bill of (salesActivity === 'payments' ? [] : bills)) {
+  })) : [];
+  if(['all','bookings'].includes(salesActivity))for(const bill of bills){
+    const booking=bill.booking;
+    if(!booking)continue;
+    const timestamp=Date.parse(booking.createdAt || (booking.date+'T'+booking.time+':00+07:00'));
+    if(!Number.isFinite(timestamp))continue;
+    const date=salesReceiptDate.format(timestamp);
+    if(date>=from && date<=to)entries.push({timestamp,item:[bill.item,bill.customer].filter(Boolean).join(' · '),
+      method:booking.createdAt?'Booked':'Scheduled',sample:Boolean(booking.preview)});
+  }
+  for (const bill of (['all','cancellations'].includes(salesActivity) ? bills : [])) {
     const booking = bill.booking;
     const timestamp = Date.parse(booking?.cancelledAt);
     if (!Number.isFinite(timestamp)) continue;
@@ -3310,9 +3353,9 @@ function renderDailySales(bills, range, methods, matches) {
     });
   }
   const sampleDate=bookingSamples?.date ?? bangkokToday();
-  if (salesActivity !== 'cancellations' && (bookingFixtures || bookingDatabaseDemo || bookingSamples) && sampleDate>=from && sampleDate<=to) {
-    for (const [time,item,method,amount,receipt,court,group] of (bookingSamples?.sales ?? (bookingDatabaseDemo ? bookingDemoSales : previewSalesTransactions))) {
-      if (!matches(group || (court ? {category:'courts',group:court} : {category:'retail'}))) continue;
+  if (['all','payments'].includes(salesActivity) && (bookingFixtures || bookingDatabaseDemo || bookingSamples) && sampleDate>=from && sampleDate<=to) {
+    for (const [time,item,method,amount,receipt,court,group] of salesTransactionRows()) {
+      if (!matches(group && group.category!=='retail' ? group : court ? {category:'courts',group:court} : salesRetailItem(item))) continue;
       entries.push({timestamp:Date.parse(sampleDate+'T'+time+':00+07:00'),item,method,amount,receipt,sample:true});
     }
   }
