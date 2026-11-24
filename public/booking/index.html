@@ -3306,7 +3306,7 @@ function renderDailySales(bills, range, methods, matches) {
       timestamp,
       item:bill.item,
       method:booking.late===true?'Late cancellation':'Cancelled',
-      cancellationDetails:bookedFor,
+      cancellationDetails:[bookedFor, booking.reason].filter(Boolean).join(' · '),
     });
   }
   const sampleDate=bookingSamples?.date ?? bangkokToday();
