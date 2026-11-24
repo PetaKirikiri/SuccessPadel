@@ -4,6 +4,7 @@ const staffAccess = document.getElementById('staff-access');
 const staffSignIn = document.getElementById('staff-sign-in');
 const staffAuthenticator = document.getElementById('staff-authenticator');
 const staffEnroll = document.getElementById('staff-enroll');
+const staffOpening = document.getElementById('staff-opening');
 const staffError = document.getElementById('staff-access-error');
 const staffCancel = document.getElementById('staff-cancel');
 let rosterRevision;
@@ -190,14 +191,18 @@ staffSignIn.onsubmit = async event => {
   try {
     const {username, password} = Object.fromEntries(new FormData(staffSignIn));
     await staffRequest('login', {username, password});
+    staffSignIn.hidden = true;
     staffSignIn.elements.password.value = '';
-    button.textContent = 'Opening Bookings…';
+    staffOpening.hidden = false;
+    staffOpening.textContent = 'Opening Bookings…';
     await loadStaffWorkspace({afterSignIn:true});
   } catch (error) {
     staffError.textContent = error.name === 'TimeoutError'
       ? 'Sign-in took too long. Try again.'
       : error.message || 'Staff sign-in failed.';
   } finally {
+    staffOpening.hidden = true;
+    staffOpening.textContent = '';
     button.textContent = originalLabel;
     button.disabled = false;
   }
