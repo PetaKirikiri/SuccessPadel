@@ -31,11 +31,13 @@ function demoStaffRequest(action, details) {
 
 async function staffRequest(action, details = {}) {
   if (bookingDemo) return demoStaffRequest(action, details);
+  const signal = AbortSignal.timeout(15000);
   const response = await fetch(staffEndpoint, action ? {
+    signal,
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({action, ...details}),
-  } : {cache:'no-store'});
+  } : {cache:'no-store', signal});
   const payload = await response.json();
   if (!response.ok) throw Object.assign(new Error(payload.error), {status:response.status, mfa:payload.mfa, googleRequired:payload.googleRequired, factorId:payload.factorId});
   return payload;
@@ -108,14 +110,14 @@ async function loadBookingLoan() {
   coachLoan = ledger;
 }
 
-async function loadStaffWorkspace() {
+async function loadStaffWorkspace({afterSignIn = false} = {}) {
   staffError.textContent = '';
   try {
     let roster = await staffRequest();
     if (!bookingDemo) calendarDataset = await staffRequest('calendar');
     if (!bookingDemo && roster.role === 'owner') {
       try {
-        const response = await fetch(staffEndpoint + '?demo=samples', {cache:'no-store'});
+        const response = await fetch(staffEndpoint + '?demo=samples', {cache:'no-store', signal:AbortSignal.timeout(5000)});
         if (response.ok) bookingSamples = await response.json();
       } catch {
         // The booking workspace remains available if sample data cannot load.
@@ -176,8 +178,10 @@ async function loadStaffWorkspace() {
       staffAuthenticator.hidden = false;
       staffEnroll.hidden = Boolean(factorId);
       staffCancel.hidden = false;
-    } else if (error.status !== 401) {
-      staffError.textContent = error.message || 'Could not open Bookings.';
+    } else if (afterSignIn || error.status !== 401) {
+      staffError.textContent = error.name === 'TimeoutError'
+        ? 'Bookings took too long to load. Try again.'
+        : error.message || 'Could not open Bookings.';
     }
   }
 }
@@ -243,15 +247,21 @@ staffSignIn.onsubmit = async event => {
   const button = event.submitter;
   if (button.disabled) return;
   button.disabled = true;
+  const originalLabel = button.textContent;
+  button.textContent = 'Signing in…';
   staffError.textContent = '';
   try {
     const {username, password} = Object.fromEntries(new FormData(staffSignIn));
     await staffRequest('login', {username, password});
-    staffSignIn.reset();
-    await loadStaffWorkspace();
+    staffSignIn.elements.password.value = '';
+    button.textContent = 'Opening Bookings…';
+    await loadStaffWorkspace({afterSignIn:true});
   } catch (error) {
-    staffError.textContent = error.message || 'Staff sign-in failed.';
+    staffError.textContent = error.name === 'TimeoutError'
+      ? 'Sign-in took too long. Try again.'
+      : error.message || 'Staff sign-in failed.';
   } finally {
+    button.textContent = originalLabel;
     button.disabled = false;
   }
 };
