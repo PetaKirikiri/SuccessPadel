@@ -23,7 +23,7 @@
 #dashboard .welcome .eyebrow,#dashboard .welcome p,#dashboard .stats,#dashboard .right-col{display:none}#dashboard .grid{grid-template-columns:1fr}#dashboard .welcome{margin-bottom:18px}#dashboard .welcome h1{font-size:26px}
 }
 </style>
-</head>
+<style>.booking-line-switch{display:inline-flex;align-items:center;gap:.5rem}.booking-line-switch input{appearance:none;width:2.6rem;height:1.5rem;min-height:0;padding:0;border:1px solid #687675;border-radius:1rem;background:#788281;cursor:pointer}.booking-line-switch input::before{content:"";display:block;width:1rem;height:1rem;margin:.17rem;background:#fff;border-radius:50%}.booking-line-switch input:checked{background:#245f50}.booking-line-switch input:checked::before{transform:translateX(1.05rem)}.booking-line-switch input:disabled{opacity:.55;cursor:default}.booking-line-switch input+span::after{content:"Off"}.booking-line-switch input:checked+span::after{content:"On"}</style></head>
 <body data-booking-locked>
 <link rel="stylesheet" href="/booking/booking-staff.css">
 <section id="staff-access" class="staff-access" hidden>
@@ -241,7 +241,7 @@ const memberModal=document.createElement('dialog');memberModal.className='modal-
 <div class="field full"><label for="member-paymentNote">Payment note</label><input id="member-paymentNote" maxlength="300"></div>
 <div class="field full" id="member-paymentHistory" hidden></div>
 </div><p id="member-feedback" role="status"></p><div class="modal-actions"><button type="button" class="secondary" id="member-cancel">Cancel</button><button type="submit" class="primary" id="member-save">Save</button></div></form>`;document.body.append(memberModal);
-const memberField=id=>document.getElementById('member-'+id);let editingMember=null,memberPhoto='',photoVersion=0,photoLoading=false;
+const memberField=id=>document.getElementById('member-'+id);let bookingLineTestMemberId=null;let editingMember=null,memberPhoto='',photoVersion=0,photoLoading=false;
 function previewMemberPhoto(){memberField('preview').hidden=!memberPhoto;memberField('remove-photo').hidden=!memberPhoto;if(memberPhoto)memberField('preview').src=memberPhoto;else memberField('preview').removeAttribute('src');}
 async function setCustomerDeleted(id,deleted){
   const next=memberRecords.map(member=>member.id===id?{...member,deleted}:member);
@@ -2505,7 +2505,33 @@ deletedCustomersButton.onclick=()=>{
   deletedCustomersButton.textContent=showDeletedCustomers?'Back to customers':'Deleted customers';
   drawMembers();
 };
-const renderCustomerRecords=drawMembers;drawMembers=()=>{renderCustomerRecords();const table=customerPage.querySelector('table'),heading=table.querySelector('thead tr'),headings=activeCustomerTab==='pilates'?['Customer','Contact','Packages','']:activeCustomerTab==='padel'?['Customer','Contact','Membership','Packages','']:['Customer','Contact','Activities','Padel membership','Packages',''];heading.replaceChildren(...headings.map(t=>memberNode('th',t)));let count=0;for(const row of [...table.querySelectorAll('tbody tr')]){const member=memberRecords.find(m=>m.id===row.dataset.memberId);if(!member)continue;const services=customerServices(member),status=customerMembership(member);if(!showDeletedCustomers&&(activeCustomerTab!=='all'&&!services.includes(activeCustomerTab)||activeCustomerTab==='padel'&&customerFilter.value!=='all'&&customerFilter.value!==status)){row.remove();continue}const [identity,contact,,,actions]=row.children;const desc=identity.querySelector('.member-person small');if(desc)desc.textContent=[member.nickname?member.name:null,...services.map(s=>s==='padel'?'Padel':'Pilates')].filter(Boolean).join(' · ');const activities=memberNode('td');for(const service of services)activities.append(memberNode('span',service==='padel'?'Padel':'Pilates','customer-badge'));if(!services.length)activities.textContent='—';const membership=memberNode('td');const label=!services.includes('padel')?'—':status==='member'?'Member':status==='expired'?'Expired':'Non-member';membership.append(memberNode('span',label,'customer-badge '+(status==='member'?'customer-member':status==='expired'?'customer-expired':'')));if(member.cardNumber)membership.append(memberNode('small','Card '+member.cardNumber,'customer-meta'));if(services.includes('padel')&&member.type==='Member')membership.append(memberNode('small',memberExpiry(member)?'Expires '+memberDate(memberExpiry(member)):'Expiry not set','customer-meta'));const packs=memberNode('td');const relevant=allPackages().filter(p=>p.memberId===member.id&&(activeCustomerTab==='all'||(p.kind.startsWith('padel')?'padel':'pilates')===activeCustomerTab));for(const pack of relevant){const remaining=remainingPackage(pack),expired=pack.expires<bangkokToday();const line=memberNode('div',null,'customer-package');line.append(memberNode('b',packageProducts[pack.kind]?.name||'Package'),memberNode('span',`${remaining}/${pack.count} remaining · ${expired?'Expired ': 'Expires '}${memberDate(pack.expires)}`,expired?'customer-meta customer-expired':'customer-meta'));packs.append(line)}if(!relevant.length)packs.textContent='—';row.replaceChildren(identity,contact,...(activeCustomerTab==='all'?[activities,membership]:activeCustomerTab==='padel'?[membership]:[]),packs,actions);count++}document.getElementById('members-empty').hidden=count!==0;customerFilter.hidden=activeCustomerTab!=='padel';customerTabs.querySelectorAll('button').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.customerTab===activeCustomerTab)))};membersSearch.removeEventListener('input',renderCustomerRecords);membersSearch.addEventListener('input',drawMembers);customerTabs.querySelectorAll('button').forEach(button=>button.onclick=()=>{activeCustomerTab=button.dataset.customerTab;drawMembers()});customerFilter.onchange=drawMembers;customerNav.addEventListener('click',drawMembers);drawMembers();
+function customerLineCell(member) {
+ const cell=memberNode('td'), label=memberNode('label',null,'booking-line-switch');
+ const control=memberNode('input');
+ control.type='checkbox';
+ control.setAttribute('role','switch');
+ control.setAttribute('aria-label','LINE notifications for '+member.name);
+ control.disabled=member.deleted || member.id!==bookingLineTestMemberId;
+ control.checked=!control.disabled && member.lineBookingNotificationsEnabled===true;
+ control.onchange=async()=>{
+   const enabled=control.checked;
+   control.disabled=true;
+   const next=memberRecords.map(record=>record.id===member.id?{...record,lineBookingNotificationsEnabled:enabled}:record);
+   try {
+     await saveBookingMembers(next);
+     memberRecords=next;
+     drawMembers();
+   } catch {
+     control.checked=!enabled;
+     control.disabled=false;
+     window.alert('Could not save LINE notifications. Reload Customers and try again.');
+   }
+ };
+ label.append(control,memberNode('span'));
+ cell.append(label);
+ return cell;
+}
+const renderCustomerRecords=drawMembers;drawMembers=()=>{renderCustomerRecords();const table=customerPage.querySelector('table'),heading=table.querySelector('thead tr'),headings=activeCustomerTab==='pilates'?['Customer','Contact','Packages','LINE notifications','']:activeCustomerTab==='padel'?['Customer','Contact','Membership','Packages','LINE notifications','']:['Customer','Contact','Activities','Padel membership','Packages','LINE notifications',''];heading.replaceChildren(...headings.map(t=>memberNode('th',t)));let count=0;for(const row of [...table.querySelectorAll('tbody tr')]){const member=memberRecords.find(m=>m.id===row.dataset.memberId);if(!member)continue;const services=customerServices(member),status=customerMembership(member);if(!showDeletedCustomers&&(activeCustomerTab!=='all'&&!services.includes(activeCustomerTab)||activeCustomerTab==='padel'&&customerFilter.value!=='all'&&customerFilter.value!==status)){row.remove();continue}const [identity,contact,,,actions]=row.children;const desc=identity.querySelector('.member-person small');if(desc)desc.textContent=[member.nickname?member.name:null,...services.map(s=>s==='padel'?'Padel':'Pilates')].filter(Boolean).join(' · ');const activities=memberNode('td');for(const service of services)activities.append(memberNode('span',service==='padel'?'Padel':'Pilates','customer-badge'));if(!services.length)activities.textContent='—';const membership=memberNode('td');const label=!services.includes('padel')?'—':status==='member'?'Member':status==='expired'?'Expired':'Non-member';membership.append(memberNode('span',label,'customer-badge '+(status==='member'?'customer-member':status==='expired'?'customer-expired':'')));if(member.cardNumber)membership.append(memberNode('small','Card '+member.cardNumber,'customer-meta'));if(services.includes('padel')&&member.type==='Member')membership.append(memberNode('small',memberExpiry(member)?'Expires '+memberDate(memberExpiry(member)):'Expiry not set','customer-meta'));const packs=memberNode('td');const relevant=allPackages().filter(p=>p.memberId===member.id&&(activeCustomerTab==='all'||(p.kind.startsWith('padel')?'padel':'pilates')===activeCustomerTab));for(const pack of relevant){const remaining=remainingPackage(pack),expired=pack.expires<bangkokToday();const line=memberNode('div',null,'customer-package');line.append(memberNode('b',packageProducts[pack.kind]?.name||'Package'),memberNode('span',`${remaining}/${pack.count} remaining · ${expired?'Expired ': 'Expires '}${memberDate(pack.expires)}`,expired?'customer-meta customer-expired':'customer-meta'));packs.append(line)}if(!relevant.length)packs.textContent='—';row.replaceChildren(identity,contact,...(activeCustomerTab==='all'?[activities,membership]:activeCustomerTab==='padel'?[membership]:[]),packs,customerLineCell(member),actions);count++}document.getElementById('members-empty').hidden=count!==0;customerFilter.hidden=activeCustomerTab!=='padel';customerTabs.querySelectorAll('button').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.customerTab===activeCustomerTab)))};membersSearch.removeEventListener('input',renderCustomerRecords);membersSearch.addEventListener('input',drawMembers);customerTabs.querySelectorAll('button').forEach(button=>button.onclick=()=>{activeCustomerTab=button.dataset.customerTab;drawMembers()});customerFilter.onchange=drawMembers;customerNav.addEventListener('click',drawMembers);drawMembers();
 function slotDateTime(date, time) {
   const label = dateLabel.format(new Date(date + 'T12:00:00Z'));
   return time ? label + ' · ' + clockLabel(time) : label;

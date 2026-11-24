@@ -1,3 +1,7 @@
+const lineTestMemberId = 'padel-card-012';
+function bookingNotificationPreferences(members) {
+  return members.map(member => ({...member, lineBookingNotificationsEnabled: member.id === lineTestMemberId && !member.deleted && (member.lineBookingNotificationsEnabled ?? true) === true}));
+}
 import { createClient } from '@supabase/supabase-js';
 import { completeKettSetup } from '../server/booking/kett-setup.mjs';
 
@@ -149,7 +153,7 @@ export default async function handler(req, res) {
         avatar:role === 'owner' && typeof avatar === 'string' &&
           /^https:\/\/lh3\.googleusercontent\.com\//.test(avatar) ? avatar : null,
       };
-      return send(200, {...data, role, profile});
+      return send(200, {...data, members:bookingNotificationPreferences(data.members), lineTestMemberId, role, profile});
     }
     if (action === 'loan' || action === 'save-loan') {
       if (role !== 'owner') return send(403, {error:'Owner access required.'});
@@ -176,7 +180,7 @@ export default async function handler(req, res) {
           !Number.isInteger(revision) || revision < 0 || revision >= 2147483647) {
         return send(400, {error:'Invalid member records.'});
       }
-      const {data, error} = await db.from('booking_member_roster').update({members, revision:revision+1})
+      const {data, error} = await db.from('booking_member_roster').update({members:bookingNotificationPreferences(members), revision:revision+1})
         .eq('id',1).eq('revision',revision).select('revision').maybeSingle();
       if (error) return send(503, {error:'Could not save members.'});
       if (!data) return send(409, {error:'Members changed. Reload and try again.'});
