@@ -395,6 +395,15 @@ function createBookingFilterDialog(titleId,title){
   return dialog;
 }
 const availabilityKey = 'success-coach-availability';
+const publishedAvailabilityRevision = 'peta-20261124-2100';
+if (!bookingDemo && localStorage.getItem('success-coach-availability-revision') !== publishedAvailabilityRevision) {
+  const windows = storedRows(availabilityKey);
+  const slot = {coach:'Peta', date:'2026-11-24', time:'21:00', duration:60};
+  if (!windows.some(w => w.coach === slot.coach && w.date === slot.date && w.time === slot.time)) {
+    localStorage.setItem(availabilityKey, JSON.stringify([...windows, slot]));
+  }
+  localStorage.setItem('success-coach-availability-revision', publishedAvailabilityRevision);
+}
 const activityField = document.createElement('label');
 activityField.className = 'field';
 activityField.innerHTML = 'Activity<select><option value="play">Normal play</option><option value="coaching">Coaching</option></select>';
