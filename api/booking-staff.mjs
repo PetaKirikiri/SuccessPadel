@@ -6,7 +6,7 @@ function bookingNotificationPreferences(members) {
 import { createClient } from '@supabase/supabase-js';
 import { completeKettSetup } from '../server/booking/kett-setup.mjs';
 
-import { authorizeBookingOwnerSession, beginBookingGoogle, completeBookingGoogle } from '../server/booking/google.mjs';
+import { authorizeBookingOwnerSession } from '../server/booking/google.mjs';
 
 const cookie = '__Host-booking_staff';
 const cookieAttributes = 'Path=/; Secure; HttpOnly; SameSite=Strict';
@@ -98,9 +98,8 @@ export default async function handler(req, res) {
       const {data:googleVerified} = await db.rpc('booking_has_google_session');
       if (googleVerified !== true) {
         if (user.email?.toLowerCase() === 'successpadelsamui@gmail.com') {
-          if (req.method === 'GET' && req.query?.google === 'config') return beginBookingGoogle(res);
-          if (action === 'google-sign-in') return completeBookingGoogle(req,res,url,key,writeSession,user.id);
-          return send(403, {googleRequired:true, error:'Verify with your club Google account.'});
+          writeSession(res, null);
+          return send(401, {error:'Sign in again with your username and password.'});
         }
         const factor = user.factors?.find(item => item.factor_type === 'totp' && item.status === 'verified');
         async function mfa(path, payload) {
