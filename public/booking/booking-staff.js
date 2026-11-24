@@ -9,6 +9,7 @@ const staffError = document.getElementById('staff-access-error');
 const staffCancel = document.getElementById('staff-cancel');
 let rosterRevision;
 let loanRevision;
+let staffWorkspaceVersion = 0;
 let factorId;
 let savingBookingMembers = false;
 
@@ -58,6 +59,8 @@ async function saveBookingMembers(members) {
 }
 
 function lockStaffWorkspace() {
+  staffWorkspaceVersion++;
+  loanRevision = undefined;
   calendarDataset = null;
   bookingSamples = null;
   refreshBookingCalendars();
@@ -89,18 +92,21 @@ function comparableMember(record) {
 }
 
 async function saveBookingLoan(ledger) {
+  if (loanRevision === undefined) throw new Error('Loan ledger unavailable.');
   const result = await staffRequest('save-loan', {ledger, revision:loanRevision});
   loanRevision = result.revision;
   coachLoan = ledger;
 }
 
-async function loadBookingLoan() {
+async function loadBookingLoan(version) {
   let {ledger, revision} = await staffRequest('loan');
+  if (version !== staffWorkspaceVersion) return;
   loanRevision = revision;
   const local = JSON.parse(localStorage.getItem(coachLoanKey) || 'null');
   if (local && revision === 0 && Array.isArray(local.entries)) {
     await saveBookingLoan(local);
     ({ledger, revision} = await staffRequest('loan'));
+    if (version !== staffWorkspaceVersion) return;
     loanRevision = revision;
   }
   if (local && comparableMember(ledger) === comparableMember(local)) {
@@ -112,20 +118,19 @@ async function loadBookingLoan() {
 async function loadStaffWorkspace({afterSignIn = false} = {}) {
   staffError.textContent = '';
   try {
-    let roster = await staffRequest();
-    if (!bookingDemo) calendarDataset = await staffRequest('calendar');
-    if (!bookingDemo && roster.role === 'owner') {
-      try {
-        const response = await fetch(staffEndpoint + '?demo=samples', {cache:'no-store', signal:AbortSignal.timeout(5000)});
-        if (response.ok) bookingSamples = await response.json();
-      } catch {
-        // The booking workspace remains available if sample data cannot load.
-      }
-    }
+    const version = ++staffWorkspaceVersion;
+    const [rosterRequest, calendarRequest] = await Promise.allSettled([
+      staffRequest(),
+      bookingDemo ? null : staffRequest('calendar'),
+    ]);
+    if (version !== staffWorkspaceVersion) return;
+    if (rosterRequest.status === 'rejected') throw rosterRequest.reason;
+    if (calendarRequest.status === 'rejected') throw calendarRequest.reason;
+    let roster = rosterRequest.value;
+    if (!bookingDemo) calendarDataset = calendarRequest.value;
     bookingStaffRole = roster.role;
     rosterRevision = roster.revision;
     if (roster.role === 'owner') {
-      await loadBookingLoan();
       const local = JSON.parse(localStorage.getItem(legacyMemberKey) || '[]');
       const demoIds = new Set(['mali', 'anan', 'narin', 'demo-package-customer']);
       const candidates = Array.isArray(local) ? local.filter(record => !demoIds.has(record?.id)) : [];
@@ -164,6 +169,23 @@ async function loadStaffWorkspace({afterSignIn = false} = {}) {
     if (document.getElementById('shop')?.classList.contains('active')) renderShop();
     staffAccess.hidden = true;
     document.body.removeAttribute('data-booking-locked');
+    if (roster.role === 'owner') {
+      loadBookingLoan(version).then(()=>{
+        if(version===staffWorkspaceVersion && document.getElementById('sales').classList.contains('active')) renderSales();
+      }).catch(error=>console.warn('Could not load booking loan ledger',error));
+      if (!bookingDemo) {
+        fetch(staffEndpoint + '?demo=samples', {cache:'no-store', signal:AbortSignal.timeout(5000)})
+          .then(response=>response.ok ? response.json() : null)
+          .then(samples=>{
+            if (!samples || version!==staffWorkspaceVersion) return;
+            bookingSamples=samples;
+            refreshBookingCalendars();
+            if (document.getElementById('sales').classList.contains('active')) renderSales();
+            if (pricingPage.classList.contains('active')) renderPricing();
+            if (document.getElementById('shop')?.classList.contains('active')) renderShop();
+          }).catch(()=>{});
+      }
+    }
   } catch (error) {
     lockStaffWorkspace();
     if (error.mfa) {
