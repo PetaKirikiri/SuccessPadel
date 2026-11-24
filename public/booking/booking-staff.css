@@ -81,4 +81,3 @@ body[data-booking-role="front_desk"] :is([data-section="sales"], #sales) { displ
 .booking-staff-password input { width: 100%; }
 .booking-staff-password output:empty { display: none; }
 .booking-staff-password output { color: #8b2638; }
-.booking-line-friend{display:grid;justify-items:center;gap:.25rem;margin:1rem auto 0;text-align:center;color:inherit}
