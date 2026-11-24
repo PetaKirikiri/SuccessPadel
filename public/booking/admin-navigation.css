@@ -1,0 +1,723 @@
+body .board-search::before { content: none; }
+body .board-search {
+  height: auto;
+  min-height: 54px;
+  padding-block: 6px;
+  gap: 8px clamp(8px, 1.5vw, 20px);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+body .board-search .board-tools[data-calendar-controls]:not([hidden]) {
+  display: none;
+}
+body:has(#dashboard.active) .board-search [data-calendar-controls="dashboard"]:not([hidden]),
+body:has(#pilates.active) .board-search [data-calendar-controls="pilates"]:not([hidden]) {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: 0 0 auto;
+  min-height: 0;
+  padding: 0;
+  margin: 0 auto 0 0;
+  border: 0;
+  gap: 4px;
+}
+body .board-search [data-calendar-controls] input[type="date"] { width: auto; }
+
+
+body:not([data-booking-role="owner"]) :is(.booking-admin-button, .sidebar [data-section="booking-users"], .sidebar [data-section="pricing"], .sidebar [data-section="events"]) {
+  display: none;
+}
+
+#booking-users iframe {
+  display: block;
+  border: 0;
+  width: 100%;
+  min-height: 570px;
+}
+
+body .board-search [data-calendar-controls] input[type="date"] {
+  min-width: 132px;
+  height: 34px;
+  border: 1px solid #d5cdeb;
+  border-radius: 6px;
+  background: #fff;
+  color: #382b5b;
+  font: 600 14px 'DM Sans', sans-serif;
+  cursor: pointer;
+}
+
+body .sidebar .board-brand {
+  justify-content: center;
+  height: auto;
+  min-height: 94px;
+  padding: 12px 5px;
+  background: #fff;
+}
+body .sidebar .board-brand img {
+  width: min(154px, 100%);
+  height: 68px;
+}
+body .sidebar button[data-section][aria-current="page"] {
+  background: #ede7f8;
+  color: #493586;
+}
+
+body .main .content:has(> :is(#dashboard, #pilates).active) {
+  padding-inline: 0;
+}
+
+body .sidebar .staff-nav > button[data-section]::before { display: block; }
+body .sidebar [data-section="sales"] { --nav-icon: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.7%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%203v18h18M8%2016v-4m5%204V8m5%208V5%22%2F%3E%3C%2Fsvg%3E"); }
+body .sidebar [data-section="events"] { --nav-icon: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.7%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%203v4m12-4v4M4%209h16M4%205h16v15H4zM12%2012v5m-2.5-2.5h5%22%2F%3E%3C%2Fsvg%3E"); }
+body .sidebar [data-section="booking-users"] { --nav-icon: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.7%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%2022s7-3%207-10V5l-7-3-7%203v7c0%207%207%2010%207%2010zM9.5%2012l2%202%203.5-4%22%2F%3E%3C%2Fsvg%3E"); }
+
+body .sidebar :is(.club-brand, .staff-nav) {
+  padding: 15px 10px;
+  gap: 7px;
+}
+body .sidebar :is(.club-brand, .staff-nav) > button[data-section] {
+  min-height: 46px;
+  padding: 10px 10px;
+  gap: 11px;
+  font-size: 16px;
+}
+body .sidebar :is(.club-brand, .staff-nav) > button[data-section]::before {
+  width: 20px;
+  height: 20px;
+}
+@media (max-width: 520px) {
+  body .sidebar :is(.club-brand, .staff-nav) { padding-inline: 4px; }
+  body .sidebar :is(.club-brand, .staff-nav) > button[data-section] {
+    padding-inline: 5px;
+    gap: 4px;
+    font-size: 12px;
+  }
+  body .sidebar .staff-nav > button[data-section]::before { width: 12px; height: 12px; }
+}
+
+.booking-date-field {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 4px 9px;
+  border: 1px solid #d5cdeb;
+  border-radius: 6px;
+  color: #382b5b;
+  font: 600 14px 'DM Sans', sans-serif;
+  white-space: nowrap;
+}
+.booking-date-field:focus-within {
+  outline: 2px solid #654cbe;
+  outline-offset: 2px;
+}
+body .board-search .booking-date-field input[type="date"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  opacity: 0;
+}
+.booking-date-field input::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  cursor: pointer;
+}
+
+body #court-calendar .court-event:has(.court-booking-footer) {
+  container-type: inline-size;
+  gap: 2px;
+}
+body #court-calendar .court-booking-players {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  width: 100%;
+  line-height: 1.18;
+}
+body #court-calendar .court-booking-player,
+body #court-calendar .court-booking-player strong {
+  display: inline;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+body #court-calendar .court-booking-footer {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  width: 100%;
+  margin-top: auto;
+}
+body #court-calendar .court-booking-footer .court-booking-coach {
+  margin-inline: 0;
+  min-width: 0;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  padding: 1px;
+}
+body #court-calendar .court-booking-coach > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body #court-calendar .court-booking-footer .court-payment-icon {
+  position: static;
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+  white-space: nowrap;
+}
+@container (max-width: 128px) {
+  body #court-calendar .court-booking-footer { gap: 3px; }
+  body #court-calendar .court-booking-footer .court-booking-coach {
+    gap: 3px;
+    font-size: 10px;
+  }
+  body #court-calendar .court-booking-footer .court-payment-icon {
+    height: 13px;
+    padding-inline: 2px;
+    font-size: 9px;
+  }
+}
+
+#sales .sales-table:has(tfoot) :is(th, td):last-child { text-align: right; }
+#sales .sales-table tfoot :is(th, td) {
+  background: #edf8f2;
+  color: #1e6745;
+  font-weight: 750;
+}
+#sales .sales-table tfoot th { text-align: left; }
+
+.sales-sample-label {
+  display: inline-block;
+  margin-inline-start: 8px;
+  color: #625c71;
+  font-size: 11px;
+}
+
+#sales-receipt-dialog {
+  width: min(420px, calc(100% - 32px));
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  box-shadow: 0 12px 40px #24203933;
+}
+.sales-receipt-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+#sales-receipt-dialog .sales-receipt-heading h3 { margin: 0; }
+.sales-receipt-button { white-space: nowrap; }
+
+#modal .new-coaching-booking .booking-player-slot:nth-child(n+4) {
+  display: none;
+}
+#modal .new-coaching-booking select[size] {
+  min-height: 8rem;
+  width: 100%;
+}
+#modal .new-coaching-booking select[size] option { padding: 4px 8px; }
+
+body #court-calendar .court-event .court-payment-icon[data-state] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-weight: 700;
+}
+body #court-calendar .court-event .court-payment-icon[data-state="paid"] { color: #19593d; }
+body #court-calendar .court-event .court-payment-icon[data-state="unpaid"] { color: #9d293c; }
+
+:root {
+  --booking-type: 'DM Sans', Arial, sans-serif;
+  --booking-text: #202339;
+  --booking-muted: #575b69;
+  --booking-body-size: 14px;
+  --booking-detail-size: 12px;
+}
+
+body, body .app, body .checkout-qr-card {
+  font-family: var(--booking-type);
+}
+body .board-search input[type="search"],
+body .global-actions > button,
+body .booking-staff-account summary,
+body .booking-date-field,
+body #modal :is(input, select, button, legend),
+body #sales :is(button, input, select, th, td) {
+  font-family: var(--booking-type);
+  font-size: var(--booking-body-size);
+}
+body .board-search input[type="search"],
+body #modal :is(.booking-player-slots input, select),
+body #sales td {
+  color: var(--booking-text);
+}
+body .board-search input[type="search"]::placeholder,
+body #modal .booking-player-slots input::placeholder,
+body :is(#court-calendar, #pilates-calendar) :is(.time-label, .calendar-head small),
+body #sales .sales-table thead th {
+  color: var(--booking-muted);
+}
+body #modal :is(#court-title, #court-context),
+body #sales h2 {
+  color: var(--booking-text);
+}
+body #modal #court-context { font-size: var(--booking-body-size); }
+body #sales .sales-table thead th {
+  font-size: var(--booking-detail-size);
+  font-weight: 700;
+}
+body :is(#court-calendar, #pilates-calendar) :is(.time-label, .calendar-head small) {
+  font-size: var(--booking-detail-size);
+  font-weight: 500;
+}
+body :is(#court-calendar, #pilates-calendar) .calendar-head b {
+  font-weight: 700;
+}
+body #court-calendar .court-booking-player strong { font-weight: 700; }
+body #sales .sales-tabs button { font-weight: 600; }
+body #sales .sales-table tfoot td { color: #1e6745; font-weight: 700; }
+
+@media (max-width: 520px) {
+  body .board-search input[type="search"],
+  body .global-actions > button,
+  body .booking-staff-account summary,
+  body .booking-date-field {
+    font-size: var(--booking-detail-size);
+  }
+}
+
+body #modal .activity-choices legend {
+  font-size: var(--booking-body-size);
+  color: var(--booking-text);
+}
+body :is(#court-calendar, #pilates-calendar) .calendar-row .time-label {
+  color: var(--booking-muted);
+}
+body #court-calendar .court-event .court-payment-icon[data-state] {
+  font-family: var(--booking-type);
+}
+
+body #court-calendar .calendar-head > .court-sign {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  min-height: 0;
+  padding: 5px 2px;
+}
+
+:root {
+  --booking-surface: #fff;
+  --booking-soft: #f8f6fc;
+  --booking-selected: #ede7f8;
+  --booking-accent-ink: #493586;
+  --booking-line: #e4deed;
+  --booking-control-radius: 8px;
+  --booking-panel-radius: 14px;
+}
+body .sidebar #sidebar-coaches {
+  gap: 4px;
+  padding: 0 0 6px 12px;
+}
+body .sidebar #sidebar-coaches button {
+  gap: 8px;
+  min-height: 36px;
+  padding: 5px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--booking-control-radius);
+  background: var(--booking-surface);
+  color: var(--booking-text);
+  font: 600 13px/1.35 var(--booking-type);
+}
+body .sidebar #sidebar-coaches button:hover {
+  background: var(--booking-soft);
+}
+body .sidebar #sidebar-coaches button[aria-current] {
+  border-color: transparent;
+  background: var(--booking-selected);
+  color: var(--booking-accent-ink);
+}
+
+body :is(#sales, #customers, #pricing, #events, #coaches) :is(select, input[type="date"]) {
+  min-height: 36px;
+  padding: 6px 9px;
+  border: 1px solid var(--booking-line);
+  border-radius: var(--booking-control-radius);
+  background: var(--booking-surface);
+  color: var(--booking-text);
+  font: 500 14px/1.35 var(--booking-type);
+}
+body :is(.sales-tabs, .pricing-tabs, .customer-tabs) > button {
+  border-radius: var(--booking-control-radius);
+  color: var(--booking-text);
+  font: 600 14px/1.35 var(--booking-type);
+}
+body :is(.sales-tabs, .pricing-tabs, .customer-tabs) > button:is([aria-pressed="true"], [aria-selected="true"]) {
+  background: var(--booking-selected);
+  color: var(--booking-accent-ink);
+}
+body #sales :is(.sales-breakdown, .sales-totals):not([hidden]) {
+  gap: 12px;
+  margin-bottom: 16px;
+}
+body #sales .sales-breakdown button {
+  gap: 4px;
+  padding: 12px;
+  border-color: var(--booking-line);
+  border-radius: var(--booking-control-radius);
+  color: var(--booking-text);
+}
+body #sales .sales-breakdown button[aria-pressed="true"] {
+  border-color: #cfc3e9;
+  background: var(--booking-selected);
+  color: var(--booking-accent-ink);
+}
+body #sales .sales-breakdown small { color: var(--booking-muted); font-size: 12px; }
+body #sales .sales-table {
+  border-color: var(--booking-line);
+  border-radius: var(--booking-panel-radius);
+}
+body #sales .sales-table thead th { background: var(--booking-soft); }
+body #sales .sales-table :is(th, td) { padding-inline: 14px; }
+body #coaches .coach-week button {
+  border: 1px solid var(--booking-line);
+  border-radius: var(--booking-control-radius);
+  background: var(--booking-soft);
+  color: var(--booking-accent-ink);
+}
+body #coaches .personal-calendar h2 { color: var(--booking-text); }
+body .booking-date-field {
+  border-color: var(--booking-line);
+  border-radius: var(--booking-control-radius);
+  color: var(--booking-accent-ink);
+}
+body :is(#court-calendar, #pilates-calendar) .calendar-head > div {
+  background: var(--booking-soft);
+  color: var(--booking-muted);
+}
+body #court-calendar .calendar-row .court-event[data-kind] {
+  border-radius: var(--booking-control-radius);
+}
+
+body #pricing .pricing-tabs { gap: 6px; margin-bottom: 16px; }
+body #pricing #pricing-groups { gap: 14px; }
+body #pricing .pricing-group {
+  min-width: 0;
+  padding: 16px;
+  border-color: var(--booking-line);
+  border-radius: var(--booking-panel-radius);
+  background: var(--booking-surface);
+}
+body #pricing .pricing-group h3 {
+  gap: 8px;
+  margin: 0 0 12px;
+  color: var(--booking-text);
+  font: 700 16px/1.35 var(--booking-type);
+}
+body #pricing .pricing-item {
+  gap: 10px;
+  padding-block: 10px;
+  border-color: var(--booking-line);
+  color: var(--booking-text);
+  font-size: 14px;
+}
+body #pricing .pricing-item small {
+  color: var(--booking-muted);
+  font-size: 12px;
+}
+body #pricing :is(.pricing-input, .retail-products, .custom-price-form) input {
+  min-height: 36px;
+  border: 1px solid var(--booking-line);
+  border-radius: var(--booking-control-radius);
+  background: var(--booking-surface);
+  color: var(--booking-text);
+  font: 500 14px/1.35 var(--booking-type);
+}
+body #pricing .price-plus {
+  border-radius: var(--booking-control-radius);
+  background: var(--booking-selected);
+  color: var(--booking-accent-ink);
+}
+body #pricing .retail-products { grid-column: 1 / -1; }
+body #pricing .retail-products .table th { background: var(--booking-soft); }
+
+body #events { padding: clamp(12px, 2vw, 28px); }
+body #events > header { padding: 0; margin-bottom: 16px; gap: 12px; }
+body #events h1 { color: var(--booking-text); font: 700 28px/1.2 var(--booking-type); }
+body #events .primary {
+  padding: 9px 13px;
+  border-radius: var(--booking-control-radius);
+  background: #654cbe;
+  color: white;
+  font: 700 14px/1.35 var(--booking-type);
+}
+body #events form:not([hidden]) {
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid var(--booking-line);
+  border-radius: var(--booking-panel-radius);
+  background: var(--booking-surface);
+}
+body #events input[name="title"],
+body #events fieldset {
+  border: 1px solid var(--booking-line);
+  border-radius: var(--booking-control-radius);
+}
+body #events .events-list { border-collapse: separate; border-spacing: 0; border: 1px solid var(--booking-line); border-radius: var(--booking-panel-radius); overflow: hidden; }
+body #events .events-list :is(th, td) { padding: 10px 14px; border-color: var(--booking-line); }
+body #events .events-list th { background: var(--booking-soft); color: var(--booking-muted); }
+body #events .events-list tbody tr:last-child td { border-bottom: 0; }
+body #events .events-list button { border-radius: var(--booking-control-radius); color: var(--booking-accent-ink); background: var(--booking-soft); }
+
+body #coaches .coach-week {
+  margin: 0;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--booking-line);
+  color: var(--booking-accent-ink);
+}
+body #coaches .personal-scroll { border-color: var(--booking-line); }
+body #coaches .coach-day-calendar .calendar-head > div {
+  background: var(--booking-soft);
+  color: var(--booking-accent-ink);
+  font: 700 12px/1.25 var(--booking-type);
+  text-align: center;
+}
+body #coaches .coach-day-calendar .time-label {
+  background: white;
+  color: var(--booking-muted);
+  font: 500 11px/1.25 var(--booking-type);
+}
+body #coaches .coach-day-calendar .calendar-cell.booked-lesson {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: space-between;
+  min-width: 0;
+  overflow: hidden;
+  gap: 2px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: var(--booking-control-radius);
+  text-align: left;
+  font: 600 11px/1.2 var(--booking-type);
+}
+.coach-card-name, .coach-card-footer > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.coach-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  font-size: 10px;
+}
+body #coaches .coach-card-footer .court-payment-icon {
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  font: 700 12px/1 var(--booking-type);
+  color: #9d293c;
+}
+body #coaches .coach-card-footer .court-payment-icon[data-state="paid"] { color: #19593d; }
+
+body .main .content:has(> #coaches.active) { padding-inline: 0; }
+body #coaches .coach-directory { padding: 0; }
+body #coaches .personal-scroll { border-radius: 0; }
+body #coaches .coach-day-calendar .calendar-head > div {
+  padding: 5px 2px;
+  font-weight: 700;
+}
+
+body #coaches.active,
+body #coaches.active :is(.grid, .coach-directory, .coach-profiles, .personal-calendar) {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+body #coaches .personal-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow: auto;
+}
+
+body #coaches .coach-week {
+  border-radius: 0;
+  border-color: var(--booking-line);
+  background: var(--booking-surface);
+  font: 600 14px/1.35 var(--booking-type);
+}
+body #coaches .coach-week button { font: inherit; }
+body #coaches .coach-day-calendar .calendar-head > .agenda-today {
+  background: var(--booking-selected);
+  color: var(--booking-accent-ink);
+}
+body #coaches .coach-day-calendar .calendar-cell:is(.booked-lesson, .availability-block, .calendar-locked:disabled) {
+  border: 1px solid transparent;
+  border-radius: var(--booking-control-radius);
+  padding: 4px 6px;
+  font: 600 12px/1.25 var(--booking-type);
+  text-align: left;
+}
+body #coaches .coach-day-calendar .calendar-cell.availability-block {
+  border-color: #cfc3e9;
+  background: var(--booking-soft) !important;
+  color: var(--booking-accent-ink);
+}
+body #coaches .coach-day-calendar .calendar-cell.calendar-locked:disabled {
+  border-color: var(--booking-line);
+  background: #f4f3f6;
+  color: var(--booking-muted);
+}
+body #coaches .coach-day-calendar .calendar-cell[aria-disabled="true"] {
+  background: white;
+  cursor: default;
+}
+
+body #coaches .coach-calendar-toolbar {
+  gap: 6px 12px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--booking-line);
+}
+body #coaches .coach-calendar-toolbar .coach-week {
+  margin-inline-start: auto;
+  border: 0;
+}
+.coach-profile-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 6px 12px;
+  color: var(--booking-muted);
+  font: 500 12px/1.3 var(--booking-type);
+}
+.coach-card-context {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 500 10px/1.2 var(--booking-type);
+}
+.booking-package-status { margin: 5px 0 0; color: var(--booking-muted); }
+
+body #coaches .coach-calendar-toolbar {
+  padding: 6px 12px;
+  flex: 0 0 auto;
+}
+body #coaches .coach-calendar-toolbar .coach-week {
+  flex: 0 0 auto;
+  gap: 8px;
+  padding: 0;
+}
+body #coaches .coach-calendar-toolbar [hidden],
+body #coaches .personal-calendar > [hidden] { display: none; }
+.coach-view-switcher { display: flex; gap: 4px; }
+.coach-view-switcher button {
+  padding: 6px 10px;
+  border-radius: var(--booking-control-radius);
+  background: transparent;
+  color: var(--booking-text);
+  font: 600 14px/1.35 var(--booking-type);
+}
+.coach-view-switcher button[aria-pressed="true"] {
+  background: var(--booking-selected);
+  color: var(--booking-accent-ink);
+}
+.coach-profile-panel {
+  align-self: flex-start;
+  width: min(100%, 420px);
+  margin: 16px;
+  padding: 18px;
+  border: 1px solid var(--booking-line);
+  border-radius: var(--booking-panel-radius);
+  background: var(--booking-surface);
+}
+.coach-profile-panel h2 { display: flex; align-items: center; gap: 8px; }
+.coach-profile-panel dl {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 8px 16px;
+  margin: 16px 0 0;
+}
+.coach-profile-panel dt { color: var(--booking-muted); }
+.coach-profile-panel dd { margin: 0; color: var(--booking-text); }
+
+#modal .coaching-product-choices[hidden],
+#modal .coaching-note-field[hidden] { display: none; }
+#modal .coaching-product-choices button {
+  min-height: 38px;
+  border: 1px solid var(--booking-line);
+  border-radius: var(--booking-control-radius);
+  padding: 8px 10px;
+  background: var(--booking-surface);
+  color: var(--booking-text);
+  font-weight: 600;
+}
+#modal .coaching-product-choices button[aria-pressed="true"] {
+  border-color: #cfc3e9;
+  background: var(--booking-selected);
+  color: var(--booking-accent-ink);
+}
+#modal .coaching-note-field textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 8px 10px;
+  border: 1px solid var(--booking-line);
+  border-radius: var(--booking-control-radius);
+  color: var(--booking-text);
+  font: 400 14px/1.4 var(--booking-type);
+}
+
+#modal .coaching-product-choices button,
+.booking-field-caption,
+.booking-dialog .slot-context {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#modal .coaching-product-choices button { justify-content: center; }
+#modal .coaching-product-choices button .booking-payment-icon,
+#modal .booking-field-caption .booking-payment-icon,
+.booking-dialog .slot-context .booking-payment-icon { color: var(--booking-accent-ink); }
+
+#modal .coaching-product-choices button {
+  flex-direction: column;
+  gap: 4px;
+}
+.coaching-choice-title, .coaching-choice-duration {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.coaching-choice-duration {
+  color: var(--booking-muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+.coaching-choice-duration .booking-payment-icon {
+  width: 14px;
+  height: 14px;
+}

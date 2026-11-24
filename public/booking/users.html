@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Users &amp; access · Success Padel</title>
+<style>
+:root{color-scheme:light;font:15px/1.45 "DM Sans",system-ui,sans-serif;color:#211d32;background:#fff;--purple:#6046b5;--ink:#211d32;--muted:#625c70;--line:#e8e2ee;--lavender:#f7f4fc}
+*{box-sizing:border-box}body{margin:0}button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--purple);outline-offset:3px}button:disabled{cursor:default}
+.shell{display:grid;grid-template-columns:178px minmax(0,1fr);min-height:100vh}.sidebar{border-right:1px solid var(--line);padding:22px 12px}.brand{display:block;font-size:16px;font-weight:850;margin:0 8px 25px;color:#3e326b}.sidebar nav{display:grid;gap:4px}.sidebar nav span{padding:9px 10px;color:var(--muted)}.sidebar nav .current{background:#ece5f9;color:#493583;border-radius:8px;font-weight:750}
+.bar{height:57px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:flex-end;padding:0 25px}.account,.identity{display:flex;align-items:center;gap:9px;font-weight:700}.avatar{display:grid;place-items:center;border-radius:50%;width:33px;height:33px;background:#ede6fa;color:#543e91;font-weight:800;flex:none}.account .avatar{width:28px;height:28px}
+.content{padding:27px 26px;max-width:1240px;margin:auto}.heading{display:flex;justify-content:space-between;align-items:center;gap:14px;margin:0 0 21px}h1{font-size:28px;line-height:1.15;margin:0;letter-spacing:-.035em}.primary,.secondary,.edit{border:1px solid transparent;border-radius:7px;padding:8px 13px;font-weight:700}.primary{background:var(--purple);color:#fff}.secondary,.edit{background:#fff;color:#493583;border-color:#ded5ec}.edit{padding:5px 8px;font-size:13px}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:11px}table{width:100%;border-collapse:collapse;min-width:715px;text-align:left}th,td{padding:13px 11px;border-bottom:1px solid var(--line)}th{font-size:12px;color:#4e4760;white-space:nowrap;background:var(--lavender)}tbody tr:last-child td{border-bottom:0}th.permission,td.permission{text-align:center}.identity small{display:block;font-weight:450;color:var(--muted);font-size:12px}.role{font-size:12px;font-weight:700;border-radius:6px;background:#eee8fa;color:#50388e;padding:3px 7px;white-space:nowrap}.role.staff{background:#ebf1ee;color:#275c4d}.check{accent-color:var(--purple);width:17px;height:17px;vertical-align:middle;margin:0}.owner-access{color:#5b496e;font-weight:720}.editing{background:#fbf9ff}
+dialog{border:1px solid #e4d9ef;border-radius:14px;width:min(440px,calc(100vw - 24px));padding:22px;color:var(--ink);box-shadow:0 18px 55px #35244335}dialog::backdrop{background:#31264158}form{display:grid;gap:12px}h2{margin:0 0 3px;font-size:21px;letter-spacing:-.025em}label.field{display:grid;gap:4px;font-weight:650}.field input,.field select{width:100%;border:1px solid #dcd2eb;padding:8px;border-radius:7px;color:var(--ink);background:white}fieldset{margin:0;border:1px solid var(--line);border-radius:8px;padding:8px 10px;display:grid;gap:8px}legend{font-size:13px;font-weight:700;color:#514662}.choices label{display:flex;align-items:center;gap:8px}.actions{display:flex;justify-content:flex-end;gap:7px;margin-top:3px}output{font-size:13px;color:#9d253e}output:empty{display:none}[hidden]{display:none!important}
+@media(max-width:750px){.shell{grid-template-columns:1fr}.sidebar{display:none}.content{padding:18px 12px}.bar{height:48px;padding:0 13px}}
+</style>
+<style>.shell{display:block}.sidebar,.bar{display:none}.content{max-width:none;padding:0}</style><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap"><link rel="stylesheet" href="/booking/dialogs.css?v=shared-2"><link rel="stylesheet" href="/booking/admin-tables.css"></head>
+<body>
+<div class="shell">
+<aside class="sidebar"><span class="brand">Success Padel</span><nav aria-label="Bookings"><span>Padel</span><span>Pilates</span><span>Customers</span><span>Sales</span><span class="current" aria-current="page">Admin</span></nav></aside>
+<main>
+<header class="bar"><span class="account"><span class="avatar" aria-hidden="true">P</span>Peta</span></header>
+<section class="content" aria-labelledby="page-title">
+<div class="heading booking-page-header"><h1 id="page-title">Users &amp; access</h1><button class="primary" id="add">Add user</button></div>
+<div class="table-wrap booking-data-table"><table>
+<thead><tr><th scope="col">User</th><th scope="col">Role</th><th scope="col" class="permission">Active</th><th scope="col" class="permission">Customer details</th><th scope="col" class="permission">Sales</th><th scope="col" class="permission">Coach finances</th><th scope="col"><span hidden>Actions</span></th></tr></thead>
+<tbody id="rows"></tbody>
+</table></div>
+</section>
+</main>
+</div>
+<dialog id="editor" aria-labelledby="dialog-title">
+<form id="user-form">
+<h2 id="dialog-title">Add user</h2>
+<label class="field">Name<input name="name" autocomplete="off" required maxlength="60"></label>
+<label class="field">Sign-in type<select name="type"><option value="username">Username</option><option value="email">Email</option></select></label>
+<label class="field"><span id="identifier-label">Username</span><input name="identifier" autocomplete="off" required maxlength="120"></label>
+<fieldset class="choices"><legend>Access</legend>
+<label><input class="check" type="checkbox" name="active" checked> Active</label>
+<label><input class="check" type="checkbox" name="customers" checked> Customer details</label>
+<label><input class="check" type="checkbox" name="sales"> Sales</label>
+<label><input class="check" type="checkbox" name="finance"> Coach finances</label>
+</fieldset>
+<output id="form-error" role="alert"></output>
+<div class="actions"><button class="secondary" type="button" id="cancel">Cancel</button><button class="primary" type="submit">Save user</button></div>
+</form>
+</dialog>
+<script>
+const permissions=[['active','Active'],['customers','Customer details'],['sales','Sales'],['finance','Coach finances']];
+const users=[
+  {id:1,name:'Peta',identifier:'Google sign-in',owner:true},
+  {id:2,name:'Kett',identifier:'Google sign-in',owner:true},
+  {id:3,name:'Front desk',identifier:'SuccessPadel',type:'username',active:true,customers:true,sales:false,finance:false},
+];
+const rows=document.getElementById('rows');
+const dialog=document.getElementById('editor');
+const form=document.getElementById('user-form');
+const error=document.getElementById('form-error');
+let editing=null;
+let nextId=4;
+
+function element(tag,text,className){
+  const node=document.createElement(tag);
+  if(text) node.textContent=text;
+  if(className) node.className=className;
+  return node;
+}
+function render(){
+  rows.replaceChildren();
+  for(const user of users){
+    const row=rows.insertRow();
+    const identity=element('div',null,'identity');
+    const avatar=element('span',user.name[0].toUpperCase(),'avatar');
+    avatar.setAttribute('aria-hidden','true');
+    const labels=element('div',user.name);
+    labels.append(element('small',user.identifier));
+    identity.append(avatar,labels);
+    row.insertCell().append(identity);
+    row.insertCell().append(element('span',user.owner?'Owner':'Staff',user.owner?'role':'role staff'));
+    for(const [key,label] of permissions){
+      const cell=row.insertCell();
+      cell.className='permission';
+      if(user.owner){
+        const mark=element('span','✓','owner-access');
+        mark.setAttribute('aria-label',label+' enabled for owner');
+        cell.append(mark);
+      }else{
+        const box=element('input',null,'check');
+        box.type='checkbox';
+        box.checked=user[key];
+        box.setAttribute('aria-label',label+' for '+user.name);
+        box.onchange=()=>{user[key]=box.checked;};
+        cell.append(box);
+      }
+    }
+    const actions=row.insertCell();
+    if(!user.owner){
+      const button=element('button','Edit','edit');
+      button.type='button';
+      button.setAttribute('aria-label','Edit '+user.name);
+      button.onclick=()=>openEditor(user);
+      actions.append(button);
+    }
+  }
+}
+function setIdentifierType(){
+  const email=form.elements.type.value==='email';
+  form.elements.identifier.type=email?'email':'text';
+  document.getElementById('identifier-label').textContent=email?'Email address':'Username';
+}
+function openEditor(user){
+  editing=user??null;
+  form.reset();
+  error.textContent='';
+  document.getElementById('dialog-title').textContent=user?'Edit user':'Add user';
+  if(user){
+    for(const key of ['name','type','identifier']) form.elements[key].value=user[key];
+    for(const [key] of permissions) form.elements[key].checked=user[key];
+  }
+  setIdentifierType();
+  dialog.showModal();
+}
+form.elements.type.onchange=setIdentifierType;
+document.getElementById('add').onclick=()=>openEditor();
+document.getElementById('cancel').onclick=()=>dialog.close();
+form.onsubmit=event=>{
+  event.preventDefault();
+  const name=form.elements.name.value.trim();
+  const identifier=form.elements.identifier.value.trim();
+  if(!name||!identifier){error.textContent='Enter a name and sign-in details.';return;}
+  if(users.some(user=>!user.owner&&user!==editing&&user.identifier.toLowerCase()===identifier.toLowerCase())){
+    error.textContent='That sign-in is already in use.';return;
+  }
+  const changes={name,identifier,type:form.elements.type.value};
+  for(const [key] of permissions) changes[key]=form.elements[key].checked;
+  if(editing)Object.assign(editing,changes);
+  else users.push({id:nextId++,...changes});
+  render();
+  dialog.close();
+};
+render();
+</script>
+</body>
+</html>

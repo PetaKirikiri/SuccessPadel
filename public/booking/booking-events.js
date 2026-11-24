@@ -1,8 +1,8 @@
 (() => {
   const page = document.createElement('section');
   page.id = 'events';
-  page.className = 'page event-page';
-  page.innerHTML = `<header><h1>Events</h1><button type="button" class="board-create">+ New event</button></header>
+  page.className = 'page event-page booking-admin-page';
+  page.innerHTML = `<header class="booking-page-header"><h1>Events</h1><button type="button" class="primary">New event</button></header>
     <form hidden><label>Event name<input name="title" required maxlength="100"></label>
     <label>Start date<input type="date" name="date" required></label>
     <label>Start time<select name="start" required><option value="">Select time</option></select></label>
@@ -10,8 +10,8 @@
     <label>Repeat<select name="repeat"><option value="once">Once</option><option value="weekly">Weekly</option></select></label>
     <label hidden>Last date (optional)<input type="date" name="until"></label>
     <fieldset><legend>Courts</legend></fieldset>
-    <output role="alert"></output><div><button type="button" name="cancel">Cancel</button> <button>Book courts</button></div></form>
-    <table class="events-list"><thead><tr><th>Event</th><th>Day</th><th>Frequency</th></tr></thead><tbody></tbody></table>`;
+    <output role="alert"></output><div><button type="button" class="secondary" name="cancel">Cancel</button> <button class="primary">Book courts</button></div></form>
+    <div class="booking-data-table"><table class="events-list"><thead><tr><th>Event</th><th>Day</th><th>Frequency</th></tr></thead><tbody></tbody></table></div>`;
   document.querySelector('.content').append(page);
   const tab = document.createElement('button');
   tab.textContent = 'Events';

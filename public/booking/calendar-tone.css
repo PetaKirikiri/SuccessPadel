@@ -615,7 +615,7 @@ body .coach-day-calendar .calendar-row .availability-block {
   background: #e1f2fb !important;
   color: #124e71;
 }
-body .coach-day-calendar .calendar-cell[aria-disabled=true] { background: #f2f5f8 !important; }
+body .coach-day-calendar .calendar-cell[aria-disabled="true"] { cursor: default; }
 body .coach-day-calendar .calendar-cell[data-slot]:not(.availability-block):is(:focus-visible,:hover) {
   position: relative; overflow: visible; z-index: 2;
 }

@@ -1,0 +1,249 @@
+:root {
+  --admin-ink: #202339;
+  --admin-muted: #575b69;
+  --admin-line: #e4deed;
+  --admin-header: #f8f6fc;
+  --admin-primary: #654cbe;
+  --admin-inset: clamp(12px, 2vw, 28px);
+}
+body .page.booking-admin-page,
+body .page.booking-admin-page#events {
+  padding: var(--admin-inset);
+  color: var(--admin-ink);
+}
+body .booking-page-header,
+body #events .booking-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 0;
+  min-height: 40px;
+}
+body .booking-page-header :is(h1, h2),
+body #events .booking-page-header h1 {
+  margin: 0;
+  color: var(--admin-ink);
+  font: 700 28px/1.2 'DM Sans', Arial, sans-serif;
+  letter-spacing: -.02em;
+}
+body .booking-page-header .primary,
+body #events .booking-page-header .primary {
+  padding: 9px 13px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: var(--admin-primary);
+  color: white;
+  font: 700 14px/1.35 'DM Sans', Arial, sans-serif;
+}
+body .booking-data-table {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--admin-line);
+  border-radius: 14px;
+  background: white;
+}
+body .booking-data-table > table,
+body #events .booking-data-table > table {
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+  border-spacing: 0;
+  background: white;
+  font-family: 'DM Sans', Arial, sans-serif;
+}
+body .booking-data-table > table :is(th, td),
+body :is(#events, #sales, #pricing, #customers) .booking-data-table > table :is(th, td) {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--admin-line);
+}
+body .booking-data-table > table thead th,
+body :is(#events, #sales, #pricing, #customers) .booking-data-table > table thead th {
+  background: var(--admin-header);
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: normal;
+}
+body .booking-data-table > table tbody td {
+  font-size: 14px;
+}
+body .booking-data-table > table tbody tr:last-child td {
+  border-bottom: 0;
+}
+body #events .booking-data-table tbody button {
+  color: var(--admin-ink);
+  background: transparent;
+  font: 600 14px/1.35 'DM Sans', Arial, sans-serif;
+}
+body #events .booking-data-table tbody button:hover { text-decoration: underline; }
+
+body #customers .customer-directory {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+body #customers .booking-page-header .primary {
+  padding: 9px 13px;
+  border-radius: 8px;
+  background: var(--admin-primary);
+  color: white;
+}
+
+body #customers .customer-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-inline-start: auto;
+}
+body #customers .customer-header-actions .customer-tabs { margin: 0; }
+body #customers #members-search[hidden] { display: none; }
+body #customers .members-directory__heading {
+  justify-content: flex-start;
+  padding: 0;
+  margin-bottom: 8px;
+}
+body #customers .members-directory__heading:not(:has(select:not([hidden]), output:not(:empty))) {
+  display: none;
+}
+.customer-more { position: relative; }
+.customer-more-toggle {
+  background: transparent;
+  padding: 7px 9px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--admin-muted);
+}
+.customer-more-actions[hidden] { display: none; }
+.customer-more-actions {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 4px);
+  inset-inline-end: 0;
+  display: grid;
+  gap: 4px;
+  min-width: max-content;
+  padding: 6px;
+  border: 1px solid var(--admin-line);
+  border-radius: 8px;
+  background: white;
+}
+@media (max-width: 700px) {
+  body:has(#customers.active) .board-search form { display: block; }
+}
+
+.sales-header-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+body #sales .sales-header-controls label[hidden] { display: none; }
+
+body #sales .sales-header-controls { justify-content: flex-end; margin-inline-start: auto; }
+body #sales .sales-header-controls > [hidden] { display: none; }
+body #sales .sales-header-controls .sales-loan-balance:not([hidden]) {
+  margin: 0;
+}
+body #sales .sales-header-controls .sales-currency-input { min-height: 36px; }
+
+body :is(#sales, #pricing) .sales-header-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid var(--admin-line);
+  border-radius: 8px;
+  background: var(--admin-header);
+  color: #493586;
+  font: 600 14px/1.35 'DM Sans', Arial, sans-serif;
+}
+body #sales .sales-header-button[hidden] { display: none; }
+.sales-filter-groups {
+  display: grid;
+  gap: 14px;
+}
+.sales-filter-groups fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.sales-filter-groups legend { margin-bottom: 6px; font-weight: 700; }
+.sales-filter-choice {
+  padding: 6px 9px;
+  border: 1px solid var(--admin-line);
+  border-radius: 8px;
+  background: white;
+  color: var(--admin-ink);
+  font-weight: 600;
+}
+.sales-filter-choice[aria-pressed="true"] {
+  border-color: #cfc3e9;
+  background: #ede7f8;
+  color: #493586;
+}
+
+.pricing-header-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-inline-start: auto;
+}
+body #pricing .pricing-header-controls .pricing-tabs { margin: 0; }
+body #pricing #pricing-groups { display: block; }
+body #pricing .pricing-ledger .pricing-group-heading {
+  background: var(--admin-header);
+  color: var(--admin-ink);
+  font-size: 14px;
+  text-align: left;
+}
+.pricing-group-row-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+body #pricing .pricing-ledger tbody + tbody .pricing-group-heading {
+  border-top: 1px solid var(--admin-line);
+}
+body #pricing .pricing-ledger td:last-child,
+body #pricing .pricing-ledger thead th:last-child { text-align: right; }
+body #pricing .pricing-ledger .pricing-input { justify-content: flex-end; }
+.pricing-editor-fields { display: grid; gap: 12px; }
+.pricing-editor-fields label { display: grid; gap: 5px; }
+.pricing-editor-fields :is(input,select) {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--admin-line);
+  border-radius: 8px;
+}
+
+.sales-filter-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.sales-filter-choice .booking-payment-icon { width: 15px; height: 15px; }
+
+body #pricing .pricing-product-details .secondary { margin-inline-start: 8px; }
+.booking-happy-hour:not([hidden]) {
+  display: block;
+  color: #493586;
+  font-size: 12px;
+  font-weight: 600;
+}
