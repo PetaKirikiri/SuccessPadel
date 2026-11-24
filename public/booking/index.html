@@ -226,6 +226,13 @@ function membershipExpiry(date){
 function memberExpiry(member){return member.membershipExpiry||membershipExpiry(member.signup)}
 function memberDate(date){if(!date)return 'Not set';const [y,m,d]=date.split('-');return `${d}/${m}/${y}`;}
 function memberNode(tag,text,className){const el=document.createElement(tag);if(text!=null)el.textContent=text;if(className)el.className=className;return el;}
+function bookingCancellations() {
+  const records = calendarDataset?.records;
+  return [...(records?.courtCancellations ?? []), ...(records?.lessonCancellations ?? [])];
+}
+function customerCancellations(id) {
+  return id ? bookingCancellations().filter(booking => booking.customerId === id) : [];
+}
 let showDeletedCustomers=false;
 function drawMembers(){
  const body=document.getElementById('member-rows');body.replaceChildren();const query=membersSearch.value.trim().toLocaleLowerCase();let matches=0;
@@ -236,8 +243,8 @@ function drawMembers(){
   matches++;const row=memberNode('tr');row.dataset.memberId=member.id;const identity=memberNode('td');const person=memberNode('div',null,'member-person');
   const photo=memberPhotoSource(member);if(photo){const img=document.createElement('img');img.src=photo;img.alt=`${member.name} profile picture`;img.className='member-photo';person.append(img);}else{person.append(memberNode('span',member.name.trim().split(/\s+/).map(n=>n[0]).slice(0,2).join('').toUpperCase(),'member-photo member-initials'));}
   const text=memberNode('div');text.append(memberNode('b',member.nickname||member.name),memberNode('small',member.nickname?member.name:member.type||'Member'));person.append(text);identity.append(person);row.append(identity);
-  const cancellations=(calendarDataset?.records.lessonCancellations||[]).filter(b=>b.customerId===member.id);
-  if(cancellations.length)identity.append(memberNode('small',cancellations.length+' cancelled lesson'+(cancellations.length===1?'':'s'),'customer-meta'));
+  const cancellations=customerCancellations(member.id);
+  if(cancellations.length)identity.append(memberNode('small',cancellations.length+' cancellation'+(cancellations.length===1?'':'s'),'customer-meta'));
   const lateCancellations=cancellations.filter(booking=>booking.late===true).length;
   if(lateCancellations)identity.append(memberNode('small',lateCancellations+' late cancellation'+(lateCancellations===1?'':'s'),'customer-meta'));
   const contact=memberNode('td');for(const [label,value]of [['Phone',member.phone],['Email',member.email],['LINE ID',member.line],['WhatsApp',member.whatsapp]])if(value)contact.append(memberNode('div',`${label}: ${value}`));if(!contact.childNodes.length)contact.textContent='Not set';row.append(contact,memberNode('td',memberDate(member.signup)),memberNode('td',memberDate(expires)));
@@ -262,6 +269,7 @@ const memberModal=document.createElement('dialog');memberModal.className='modal-
 <div class="field"><label for="member-paymentBank">Bank or payment method</label><input id="member-paymentBank" maxlength="100"></div>
 <div class="field full"><label for="member-paymentNote">Payment note</label><input id="member-paymentNote" maxlength="300"></div>
 <div class="field full" id="member-paymentHistory" hidden></div>
+<section class="field full" id="member-cancellationHistory" aria-label="Cancellation history" hidden></section>
 </div><p id="member-feedback" role="status"></p><div class="modal-actions"><button type="button" class="secondary" id="member-cancel">Cancel</button><button type="submit" class="primary" id="member-save">Save</button></div></form>`;document.body.append(memberModal);
 const memberField=id=>document.getElementById('member-'+id);let bookingLineTestMemberId=null;let editingMember=null,memberPhoto='',photoVersion=0,photoLoading=false;
 function previewMemberPhoto(){memberField('preview').hidden=!memberPhoto;memberField('remove-photo').hidden=!memberPhoto;if(memberPhoto)memberField('preview').src=memberPhoto;else memberField('preview').removeAttribute('src');}
@@ -301,7 +309,27 @@ deleteCustomerButton.onclick=()=>{
   deleteCustomerDialog.showModal();
 };
 function closeMember(){photoVersion++;memberModal.close();}
-function openMember(id){editingMember=id||null;deleteCustomerButton.hidden=!editingMember;const member=memberRecords.find(m=>m.id===id)||{};photoVersion++;photoLoading=false;memberField('save').disabled=false;memberField('name').value=member.name||'';for(const field of ['phone','email','line','whatsapp'])memberField(field).value=member[field]||'';memberField('type').value=member.type||'Member';memberField('signup').value=member.signup||'';memberField('expiry').value=memberExpiry(member);loadMembershipFields(member);memberField('photo').value='';memberPhoto=memberPhotoSource(member);previewMemberPhoto();memberField('feedback').textContent='';memberModal.showModal();memberField('name').focus();}
+function openMember(id){editingMember=id||null;deleteCustomerButton.hidden=!editingMember;const member=memberRecords.find(m=>m.id===id)||{};photoVersion++;photoLoading=false;memberField('save').disabled=false;memberField('name').value=member.name||'';for(const field of ['phone','email','line','whatsapp'])memberField(field).value=member[field]||'';memberField('type').value=member.type||'Member';memberField('signup').value=member.signup||'';memberField('expiry').value=memberExpiry(member);loadMembershipFields(member);loadCustomerCancellationHistory(id);memberField('photo').value='';memberPhoto=memberPhotoSource(member);previewMemberPhoto();memberField('feedback').textContent='';memberModal.showModal();memberField('name').focus();}
+function loadCustomerCancellationHistory(id) {
+  const history = memberField('cancellationHistory');
+  const cancellations = customerCancellations(id)
+    .sort((first, second) => second.cancelledAt.localeCompare(first.cancelledAt));
+  history.replaceChildren();
+  history.hidden = !cancellations.length;
+  if (!cancellations.length) return;
+  history.append(memberNode('h3','Cancellation history'));
+  for (const booking of cancellations) {
+    const cancelledAt = new Date(booking.cancelledAt).toLocaleString('en-GB',{timeZone:'Asia/Bangkok'});
+    const bookedFor = booking.date && booking.time ? memberDate(booking.date)+' · '+clockLabel(booking.time) : '';
+    const entry = memberNode('div');
+    entry.append(
+      memberNode('strong',booking.late === true ? 'Late cancellation' : 'Cancelled'),
+      memberNode('div',[booking.court,booking.coach,bookedFor].filter(Boolean).join(' · ')),
+      memberNode('small',[cancelledAt,booking.reason].filter(Boolean).join(' · '))
+    );
+    history.append(entry);
+  }
+}
 const membershipDetailFields=['nickname','cardNumber','luckyDrawNumber','averageMonthly','paymentPrice','paymentDate','paymentTime','paymentBank','paymentNote'];
 function updateMembershipMonths(){
   const expiry=memberField('expiry').value;
@@ -3020,6 +3048,7 @@ const salesHeaderControls=salesPage.querySelector('.sales-header-controls');
 const salesFiltersDialog=createBookingFilterDialog('sales-filters-title','Sales filters');
 const salesFilterGroups=salesFiltersDialog.querySelector('.sales-filter-groups');
 let salesFilterMode = 'filters';
+let salesActivity = 'all';
 function openSalesFilterDialog(mode) {
   salesFilterMode=mode;
   salesFiltersDialog.querySelector('h2').textContent=mode==='period'?'Sales period':'Sales filters';
@@ -3040,6 +3069,8 @@ function drawSalesFilterChoices() {
     if (salesPeriod==='date') salesFilterGroups.append(salesHeaderDate);
     return;
   }
+  addGroup('Activity',[['all','All activity'],['payments','Payments'],['cancellations','Cancellations']],
+    salesActivity,value=>{salesActivity=value;});
   addGroup('Category',salesCategories,activeSalesCategory,value=>{activeSalesCategory=value;});
   if (activeSalesCategory==='coaches') {
     addGroup('Coach',[['','All coaches'],...coachList.map(name=>[name,name])],salesCoach.value,value=>{salesCoach.value=value;});
@@ -3249,7 +3280,7 @@ function renderDailySales(bills, range, methods, matches) {
     .map(label => memberNode('th',label)));
   const body = table.querySelector('tbody');
   body.replaceChildren();
-  const entries = bills.flatMap(bill => bill.payments.flatMap(payment => {
+  const entries = salesActivity === 'cancellations' ? [] : bills.flatMap(bill => bill.payments.flatMap(payment => {
     const timestamp = Date.parse(payment.receivedAt);
     if (!Number.isFinite(timestamp) || !Number.isFinite(payment.amount) ||
         salesReceiptDate.format(timestamp) < from || salesReceiptDate.format(timestamp) > to) return [];
@@ -3262,7 +3293,7 @@ function renderDailySales(bills, range, methods, matches) {
       receipt:{payer:payment.payer, bank:payment.bank, reference:payment.reference,bankSlip:payment.bankSlip,confirmedBy:payment.confirmedBy},
     }];
   }));
-  for (const bill of bills) {
+  for (const bill of (salesActivity === 'payments' ? [] : bills)) {
     const booking = bill.booking;
     const timestamp = Date.parse(booking?.cancelledAt);
     if (!Number.isFinite(timestamp)) continue;
@@ -3275,11 +3306,11 @@ function renderDailySales(bills, range, methods, matches) {
       timestamp,
       item:bill.item,
       method:booking.late===true?'Late cancellation':'Cancelled',
-      cancellationDetails:[bill.customer, bookedFor, booking.reason].filter(Boolean).join(' · '),
+      cancellationDetails:bookedFor,
     });
   }
   const sampleDate=bookingSamples?.date ?? bangkokToday();
-  if ((bookingFixtures || bookingDatabaseDemo || bookingSamples) && sampleDate>=from && sampleDate<=to) {
+  if (salesActivity !== 'cancellations' && (bookingFixtures || bookingDatabaseDemo || bookingSamples) && sampleDate>=from && sampleDate<=to) {
     for (const [time,item,method,amount,receipt,court,group] of (bookingSamples?.sales ?? (bookingDatabaseDemo ? bookingDemoSales : previewSalesTransactions))) {
       if (!matches(group || (court ? {category:'courts',group:court} : {category:'retail'}))) continue;
       entries.push({timestamp:Date.parse(sampleDate+'T'+time+':00+07:00'),item,method,amount,receipt,sample:true});
@@ -3310,8 +3341,9 @@ function renderDailySales(bills, range, methods, matches) {
     const empty = body.insertRow().insertCell();
     empty.colSpan = 4;
     empty.className = 'sales-empty';
-    empty.textContent = 'No payments recorded for this period';
+    empty.textContent = salesActivity === 'cancellations' ? 'No cancellations recorded for this period' : 'No activity recorded for this period';
   }
+  if (salesActivity !== 'cancellations') {
   const footer = table.querySelector('table').createTFoot();
   const total = footer.insertRow();
   const label = memberNode('th',entries.some(entry=>entry.sample)?'Total received · includes samples':'Total received');
@@ -3319,6 +3351,7 @@ function renderDailySales(bills, range, methods, matches) {
   label.scope = 'row';
   total.append(label);
   total.insertCell().textContent = formatPrice(cents / 100);
+  }
   salesLoanBalance.hidden = true;
   salesPage.querySelector('.sales-totals').hidden = true;
   salesPage.querySelector('.sales-methods').replaceChildren();
@@ -3328,12 +3361,7 @@ function renderSales(){
   const date=salesDate.value;
   const bills=[];
   const dailyLedger=!showingCoachPayouts;
-  const cancellations = calendarDataset?.records;
-  const padelSalesBookings = dailyLedger ? [
-    ...displayedCourtBookings(),
-    ...(cancellations?.courtCancellations ?? []),
-    ...(cancellations?.lessonCancellations ?? []),
-  ] : null;
+  const padelSalesBookings = dailyLedger ? [...displayedCourtBookings(), ...bookingCancellations()] : null;
   salesPage.querySelector('h2').textContent=showingCoachPayouts?'Coach payouts':'Sales';
   salesPeriodButton.hidden=showingCoachPayouts;
   salesFiltersButton.hidden=showingCoachPayouts;
