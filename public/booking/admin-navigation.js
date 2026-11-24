@@ -20,6 +20,16 @@ const shopCatalog = memberNode('div', null, 'racket-catalog');
 shopPage.append(shopHeader, shopCatalog);
 document.querySelector('.content').append(shopPage);
 
+const shopCatalogPhotos = new Set([
+  'nox-balance-fresh-shorts',
+  'nox-red-white-tank',
+  'head-white-wristband',
+  'head-padel-pro-s-plus',
+  'pocari-sweat',
+  'heineken-beer',
+  'wilder-hydration',
+]);
+
 function renderShop() {
   const query = shopSearch.value.trim().toLowerCase();
   const cards = retailProducts().filter(product => product.name.toLowerCase().includes(query)).map(product => {
@@ -29,9 +39,15 @@ function renderShop() {
     heading.append(memberNode('h3', product.name), memberNode('strong', formatPrice(product.price)));
     const photo = photographedShopProducts.find(item => item.id === product.id);
     if (photo) {
-      const visual = memberNode('div', null, 'racket-card-visual');
+      const visual = memberNode('div', null, 'shop-product-photo');
       const image = document.createElement('img');
-      image.src = '/booking/photos/shop/' + photo.id + '.jpg';
+      const original = '/booking/photos/shop/' + photo.id + '.jpg';
+      if (shopCatalogPhotos.has(photo.id)) {
+        image.addEventListener('error', () => { image.src = original; }, { once: true });
+        image.src = '/booking/photos/shop/catalog/' + photo.id + '.png';
+      } else {
+        image.src = original;
+      }
       image.alt = product.name;
       image.loading = 'lazy';
       visual.append(image);
