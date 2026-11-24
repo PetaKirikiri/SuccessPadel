@@ -196,7 +196,7 @@ sidebar.innerHTML = `
 sidebar.querySelectorAll('[data-section]').forEach(button => {
   button.onclick = () => selectStaffSection(button);
 });
-const form=modal.querySelector('.modal');form.classList.add('compact-booking');const header=form.querySelector('h2');const originalStart=start;start=function(court,t){originalStart(court,t);header.textContent=`${resource.value} · ${timeInput.value}`;};[type,dateInput,timeInput].forEach(el=>el.closest('.field').hidden=true);customer.closest('.field').classList.add('customer-field');form.querySelector('.price-preview span').textContent='Total';form.querySelector('.check').lastChild.textContent=' Override';document.getElementById('cancel').style.display='none';
+const form=modal.querySelector('.modal');form.classList.add('compact-booking');const header=form.querySelector('h2');const originalStart=start;start=function(court,t){originalStart(court,t);header.textContent=`${resource.value} · ${timeInput.value}`;};[type,dateInput,timeInput].forEach(el=>el.closest('.field').hidden=true);customer.closest('.field').classList.add('customer-field');form.querySelector('.price-preview span').textContent='Total';form.querySelector('.check').lastChild.textContent=' Override';document.getElementById('cancel').hidden=true;
 const coachList=['David','Bia','Tong','Neung','Peta'];document.querySelector('#coaches .table tbody').innerHTML=coachList.map(name=>`<tr><td><b>${name}</b></td><td>—</td></tr>`).join('');
 const rooms=['Room 1','Room 2','Room 3','Room 4'];const pilatesRates={group:800,private:1500,duo:2200};const pilatesNames={group:'Group Reformer',private:'Private 1:1',duo:'Private 1:2'};let pilatesBookings=[];try{pilatesBookings=storedRows('success-pilates-bookings')}catch{}
 pilates.innerHTML='<div class="calendar-toolbar"><button class="secondary" id="pilates-prev">‹</button><input type="date" id="pilates-day" value="2026-11-21"><button class="secondary" id="pilates-next">›</button><button class="secondary" id="pilates-prices" style="margin-left:auto">Prices</button></div><div class="calendar-scroll"><div id="pilates-calendar"></div></div>';
@@ -2254,6 +2254,9 @@ courtPlayers.label.addEventListener('input',event=>{
 
 let paidBookingBaseline=null;
 const courtSaveButton=document.getElementById('save');
+const courtCancelButton=document.getElementById('cancel');
+courtSaveButton.before(courtCancelButton);
+courtCancelButton.onclick=()=>{if(editingCourt?.id)openCourtCancellation(editingCourt)};
 function courtBookingEditState(){
   return JSON.stringify([
     dateInput.value,timeInput.value,activity.value,resource.value,duration.value,
@@ -2319,6 +2322,7 @@ function editCourtBooking(booking){
   day.value=booking.date;
   start(booking.court,booking.time);
   editingCourt=booking;
+  courtCancelButton.hidden=!booking.id || Boolean(booking.preview || booking.eventId);
   const person=Array.from(customer.options).find(option=>booking.customerId
     ?option.dataset.memberId===booking.customerId
     :option.textContent.split(' · ')[0]===booking.customer);
@@ -2424,6 +2428,7 @@ modal.addEventListener('close',()=>{
   newCourtPlayers.value=[];
   updateSplitRows();
   editingCourt=null;
+  courtCancelButton.hidden=true;
   form.querySelector('.court-booked-by')?.remove();
   courtHeading.querySelector('.sales-sample-label')?.remove();
   paidBookingBaseline=null;
