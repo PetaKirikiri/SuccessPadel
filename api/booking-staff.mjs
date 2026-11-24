@@ -1,7 +1,7 @@
 import {applyLessonChanges,sendLessonNotices} from '../server/booking/lesson-events.mjs';
 const lineTestMemberId = 'padel-card-012';
 function bookingNotificationPreferences(members) {
-  return members.map(member => ({...member, lineBookingNotificationsEnabled: member.id === lineTestMemberId && !member.deleted && (member.lineBookingNotificationsEnabled ?? true) === true}));
+  return members.map(member => ({...member, lineBookingNotificationsEnabled: !member.deleted && member.lineBookingNotificationsEnabled === true}));
 }
 import { createClient } from '@supabase/supabase-js';
 import { completeKettSetup } from '../server/booking/kett-setup.mjs';
@@ -163,7 +163,7 @@ export default async function handler(req, res) {
       if(changes.some(c=>c.booking.customerId===lineTestMemberId)){
         const roster=await db.from('booking_member_roster').select('members').eq('id',1).single();
         if(roster.error)return send(503,{error:'Could not check notification preferences.'});
-        enabled=bookingNotificationPreferences(roster.data.members).some(m=>m.lineBookingNotificationsEnabled);
+        enabled=bookingNotificationPreferences(roster.data.members).some(m=>m.id===lineTestMemberId && m.lineBookingNotificationsEnabled);
       }
       const {data,error} = await table.update({records:output,revision:revision+1})
         .eq('id',1).eq('revision',revision).select('revision').maybeSingle();
@@ -189,7 +189,7 @@ export default async function handler(req, res) {
         avatar:role === 'owner' && typeof avatar === 'string' &&
           /^https:\/\/lh3\.googleusercontent\.com\//.test(avatar) ? avatar : null,
       };
-      return send(200, {...data, members:bookingNotificationPreferences(data.members), lineTestMemberId, role, profile});
+      return send(200, {...data, members:bookingNotificationPreferences(data.members), role, profile});
     }
     if (action === 'loan' || action === 'save-loan') {
       if (role !== 'owner') return send(403, {error:'Owner access required.'});

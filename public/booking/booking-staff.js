@@ -149,7 +149,6 @@ async function loadStaffWorkspace({afterSignIn = false} = {}) {
         localStorage.removeItem(legacyMemberKey);
       }
     }
-    bookingLineTestMemberId = roster.lineTestMemberId || null;
     memberRecords = roster.members;
     document.body.dataset.bookingRole = roster.role;
     renderStaffAccount(roster.profile, roster.role);

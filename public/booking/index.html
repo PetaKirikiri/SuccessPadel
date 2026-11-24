@@ -271,7 +271,7 @@ const memberModal=document.createElement('dialog');memberModal.className='modal-
 <div class="field full" id="member-paymentHistory" hidden></div>
 <section class="field full" id="member-cancellationHistory" aria-label="Cancellation history" hidden></section>
 </div><p id="member-feedback" role="status"></p><div class="modal-actions"><button type="button" class="secondary" id="member-cancel">Cancel</button><button type="submit" class="primary" id="member-save">Save</button></div></form>`;document.body.append(memberModal);
-const memberField=id=>document.getElementById('member-'+id);let bookingLineTestMemberId=null;let editingMember=null,memberPhoto='',photoVersion=0,photoLoading=false;
+const memberField=id=>document.getElementById('member-'+id);let editingMember=null,memberPhoto='',photoVersion=0,photoLoading=false;
 function previewMemberPhoto(){memberField('preview').hidden=!memberPhoto;memberField('remove-photo').hidden=!memberPhoto;if(memberPhoto)memberField('preview').src=memberPhoto;else memberField('preview').removeAttribute('src');}
 async function setCustomerDeleted(id,deleted){
   const next=memberRecords.map(member=>member.id===id?{...member,deleted}:member);
@@ -2591,7 +2591,7 @@ function customerLineCell(member) {
  control.type='checkbox';
  control.setAttribute('role','switch');
  control.setAttribute('aria-label','LINE notifications for '+member.name);
- control.disabled=member.deleted || member.id!==bookingLineTestMemberId;
+ control.disabled=Boolean(member.deleted);
  control.checked=!control.disabled && member.lineBookingNotificationsEnabled===true;
  control.onchange=async()=>{
    const enabled=control.checked;
