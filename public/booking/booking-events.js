@@ -85,7 +85,7 @@
     fields.until.parentElement.hidden=!repeats;
     fields.until.disabled=!repeats;
   };
-  form.onsubmit = e=>{
+  form.onsubmit = async e=>{
     e.preventDefault();
     const title=fields.title.value.trim(), date=fields.date.value, start=fields.start.value, end=fields.end.value;
     const duration=minutes(end)-minutes(start);
@@ -107,7 +107,7 @@
       }
       if(!last||occurrence===last)break;
     }
-    try{localStorage.setItem('success-padel-bookings',JSON.stringify([...existing,...additions]))}
+    try{await writeCalendarRows('success-padel-bookings',[...existing,...additions])}
     catch{error.textContent='Could not save the court bookings.';return}
     form.reset();updateEndTimes();fields.repeat.onchange();error.textContent='';form.hidden=true;
     refreshBookingCalendars();render();

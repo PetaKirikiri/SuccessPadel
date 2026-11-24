@@ -56,6 +56,7 @@ async function saveBookingMembers(members) {
 }
 
 function lockStaffWorkspace() {
+  calendarDataset = null;
   bookingSamples = null;
   refreshBookingCalendars();
   document.body.setAttribute('data-booking-locked', '');
@@ -111,6 +112,7 @@ async function loadStaffWorkspace() {
   staffError.textContent = '';
   try {
     let roster = await staffRequest();
+    if (!bookingDemo) calendarDataset = await staffRequest('calendar');
     if (!bookingDemo && roster.role === 'owner') {
       try {
         const response = await fetch(staffEndpoint + '?demo=samples', {cache:'no-store'});

@@ -136,6 +136,23 @@ export default async function handler(req, res) {
       return send(response.status, await response.json());
     }
 
+    if (action === 'calendar' || action === 'save-calendar') {
+      const table = db.from('booking_calendar_records');
+      if (action === 'calendar') {
+        const {data,error} = await table.select('records,revision').eq('id',1).single();
+        return error ? send(503,{error:'Calendar unavailable.'}) : send(200,data);
+      }
+      const {key,rows,revision} = body;
+      if (!['success-padel-bookings','success-pilates-bookings','success-coach-availability','success-booking-packages-v1'].includes(key) ||
+          !Array.isArray(rows) || !Number.isSafeInteger(revision) || revision < 0) return send(400,{error:'Invalid calendar change.'});
+      const current = await table.select('records').eq('id',1).eq('revision',revision).maybeSingle();
+      if (current.error) return send(503,{error:'Calendar unavailable.'});
+      if (!current.data) return send(409,{error:'Calendar changed. Reload and try again.'});
+      const {data,error} = await table.update({records:{...current.data.records,[key]:rows},revision:revision+1})
+        .eq('id',1).eq('revision',revision).select('revision').maybeSingle();
+      if (error) return send(503,{error:'Could not save calendar.'});
+      return data ? send(200,data) : send(409,{error:'Calendar changed. Reload and try again.'});
+    }
     if (action === 'roster' && req.query?.demo === 'samples') {
       if (role !== 'owner') return send(403, {error:'Owner access required.'});
       const {data, error} = await db.from('booking_demo_samples').select('dataset').eq('id',1).single();
