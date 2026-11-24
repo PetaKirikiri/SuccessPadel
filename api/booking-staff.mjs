@@ -69,7 +69,13 @@ export default async function handler(req, res) {
           await staffRole(data.session.access_token) !== account.role) {
         return send(401, {error: 'Staff sign-in failed.'});
       }
-      if (username === 'peta' && data.user?.app_metadata?.booking_password_setup === true) {
+      const user = data.user;
+      const kettVerified = account.role === 'owner' &&
+        user?.email?.toLowerCase() === 'successpadelsamui@gmail.com' &&
+        Boolean(user.email_confirmed_at) &&
+        user.app_metadata?.booking_username === username &&
+        user.identities?.some(identity => identity.provider === 'google');
+      if (kettVerified || (username === 'peta' && user?.app_metadata?.booking_password_setup === true)) {
         await authorizeBookingOwnerSession(url,key,data.session,data.user.id);
       }
       writeSession(res, data.session);
