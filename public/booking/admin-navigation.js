@@ -27,7 +27,18 @@ function renderShop() {
     const card = memberNode('article', null, 'racket-card');
     const heading = memberNode('div', null, 'racket-card-heading');
     heading.append(memberNode('h3', product.name), memberNode('strong', formatPrice(product.price)));
+    const photo = photographedShopProducts.find(item => item.id === product.id);
+    if (photo) {
+      const visual = memberNode('div', null, 'racket-card-visual');
+      const image = document.createElement('img');
+      image.src = '/booking/photos/shop/' + photo.id + '.jpg';
+      image.alt = product.name;
+      image.loading = 'lazy';
+      visual.append(image);
+      card.append(visual);
+    }
     card.append(heading);
+    if (product.details) card.append(memberNode('div', product.details, 'racket-card-footer'));
     return card;
   });
   shopCatalog.replaceChildren(...(cards.length ? cards : [memberNode('p', 'No products found')]));
