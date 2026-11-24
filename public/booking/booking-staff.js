@@ -1,5 +1,6 @@
 const staffEndpoint = '/api/booking-staff';
 const legacyMemberKey = 'success-booking-members-v1';
+const googleSignInContainer = document.getElementById('booking-google-sign-in');
 const staffAccess = document.getElementById('staff-access');
 const staffSignIn = document.getElementById('staff-sign-in');
 const staffAuthenticator = document.getElementById('staff-authenticator');
@@ -36,7 +37,7 @@ async function staffRequest(action, details = {}) {
     body: JSON.stringify({action, ...details}),
   } : {cache:'no-store'});
   const payload = await response.json();
-  if (!response.ok) throw Object.assign(new Error(payload.error), {status:response.status, mfa:payload.mfa, factorId:payload.factorId});
+  if (!response.ok) throw Object.assign(new Error(payload.error), {status:response.status, mfa:payload.mfa, googleRequired:payload.googleRequired, factorId:payload.factorId});
   return payload;
 }
 
@@ -68,6 +69,7 @@ function lockStaffWorkspace() {
   staffAccess.hidden = false;
   staffSignIn.hidden = false;
   staffAuthenticator.hidden = true;
+  googleSignInContainer.hidden = true;
   staffCancel.hidden = true;
 }
 
@@ -160,7 +162,12 @@ async function loadStaffWorkspace() {
     document.body.removeAttribute('data-booking-locked');
   } catch (error) {
     lockStaffWorkspace();
-    if (error.mfa) {
+    if (error.googleRequired) {
+      staffSignIn.hidden = true;
+      staffCancel.hidden = false;
+      googleSignInContainer.hidden = false;
+      await showKettGoogleVerification().catch(retryKettGoogleVerification);
+    } else if (error.mfa) {
       factorId = error.factorId;
       staffSignIn.hidden = true;
       staffAuthenticator.hidden = false;
@@ -170,6 +177,62 @@ async function loadStaffWorkspace() {
       staffError.textContent = error.message || 'Could not open Bookings.';
     }
   }
+}
+
+let bookingGoogleScript;
+let verifyingKettGoogle = false;
+function loadBookingGoogle() {
+  bookingGoogleScript ??= new Promise((resolve,reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    const timeout = setTimeout(() => script.onerror(), 8000);
+    script.onload = () => { clearTimeout(timeout); resolve(); };
+    script.onerror = () => {
+      clearTimeout(timeout);
+      script.remove();
+      bookingGoogleScript = null;
+      reject(new Error('Google verification unavailable.'));
+    };
+    document.head.append(script);
+  });
+  return bookingGoogleScript;
+}
+
+function retryKettGoogleVerification() {
+  if (googleSignInContainer.hidden) return;
+  const retry = memberNode('button','Retry Google verification','secondary');
+  retry.type = 'button';
+  retry.onclick = () => showKettGoogleVerification().catch(retryKettGoogleVerification);
+  googleSignInContainer.replaceChildren(retry);
+}
+
+async function showKettGoogleVerification() {
+  const response = await fetch(staffEndpoint + '?google=config',{cache:'no-store'});
+  if(!response.ok) throw new Error('Google verification unavailable.');
+  const {clientId, nonce} = await response.json();
+  await loadBookingGoogle();
+  if (googleSignInContainer.hidden) return;
+  google.accounts.id.initialize({
+    client_id:clientId,
+    nonce,
+    login_hint:'successpadelsamui@gmail.com',
+    callback:async ({credential}) => {
+      if (verifyingKettGoogle || googleSignInContainer.hidden) return;
+      verifyingKettGoogle = true;
+      staffError.textContent = '';
+      try {
+        await staffRequest('google-sign-in',{credential});
+        await loadStaffWorkspace();
+      } catch (error) {
+        staffError.textContent = error.message || 'Google verification failed.';
+        await showKettGoogleVerification().catch(retryKettGoogleVerification);
+      } finally {
+        verifyingKettGoogle = false;
+      }
+    },
+  });
+  googleSignInContainer.replaceChildren();
+  google.accounts.id.renderButton(googleSignInContainer,{theme:'outline',size:'large',text:'continue_with'});
 }
 
 staffSignIn.onsubmit = async event => {

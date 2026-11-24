@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { completeKettSetup } from '../server/booking/kett-setup.mjs';
 
+import { beginBookingGoogle, completeBookingGoogle } from '../server/booking/google.mjs';
+
 const cookie = '__Host-booking_staff';
 const cookieAttributes = 'Path=/; Secure; HttpOnly; SameSite=Strict';
 
@@ -81,6 +83,11 @@ export default async function handler(req, res) {
     if (role === 'owner' && assurance !== 'aal2') {
       const {data:googleVerified} = await db.rpc('booking_has_google_session');
       if (googleVerified !== true) {
+        if (user.email?.toLowerCase() === 'successpadelsamui@gmail.com') {
+          if (req.method === 'GET' && req.query?.google === 'config') return beginBookingGoogle(res);
+          if (action === 'google-sign-in') return completeBookingGoogle(req,res,url,key,writeSession,user.id);
+          return send(403, {googleRequired:true, error:'Verify with your club Google account.'});
+        }
         const factor = user.factors?.find(item => item.factor_type === 'totp' && item.status === 'verified');
         async function mfa(path, payload) {
           const response = await fetch(`${url}/auth/v1/factors${path}`, {

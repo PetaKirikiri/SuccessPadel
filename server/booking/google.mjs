@@ -20,7 +20,7 @@ function claimsFrom(token) {
   return JSON.parse(Buffer.from(token.split('.')[1], 'base64url'));
 }
 
-export async function completeBookingGoogle(req, res, url, key, writeSession) {
+export async function completeBookingGoogle(req, res, url, key, writeSession, expectedUserId) {
   const signingKey = process.env.BOOKING_GOOGLE_SESSION_KEY;
   const allowed = [process.env.BOOKING_OWNER_EMAIL, process.env.BOOKING_KETT_EMAIL]
     .filter(Boolean).map(email => email.trim().toLowerCase());
@@ -70,7 +70,8 @@ export async function completeBookingGoogle(req, res, url, key, writeSession) {
     const user = account?.user;
     const linked = user?.identities?.some(item => item.provider === 'google' &&
       (item.identity_data?.sub === identity.sub || item.id === identity.sub));
-    if (accountError || !user || !linked || user.email?.toLowerCase() !== email) {
+    if (accountError || !user || !linked || user.email?.toLowerCase() !== email ||
+        (expectedUserId && user.id !== expectedUserId)) {
       console.warn('booking_google_identity_mismatch', {
         accountFound:Boolean(user), emailMatches:user?.email?.toLowerCase() === email,
         hasGoogleIdentity:Boolean(user?.identities?.some(item => item.provider === 'google')),
