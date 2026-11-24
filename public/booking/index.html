@@ -1284,24 +1284,6 @@ draw = () => {
         footer.append(payment);
         head.parentElement.append(footer);
         cell.setAttribute('aria-label',description+' · '+clockLabel(b.time)+' · '+payment.title);
-        if(b.id && !b.preview){
-          const slot=document.createElement('div');
-          slot.className=cell.className;
-          const card=head.parentElement;
-          const open=document.createElement('button');
-          open.type='button';
-          open.className='court-card-open';
-          open.setAttribute('aria-label',cell.getAttribute('aria-label'));
-          open.title=cell.title;
-          open.onclick=cell.onclick;
-          const cancel=memberNode('button','Cancel','court-card-cancel');
-          cancel.type='button';
-          cancel.onclick=()=>openCourtCancellation(b);
-          open.append(...card.childNodes);
-          card.append(open,cancel);
-          slot.append(card);
-          cell.replaceWith(slot);
-        }
       }
     }
   }
@@ -4029,5 +4011,5 @@ body .sales-register .sales-totals[hidden]{display:none}
 .member-form-section:first-child{border-top:0;padding-top:0}
 body dialog .member-editor{max-height:90dvh;overflow:auto}
 #member-monthsRemaining{align-self:center;padding:8px;background:#f5f2fa;border-radius:6px}
-.court-card-open{background:transparent;border:0;color:inherit;font:inherit;text-align:left;width:100%;cursor:pointer}.court-card-cancel{align-self:flex-end;border:0;background:transparent;color:inherit;text-decoration:underline;cursor:pointer}.booking-dialog label[hidden]{display:none}
+.booking-dialog label[hidden]{display:none}
 </style><script src="/booking/booking-staff.js?v=opening-bookings"></script><link rel="stylesheet" href="/booking/admin-navigation.css?v=calendar-coaching"><script src="/booking/admin-navigation.js?v=populated-shop-filters"></script><link rel="stylesheet" href="/booking/dialogs.css?v=calendar-coaching"><link rel="stylesheet" href="/booking/admin-tables.css?v=shop-filter-grid"><style>#court-calendar.select-lesson-slot .calendar-head,#court-calendar.select-lesson-slot .calendar-row{grid-template-columns:70px repeat(2,minmax(0,1fr))}#court-calendar.select-lesson-slot{align-content:start;grid-auto-rows:auto}#court-calendar.select-lesson-slot .calendar-row>div:has(.court-coaching-offer){display:grid;align-content:start}#court-calendar.select-lesson-slot .court-coaching-offer{display:block;width:100%;height:auto;padding:3px}#court-calendar.select-lesson-slot .court-event{position:relative;inset:auto;width:100%;height:auto;min-height:48px}</style></body></html>
