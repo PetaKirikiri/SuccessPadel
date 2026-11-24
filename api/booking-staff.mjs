@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { beginBookingGoogle, completeBookingGoogle } from '../server/booking/google.mjs';
+import { completeKettSetup } from '../server/booking/kett-setup.mjs';
 
 const cookie = '__Host-booking_staff';
 const cookieAttributes = 'Path=/; Secure; HttpOnly; SameSite=Strict';
@@ -24,12 +24,10 @@ export default async function handler(req, res) {
   const url = process.env.BOOKING_SUPABASE_URL;
   const key = process.env.BOOKING_SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) return send(503, {error: 'Staff sign-in unavailable.'});
-  if (req.method === 'GET' && req.query?.google === 'config') return beginBookingGoogle(res);
   const token = req.headers.cookie?.split(';').map(part => part.trim())
     .find(part => part.startsWith(cookie + '='))?.slice(cookie.length + 1);
   const body = req.body ?? {};
   const action = req.method === 'GET' ? 'roster' : body.action;
-  if (action === 'google-sign-in') return completeBookingGoogle(req,res,url,key,writeSession);
   if (action === 'logout') {
     writeSession(res, null);
     return send(200, {});
@@ -46,6 +44,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    if (action === 'kett-setup') return await completeKettSetup(body, url, key, send);
     if (action === 'login') {
       if (typeof body.username !== 'string' || typeof body.password !== 'string') {
         return send(400, {error: 'Enter your username and password.'});
@@ -53,12 +52,15 @@ export default async function handler(req, res) {
       const username = body.username.trim().toLowerCase();
       const account = new Map([
         ['peta', {email:process.env.BOOKING_OWNER_EMAIL, role:'owner'}],
-        ['kett', {email:process.env.BOOKING_KETT_EMAIL, role:'owner'}],
+        ['kett', {email:'successpadelsamui@gmail.com', role:'owner'}],
         ['successpadel', {email:'booking-front-desk@successpadel.local', role:'front_desk'}],
-      ]).get(username);
+      ]).get(username) ?? (/^[a-z][a-z0-9_-]{2,31}$/.test(username)
+        ? {email:'successpadelsamui@gmail.com', role:'owner', chosenUsername:username} : null);
       if (!account?.email) return send(401, {error:'Staff sign-in failed.'});
       const {data, error} = await client().auth.signInWithPassword({email:account.email, password:body.password});
-      if (error || !data.session || await staffRole(data.session.access_token) !== account.role) {
+      if (error || !data.session || (account.chosenUsername && data.user?.app_metadata?.booking_username !== account.chosenUsername) ||
+          (username === 'kett' && data.user?.app_metadata?.booking_username && data.user.app_metadata.booking_username !== username) ||
+          await staffRole(data.session.access_token) !== account.role) {
         return send(401, {error: 'Staff sign-in failed.'});
       }
       writeSession(res, data.session);

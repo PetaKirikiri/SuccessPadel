@@ -28,7 +28,12 @@
 <link rel="stylesheet" href="/booking/booking-staff.css">
 <section id="staff-access" class="staff-access" hidden>
   <h1>Staff sign-in</h1>
-  <div id="booking-google-sign-in" class="booking-google-sign-in" aria-busy="true"><button type="button" class="secondary" disabled>Loading Google sign-in…</button></div>
+  <form id="kett-account-setup" hidden>
+    <label>Username <input name="username" autocomplete="username" required></label>
+    <label>Password <input name="password" type="password" autocomplete="new-password" minlength="14" maxlength="72" required></label>
+    <label>Confirm password <input name="confirmation" type="password" autocomplete="new-password" required></label>
+    <button class="primary">Set up account</button>
+  </form>
   <form id="staff-sign-in">
     <label>Username <input name="username" autocomplete="username" required></label>
     <label>Password <input name="password" type="password" autocomplete="current-password" required></label>
@@ -3916,4 +3921,4 @@ body .sales-register .sales-totals[hidden]{display:none}
 .member-form-section:first-child{border-top:0;padding-top:0}
 body dialog .member-editor{max-height:90dvh;overflow:auto}
 #member-monthsRemaining{align-self:center;padding:8px;background:#f5f2fa;border-radius:6px}
-</style><script src="/booking/booking-staff.js?v=shop-samples"></script><link rel="stylesheet" href="/booking/admin-navigation.css?v=calendar-coaching"><script src="/booking/admin-navigation.js?v=populated-shop-filters"></script><link rel="stylesheet" href="/booking/dialogs.css?v=calendar-coaching"><link rel="stylesheet" href="/booking/admin-tables.css?v=shop-filter-grid"></body></html>
+</style><script src="/booking/booking-staff.js?v=username-setup"></script><link rel="stylesheet" href="/booking/admin-navigation.css?v=calendar-coaching"><script src="/booking/admin-navigation.js?v=populated-shop-filters"></script><link rel="stylesheet" href="/booking/dialogs.css?v=calendar-coaching"><link rel="stylesheet" href="/booking/admin-tables.css?v=shop-filter-grid"></body></html>

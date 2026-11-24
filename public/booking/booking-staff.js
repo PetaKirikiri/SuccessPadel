@@ -67,7 +67,6 @@ function lockStaffWorkspace() {
   drawMembers();
   staffAccess.hidden = false;
   staffSignIn.hidden = false;
-  googleSignInContainer.hidden = false;
   staffAuthenticator.hidden = true;
   staffCancel.hidden = true;
 }
@@ -164,7 +163,6 @@ async function loadStaffWorkspace() {
     if (error.mfa) {
       factorId = error.factorId;
       staffSignIn.hidden = true;
-      googleSignInContainer.hidden = true;
       staffAuthenticator.hidden = false;
       staffEnroll.hidden = Boolean(factorId);
       staffCancel.hidden = false;
@@ -334,73 +332,39 @@ staffPasswordForm.onsubmit = async event => {
     staffPasswordCancel.disabled = false;
   }
 };
-const googleSignInContainer = document.getElementById('booking-google-sign-in');
-let googleScript;
-let signingInWithGoogle = false;
-
-function loadGoogleIdentity() {
-  googleScript ??= new Promise((resolve,reject) => {
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    const timeout = setTimeout(() => script.onerror(), 8000);
-    script.onload = () => { clearTimeout(timeout); resolve(); };
-    script.onerror = () => {
-      clearTimeout(timeout);
-      script.remove();
-      googleScript = undefined;
-      reject(new Error('Google sign-in unavailable.'));
-    };
-    document.head.append(script);
-  });
-  return googleScript;
-}
-
-async function showGoogleSignIn() {
-  if (bookingDemo || staffAccess.hidden || staffSignIn.hidden) return;
-  const configResponse = await fetch(staffEndpoint + '?google=config', {cache:'no-store'});
-  if (!configResponse.ok) throw new Error('Google sign-in unavailable.');
-  const config = await configResponse.json();
-  await loadGoogleIdentity();
-  google.accounts.id.initialize({
-    client_id:config.clientId,
-    nonce:config.nonce,
-    callback:async response => {
-      if (signingInWithGoogle || staffAccess.hidden) return;
-      signingInWithGoogle = true;
-      staffError.textContent = '';
-      try {
-        await staffRequest('google-sign-in', {credential:response.credential});
-        await loadStaffWorkspace();
-      } catch (error) {
-        await loadStaffWorkspace();
-        if (staffAccess.hidden) return;
-        staffError.textContent = error.message || 'Google sign-in failed. Try again.';
-        await showGoogleSignIn().catch(retryGoogleSignIn);
-      } finally {
-        signingInWithGoogle = false;
-      }
-    },
-  });
-  googleSignInContainer.replaceChildren();
-  googleSignInContainer.removeAttribute('aria-busy');
-  google.accounts.id.renderButton(googleSignInContainer,{theme:'outline',size:'large',text:'signin_with'});
-}
-
-function retryGoogleSignIn() {
-  if (bookingDemo || staffAccess.hidden || staffSignIn.hidden) return;
-  const button = memberNode('button', 'Retry Google sign-in', 'secondary');
-  button.type = 'button';
-  button.onclick = () => {
-    button.disabled = true;
-    button.textContent = 'Loading Google sign-in…';
-    googleSignInContainer.setAttribute('aria-busy', 'true');
-    showGoogleSignIn().catch(retryGoogleSignIn);
-  };
-  googleSignInContainer.removeAttribute('aria-busy');
-  googleSignInContainer.replaceChildren(button);
-}
+const setupForm = document.getElementById('kett-account-setup');
+let setupToken = new URLSearchParams(location.hash.slice(1)).get('staff-setup');
+if (setupToken) history.replaceState(history.state, '', location.pathname + location.search);
+setupForm.onsubmit = async event => {
+  event.preventDefault();
+  const {username, password, confirmation} = setupForm.elements;
+  const submit = setupForm.querySelector('button');
+  submit.disabled = true;
+  staffError.textContent = '';
+  try {
+    await staffRequest('kett-setup', {token:setupToken, username:username.value,
+      password:password.value, confirmation:confirmation.value});
+    staffSignIn.elements.username.value = username.value.trim();
+    setupToken = null;
+    setupForm.reset();
+    setupForm.hidden = true;
+    staffSignIn.hidden = false;
+    staffSignIn.elements.password.focus();
+  } catch (error) {
+    staffError.textContent = error.message;
+  } finally {
+    submit.disabled = false;
+  }
+};
 
 async function startBookingWorkspace() {
+  if (setupToken && !bookingDemo) {
+    staffAccess.hidden = false;
+    staffSignIn.hidden = true;
+    setupForm.hidden = false;
+    setupForm.elements.username.focus();
+    return;
+  }
   if (bookingDatabaseDemo) {
     const response = await fetch(staffEndpoint + '?demo=samples', {cache:'no-store'});
     if (response.status === 401 || response.status === 403) {
@@ -418,11 +382,10 @@ async function startBookingWorkspace() {
     refreshBookingCalendars();
   }
   await loadStaffWorkspace();
-  await showGoogleSignIn();
 }
 
 startBookingWorkspace().catch(() => {
-  if (!bookingDatabaseDemo) return retryGoogleSignIn();
+  if (!bookingDatabaseDemo) { staffError.textContent = 'Could not open Bookings.'; return; }
   staffSignIn.hidden = true;
   staffError.textContent = 'Could not load sample data.';
   const back = memberNode('a', 'Back to Bookings');

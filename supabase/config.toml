@@ -15,3 +15,6 @@ verify_jwt = false
 # Both signed-in staff and owner capabilities are validated inside the handler.
 [functions.member-directory-avatar]
 verify_jwt = false
+
+[functions.booking-kett-setup]
+verify_jwt = false
