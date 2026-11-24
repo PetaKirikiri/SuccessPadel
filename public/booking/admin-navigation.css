@@ -30,13 +30,6 @@ body:not([data-booking-role="owner"]) :is(.booking-admin-button, .sidebar [data-
   display: none;
 }
 
-#booking-users iframe {
-  display: block;
-  border: 0;
-  width: 100%;
-  min-height: 570px;
-}
-
 body .board-search [data-calendar-controls] input[type="date"] {
   min-width: 132px;
   height: 34px;

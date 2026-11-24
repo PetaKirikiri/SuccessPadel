@@ -46,42 +46,45 @@ function renderShop() {
 shopButton.onclick = () => { selectStaffSection(shopButton); renderShop(); };
 shopSearch.addEventListener('input', renderShop);
 
-if (['127.0.0.1', 'localhost'].includes(location.hostname)) {
-  const adminButton = document.createElement('button');
-  adminButton.type = 'button';
-  adminButton.className = 'booking-admin-button';
-  adminButton.textContent = 'Admin';
-  adminButton.setAttribute('aria-controls', 'booking-users');
+const usersButton = memberNode('button', 'Users & access');
+usersButton.type = 'button';
+usersButton.dataset.section = 'booking-users';
+administrationNavigation.append(usersButton);
 
+const accountMenuButton = memberNode('button', 'Users & access', 'booking-admin-button');
+accountMenuButton.type = 'button';
+accountMenuButton.setAttribute('aria-controls', 'booking-users');
+staffAccountActions.prepend(accountMenuButton);
 
-  const usersButton = document.createElement('button');
-  usersButton.type = 'button';
-  usersButton.dataset.section = 'booking-users';
-  usersButton.textContent = 'Users & access';
-  administrationNavigation.append(usersButton);
+const usersPage = memberNode('section', null, 'page booking-admin-page');
+usersPage.id = 'booking-users';
+const usersHeader = memberNode('header', null, 'booking-page-header');
+usersHeader.append(memberNode('h1', 'Users & access'));
+const usersTable = memberNode('div', null, 'booking-data-table');
+usersTable.innerHTML = '<table class="table"><thead><tr><th scope="col">Account</th><th scope="col">Role</th><th scope="col">Sign-in</th><th scope="col">Action</th></tr></thead><tbody></tbody></table>';
+const [ownerRow, frontDeskRow] = ['Owner', 'Front desk'].map(role => {
+  const row = usersTable.querySelector('tbody').insertRow();
+  row.insertCell();
+  row.insertCell().textContent = role;
+  row.insertCell().textContent = role === 'Owner' ? 'Google' : 'Username and password';
+  row.insertCell();
+  return row;
+});
+frontDeskRow.cells[0].textContent = 'SuccessPadel';
+staffPasswordButton.textContent = 'Set staff password';
+frontDeskRow.cells[3].append(staffPasswordButton);
+usersPage.append(usersHeader, usersTable);
+document.querySelector('.content').append(usersPage);
 
-  const usersPage = document.createElement('section');
-  usersPage.className = 'page booking-admin-page';
-  usersPage.id = 'booking-users';
-  document.querySelector('.content').append(usersPage);
-
-  usersButton.onclick = () => {
-    if (bookingStaffRole !== 'owner') return;
-    selectStaffSection(usersButton);
-    if (usersPage.firstElementChild) return;
-    const frame = document.createElement('iframe');
-    frame.title = 'Users & access';
-    frame.src = '/booking/users.html?v=admin-tables';
-    usersPage.append(frame);
-  };
-  adminButton.onclick = () => {
-    if (bookingStaffRole !== 'owner') return;
-    staffAccount.open = false;
-    usersButton.click();
-  };
-
-  staffAccountActions.prepend(adminButton);
-}
+usersButton.onclick = () => {
+  if (bookingStaffRole !== 'owner') return;
+  ownerRow.cells[0].textContent = staffAccountName.textContent;
+  selectStaffSection(usersButton);
+};
+accountMenuButton.onclick = () => {
+  staffAccount.open = false;
+  usersButton.click();
+};
 
 for (const [section, input] of [['dashboard', day], ['pilates', pDay]]) {
   const dateControls = input.closest('.booking-week-toolbar');
