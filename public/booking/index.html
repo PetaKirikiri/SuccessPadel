@@ -1108,7 +1108,7 @@ function openBookingDetails(booking,kind){
     ['Payment',booking.eventId?null:paymentMark(booking)],
     ['Method',{'test-card':'Credit card (test)','test-qr':'QR transfer (test)','test-true':'True Pay (test)','cash':'Cash','package':'Package credit'}[booking.paymentMethod]],
     ['Paid by',booking.paidBy],
-    ['Card reference',booking.paymentMethod==='test-card'?booking.paymentReference:null],
+    [booking.paymentMethod==='test-card'?'Card reference':'Receipt reference',booking.paymentReference],
     ['Bank slip',bankSlipLink(booking.bankSlip)],
     ['Bank',booking.paymentBank],
     ['Account',booking.paymentAccount],
@@ -1926,13 +1926,13 @@ function reviewBookingPayment(method,amount,payer,confirm){
   const evidence = memberNode('div',null,'payment-review-evidence');
   const confirmButton=paymentReview.querySelector('[value="confirm"]');
   confirmButton.disabled=false;
-  if(method==='test-card'){
-    const label=memberNode('label','Card reference number');
+  if(method==='test-card'||method==='test-qr'){
+    const label=memberNode('label',method==='test-card'?'Card reference number':'Receipt number');
     const input=document.createElement('input');
     input.type='text';
     input.maxLength=80;
     input.autocomplete='off';
-    input.oninput=()=>{paymentReviewEvidence={paymentReference:input.value.trim()||undefined};};
+    input.oninput=()=>{paymentReviewEvidence.paymentReference=input.value.trim()||undefined;};
     label.append(input);
     evidence.append(label);
   }
@@ -1947,7 +1947,7 @@ function reviewBookingPayment(method,amount,payer,confirm){
     input.onchange=()=>{
       const current=++version;
       const file=input.files[0];
-      paymentReviewEvidence={};
+      delete paymentReviewEvidence.bankSlip;
       error.textContent='';
       confirmButton.disabled=Boolean(file);
       if(!file)return;
@@ -1958,7 +1958,7 @@ function reviewBookingPayment(method,amount,payer,confirm){
       const reader=new FileReader();
       reader.onload=()=>{
         if(current!==version||!input.isConnected||!paymentReview.open)return;
-        paymentReviewEvidence={bankSlip:{name:file.name,url:reader.result}};
+        paymentReviewEvidence.bankSlip={name:file.name,url:reader.result};
         confirmButton.disabled=false;
       };
       reader.onerror=()=>{if(current===version&&input.isConnected)error.textContent='Could not read the slip. Choose the file again.';};
