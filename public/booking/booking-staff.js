@@ -333,6 +333,8 @@ staffPasswordForm.onsubmit = async event => {
   }
 };
 const setupForm = document.getElementById('kett-account-setup');
+const staffAccessHeading = staffAccess.querySelector('h1');
+const bookingPageTitle = document.title;
 let setupToken = new URLSearchParams(location.hash.slice(1)).get('staff-setup');
 if (setupToken) history.replaceState(history.state, '', location.pathname + location.search);
 setupForm.onsubmit = async event => {
@@ -348,6 +350,8 @@ setupForm.onsubmit = async event => {
     setupToken = null;
     setupForm.reset();
     setupForm.hidden = true;
+    staffAccessHeading.textContent = 'Staff sign-in';
+    document.title = bookingPageTitle;
     staffSignIn.hidden = false;
     staffSignIn.elements.password.focus();
   } catch (error) {
@@ -359,6 +363,8 @@ setupForm.onsubmit = async event => {
 
 async function startBookingWorkspace() {
   if (setupToken && !bookingDemo) {
+    staffAccessHeading.textContent = 'Set up your Bookings account';
+    document.title = 'Set up your Bookings account · Success Padel';
     staffAccess.hidden = false;
     staffSignIn.hidden = true;
     setupForm.hidden = false;
