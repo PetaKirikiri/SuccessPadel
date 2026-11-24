@@ -129,18 +129,26 @@ body #court-calendar .court-event:has(.court-booking-footer) {
   gap: 2px;
 }
 body #court-calendar .court-booking-players {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  width: 100%;
-  line-height: 1.18;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  min-width: 0;
 }
-body #court-calendar .court-booking-player,
+body #court-calendar .court-booking-player {
+  display: inline-flex;
+  max-width: 100%;
+  padding-inline: 3px;
+  border-radius: 3px;
+}
+body #court-calendar .court-player-member {
+  background: #f4ca58;
+  color: #382900;
+}
 body #court-calendar .court-booking-player strong {
-  display: inline;
-  white-space: normal;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 body #court-calendar .court-booking-footer {
   display: flex;
@@ -151,7 +159,9 @@ body #court-calendar .court-booking-footer {
   margin-top: auto;
 }
 body #court-calendar .court-booking-footer .court-booking-coach {
-  margin-inline: 0;
+  margin-inline: auto 0;
+  font-size: 15px;
+  font-weight: 650;
   min-width: 0;
   overflow: hidden;
   border: 0;
@@ -716,6 +726,14 @@ body #coaches .personal-calendar > [hidden] { display: none; }
   height: 14px;
 }
 
+body #court-calendar .court-event .court-payment-icon[data-state],
+body #coaches .coach-card-footer .court-payment-icon[data-state] {
+  width: 20px;
+  font-size: 19px;
+  line-height: 1;
+  font-weight: 800;
+}
+
 .shop-product-photo {
   display: grid;
   place-items: center;
@@ -732,16 +750,12 @@ body #coaches .personal-calendar > [hidden] { display: none; }
   object-fit: contain;
 }
 
+
+body #court-calendar .court-booking-footer .court-booking-coach + .court-payment-icon { margin-inline-start: 0; }
+body :is(#court-calendar,#coaches) .court-payment-icon svg { display:block; width:18px; height:18px; flex:none; }
+
 body #court-calendar .calendar-row .court-event[data-member-booking] {
   background: #dcf2e4 !important;
   border-color: #a8d4b7 !important;
   color: #194b34 !important;
-}
-
-body #court-calendar .court-event .court-payment-icon[data-state],
-body #coaches .coach-card-footer .court-payment-icon[data-state] {
-  width: 20px;
-  font-size: 19px;
-  line-height: 1;
-  font-weight: 800;
 }

@@ -130,3 +130,83 @@ body dialog#sales-receipt-dialog .sales-receipt-panel dl {
   width: 100%;
   min-width: 0;
 }
+
+body dialog .booking-payment-method {
+  container-type: inline-size;
+  min-inline-size: 0;
+}
+body #modal legend:has(.split-payment-toggle) {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+body #modal .split-payment-toggle { margin: 0; padding: 5px 10px; }
+body dialog .booking-payment-method .payment-options {
+  grid-auto-flow: column;
+  grid-template-columns: none;
+  grid-auto-columns: minmax(0,1fr);
+}
+body dialog .booking-payment-method .payment-options button {
+  flex-direction: column;
+  white-space: nowrap;
+  gap: 3px;
+  font-size: 12px;
+  font-weight: 500;
+}
+body #modal .split-player-payment:not([hidden]) {
+  display: grid;
+  grid-template-columns: 5ch 7.2em 6.5em;
+  gap: 6px;
+  align-items: center;
+}
+body #modal .split-player-payment output {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+body #modal .split-player-payment select {
+  width: 100%;
+  max-width: none;
+  height: 32px;
+  padding: 2px 4px;
+  font: 400 13px/1.2 var(--booking-type);
+  color: var(--booking-text);
+  background-color: white;
+  border: 1px solid #b5ccd9;
+  border-radius: 7px;
+}
+body #modal .split-player-payment select:disabled {
+  color: var(--booking-muted);
+  background-color: #f5f7f8;
+  border-color: #dce4e8;
+}
+@container (max-width: 360px) {
+  body dialog .booking-payment-method .payment-options {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(6,minmax(0,1fr));
+  }
+  body dialog .booking-payment-method .payment-options button {
+    grid-column: span 2;
+  }
+  body dialog .booking-payment-method .payment-options button:nth-last-child(-n+2) {
+    grid-column: span 3;
+  }
+}
+@container (max-width: 360px) {
+  body dialog .package-account .booking-payment-method .payment-options button {
+    grid-column: span 3;
+  }
+}
+@media(max-width:500px) {
+  body #modal .split-player-payment:not([hidden]) {
+    grid-template-columns: minmax(0,1fr) 7.2em 6.5em;
+  }
+}
+
+dialog.lesson-picker { width:min(560px,94vw); max-height:85vh; padding:18px; border:1px solid #b5ccd9; border-radius:12px; color:#20344a; }
+dialog.lesson-picker::backdrop { background:#f5f8fa; }
+.lesson-picker header { display:flex; justify-content:space-between; gap:8px; margin-bottom:12px; }
+.lesson-choices { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,185px),1fr)); gap:8px; }
+.lesson-choice { display:grid; gap:3px; padding:10px; text-align:left; color:inherit; background:#f3f8fc; border:1px solid #acc8d9; border-radius:8px; }
+.lesson-choice:is(:hover,:focus-visible) { background:#dcecff; }

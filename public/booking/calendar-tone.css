@@ -379,12 +379,6 @@ body :is(#court-calendar,#pilates-calendar) .calendar-cell[data-slot-time]:not(.
   padding:1px 4px; border-radius:4px; background:#e7f3fa; color:#1e526e;
   font:600 10px/13px 'DM Sans',sans-serif; pointer-events:none; white-space:nowrap;
 }
-@media (hover:hover) {
-  body :is(#court-calendar,#pilates-calendar) .calendar-cell[data-slot-time]:not(.court-coaching-offer):hover::after {
-    content:attr(data-slot-time);
-    left:clamp(0px,calc(var(--pointer-x,0px) + 8px),calc(100% - 55px));
-  }
-}
 body :is(#court-calendar,#pilates-calendar) .calendar-cell[data-slot-time]:not(.court-coaching-offer):focus-visible::after {
   content:attr(data-slot-time);
 }
@@ -619,7 +613,7 @@ body .coach-day-calendar .calendar-cell[aria-disabled="true"] { cursor: default;
 body .coach-day-calendar .calendar-cell[data-slot]:not(.availability-block):is(:focus-visible,:hover) {
   position: relative; overflow: visible; z-index: 2;
 }
-.coach-day-calendar .calendar-cell[data-slot]:not(.availability-block):is(:focus-visible,:hover)::after {
+.coach-day-calendar .calendar-cell[data-slot]:not(.availability-block):focus-visible::after {
   content: attr(data-slot-time);
   position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
   background: #165978; color: white; padding: 1px 4px; border-radius: 4px;
