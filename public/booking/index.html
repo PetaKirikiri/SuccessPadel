@@ -73,7 +73,8 @@ async function writeCalendarRows(key, rows) {
   calendarWriting = true;
   try {
     const result = await staffRequest('save-calendar',{key,rows,revision:calendarDataset.revision});
-    calendarDataset = {records:{...calendarDataset.records,[key]:rows},revision:result.revision};
+    calendarDataset = {records:{...calendarDataset.records,[key]:rows,lessonCancellations:result.lessonCancellations||calendarDataset.records.lessonCancellations||[]},revision:result.revision};
+    if(result.notificationWarning)window.alert("Calendar saved. LINE delivery incomplete.");
   } finally {
     calendarWriting = false;
   }
@@ -167,7 +168,7 @@ document.getElementById('save').onclick=async()=>{bookings=storedRows('success-p
   }
   day.value=nextDate;
   close();refreshBookingCalendars();drawMembers();return;
-}if(activity.value==='coaching'&&!coachingCourts.includes(resource.value))return bookingError(modal,'Choose a covered court for coaching.');if(activity.value==='coaching'&&!eligibleCoaches(dateInput.value,timeInput.value,Number(product.value),bookings).includes(coach))return bookingError(modal,'Coach unavailable');const walkIn=customer.value==='New customer';if(walkIn&&!walkName.value.trim()){walkName.focus();walkName.reportValidity();return}if(!rows.includes(timeInput.value))return bookingError(modal,'Choose a quarter-hour start time.');if(![30,60,90,120].includes(parseInt(duration.value)))return bookingError(modal,'Choose a listed duration.');const credit=bookingPackage('padel');if(credit===false)return bookingError(modal,'Package unavailable.');const b={bookedBy:bookingOperator(),coach,playerLevel:coach?lessonLevel.value||null:null,coachingNote:coach?coachingNote.value.trim()||null:null,activity:activity.value,product:activity.value==='coaching'?(product.value==='60'?'normal-coaching':'coaching-match'):null,date:dateInput.value,time:timeInput.value,court:resource.value,duration:parseInt(duration.value),membership:courtMemberRate().member?'Member':'Non-member',customer:walkIn?walkName.value.trim():customer.value.split(' · ')[0],customerId:padelCustomerId(),players:newCourtPlayers.value.slice(1).filter(Boolean),packageId:credit?.id||null,...(credit?testPayment('package',walkIn?walkName.value.trim():customer.value.split(' · ')[0]):{paid:false,requestedPaymentMethod:padelPayment.value}),price:credit?0:override.checked?Number(amount.value):rate()};Object.assign(b,splitBookingFields(b.price));if(!b.date||!Number.isFinite(b.price)||b.price<0||minutes(b.time)+b.duration>closingMinute)return bookingError(modal,'Check the booking date, duration and price.');if(bookings.some(x=>bookingOccursOn(x,b.date)&&x.court===b.court&&minutes(x.time)<minutes(b.time)+b.duration&&minutes(b.time)<minutes(x.time)+x.duration))return bookingError(modal,'Court already booked');if(!credit&&!b.splitPayments?.length&&!confirmBookingPayment(b,padelPayment.value,'save'))return;const next=[...bookings,b];try{await writeCalendarRows('success-padel-bookings',next)}catch{return bookingError(modal,'Could not save booking.')}bookings=next;day.value=b.date;draw();close();drawMembers()};
+}if(activity.value==='coaching'&&!coachingCourts.includes(resource.value))return bookingError(modal,'Choose a covered court for coaching.');if(activity.value==='coaching'&&!eligibleCoaches(dateInput.value,timeInput.value,Number(product.value),bookings).includes(coach))return bookingError(modal,'Coach unavailable');const walkIn=customer.value==='New customer';if(walkIn&&!walkName.value.trim()){walkName.focus();walkName.reportValidity();return}if(!rows.includes(timeInput.value))return bookingError(modal,'Choose a quarter-hour start time.');if(![30,60,90,120].includes(parseInt(duration.value)))return bookingError(modal,'Choose a listed duration.');const credit=bookingPackage('padel');if(credit===false)return bookingError(modal,'Package unavailable.');const b={id:crypto.randomUUID(),bookedBy:bookingOperator(),coach,playerLevel:coach?lessonLevel.value||null:null,coachingNote:coach?coachingNote.value.trim()||null:null,activity:activity.value,product:activity.value==='coaching'?(product.value==='60'?'normal-coaching':'coaching-match'):null,date:dateInput.value,time:timeInput.value,court:resource.value,duration:parseInt(duration.value),membership:courtMemberRate().member?'Member':'Non-member',customer:walkIn?walkName.value.trim():customer.value.split(' · ')[0],customerId:padelCustomerId(),players:newCourtPlayers.value.slice(1).filter(Boolean),packageId:credit?.id||null,...(credit?testPayment('package',walkIn?walkName.value.trim():customer.value.split(' · ')[0]):{paid:false,requestedPaymentMethod:padelPayment.value}),price:credit?0:override.checked?Number(amount.value):rate()};Object.assign(b,splitBookingFields(b.price));if(!b.date||!Number.isFinite(b.price)||b.price<0||minutes(b.time)+b.duration>closingMinute)return bookingError(modal,'Check the booking date, duration and price.');if(bookings.some(x=>bookingOccursOn(x,b.date)&&x.court===b.court&&minutes(x.time)<minutes(b.time)+b.duration&&minutes(b.time)<minutes(x.time)+x.duration))return bookingError(modal,'Court already booked');if(!credit&&!b.splitPayments?.length&&!confirmBookingPayment(b,padelPayment.value,'save'))return;const next=[...bookings,b];try{await writeCalendarRows('success-padel-bookings',next)}catch{return bookingError(modal,'Could not save booking.')}bookings=next;day.value=b.date;draw();close();drawMembers()};
 const originalDraw=draw;draw=function(){originalDraw();const calendarRows=[...document.querySelectorAll('.calendar-row')];calendarRows.forEach((row,i)=>{row.classList.toggle('hour-start',i%4===0);row.querySelectorAll('.calendar-cell.reserved').forEach(cell=>{if(!cell.textContent)cell.classList.add('reserved-continuation');const courtIndex=[...row.children].indexOf(cell)-1;const next=calendarRows[i+1]?.children[courtIndex+1];if(next?.classList.contains('reserved')&&!next.textContent)cell.classList.add('reserved-continues')})})};
 modal.querySelector('p').remove(); type.querySelector('option[value="coach"]').remove(); document.getElementById('new').remove(); duration.innerHTML=[30,60,90,120].map(n=>`<option ${n===60?'selected':''}>${n} min</option>`).join(''); setResources();draw();
 const sidebar=document.querySelector('.sidebar');sidebar.style.display='grid';
@@ -235,6 +236,8 @@ function drawMembers(){
   matches++;const row=memberNode('tr');row.dataset.memberId=member.id;const identity=memberNode('td');const person=memberNode('div',null,'member-person');
   const photo=memberPhotoSource(member);if(photo){const img=document.createElement('img');img.src=photo;img.alt=`${member.name} profile picture`;img.className='member-photo';person.append(img);}else{person.append(memberNode('span',member.name.trim().split(/\s+/).map(n=>n[0]).slice(0,2).join('').toUpperCase(),'member-photo member-initials'));}
   const text=memberNode('div');text.append(memberNode('b',member.nickname||member.name),memberNode('small',member.nickname?member.name:member.type||'Member'));person.append(text);identity.append(person);row.append(identity);
+  const cancellations=(calendarDataset?.records.lessonCancellations||[]).filter(b=>b.customerId===member.id);
+  if(cancellations.length)identity.append(memberNode('small',cancellations.length+' cancelled lesson'+(cancellations.length===1?'':'s'),'customer-meta'));
   const contact=memberNode('td');for(const [label,value]of [['Phone',member.phone],['Email',member.email],['LINE ID',member.line],['WhatsApp',member.whatsapp]])if(value)contact.append(memberNode('div',`${label}: ${value}`));if(!contact.childNodes.length)contact.textContent='Not set';row.append(contact,memberNode('td',memberDate(member.signup)),memberNode('td',memberDate(expires)));
   const actions=memberNode('td');const edit=memberNode('button','Edit','secondary');edit.type='button';edit.setAttribute('aria-label',`Edit ${member.name}`);edit.onclick=()=>openMember(member.id);
   if(member.deleted){
@@ -1846,7 +1849,7 @@ function allPackages(){return storedRows(packageKey)}function packageSessions(id
     .filter(booking=>booking.packageId===id)
     .sort((first,second)=>(first.date+'T'+first.time).localeCompare(second.date+'T'+second.time));
 }
-function usedPackage(id){return packageSessions(id).length}function remainingPackage(pack){return Math.max(0,pack.count-(pack.previousSessionsUsed||0)-usedPackage(pack.id))}
+function usedPackage(id){return packageSessions(id).length}function remainingPackage(pack){return Math.max(0,pack.count-(pack.previousSessionsUsed||0)-usedPackage(pack.id)-(calendarDataset?.records.lessonCancellations||[]).filter(b=>b.late&&b.packageId===pack.id).length)}
 function eligiblePackages(memberId,kind,date){return allPackages().filter(p=>p.memberId===memberId&&(p.kind===kind||(kind==='padel10'&&p.kind==='padel5'))&&p.purchased<=date&&date<=p.expires&&remainingPackage(p)>0).sort((a,b)=>a.expires.localeCompare(b.expires))}
 const packageModal=document.createElement('dialog');packageModal.className='modal-back';packageModal.setAttribute('aria-labelledby','package-person');packageModal.innerHTML='<div class="modal compact-booking package-account"><button class="close" aria-label="Close" id="package-close">×</button><h2 id="package-person"></h2><div id="account-packages"></div><div class="field"><label for="package-product">Package</label><select id="package-product"></select></div><div class="package-purchase-total"><b id="package-cost"></b><small id="package-expiry"></small></div><div id="package-error" role="alert"></div><div class="modal-actions"><button class="primary" id="package-purchase">Add package</button></div></div>';document.body.append(packageModal);
 function addOnIcon(kind){
@@ -2273,7 +2276,24 @@ savedCourtPayment.hidden=true;
 function sameCourtBooking(row,booking){
   return row.date===booking.date&&row.time===booking.time&&row.court===booking.court;
 }
+const cancelLessonButton=memberNode('button','Cancel lesson','secondary');
+cancelLessonButton.type='button';
+cancelLessonButton.hidden=true;
+form.append(cancelLessonButton);
+cancelLessonButton.onclick=async()=>{
+  const booking=editingCourt;
+  if(!booking?.id || !confirm('Cancel this lesson?'+(Date.parse(booking.date+'T'+booking.time+':00+07:00')-Date.now()<43200000 && booking.packageId?' The package credit will be kept.':'')))return;
+  cancelLessonButton.disabled=true;
+  try{
+    const saved=storedRows('success-padel-bookings');
+    await writeCalendarRows('success-padel-bookings',saved.filter(b=>b.id!==booking.id));
+    close();refreshBookingCalendars();drawMembers();
+  }catch{bookingError(modal,'Could not cancel lesson. Reload and try again.')}
+  finally{cancelLessonButton.disabled=false;}
+};
+modal.addEventListener('close',()=>{cancelLessonButton.hidden=true});
 function editCourtBooking(booking){
+  cancelLessonButton.hidden=!(booking.id && booking.activity==='coaching');
   day.value=booking.date;
   start(booking.court,booking.time);
   editingCourt=booking;
@@ -2426,7 +2446,7 @@ document.getElementById('save').addEventListener('click',event=>{
 
 function packageContext(kind){return kind==='padel'?{id:padelCustomerId(),kind:activity.value==='coaching'&&product.value==='60'?'padel10':null,date:dateInput.value,control:courtCredit}:{id:pilatesCustomerId(),kind:pService.value==='private'?'private5':pService.value==='group'?'group5':null,date:pSelected?.date,control:pilatesCredit}}
 function bookingPackage(surface){const ctx=packageContext(surface),id=ctx.control.select.value;if(!id)return null;return eligiblePackages(ctx.id,ctx.kind,ctx.date).find(p=>p.id===id)||false}
-function refreshPackageChoices(surface,reset=false){const ctx=packageContext(surface),old=reset?'':ctx.control.select.value,available=ctx.id&&ctx.kind&&ctx.date?eligiblePackages(ctx.id,ctx.kind,ctx.date):[];ctx.control.field.hidden=!available.length;ctx.control.select.replaceChildren(new Option('Pay per session',''),...available.map(p=>new Option(`${remainingPackage(p)} credits · ${memberDate(p.expires)}`,p.id)));if(available.some(p=>p.id===old))ctx.control.select.value=old;showPackageTotal(surface)}
+function refreshPackageChoices(surface,reset=false){const ctx=packageContext(surface),old=reset?'':ctx.control.select.value,available=ctx.id&&ctx.kind&&ctx.date?eligiblePackages(ctx.id,ctx.kind,ctx.date):[];ctx.control.field.hidden=!available.length;ctx.control.select.replaceChildren(new Option('Pay per session',''),...available.map(p=>new Option(`${remainingPackage(p)} credits · ${memberDate(p.expires)}`,p.id)));const contextKey=[ctx.id,ctx.kind,ctx.date,available.map(p=>p.id)].join('|');if(available.some(p=>p.id===old))ctx.control.select.value=old;else if(available.length && (reset||ctx.control.select.dataset.contextKey!==contextKey))ctx.control.select.value=available[0].id;ctx.control.select.dataset.contextKey=contextKey;showPackageTotal(surface)}
 const cashCourtPrice=refreshPrice,cashPilatesPrice=pPrice;function showPackageTotal(surface){const pack=bookingPackage(surface);if(surface==='padel'){cashCourtPrice();override.disabled=!!pack;if(pack){override.checked=false;overrideField.style.display='none';price.textContent='1 credit · ฿0'}}else{cashPilatesPrice();pOverride.disabled=!!pack;if(pack){pOverride.checked=false;document.getElementById('p-override-field').hidden=true;document.getElementById('p-total').textContent='1 credit · ฿0'}}}
 refreshPrice=()=>refreshPackageChoices('padel');pPrice=()=>refreshPackageChoices('pilates');customer.onchange=refreshPrice;duration.onchange=refreshPrice;pService.onchange=pPrice;pCustomer.addEventListener('input',pPrice);courtCredit.select.onchange=()=>showPackageTotal('padel');pilatesCredit.select.onchange=()=>showPackageTotal('pilates');
 const startPackageCourt=start;start=(court,time)=>{courtCredit.select.value='';startPackageCourt(court,time);refreshPackageChoices('padel',true)};const startPackagePilates=pStart;pStart=(room,time,existing)=>{pilatesCredit.select.value='';startPackagePilates(room,time,existing);refreshPackageChoices('pilates',true)};drawMembers();

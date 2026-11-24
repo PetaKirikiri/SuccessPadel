@@ -1,3 +1,4 @@
+import {applyLessonChanges,sendLessonNotices} from '../server/booking/lesson-events.mjs';
 const lineTestMemberId = 'padel-card-012';
 function bookingNotificationPreferences(members) {
   return members.map(member => ({...member, lineBookingNotificationsEnabled: member.id === lineTestMemberId && !member.deleted && (member.lineBookingNotificationsEnabled ?? true) === true}));
@@ -154,10 +155,23 @@ export default async function handler(req, res) {
       const current = await table.select('records').eq('id',1).eq('revision',revision).maybeSingle();
       if (current.error) return send(503,{error:'Calendar unavailable.'});
       if (!current.data) return send(409,{error:'Calendar changed. Reload and try again.'});
-      const {data,error} = await table.update({records:{...current.data.records,[key]:rows},revision:revision+1})
+      let output={...current.data.records,[key]:rows},changes=[];
+      if(key==='success-padel-bookings'){
+        try { ({output,changes}=applyLessonChanges(current.data.records,rows)); }
+        catch(err){ return send(400,{error:err.message}); }
+      }
+      let enabled=false;
+      if(changes.some(c=>c.booking.customerId===lineTestMemberId)){
+        const roster=await db.from('booking_member_roster').select('members').eq('id',1).single();
+        if(roster.error)return send(503,{error:'Could not check notification preferences.'});
+        enabled=bookingNotificationPreferences(roster.data.members).some(m=>m.lineBookingNotificationsEnabled);
+      }
+      const {data,error} = await table.update({records:output,revision:revision+1})
         .eq('id',1).eq('revision',revision).select('revision').maybeSingle();
       if (error) return send(503,{error:'Could not save calendar.'});
-      return data ? send(200,data) : send(409,{error:'Calendar changed. Reload and try again.'});
+      if(!data)return send(409,{error:'Calendar changed. Reload and try again.'});
+      const notified=await sendLessonNotices(changes,enabled);
+      return send(200,{...data,lessonCancellations:output.lessonCancellations,notificationWarning:!notified});
     }
     if (action === 'roster' && req.query?.demo === 'samples') {
       if (role !== 'owner') return send(403, {error:'Owner access required.'});

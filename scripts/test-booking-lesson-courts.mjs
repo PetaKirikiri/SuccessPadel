@@ -11,7 +11,7 @@ for (const court of ['Court 3', 'Court 4']) {
   test('Lesson on ' + court + ' takes one court and one package credit', () => {
     const bookings = [];
     const ctx = vm.createContext({
-      coachList: ['Peta'], coachingCourts: ['Court 3', 'Court 4'], closingMinute: 1320,
+      calendarDataset:null, coachList: ['Peta'], coachingCourts: ['Court 3', 'Court 4'], closingMinute: 1320,
       rows: ['21:00'], availabilityKey: 'availability',
       storedRows: key => key === 'availability' ? [window] : key === 'success-padel-bookings' ? bookings : [],
       minutes: time => Number(time.slice(0, 2)) * 60 + Number(time.slice(3))
