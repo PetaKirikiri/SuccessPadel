@@ -119,15 +119,9 @@ async function loadStaffWorkspace({afterSignIn = false} = {}) {
   staffError.textContent = '';
   try {
     const version = ++staffWorkspaceVersion;
-    const [rosterRequest, calendarRequest] = await Promise.allSettled([
-      staffRequest(),
-      bookingDemo ? null : staffRequest('calendar'),
-    ]);
+    let roster = await staffRequest(bookingDemo ? undefined : 'workspace');
     if (version !== staffWorkspaceVersion) return;
-    if (rosterRequest.status === 'rejected') throw rosterRequest.reason;
-    if (calendarRequest.status === 'rejected') throw calendarRequest.reason;
-    let roster = rosterRequest.value;
-    if (!bookingDemo) calendarDataset = calendarRequest.value;
+    if (!bookingDemo) calendarDataset = roster.calendar;
     bookingStaffRole = roster.role;
     rosterRevision = roster.revision;
     if (roster.role === 'owner') {

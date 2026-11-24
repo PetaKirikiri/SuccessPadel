@@ -178,9 +178,14 @@ export default async function handler(req, res) {
       return error ? send(503, {error:'Could not load sample data.'}) : send(200, data.dataset);
     }
 
-    if (action === 'roster') {
-      const {data, error} = await db.from('booking_member_roster').select('members,revision').eq('id',1).single();
+    if (action === 'roster' || action === 'workspace') {
+      const rosterQuery = db.from('booking_member_roster').select('members,revision').eq('id',1).single();
+      const calendarQuery = action === 'workspace'
+        ? db.from('booking_calendar_records').select('records,revision').eq('id',1).single()
+        : null;
+      const [{data, error}, calendar] = await Promise.all([rosterQuery, calendarQuery]);
       if (error) return send(503, {error:'Could not load members.'});
+      if (calendar?.error) return send(503, {error:'Calendar unavailable.'});
       const profileName = role === 'front_desk' ? 'SuccessPadel' :
         user.email?.toLowerCase() === process.env.BOOKING_KETT_EMAIL?.toLowerCase() ? 'Kett' : 'Peta';
       const avatar = user.user_metadata?.avatar_url;
@@ -189,7 +194,7 @@ export default async function handler(req, res) {
         avatar:role === 'owner' && typeof avatar === 'string' &&
           /^https:\/\/lh3\.googleusercontent\.com\//.test(avatar) ? avatar : null,
       };
-      return send(200, {...data, members:bookingNotificationPreferences(data.members), role, profile});
+      return send(200, {...data, members:bookingNotificationPreferences(data.members), role, profile, ...(calendar && {calendar:calendar.data})});
     }
     if (action === 'loan' || action === 'save-loan') {
       if (role !== 'owner') return send(403, {error:'Owner access required.'});
