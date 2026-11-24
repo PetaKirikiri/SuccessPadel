@@ -52,8 +52,12 @@
 </div></main></div>
 <dialog class="modal-back booking-dialog" id="modal" aria-labelledby="court-title" aria-describedby="court-context"><div class="modal"><button class="close" aria-label="Close" id="close">×</button><h2 id="court-title">Create a booking</h2><div id="court-context" class="slot-context"></div><p>Reserve a court or coach. Staff pricing override is available here.</p><div class="form-grid"><div class="field"><label>Customer</label><select id="customer"><option>Mali K. · Member</option><option>Anan S. · Regular</option><option>New customer</option></select></div><div class="field"><label>Booking type</label><select id="type"><option value="outdoor">Outdoor court</option><option value="indoor">Covered court</option><option value="coach">Coaching session</option></select></div><div class="field"><label>Date</label><input type="date" value="2026-11-21"/></div><div class="field"><label>Start time</label><select><option>10:00</option><option>11:00</option><option>14:00</option><option>16:00</option></select></div><div class="field"><label>Court</label><select><option>Outdoor 1</option><option>Outdoor 2</option><option>Indoor 1</option><option>Coach Fon</option><option>Coach Niran</option></select></div><div class="field"><label>Duration</label><select><option>60 minutes</option><option>90 minutes</option><option>120 minutes</option></select></div><div class="price-preview"><div><span style="display:block;color:var(--muted);font-size:12px">Calculated price</span><b id="calc-price">฿400</b></div><label class="check"><input type="checkbox" id="override"/> Staff override</label></div><div class="field full" id="override-field" style="display:none"><label>Override amount (THB)</label><input type="number" value="400" id="override-amount"/></div></div><div class="modal-actions"><button class="secondary" id="cancel">Cancel</button><button class="primary" id="save">Save booking</button></div></div></dialog>
 <script>
-const bookingDemo = new URLSearchParams(location.search).get('demo') === '1';
-const bookingFixtures = bookingDemo || ['localhost', '127.0.0.1'].includes(location.hostname);
+const bookingMode = new URLSearchParams(location.search).get('demo');
+const bookingDatabaseDemo = bookingMode === 'staff';
+const bookingDemo = bookingMode === '1' || bookingDatabaseDemo;
+const bookingFixtures = !bookingDatabaseDemo && (bookingDemo || ['localhost', '127.0.0.1'].includes(location.hostname));
+let bookingDemoDate = '2026-11-25';
+let bookingDemoSales = [];
 function demoStorage() {
   const values = Object.create(null);
   return Object.defineProperties(values, {
@@ -1603,7 +1607,7 @@ const drawWithPrices=draw;draw=()=>{
 
 };day.onchange=draw;timeInput.onchange=refreshPrice;draw();
 const weekDayLong=new Intl.DateTimeFormat('en-GB',{weekday:'long',timeZone:'UTC'}),weekDayShort=new Intl.DateTimeFormat('en-GB',{weekday:'short',timeZone:'UTC'}),weekDateShort=new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short',timeZone:'UTC'});
-function bangkokToday(){if(bookingDemo)return '2026-11-25';const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const date=Object.fromEntries(parts.map(p=>[p.type,p.value]));return `${date.year}-${date.month}-${date.day}`}
+function bangkokToday(){if(bookingDemo)return bookingDemoDate;const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const date=Object.fromEntries(parts.map(p=>[p.type,p.value]));return `${date.year}-${date.month}-${date.day}`}
 function installDayToolbar(input, previousId, nextId) {
   const bar=input.closest('.calendar-toolbar');
   bar.classList.add('booking-week-toolbar','board-tools');
@@ -2900,8 +2904,8 @@ function renderDailySales(bills, range, methods, matches) {
     }];
   }));
   const sampleDate=bangkokToday();
-  if (bookingFixtures && sampleDate>=from && sampleDate<=to) {
-    for (const [time,item,method,amount,receipt,court,group] of previewSalesTransactions) {
+  if ((bookingFixtures || bookingDatabaseDemo) && sampleDate>=from && sampleDate<=to) {
+    for (const [time,item,method,amount,receipt,court,group] of bookingDatabaseDemo ? bookingDemoSales : previewSalesTransactions) {
       if (!matches(group || (court ? {category:'courts',group:court} : {category:'retail'}))) continue;
       entries.push({timestamp:Date.parse(sampleDate+'T'+time+':00+07:00'),item,method,amount,receipt,sample:true});
     }
@@ -3650,4 +3654,4 @@ body .sales-register .sales-totals[hidden]{display:none}
 .member-form-section:first-child{border-top:0;padding-top:0}
 body dialog .member-editor{max-height:90dvh;overflow:auto}
 #member-monthsRemaining{align-self:center;padding:8px;background:#f5f2fa;border-radius:6px}
-</style><script src="/booking/booking-staff.js?v=demo"></script><link rel="stylesheet" href="/booking/admin-navigation.css?v=admin-tables-2"><script src="/booking/admin-navigation.js?v=demo"></script><link rel="stylesheet" href="/booking/dialogs.css?v=receipt"><link rel="stylesheet" href="/booking/admin-tables.css?v=product-categories"></body></html>
+</style><script src="/booking/booking-staff.js?v=demo-db"></script><link rel="stylesheet" href="/booking/admin-navigation.css?v=admin-tables-2"><script src="/booking/admin-navigation.js?v=demo-db"></script><link rel="stylesheet" href="/booking/dialogs.css?v=receipt"><link rel="stylesheet" href="/booking/admin-tables.css?v=product-categories"></body></html>

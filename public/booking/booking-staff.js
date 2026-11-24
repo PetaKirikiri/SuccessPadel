@@ -55,6 +55,7 @@ async function saveBookingMembers(members) {
 }
 
 function lockStaffWorkspace() {
+  document.getElementById('booking-sample-view')?.remove();
   document.body.setAttribute('data-booking-locked', '');
   delete document.body.dataset.bookingRole;
   bookingStaffRole = undefined;
@@ -257,6 +258,13 @@ function renderStaffAccount(profile, role) {
     staffAccountAvatar.replaceChildren(photo);
   }
   staffPasswordButton.hidden = bookingDemo || role !== 'owner';
+  if (!bookingDemo && role === 'owner' && !document.getElementById('booking-sample-view')) {
+    const samples = memberNode('button', 'Show sample data', 'secondary');
+    samples.id = 'booking-sample-view';
+    samples.type = 'button';
+    samples.onclick = () => location.assign('/booking/?demo=staff');
+    tools.prepend(samples);
+  }
   staffSignOut.textContent = bookingDemo ? 'Exit demo' : 'Sign out';
   if (bookingDemo) staffSignOut.onclick = () => location.assign('/booking/');
 }
@@ -381,4 +389,31 @@ function retryGoogleSignIn() {
   googleSignInContainer.replaceChildren(button);
 }
 
-loadStaffWorkspace().then(showGoogleSignIn).catch(retryGoogleSignIn);
+async function startBookingWorkspace() {
+  if (bookingDatabaseDemo) {
+    const response = await fetch(staffEndpoint + '?demo=samples', {cache:'no-store'});
+    if (response.status === 401 || response.status === 403) {
+      location.replace('/booking/');
+      return;
+    }
+    if (!response.ok) throw new Error('Could not load sample data.');
+    const {date, bookings, availability, sales} = await response.json();
+    bookingDemoDate = date;
+    bookingDemoSales = sales;
+    localStorage.setItem('success-padel-bookings', JSON.stringify(bookings));
+    localStorage.setItem(availabilityKey, JSON.stringify(availability));
+    day.value = pDay.value = date;
+    refreshBookingCalendars();
+  }
+  await loadStaffWorkspace();
+  await showGoogleSignIn();
+}
+
+startBookingWorkspace().catch(() => {
+  if (!bookingDatabaseDemo) return retryGoogleSignIn();
+  staffSignIn.hidden = true;
+  staffError.textContent = 'Could not load sample data.';
+  const back = memberNode('a', 'Back to Bookings');
+  back.href = '/booking/';
+  staffError.after(back);
+});

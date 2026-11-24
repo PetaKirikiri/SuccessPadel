@@ -120,6 +120,12 @@ export default async function handler(req, res) {
       return send(response.status, await response.json());
     }
 
+    if (action === 'roster' && req.query?.demo === 'samples') {
+      if (role !== 'owner') return send(403, {error:'Owner access required.'});
+      const {data, error} = await db.from('booking_demo_samples').select('dataset').eq('id',1).single();
+      return error ? send(503, {error:'Could not load sample data.'}) : send(200, data.dataset);
+    }
+
     if (action === 'roster') {
       const {data, error} = await db.from('booking_member_roster').select('members,revision').eq('id',1).single();
       if (error) return send(503, {error:'Could not load members.'});
