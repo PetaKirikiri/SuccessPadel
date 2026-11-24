@@ -11,6 +11,15 @@ Deno.serve(async request => {
   const body = await request.json().catch(() => null);
   if (!body) return send(400, {});
   const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, options);
+  const ownerEmail = Deno.env.get('BOOKING_OWNER_SETUP_EMAIL')?.trim().toLowerCase();
+  if (body.action === 'create-owner-setup') {
+    const secret = Deno.env.get('BOOKING_OWNER_SETUP_SECRET');
+    if (!secret || !ownerEmail || ownerEmail === setupEmail ||
+        request.headers.get('Authorization') !== 'Bearer ' + secret) return send(403, {});
+    const {data,error} = await admin.auth.admin.generateLink({type:'recovery',email:ownerEmail});
+    if (error || !data.properties.hashed_token) return send(409,{error:'Could not generate setup link.'});
+    return send(200,{token:data.properties.hashed_token});
+  }
   if (body.action === 'create-invite') {
     const secret = Deno.env.get('BOOKING_KETT_INVITE_SECRET');
     if (!secret || request.headers.get('Authorization') !== 'Bearer ' + secret) return send(403, {});
@@ -21,7 +30,7 @@ Deno.serve(async request => {
   const auth = createClient(url,Deno.env.get('SUPABASE_ANON_KEY')!,options);
   const username = typeof body.username === 'string' ? body.username.trim().toLowerCase() : '';
   const {token, password, confirmation} = body;
-  if (!/^[a-z][a-z0-9_-]{2,31}$/.test(username) || ['peta', 'successpadel'].includes(username)) {
+  if (!/^[a-z][a-z0-9_-]{2,31}$/.test(username) || username === 'successpadel') {
     return send(400, {error:'Choose a username with 3–32 letters, numbers, hyphens or underscores.'});
   }
   if (typeof password !== 'string' || password.length < 14 || password.length > 72 ||
@@ -33,17 +42,25 @@ Deno.serve(async request => {
   if (typeof token !== 'string' || !/^[a-z0-9_-]{20,256}$/i.test(token)) {
     return send(400, {error:'Open a valid account setup link.'});
   }
-  const {data, error} = await auth.auth.verifyOtp({token_hash:token, type:'invite'});
+  const ownerSetup = username === 'peta';
+  const {data, error} = await auth.auth.verifyOtp({token_hash:token, type:ownerSetup?'recovery':'invite'});
   const user = data?.user;
-  if (error || !user?.invited_at || user.email?.toLowerCase() !== setupEmail || user.app_metadata?.booking_username) {
+  if (error || !user || (ownerSetup ? !ownerEmail || user.email?.toLowerCase() !== ownerEmail || ownerEmail === setupEmail :
+      !user.invited_at || user.email?.toLowerCase() !== setupEmail || user.app_metadata?.booking_username)) {
     return send(403, {error:'This setup link is invalid or expired.'});
   }
 
-  const {error:roleError} = await admin.from('booking_staff_access')
-    .upsert({user_id:user.id, role:'owner'}, {onConflict:'user_id', ignoreDuplicates:true});
-  if (roleError) return send(503,{error:'Could not activate booking access.'});
+  if (ownerSetup) {
+    const {data:access,error:accessError} = await admin.from('booking_staff_access')
+      .select('role').eq('user_id',user.id).maybeSingle();
+    if (accessError || access?.role !== 'owner') return send(403,{error:'Owner account unavailable.'});
+  } else {
+    const {error:roleError} = await admin.from('booking_staff_access')
+      .upsert({user_id:user.id, role:'owner'}, {onConflict:'user_id', ignoreDuplicates:true});
+    if (roleError) return send(503,{error:'Could not activate booking access.'});
+  }
   const {error:updateError} = await admin.auth.admin.updateUserById(user.id, {
-    password, app_metadata:{...user.app_metadata, booking_username:username},
+    password, app_metadata:{...user.app_metadata, booking_username:username, ...(ownerSetup && {booking_password_setup:true})},
   });
   if (updateError) return send(503,{error:'Could not finish setup. Request a new link.'});
   return send(200, {});

@@ -21,11 +21,10 @@ function claimsFrom(token) {
 }
 
 export async function completeBookingGoogle(req, res, url, key, writeSession, expectedUserId) {
-  const signingKey = process.env.BOOKING_GOOGLE_SESSION_KEY;
   const allowed = [process.env.BOOKING_OWNER_EMAIL, process.env.BOOKING_KETT_EMAIL]
     .filter(Boolean).map(email => email.trim().toLowerCase());
   const credential = req.body?.credential;
-  if (!signingKey || !allowed.length || req.headers.host !== 'successpadel.app') {
+  if (!process.env.BOOKING_GOOGLE_SESSION_KEY || !allowed.length || req.headers.host !== 'successpadel.app') {
     return res.status(503).json({error:'Google sign-in unavailable.'});
   }
   if (typeof credential !== 'string' || credential.length > 8192) {
@@ -81,17 +80,23 @@ export async function completeBookingGoogle(req, res, url, key, writeSession, ex
     }
 
     step = 'booking-session';
-    const claims = claimsFrom(session.access_token);
-    if (!claims.session_id || claims.sub !== user.id) throw new Error('Invalid session binding');
-    const expires = Math.min(claims.exp, Math.floor(Date.now()/1000) + 3500);
-    const proof = createHmac('sha256',signingKey).update(`booking-google-v1:${user.id}:${claims.session_id}:${expires}`).digest('hex');
-    const db = createClient(url,key,{accessToken:async()=>session.access_token});
-    const {data:accepted, error:proofError} = await db.rpc('booking_accept_google_session',{proof,expires});
-    if (proofError || accepted !== true) throw new Error('Booking access denied');
+    await authorizeBookingOwnerSession(url,key,session,user.id);
     writeSession(res,session);
     return res.status(200).json({});
   } catch {
     console.warn('booking_google_signin_failed', {step});
     return res.status(401).json({error:'Google sign-in failed. Try again.'});
   }
+}
+
+export async function authorizeBookingOwnerSession(url,key,session,userId) {
+  const signingKey = process.env.BOOKING_GOOGLE_SESSION_KEY;
+  if (!signingKey) throw new Error("Booking session signing unavailable");
+    const claims = claimsFrom(session.access_token);
+    if (!claims.session_id || claims.sub !== userId) throw new Error('Invalid session binding');
+    const expires = Math.min(claims.exp, Math.floor(Date.now()/1000) + 3500);
+    const proof = createHmac('sha256',signingKey).update(`booking-google-v1:${userId}:${claims.session_id}:${expires}`).digest('hex');
+    const db = createClient(url,key,{accessToken:async()=>session.access_token});
+    const {data:accepted, error:proofError} = await db.rpc('booking_accept_google_session',{proof,expires});
+    if (proofError || accepted !== true) throw new Error('Booking access denied');
 }

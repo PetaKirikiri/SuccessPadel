@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { completeKettSetup } from '../server/booking/kett-setup.mjs';
 
-import { beginBookingGoogle, completeBookingGoogle } from '../server/booking/google.mjs';
+import { authorizeBookingOwnerSession, beginBookingGoogle, completeBookingGoogle } from '../server/booking/google.mjs';
 
 const cookie = '__Host-booking_staff';
 const cookieAttributes = 'Path=/; Secure; HttpOnly; SameSite=Strict';
@@ -64,6 +64,9 @@ export default async function handler(req, res) {
           (username === 'kett' && data.user?.app_metadata?.booking_username && data.user.app_metadata.booking_username !== username) ||
           await staffRole(data.session.access_token) !== account.role) {
         return send(401, {error: 'Staff sign-in failed.'});
+      }
+      if (username === 'peta' && data.user?.app_metadata?.booking_password_setup === true) {
+        await authorizeBookingOwnerSession(url,key,data.session,data.user.id);
       }
       writeSession(res, data.session);
       return send(200, {});
