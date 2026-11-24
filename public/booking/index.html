@@ -448,6 +448,7 @@ chooseLessonTime.type = 'button';
 lessonTimeField.append(chooseLessonTime);
 productField.after(lessonTimeField, coachField);
 let selectedLessonSlot = null;
+let editingCourt=null;
 
 function availableLessonTimes(date, court, length, reservations) {
   if (!coachingCourts.includes(court)) return [];
@@ -2232,7 +2233,6 @@ courtPlayers.label.addEventListener('input',event=>{
   if(event.target===courtPlayers.label.querySelector('input'))syncCourtPlayer();
 });
 
-let editingCourt=null;
 let paidBookingBaseline=null;
 const courtSaveButton=document.getElementById('save');
 function courtBookingEditState(){
