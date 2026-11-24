@@ -238,6 +238,8 @@ function drawMembers(){
   const text=memberNode('div');text.append(memberNode('b',member.nickname||member.name),memberNode('small',member.nickname?member.name:member.type||'Member'));person.append(text);identity.append(person);row.append(identity);
   const cancellations=(calendarDataset?.records.lessonCancellations||[]).filter(b=>b.customerId===member.id);
   if(cancellations.length)identity.append(memberNode('small',cancellations.length+' cancelled lesson'+(cancellations.length===1?'':'s'),'customer-meta'));
+  const lateCancellations=cancellations.filter(booking=>booking.late===true).length;
+  if(lateCancellations)identity.append(memberNode('small',lateCancellations+' late cancellation'+(lateCancellations===1?'':'s'),'customer-meta'));
   const contact=memberNode('td');for(const [label,value]of [['Phone',member.phone],['Email',member.email],['LINE ID',member.line],['WhatsApp',member.whatsapp]])if(value)contact.append(memberNode('div',`${label}: ${value}`));if(!contact.childNodes.length)contact.textContent='Not set';row.append(contact,memberNode('td',memberDate(member.signup)),memberNode('td',memberDate(expires)));
   const actions=memberNode('td');const edit=memberNode('button','Edit','secondary');edit.type='button';edit.setAttribute('aria-label',`Edit ${member.name}`);edit.onclick=()=>openMember(member.id);
   if(member.deleted){
@@ -3272,7 +3274,7 @@ function renderDailySales(bills, range, methods, matches) {
     entries.push({
       timestamp,
       item:bill.item,
-      method:'Cancelled',
+      method:booking.late===true?'Late cancellation':'Cancelled',
       cancellationDetails:[bill.customer, bookedFor, booking.reason].filter(Boolean).join(' · '),
     });
   }
