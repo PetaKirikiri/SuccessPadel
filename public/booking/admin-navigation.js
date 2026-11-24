@@ -71,7 +71,7 @@ for (const [input, calendar] of [[day, document.getElementById('court-calendar')
 }
 
 function seedPreviewCompetitions() {
-  if (location.hostname !== '127.0.0.1') return;
+  if (!bookingFixtures) return;
   const key = 'success-padel-bookings';
   const saved = storedRows(key);
   let changed = false;
@@ -146,7 +146,7 @@ function seedPreviewCompetitions() {
 seedPreviewCompetitions();
 
 function seedPreviewClinic() {
-  if (!['127.0.0.1', 'localhost'].includes(location.hostname)) return;
+  if (!bookingFixtures) return;
   const key = 'success-padel-bookings';
   const bookings = storedRows(key);
   const clinic = {

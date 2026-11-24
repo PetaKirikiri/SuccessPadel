@@ -11,7 +11,25 @@ let loanRevision;
 let factorId;
 let savingBookingMembers = false;
 
+const demoRoster = {role:'owner', profile:{name:'Demo'}, members:[], revision:1};
+let demoLoan = {ledger:{entries:[]}, revision:1};
+
+function demoStaffRequest(action, details) {
+  switch (action) {
+    case undefined: return structuredClone(demoRoster);
+    case 'loan': return structuredClone(demoLoan);
+    case 'save':
+      demoRoster.members = structuredClone(details.members);
+      return {revision:++demoRoster.revision};
+    case 'save-loan':
+      demoLoan = {ledger:structuredClone(details.ledger), revision:demoLoan.revision + 1};
+      return {revision:demoLoan.revision};
+    default: throw new Error('Unavailable in demo.');
+  }
+}
+
 async function staffRequest(action, details = {}) {
+  if (bookingDemo) return demoStaffRequest(action, details);
   const response = await fetch(staffEndpoint, action ? {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
@@ -238,7 +256,9 @@ function renderStaffAccount(profile, role) {
     photo.src = profile.avatar;
     staffAccountAvatar.replaceChildren(photo);
   }
-  staffPasswordButton.hidden = role !== 'owner';
+  staffPasswordButton.hidden = bookingDemo || role !== 'owner';
+  staffSignOut.textContent = bookingDemo ? 'Exit demo' : 'Sign out';
+  if (bookingDemo) staffSignOut.onclick = () => location.assign('/booking/');
 }
 
 const staffPasswordDialog = memberNode('dialog', null, 'modal-back');
@@ -317,7 +337,7 @@ function loadGoogleIdentity() {
 }
 
 async function showGoogleSignIn() {
-  if (staffAccess.hidden || staffSignIn.hidden) return;
+  if (bookingDemo || staffAccess.hidden || staffSignIn.hidden) return;
   const configResponse = await fetch(staffEndpoint + '?google=config', {cache:'no-store'});
   if (!configResponse.ok) throw new Error('Google sign-in unavailable.');
   const config = await configResponse.json();
@@ -348,7 +368,7 @@ async function showGoogleSignIn() {
 }
 
 function retryGoogleSignIn() {
-  if (staffAccess.hidden || staffSignIn.hidden) return;
+  if (bookingDemo || staffAccess.hidden || staffSignIn.hidden) return;
   const button = memberNode('button', 'Retry Google sign-in', 'secondary');
   button.type = 'button';
   button.onclick = () => {
