@@ -9,11 +9,19 @@ function overlaps(a,b) {
     (Date.parse(b.date)-Date.parse(a.date)) % 604800000 === 0);
   return sameDay && minutes(a.time)<minutes(b.time)+b.duration && minutes(b.time)<minutes(a.time)+a.duration;
 }
-export function applyLessonChanges(records,next,now=Date.now()) {
+export function applyLessonChanges(records,next,now=Date.now(),cancellation) {
   const prior=records[courts] || [];
   const changes=[];
   const cancellations=[...(records.lessonCancellations || [])];
   const output={...records,[courts]:next,lessonCancellations:cancellations};
+  if(cancellation!==undefined){
+    const booking=prior.find(b=>b.id===cancellation?.id);
+    const reason=cancellation?.reason;
+    if(!booking || next.some(b=>b.id===booking.id) || typeof reason!=='string' || !reason.trim() || reason.length>500)throw Error('Invalid cancellation.');
+    if(booking.activity!=='coaching'){
+      output.courtCancellations=[...(records.courtCancellations||[]),{...booking,reason:reason.trim(),cancelledAt:new Date(now).toISOString()}];
+    }
+  }
   const lessons=rows=>rows.filter(b=>b.activity==='coaching' && b.id);
   const byId=new Map(lessons(prior).map(b=>[b.id,b]));
   const current=new Map(lessons(next).map(b=>[b.id,b]));
@@ -28,7 +36,7 @@ export function applyLessonChanges(records,next,now=Date.now()) {
   };
   for(const b of byId.values())if(!current.has(b.id)){
     const late=Date.parse(b.date+'T'+b.time+':00+07:00')-now<cutoff;
-    cancellations.push({...b,late,cancelledAt:new Date(now).toISOString()});
+    cancellations.push({...b,...(cancellation?.id===b.id?{reason:cancellation.reason.trim()}:{}),late,cancelledAt:new Date(now).toISOString()});
     changes.push({kind:'cancelled',booking:b,remaining:balance(b.packageId)});
   }
   for(const b of current.values())if(!byId.has(b.id)){

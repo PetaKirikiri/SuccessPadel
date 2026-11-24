@@ -64,7 +64,7 @@ const bookingDemo = bookingMode === '1' || bookingDatabaseDemo;
 let calendarDataset = null;
 let calendarWriting = false;
 const databaseCalendarKeys = new Set(['success-padel-bookings','success-pilates-bookings','success-coach-availability','success-booking-packages-v1']);
-async function writeCalendarRows(key, rows) {
+async function writeCalendarRows(key, rows, cancellation) {
   if (bookingDemo) {
     localStorage.setItem(key, JSON.stringify(rows));
     return;
@@ -72,7 +72,7 @@ async function writeCalendarRows(key, rows) {
   if (!calendarDataset || calendarWriting) throw new Error('Calendar unavailable');
   calendarWriting = true;
   try {
-    const result = await staffRequest('save-calendar',{key,rows,revision:calendarDataset.revision});
+    const result = await staffRequest('save-calendar',{key,rows,cancellation,revision:calendarDataset.revision});
     calendarDataset = {records:{...calendarDataset.records,[key]:rows,lessonCancellations:result.lessonCancellations||calendarDataset.records.lessonCancellations||[]},revision:result.revision};
     if(result.notificationWarning)window.alert("Calendar saved. LINE delivery incomplete.");
   } finally {
@@ -1284,6 +1284,24 @@ draw = () => {
         footer.append(payment);
         head.parentElement.append(footer);
         cell.setAttribute('aria-label',description+' · '+clockLabel(b.time)+' · '+payment.title);
+        if(b.id && !b.preview){
+          const slot=document.createElement('div');
+          slot.className=cell.className;
+          const card=head.parentElement;
+          const open=document.createElement('button');
+          open.type='button';
+          open.className='court-card-open';
+          open.setAttribute('aria-label',cell.getAttribute('aria-label'));
+          open.title=cell.title;
+          open.onclick=cell.onclick;
+          const cancel=memberNode('button','Cancel','court-card-cancel');
+          cancel.type='button';
+          cancel.onclick=()=>openCourtCancellation(b);
+          open.append(...card.childNodes);
+          card.append(open,cancel);
+          slot.append(card);
+          cell.replaceWith(slot);
+        }
       }
     }
   }
@@ -2255,24 +2273,49 @@ savedCourtPayment.hidden=true;
 function sameCourtBooking(row,booking){
   return row.date===booking.date&&row.time===booking.time&&row.court===booking.court;
 }
-const cancelLessonButton=memberNode('button','Cancel lesson','secondary');
-cancelLessonButton.type='button';
-cancelLessonButton.hidden=true;
-form.append(cancelLessonButton);
-cancelLessonButton.onclick=async()=>{
-  const booking=editingCourt;
-  if(!booking?.id || !confirm('Cancel this lesson?'+(Date.parse(booking.date+'T'+booking.time+':00+07:00')-Date.now()<43200000 && booking.packageId?' The package credit will be kept.':'')))return;
-  cancelLessonButton.disabled=true;
+const cancelDialog=document.createElement('dialog');
+cancelDialog.className='booking-dialog';
+cancelDialog.setAttribute('aria-labelledby','cancel-court-title');
+cancelDialog.innerHTML='<form class="modal"><h2 id="cancel-court-title">Cancel booking</h2><p class="cancel-summary"></p><label class="field">Reason<select required><option value="">Select reason</option><option>Schedule conflict</option><option>Illness or injury</option><option>Weather</option><option>Other</option></select></label><label class="field" hidden>Other reason<textarea maxlength="500"></textarea></label><p role="alert"></p><div class="modal-actions"><button type="button" class="secondary">Keep booking</button><button class="primary">Confirm cancellation</button></div></form>';
+document.body.append(cancelDialog);
+const cancelForm=cancelDialog.querySelector('form');
+const reasonSelect=cancelForm.querySelector('select');
+const otherReason=cancelForm.querySelector('textarea');
+let cancelTarget=null;
+reasonSelect.onchange=()=>{
+  otherReason.parentElement.hidden=reasonSelect.value!=='Other';
+  otherReason.required=!otherReason.parentElement.hidden;
+  if(otherReason.required)otherReason.focus();
+};
+function openCourtCancellation(booking){
+  cancelTarget=booking;
+  cancelForm.reset();
+  reasonSelect.onchange();
+  cancelForm.querySelector('[role=alert]').textContent='';
+  const late=booking.activity==='coaching' && booking.packageId && Date.parse(booking.date+'T'+booking.time+':00+07:00')-Date.now()<43200000;
+  cancelForm.querySelector('.cancel-summary').textContent=[booking.customer,booking.court,booking.date,booking.time].join(' · ')+(late?' · Package credit will be kept.':'');
+  cancelDialog.showModal();
+}
+cancelForm.querySelector('[type=button]').onclick=()=>cancelDialog.close();
+cancelForm.onsubmit=async event=>{
+  event.preventDefault();
+  const booking=cancelTarget;
+  const reason=reasonSelect.value==='Other'?otherReason.value.trim():reasonSelect.value;
+  const error=cancelForm.querySelector('[role=alert]');
+  if(!reason){error.textContent='Enter a cancellation reason.';otherReason.focus();return}
+  const buttons=cancelForm.querySelectorAll('button');
+  buttons.forEach(button=>button.disabled=true);
   try{
     const saved=storedRows('success-padel-bookings');
-    await writeCalendarRows('success-padel-bookings',saved.filter(b=>b.id!==booking.id));
-    close();refreshBookingCalendars();drawMembers();
-  }catch{bookingError(modal,'Could not cancel lesson. Reload and try again.')}
-  finally{cancelLessonButton.disabled=false;}
+    await writeCalendarRows('success-padel-bookings',saved.filter(b=>b.id!==booking.id),{id:booking.id,reason});
+    cancelDialog.close();
+    if(modal.open)close();
+    refreshBookingCalendars();drawMembers();
+  }catch{error.textContent='Could not cancel booking. Reload and try again.'}
+  finally{buttons.forEach(button=>button.disabled=false)}
 };
-modal.addEventListener('close',()=>{cancelLessonButton.hidden=true});
+cancelDialog.oncancel=event=>{if(cancelForm.querySelector('button').disabled)event.preventDefault()};
 function editCourtBooking(booking){
-  cancelLessonButton.hidden=!(booking.id && booking.activity==='coaching');
   day.value=booking.date;
   start(booking.court,booking.time);
   editingCourt=booking;
@@ -3978,4 +4021,5 @@ body .sales-register .sales-totals[hidden]{display:none}
 .member-form-section:first-child{border-top:0;padding-top:0}
 body dialog .member-editor{max-height:90dvh;overflow:auto}
 #member-monthsRemaining{align-self:center;padding:8px;background:#f5f2fa;border-radius:6px}
+.court-card-open{background:transparent;border:0;color:inherit;font:inherit;text-align:left;width:100%;cursor:pointer}.court-card-cancel{align-self:flex-end;border:0;background:transparent;color:inherit;text-decoration:underline;cursor:pointer}.booking-dialog label[hidden]{display:none}
 </style><script src="/booking/booking-staff.js?v=opening-bookings"></script><link rel="stylesheet" href="/booking/admin-navigation.css?v=calendar-coaching"><script src="/booking/admin-navigation.js?v=populated-shop-filters"></script><link rel="stylesheet" href="/booking/dialogs.css?v=calendar-coaching"><link rel="stylesheet" href="/booking/admin-tables.css?v=shop-filter-grid"><style>#court-calendar.select-lesson-slot .calendar-head,#court-calendar.select-lesson-slot .calendar-row{grid-template-columns:70px repeat(2,minmax(0,1fr))}#court-calendar.select-lesson-slot{align-content:start;grid-auto-rows:auto}#court-calendar.select-lesson-slot .calendar-row>div:has(.court-coaching-offer){display:grid;align-content:start}#court-calendar.select-lesson-slot .court-coaching-offer{display:block;width:100%;height:auto;padding:3px}#court-calendar.select-lesson-slot .court-event{position:relative;inset:auto;width:100%;height:auto;min-height:48px}</style></body></html>
