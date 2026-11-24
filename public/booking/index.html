@@ -58,6 +58,7 @@ const bookingDemo = bookingMode === '1' || bookingDatabaseDemo;
 const bookingFixtures = !bookingDatabaseDemo && (bookingDemo || ['localhost', '127.0.0.1'].includes(location.hostname));
 let bookingDemoDate = '2026-11-25';
 let bookingDemoSales = [];
+let bookingSamples = null;
 function demoStorage() {
   const values = Object.create(null);
   return Object.defineProperties(values, {
@@ -589,8 +590,17 @@ function storedRows(key) {
   try { return JSON.parse(localStorage.getItem(key) || '[]'); }
   catch { return []; }
 }
+function displayedCourtBookings() {
+  const saved = storedRows('success-padel-bookings');
+  const samples = bookingSamples?.bookings ?? [];
+  return [...saved, ...samples.filter(sample => !saved.some(booking =>
+    booking.court === sample.court && bookingOccursOn(booking, sample.date) &&
+    minutes(booking.time) < minutes(sample.time) + sample.duration &&
+    minutes(sample.time) < minutes(booking.time) + booking.duration
+  )).map(sample => ({...sample, weeklyOngoing:false, databaseSample:true}))];
+}
 function refreshBookingCalendars() {
-  bookings = storedRows('success-padel-bookings');
+  bookings = displayedCourtBookings();
   pilatesBookings = storedRows('success-pilates-bookings');
   draw();
   pDraw();
@@ -1072,6 +1082,7 @@ function openBookingDetails(booking,kind){
   const dayLabel=slotDateTime(booking.date,booking.time);
   const rows=[
     ['When',dayLabel+' · '+booking.duration+' min'],
+    ['Record',booking.databaseSample?'Sample':null],
     ['Location',booking.court||pilatesRoomLabels[booking.room]||booking.room],
     ['Booking type',booking.eventId?'Event':booking.coach?'Coaching':pilatesNames[booking.service]||'Normal play'],
     ['Coach',booking.coach||(kind==='pilates'?'Tae':null)],
@@ -1088,7 +1099,7 @@ function openBookingDetails(booking,kind){
     const term=document.createElement('dt'),entry=document.createElement('dd');
     term.textContent=label;entry.append(value);details.append(term,entry);
   }
-  if(!booking.eventId && paymentMark(booking).dataset.paid!=='true'){
+  if(!booking.databaseSample && !booking.eventId && paymentMark(booking).dataset.paid!=='true'){
     const pay=document.createElement('button');
     pay.className='primary';pay.textContent='Run test card payment';
     const error=document.createElement('output');error.setAttribute('role','alert');
@@ -1404,6 +1415,10 @@ const retailCategories=[
   ['rackets','Rackets'],['drinks','Drinks'],['food','Food'],['clothing','Clothing'],
   ['accessories','Accessories'],['other','Other'],
 ];
+function retailProducts() {
+  if (localStorage.getItem(retailProductsKey) !== null) return storedRows(retailProductsKey);
+  return bookingSamples?.products ?? previewRetailProducts;
+}
 const knownRacketNames=new Set(previewRetailProducts.map(product=>product.name.toLowerCase()));
 function retailCategory(product){
   return product.category || (knownRacketNames.has(product.name.toLowerCase())?'rackets':'other');
@@ -1450,7 +1465,7 @@ function editRetailPrice(group,product,index){
   openPricingEditor(product?'Edit product':'Add product',priceNameField+'<label>Category<select name="category" required></select></label>'+priceAmountField,fields=>{
     const name=fields.itemName.value.trim();
     if(!name){fields.itemName.value='';fields.itemName.reportValidity();return false;}
-    const products=localStorage.getItem(retailProductsKey)===null?previewRetailProducts.slice():storedRows(retailProductsKey);
+    const products=retailProducts().slice();
     const next={...product,name,price:fields.amount.valueAsNumber,category:fields.category.value,groupId:group.id||null};
     if(product){
       const photoId=previewRetailProducts.findIndex(item=>item.name.toLowerCase()===product.name.toLowerCase())+1;
@@ -1483,7 +1498,7 @@ function addCustomRate(group){
   for(const scope of [allScope,...resources].filter(Boolean)) pricingEditorForm.elements.scope?.add(new Option(scope,scope));
 }
 
-</script><link rel="stylesheet" href="/booking/racket-cards.css"><script src="/booking/racket-cards.js"></script><script>
+</script><link rel="stylesheet" href="/booking/racket-cards.css"><script src="/booking/racket-cards.js?v=shop-samples"></script><script>
 function renderPricing(){
   document.getElementById('pricing-error').textContent='';
   const productsView=activePricingTab==='products';
@@ -1494,7 +1509,7 @@ function renderPricing(){
   const panel=document.getElementById('pricing-groups');
   panel.innerHTML='<div class="booking-data-table pricing-ledger"><table class="table"><thead><tr><th>Item</th><th>Details</th><th>Price</th></tr></thead></table></div>';
   const table=panel.querySelector('table');
-  const products=productsView?(localStorage.getItem(retailProductsKey)===null?previewRetailProducts:storedRows(retailProductsKey)):[];
+  const products=productsView?retailProducts():[];
   if (productsView && activeProductCategory === 'rackets') {
     const catalog = memberNode('div', null, 'racket-catalog');
     const groupsById = new Map(groups.map(group => [group.id || null, group]));
@@ -1518,11 +1533,14 @@ function renderPricing(){
     groupTitle.scope='rowgroup';
     groupTitle.colSpan=3;
     const content=memberNode('div',null,'pricing-group-row-content');
-    const add=memberNode('button',productsView?'Add product':'Add price','secondary');
-    add.type='button';
-    add.setAttribute('aria-label',(productsView?'Add product to ':'Add price to ')+group.name);
-    add.onclick=()=>productsView?editRetailPrice(group):addCustomRate(group);
-    content.append(memberNode('span',group.name),add);
+    content.append(memberNode('span',group.name));
+    if (!productsView) {
+      const add=memberNode('button','Add price','secondary');
+      add.type='button';
+      add.setAttribute('aria-label','Add price to '+group.name);
+      add.onclick=()=>addCustomRate(group);
+      content.append(add);
+    }
     groupTitle.append(content);
     groupRow.append(groupTitle);
     const allScope=group.name==='Pilates'?'All rooms':group.name.startsWith('Padel')?'All courts':'';
@@ -2105,6 +2123,7 @@ function sameCourtBooking(row,booking){
   return row.date===booking.date&&row.time===booking.time&&row.court===booking.court;
 }
 function editCourtBooking(booking){
+  if (booking.databaseSample) return openBookingDetails(booking, 'padel');
   day.value=booking.date;
   start(booking.court,booking.time);
   editingCourt=booking;
@@ -2903,9 +2922,9 @@ function renderDailySales(bills, range, methods, matches) {
       receipt:{payer:payment.payer, bank:payment.bank, reference:payment.reference},
     }];
   }));
-  const sampleDate=bangkokToday();
-  if ((bookingFixtures || bookingDatabaseDemo) && sampleDate>=from && sampleDate<=to) {
-    for (const [time,item,method,amount,receipt,court,group] of bookingDatabaseDemo ? bookingDemoSales : previewSalesTransactions) {
+  const sampleDate=bookingSamples?.date ?? bangkokToday();
+  if ((bookingFixtures || bookingDatabaseDemo || bookingSamples) && sampleDate>=from && sampleDate<=to) {
+    for (const [time,item,method,amount,receipt,court,group] of (bookingSamples?.sales ?? (bookingDatabaseDemo ? bookingDemoSales : previewSalesTransactions))) {
       if (!matches(group || (court ? {category:'courts',group:court} : {category:'retail'}))) continue;
       entries.push({timestamp:Date.parse(sampleDate+'T'+time+':00+07:00'),item,method,amount,receipt,sample:true});
     }
@@ -2964,7 +2983,7 @@ function renderSales(){
   salesPage.querySelector('tfoot')?.remove();
   salesPage.querySelector('.sales-table-summary')?.remove();
   for(const [key,label] of [['success-padel-bookings','Padel'],['success-pilates-bookings','Pilates']]){
-    for(const booking of storedRows(key)){
+    for(const booking of (dailyLedger && label==='Padel' ? displayedCourtBookings() : storedRows(key))){
       if((!dailyLedger&&booking.date!==date)||booking.eventId)continue;
       const payout=label==='Padel'?coachPayout(booking):null;
       const previewCharge=booking.preview&&payout
@@ -3329,7 +3348,7 @@ body .sidebar #sidebar-coaches button::before{display:none}
 .event-page fieldset label{display:inline-flex!important;margin-right:12px}.event-page input,.event-page select{padding:6px}
 .event-days section{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-height:52px;border-top:1px solid #dae0e4}
 .event-days h3{min-width:120px;font-size:14px}.event-days button,body #court-calendar .court-event[data-kind=event]{background:#18594f;color:white}
-</style><script src="/booking/booking-events.js?v=admin-tables"></script><style>
+</style><script src="/booking/booking-events.js?v=shop-samples"></script><style>
 .personal-calendar .coach-day-calendar{min-width:660px}
 .personal-calendar .calendar-cell.personal-lesson{background:#ff7900;color:#341b06}
 .personal-calendar .calendar-head .agenda-today{background:#e1f2d8}
@@ -3654,4 +3673,4 @@ body .sales-register .sales-totals[hidden]{display:none}
 .member-form-section:first-child{border-top:0;padding-top:0}
 body dialog .member-editor{max-height:90dvh;overflow:auto}
 #member-monthsRemaining{align-self:center;padding:8px;background:#f5f2fa;border-radius:6px}
-</style><script src="/booking/booking-staff.js?v=demo-db"></script><link rel="stylesheet" href="/booking/admin-navigation.css?v=admin-tables-2"><script src="/booking/admin-navigation.js?v=demo-db"></script><link rel="stylesheet" href="/booking/dialogs.css?v=receipt"><link rel="stylesheet" href="/booking/admin-tables.css?v=product-categories"></body></html>
+</style><script src="/booking/booking-staff.js?v=shop-samples"></script><link rel="stylesheet" href="/booking/admin-navigation.css?v=shop-samples"><script src="/booking/admin-navigation.js?v=shop-samples"></script><link rel="stylesheet" href="/booking/dialogs.css?v=receipt"><link rel="stylesheet" href="/booking/admin-tables.css?v=product-categories"></body></html>

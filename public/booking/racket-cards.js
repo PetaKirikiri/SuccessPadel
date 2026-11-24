@@ -15,7 +15,7 @@ function renderRacketCard(product, edit) {
   const photoId = product.racketPhotoId || previewRetailProducts.findIndex(
     item => item.name.toLowerCase() === product.name.toLowerCase()
   ) + 1;
-  const [fit, shape, sweetSpot, core, face, source] = racketSpecifications[photoId] || [];
+  const [fit, shape, sweetSpot, core, face, source] = product.racketSpecifications || racketSpecifications[photoId] || [];
   const card = memberNode('article', null, 'racket-card');
   const visual = memberNode('div', null, 'racket-card-visual');
   if (photoId) {
@@ -42,11 +42,14 @@ function renderRacketCard(product, edit) {
     link.rel = 'noopener noreferrer';
     footer.append(link);
   }
-  const button = memberNode('button', 'Edit', 'secondary');
-  button.type = 'button';
-  button.setAttribute('aria-label', 'Edit ' + product.name);
-  button.onclick = edit;
-  footer.append(button);
-  card.append(visual, specs, footer);
+  if (edit) {
+    const button = memberNode('button', 'Edit', 'secondary');
+    button.type = 'button';
+    button.setAttribute('aria-label', 'Edit ' + product.name);
+    button.onclick = edit;
+    footer.append(button);
+  }
+  card.append(visual, specs);
+  if (footer.childElementCount) card.append(footer);
   return card;
 }

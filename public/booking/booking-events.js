@@ -37,7 +37,7 @@
     const body=page.querySelector('tbody');
     body.replaceChildren();
     const groups=new Map();
-    for(const booking of storedRows('success-padel-bookings')){
+    for(const booking of displayedCourtBookings()){
       if(!booking.eventId)continue;
       if(!groups.has(booking.eventId))groups.set(booking.eventId,[]);
       groups.get(booking.eventId).push(booking);

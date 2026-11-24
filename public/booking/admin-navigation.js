@@ -2,6 +2,39 @@ const administrationNavigation = sidebar.querySelector('.staff-nav');
 
 administrationNavigation.prepend(customerNav);
 
+const shopButton = memberNode('button', 'Shop');
+shopButton.type = 'button';
+shopButton.dataset.section = 'shop';
+administrationNavigation.prepend(shopButton);
+
+const shopPage = memberNode('section', null, 'page booking-admin-page');
+shopPage.id = 'shop';
+const shopHeader = memberNode('header', null, 'booking-page-header');
+shopHeader.append(memberNode('h1', 'Shop'));
+const shopSearch = document.createElement('input');
+shopSearch.type = 'search';
+shopSearch.placeholder = 'Find product';
+shopSearch.setAttribute('aria-label', 'Find product');
+shopHeader.append(shopSearch);
+const shopCatalog = memberNode('div', null, 'racket-catalog');
+shopPage.append(shopHeader, shopCatalog);
+document.querySelector('.content').append(shopPage);
+
+function renderShop() {
+  const query = shopSearch.value.trim().toLowerCase();
+  const cards = retailProducts().filter(product => product.name.toLowerCase().includes(query)).map(product => {
+    if (retailCategory(product) === 'rackets') return renderRacketCard(product);
+    const card = memberNode('article', null, 'racket-card');
+    const heading = memberNode('div', null, 'racket-card-heading');
+    heading.append(memberNode('h3', product.name), memberNode('strong', formatPrice(product.price)));
+    card.append(heading);
+    return card;
+  });
+  shopCatalog.replaceChildren(...(cards.length ? cards : [memberNode('p', 'No products found')]));
+}
+shopButton.onclick = () => { selectStaffSection(shopButton); renderShop(); };
+shopSearch.addEventListener('input', renderShop);
+
 if (['127.0.0.1', 'localhost'].includes(location.hostname)) {
   const adminButton = document.createElement('button');
   adminButton.type = 'button';

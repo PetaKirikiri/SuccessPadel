@@ -55,7 +55,8 @@ async function saveBookingMembers(members) {
 }
 
 function lockStaffWorkspace() {
-  document.getElementById('booking-sample-view')?.remove();
+  bookingSamples = null;
+  refreshBookingCalendars();
   document.body.setAttribute('data-booking-locked', '');
   delete document.body.dataset.bookingRole;
   bookingStaffRole = undefined;
@@ -109,6 +110,14 @@ async function loadStaffWorkspace() {
   staffError.textContent = '';
   try {
     let roster = await staffRequest();
+    if (!bookingDemo && roster.role === 'owner') {
+      try {
+        const response = await fetch(staffEndpoint + '?demo=samples', {cache:'no-store'});
+        if (response.ok) bookingSamples = await response.json();
+      } catch {
+        // The booking workspace remains available if sample data cannot load.
+      }
+    }
     bookingStaffRole = roster.role;
     rosterRevision = roster.revision;
     if (roster.role === 'owner') {
@@ -139,6 +148,15 @@ async function loadStaffWorkspace() {
     }
     drawMembers();
     restoreBookingView();
+    if (bookingSamples && !storedRows('success-padel-bookings').length) {
+      day.value = bookingSamples.date;
+      salesDate.value = bookingSamples.date;
+      salesPeriod = 'date';
+    }
+    refreshBookingCalendars();
+    if (document.getElementById('sales').classList.contains('active')) renderSales();
+    if (pricingPage.classList.contains('active')) renderPricing();
+    if (document.getElementById('shop')?.classList.contains('active')) renderShop();
     staffAccess.hidden = true;
     document.body.removeAttribute('data-booking-locked');
   } catch (error) {
@@ -258,13 +276,6 @@ function renderStaffAccount(profile, role) {
     staffAccountAvatar.replaceChildren(photo);
   }
   staffPasswordButton.hidden = bookingDemo || role !== 'owner';
-  if (!bookingDemo && role === 'owner' && !document.getElementById('booking-sample-view')) {
-    const samples = memberNode('button', 'Show sample data', 'secondary');
-    samples.id = 'booking-sample-view';
-    samples.type = 'button';
-    samples.onclick = () => location.assign('/booking/?demo=staff');
-    tools.prepend(samples);
-  }
   staffSignOut.textContent = bookingDemo ? 'Exit demo' : 'Sign out';
   if (bookingDemo) staffSignOut.onclick = () => location.assign('/booking/');
 }
@@ -397,11 +408,12 @@ async function startBookingWorkspace() {
       return;
     }
     if (!response.ok) throw new Error('Could not load sample data.');
-    const {date, bookings, availability, sales} = await response.json();
+    const {date, bookings, availability, sales, products} = await response.json();
     bookingDemoDate = date;
     bookingDemoSales = sales;
     localStorage.setItem('success-padel-bookings', JSON.stringify(bookings));
     localStorage.setItem(availabilityKey, JSON.stringify(availability));
+    localStorage.setItem(retailProductsKey, JSON.stringify(products ?? []));
     day.value = pDay.value = date;
     refreshBookingCalendars();
   }
