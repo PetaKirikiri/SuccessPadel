@@ -104,25 +104,16 @@ body :is(#court-calendar,#pilates-calendar)[data-closes]:not(.select-lesson-slot
 }
 
 body[data-booking-guest] :is(#court-calendar,#pilates-calendar) .calendar-row .calendar-cell[data-slot-time]:enabled:not(.calendar-hour-hover,.reserved) {
-  background:#f5faf6;
+  background:var(--booking-soft,#f8f6fc);
 }
-body[data-booking-guest] :is(#court-calendar,#pilates-calendar) .calendar-cell[data-slot-time][tabindex="0"]:enabled {
-  position:relative;
+body[data-booking-guest] #court-calendar:not(.select-lesson-slot) .calendar-row > .calendar-cell {
+  border-inline-end:1px solid var(--booking-line,#ddd8e9);
 }
-body[data-booking-guest] :is(#court-calendar,#pilates-calendar) .calendar-cell[data-slot-time][tabindex="0"]:enabled::before {
-  content:'';
-  position:absolute;
-  left:8px;
-  top:50%;
-  width:8px;
-  height:3px;
-  border-radius:2px;
-  background:#599373;
-  transform:translateY(-50%);
-  pointer-events:none;
+body[data-booking-guest] #court-calendar:not(.select-lesson-slot) .calendar-row.hour-start > .calendar-cell {
+  border-top:1px solid var(--booking-line,#ddd8e9);
 }
-body[data-booking-guest] #court-calendar .calendar-row .calendar-cell.reserved .court-event[data-kind],
-body[data-booking-guest] #pilates-calendar .calendar-row .calendar-cell.reserved:disabled {
-  background:#fae5e7;
-  color:#77323e;
+
+body[data-booking-guest] #court-calendar .calendar-row .calendar-cell:disabled:not(.reserved,.calendar-hour-hover),
+body[data-booking-guest] #court-calendar .calendar-row .time-label {
+  background:white;
 }

@@ -18,7 +18,8 @@
       for(const [index,row] of calendarRows.entries()){
         const end=minutes(rows[index])+15;
         row.classList.toggle('calendar-elapsed',date.value<today || (isToday && end<=now));
-        const start=minutes(rows[index-index%2]);
+        const quarters=grid===courtCalendar?4:2;
+        const start=minutes(rows[index-index%quarters]);
         if(bookingGuest && (date.value<today || (isToday && start<now))){
           for(const cell of row.querySelectorAll('.calendar-cell:enabled')){
             cell.disabled=true;

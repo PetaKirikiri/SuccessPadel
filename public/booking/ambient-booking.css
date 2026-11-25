@@ -583,9 +583,9 @@ body :is(#dashboard,#pilates) .calendar-scroll:not(:has(.select-lesson-slot))::a
   height:var(--calendar-scroll-tail,0px);
 }
 body :is(#court-calendar,#pilates-calendar) .calendar-elapsed > .calendar-cell:not(.reserved,.calendar-hour-hover) {
-  background:#f0f2f4 !important;
+  background:white !important;
 }
 body :is(#court-calendar,#pilates-calendar) .calendar-elapsed > .time-label {
-  color:#606974;
-  background:#f0f2f4;
+  color:#6e7481;
+  background:white;
 }

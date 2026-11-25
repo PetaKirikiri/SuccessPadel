@@ -209,6 +209,14 @@ export default async function handler(req, res) {
       if (!current.data) return send(409,{error:'Calendar changed. Reload and try again.'});
       let output={...current.data.records,[key]:rows},changes=[];
       if(key==='success-padel-bookings'){
+        const previous=current.data.records[key] || [];
+        for(const row of rows){
+          if(row.eventId || row.coach || row.activity==='coaching')continue;
+          if(/^\d{2}:00$/.test(row.time) && Number(row.duration)===60)continue;
+          const existing=previous.some(old=>old.id===row.id && old.date===row.date && old.court===row.court &&
+            old.time===row.time && old.duration===row.duration && !old.eventId && !old.coach && old.activity!=='coaching');
+          if(!existing)return send(400,{error:'Choose a full hour on the calendar.'});
+        }
         try { ({output,changes}=applyLessonChanges(current.data.records,rows,Date.now(),body.cancellation)); }
         catch(err){ return send(400,{error:err.message}); }
       }

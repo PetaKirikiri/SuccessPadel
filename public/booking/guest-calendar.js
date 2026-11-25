@@ -64,21 +64,24 @@ if (bookingGuest) {
     if(sport==='padel' && pickingLessonTime){renderLessonCalendar();return;}
     const byStart=new Map();
     for(const slot of cal.slots??[]){
+      if(sport==='padel' && (slot.kind!=='play' || slot.duration!==60 || slot.minute%60!==0))continue;
       const key=slot.resource+'-'+slot.minute;
       if(!byStart.has(key))byStart.set(key,[]);
       byStart.get(key).push(slot);
     }
     // Bind availability to the original cells. Their typography, hour labels,
     // dimensions and pointer feedback are owned by the shared renderer.
+    const quarters=sport==='padel'?4:2;
     cal.grid.querySelectorAll('.calendar-row').forEach((row,index)=>{
-      const minute=minutes(rows[index-index%2]);
+      const minute=minutes(rows[index-index%quarters]);
       row.querySelectorAll('.calendar-cell').forEach((cell,column)=>{
         const choices=byStart.get((column+1)+'-'+minute);
         const slot=choices?.[0];
         cell.disabled=!slot;
-        cell.tabIndex=slot && index%2===0?0:-1;
-        cell.dataset.slotTime=clockLabel(timeOf(minute));
-        cell.setAttribute('aria-label',cal.places[column]+' '+cell.dataset.slotTime+(cell.classList.contains('reserved')?' reserved':slot?'':' unavailable'));
+        cell.tabIndex=slot && index%quarters===0?0:-1;
+        if(cell.classList.contains('reserved'))delete cell.dataset.slotTime;
+        else cell.dataset.slotTime=clockLabel(timeOf(minute));
+        cell.setAttribute('aria-label',cal.places[column]+' '+clockLabel(timeOf(minute))+(cell.classList.contains('reserved')?' reserved':slot?'':' unavailable'));
         cell.onclick=slot?()=>openSlot(sport,slot,choices):null;
       });
     });
@@ -122,7 +125,7 @@ if (bookingGuest) {
   productChoices.querySelector('[data-product="90"]').hidden=true;
   activityChoices.addEventListener('change',()=>{
     if(activity.value==='play'){
-      duration.value=(timeInput.value.endsWith(':30')?'30 min':'60 min');
+      duration.value='60 min';
       refreshPrice();
     }
     duration.disabled=true;
