@@ -89,13 +89,7 @@ body[data-booking-guest] .board-search > :not(.global-actions,[data-calendar-con
 body[data-booking-guest] dialog [hidden] { display:none !important; }
 body[data-booking-guest] .modal-actions a { text-decoration:none; }
 
-body[data-booking-guest] :is(#pilates-calendar,#court-calendar) .calendar-row[hidden],
-body[data-booking-guest] .global-actions [hidden] { display:none!important; }
-body[data-booking-guest] :is(#pilates-calendar,#court-calendar) .calendar-row .calendar-cell,
-body[data-booking-guest] :is(#pilates-calendar,#court-calendar) .calendar-row .time-label { min-height:36px; height:auto; }
-body[data-booking-guest] :is(#pilates-calendar,#court-calendar) .calendar-row .time-label { color:var(--ink); }
-body[data-booking-guest] :is(#pilates-calendar,#court-calendar) .calendar-cell:enabled { color:#235773; font-weight:600; }
-.guest-reservation .guest-times { display:grid; gap:.4rem; overflow-y:auto; max-height:55vh; }
-.guest-reservation .compact-booking { display:grid; gap:.85rem; }
-.guest-reservation .guest-times button { text-align:left; }
-.guest-reservation output:empty, .guest-calendar-status:empty { display:none; }
+body[data-booking-guest] .global-actions [hidden],
+body[data-booking-guest] .booking-dialog :is(.booking-payment-method,.payment-checkout,.booking-adjustment,.coaching-note-field),
+body[data-booking-guest] .booking-player-slot ~ .booking-player-slot,
+body[data-booking-guest] .guest-calendar-status:empty { display:none!important; }

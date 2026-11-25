@@ -17,136 +17,136 @@ if (bookingGuest) {
     });
   }
 
-  const dialog = document.createElement('dialog');
-  dialog.className='modal-back booking-dialog guest-reservation';
-  dialog.setAttribute('aria-labelledby','guest-heading');
-  dialog.innerHTML='<form class="modal compact-booking"><button type="button" class="close" aria-label="Close">×</button><h2 id="guest-heading">Make a booking</h2><p class="slot-context"></p><div class="guest-times"></div><label class="field" data-service>Booking type<select name="service"></select></label><label class="field" data-name>Your name<input name="customer" required maxlength="80" autocomplete="name"></label><output role="status"></output><button class="primary" type="submit">Confirm booking</button></form>';
-  document.body.append(dialog);
-  const form=dialog.querySelector('form'), times=dialog.querySelector('.guest-times');
-  const status=form.querySelector('output'), submit=form.querySelector('[type=submit]');
-  let selected, sending=false, requestId, selectionKey;
   const calendars={
     padel:{grid:courtCalendar,date:day,places:courtNames,draw},
-    pilates:{grid:pGrid,date:pDay,places:rooms.map(room=>pilatesRoomLabels[room]),draw:pDraw}
+    pilates:{grid:pGrid,date:pDay,places:rooms,draw:pDraw}
   };
   const activeSport=()=>pilates.classList.contains('active')?'pilates':'padel';
-  const timeLabel=m=>clockLabel(String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'));
-  function label(sport,slot) {
-    return calendars[sport].places[slot.resource-1]+' · '+timeLabel(slot.minute)+' · '+slot.duration+' min';
-  }
-  function view(sport,slot) {
-    const cal=calendars[sport];
-    selected=slot?{sport,date:cal.date.value,slot}:null;
-    form.querySelector('h2').textContent='Make a booking';
-    form.querySelector('p').textContent=[bookingDateDisplay.format(new Date(cal.date.value+'T00:00:00Z')),slot&&label(sport,slot)].filter(Boolean).join(' · ');
-    status.textContent='';
-    times.replaceChildren();
-    times.hidden=!!slot;
-    form.querySelector('[data-name]').hidden=!slot;
-    submit.hidden=!slot;
-    const choices=slot ? cal.slots.filter(s=>s.resource===slot.resource && s.minute===slot.minute) : [];
-    form.elements.service.replaceChildren(...choices.map((s,i)=>{
-      const profile=coachProfiles[s.coach];
-      const title=s.coach?[s.coach,profile?.languages,profile?.levels].filter(Boolean).join(' · '):
-        s.kind==='play'?'Normal play':pilatesNames[s.kind];
-      return new Option(title,i);
-    }));
-    form.querySelector('[data-service]').hidden=choices.length<=1;
-    form.elements.service.onchange=()=>{selected.slot=choices[Number(form.elements.service.value)];};
-    if (!slot) {
-      const displayed=new Set();
-      for(const s of cal.slots??[]) {
-        const key=s.resource+'-'+s.minute;
-        if(displayed.has(key))continue;
-        displayed.add(key);
-        const button=memberNode('button',label(sport,s),'secondary'); button.type='button';
-        button.onclick=()=>view(sport,s); times.append(button);
-      }
-      if (!times.childElementCount) status.textContent='No available times on this date.';
-    }
-    if (!dialog.open) dialog.showModal();
-    if (slot) form.elements.customer.focus();
-  }
-  dialog.querySelector('.close').onclick=()=>{if(!sending)dialog.close();};
-  dialog.addEventListener('cancel',event=>{if(sending)event.preventDefault();});
-  dialog.addEventListener('close',()=>{form.reset();selectionKey=null;});
-  form.onsubmit=async event=>{
-    event.preventDefault();
-    if (!selected||sending)return;
-    const {sport,date,slot}=selected;
-    const data={activity:sport,date,resource:slot.resource,minute:slot.minute,kind:slot.kind,coach:slot.coach,name:form.elements.customer.value.trim()};
-    const key=JSON.stringify(data);
-    if (selectionKey!==key) {selectionKey=key;requestId=crypto.randomUUID();}
-    sending=true;submit.disabled=true;form.elements.service.disabled=true;form.elements.customer.readOnly=true;
-    try {
-      const response=await fetch('/api/booking-guest',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...data,id:requestId})});
-      const result=await response.json();
-      if(!response.ok){
-        if(response.status===409){await refresh(sport);view(sport,null);}
-        throw Error(result.error||'Could not save booking. Try again.');
-      }
-      if(result.reference!==requestId)throw Error('Confirmation unavailable. Try again.');
-      selected=null;
-      form.querySelector('h2').textContent='Booking confirmed';
-      form.querySelector('[data-name]').hidden=form.querySelector('[data-service]').hidden=submit.hidden=true;
-      status.textContent='Reference '+result.reference.slice(0,8).toUpperCase();
-      void refresh(sport);
-    } catch(err){status.textContent=err instanceof TypeError?'Connection lost. Try again.':err.message;}
-    finally {sending=false;submit.disabled=false;form.elements.service.disabled=false;form.elements.customer.readOnly=false;}
-  };
-  const book=memberNode('button','Make a booking','primary');
-  book.type='button';
-  book.onclick=async()=>{
-    if (document.getElementById('shop').classList.contains('active')) {
-      history.pushState(null,'','#padel');
-      selectStaffSection(sidebar.querySelector('[data-section="dashboard"]'));
-      feedback.hidden=false;
-    }
-    const sport=activeSport(),cal=calendars[sport];
-    if(cal.loaded!==cal.date.value && !(await refresh(sport)))return;
-    view(sport,null);
-  };
   const feedback=memberNode('output','','guest-calendar-status');
   feedback.setAttribute('role','status');
-  function paint(sport){
-    const cal=calendars[sport], grid=cal.grid;
-    const cellsBySlot=new Map();
-    for (const slot of cal.slots??[]) {
-      const key=slot.resource+'-'+slot.minute;
-      if (!cellsBySlot.has(key))cellsBySlot.set(key,slot);
+  const timeOf=minute=>rows[(minute-420)/15];
+  const attempts=new WeakMap();
+
+  // The existing coaching picker consumes the same {time, coaches} contract for guests.
+  availableLessonTimes=(date,court,length)=>{
+    const cal=calendars.padel;
+    if(cal.loaded!==date)return [];
+    const byTime=new Map();
+    for(const slot of cal.slots){
+      if(slot.kind!=='coaching'||slot.resource!==courtNames.indexOf(court)+1||slot.duration!==length)continue;
+      const time=timeOf(slot.minute);
+      if(!byTime.has(time))byTime.set(time,[]);
+      byTime.get(time).push(slot.coach);
     }
-    const list=grid.querySelectorAll('.calendar-row');
-    list.forEach((row,index)=>{
-      if(index%2){
-        row.hidden=true;
-        row.querySelectorAll('.calendar-cell').forEach(cell=>{cell.disabled=true;cell.onclick=null;});
-        return;
-      }
-      const minute=minutes(rows[index]);
-      row.firstElementChild.textContent=timeLabel(minute);
+    return Array.from(byTime,([time,coaches])=>({time,coaches}));
+  };
+
+  function openSlot(sport,slot,choices){
+    const time=timeOf(slot.minute);
+    if(sport==='padel'){
+      start(courtNames[slot.resource-1],time);
+      resource.disabled=true;
+      duration.disabled=true;
+      bookingError(modal,'');
+    }else{
+      pStart(rooms[slot.resource-1],time);
+      for(const option of pService.options)option.disabled=!choices.some(s=>s.kind===option.value);
+      if(pService.selectedOptions[0]?.disabled)pService.value=slot.kind;
+      pDuration.value=String(slot.duration);
+      pDuration.disabled=true;
+      pPrice();
+      bookingError(pModal,'');
+    }
+  }
+
+  function paint(sport){
+    const cal=calendars[sport];
+    if(sport==='padel' && pickingLessonTime){renderLessonCalendar();return;}
+    const byStart=new Map();
+    for(const slot of cal.slots??[]){
+      const key=slot.resource+'-'+slot.minute;
+      if(!byStart.has(key))byStart.set(key,[]);
+      byStart.get(key).push(slot);
+    }
+    // Bind availability to the original cells. Their typography, hour labels,
+    // dimensions and pointer feedback are owned by the shared renderer.
+    cal.grid.querySelectorAll('.calendar-row').forEach((row,index)=>{
+      const minute=minutes(rows[index-index%2]);
       row.querySelectorAll('.calendar-cell').forEach((cell,column)=>{
-        const slot=cellsBySlot.get(column+1+'-'+minute);
-        cell.disabled=!slot; cell.textContent=slot?'Book':'';
-        cell.removeAttribute('data-slot-time');
-        cell.setAttribute('aria-label',slot?'Book '+label(sport,slot):cal.places[column]+' '+timeLabel(minute)+' unavailable');
-        cell.onclick=slot?()=>view(sport,slot):null;
+        const choices=byStart.get((column+1)+'-'+minute);
+        const slot=choices?.[0];
+        cell.disabled=!slot;
+        cell.tabIndex=slot && index%2===0?0:-1;
+        cell.dataset.slotTime=clockLabel(timeOf(minute));
+        cell.setAttribute('aria-label',cal.places[column]+' '+cell.dataset.slotTime+(slot?'':' unavailable'));
+        cell.onclick=slot?()=>openSlot(sport,slot,choices):null;
       });
     });
-    if(sport===activeSport())feedback.textContent=cal.error||'';
   }
+
+  async function save(sport,dialog,button){
+    const padel=sport==='padel';
+    const date=padel?dateInput.value:pSelected.date;
+    const name=padel?newCourtPlayers.value[0]:pCustomer.value.trim();
+    const field=padel?newCourtPlayers.label.querySelector('input'):pCustomer;
+    if(!name){bookingError(dialog,'Enter a name.');field.focus();return;}
+    const data={activity:sport,date,name,resource:padel?courtNames.indexOf(resource.value)+1:rooms.indexOf(pSelected.room)+1,
+      minute:minutes(padel?timeInput.value:pSelected.time),kind:padel?activity.value:pService.value,
+      coach:padel&&activity.value==='coaching'?coachSelect.value:null};
+    const key=JSON.stringify(data);
+    if(attempts.get(dialog)?.key!==key)attempts.set(dialog,{key,id:crypto.randomUUID()});
+    const {id}=attempts.get(dialog);
+    button.disabled=true;
+    bookingError(dialog,'');
+    try{
+      const response=await fetch('/api/booking-guest',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...data,id})});
+      const result=await response.json();
+      if(!response.ok){
+        if(response.status===409)await refresh(sport);
+        throw Error(result.error||'Could not save booking. Try again.');
+      }
+      if(result.reference!==id)throw Error('Confirmation unavailable. Try again.');
+      attempts.delete(dialog);
+      dialog.close();
+      await refresh(sport);
+      feedback.textContent='Booking confirmed · '+id.slice(0,8).toUpperCase();
+    }catch(err){bookingError(dialog,err instanceof TypeError?'Connection lost. Try again.':err.message);}
+    finally{button.disabled=false;}
+  }
+  for(const [sport,dialog,button] of [['padel',modal,courtSaveButton],['pilates',pModal,document.getElementById('p-save')]]){
+    button.onclick=()=>save(sport,dialog,button);
+    dialog.addEventListener('cancel',event=>{if(button.disabled)event.preventDefault();});
+  }
+  productChoices.querySelector('[data-product="90"]').hidden=true;
+  activityChoices.addEventListener('change',()=>{
+    if(activity.value==='play'){
+      duration.value=(timeInput.value.endsWith(':30')?'30 min':'60 min');
+      refreshPrice();
+    }
+    duration.disabled=true;
+  });
+  pCustomer.removeAttribute('list');
+  // Reuse the toolbar action that opens the original form on the first free cell.
+  newBookingButton.onclick=async()=>{
+    if(document.getElementById('shop').classList.contains('active'))sidebar.querySelector('[data-section="dashboard"]').click();
+    const sport=activeSport(),cal=calendars[sport];
+    if(cal.loaded!==cal.date.value && !(await refresh(sport)))return;
+    const cell=cal.grid.querySelector('.calendar-cell:enabled');
+    if(cell)cell.click();else feedback.textContent='No available times on this date.';
+  };
   async function refresh(sport) {
     const cal=calendars[sport],date=cal.date.value,seq=cal.seq=(cal.seq||0)+1;
     const stale=cal.loaded!==date;
-    if (stale){cal.slots=[];cal.loaded=null;cal.error='';paint(sport);}
+    if (stale){cal.slots=[];cal.loaded=null;paint(sport);}
     try {
       const response=await fetch('/api/booking-guest?'+new URLSearchParams({activity:sport,date}),{cache:'no-store'});
       if(!response.ok)throw Error();
       const slots=await response.json();
       if(seq!==cal.seq || date!==cal.date.value)return false;
       slots.sort((a,b)=>a.minute-b.minute || a.resource-b.resource || Number(['play','private'].includes(b.kind))-Number(['play','private'].includes(a.kind)));
-      cal.slots=slots;cal.loaded=date;cal.error='';paint(sport);return true;
+      cal.slots=slots;cal.loaded=date;paint(sport);return true;
     } catch{
-      if(seq===cal.seq){cal.loaded=null;cal.slots=[];cal.error='Calendar unavailable. Select Make a booking to retry.';paint(sport);}
+      if(seq===cal.seq){cal.loaded=null;cal.slots=[];paint(sport);if(sport===activeSport())feedback.textContent='Calendar unavailable. Try again.';}
       return false;
     }
   }
@@ -160,6 +160,7 @@ if (bookingGuest) {
   }
   function toolbar(){
     const shop=document.getElementById('shop').classList.contains('active');
+    feedback.textContent='';
     feedback.hidden=shop;
     if(!shop)void refresh(activeSport());
   }
@@ -169,7 +170,7 @@ if (bookingGuest) {
   signIn.title='Sign in';
   signIn.append(bookingIcon('person'));
   signIn.href = '/booking/?staff=1';
-  tools.replaceChildren(book,feedback,signIn);
+  tools.replaceChildren(newBookingButton,feedback,signIn);
   administrationNavigation.setAttribute('aria-label','Shop');
   for (const element of searchBar.querySelectorAll('input[type=search], .board-results, form')) element.remove();
   document.body.dataset.bookingGuest = '';
