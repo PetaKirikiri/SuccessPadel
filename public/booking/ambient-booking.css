@@ -565,7 +565,6 @@ body .sidebar [data-section=coaches]{--nav-icon:url('data:image/svg+xml,%3Csvg%2
 body .sidebar [data-section=customers]{--nav-icon:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.7%22%3E%3Cpath%20d%3D%22M8%2012a4%204%200%201%200%200-8a4%204%200%200%200%200%208%20M2%2021v-2a6%206%200%200%201%2012%200v2%20M16%205a4%204%200%200%201%200%207%20M17%2015q5%200%205%206%22/%3E%3C/svg%3E')}
 body .sidebar [data-section=pricing]{--nav-icon:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.7%22%3E%3Cpath%20d%3D%22M3%2012l9-9h8v8l-9%2010z%20M16%207h1%22/%3E%3C/svg%3E')}
 
-body[data-booking-guest] :is(#court-calendar,#pilates-calendar) .calendar-cell.calendar-hour-hover:disabled,
 body :is(#court-calendar,#pilates-calendar,.coach-day-calendar) .calendar-cell.calendar-hour-hover:not(.reserved):enabled {
   background: #dff5fb !important;
   box-shadow: none;

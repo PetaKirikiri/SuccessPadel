@@ -3,7 +3,7 @@
 <head>
 <style>@layer booking-legacy; @import url('/booking/calendar-tone.css?v=hour-cell-hover') layer(booking-legacy);</style>
 <link rel="stylesheet" href="/booking/vendor/ambientcss/dist/ambient.css">
-<link rel="stylesheet" href="/booking/ambient-booking.css?v=court-hour-cells">
+<link rel="stylesheet" href="/booking/ambient-booking.css?v=available-slot-hover">
 
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -2600,9 +2600,6 @@ arrangeBookingForm(pModal, pCustomer, pOverride, pAmount, document.getElementByI
 // Group the hover feedback by visible hour without changing slot hit targets.
 const availableHoverSlot = '.calendar-cell[data-slot-time]:enabled:not(.reserved,.court-coaching-offer,.availability-block,.calendar-locked,[aria-disabled="true"],[hidden])';
 for (const calendar of [document.getElementById('court-calendar'), pGrid, timeList]) {
-  const hoverSlot = bookingGuest && calendar !== timeList
-    ? '.calendar-cell[data-slot-time]:not(.reserved,.court-coaching-offer,[hidden])'
-    : availableHoverSlot;
   let highlighted = [];
   const clearHighlight = () => {
     for (const cell of highlighted) cell.classList.remove('calendar-hour-hover','calendar-hour-hover-start','calendar-hour-hover-end');
@@ -2610,7 +2607,7 @@ for (const calendar of [document.getElementById('court-calendar'), pGrid, timeLi
   };
   calendar.addEventListener('pointermove', event => {
     if (event.pointerType === 'touch') return;
-    const cell = event.target.closest(hoverSlot);
+    const cell = event.target.closest(availableHoverSlot);
     if (highlighted.includes(cell)) return;
     clearHighlight();
     if (!cell) return;
@@ -2625,7 +2622,7 @@ for (const calendar of [document.getElementById('court-calendar'), pGrid, timeLi
       const column = [...row.children].indexOf(cell);
       highlighted = calendarRows.slice(first, first + 4)
         .map(hourRow => hourRow.children[column])
-        .filter(candidate => candidate?.matches(hoverSlot) && candidate.disabled === cell.disabled);
+        .filter(candidate => candidate?.matches(availableHoverSlot));
     }
     for (const slot of highlighted) slot.classList.add('calendar-hour-hover');
     highlighted[0]?.classList.add('calendar-hour-hover-start');
@@ -4222,4 +4219,4 @@ body .sales-register .sales-totals[hidden]{display:none}
 body dialog .member-editor{max-height:90dvh;overflow:auto}
 #member-monthsRemaining{align-self:center;padding:8px;background:#f5f2fa;border-radius:6px}
 .report-categories:not([hidden]){display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 16px}.booking-dialog label[hidden]{display:none}
-</style><script src="/booking/booking-staff.js?v=profile-reservations"></script><link rel="stylesheet" href="/booking/admin-navigation.css?v=calendar-coaching"><script src="/booking/admin-navigation.js?v=account-menu"></script><link rel="stylesheet" href="/booking/dialogs.css?v=calendar-coaching"><link rel="stylesheet" href="/booking/admin-tables.css?v=shop-filter-grid"><style>#court-calendar.select-lesson-slot .calendar-head,#court-calendar.select-lesson-slot .calendar-row{grid-template-columns:70px repeat(2,minmax(0,1fr))}#court-calendar.select-lesson-slot{align-content:start;grid-auto-rows:auto}#court-calendar.select-lesson-slot .calendar-row>div:has(.court-coaching-offer){display:grid;align-content:start}#court-calendar.select-lesson-slot .court-coaching-offer{display:block;width:100%;height:auto;padding:3px}#court-calendar.select-lesson-slot .court-event{position:relative;inset:auto;width:100%;height:auto;min-height:48px}</style><script src="/booking/guest-calendar.js?v=public-card-kind"></script><script src="/booking/calendar-clock.js?v=2"></script></body></html>
+</style><script src="/booking/booking-staff.js?v=profile-reservations"></script><link rel="stylesheet" href="/booking/admin-navigation.css?v=calendar-coaching"><script src="/booking/admin-navigation.js?v=account-menu"></script><link rel="stylesheet" href="/booking/dialogs.css?v=calendar-coaching"><link rel="stylesheet" href="/booking/admin-tables.css?v=shop-filter-grid"><style>#court-calendar.select-lesson-slot .calendar-head,#court-calendar.select-lesson-slot .calendar-row{grid-template-columns:70px repeat(2,minmax(0,1fr))}#court-calendar.select-lesson-slot{align-content:start;grid-auto-rows:auto}#court-calendar.select-lesson-slot .calendar-row>div:has(.court-coaching-offer){display:grid;align-content:start}#court-calendar.select-lesson-slot .court-coaching-offer{display:block;width:100%;height:auto;padding:3px}#court-calendar.select-lesson-slot .court-event{position:relative;inset:auto;width:100%;height:auto;min-height:48px}</style><script src="/booking/guest-calendar.js?v=available-booking"></script><script src="/booking/calendar-clock.js?v=3"></script></body></html>

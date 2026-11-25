@@ -25,6 +25,8 @@
             cell.disabled=true;
             cell.tabIndex=-1;
             cell.onclick=null;
+            cell.classList.remove('calendar-hour-hover','calendar-hour-hover-start','calendar-hour-hover-end');
+            delete cell.dataset.slotTime;
             cell.setAttribute('aria-label',cell.getAttribute('aria-label')+' unavailable');
           }
         }

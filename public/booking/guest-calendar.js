@@ -79,7 +79,7 @@ if (bookingGuest) {
         const slot=choices?.[0];
         cell.disabled=!slot;
         cell.tabIndex=slot && index%quarters===0?0:-1;
-        if(cell.classList.contains('reserved'))delete cell.dataset.slotTime;
+        if(!slot || cell.classList.contains('reserved'))delete cell.dataset.slotTime;
         else cell.dataset.slotTime=clockLabel(timeOf(minute));
         const occupied=cell.classList.contains('reserved');
         const labelTime=occupied?rows[index]:timeOf(minute);
@@ -137,9 +137,19 @@ if (bookingGuest) {
   newBookingButton.onclick=async()=>{
     if(document.getElementById('shop').classList.contains('active'))sidebar.querySelector('[data-section="dashboard"]').click();
     const sport=activeSport(),cal=calendars[sport];
-    if(cal.loaded!==cal.date.value && !(await refresh(sport)))return;
-    const cell=cal.grid.querySelector('.calendar-cell:enabled');
-    if(cell)cell.click();else feedback.textContent='No available times on this date.';
+    const firstSlot=()=>cal.grid.querySelector('.calendar-cell:enabled[tabindex="0"]');
+    newBookingButton.disabled=true;
+    try {
+      if(!await refresh(sport) || sport!==activeSport())return;
+      let cell=firstSlot();
+      if(!cell && cal.date.value===bangkokToday()){
+        cal.date.value=dateOffset(cal.date.value,1);
+        if(!await refresh(sport) || sport!==activeSport())return;
+        cell=firstSlot();
+      }
+      if(cell)cell.click();
+      else feedback.textContent='No available times. Choose another date.';
+    } finally { newBookingButton.disabled=false; }
   };
   async function refresh(sport) {
     const cal=calendars[sport],date=cal.date.value,seq=cal.seq=(cal.seq||0)+1;
