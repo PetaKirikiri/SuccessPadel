@@ -108,7 +108,7 @@ body[data-booking-guest] :is(#court-calendar,#pilates-calendar):not(.select-less
   --slot-line:#dedede;
   --slot-hover:#858585;
 }
-body[data-booking-guest] :is(#court-calendar,#pilates-calendar):not(.select-lesson-slot) :is(.calendar-head > div,.time-label,.calendar-cell) {
+body[data-booking-guest] :is(#court-calendar,#pilates-calendar):not(.select-lesson-slot) :is(.calendar-head > div,.time-label,.calendar-cell:not(.reserved)) {
   background:white !important;
 }
 body[data-booking-guest] :is(#court-calendar,#pilates-calendar):not(.select-lesson-slot) .calendar-head :is(b,strong) {
@@ -120,11 +120,6 @@ body[data-booking-guest] :is(#court-calendar,#pilates-calendar):not(.select-less
 body[data-booking-guest] :is(#court-calendar,#pilates-calendar):not(.select-lesson-slot) .calendar-row.hour-start > .calendar-cell {
   border-top:1px solid var(--slot-line);
 }
-body[data-booking-guest] #court-calendar .calendar-row .reserved .court-event[data-kind],
-body[data-booking-guest] #pilates-calendar .calendar-row .reserved {
-  background:white;
-  color:#343434;
-}
 /* The card spans quarters from its first cell. A real top border on that
    cell would subtract a pixel from every quarter of the card's height. */
 body[data-booking-guest] #court-calendar:not(.select-lesson-slot) .calendar-row.hour-start > .calendar-cell.reserved {
@@ -133,7 +128,7 @@ body[data-booking-guest] #court-calendar:not(.select-lesson-slot) .calendar-row.
 body[data-booking-guest] #court-calendar .calendar-row .reserved .court-event[data-kind] {
   top:1px;
   height:calc(var(--slots) * 100% - 2px);
-  box-shadow:inset 0 0 0 1px #a6a6a6;
+  box-shadow:none;
 }
 body[data-booking-guest] :is(#court-calendar,#pilates-calendar):not(.select-lesson-slot) .calendar-cell.calendar-hour-hover {
   background:white !important;

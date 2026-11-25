@@ -81,7 +81,9 @@ if (bookingGuest) {
         cell.tabIndex=slot && index%quarters===0?0:-1;
         if(cell.classList.contains('reserved'))delete cell.dataset.slotTime;
         else cell.dataset.slotTime=clockLabel(timeOf(minute));
-        cell.setAttribute('aria-label',cal.places[column]+' '+clockLabel(timeOf(minute))+(cell.classList.contains('reserved')?' reserved':slot?'':' unavailable'));
+        const occupied=cell.classList.contains('reserved');
+        const labelTime=occupied?rows[index]:timeOf(minute);
+        cell.setAttribute('aria-label',cal.places[column]+' '+clockLabel(labelTime)+(occupied?' reserved':slot?'':' unavailable'));
         cell.onclick=slot?()=>openSlot(sport,slot,choices):null;
       });
     });
@@ -149,8 +151,8 @@ if (bookingGuest) {
       const {slots,occupied}=await response.json();
       if(seq!==cal.seq || date!==cal.date.value)return false;
       slots.sort((a,b)=>a.minute-b.minute || a.resource-b.resource || Number(['play','private'].includes(b.kind))-Number(['play','private'].includes(a.kind)));
-      const reserved=occupied.map(({resource,minute,duration})=>({
-        date,time:timeOf(minute),duration,customer:'Reserved',
+      const reserved=occupied.map(({resource,minute,duration,kind})=>({
+        date,time:timeOf(minute),duration,customer:'Reserved',publicKind:kind,
         [sport==='padel'?'court':'room']:cal.places[resource-1]
       }));
       if(sport==='padel')bookings=reserved;else pilatesBookings=reserved;

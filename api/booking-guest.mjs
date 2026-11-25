@@ -52,7 +52,10 @@ export default async function handler(req,res) {
       const {slots,occupied}=result;
       return res.status(200).json({
         slots:slots.map(({resource,minute,duration,kind,coach})=>({resource,minute,duration,kind,coach})),
-        occupied:occupied.map(({resource,minute,duration})=>({resource,minute,duration}))
+        occupied:occupied.map(({resource,minute,duration,kind})=>({
+          resource,minute,duration,
+          kind:['play','lesson','coaching-match','event','competition','pilates'].includes(kind)?kind:'play'
+        }))
       });
     }
     return reserve ? res.status(201).json({reference:result.reference}) :
