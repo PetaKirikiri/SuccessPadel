@@ -14,7 +14,7 @@ export default async function handler(req,res) {
     return res.status(400).json({error:'Choose a valid date.'});
   const key = process.env.BOOKING_GOOGLE_SESSION_KEY;
   if (!key) return res.status(503).json({error:'Booking is temporarily unavailable.'});
-  const data = {action:reserve?'reserve':'slots',activity,date,issued:Math.floor(Date.now()/1000)};
+  const data = {action:reserve?'reserve':input.view==='calendar'?'calendar':'slots',activity,date,issued:Math.floor(Date.now()/1000)};
   if (reserve) {
     const {resource,minute,kind,coach,id} = input;
     const name = typeof input.name==='string' ? input.name.trim() : '';
@@ -25,6 +25,16 @@ export default async function handler(req,res) {
        !(coach===null || (typeof coach==='string' && coach.length<=60)) ||
        typeof id!=='string' || !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(id))
       return res.status(400).json({error:'Choose an available time.'});
+    const players = input.players ?? [];
+    const method = input.method ?? 'later';
+    if (!Array.isArray(players) || players.length>3 || players.some(p=>typeof p!=='string' || !p.trim() || p.length>80 || /[<>&"\u0000-\u001f\u007f]/u.test(p)))
+      return res.status(400).json({error:'Enter a valid name for each player.'});
+    const names=[name,...players].map(p=>p.trim().toLowerCase());
+    if(new Set(names).size!==names.length)return res.status(400).json({error:'This player is already in the booking.'});
+    if (!['later','test-card','test-qr','test-true','cash'].includes(method))
+      return res.status(400).json({error:'Choose a payment method.'});
+    if(input.players!==undefined)data.players=players.map(p=>p.trim());
+    if(input.method!==undefined)data.method=method;
     const ip = req.headers['x-vercel-forwarded-for'] || req.headers['x-real-ip'] || req.socket?.remoteAddress;
     Object.assign(data,{name,resource,minute,kind,coach,id,requester:sign(key,'guest-address:'+ip)});
   }
@@ -38,6 +48,13 @@ export default async function handler(req,res) {
     if (response.status===429) return res.status(429).json({error:'Too many bookings. Try again in ten minutes.'});
     if (!response.ok) throw new Error();
     const result = await response.json();
+    if(data.action==='calendar'){
+      const {slots,occupied}=result;
+      return res.status(200).json({
+        slots:slots.map(({resource,minute,duration,kind,coach})=>({resource,minute,duration,kind,coach})),
+        occupied:occupied.map(({resource,minute,duration})=>({resource,minute,duration}))
+      });
+    }
     return reserve ? res.status(201).json({reference:result.reference}) :
       res.status(200).json(result.map(({resource,minute,duration,kind,coach})=>({resource,minute,duration,kind,coach})));
   } catch {

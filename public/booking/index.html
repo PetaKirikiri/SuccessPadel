@@ -3,7 +3,7 @@
 <head>
 <style>@layer booking-legacy; @import url('/booking/calendar-tone.css?v=hour-cell-hover') layer(booking-legacy);</style>
 <link rel="stylesheet" href="/booking/vendor/ambientcss/dist/ambient.css">
-<link rel="stylesheet" href="/booking/ambient-booking.css?v=hour-cell-hover">
+<link rel="stylesheet" href="/booking/ambient-booking.css?v=shared-calendar-clock">
 
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -25,7 +25,7 @@
 </style>
 <style>.booking-line-switch{display:inline-flex;align-items:center;gap:.5rem}.booking-line-switch input{appearance:none;width:2.6rem;height:1.5rem;min-height:0;padding:0;border:1px solid #687675;border-radius:1rem;background:#788281;cursor:pointer}.booking-line-switch input::before{content:"";display:block;width:1rem;height:1rem;margin:.17rem;background:#fff;border-radius:50%}.booking-line-switch input:checked{background:#245f50}.booking-line-switch input:checked::before{transform:translateX(1.05rem)}.booking-line-switch input:disabled{opacity:.55;cursor:default}.booking-line-switch input+span::after{content:"Off"}.booking-line-switch input:checked+span::after{content:"On"}</style></head>
 <body data-booking-locked>
-<link rel="stylesheet" href="/booking/booking-staff.css?v=original-calendar">
+<link rel="stylesheet" href="/booking/booking-staff.css?v=shared-availability">
 <section id="staff-access" class="staff-access" hidden>
   <h1>Staff sign-in</h1>
   <form id="kett-account-setup" hidden>
@@ -217,7 +217,7 @@ const pDay=document.getElementById('pilates-day'), pGrid=document.getElementById
 const pService=document.getElementById('p-service'),pDuration=document.getElementById('p-duration'),pAmount=document.getElementById('p-amount'),pOverride=document.getElementById('p-override'),pCustomer=document.getElementById('p-customer');let pSelected;
 function pPrice(){pAmount.value=pilatesRates[pService.value];document.getElementById('p-total').textContent='฿'+Number(pAmount.value).toLocaleString()}pService.onchange=pPrice;pOverride.onchange=()=>{document.getElementById('p-override-field').hidden=!pOverride.checked;pPrice()};pAmount.oninput=()=>document.getElementById('p-total').textContent='฿'+Number(pAmount.value).toLocaleString();document.getElementById('p-close').onclick=()=>pModal.close();
 function pStart(room,time,existing){pSelected={room,time,date:pDay.value};pCustomer.value='';pService.value=existing?'group':'group';pDuration.value=existing?String(existing.duration):'60';pService.disabled=!!existing;pDuration.disabled=!!existing;pOverride.checked=false;document.getElementById('p-override-field').hidden=true;document.getElementById('p-title').textContent=`${room} · ${time}`;pPrice();pModal.showModal();pCustomer.focus()}
-function pDraw(){pGrid.replaceChildren();const heading=document.createElement('div');heading.className='calendar-head';heading.innerHTML='<div>Time</div>'+rooms.map(room=>`<div><b>${room}</b></div>`).join('');pGrid.append(heading);for(const [i,t] of rows.entries()){const row=document.createElement('div');row.className='calendar-row'+(i%4===0?' hour-start':'');row.innerHTML=`<div class="time-label">${hourLabel(t)}</div>`;for(const room of rooms){const cell=document.createElement('button');cell.className='calendar-cell';const active=pilatesBookings.filter(b=>b.date===pDay.value&&b.room===room&&minutes(t)>=minutes(b.time)&&minutes(t)<minutes(b.time)+b.duration);const first=active[0];if(first){cell.classList.add('reserved');if(first.time===t){cell.textContent=first.service==='group'?`Group · ${active.length}/3 · ${active.map(b=>b.customer).join(', ')}`:`${pilatesNames[first.service]} · ${first.customer}`;cell.prepend(...active.map(paymentMark),portrait(first.coach||'Tae',true),...active.map(b=>portrait(b.customer,false,b.customerId)));if(first.service==='group'&&active.length<3){cell.onclick=()=>pStart(room,t,first);cell.title='Add participant'}}else{cell.classList.add('reserved-continuation');cell.disabled=true}if(minutes(t)+15<minutes(first.time)+first.duration)cell.classList.add('reserved-continues');if(first.service!=='group'||active.length>=3)cell.disabled=true;if(first.time===t){cell.disabled=false;cell.onclick=()=>openBookingDetails(first,'pilates')}}else{cell.onclick=()=>pStart(room,t);cell.dataset.slotTime=clockLabel(t);cell.setAttribute('aria-label',room+' '+cell.dataset.slotTime)}row.append(cell)}pGrid.append(row)}}
+function pDraw(){pGrid.replaceChildren();const heading=document.createElement('div');heading.className='calendar-head';heading.innerHTML='<div>Time</div>'+rooms.map(room=>`<div><b>${room}</b></div>`).join('');pGrid.append(heading);for(const [i,t] of rows.entries()){const row=document.createElement('div');row.className='calendar-row'+(i%4===0?' hour-start':'');row.innerHTML=`<div class="time-label">${hourLabel(t)}</div>`;for(const room of rooms){const cell=document.createElement('button');cell.className='calendar-cell';const active=pilatesBookings.filter(b=>b.date===pDay.value&&b.room===room&&minutes(t)>=minutes(b.time)&&minutes(t)<minutes(b.time)+b.duration);const first=active[0];if(first){cell.classList.add('reserved');if(bookingGuest){if(first.time===t)cell.textContent='Reserved';else cell.classList.add('reserved-continuation');if(minutes(t)+15<minutes(first.time)+first.duration)cell.classList.add('reserved-continues');cell.disabled=true;row.append(cell);continue}if(first.time===t){cell.textContent=first.service==='group'?`Group · ${active.length}/3 · ${active.map(b=>b.customer).join(', ')}`:`${pilatesNames[first.service]} · ${first.customer}`;cell.prepend(...active.map(paymentMark),portrait(first.coach||'Tae',true),...active.map(b=>portrait(b.customer,false,b.customerId)));if(first.service==='group'&&active.length<3){cell.onclick=()=>pStart(room,t,first);cell.title='Add participant'}}else{cell.classList.add('reserved-continuation');cell.disabled=true}if(minutes(t)+15<minutes(first.time)+first.duration)cell.classList.add('reserved-continues');if(first.service!=='group'||active.length>=3)cell.disabled=true;if(first.time===t){cell.disabled=false;cell.onclick=()=>openBookingDetails(first,'pilates')}}else{cell.onclick=()=>pStart(room,t);cell.dataset.slotTime=clockLabel(t);cell.setAttribute('aria-label',room+' '+cell.dataset.slotTime)}row.append(cell)}pGrid.append(row)}}
 document.getElementById('p-save').onclick=async()=>{pilatesBookings=storedRows('success-pilates-bookings');const credit=bookingPackage('pilates');if(credit===false)return bookingError(pModal,'Package unavailable.');const b={...pSelected,bookedBy:bookingOperator(),service:pService.value,duration:Number(pDuration.value),customer:pCustomer.value.trim(),customerId:pilatesCustomerId(),packageId:credit?.id||null,...(credit?testPayment('package',pCustomer.value.trim()):{paid:false,requestedPaymentMethod:pilatesPayment.value}),price:credit?0:pOverride.checked?Number(pAmount.value):pilatesRates[pService.value]};if(!b.customer){pCustomer.focus();return bookingError(pModal,'Enter a customer name.')}if(!Number.isFinite(b.price)||b.price<0||minutes(b.time)+b.duration>closingMinute)return bookingError(pModal,'Check the duration and price.');const overlaps=pilatesBookings.filter(x=>x.date===b.date&&x.room===b.room&&minutes(x.time)<minutes(b.time)+b.duration&&minutes(b.time)<minutes(x.time)+x.duration);if(overlaps.length&&!(b.service==='group'&&overlaps.length<3&&overlaps.every(x=>x.service==='group'&&x.time===b.time&&x.duration===b.duration)))return bookingError(pModal,'Room unavailable');if(!credit&&!confirmBookingPayment(b,pilatesPayment.value,'p-save'))return;const next=[...pilatesBookings,b];try{await writeCalendarRows('success-pilates-bookings',next)}catch{return bookingError(pModal,'Could not save booking.')}pilatesBookings=next;pDraw();pModal.close();drawMembers()};
 function pShift(n){const d=new Date(pDay.value+'T12:00:00');d.setDate(d.getDate()+n);pDay.value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;pDraw()}pDay.onchange=pDraw;document.getElementById('pilates-prev').onclick=()=>pShift(-1);document.getElementById('pilates-next').onclick=()=>pShift(1);
 const pRatesModal=document.createElement('dialog');pRatesModal.className='modal-back';pRatesModal.setAttribute('aria-labelledby','pilates-rates-title');pRatesModal.innerHTML='<div class="modal compact-booking"><button class="close" aria-label="Close" id="p-rates-close">×</button><h2 id="pilates-rates-title">Pilates prices</h2><div class="price-line"><span>Private 1:1</span><b>฿1,500</b></div><div class="price-line"><span>Private 1:1 × 5 · 30 days</span><b>฿6,500</b></div><div class="price-line"><span>Private 1:2</span><b>฿2,200</b></div><div class="price-line"><span>Group Reformer</span><b>฿800</b></div><div class="price-line"><span>Group × 5 · 14 days</span><b>฿2,950</b></div></div>';document.body.append(pRatesModal);document.getElementById('pilates-prices').onclick=()=>pRatesModal.showModal();document.getElementById('p-rates-close').onclick=()=>pRatesModal.close();pDraw();
@@ -1291,6 +1291,7 @@ draw = () => {
       const detail = b.coach ? label + ' · Coach ' + b.coach : label;
       const primaryName = !b.eventId && b.preview ? b.customer.split(' & ')[0] : b.customer;
       courtEventCard(cell, kind, primaryName, b.time, b.duration, detail, b.coach ? status : '');
+      if(bookingGuest)continue;
       cell.disabled=false;cell.onclick=()=>b.eventId?openBookingDetails(b,'padel'):editCourtBooking(b);
       if(!b.eventId){
         const head=cell.querySelector('.event-heading');
@@ -2598,14 +2599,17 @@ arrangeBookingForm(pModal, pCustomer, pOverride, pAmount, document.getElementByI
 // Group the hover feedback by visible hour without changing slot hit targets.
 const availableHoverSlot = '.calendar-cell[data-slot-time]:enabled:not(.reserved,.court-coaching-offer,.availability-block,.calendar-locked,[aria-disabled="true"],[hidden])';
 for (const calendar of [document.getElementById('court-calendar'), pGrid, timeList]) {
+  const hoverSlot = bookingGuest && calendar !== timeList
+    ? '.calendar-cell[data-slot-time]:not(.reserved,.court-coaching-offer,[hidden])'
+    : availableHoverSlot;
   let highlighted = [];
   const clearHighlight = () => {
     for (const cell of highlighted) cell.classList.remove('calendar-hour-hover');
     highlighted = [];
   };
-  calendar.addEventListener('pointerover', event => {
+  calendar.addEventListener('pointermove', event => {
     if (event.pointerType === 'touch') return;
-    const cell = event.target.closest(availableHoverSlot);
+    const cell = event.target.closest(hoverSlot);
     if (highlighted.includes(cell)) return;
     clearHighlight();
     if (!cell) return;
@@ -2620,7 +2624,7 @@ for (const calendar of [document.getElementById('court-calendar'), pGrid, timeLi
       const column = [...row.children].indexOf(cell);
       highlighted = calendarRows.slice(first, first + 4)
         .map(hourRow => hourRow.children[column])
-        .filter(candidate => candidate?.matches(availableHoverSlot));
+        .filter(candidate => candidate?.matches(hoverSlot) && candidate.disabled === cell.disabled);
     }
     for (const slot of highlighted) slot.classList.add('calendar-hour-hover');
   });
@@ -4052,4 +4056,4 @@ body .sales-register .sales-totals[hidden]{display:none}
 body dialog .member-editor{max-height:90dvh;overflow:auto}
 #member-monthsRemaining{align-self:center;padding:8px;background:#f5f2fa;border-radius:6px}
 .report-categories:not([hidden]){display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 16px}.booking-dialog label[hidden]{display:none}
-</style><script src="/booking/booking-staff.js?v=profile-reservations"></script><link rel="stylesheet" href="/booking/admin-navigation.css?v=calendar-coaching"><script src="/booking/admin-navigation.js?v=account-menu"></script><link rel="stylesheet" href="/booking/dialogs.css?v=calendar-coaching"><link rel="stylesheet" href="/booking/admin-tables.css?v=shop-filter-grid"><style>#court-calendar.select-lesson-slot .calendar-head,#court-calendar.select-lesson-slot .calendar-row{grid-template-columns:70px repeat(2,minmax(0,1fr))}#court-calendar.select-lesson-slot{align-content:start;grid-auto-rows:auto}#court-calendar.select-lesson-slot .calendar-row>div:has(.court-coaching-offer){display:grid;align-content:start}#court-calendar.select-lesson-slot .court-coaching-offer{display:block;width:100%;height:auto;padding:3px}#court-calendar.select-lesson-slot .court-event{position:relative;inset:auto;width:100%;height:auto;min-height:48px}</style><script src="/booking/guest-calendar.js?v=original-calendar"></script></body></html>
+</style><script src="/booking/booking-staff.js?v=profile-reservations"></script><link rel="stylesheet" href="/booking/admin-navigation.css?v=calendar-coaching"><script src="/booking/admin-navigation.js?v=account-menu"></script><link rel="stylesheet" href="/booking/dialogs.css?v=calendar-coaching"><link rel="stylesheet" href="/booking/admin-tables.css?v=shop-filter-grid"><style>#court-calendar.select-lesson-slot .calendar-head,#court-calendar.select-lesson-slot .calendar-row{grid-template-columns:70px repeat(2,minmax(0,1fr))}#court-calendar.select-lesson-slot{align-content:start;grid-auto-rows:auto}#court-calendar.select-lesson-slot .calendar-row>div:has(.court-coaching-offer){display:grid;align-content:start}#court-calendar.select-lesson-slot .court-coaching-offer{display:block;width:100%;height:auto;padding:3px}#court-calendar.select-lesson-slot .court-event{position:relative;inset:auto;width:100%;height:auto;min-height:48px}</style><script src="/booking/guest-calendar.js?v=shared-availability"></script><script src="/booking/calendar-clock.js?v=1"></script></body></html>

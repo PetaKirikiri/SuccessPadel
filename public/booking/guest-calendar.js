@@ -78,7 +78,7 @@ if (bookingGuest) {
         cell.disabled=!slot;
         cell.tabIndex=slot && index%2===0?0:-1;
         cell.dataset.slotTime=clockLabel(timeOf(minute));
-        cell.setAttribute('aria-label',cal.places[column]+' '+cell.dataset.slotTime+(slot?'':' unavailable'));
+        cell.setAttribute('aria-label',cal.places[column]+' '+cell.dataset.slotTime+(cell.classList.contains('reserved')?' reserved':slot?'':' unavailable'));
         cell.onclick=slot?()=>openSlot(sport,slot,choices):null;
       });
     });
@@ -93,6 +93,8 @@ if (bookingGuest) {
     const data={activity:sport,date,name,resource:padel?courtNames.indexOf(resource.value)+1:rooms.indexOf(pSelected.room)+1,
       minute:minutes(padel?timeInput.value:pSelected.time),kind:padel?activity.value:pService.value,
       coach:padel&&activity.value==='coaching'?coachSelect.value:null};
+    if(padel)data.players=newCourtPlayers.value.slice(1).filter(Boolean);
+    data.method=(padel?padelPayment:pilatesPayment).value;
     const key=JSON.stringify(data);
     if(attempts.get(dialog)?.key!==key)attempts.set(dialog,{key,id:crypto.randomUUID()});
     const {id}=attempts.get(dialog);
@@ -109,7 +111,7 @@ if (bookingGuest) {
       attempts.delete(dialog);
       dialog.close();
       await refresh(sport);
-      feedback.textContent='Booking confirmed · '+id.slice(0,8).toUpperCase();
+
     }catch(err){bookingError(dialog,err instanceof TypeError?'Connection lost. Try again.':err.message);}
     finally{button.disabled=false;}
   }
@@ -139,12 +141,19 @@ if (bookingGuest) {
     const stale=cal.loaded!==date;
     if (stale){cal.slots=[];cal.loaded=null;paint(sport);}
     try {
-      const response=await fetch('/api/booking-guest?'+new URLSearchParams({activity:sport,date}),{cache:'no-store'});
+      const response=await fetch('/api/booking-guest?'+new URLSearchParams({activity:sport,date,view:'calendar'}),{cache:'no-store'});
       if(!response.ok)throw Error();
-      const slots=await response.json();
+      const {slots,occupied}=await response.json();
       if(seq!==cal.seq || date!==cal.date.value)return false;
       slots.sort((a,b)=>a.minute-b.minute || a.resource-b.resource || Number(['play','private'].includes(b.kind))-Number(['play','private'].includes(a.kind)));
-      cal.slots=slots;cal.loaded=date;paint(sport);return true;
+      const reserved=occupied.map(({resource,minute,duration})=>({
+        date,time:timeOf(minute),duration,customer:'Reserved',
+        [sport==='padel'?'court':'room']:cal.places[resource-1]
+      }));
+      if(sport==='padel')bookings=reserved;else pilatesBookings=reserved;
+      cal.slots=slots;cal.loaded=date;cal.draw();paint(sport);
+      if(sport===activeSport())feedback.textContent='';
+      return true;
     } catch{
       if(seq===cal.seq){cal.loaded=null;cal.slots=[];paint(sport);if(sport===activeSport())feedback.textContent='Calendar unavailable. Try again.';}
       return false;

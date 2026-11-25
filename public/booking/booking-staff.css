@@ -90,6 +90,5 @@ body[data-booking-guest] dialog [hidden] { display:none !important; }
 body[data-booking-guest] .modal-actions a { text-decoration:none; }
 
 body[data-booking-guest] .global-actions [hidden],
-body[data-booking-guest] .booking-dialog :is(.booking-payment-method,.payment-checkout,.booking-adjustment,.coaching-note-field),
-body[data-booking-guest] .booking-player-slot ~ .booking-player-slot,
+body[data-booking-guest] .booking-dialog :is(.split-payment-toggle,.payment-checkout,.booking-adjustment,.coaching-note-field),
 body[data-booking-guest] .guest-calendar-status:empty { display:none!important; }
