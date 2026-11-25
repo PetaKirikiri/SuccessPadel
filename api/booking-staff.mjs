@@ -187,10 +187,19 @@ export default async function handler(req, res) {
       const notified=await sendLessonNotices(changes,enabled);
       return send(200,{...data,lessonCancellations:output.lessonCancellations,courtCancellations:output.courtCancellations,notificationWarning:!notified});
     }
-    if (action === 'roster' && req.query?.demo === 'samples') {
+    if (action === 'roster' && (req.query?.catalog === 'live' || req.query?.demo === 'samples')) {
       if (role !== 'owner') return send(403, {error:'Owner access required.'});
       const {data, error} = await db.from('booking_demo_samples').select('dataset').eq('id',1).single();
-      return error ? send(503, {error:'Could not load sample data.'}) : send(200, data.dataset);
+      if (error) return send(503, {error:'Could not load the catalog.'});
+      if (req.query?.catalog === 'live') {
+        const {bookings, products} = data.dataset;
+        return send(200, {
+          bookings:(bookings ?? []).filter(booking =>
+            booking.eventType === 'competition' && booking.weeklyOngoing === true),
+          products:products ?? [],
+        });
+      }
+      return send(200, data.dataset);
     }
 
     if (action === 'roster' || action === 'workspace') {

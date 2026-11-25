@@ -151,11 +151,6 @@ async function loadStaffWorkspace({afterSignIn = false} = {}) {
     }
     drawMembers();
     restoreBookingView();
-    if (bookingSamples && !storedRows('success-padel-bookings').length) {
-      day.value = bookingSamples.date;
-      salesDate.value = bookingSamples.date;
-      salesPeriod = 'date';
-    }
     refreshBookingCalendars();
     if (document.getElementById('sales').classList.contains('active')) renderSales();
     if (pricingPage.classList.contains('active')) renderPricing();
@@ -167,7 +162,7 @@ async function loadStaffWorkspace({afterSignIn = false} = {}) {
         if(version===staffWorkspaceVersion && document.getElementById('sales').classList.contains('active')) renderSales();
       }).catch(error=>console.warn('Could not load booking loan ledger',error));
       if (!bookingDemo) {
-        fetch(staffEndpoint + '?demo=samples', {cache:'no-store', signal:AbortSignal.timeout(5000)})
+        fetch(staffEndpoint + '?catalog=live', {cache:'no-store', signal:AbortSignal.timeout(5000)})
           .then(response=>response.ok ? response.json() : null)
           .then(samples=>{
             if (!samples || version!==staffWorkspaceVersion) return;
