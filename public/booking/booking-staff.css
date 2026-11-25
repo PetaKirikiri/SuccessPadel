@@ -81,3 +81,10 @@ body[data-booking-role="front_desk"] :is([data-section="sales"], #sales) { displ
 .booking-staff-password input { width: 100%; }
 .booking-staff-password output:empty { display: none; }
 .booking-staff-password output { color: #8b2638; }
+
+body[data-booking-guest] .sidebar [data-section]:not([data-section="dashboard"],[data-section="pilates"],[data-section="shop"]),
+body[data-booking-guest] .sidebar #sidebar-coaches,
+body[data-booking-guest] .content > .page:not(#dashboard,#pilates,#shop),
+body[data-booking-guest] .board-search > :not(.global-actions,[data-calendar-controls]),
+body[data-booking-guest] dialog [hidden] { display:none !important; }
+body[data-booking-guest] .modal-actions a { text-decoration:none; }

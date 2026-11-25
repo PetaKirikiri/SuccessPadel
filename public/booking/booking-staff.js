@@ -41,6 +41,7 @@ function scheduleOwnerSignIn(response) {
 }
 
 async function staffRequest(action, details = {}) {
+  if (bookingGuest && action !== 'session') throw new Error('Staff access required.');
   if (bookingDemo) return demoStaffRequest(action, details);
   const signal = AbortSignal.timeout(15000);
   const response = await fetch(staffEndpoint, action ? {
@@ -50,7 +51,7 @@ async function staffRequest(action, details = {}) {
     body: JSON.stringify({action, ...details}),
   } : {cache:'no-store', signal});
   const payload = await response.json();
-  if (!response.ok) throw Object.assign(new Error(payload.error), {status:response.status, mfa:payload.mfa, factorId:payload.factorId});
+  if (!response.ok) throw Object.assign(new Error(payload.error), {status:response.status, returning:payload.returning, mfa:payload.mfa, factorId:payload.factorId});
   scheduleOwnerSignIn(response);
   return payload;
 }
@@ -429,7 +430,7 @@ async function startBookingWorkspace() {
   await loadStaffWorkspace();
 }
 
-startBookingWorkspace().catch(() => {
+if (!bookingGuest) startBookingWorkspace().catch(() => {
   if (!bookingDatabaseDemo) { staffError.textContent = 'Could not open Bookings.'; return; }
   staffSignIn.hidden = true;
   staffError.textContent = 'Could not load sample data.';

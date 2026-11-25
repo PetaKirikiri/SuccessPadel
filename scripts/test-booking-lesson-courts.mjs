@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import test from 'node:test';
 
-const html = readFileSync(new URL('../public/booking/staff.html', import.meta.url), 'utf8');
+const html = readFileSync(new URL('../public/booking/index.html', import.meta.url), 'utf8');
 const date = '2026-11-24';
 const window = { coach: 'Peta', date, time: '21:00', duration: 60 };
 
