@@ -2224,7 +2224,7 @@ function sameCourtBooking(row,booking){
 const cancelDialog=document.createElement('dialog');
 cancelDialog.className='booking-dialog';
 cancelDialog.setAttribute('aria-labelledby','cancel-court-title');
-cancelDialog.innerHTML='<form class="modal"><h2 id="cancel-court-title">Cancel booking</h2><p class="cancel-summary"></p><label class="field">Reason<select required><option value="">Select reason</option><option>Schedule conflict</option><option>Illness or injury</option><option>Weather</option><option>Other</option></select></label><label class="field" hidden>Other reason<textarea maxlength="500"></textarea></label><p role="alert"></p><div class="modal-actions"><button type="button" class="secondary">Keep booking</button><button class="primary">Confirm cancellation</button></div></form>';
+cancelDialog.innerHTML='<form class="modal"><h2 id="cancel-court-title">Cancel booking</h2><p class="cancel-summary"></p><label class="field">Reason<select required><option value="">Select reason</option><option>Schedule conflict</option><option>Illness or injury</option><option>Weather</option><option>Incorrect course sale</option><option>Other</option></select></label><label class="field" hidden>Other reason<textarea maxlength="500"></textarea></label><p role="alert"></p><div class="modal-actions"><button type="button" class="secondary">Keep booking</button><button class="primary">Confirm cancellation</button></div></form>';
 document.body.append(cancelDialog);
 const cancelForm=cancelDialog.querySelector('form');
 const reasonSelect=cancelForm.querySelector('select');
@@ -2984,6 +2984,35 @@ const salesFiltersDialog=createBookingFilterDialog('sales-filters-title','Report
 const salesFilterGroups=salesFiltersDialog.querySelector('.sales-filter-groups');
 let salesFilterMode = 'filters';
 let salesActivity = 'all';
+let reportCustomer = '';
+let reportCourse = '';
+let reportReason = '';
+let activeReportView = '';
+const reportActivities = [
+  ['all','All activity'],['bookings','Bookings'],['payments','Payments'],
+  ['cancellations','Cancellations'],['lesson-usage','Lesson usage'],
+];
+const reportViewsKey = () => 'booking-report-views:'+staffAccountName.textContent;
+function savedReportViews(){
+  try { return JSON.parse(localStorage.getItem(reportViewsKey())||'[]'); }
+  catch { return []; }
+}
+function writeReportViews(views){
+  localStorage.setItem(reportViewsKey(),JSON.stringify(views));
+}
+function reportCourseName(kind){
+  const course=packageProducts[kind];
+  return course ? course.name+' × '+course.count : kind;
+}
+function reportSelect(label, options, value, change){
+  const field=memberNode('label',label,'field');
+  const input=document.createElement('select');
+  for(const [key,name] of options)input.add(new Option(name,key));
+  input.value=value;
+  input.onchange=()=>{change(input.value);renderSales();};
+  field.append(input);
+  salesFilterGroups.append(field);
+}
 function openSalesFilterDialog(mode) {
   salesFilterMode=mode;
   salesFiltersDialog.querySelector('h2').textContent=mode==='period'?'Report period':'Report filters';
@@ -3003,15 +3032,77 @@ for(const [value,label] of salesCategories){
   const button=bookingFilterChoice(label,value==='all',filterIcon(value));
   button.dataset.category=value;
   button.onclick=()=>{
+    resetSalesFilters();
     activeSalesCategory=value;
     renderSales();
   };
   reportCategories.append(button);
 }
 salesPage.querySelector('header').after(reportCategories);
+function drawSavedReportTabs(){
+  for(const button of reportCategories.querySelectorAll('[data-report-view]'))button.remove();
+  for(const view of savedReportViews()){
+    const button=bookingFilterChoice(view.name,view.id===activeReportView,filterIcon('tag'));
+    button.dataset.reportView=view.id;
+    button.onclick=()=>{
+      resetSalesFilters();
+      activeReportView=view.id;
+      activeSalesCategory=view.category;
+      salesActivity=view.activity;
+      salesCoach.value=view.coach;
+      Object.assign(salesSelections,view.selections);
+      reportCustomer=view.customer;
+      reportCourse=view.course;
+      reportReason=view.reason;
+      salesPeriod=view.period;
+      if(view.period==='date')salesDate.value=view.date;
+      renderSales();
+    };
+    reportCategories.append(button);
+  }
+}
+function addSavedReportControls(){
+  const field=memberNode('label','View name','field');
+  const name=document.createElement('input');
+  name.maxLength=40;
+  field.append(name);
+  const save=memberNode('button','Save as tab','secondary');
+  save.type='button';
+  const error=memberNode('output');
+  error.setAttribute('role','alert');
+  save.onclick=()=>{
+    const title=name.value.trim();
+    if(!title){error.textContent='Enter a view name.';name.focus();return;}
+    const views=savedReportViews();
+    const existing=views.find(view=>view.name.toLowerCase()===title.toLowerCase());
+    if(existing){error.textContent='That tab name is already in use.';return;}
+    const view={id:crypto.randomUUID(),name:title,category:activeSalesCategory,activity:salesActivity,
+      coach:salesCoach.value,selections:{...salesSelections},customer:reportCustomer,course:reportCourse,
+      reason:reportReason,period:salesPeriod,date:salesDate.value};
+    try { writeReportViews([...views,view]); }
+    catch { error.textContent='Could not save the report tab.';return; }
+    activeReportView=view.id;
+    renderSales();
+    salesFiltersDialog.close();
+  };
+  salesFilterGroups.append(field,save,error);
+  if(activeReportView){
+    const remove=memberNode('button','Remove saved tab','secondary');
+    remove.type='button';
+    remove.onclick=()=>{
+      try { writeReportViews(savedReportViews().filter(view=>view.id!==activeReportView)); }
+      catch { error.textContent='Could not remove the report tab.';return; }
+      activeReportView='';
+      renderSales();
+      drawSalesFilterChoices();
+    };
+    salesFilterGroups.append(remove);
+  }
+}
 function resetSalesFilters(){
   activeSalesCategory='all';
   salesActivity='all';
+  reportCustomer=reportCourse=reportReason=activeReportView='';
   salesCoach.value='';
   for(const key of Object.keys(salesSelections))salesSelections[key]='';
 }
@@ -3030,8 +3121,22 @@ function drawSalesFilterChoices() {
     clear.onclick=()=>{resetSalesFilters();renderSales();drawSalesFilterChoices()};
     salesFilterGroups.append(clear);
   }
-  addGroup('Activity',[['all','All activity'],['bookings','Bookings'],['payments','Payments'],['cancellations','Cancellations']],
-    salesActivity,value=>{salesActivity=value;});
+  addGroup('Activity',reportActivities,salesActivity,value=>{salesActivity=value;});
+  if(salesActivity==='lesson-usage'){
+    const names=new Map(memberRecords.map(member=>[member.id,member.name]));
+    const ids=new Set(allPackages().map(course=>course.memberId));
+    const customers=[...ids].map(id=>[id,names.get(id)||'Archived customer']).sort((a,b)=>a[1].localeCompare(b[1]));
+    reportSelect('Customer',[['','All customers'],...customers],reportCustomer,value=>{reportCustomer=value;});
+    reportSelect('Course',[['','All courses'],...Object.keys(packageProducts).map(kind=>[kind,reportCourseName(kind)])],
+      reportCourse,value=>{reportCourse=value;});
+    addSavedReportControls();
+    return;
+  }
+  if(salesActivity==='cancellations'){
+    const reasons=new Set(['Incorrect course sale',...bookingCancellations().map(booking=>booking.reason).filter(Boolean)]);
+    reportSelect('Reason',[['','All reasons'],...[...reasons].sort().map(reason=>[reason,reason])],
+      reportReason,value=>{reportReason=value;});
+  }
   addGroup('Category',salesCategories,activeSalesCategory,value=>{activeSalesCategory=value;});
   if (activeSalesCategory==='coaches') {
     addGroup('Coach',[['','All coaches'],...coachList.map(name=>[name,name])],salesCoach.value,value=>{salesCoach.value=value;});
@@ -3052,6 +3157,7 @@ function drawSalesFilterChoices() {
     addGroup(dimension.filter,[['','All '+dimension.label.toLowerCase()],...dimension.items],
       salesSelections[activeSalesCategory],value=>{salesSelections[activeSalesCategory]=value;});
   }
+  addSavedReportControls();
 }
 document.querySelector('.content').append(salesPage);
 const salesDate=salesPage.querySelector('input');
@@ -3291,6 +3397,8 @@ function renderDailySales(bills, range, methods, matches) {
     if (!Number.isFinite(timestamp)) continue;
     const cancelledDate = salesReceiptDate.format(timestamp);
     if (cancelledDate < from || cancelledDate > to) continue;
+    if (salesActivity==='cancellations' && reportReason &&
+        booking.reason?.trim().toLowerCase()!==reportReason.trim().toLowerCase()) continue;
     const bookedFor = booking.date && booking.time
       ? memberDate(booking.date)+' · '+clockLabel(booking.time)
       : '';
@@ -3349,10 +3457,61 @@ function renderDailySales(bills, range, methods, matches) {
   salesPage.querySelector('.sales-methods').replaceChildren();
 }
 
+function renderLessonUsage([from,to]){
+  const table=salesPage.querySelector('.sales-table');
+  table.classList.remove('sales-coaching-table');
+  const body=table.querySelector('tbody');
+  const labels=['Customer','Course','Lessons used','Hours used','Late cancellations'];
+  table.querySelector('thead tr').replaceChildren(...labels.map(label=>memberNode('th',label)));
+  body.replaceChildren();
+  const today=bangkokToday();
+  const bookings=[...storedRows('success-padel-bookings'),...storedRows('success-pilates-bookings')];
+  const cancellations=bookingCancellations();
+  const names=new Map(memberRecords.map(member=>[member.id,member.name]));
+  const courses=new Map();
+  for(const course of allPackages()){
+    if((reportCustomer && course.memberId!==reportCustomer)||(reportCourse && course.kind!==reportCourse))continue;
+    const key=JSON.stringify([course.memberId,course.kind]);
+    const totals=courses.get(key)??{customer:names.get(course.memberId)||'Archived customer',
+      course:reportCourseName(course.kind), lessons:0, minutes:0, late:0};
+    for(const lesson of bookings){
+      if(lesson.packageId!==course.id || lesson.preview || lesson.date<from || lesson.date>to ||
+        lesson.date>today || !Number.isFinite(lesson.duration) || lesson.duration<=0 ||
+        Date.parse(lesson.date+'T'+lesson.time+':00+07:00')+lesson.duration*60000>Date.now())continue;
+      totals.lessons++;
+      totals.minutes+=lesson.duration;
+    }
+    totals.late+=cancellations.filter(lesson=>lesson.packageId===course.id &&
+      lesson.late===true && lesson.date>=from && lesson.date<=to).length;
+    if(totals.lessons || totals.late)courses.set(key,totals);
+  }
+  const hours=minutes=>new Intl.NumberFormat('en',{maximumFractionDigits:2}).format(minutes/60);
+  const rows=[...courses.values()].sort((a,b)=>a.customer.localeCompare(b.customer)||a.course.localeCompare(b.course));
+  for(const usage of rows){
+    const row=body.insertRow();
+    for(const value of [usage.customer,usage.course,usage.lessons,hours(usage.minutes),usage.late])row.insertCell().textContent=value;
+  }
+  if(rows.length){
+    const total=table.querySelector('table').createTFoot().insertRow();
+    const label=memberNode('th','Total');label.colSpan=2;label.scope='row';total.append(label);
+    for(const value of [rows.reduce((sum,row)=>sum+row.lessons,0),
+      hours(rows.reduce((sum,row)=>sum+row.minutes,0)),rows.reduce((sum,row)=>sum+row.late,0)])total.insertCell().textContent=value;
+  }else{
+    const empty=body.insertRow().insertCell();
+    empty.colSpan=labels.length;empty.className='sales-empty';
+    empty.textContent='No lesson usage for this period';
+  }
+  salesLoanBalance.hidden=true;
+  salesPage.querySelector('.sales-totals').hidden=true;
+  salesPage.querySelector('.sales-methods').replaceChildren();
+}
+
 function renderSales(){
   const date=salesDate.value;
   reportCategories.hidden=showingCoachPayouts;
-  for(const button of reportCategories.children)button.setAttribute('aria-pressed',String(button.dataset.category===activeSalesCategory));
+  for(const button of reportCategories.querySelectorAll('[data-category]'))
+    button.setAttribute('aria-pressed',String(!activeReportView && salesActivity!=='lesson-usage' && button.dataset.category===activeSalesCategory));
+  drawSavedReportTabs();
   const bills=[];
   const dailyLedger=!showingCoachPayouts;
   const padelSalesBookings = dailyLedger ? [...displayedCourtBookings(), ...bookingCancellations()] : null;
@@ -3367,6 +3526,10 @@ function renderSales(){
   salesHeaderDate.hidden=!showingCoachPayouts&&salesPeriod!=='date';
   salesPage.querySelector('tfoot')?.remove();
   salesPage.querySelector('.sales-table-summary')?.remove();
+  if(dailyLedger && salesActivity==='lesson-usage'){
+    renderLessonUsage(salesDateRange(salesPeriod,date));
+    return;
+  }
   for(const [key,label] of [['success-padel-bookings','Padel'],['success-pilates-bookings','Pilates']]){
     for(const booking of (dailyLedger && label==='Padel' ? padelSalesBookings : storedRows(key))){
       if((!dailyLedger&&booking.date!==date)||booking.eventId)continue;
