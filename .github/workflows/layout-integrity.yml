@@ -32,10 +32,6 @@ jobs:
           ')
           npm run check:layout-scope -- --scope "$LAYOUT_SCOPE" --base "$BASE_SHA" --committed
       - run: npm run build
-        env:
-          # UI tests initialize the client without connecting to a club database.
-          VITE_SUPABASE_URL: http://127.0.0.1:54321
-          VITE_SUPABASE_ANON_KEY: local-test-only
       - name: Require singles/duos ownership declaration on pull requests
         if: github.event_name == 'pull_request'
         env:
