@@ -108,7 +108,7 @@ body[data-booking-guest] :is(#court-calendar,#pilates-calendar):not(.select-less
   --slot-line:#dedede;
   --slot-hover:#858585;
 }
-body[data-booking-guest] :is(#court-calendar,#pilates-calendar):not(.select-lesson-slot) :is(.calendar-head > div,.time-label,.calendar-cell:not(.reserved)) {
+body[data-booking-guest] :is(#court-calendar,#pilates-calendar):not(.select-lesson-slot) :is(.calendar-head > div,.time-label,.calendar-cell:not(.reserved,.calendar-hour-hover)) {
   background:white !important;
 }
 body[data-booking-guest] :is(#court-calendar,#pilates-calendar):not(.select-lesson-slot) .calendar-head :is(b,strong) {
@@ -131,7 +131,6 @@ body[data-booking-guest] #court-calendar .calendar-row .reserved .court-event[da
   box-shadow:none;
 }
 body[data-booking-guest] :is(#court-calendar,#pilates-calendar):not(.select-lesson-slot) .calendar-cell.calendar-hour-hover {
-  background:white !important;
   box-shadow:inset 1px 0 var(--slot-hover),inset -1px 0 var(--slot-hover),
     inset 0 var(--hover-top,0px) var(--slot-hover),inset 0 var(--hover-bottom,0px) var(--slot-hover) !important;
 }
