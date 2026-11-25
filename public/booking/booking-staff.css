@@ -18,37 +18,37 @@ body[data-booking-role="front_desk"] :is([data-section="sales"], #sales) { displ
 .booking-google-sign-in:not([hidden]) { margin-bottom: 1rem; }
 
 .booking-staff-account { position: relative; }
-.booking-staff-account summary {
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-  padding: .35rem .65rem;
-  border: 1px solid #dfd8eb;
-  border-radius: .65rem;
-  background: white;
-  color: #403276;
-  cursor: pointer;
-  list-style: none;
-  white-space: nowrap;
-}
-.booking-staff-account summary::-webkit-details-marker { display: none; }
-.booking-staff-account summary::after {
-  content: "";
-  width: .35rem;
-  height: .35rem;
-  border-right: 1.5px solid;
-  border-bottom: 1.5px solid;
-  transform: rotate(45deg);
-  margin: 0 .1rem .2rem;
-}
-.booking-staff-account .booking-portrait {
-  width: 1.6rem;
-  height: 1.6rem;
+.global-actions .booking-profile-trigger {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  align-self: center;
   display: inline-grid;
   place-items: center;
+  padding: 0;
+  border: 1px solid #dfd8eb;
   border-radius: 50%;
+  background: #f4f0fa;
+  color: #493586;
   overflow: hidden;
+  cursor: pointer;
+  list-style: none;
+  text-decoration: none;
+}
+.booking-profile-trigger::-webkit-details-marker { display: none; }
+.booking-profile-trigger:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.booking-profile-trigger .booking-payment-icon { width: 22px; height: 22px; }
+.booking-staff-account .booking-profile-trigger .booking-portrait {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
   background: #e9e2f7;
+}
+.booking-staff-account-actions .booking-profile-name {
+  display: block;
+  padding: .55rem .65rem;
+  font-weight: 650;
 }
 .booking-staff-account .booking-portrait img { width: 100%; height: 100%; object-fit: cover; }
 .booking-staff-account-actions {
@@ -88,3 +88,14 @@ body[data-booking-guest] .content > .page:not(#dashboard,#pilates,#shop),
 body[data-booking-guest] .board-search > :not(.global-actions,[data-calendar-controls]),
 body[data-booking-guest] dialog [hidden] { display:none !important; }
 body[data-booking-guest] .modal-actions a { text-decoration:none; }
+
+body[data-booking-guest] :is(#pilates-calendar,#court-calendar) .calendar-row[hidden],
+body[data-booking-guest] .global-actions [hidden] { display:none!important; }
+body[data-booking-guest] :is(#pilates-calendar,#court-calendar) .calendar-row .calendar-cell,
+body[data-booking-guest] :is(#pilates-calendar,#court-calendar) .calendar-row .time-label { min-height:36px; height:auto; }
+body[data-booking-guest] :is(#pilates-calendar,#court-calendar) .calendar-row .time-label { color:var(--ink); }
+body[data-booking-guest] :is(#pilates-calendar,#court-calendar) .calendar-cell:enabled { color:#235773; font-weight:600; }
+.guest-reservation .guest-times { display:grid; gap:.4rem; overflow-y:auto; max-height:55vh; }
+.guest-reservation .compact-booking { display:grid; gap:.85rem; }
+.guest-reservation .guest-times button { text-align:left; }
+.guest-reservation output:empty, .guest-calendar-status:empty { display:none; }

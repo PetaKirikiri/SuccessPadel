@@ -86,7 +86,7 @@ administrationNavigation.append(usersButton);
 const accountMenuButton = memberNode('button', 'Users & access', 'booking-admin-button');
 accountMenuButton.type = 'button';
 accountMenuButton.setAttribute('aria-controls', 'booking-users');
-staffAccountActions.prepend(accountMenuButton);
+staffAccountName.after(accountMenuButton);
 
 const usersPage = memberNode('section', null, 'page booking-admin-page');
 usersPage.id = 'booking-users';

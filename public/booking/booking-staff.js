@@ -280,14 +280,16 @@ const staffAccountSummary = document.createElement('summary');
 const staffAccountAvatar = memberNode('span', null, 'booking-portrait');
 staffAccountAvatar.setAttribute('aria-hidden', 'true');
 const staffAccountName = memberNode('span', 'Account', 'booking-profile-name');
-staffAccountSummary.append(staffAccountAvatar, staffAccountName);
+staffAccountSummary.className = 'booking-profile-trigger';
+staffAccountSummary.setAttribute('aria-label', 'Account menu');
+staffAccountSummary.append(staffAccountAvatar);
 const staffAccountActions = memberNode('div', null, 'booking-staff-account-actions');
 const staffPasswordButton = memberNode('button', 'Staff login');
 staffPasswordButton.type = 'button';
 const staffSignOut = memberNode('button', 'Sign out');
 staffSignOut.type = 'button';
 staffSignOut.onclick = signOutBookingStaff;
-staffAccountActions.append(staffPasswordButton, staffSignOut);
+staffAccountActions.append(staffAccountName,staffPasswordButton, staffSignOut);
 staffAccount.append(staffAccountSummary, staffAccountActions);
 tools.append(staffAccount);
 document.addEventListener('click', event => {
@@ -304,6 +306,8 @@ function renderStaffAccount(profile, role) {
   const name = profile?.name || (role === 'front_desk' ? 'SuccessPadel' : 'Account');
   const initial = name.charAt(0).toUpperCase();
   staffAccountName.textContent = name;
+  staffAccountSummary.setAttribute('aria-label', 'Account menu for '+name);
+  staffAccountSummary.title = name;
   staffAccountAvatar.textContent = initial;
   if (profile?.avatar) {
     const photo = new Image();

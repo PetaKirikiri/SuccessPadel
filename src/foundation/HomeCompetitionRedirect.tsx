@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { nearestCompetitionId, type HomepageCompetition } from '../lib/nearestCompetition'
 import { supabase } from '../lib/supabaseClient'
+import { isNativeApp } from '../lib/native/app'
 import { PadelLoading } from '../shared/Loading/PadelLoading'
 import { canonicalCompetitionInviteLocation } from '../lib/competitionInviteLink'
 
@@ -10,6 +11,10 @@ export function HomeCompetitionRedirect() {
   const [destination, setDestination] = useState<string | null>(null)
 
   useEffect(() => {
+    if (!search && !hash && !isNativeApp() && window.location.hostname === 'successpadel.app') {
+      window.location.replace('/booking/')
+      return
+    }
     let cancelled = false
     const controller = new AbortController()
     const timer = window.setTimeout(() => controller.abort(), 8000)
