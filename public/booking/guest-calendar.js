@@ -97,6 +97,11 @@ if (bookingGuest) {
   const book=memberNode('button','Make a booking','primary');
   book.type='button';
   book.onclick=async()=>{
+    if (document.getElementById('shop').classList.contains('active')) {
+      history.pushState(null,'','#padel');
+      selectStaffSection(sidebar.querySelector('[data-section="dashboard"]'));
+      feedback.hidden=false;
+    }
     const sport=activeSport(),cal=calendars[sport];
     if(cal.loaded!==cal.date.value && !(await refresh(sport)))return;
     view(sport,null);
@@ -112,7 +117,11 @@ if (bookingGuest) {
     }
     const list=grid.querySelectorAll('.calendar-row');
     list.forEach((row,index)=>{
-      if(index%2){row.hidden=true;return;}
+      if(index%2){
+        row.hidden=true;
+        row.querySelectorAll('.calendar-cell').forEach(cell=>{cell.disabled=true;cell.onclick=null;});
+        return;
+      }
       const minute=minutes(rows[index]);
       row.firstElementChild.textContent=timeLabel(minute);
       row.querySelectorAll('.calendar-cell').forEach((cell,column)=>{
@@ -151,7 +160,7 @@ if (bookingGuest) {
   }
   function toolbar(){
     const shop=document.getElementById('shop').classList.contains('active');
-    book.hidden=feedback.hidden=shop;
+    feedback.hidden=shop;
     if(!shop)void refresh(activeSport());
   }
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)toolbar();});
