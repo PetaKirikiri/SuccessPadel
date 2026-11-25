@@ -106,9 +106,13 @@ export default async function handler(req, res) {
     // The token has already been validated by Supabase Auth.
     const assurance = JSON.parse(Buffer.from(token.split('.')[1], 'base64url')).aal;
     if (role === 'owner' && assurance !== 'aal2') {
-      const {data:googleVerified} = await db.rpc('booking_has_google_session');
+      const {data:googleVerified, error:sessionError} = await db.rpc('booking_has_google_session');
+      if (sessionError) return send(503, {error:'Could not check your session. Try again.'});
       if (googleVerified !== true) {
-        if (user.email?.toLowerCase() === 'successpadelsamui@gmail.com') {
+        const email = user.email?.toLowerCase();
+        const passwordOwner = email === process.env.BOOKING_OWNER_EMAIL?.trim().toLowerCase() &&
+          user.app_metadata?.booking_password_setup === true;
+        if (email === 'successpadelsamui@gmail.com' || passwordOwner) {
           writeSession(res, null);
           return send(401, {error:'Sign in again with your username and password.'});
         }
