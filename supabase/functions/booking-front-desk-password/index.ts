@@ -31,17 +31,74 @@ Deno.serve(async (request) => {
     }
 
     const body = await request.json().catch(() => null)
+    const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, sessionOptions)
+    const { data: accessRows, error: accessError } = await admin.from('booking_staff_access')
+      .select('user_id,role')
+    if (accessError) throw accessError
+    const accounts = await Promise.all(accessRows.map(async ({user_id, role}) => {
+      const {data, error} = await admin.auth.admin.getUserById(user_id)
+      if (error || !data.user) throw new Error('Account unavailable')
+      return {user: data.user, role}
+    }))
+    const shared = accounts.find(({user}) => user.email === sharedEmail)
+    if (body?.action === 'list') {
+      return send(200, {accounts: accounts.map(({user, role}) => ({
+        id: user.id,
+        role,
+        name: user.email === sharedEmail ? 'SuccessPadel' : role === 'owner'
+          ? user.email === 'successpadelsamui@gmail.com' ? 'Kett' : 'Peta'
+          : user.app_metadata.booking_display_name ?? user.app_metadata.booking_staff_username ?? 'Staff',
+        username: user.email === sharedEmail ? 'SuccessPadel' :
+          user.app_metadata.booking_staff_username ?? user.app_metadata.booking_username ??
+          (role === 'owner' && user.email !== 'successpadelsamui@gmail.com' ? 'Peta' : null),
+        shared: user.email === sharedEmail,
+      }))})
+    }
+
     const password = body?.password
     if (typeof password !== 'string' || password.length < 12 ||
         new TextEncoder().encode(password).length > 72 || password.trim() !== password) {
       return send(400, { error: 'Use 12–72 characters with no spaces at the start or end.' })
     }
 
-    const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, sessionOptions)
-    const { data: accounts, error: accessError } = await admin.from('booking_staff_access')
-      .select('user_id').eq('role', 'front_desk')
-    if (accessError || accounts.length > 1) throw new Error('Unexpected staff accounts')
-    let staffId = accounts[0]?.user_id
+    if (body?.action === 'create') {
+      const username = typeof body.username === 'string' ? body.username.trim().toLowerCase() : ''
+      const name = typeof body.name === 'string' ? body.name.trim() : ''
+      if (!/^[a-z][a-z0-9_-]{2,31}$/.test(username) || !name || name.length > 60) {
+        return send(400, {error:'Enter a name and a username with 3–32 letters, numbers, underscores or hyphens.'})
+      }
+      if (['peta','kett','successpadel'].includes(username) || accounts.some(({user}) =>
+        user.app_metadata.booking_username === username || user.app_metadata.booking_staff_username === username)) {
+        return send(409, {error:'That username is already in use.'})
+      }
+      const {data, error} = await admin.auth.admin.createUser({
+        email: username+'@staff.successpadel.local', email_confirm: true, password,
+        app_metadata: {booking_staff_username:username, booking_display_name:name},
+      })
+      if (error?.code === 'email_exists') return send(409, {error:'That username is already in use.'})
+      if (error?.code === 'weak_password') return send(400, {error:'Choose a stronger password.'})
+      if (error || !data.user) throw new Error('Could not create staff user')
+      const {error: assignmentError} = await admin.from('booking_staff_access')
+        .insert({user_id:data.user.id, role:'front_desk'})
+      if (assignmentError) {
+        await admin.auth.admin.deleteUser(data.user.id)
+        throw assignmentError
+      }
+      return send(201, {})
+    }
+
+    if (body?.action === 'reset') {
+      const target = accounts.find(({user, role}) => user.id === body.id && role === 'front_desk' &&
+        typeof user.app_metadata.booking_staff_username === 'string' &&
+        user.email === user.app_metadata.booking_staff_username+'@staff.successpadel.local')
+      if (!target) return send(404, {error:'Staff account unavailable.'})
+      const {error} = await admin.auth.admin.updateUserById(target.user.id, {password})
+      if (error?.code === 'weak_password') return send(400, {error:'Choose a stronger password.'})
+      if (error && error.code !== 'same_password') throw error
+      return send(200, {})
+    }
+    if (body?.action) return send(400, {error:'Invalid account action.'})
+    let staffId = shared?.user.id
     let createdNow = false
 
     if (!staffId) {
@@ -91,6 +148,6 @@ Deno.serve(async (request) => {
     if (saveError) throw saveError
     return send(200, {})
   } catch {
-    return send(503, { error: 'Could not set the staff password. Try again.' })
+    return send(503, { error: 'Could not manage staff accounts. Try again.' })
   }
 })

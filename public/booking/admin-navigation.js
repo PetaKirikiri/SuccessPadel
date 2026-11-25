@@ -91,27 +91,108 @@ staffAccountActions.prepend(accountMenuButton);
 const usersPage = memberNode('section', null, 'page booking-admin-page');
 usersPage.id = 'booking-users';
 const usersHeader = memberNode('header', null, 'booking-page-header');
-usersHeader.append(memberNode('h1', 'Users & access'));
+const addUser = memberNode('button', 'Add user', 'primary');
+addUser.type = 'button';
+addUser.disabled = true;
+usersHeader.append(memberNode('h1', 'Users & access'), addUser);
+const usersError = memberNode('output');
+usersError.setAttribute('role', 'alert');
 const usersTable = memberNode('div', null, 'booking-data-table');
-usersTable.innerHTML = '<table class="table"><thead><tr><th scope="col">Account</th><th scope="col">Role</th><th scope="col">Sign-in</th><th scope="col">Action</th></tr></thead><tbody></tbody></table>';
-const [ownerRow, frontDeskRow] = ['Owner', 'Front desk'].map(role => {
-  const row = usersTable.querySelector('tbody').insertRow();
-  row.insertCell();
-  row.insertCell().textContent = role;
-  row.insertCell().textContent = role === 'Owner' ? 'Google' : 'Username and password';
-  row.insertCell();
-  return row;
-});
-frontDeskRow.cells[0].textContent = 'SuccessPadel';
-staffPasswordButton.textContent = 'Set staff password';
-frontDeskRow.cells[3].append(staffPasswordButton);
-usersPage.append(usersHeader, usersTable);
+usersTable.innerHTML = '<table class="table"><thead><tr><th scope="col">Account</th><th scope="col">Role</th><th scope="col">Username</th><th scope="col">Action</th></tr></thead><tbody></tbody></table>';
+usersPage.append(usersHeader, usersError, usersTable);
 document.querySelector('.content').append(usersPage);
 
+const userEditor = memberNode('dialog', null, 'modal-back');
+userEditor.setAttribute('aria-labelledby','staff-user-title');
+userEditor.innerHTML = `<form class="modal compact-booking">
+  <h2 id="staff-user-title">Add user</h2>
+  <label class="field">Name<input name="name" maxlength="60" required></label>
+  <label class="field">Username<input name="username" autocomplete="off" pattern="[A-Za-z][A-Za-z0-9_\\-]{2,31}" required></label>
+  <label class="field">Password<input name="password" type="password" autocomplete="new-password" minlength="12" maxlength="72" required></label>
+  <output role="alert"></output>
+  <div class="modal-actions"><button class="secondary" type="button">Cancel</button><button class="primary" type="submit">Save user</button></div>
+</form>`;
+document.body.append(userEditor);
+const userForm = userEditor.querySelector('form');
+const userSave = userForm.querySelector('[type="submit"]');
+const userCancel = userForm.querySelector('[type="button"]');
+let staffAccountTarget;
+function openUserEditor(account) {
+  staffAccountTarget = account;
+  userForm.reset();
+  userForm.querySelector('output').textContent = '';
+  userForm.querySelector('h2').textContent = account ? 'Set password for '+account.name : 'Add user';
+  for (const field of ['name', 'username']) {
+    userForm.elements[field].disabled = Boolean(account);
+    userForm.elements[field].closest('label').hidden = Boolean(account);
+  }
+  userEditor.showModal();
+}
+addUser.onclick = () => openUserEditor();
+userCancel.onclick = () => userEditor.close();
+userEditor.addEventListener('cancel', event => { if (userSave.disabled) event.preventDefault(); });
+userEditor.addEventListener('close', () => userForm.reset());
+userForm.onsubmit = async event => {
+  event.preventDefault();
+  userSave.disabled = userCancel.disabled = true;
+  const error = userForm.querySelector('output');
+  error.textContent = '';
+  try {
+    await staffRequest('staff-accounts', {
+      ...Object.fromEntries(new FormData(userForm)),
+      operation:staffAccountTarget ? 'reset' : 'create',
+      id:staffAccountTarget?.id,
+    });
+    userEditor.close();
+    await loadStaffAccounts();
+  } catch (failure) {
+    error.textContent = failure.message || 'Could not save the account.';
+  } finally {
+    userSave.disabled = userCancel.disabled = false;
+  }
+};
+
+async function loadStaffAccounts() {
+  const body = usersTable.querySelector('tbody');
+  addUser.disabled = true;
+  usersError.textContent = '';
+  body.replaceChildren();
+  try {
+    const {accounts} = await staffRequest('staff-accounts', {operation:'list'});
+    if (bookingStaffRole !== 'owner') return;
+    for (const account of accounts.sort((left,right) =>
+      Number(right.role === 'owner')-Number(left.role === 'owner') || left.name.localeCompare(right.name))) {
+      const row = body.insertRow();
+      row.insertCell().textContent = account.name;
+      row.insertCell().textContent = account.role === 'owner' ? 'Owner' : 'Front desk';
+      row.insertCell().textContent = account.username || '—';
+      const actions = row.insertCell();
+      if (account.shared) actions.append(staffPasswordButton);
+      else if (account.role === 'front_desk' && account.username) {
+        const reset = memberNode('button','Set password','secondary');
+        reset.type = 'button';
+        reset.onclick = () => openUserEditor(account);
+        actions.append(reset);
+      }
+    }
+    if (!accounts.some(account => account.shared)) {
+      const row = body.insertRow();
+      row.insertCell().textContent = 'SuccessPadel';
+      row.insertCell().textContent = 'Front desk';
+      row.insertCell().textContent = '—';
+      row.insertCell().append(staffPasswordButton);
+    }
+    staffPasswordButton.textContent = 'Set staff password';
+    staffPasswordButton.classList.add('secondary');
+    addUser.disabled = false;
+  } catch (error) {
+    usersError.textContent = error.message || 'Could not load accounts.';
+  }
+}
 usersButton.onclick = () => {
   if (bookingStaffRole !== 'owner') return;
-  ownerRow.cells[0].textContent = staffAccountName.textContent;
   selectStaffSection(usersButton);
+  void loadStaffAccounts();
 };
 accountMenuButton.onclick = () => {
   staffAccount.open = false;

@@ -57,14 +57,25 @@ export default async function handler(req, res) {
         return send(400, {error: 'Enter your username and password.'});
       }
       const username = body.username.trim().toLowerCase();
-      const account = new Map([
+      let account = new Map([
         ['peta', {email:process.env.BOOKING_OWNER_EMAIL, role:'owner'}],
         ['kett', {email:'successpadelsamui@gmail.com', role:'owner'}],
         ['successpadel', {email:'booking-front-desk@successpadel.local', role:'front_desk'}],
       ]).get(username) ?? (/^[a-z][a-z0-9_-]{2,31}$/.test(username)
         ? {email:'successpadelsamui@gmail.com', role:'owner', chosenUsername:username} : null);
       if (!account?.email) return send(401, {error:'Staff sign-in failed.'});
-      const {data, error} = await client().auth.signInWithPassword({email:account.email, password:body.password});
+      let result;
+      if (account.chosenUsername) {
+        result = await client().auth.signInWithPassword({
+          email:username+'@staff.successpadel.local', password:body.password,
+        });
+        if (result.data?.user?.app_metadata?.booking_staff_username === username && result.data.session) {
+          account = {role:'front_desk'};
+        } else {
+          result = undefined;
+        }
+      }
+      const {data, error} = result ?? await client().auth.signInWithPassword({email:account.email, password:body.password});
       if (error || !data.session || (account.chosenUsername && data.user?.app_metadata?.booking_username !== account.chosenUsername) ||
           (username === 'kett' && data.user?.app_metadata?.booking_username && data.user.app_metadata.booking_username !== username) ||
           await staffRole(data.session.access_token) !== account.role) {
@@ -132,12 +143,12 @@ export default async function handler(req, res) {
       }
     }
 
-    if (action === 'staff-password') {
+    if (action === 'staff-password' || action === 'staff-accounts') {
       if (role !== 'owner') return send(403, {error:'Admin access required.'});
       const response = await fetch(`${url}/functions/v1/booking-front-desk-password`, {
         method:'POST',
         headers:{apikey:key, Authorization:`Bearer ${token}`, 'Content-Type':'application/json'},
-        body:JSON.stringify({password:body.password}),
+        body:JSON.stringify(action === 'staff-password' ? {password:body.password} : {action:body.operation, id:body.id, name:body.name, username:body.username, password:body.password}),
       });
       return send(response.status, await response.json());
     }
