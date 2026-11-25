@@ -41,6 +41,8 @@
     { "source": "/tactics", "destination": "/tactics/index.html" },
     { "source": "/tactics/", "destination": "/tactics/index.html" },
     { "source": "/rules", "destination": "/rain-policy/index.html" },
+    { "source": "/book", "destination": "/booking/index.html" },
+    { "source": "/book/", "destination": "/booking/index.html" },
     { "source": "/booking", "destination": "/booking/index.html" },
     { "source": "/booking/", "destination": "/booking/index.html" },
     { "source": "/rules/", "destination": "/rain-policy/index.html" },

@@ -26,3 +26,90 @@ const photographedShopProducts = [
   { id: 'singha-beer', name: 'Singha Beer', category: 'drinks', price: 80 },
   { id: 'chang-beer', name: 'Chang Beer', category: 'drinks', price: 80 },
 ];
+
+const previewRetailProducts = [
+  {
+    "name": "Bullpadel Unica Vertex",
+    "price": 17000
+  },
+  {
+    "name": "Siux Beat Kid Girl 2027",
+    "price": 4500
+  },
+  {
+    "name": "CWIN Kid’s Racket",
+    "price": 1750
+  },
+  {
+    "name": "Siux Diablo Pro 2026 – Night Blue",
+    "price": 15000
+  },
+  {
+    "name": "Siux Valkiria Elite",
+    "price": 15000
+  },
+  {
+    "name": "Bullpadel Pearl 27",
+    "price": 15000
+  },
+  {
+    "name": "Siux Diablo Pro 2026 – Royal Blue",
+    "price": 15000
+  },
+  {
+    "name": "Drop Shot Essential",
+    "price": 6500
+  },
+  {
+    "name": "Siux Fenix Pro 2027 – Purple",
+    "price": 17000
+  },
+  {
+    "name": "Siux Fenix Pro 2027 – Black",
+    "price": 17000
+  },
+  {
+    "name": "Bullpadel Neuron",
+    "price": 17000
+  },
+  {
+    "name": "Adidas Drive Black 26",
+    "price": 4500
+  },
+  {
+    "name": "Nox Equation Soft Advanced",
+    "price": 7500
+  },
+  {
+    "name": "Drop Shot Explorer Pro Attack 2.0",
+    "price": 17000
+  },
+  {
+    "name": "Siux Fenix Pro Oasis 2027",
+    "price": 22000
+  },
+  {
+    "name": "Siux Electra Pro 2027 – White",
+    "price": 17000
+  },
+  {
+    "name": "Brave – White",
+    "price": 2500
+  },
+  {
+    "name": "CWIN Storm",
+    "price": 1600
+  },
+  {
+    "name": "Babolat Technical Viper",
+    "price": 13000
+  },
+  {
+    "name": "Adidas Metalbone Carbon",
+    "price": 11000
+  },
+  {
+    "name": "Adidas Metalbone",
+    "price": 13000
+  }
+];

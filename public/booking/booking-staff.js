@@ -30,6 +30,16 @@ function demoStaffRequest(action, details) {
   }
 }
 
+let ownerReauthTimer;
+function scheduleOwnerSignIn(response) {
+  const deadline = Number(response.headers.get('X-Booking-Reauth-At'));
+  if (!deadline) return;
+  clearTimeout(ownerReauthTimer);
+  const serverNow = Date.parse(response.headers.get('Date'));
+  const remaining = deadline * 1000 - (Number.isFinite(serverNow) ? serverNow : Date.now());
+  ownerReauthTimer = setTimeout(() => location.reload(), Math.max(0, remaining));
+}
+
 async function staffRequest(action, details = {}) {
   if (bookingDemo) return demoStaffRequest(action, details);
   const signal = AbortSignal.timeout(15000);
@@ -41,6 +51,7 @@ async function staffRequest(action, details = {}) {
   } : {cache:'no-store', signal});
   const payload = await response.json();
   if (!response.ok) throw Object.assign(new Error(payload.error), {status:response.status, mfa:payload.mfa, factorId:payload.factorId});
+  scheduleOwnerSignIn(response);
   return payload;
 }
 
@@ -255,7 +266,7 @@ staffAuthenticator.onsubmit = async event => {
 async function signOutBookingStaff() {
   try {
     await staffRequest('logout');
-    location.reload();
+    location.replace('/booking/');
   } catch {
     lockStaffWorkspace();
     staffError.textContent = 'Could not sign out. Try again.';
@@ -425,4 +436,8 @@ startBookingWorkspace().catch(() => {
   const back = memberNode('a', 'Back to Bookings');
   back.href = '/booking/';
   staffError.after(back);
+});
+
+window.addEventListener('pageshow', event => {
+  if (event.persisted && !bookingDemo) location.reload();
 });

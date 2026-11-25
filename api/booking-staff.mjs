@@ -8,15 +8,8 @@ import { completeKettSetup } from '../server/booking/kett-setup.mjs';
 
 import { authorizeBookingOwnerSession } from '../server/booking/google.mjs';
 
-const cookie = '__Host-booking_staff';
-const cookieAttributes = 'Path=/; Secure; HttpOnly; SameSite=Strict';
-
-function writeSession(res, session) {
-  const token = session?.access_token ?? '';
-  const age = token ? Math.min(Number(session.expires_in) || 3600, 3600) : 0;
-  const existing = res.getHeader('Set-Cookie');
-  res.setHeader('Set-Cookie', [...(existing ? [existing].flat() : []), `${cookie}=${token}; ${cookieAttributes}; Max-Age=${age}`]);
-}
+import {accessCookie, rememberCookie, returningCookie, beginRemembered, claimsOf, clearBrowserSession,
+  ownerLifetime, readCookie, readRemembered, saveBrowserSession} from '../server/booking/browser-session.mjs';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'private, no-store');
@@ -31,14 +24,15 @@ export default async function handler(req, res) {
   const url = process.env.BOOKING_SUPABASE_URL;
   const key = process.env.BOOKING_SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) return send(503, {error: 'Staff sign-in unavailable.'});
-  const token = req.headers.cookie?.split(';').map(part => part.trim())
-    .find(part => part.startsWith(cookie + '='))?.slice(cookie.length + 1);
+  let token = readCookie(req, accessCookie);
+  const returning = readCookie(req, returningCookie) === '1';
+  const now = Math.floor(Date.now() / 1000);
   const body = req.body ?? {};
   const action = req.method === 'GET' ? 'roster' : body.action;
-  if (action === 'logout') {
-    writeSession(res, null);
-    return send(200, {});
-  }
+  const expired = () => {
+    clearBrowserSession(res);
+    return send(401, {returning, error:'Sign in to continue.'});
+  };
 
   const client = accessToken => createClient(url, key, {
     auth: {persistSession:false, autoRefreshToken:false, detectSessionInUrl:false},
@@ -51,6 +45,23 @@ export default async function handler(req, res) {
   }
 
   try {
+    const encoded = readCookie(req, rememberCookie);
+    let remembered = readRemembered(encoded);
+    if (action === 'logout') {
+      if (!token && remembered && remembered.until > now) {
+        const refresh = await client().auth.refreshSession({refresh_token:remembered.refresh});
+        if (refresh.error && (!refresh.error.status || refresh.error.status >= 500)) throw refresh.error;
+        token = refresh.data.session?.access_token;
+      }
+      if (token) {
+        const response = await fetch(url + '/auth/v1/logout?scope=local', {
+          method:'POST', headers:{apikey:key, Authorization:'Bearer ' + token},
+        });
+        if (!response.ok && ![401,403,404].includes(response.status)) throw new Error('Sign-out unavailable.');
+      }
+      clearBrowserSession(res, true);
+      return send(200, {});
+    }
     if (action === 'kett-setup') return await completeKettSetup(body, url, key, send);
     if (action === 'login') {
       if (typeof body.username !== 'string' || typeof body.password !== 'string') {
@@ -90,21 +101,44 @@ export default async function handler(req, res) {
       if (kettVerified || (username === 'peta' && user?.app_metadata?.booking_password_setup === true)) {
         await authorizeBookingOwnerSession(url,key,data.session,data.user.id);
       }
-      writeSession(res, data.session);
+      remembered = beginRemembered(data.session, account.role, Boolean(kettVerified ||
+        (username === 'peta' && user?.app_metadata?.booking_password_setup === true)), now);
+      saveBrowserSession(res, data.session, remembered, now);
       return send(200, {});
     }
-    if (!token) return send(401, {error:'Sign in to continue.'});
+    if (encoded && (!remembered || remembered.until <= now)) return expired();
+    let renewed;
+    if (!token && remembered) {
+      const result = await client().auth.refreshSession({refresh_token:remembered.refresh});
+      if (result.error && (!result.error.status || result.error.status >= 500 || result.error.status === 429)) throw result.error;
+      renewed = result.data.session;
+      if (!renewed || claimsOf(renewed.access_token).session_id !== remembered.sid) return expired();
+      token = renewed.access_token;
+    }
+    if (!token) return send(401, {returning, error:'Sign in to continue.'});
     const db = client(token);
     const {data:{user}, error:userError} = await db.auth.getUser(token);
     if (userError || !user) {
-      writeSession(res, null);
-      return send(401, {error:'Sign in to continue.'});
+      if (userError && (!userError.status || userError.status >= 500 || userError.status === 429)) throw userError;
+      return expired();
     }
     const role = await staffRole(token);
     if (!role) return send(403, {error:'Staff access required.'});
 
     // The token has already been validated by Supabase Auth.
-    const assurance = JSON.parse(Buffer.from(token.split('.')[1], 'base64url')).aal;
+    const claims = claimsOf(token);
+    if (remembered && (remembered.role !== role || remembered.sid !== claims.session_id)) return expired();
+    // Supabase signs the original authentication time in amr, including on refreshed tokens.
+    const passwordTime = claims.amr?.find(entry => entry.method === 'password')?.timestamp;
+    const ownerUntil = Math.min(remembered?.until ?? Infinity, (passwordTime ?? claims.iat) + ownerLifetime);
+    if (role === 'owner' && now >= ownerUntil) return expired();
+    if (renewed) {
+      if (role === 'owner' && remembered.ownerProof) {
+        await authorizeBookingOwnerSession(url, key, renewed, user.id, ownerUntil);
+      }
+      saveBrowserSession(res, renewed, remembered, now);
+    }
+    const assurance = claims.aal;
     if (role === 'owner' && assurance !== 'aal2') {
       const {data:googleVerified, error:sessionError} = await db.rpc('booking_has_google_session');
       if (sessionError) return send(503, {error:'Could not check your session. Try again.'});
@@ -113,7 +147,7 @@ export default async function handler(req, res) {
         const passwordOwner = email === process.env.BOOKING_OWNER_EMAIL?.trim().toLowerCase() &&
           user.app_metadata?.booking_password_setup === true;
         if (email === 'successpadelsamui@gmail.com' || passwordOwner) {
-          writeSession(res, null);
+          clearBrowserSession(res);
           return send(401, {error:'Sign in again with your username and password.'});
         }
         const factor = user.factors?.find(item => item.factor_type === 'totp' && item.status === 'verified');
@@ -137,7 +171,8 @@ export default async function handler(req, res) {
           try {
             const challenge = await mfa('/' + factorId + '/challenge', {});
             const session = await mfa('/' + factorId + '/verify', {challenge_id:challenge.id, code:body.code});
-            writeSession(res, session);
+            const state = remembered ?? beginRemembered(session, role, false, now);
+            saveBrowserSession(res, session, {...state, until:Math.min(state.until, ownerUntil)}, now);
             return send(200, {});
           } catch {
             return send(400, {error:'Authenticator code was rejected.'});
@@ -146,6 +181,9 @@ export default async function handler(req, res) {
         return send(403, {mfa:true, factorId:factor?.id ?? null, error:'Authenticator verification required.'});
       }
     }
+
+    if (role === 'owner') res.setHeader('X-Booking-Reauth-At', String(ownerUntil));
+    if (action === 'session') return send(200, {role});
 
     if (action === 'staff-password' || action === 'staff-accounts') {
       if (role !== 'owner') return send(403, {error:'Admin access required.'});

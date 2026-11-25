@@ -89,12 +89,12 @@ export async function completeBookingGoogle(req, res, url, key, writeSession, ex
   }
 }
 
-export async function authorizeBookingOwnerSession(url,key,session,userId) {
+export async function authorizeBookingOwnerSession(url,key,session,userId,deadline = Infinity) {
   const signingKey = process.env.BOOKING_GOOGLE_SESSION_KEY;
   if (!signingKey) throw new Error("Booking session signing unavailable");
     const claims = claimsFrom(session.access_token);
     if (!claims.session_id || claims.sub !== userId) throw new Error('Invalid session binding');
-    const expires = Math.min(claims.exp, Math.floor(Date.now()/1000) + 3500);
+    const expires = Math.min(deadline, claims.exp, Math.floor(Date.now()/1000) + 3500);
     const proof = createHmac('sha256',signingKey).update(`booking-google-v1:${userId}:${claims.session_id}:${expires}`).digest('hex');
     const db = createClient(url,key,{accessToken:async()=>session.access_token});
     const {data:accepted, error:proofError} = await db.rpc('booking_accept_google_session',{proof,expires});
