@@ -20,6 +20,8 @@ import {
 import { formatClubDateInvite, formatClubTimeLocalized, parseClubDate } from './courtSchedule'
 import type { AppLocale } from './locale'
 import type { RosterSlot, RuleChip } from './friendlyGameDisplay'
+import { confirmedDuoTeams } from './competition-formats/duos/roster'
+import { storedScheduleFromConfig } from './rankedSchedule'
 import { competitionPlayerAvatarUrl } from './competitionRosterAvatars'
 import type { GameSession } from './types'
 
@@ -200,12 +202,38 @@ export function duoTeamDraftsFromRow(row: CompetitionRow): DuoTeamDraft[] {
   })
 }
 
+/** Hide trailing signup positions once the saved draw accounts for every entrant. */
+export function competitionDuoDrawTeamCount(row: CompetitionRow): number | undefined {
+  const rounds = storedScheduleFromConfig(row.scoring_config)
+  if (rounds.length === 0) return
+  const players = row.session_players ?? []
+  const teams = confirmedDuoTeams(players, row.session_pairs ?? [])
+  if (teams.length < 2) return
+
+  const ranks = new Set(players.map(player => player.rank_order))
+  if (!players.every((_, rank) => ranks.has(rank))) return
+
+  const pairKeys = new Set(teams.map(team => [...team.roster_ids].sort().join(':')))
+  const complete = rounds.every(round => {
+    if (round.matches.length * 2 !== pairKeys.size) return false
+    const playingPairs = new Set<string>()
+    for (const match of round.matches) {
+      if (!Array.isArray(match?.team_a) || !Array.isArray(match?.team_b)) return false
+      playingPairs.add([...match.team_a].sort().join(':'))
+      playingPairs.add([...match.team_b].sort().join(':'))
+    }
+    return playingPairs.size === pairKeys.size &&
+      [...playingPairs].every(pair => pairKeys.has(pair))
+  })
+  return complete ? teams.length : undefined
+}
+
 export function competitionInviteRoster(row: CompetitionRow): {
   slots: RosterSlot[]
   duoTeams: CompetitionTeamSlot[] | null
 } {
   if (isDuoCompetition(row)) {
-    return { slots: [], duoTeams: competitionDuoTeamSlots(row) }
+    return { slots: [], duoTeams: competitionDuoTeamSlots(row).slice(0, competitionDuoDrawTeamCount(row)) }
   }
   return { slots: competitionRosterSlots(row), duoTeams: null }
 }

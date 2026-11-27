@@ -30,6 +30,7 @@ import { computeDuoStandings } from '../../lib/computeDuoStandings'
 import { competitionStandingsHistory } from '../../lib/competitionStandingsHistory'
 import { computeFriendlySessionStandings } from '../../lib/friendlySessionStandings'
 import { duoLabelsForMatch } from '../../lib/competitionFormatPresets'
+import { confirmedDuoTeams } from '../../lib/competition-formats/duos/roster'
 import { duoStandings } from '../../lib/competition-formats/duos/standings'
 import { singlesStandings } from '../../lib/competition-formats/singles/standings'
 import type { CourtPlayer } from '../../lib/americanoSchedule'
@@ -342,16 +343,20 @@ export function GameCardPlayEvent() {
     [effectiveCourtMatches, leaderboard, roster, rounds],
   )
 
+  const confirmedTeams = useMemo(
+    () => isDuo ? confirmedDuoTeams(roster, sessionPairs) : [],
+    [isDuo, roster, sessionPairs],
+  )
   const effectiveDuoStandings = useMemo(
     () =>
-      isDuo && teams.length >= 2
+      confirmedTeams.length >= 2
         ? enrichStandingsWithAvatars(
             // Standings reflect saved results, never stale local/gesture drafts.
-            computeDuoStandings(roster, rounds, courtMatches, teams),
+            computeDuoStandings(roster, rounds, courtMatches, confirmedTeams),
             leaderboard,
           )
         : [],
-    [courtMatches, isDuo, leaderboard, roster, rounds, teams],
+    [courtMatches, confirmedTeams, leaderboard, roster, rounds],
   )
 
   const gestureStandings = useMemo(
@@ -376,7 +381,7 @@ export function GameCardPlayEvent() {
     // Fixed pairs stay team standings after the first persisted score arrives.
     // The server leaderboard is individual; it must not replace these pair rows.
     if (isDuo) {
-      return duoStandings(effectiveDuoStandings, teams.length)
+      return duoStandings(effectiveDuoStandings, confirmedTeams.length)
     }
     // Preview standings share the exact playing slots used by the court draw.
     // Vacancies are presentation-only and never become registered players.
@@ -415,14 +420,14 @@ export function GameCardPlayEvent() {
     manualStandings,
     roster,
     rounds,
-    teams,
+    confirmedTeams,
   ])
 
   const selectedGame = tvGameNumber ?? activeRound?.round_number ?? 1
-  const history = useMemo(() => rounds.length ? competitionStandingsHistory(
-    roster, rounds, courtMatches, selectedGame, isDuo ? teams : undefined,
-  ) : null, [roster, rounds, courtMatches, selectedGame, isDuo, teams])
-  const liveStandings = history
+  const history = useMemo(() => rounds.length && (!isDuo || confirmedTeams.length >= 2) ? competitionStandingsHistory(
+    roster, rounds, courtMatches, selectedGame, isDuo ? confirmedTeams : undefined,
+  ) : null, [roster, rounds, courtMatches, selectedGame, isDuo, confirmedTeams])
+  const liveStandings = history && !standingsModel.error
     ? enrichStandingsWithAvatars(history.entries, leaderboard)
     : standingsModel.entries
 

@@ -18,3 +18,16 @@ export function fixedPairRoster<T extends Player>(players: readonly T[], pairs: 
   }
   return { players: result, teams, error: null }
 }
+
+export function confirmedDuoTeams(
+  players: readonly Player[],
+  pairs: readonly (NonNullable<Pair> & { pair_label?: string | null })[],
+): { label: string; roster_ids: [string, string] }[] {
+  const occupiedPairs = pairs.filter(pair => pair.roster_a_id || pair.roster_b_id)
+  const roster = fixedPairRoster(players, occupiedPairs)
+  if (roster.error) return []
+  return roster.teams.map(([a, b], index) => ({
+    label: occupiedPairs[index].pair_label?.trim() || `Team ${index + 1}`,
+    roster_ids: [a.id, b.id],
+  }))
+}

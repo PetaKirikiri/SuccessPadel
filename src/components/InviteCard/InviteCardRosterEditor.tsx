@@ -7,7 +7,7 @@ import { MemberPlayerSlots, type PadelPlayerOption } from '../../components/Setu
 import { useTranslation } from '../../hooks/useTranslation'
 import { clubDisplayName } from '../../lib/clubMemberDisplay'
 import type { DuoTeamDraft } from '../../lib/competitionDuoTeams'
-import { duoTeamDraftsFromRow, competitionRosterSlots, competitionDuoTeamSlots } from '../../lib/competitionGameDisplay'
+import { duoTeamDraftsFromRow, competitionRosterSlots, competitionDuoTeamSlots, competitionDuoDrawTeamCount } from '../../lib/competitionGameDisplay'
 import { isDuoCompetition } from '../../lib/competitionFormatPresets'
 import {
   clearInviteRosterDraft,
@@ -194,6 +194,8 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false, rea
     [displayedRow.session_players, profiles, padelPlayers],
   )
   const [duoTeams, setDuoTeams] = useState<DuoTeamDraft[]>(() => duoTeamDraftsFromRow(row))
+  const drawnTeamCount = useMemo(() => isDuos ? competitionDuoDrawTeamCount(displayedRow) : undefined, [displayedRow, isDuos])
+  const visibleDuoTeams = drawnTeamCount === undefined ? duoTeams : duoTeams.slice(0, drawnTeamCount)
   const [playerSlots, setPlayerSlots] = useState<string[]>(() => singlesFromRow(row).names)
   const [profileIds, setProfileIds] = useState<(string | null)[]>(() =>
     singlesFromRow(row).profileIds,
@@ -419,10 +421,10 @@ export function InviteCardRosterEditor({ row, onSaved, publicSignup = false, rea
         <DuoTeamSlots
           renderSlotActions={renderSlotActions}
           disabled={readOnly || (publicSignup && saving)}
-          teams={duoTeams}
+          teams={visibleDuoTeams}
           profiles={rosterDirectory.profiles}
           padelPlayers={rosterDirectory.padelPlayers}
-          onChange={handleDuoChange}
+          onChange={teams => handleDuoChange([...teams, ...duoTeams.slice(teams.length)])}
           layout="grid"
           nameInputMode="picker"
           linkAvatarsToProfile

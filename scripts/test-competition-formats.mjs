@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { duoStandings } from '../src/lib/competition-formats/duos/standings.ts'
 import { singlesStandings } from '../src/lib/competition-formats/singles/standings.ts'
-import { fixedPairRoster } from '../src/lib/competition-formats/duos/roster.ts'
+import { confirmedDuoTeams, fixedPairRoster } from '../src/lib/competition-formats/duos/roster.ts'
 import { checkFormatCss, checkFormatModule, formatScope, rosterHook } from './check-competition-formats.mjs'
 import { fileScope, checkViewportFile } from './layout-isolation.mjs'
 import fs from 'node:fs'
@@ -17,6 +17,16 @@ test('duos remain eight team rows before and after first saved score and refresh
     assert.equal(result.entries.length, 8)
     assert.equal(result.entries[0].total_points, score) // not twice the team score
   }
+})
+test('six fixed pairs get six standings rows with two unused signup positions', () => {
+  const pairs = Array.from({ length: 6 }, (_, index) => ({ roster_a_id: `a${index}`, roster_b_id: `b${index}` }))
+  const players = pairs.flatMap(row => [{ id: row.roster_a_id }, { id: row.roster_b_id }])
+  const vacant = { roster_a_id: null, roster_b_id: null }
+  const teams = confirmedDuoTeams(players, [...pairs, vacant, vacant])
+  const standings = duoStandings(Array.from({ length: 6 }, (_, index) => pair(index)), teams.length)
+  assert.equal(standings.error, null)
+  assert.equal(standings.entries.length, 6)
+  assert.deepEqual(confirmedDuoTeams(players, [...pairs.slice(0, 5), { ...pairs[5], roster_b_id: null }]), [])
 })
 test('duos reject individual, mixed, missing, and duplicate rows', () => {
   for (const entries of [[solo, solo], [pair(0), solo], [pair(0)], [pair(0), pair(0)]]) {
@@ -88,8 +98,8 @@ test('format CSS cannot escape into singles or the unscoped shell', () => {
 test('both play leaderboard surfaces pass the explicit format contract', () => {
   const source = fs.readFileSync('src/foundation/play/GameCardPlayEvent.tsx', 'utf8')
   assert.equal((source.match(/competitionFormat=\{standingsModel.format\}/g) ?? []).length, 2)
-  assert.ok(source.includes('return duoStandings(effectiveDuoStandings, teams.length)'))
-  assert.ok(source.includes('computeDuoStandings(roster, rounds, courtMatches, teams)'))
+  assert.ok(source.includes('return duoStandings(effectiveDuoStandings, confirmedTeams.length)'))
+  assert.ok(source.includes('computeDuoStandings(roster, rounds, courtMatches, confirmedTeams)'))
   const renderer = fs.readFileSync('src/components/leaderboard/Leaderboard.tsx', 'utf8')
   assert.ok(renderer.includes("simpleTeamRow={compact && (competitionFormat === 'duos'"), 'Sidebar team presentation must not replace the standard mobile team row')
 })
