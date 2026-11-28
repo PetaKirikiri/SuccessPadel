@@ -30,3 +30,43 @@ test('Both recipients get the balance on booking and cancellation',async t=>{
     assert.deepEqual(sent.splice(0).map(m=>[m.to,m.messages[0].text.includes(kind),m.messages[0].text.includes('1 lesson remaining')]),recipients.map(id=>[id,true,true]));
   }
 });
+
+test('Edits recheck availability and package ownership', () => {
+  const current = applyLessonChanges(records, [booking]).output;
+  assert.throws(() => applyLessonChanges(current, [{...booking, court:'Court 1'}]), /Lesson time unavailable/);
+  assert.throws(() => applyLessonChanges(current, [{...booking, time:'20:00'}]), /Lesson time unavailable/);
+  assert.throws(() => applyLessonChanges(current, [{...booking, customerId:'another-customer'}]), /Package unavailable/);
+  assert.throws(() => applyLessonChanges(current, [{...booking, packageId:'unknown'}]), /Package unavailable/);
+});
+
+test('Payment and notes preserve unchanged historical lessons', () => {
+  const current = {...applyLessonChanges(records, [booking]).output, 'success-coach-availability':[]};
+  const updated = {...booking, paid:true, coachingNote:'Follow up'};
+  const result = applyLessonChanges(current, [updated]);
+  assert.deepEqual(result.output[key], [updated]);
+  assert.deepEqual(result.changes, []);
+});
+
+test('Recurrence blocks future dates in either order without blocking preceding weeks', () => {
+  const season = {
+    eventId:'competition', activity:'event', weeklyOngoing:true,
+    date:'2026-11-24', court:'Court 1', time:'21:00', duration:60,
+  };
+  const normalPlay = {
+    id:'play', activity:'play', date:'2026-12-01', court:'Court 1', time:'21:00', duration:60,
+  };
+  const normalBooking = {[key]:[normalPlay]};
+  assert.throws(() => applyLessonChanges({}, [normalPlay], undefined, undefined, [season]), /Court already booked/);
+  assert.throws(() => applyLessonChanges(normalBooking, [normalPlay, season]), /Court already booked/);
+  assert.doesNotThrow(() => applyLessonChanges({}, [{...normalPlay, date:'2026-11-17'}], undefined, undefined, [season]));
+  assert.doesNotThrow(() => applyLessonChanges({}, [{...normalPlay, time:'20:00'}], undefined, undefined, [season]));
+});
+
+test('Coach overlap is shared across courts for changes to an existing lesson', () => {
+  const original = {...booking, packageId:null};
+  const occupied = {...original, id:'another-lesson', court:'Court 4', time:'20:00'};
+  const availability = {...original, time:'20:00', duration:120};
+  const saved = { [key]:[original, occupied], 'success-coach-availability':[availability] };
+  assert.throws(() => applyLessonChanges(saved, [occupied, {...original, time:'20:00'}]), /Lesson time unavailable/);
+  assert.doesNotThrow(() => applyLessonChanges(saved, [occupied, original]));
+});

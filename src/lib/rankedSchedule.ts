@@ -149,7 +149,7 @@ export function sortRosterByRank(roster: CompetitionPlayer[]): CompetitionPlayer
 }
 
 export function buildStoredSchedule(
-  ranked: CompetitionPlayer[],
+  ranked: readonly Pick<CompetitionPlayer, 'id'>[],
   rounds: RoundAssignment[],
 ): StoredScheduleRound[] {
   return rounds.map((round) => ({

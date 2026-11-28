@@ -89,6 +89,56 @@ type SessionPairRef = {
   roster_b_id?: string | null
 }
 
+type SetupRosterPlayer = {
+  id: string
+  rank: number
+  name: string
+  profileId: string | null
+  padelPlayerId: string | null
+}
+
+/** Restore saved sides without changing the roster ranks used by an existing draw. */
+export function hydrateDuoTeams(
+  roster: SetupRosterPlayer[],
+  pairs: Array<SessionPairRef & { pair_label?: string | null }>,
+  teamCount: number,
+): { teams: DuoTeamDraft[]; ranks: Array<number | null> } | null {
+  const byId = new Map(roster.map((player) => [player.id, player]))
+  const teams = emptyDuoTeams(teamCount)
+  const ranks = Array<number | null>(teamCount * 2).fill(null)
+  const placed = new Set<string>()
+  const occupied = new Set<number>()
+  const savedRank = (pair: SessionPairRef) =>
+    byId.get(pair.roster_a_id ?? '')?.rank ?? byId.get(pair.roster_b_id ?? '')?.rank ?? Number.MAX_SAFE_INTEGER
+
+  for (const pair of [...pairs].sort((a, b) => savedRank(a) - savedRank(b))) {
+    if (!pair.roster_a_id && !pair.roster_b_id) continue
+    const a = pair.roster_a_id ? byId.get(pair.roster_a_id) : undefined
+    const b = pair.roster_b_id ? byId.get(pair.roster_b_id) : undefined
+    if ((pair.roster_a_id && !a) || (pair.roster_b_id && !b) || (a && b && a.id === b.id)) return null
+    if ((a && placed.has(a.id)) || (b && placed.has(b.id))) return null
+
+    const preferred = Math.floor(savedRank(pair) / 2)
+    const index = teams[preferred] && !occupied.has(preferred)
+      ? preferred
+      : teams.findIndex((_, candidate) => !occupied.has(candidate))
+    if (index === -1) return null
+    occupied.add(index)
+    teams[index] = {
+      label: pair.pair_label ?? '',
+      names: [a?.name ?? '', b?.name ?? ''],
+      profileIds: [a?.profileId ?? null, b?.profileId ?? null],
+      padelPlayerIds: [a?.padelPlayerId ?? null, b?.padelPlayerId ?? null],
+    }
+    ranks[index * 2] = a?.rank ?? null
+    ranks[index * 2 + 1] = b?.rank ?? null
+    if (a) placed.add(a.id)
+    if (b) placed.add(b.id)
+  }
+
+  return placed.size === roster.length ? { teams, ranks } : null
+}
+
 /** Map session_pairs to team slots (0..teamCount-1) using roster rank_order. */
 export function orderSessionPairsByTeamIndex<T extends SessionPairRef>(
   pairs: T[],

@@ -3,6 +3,7 @@ const lineTestMemberId = 'padel-card-012';
 function bookingNotificationPreferences(members) {
   return members.map(member => ({...member, lineBookingNotificationsEnabled: !member.deleted && member.lineBookingNotificationsEnabled === true}));
 }
+import {bookingCalendarAccess, calendarForRole, preserveOwnerBookingFields} from '../server/booking/calendar-access.mjs';
 import { createClient } from '@supabase/supabase-js';
 import { completeKettSetup } from '../server/booking/kett-setup.mjs';
 
@@ -10,6 +11,15 @@ import { authorizeBookingOwnerSession } from '../server/booking/google.mjs';
 
 import {accessCookie, rememberCookie, returningCookie, beginRemembered, claimsOf, clearBrowserSession,
   ownerLifetime, readCookie, readRemembered, saveBrowserSession} from '../server/booking/browser-session.mjs';
+
+async function readCalendarSnapshot(db, actor, role) {
+  const [calendar, blocks] = await Promise.all([
+    bookingCalendarAccess(db, actor, 'read'),
+    db.rpc('booking_competition_blocks'),
+  ]);
+  if (calendar.error || blocks.error) throw Error('Calendar unavailable.');
+  return {...calendarForRole(calendar.data, role), competitionBlocks:blocks.data};
+}
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'private, no-store');
@@ -196,29 +206,26 @@ export default async function handler(req, res) {
     }
 
     if (action === 'calendar' || action === 'save-calendar') {
-      const table = db.from('booking_calendar_records');
-      if (action === 'calendar') {
-        const {data,error} = await table.select('records,revision').eq('id',1).single();
-        return error ? send(503,{error:'Calendar unavailable.'}) : send(200,data);
-      }
-      const {key,rows,revision} = body;
+      if (action === 'calendar') return send(200, await readCalendarSnapshot(db,user.id,role));
+      const {key,revision} = body;
+      let {rows} = body;
       if (!['success-padel-bookings','success-pilates-bookings','success-coach-availability','success-booking-packages-v1'].includes(key) ||
-          !Array.isArray(rows) || !Number.isSafeInteger(revision) || revision < 0) return send(400,{error:'Invalid calendar change.'});
-      const current = await table.select('records').eq('id',1).eq('revision',revision).maybeSingle();
+          !Array.isArray(rows) || rows.some(row=>!row || typeof row!=='object' || Array.isArray(row)) ||
+          !Number.isSafeInteger(revision) || revision < 0 || revision >= 2147483647) return send(400,{error:'Invalid calendar change.'});
+      const current = await bookingCalendarAccess(db,user.id,'read');
       if (current.error) return send(503,{error:'Calendar unavailable.'});
-      if (!current.data) return send(409,{error:'Calendar changed. Reload and try again.'});
+      if (current.data?.revision !== revision) return send(409,{error:'Calendar changed. Reload and try again.'});
+      if (role !== 'owner') rows = preserveOwnerBookingFields(key,current.data.records[key] ?? [],rows);
       let output={...current.data.records,[key]:rows},changes=[];
-      if(key==='success-padel-bookings'){
-        const previous=current.data.records[key] || [];
-        for(const row of rows){
-          if(row.eventId || row.coach || row.activity==='coaching')continue;
-          if(/^\d{2}:00$/.test(row.time) && Number(row.duration)===60)continue;
-          const existing=previous.some(old=>old.id===row.id && old.date===row.date && old.court===row.court &&
-            old.time===row.time && old.duration===row.duration && !old.eventId && !old.coach && old.activity!=='coaching');
-          if(!existing)return send(400,{error:'Choose a full hour on the calendar.'});
+      if (key === 'success-padel-bookings') {
+        const {data:competitionBlocks, error:blocksError} = await db.rpc('booking_competition_blocks');
+        if (blocksError) return send(503, {error:'Calendar unavailable.'});
+        try {
+          ({output, changes} = applyLessonChanges(current.data.records, rows, Date.now(),
+            body.cancellation, competitionBlocks));
+        } catch (error) {
+          return send(400, {error:error.message});
         }
-        try { ({output,changes}=applyLessonChanges(current.data.records,rows,Date.now(),body.cancellation)); }
-        catch(err){ return send(400,{error:err.message}); }
       }
       let enabled=false;
       if(changes.some(c=>c.booking.customerId===lineTestMemberId)){
@@ -226,12 +233,12 @@ export default async function handler(req, res) {
         if(roster.error)return send(503,{error:'Could not check notification preferences.'});
         enabled=bookingNotificationPreferences(roster.data.members).some(m=>m.id===lineTestMemberId && m.lineBookingNotificationsEnabled);
       }
-      const {data,error} = await table.update({records:output,revision:revision+1})
-        .eq('id',1).eq('revision',revision).select('revision').maybeSingle();
+      const {data,error} = await bookingCalendarAccess(db,user.id,'write',{revision,records:output});
       if (error) return send(503,{error:'Could not save calendar.'});
       if(!data)return send(409,{error:'Calendar changed. Reload and try again.'});
       const notified=await sendLessonNotices(changes,enabled);
-      return send(200,{...data,lessonCancellations:output.lessonCancellations,courtCancellations:output.courtCancellations,notificationWarning:!notified});
+      const {records} = calendarForRole({records:output},role);
+      return send(200,{...data,lessonCancellations:records.lessonCancellations,courtCancellations:records.courtCancellations,notificationWarning:!notified});
     }
     if (action === 'roster' && (req.query?.catalog === 'live' || req.query?.demo === 'samples')) {
       if (role !== 'owner') return send(403, {error:'Owner access required.'});
@@ -250,13 +257,12 @@ export default async function handler(req, res) {
 
     if (action === 'roster' || action === 'workspace') {
       const rosterQuery = db.from('booking_member_roster').select('members,revision').eq('id',1).single();
-      const calendarQuery = action === 'workspace'
-        ? db.from('booking_calendar_records').select('records,revision').eq('id',1).single()
-        : null;
-      const [{data, error}, calendar] = await Promise.all([rosterQuery, calendarQuery]);
+      const calendarQuery = action === 'workspace' ? readCalendarSnapshot(db,user.id,role) : null;
+      const ratesQuery = action === 'workspace' ? db.from('booking_rates').select('code,amount') : null;
+      const [{data, error}, calendar, rates] = await Promise.all([rosterQuery, calendarQuery, ratesQuery]);
       if (error) return send(503, {error:'Could not load members.'});
-      if (calendar?.error) return send(503, {error:'Calendar unavailable.'});
-      const profileName = role === 'front_desk' ? 'SuccessPadel' :
+      if (rates?.error) return send(503, {error:'Could not load rates.'});
+      const profileName = role === 'front_desk' ? user.app_metadata?.booking_display_name || 'SuccessPadel' :
         user.email?.toLowerCase() === process.env.BOOKING_KETT_EMAIL?.toLowerCase() ? 'Kett' : 'Peta';
       const avatar = user.user_metadata?.avatar_url;
       const profile = {
@@ -264,7 +270,19 @@ export default async function handler(req, res) {
         avatar:role === 'owner' && typeof avatar === 'string' &&
           /^https:\/\/lh3\.googleusercontent\.com\//.test(avatar) ? avatar : null,
       };
-      return send(200, {...data, members:bookingNotificationPreferences(data.members), role, profile, ...(calendar && {calendar:calendar.data})});
+      return send(200, {...data, members:bookingNotificationPreferences(data.members), role, profile, ...(calendar && {calendar,rates:Object.fromEntries(rates.data.map(({code, amount}) => [code, amount]))})});
+    }
+    if (action === 'save-rate') {
+      const rates = db.from('booking_rates');
+      if (role !== 'owner') return send(403, {error:'Owner access required.'});
+      const {code, amount} = body;
+      if (typeof code !== 'string' || !/^[a-zA-Z]{1,32}$/.test(code) ||
+          !Number.isInteger(amount) || amount < 0 || amount > 2147483647) {
+        return send(400, {error:'Enter a valid price.'});
+      }
+      const {data, error} = await rates.update({amount}).eq('code',code).select('amount').maybeSingle();
+      if (error) return send(503, {error:'Could not save rate.'});
+      return data ? send(200, data) : send(404, {error:'Rate unavailable.'});
     }
     if (action === 'loan' || action === 'save-loan') {
       if (role !== 'owner') return send(403, {error:'Owner access required.'});

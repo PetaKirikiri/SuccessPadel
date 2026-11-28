@@ -101,6 +101,7 @@ if (bookingGuest) {
     if(padel)data.players=newCourtPlayers.value.slice(1).filter(Boolean);
     data.method=(padel?padelPayment:pilatesPayment).value;
     const key=JSON.stringify(data);
+    data.expectedPrice = padel ? rate() : pilatesRates[data.kind];
     if(attempts.get(dialog)?.key!==key)attempts.set(dialog,{key,id:crypto.randomUUID()});
     const {id}=attempts.get(dialog);
     button.disabled=true;
@@ -108,6 +109,12 @@ if (bookingGuest) {
     try{
       const response=await fetch('/api/booking-guest',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...data,id})});
       const result=await response.json();
+      if(response.status===412){
+        await refresh(sport);
+        if(padel)refreshPrice();else pPrice();
+        bookingError(dialog,result.error);
+        return;
+      }
       if(!response.ok){
         if(response.status===409)await refresh(sport);
         throw Error(result.error||'Could not save booking. Try again.');
@@ -158,8 +165,12 @@ if (bookingGuest) {
     try {
       const response=await fetch('/api/booking-guest?'+new URLSearchParams({activity:sport,date,view:'calendar'}),{cache:'no-store'});
       if(!response.ok)throw Error();
-      const {slots,occupied}=await response.json();
+      const {slots,occupied,rates}=await response.json();
       if(seq!==cal.seq || date!==cal.date.value)return false;
+      if (rates) {
+        Object.assign(pricing,rates);
+        applyPriceConfig();
+      }
       slots.sort((a,b)=>a.minute-b.minute || a.resource-b.resource || Number(['play','private'].includes(b.kind))-Number(['play','private'].includes(a.kind)));
       const reserved=occupied.map(({resource,minute,duration,kind})=>({
         date,time:timeOf(minute),duration,customer:'Reserved',publicKind:kind,

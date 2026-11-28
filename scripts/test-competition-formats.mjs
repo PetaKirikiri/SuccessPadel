@@ -1,11 +1,38 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { hydrateDuoTeams } from '../src/lib/competitionDuoTeams.ts'
 import { duoStandings } from '../src/lib/competition-formats/duos/standings.ts'
 import { singlesStandings } from '../src/lib/competition-formats/singles/standings.ts'
 import { confirmedDuoTeams, fixedPairRoster } from '../src/lib/competition-formats/duos/roster.ts'
 import { checkFormatCss, checkFormatModule, formatScope, rosterHook } from './check-competition-formats.mjs'
 import { fileScope, checkViewportFile } from './layout-isolation.mjs'
 import fs from 'node:fs'
+
+test('editing nonadjacent saved duo pairs retains each side and original rank', () => {
+  const players = ['A', 'B', 'C', 'D'].map((name, rank) => ({
+    id: name.toLowerCase(), name, rank, profileId: null, padelPlayerId: name.toLowerCase(),
+  }))
+  const pairs = [
+    { pair_label: 'First', roster_a_id: 'a', roster_b_id: 'c' },
+    { pair_label: 'Second', roster_a_id: 'b', roster_b_id: 'd' },
+  ]
+  const result = hydrateDuoTeams(players, pairs, 2)
+  assert.deepEqual(result.teams.map(team => [team.label, ...team.names]), [
+    ['First', 'A', 'C'],
+    ['Second', 'B', 'D'],
+  ])
+  assert.deepEqual(result.ranks, [0, 2, 1, 3])
+  assert.equal(hydrateDuoTeams(players, [pairs[0]], 2), null)
+  assert.equal(hydrateDuoTeams(players, [...pairs, pairs[0]], 2), null)
+  assert.equal(hydrateDuoTeams(players, [pairs[0], { ...pairs[1], roster_b_id: 'missing' }], 2), null)
+})
+
+test('a saved partial duo team keeps its vacant side', () => {
+  const player = { id: 'third', name: 'Third', rank: 5, profileId: 'member', padelPlayerId: null }
+  const result = hydrateDuoTeams([player], [{ pair_label: 'Open team', roster_b_id: 'third' }], 3)
+  assert.deepEqual(result.teams[2].names, ['', 'Third'])
+  assert.deepEqual(result.ranks, [null, null, null, null, null, 5])
+})
 
 const solo = { profile_id: 'person-a', display_name: 'A', total_points: 6, games: 1 }
 const pair = n => ({ ...solo, profile_id: `duo:a${n}:b${n}`, player_a_id: `a${n}`, player_b_id: `b${n}`, player_a_name: 'A', player_b_name: 'B' })

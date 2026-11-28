@@ -94,11 +94,11 @@
     if(!title||!courts.length||(last && last<date)||!rows.includes(start)||duration<=0||duration%15||minutes(end)>closingMinute){
       error.textContent='Check the name, courts, dates and opening hours.';return;
     }
-    const existing=storedRows('success-padel-bookings'), additions=[];
+    const existing=storedRows('success-padel-bookings'), reservations=displayedCourtBookings(), additions=[];
     const eventId=Array.from(crypto.getRandomValues(new Uint32Array(4))).join('-');
     for(let occurrence=date;occurrence<=(last||date);occurrence=dateOffset(occurrence,7)){
       for(const court of courts){
-        const conflict=existing.find(b=>b.court===court && minutes(b.time)<minutes(end) && minutes(start)<minutes(b.time)+b.duration &&
+        const conflict=reservations.find(b=>b.court===court && minutes(b.time)<minutes(end) && minutes(start)<minutes(b.time)+b.duration &&
           (bookingOccursOn(b,occurrence) || (!last && bookingOccursOn({date,weeklyOngoing:true},b.date))));
         if(conflict){
           error.textContent=court+' is already booked on '+longDate(conflict.date>occurrence?conflict.date:occurrence)+'.';return;
@@ -108,7 +108,7 @@
       if(!last||occurrence===last)break;
     }
     try{await writeCalendarRows('success-padel-bookings',[...existing,...additions])}
-    catch{error.textContent='Could not save the court bookings.';return}
+    catch(failure){error.textContent=calendarSaveMessage(failure,'Could not save the court bookings.');return}
     form.reset();updateEndTimes();fields.repeat.onchange();error.textContent='';form.hidden=true;
     refreshBookingCalendars();render();
   };

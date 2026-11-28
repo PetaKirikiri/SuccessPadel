@@ -56,6 +56,47 @@ async function staffRequest(action, details = {}) {
   return payload;
 }
 
+let calendarWriting = false;
+async function writeCalendarRows(key, rows, cancellation) {
+  if (bookingGuest) throw new Error('Staff access required.');
+  if (bookingDemo) {
+    localStorage.setItem(key, JSON.stringify(rows));
+    return;
+  }
+  if (!calendarDataset || calendarWriting) throw new Error('Calendar unavailable.');
+  calendarWriting = true;
+  try {
+    const result = await staffRequest('save-calendar',{key,rows,cancellation,revision:calendarDataset.revision});
+    const records = calendarDataset.records;
+    calendarDataset = {
+      ...calendarDataset,
+      revision: result.revision,
+      records: {
+        ...records,
+        [key]:rows,
+        lessonCancellations:result.lessonCancellations ?? records.lessonCancellations ?? [],
+        courtCancellations:result.courtCancellations ?? records.courtCancellations ?? [],
+      },
+    };
+    if (result.notificationWarning) window.alert('Calendar saved. LINE delivery incomplete.');
+  } catch (error) {
+    if (error.status === 409) {
+      const latest = await staffRequest('calendar');
+      calendarDataset = latest;
+      refreshBookingCalendars();
+      throw new Error('Calendar updated. Review your changes and save again.');
+    }
+    throw error;
+  } finally {
+    calendarWriting = false;
+  }
+}
+function calendarSaveMessage(error, fallback = 'Could not save booking.') {
+  if (error.status === 401) return 'Sign in again to save the changes.';
+  if (error.name === 'TimeoutError') return 'Save timed out. Check the calendar before trying again.';
+  return error.message || fallback;
+}
+
 async function saveBookingMembers(members) {
   if (savingBookingMembers || !bookingStaffRole) throw new Error('Member save unavailable');
   savingBookingMembers = true;
@@ -133,7 +174,11 @@ async function loadStaffWorkspace({afterSignIn = false} = {}) {
     const version = ++staffWorkspaceVersion;
     let roster = await staffRequest(bookingDemo ? undefined : 'workspace');
     if (version !== staffWorkspaceVersion) return;
-    if (!bookingDemo) calendarDataset = roster.calendar;
+    if (!bookingDemo) {
+      calendarDataset = roster.calendar;
+      Object.assign(pricing, roster.rates);
+      applyPriceConfig();
+    }
     bookingStaffRole = roster.role;
     rosterRevision = roster.revision;
     if (roster.role === 'owner') {

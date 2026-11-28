@@ -8,21 +8,22 @@
     "dev:phone": "VITE_DEV_PHONE=1 vite --host",
     "debug:tail": "mkdir -p .debug && touch .debug/ingest.jsonl && tail -f .debug/ingest.jsonl",
     "dev:tunnel": "npx cloudflared tunnel --url http://localhost:5173",
-    "build": "npm run check:layouts && npm run test:layout-isolation && npm run check:formats && npm run test:formats && npm run test:gesture-scoring && npm run test:line-return && npm run test:competition-invite && tsc -b && vite build && npm run prerender:coaching && node scripts/test-share-runtime.mjs && npx vite-node --mode test scripts/test-competition-share.mts --built && node --test scripts/test-share-thumbnail.mjs",
+    "build": "npm run check:layouts && npm run test:layout-isolation && npm run check:formats && npm run test:formats && npm run test:gesture-scoring && npm run test:line-return && npm run test:competition-invite && npm run test:bookings && tsc -b && vite build && npm run prerender:coaching && node scripts/test-share-runtime.mjs && vite-node --mode test scripts/test-competition-share.mts --built && node --test scripts/test-share-thumbnail.mjs",
+    "test:bookings": "node --test scripts/test-booking-*.mjs",
     "test:competition-invite": "node --experimental-strip-types --test scripts/test-competition-invite-link.mjs",
-    "test:line-return": "npx vite-node --mode test scripts/test-line-return.mts && node --experimental-strip-types --test scripts/test-line-passive-recognition.mjs && npx vite-node --mode test scripts/test-english-entry.mts",
-    "test:gesture-scoring": "npx vite-node --mode test scripts/test-thumb-scoring.mts",
+    "test:line-return": "vite-node --mode test scripts/test-line-return.mts && node --experimental-strip-types --test scripts/test-line-passive-recognition.mjs && vite-node --mode test scripts/test-english-entry.mts",
+    "test:gesture-scoring": "vite-node --mode test scripts/test-thumb-scoring.mts",
     "check:formats": "node scripts/check-competition-formats.mjs",
     "test:formats": "node --experimental-strip-types --test scripts/test-competition-formats.mjs",
-    "check:cycles": "npx vite-node scripts/check-cycles.mts",
-    "check:schedule": "npx vite-node scripts/check-competition-schedule.mts",
+    "check:cycles": "vite-node scripts/check-cycles.mts",
+    "check:schedule": "vite-node scripts/check-competition-schedule.mts",
     "check:layouts": "node scripts/check-layouts.mjs",
     "check:layout-scope": "node scripts/check-layout-scope.mjs",
     "test:layout-isolation": "node --test scripts/test-layout-isolation.mjs",
-    "audit:tsx-css": "npx vite-node scripts/audit-tsx-css.mts",
-    "check:tsx-css": "npx vite-node scripts/audit-tsx-css.mts --strict",
-    "check:dead": "npx vite-node scripts/check-dead.mts",
-    "showdown:sync": "npx vite-node scripts/sync-showdown-assets.mts",
+    "audit:tsx-css": "vite-node scripts/audit-tsx-css.mts",
+    "check:tsx-css": "vite-node scripts/audit-tsx-css.mts --strict",
+    "check:dead": "vite-node scripts/check-dead.mts",
+    "showdown:sync": "vite-node scripts/sync-showdown-assets.mts",
     "lint": "eslint .",
     "preview": "vite preview",
     "cap:sync": "npm run build && npx cap sync",
@@ -31,7 +32,7 @@
     "cap:run:ios": "npm run cap:sync && npx cap run ios",
     "cap:run:android": "npm run cap:sync && npx cap run android",
     "ios:release": "bash scripts/ios-release.sh",
-    "prerender:coaching": "npx vite-node scripts/prerender-coaching.mts && node --test scripts/test-coaching-html.mjs"
+    "prerender:coaching": "vite-node scripts/prerender-coaching.mts && node --test scripts/test-coaching-html.mjs"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.0",
@@ -70,6 +71,7 @@
     "tailwindcss": "^4.3.0",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
-    "vite": "^8.0.12"
+    "vite": "^8.0.12",
+    "vite-node": "6.0.0"
   }
 }

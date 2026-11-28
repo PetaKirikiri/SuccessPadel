@@ -25,6 +25,11 @@ export default async function handler(req,res) {
        !(coach===null || (typeof coach==='string' && coach.length<=60)) ||
        typeof id!=='string' || !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(id))
       return res.status(400).json({error:'Choose an available time.'});
+    const expectedPrice = input.expectedPrice;
+    if (expectedPrice !== undefined && (!Number.isFinite(expectedPrice) || expectedPrice < 0)) {
+      return res.status(400).json({error:'Invalid quoted price.'});
+    }
+    if (expectedPrice !== undefined) data.expectedPrice = expectedPrice;
     const players = input.players ?? [];
     const method = input.method ?? 'later';
     if (!Array.isArray(players) || players.length>3 || players.some(p=>typeof p!=='string' || !p.trim() || p.length>80 || /[<>&"\u0000-\u001f\u007f]/u.test(p)))
@@ -44,13 +49,15 @@ export default async function handler(req,res) {
       method:'POST',headers:{apikey:process.env.BOOKING_SUPABASE_PUBLISHABLE_KEY,'Content-Type':'application/json'},
       body:JSON.stringify({payload,signature:sign(key,'booking-guest-v1:'+payload)}),signal:AbortSignal.timeout(12000)
     });
+    if (response.status===412) return res.status(412).json({error:'The price changed. Review the new price before booking.'});
     if (response.status===409) return res.status(409).json({error:'This time has just been booked. Choose another slot.'});
     if (response.status===429) return res.status(429).json({error:'Too many bookings. Try again in ten minutes.'});
     if (!response.ok) throw new Error();
     const result = await response.json();
     if(data.action==='calendar'){
-      const {slots,occupied}=result;
+      const {slots,occupied,rates}=result;
       return res.status(200).json({
+        rates,
         slots:slots.map(({resource,minute,duration,kind,coach})=>({resource,minute,duration,kind,coach})),
         occupied:occupied.map(({resource,minute,duration,kind})=>({
           resource,minute,duration,

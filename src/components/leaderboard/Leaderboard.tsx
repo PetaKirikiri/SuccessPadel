@@ -402,7 +402,10 @@ export function Leaderboard({
   const navigate = useNavigate()
   const location = useLocation()
   const [info, setInfo] = useState<AchievementInfo | null>(null)
-  const activeEntries = !competitionFormat || validateStandings(competitionFormat, entries) ? entries : []
+  const activeEntries = useMemo(
+    () => (!competitionFormat || validateStandings(competitionFormat, entries) ? entries : []),
+    [competitionFormat, entries],
+  )
   const cachedMovement = useLeaderboardMovement(
     rankMovement === undefined && competitionId ? `${competitionId}:${competitionFormat ?? 'singles'}` : null,
     activeEntries,
@@ -418,10 +421,10 @@ export function Leaderboard({
       : scoreUnit === 'games'
         ? t('leaderboard.games')
         : t('leaderboard.pts'))
+  const podiumTiers = useMemo(() => podiumPointTiers(activeEntries), [activeEntries])
   if (activeEntries.length === 0) return null
 
   const hasAnyScores = activeEntries.some((entry) => entry.games > 0)
-  const podiumTiers = useMemo(() => podiumPointTiers(activeEntries), [activeEntries])
 
   const effectiveShowAchievements = showAchievements && !simpleTeamRows
 
@@ -441,22 +444,21 @@ export function Leaderboard({
   const rowGrid = effectiveShowAchievements ? ROW_GRID : ROW_GRID_NO_BADGES
   const nameColumnLabel = showingTeamEntries ? t('leaderboard.teams') : t('leaderboard.player')
 
-  const shareRows = useMemo((): LeaderboardShareRow[] => {
-    if (!shareTitle) return []
-    return displayEntries.slice(0, 15).map((entry, i) => {
-      const source = activeEntries[i]!
-      const badges = badgesFor(source)
-      return {
-        name: entry.display_name,
-        points: entry.total_points,
-        avatarUrl: entry.avatar_url,
-        badges: badges.map((badge) => ({
-          iconKey: badge.key,
-          emoji: badge.icon,
-        })),
-      }
-    })
-  }, [shareTitle, displayEntries, activeEntries, badgesFor])
+  const shareRows: LeaderboardShareRow[] = shareTitle
+    ? displayEntries.slice(0, 15).map((entry, i) => {
+        const source = activeEntries[i]!
+        const badges = badgesFor(source)
+        return {
+          name: entry.display_name,
+          points: entry.total_points,
+          avatarUrl: entry.avatar_url,
+          badges: badges.map((badge) => ({
+            iconKey: badge.key,
+            emoji: badge.icon,
+          })),
+        }
+      })
+    : []
 
   const shellClass = embedded
     ? compact

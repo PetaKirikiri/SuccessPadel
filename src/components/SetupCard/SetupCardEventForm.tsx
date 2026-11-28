@@ -14,12 +14,11 @@ import {
   type CompetitionFormDraft,
   type CompetitionPlayerMode,
 } from '../../lib/competitionFormDraft'
-import { rosterDisplayName, type CompetitionPlayer, type CompetitionRow } from '../../hooks/useCompetitions'
+import { rosterDisplayName, type CompetitionRow } from '../../hooks/useCompetitions'
 import { MemberPlayerSlots, type PadelPlayerOption } from './MemberPlayerSlots'
 import {
   DuoTeamSlots,
   duoTeamsComplete,
-  duoTeamsToPairPayload,
   duoTeamsToPairSlotPayload,
   duoTeamsToRosterSlots,
   duoTeamsToScheduleInput,
@@ -34,7 +33,7 @@ import { useTranslation } from '../../hooks/useTranslation'
 import { measureScheduleQuality, solveBalancedSchedule } from '../../lib/balancedSchedule'
 import {
   buildStoredSchedule,
-  padRosterToTarget,
+  RANKED_SCHEDULE_VERSION,
   sortRosterByRank,
   targetPlayerCount,
 } from '../../lib/rankedSchedule'
@@ -42,13 +41,13 @@ import { buildDuoStoredSchedule } from '../../lib/duoRoundRobinSchedule'
 import {
   competitionFormatPreset,
   competitionPlayerMode,
-  competitionScoringConfig,
   competitionSessionFields,
   SINGLES_COMPETITION,
-  type CompetitionTeamConfig,
+  teamsFromConfig,
 } from '../../lib/competitionFormatPresets'
 import { buildCompetitionAutoTitle, GENDERS, SKILL_LEVELS, type Gender, type SkillLevel } from '../../lib/competitionPresets'
 import { storeCompetitiveGenderFilter } from '../../lib/gamesGenderFilter'
+import { hydrateDuoTeams } from '../../lib/competitionDuoTeams'
 import { buildCompetitionRosterSlots } from '../../lib/competitionRosterSlots'
 import {
   COURT_COUNT_OPTIONS,
@@ -63,9 +62,6 @@ import {
 } from '../../lib/competitionLayout'
 import { totalScheduleMinutes } from '../../lib/competitionScheduleLayout'
 import { supabase } from '../../lib/supabaseClient'
-import {
-  saveScheduleForSession,
-} from '../../lib/persistCompetitionSchedule'
 import type { Profile, ScoringConfig } from '../../lib/types'
 import { fetchCompetitionAutoRank } from '../../lib/competitionAutoRank'
 
@@ -87,17 +83,7 @@ function flushPendingInputs(): Promise<void> {
   })
 }
 
-function rosterIdsInOrder(rows: CompetitionPlayer[]): string[] {
-  return sortRosterByRank(rows).map((row) => row.id)
-}
-
 async function loadCompetitionRowForEdit(id: string): Promise<{ row: CompetitionRow | null; error: string | null }> {
-  const { data: listed, error: listErr } = await supabase.rpc('list_competitions_for_setup')
-  if (!listErr) {
-    const row = ((listed as CompetitionRow[] | null) ?? []).find((candidate) => candidate.id === id)
-    if (row) return { row, error: null }
-  }
-
   const { data, error: sessionErr } = await supabase
     .from('game_sessions')
     .select(
@@ -109,7 +95,7 @@ async function loadCompetitionRowForEdit(id: string): Promise<{ row: Competition
     .maybeSingle()
 
   if (sessionErr) return { row: null, error: sessionErr.message }
-  if (!data) return { row: null, error: listErr?.message ?? 'Competition not found.' }
+  if (!data) return { row: null, error: 'Competition not found.' }
   return { row: data as unknown as CompetitionRow, error: null }
 }
 
@@ -198,6 +184,8 @@ export function CompetitionForm() {
   const [seasonLoading, setSeasonLoading] = useState(true)
   const [seasonError, setSeasonError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const savingRef = useRef(false)
+  const createRequestId = useRef<string | null>(null)
   const [autoRankBusy, setAutoRankBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [playerSlots, setPlayerSlots] = useState<string[]>(() =>
@@ -224,6 +212,8 @@ export function CompetitionForm() {
   const [slotCount, setSlotCount] = useState(playersFromCourtCount(DEFAULT_SINGLES_COURT_COUNT))
   const [competitionStarted, setCompetitionStarted] = useState(false)
   const [rosterHydrated, setRosterHydrated] = useState(!id)
+  const [editLoadError, setEditLoadError] = useState<string | null>(null)
+  const [duoRosterRanks, setDuoRosterRanks] = useState<Array<number | null>>([])
   const [isLeagueWeek, setIsLeagueWeek] = useState(false)
   const playerSlotsRef = useRef(playerSlots)
   const profileIdsRef = useRef(profileIds)
@@ -453,12 +443,15 @@ export function CompetitionForm() {
   useEffect(() => {
     if (!id) return
     setRosterHydrated(false)
+    setEditLoadError(null)
+    let active = true
     void (async () => {
       const { row: session, error: sessionErr } = await loadCompetitionRowForEdit(id)
 
+      if (!active) return
       if (sessionErr || !session) {
         setRosterHydrated(true)
-        if (sessionErr) setError(sessionErr)
+        setEditLoadError(sessionErr ?? 'Competition not found.')
         return
       }
 
@@ -524,35 +517,32 @@ export function CompetitionForm() {
       }
 
       if (mode === 'duos') {
-        const teams = emptyDuoTeams(teamsFromCourtCount(courtCountFromPlayers(target))).map(
-          (team, teamIndex) => {
-            const base = teamIndex * 2
-            return {
-              ...team,
-              names: [nextNames[base] ?? '', nextNames[base + 1] ?? ''] as [string, string],
-              profileIds: [nextIds[base] ?? null, nextIds[base + 1] ?? null] as [
-                string | null,
-                string | null,
-              ],
-              padelPlayerIds: [nextPadelIds[base] ?? null, nextPadelIds[base + 1] ?? null] as [
-                string | null,
-                string | null,
-              ],
-            }
-          },
+        const pairs = session.session_pairs?.length
+          ? session.session_pairs
+          : teamsFromConfig(config).map((team) => ({
+            pair_label: team.label,
+            roster_a_id: team.roster_ids[0],
+            roster_b_id: team.roster_ids[1],
+          }))
+        const fixedRoster = hydrateDuoTeams(
+          rosterRows.map((row) => ({
+            id: row.id,
+            rank: row.rank_order ?? -1,
+            name: rosterDisplayName(row),
+            profileId: row.profile_id,
+            padelPlayerId: row.padel_player_id,
+          })),
+          pairs,
+          teamsFromCourtCount(courtCountFromPlayers(target)),
         )
-        const rankByRosterId = new Map(
-          rosterRows.map((row) => [row.id, row.rank_order ?? 0]),
-        )
-        for (const pair of session.session_pairs ?? []) {
-          const rankA = rankByRosterId.get(pair.roster_a_id ?? '')
-          if (rankA == null) continue
-          const teamIndex = Math.floor(rankA / 2)
-          if (teamIndex >= 0 && teamIndex < teams.length && pair.pair_label) {
-            teams[teamIndex] = { ...teams[teamIndex], label: pair.pair_label }
-          }
+        if (!fixedRoster) {
+          setDuoTeams(emptyDuoTeams(teamsFromCourtCount(courtCountFromPlayers(target))))
+          setDuoRosterRanks([])
+          setEditLoadError('Fixed-pair roster incomplete. Correct the saved teams before editing.')
+        } else {
+          setDuoTeams(fixedRoster.teams)
+          setDuoRosterRanks(fixedRoster.ranks)
         }
-        setDuoTeams(teams)
       } else {
         setPlayerSlots(nextNames)
         setProfileIds(nextIds)
@@ -564,6 +554,7 @@ export function CompetitionForm() {
           .from('padel_players')
           .select('id, display_name, profile_id, line_picture_url')
           .in('id', [...padelIdsOnRoster])
+        if (!active) return
         if (rosterPadel?.length) {
           setPadelPlayers((prev) => {
             const byId = new Map(prev.map((p) => [p.id, p]))
@@ -579,9 +570,10 @@ export function CompetitionForm() {
 
       setRosterHydrated(true)
     })()
+    return () => { active = false }
   }, [id])
 
-  const save = async () => {
+  const saveCompetition = async () => {
     await flushPendingInputs()
 
     if (!seasonId) {
@@ -600,19 +592,14 @@ export function CompetitionForm() {
       return
     }
 
-    setBusy(true)
-    setError(null)
-
     const admin = await verifyAdminSession(session, restoreSession)
     if (admin.error || !admin.session?.user) {
-      setBusy(false)
       setError(admin.error ?? 'Admin session expired. Reopen Sign In, then try saving again.')
       return
     }
 
     const finalTitle = title.trim() || autoTitle
     const targetPlayers = playersFromCourtCount(courtCount)
-    const baseConfig = competitionScoringConfig(playerMode)
     const lockedFields = competitionSessionFields(playerMode, {
       skillLevel,
       gender,
@@ -620,16 +607,35 @@ export function CompetitionForm() {
       schedule: competitionSchedule,
     })
 
+    const savedTeamDraft = duoTeamsRef.current
     const rosterPayload = isDuos
-      ? duoTeamsToRosterSlots(duoTeams)
-      : buildCompetitionRosterSlots(trimmedSlots, profileIds, padelPlayerIds)
+      ? duoTeamsToRosterSlots(savedTeamDraft)
+      : buildCompetitionRosterSlots(
+        padArray(playerSlotsRef.current, slotCount, ''),
+        profileIdsRef.current,
+        padelPlayerIdsRef.current,
+      )
 
     // Existing rounds are the draw authority. Never sync/delete the roster or
     // invoke the schedule generator when deliberately editing a running event.
     if (id && competitionStarted) {
+      let startedRoster = rosterPayload
+      if (isDuos) {
+        const byRank = rosterPayload
+          .flatMap((slot, index) => {
+            const rank = duoRosterRanks[index]
+            return rank == null ? [] : [{ slot, rank }]
+          })
+          .sort((a, b) => a.rank - b.rank)
+        if (byRank.some(({ rank }, index) => rank !== index)) {
+          setError('The existing roster ranks could not be restored. Reload before editing.')
+          return
+        }
+        startedRoster = byRank.map(({ slot }) => slot)
+      }
       const { error: editError } = await supabase.rpc('edit_competition_preserving_draw', {
         p_session_id: id,
-        p_slots: rosterPayload,
+        p_slots: startedRoster,
         p_starts_at: startsAtIso,
         p_ends_at: endsAtIso,
         p_games: competitionSchedule.games,
@@ -637,7 +643,6 @@ export function CompetitionForm() {
         p_break_minutes: competitionSchedule.breakMinutes,
         p_title: finalTitle,
       })
-      setBusy(false)
       if (editError) {
         setError(editError.code === 'PGRST202'
           ? 'Safe editing is not installed in the database yet. Nothing was changed.'
@@ -650,215 +655,83 @@ export function CompetitionForm() {
       return
     }
 
-    if (isDuos && createLeague && !id) {
-      const { data: leagueResult, error: leagueErr } = await supabase.rpc('create_duo_league', {
-        p_season_id: seasonId,
-        p_title: finalTitle,
-        p_skill_level: skillLevel,
-        p_gender: gender,
-        p_slots: rosterPayload,
-        p_pairs: [],
-        p_scoring_config: baseConfig,
-        p_created_by: admin.session.user.id,
-        p_target_players: targetPlayers,
-        p_schedule_game_count: competitionSchedule.games,
-        p_schedule_game_minutes: competitionSchedule.gameMinutes,
-        p_schedule_break_minutes: competitionSchedule.breakMinutes,
-      })
-      if (leagueErr || !leagueResult) {
-        setBusy(false)
-        setError(leagueErr?.message ?? 'Could not create league')
-        return
-      }
-
-      const sessionIds = (leagueResult.session_ids as string[] | undefined) ?? []
-      for (const sessionId of sessionIds) {
-        const { data: rosterRows, error: rosterLoadErr } = await supabase
-          .from('session_players')
-          .select('id, guest_name, rank_order, profile_id, profiles(display_name)')
-          .eq('session_id', sessionId)
-          .order('rank_order')
-        if (rosterLoadErr || !rosterRows) {
-          setBusy(false)
-          setError(rosterLoadErr?.message ?? 'Could not load league roster')
-          return
-        }
-        const ranked = sortRosterByRank(rosterRows as unknown as CompetitionPlayer[])
-        const rosterIds = rosterIdsInOrder(ranked)
-        const pairs = duoTeamsToPairPayload(duoTeams, rosterIds)
-        const { error: pairErr } = await supabase.rpc('sync_competition_pairs', {
-          p_session_id: sessionId,
-          p_pairs: pairs,
-        })
-        if (pairErr) {
-          setBusy(false)
-          setError(pairErr.message)
-          return
-        }
-        if (canBuildDuoSchedule) {
-          const schedule = buildDuoStoredSchedule(
-            duoTeamsToScheduleInput(duoTeams, rosterIds),
-            scheduleSetup.gameCount,
-            previewSeed,
-          )
-          const teamsConfig: CompetitionTeamConfig[] = pairs.map((pair) => ({
-            label: pair.label,
-            roster_ids: [pair.roster_a_id, pair.roster_b_id],
-          }))
-          const cfgErr = await saveScheduleForSession(
-            sessionId,
-            { ...baseConfig, teams: teamsConfig },
-            schedule,
-            previewSeed,
-          )
-          if (cfgErr) {
-            setBusy(false)
-            setError(cfgErr)
-            return
-          }
-        }
-      }
-
-      clearDraft()
-      clearCompetitionHubCache()
-      setBusy(false)
-      storeCompetitiveGenderFilter(gender)
-      navigate('/competitive')
-      return
-    }
-
-    const startsAt = showDateFields ? new Date(startsAtIso) : null
-    const endsAt = showDateFields ? new Date(endsAtIso) : null
-
+    const isLeague = isDuos && createLeague && !id
     const sessionFields = {
       season_id: seasonId,
       title: finalTitle,
-      ...(startsAt
-        ? {
-            starts_on: day,
-            ends_on: bangkokDateFromIso(endsAt!.toISOString()),
-            starts_at: startsAt.toISOString(),
-            ends_at: endsAt!.toISOString(),
-          }
-        : {}),
-      game_kind: 'competition' as const,
-      visibility: 'open' as const,
-      created_by: admin.session.user.id,
+      ...(!isLeague ? {
+        starts_at: startsAtIso,
+        ends_at: endsAtIso,
+      } : {}),
       ...lockedFields,
     }
-    const payload = id ? sessionFields : { ...sessionFields, status: 'open' as const }
 
-    let sessionId = id
-    if (id) {
-      const { error: err } = await supabase.from('game_sessions').update(payload).eq('id', id)
-      if (err) {
-        setBusy(false)
-        setError(err.message)
-        return
-      }
-    } else {
-      const { data, error: err } = await supabase
-        .from('game_sessions')
-        .insert(payload)
-        .select('id')
-        .limit(1)
-      const createdId = data?.[0]?.id
-      if (err || !createdId) {
-        setBusy(false)
-        setError(err?.message ?? 'Could not create competition')
-        return
-      }
-      sessionId = createdId
-    }
-
-    const pairSlotPayload = isDuos ? duoTeamsToPairSlotPayload(duoTeams) : null
-
-    const { error: rosterErr } = await supabase.rpc('sync_competition_roster_slots', {
-      p_session_id: sessionId,
-      p_slots: rosterPayload,
-      ...(pairSlotPayload?.length ? { p_pairs: pairSlotPayload } : {}),
-    })
-    if (rosterErr) {
-      setBusy(false)
-      setError(rosterErr.message)
-      return
-    }
-
-    const { data: rosterRows, error: rosterLoadErr } = await supabase
-      .from('session_players')
-      .select('id, guest_name, rank_order, profile_id, profiles(display_name)')
-      .eq('session_id', sessionId)
-      .order('rank_order')
-    if (rosterLoadErr) {
-      setBusy(false)
-      setError(rosterLoadErr.message)
-      return
-    }
-
-    const ranked = sortRosterByRank((rosterRows ?? []) as unknown as CompetitionPlayer[])
-    const rosterIds = rosterIdsInOrder(ranked)
+    const rosterSize = rosterPayload.filter((slot) => slot.name.trim()).length
     const effectiveSlotCount = targetPlayerCount(
       { target_players: slotCount, max_players: slotCount },
-      ranked.length,
+      rosterSize,
       isDuos,
     )
-
+    const slotIds = Array.from({ length: effectiveSlotCount }, (_, rank) => String(rank))
     const canSaveSchedule = isDuos
-      ? canBuildDuoSchedule
-      : ranked.length >= 4 && effectiveSlotCount >= 4 && effectiveSlotCount % 4 === 0
-
-    if (canSaveSchedule) {
-      let schedule: ReturnType<typeof buildStoredSchedule> = []
-      let teamsConfig: CompetitionTeamConfig[] | undefined
-
-      if (isDuos) {
-        schedule = buildDuoStoredSchedule(
-          duoTeamsToScheduleInput(duoTeams, rosterIds),
-          scheduleSetup.gameCount,
-          previewSeed,
-        )
-        teamsConfig = duoTeamsToPairPayload(duoTeams, rosterIds).map((pair) => ({
-          label: pair.label,
-          roster_ids: [pair.roster_a_id, pair.roster_b_id],
-        }))
-      } else {
-        const padded = padRosterToTarget(ranked, effectiveSlotCount)
-        schedule = buildStoredSchedule(
-          padded,
-          solveBalancedSchedule(effectiveSlotCount, scheduleSetup.gameCount, previewSeed),
-        )
-      }
-
-      const cfgErr = await saveScheduleForSession(
-        sessionId!,
-        { ...baseConfig, ...(teamsConfig ? { teams: teamsConfig } : {}) },
-        schedule,
+      ? duoTeamsComplete(savedTeamDraft)
+      : rosterSize >= 4 && effectiveSlotCount >= 4 && effectiveSlotCount % 4 === 0
+    const schedule = !canSaveSchedule ? null : isDuos
+      ? buildDuoStoredSchedule(
+        duoTeamsToScheduleInput(savedTeamDraft, slotIds),
+        scheduleSetup.gameCount,
         previewSeed,
       )
-      if (cfgErr) {
-        setBusy(false)
-        setError(cfgErr)
-        return
-      }
+      : buildStoredSchedule(
+        slotIds.map((slotId) => ({ id: slotId })),
+        solveBalancedSchedule(effectiveSlotCount, scheduleSetup.gameCount, previewSeed),
+      )
+
+    const requestId = id ?? (createRequestId.current ??= crypto.randomUUID())
+    const { data: sessionId, error: saveError } = await supabase.rpc('save_competition_setup', {
+      p_request_id: requestId,
+      p_create: !id,
+      p_league: isLeague,
+      p_fields: sessionFields,
+      p_slots: rosterPayload,
+      p_pairs: isDuos ? duoTeamsToPairSlotPayload(savedTeamDraft) : null,
+      p_slot_schedule: schedule,
+      p_schedule_seed: previewSeed,
+      p_schedule_version: RANKED_SCHEDULE_VERSION,
+    })
+    if (saveError || !sessionId) {
+      setError(saveError?.code === 'PGRST202'
+        ? 'Competition setup is unavailable. Try again after the update.'
+        : saveError?.message ?? 'Could not save the competition.')
+      return
     }
 
     clearDraft()
     clearCompetitionHubCache()
-
-    if (id) {
-      setBusy(false)
-      storeCompetitiveGenderFilter(gender)
-      window.location.assign(`/competitions/${sessionId}`)
-      return
-    }
-
-    if (!competitionStarted && sessionId) {
-      void supabase.rpc('start_competition', { p_session_id: sessionId })
-    }
-
-    setBusy(false)
     storeCompetitiveGenderFilter(gender)
-    navigate(`/competitions/${sessionId}`)
+    if (isLeague) {
+      navigate('/competitive')
+    } else if (id) {
+      window.location.assign(`/competitions/${sessionId}`)
+    } else {
+      void supabase.rpc('start_competition', { p_session_id: sessionId })
+      navigate(`/competitions/${sessionId}`)
+    }
+  }
+
+  const save = async () => {
+    if (savingRef.current || (id && (!rosterHydrated || editLoadError))) return
+    savingRef.current = true
+    setBusy(true)
+    setError(null)
+    try {
+      await saveCompetition()
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : 'Could not save the competition.')
+    } finally {
+      savingRef.current = false
+      setBusy(false)
+    }
   }
 
   const autoRankRoster = async () => {
@@ -940,7 +813,7 @@ export function CompetitionForm() {
   }
 
   const saveDisabled =
-    busy || (Boolean(id) && !rosterHydrated) || (!id && seasonLoading)
+    busy || (Boolean(id) && (!rosterHydrated || Boolean(editLoadError))) || (!id && seasonLoading)
   const scheduleQuality = useMemo(() => {
     if (filledNameCount < 4 || isDuos) return null
     const previewSlotCount = targetPlayerCount(
@@ -969,8 +842,8 @@ export function CompetitionForm() {
           formatLabel={t('competition.formatLabel')}
           playerMode={playerMode}
           playerModeOptions={[
-            { value: 'singles', label: t('competition.formatSingles') },
-            { value: 'duos', label: t('competition.formatDuos') },
+            { value: 'singles', label: t('competition.formatSingles'), disabled: competitionStarted },
+            { value: 'duos', label: t('competition.formatDuos'), disabled: competitionStarted },
           ]}
           onPlayerModeChange={(mode) => {
             setPlayerMode(mode)
@@ -1052,7 +925,7 @@ export function CompetitionForm() {
 
         {!rosterHydrated && id ? (
           <p className="text-sm text-brand-muted">{t('common.loading')}</p>
-        ) : isDuos ? (
+        ) : editLoadError ? null : isDuos ? (
           <DuoTeamSlots
             teams={duoTeams}
             profiles={profiles}
@@ -1083,7 +956,7 @@ export function CompetitionForm() {
           <button
             type="button"
             className="setup-auto-rank__button"
-            disabled={busy || autoRankBusy}
+            disabled={busy || autoRankBusy || competitionStarted || Boolean(editLoadError)}
             onClick={() => void autoRankRoster()}
           >
             {autoRankBusy ? 'Ranking…' : 'Auto-rank roster'}
@@ -1121,8 +994,8 @@ export function CompetitionForm() {
           </p>
         ) : null}
 
-        {(seasonError || error) && (
-          <p className="text-sm text-red-600">{error ?? seasonError}</p>
+        {(editLoadError || seasonError || error) && (
+          <p className="text-sm text-red-600">{editLoadError ?? error ?? seasonError}</p>
         )}
         <button
           type="submit"

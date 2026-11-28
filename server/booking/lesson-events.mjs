@@ -3,58 +3,150 @@ import { randomUUID } from 'node:crypto';
 const courts = 'success-padel-bookings';
 const packages = 'success-booking-packages-v1';
 const cutoff = 12 * 60 * 60 * 1000;
-const minutes = time => Number(time.slice(0,2))*60 + Number(time.slice(3));
-function overlaps(a,b) {
-  const sameDay = a.date === b.date || (a.weeklyOngoing && a.date < b.date &&
-    (Date.parse(b.date)-Date.parse(a.date)) % 604800000 === 0);
-  return sameDay && minutes(a.time)<minutes(b.time)+b.duration && minutes(b.time)<minutes(a.time)+a.duration;
+const week = 7 * 24 * 60 * 60 * 1000;
+const validCourts = new Set(['Court 1', 'Court 2', 'Court 3', 'Court 4']);
+const coachingCourts = new Set(['Court 3', 'Court 4']);
+const slotFields = ['date', 'time', 'duration', 'court', 'coach', 'weeklyOngoing'];
+const minutes = time => typeof time === 'string' && /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(time)
+  ? Number(time.slice(0, 2)) * 60 + Number(time.slice(3))
+  : NaN;
+
+function isLesson(booking) {
+  return booking.activity === 'coaching' || Boolean(booking.coach && !booking.eventId);
 }
-export function applyLessonChanges(records,next,now=Date.now(),cancellation) {
-  const prior=records[courts] || [];
-  const changes=[];
-  const cancellations=[...(records.lessonCancellations || [])];
-  const output={...records,[courts]:next,lessonCancellations:cancellations};
-  if(cancellation!==undefined){
-    const booking=prior.find(b=>b.id===cancellation?.id);
-    const reason=cancellation?.reason;
-    if(!booking || next.some(b=>b.id===booking.id) || typeof reason!=='string' || !reason.trim() || reason.length>500)throw Error('Invalid cancellation.');
-    if(booking.activity!=='coaching'){
-      output.courtCancellations=[...(records.courtCancellations||[]),{...booking,reason:reason.trim(),cancelledAt:new Date(now).toISOString()}];
+
+function validDate(date) {
+  const value = Date.parse(date);
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isFinite(value) &&
+    new Date(value).toISOString().slice(0, 10) === date;
+}
+
+function occursOn(booking, date) {
+  if (booking.date === date) return true;
+  const difference = Date.parse(date) - Date.parse(booking.date);
+  return booking.weeklyOngoing === true && difference > 0 && difference % week === 0;
+}
+
+function overlaps(first, second) {
+  if (!occursOn(first, second.date) && !occursOn(second, first.date)) return false;
+  const start = minutes(first.time);
+  const otherStart = minutes(second.time);
+  return start < otherStart + Number(second.duration) && otherStart < start + Number(first.duration);
+}
+
+function sameSlot(first, second) {
+  return isLesson(first) === isLesson(second) && Boolean(first.eventId) === Boolean(second.eventId) &&
+    slotFields.every(field => (first[field] ?? null) === (second[field] ?? null));
+}
+
+function previousBooking(booking, prior, priorById) {
+  if (booking.id) return priorById.get(booking.id);
+  return prior.find(old => !old.id && old.eventId === booking.eventId && sameSlot(old, booking));
+}
+
+function coachAvailable(booking, windows) {
+  const start = minutes(booking.time);
+  let coveredUntil = start;
+  const sameDayWindows = windows
+    .filter(window => window.date === booking.date && window.coach === booking.coach)
+    .sort((first, second) => minutes(first.time) - minutes(second.time));
+  for (const window of sameDayWindows) {
+    const opening = minutes(window.time);
+    if (opening > coveredUntil) break;
+    if (Number.isFinite(window.duration) && window.duration > 0) {
+      coveredUntil = Math.max(coveredUntil, opening + window.duration);
     }
   }
-  const lessons=rows=>rows.filter(b=>b.activity==='coaching' && b.id);
-  const byId=new Map(lessons(prior).map(b=>[b.id,b]));
-  const current=new Map(lessons(next).map(b=>[b.id,b]));
-  if(current.size!==lessons(next).length)throw Error('Duplicate lesson.');
-  const balance=id=>{
-    if(!id)return null;
-    const pack=(records[packages]||[]).find(p=>p.id===id);
-    if(!pack)throw Error('Package unavailable.');
-    return pack.count-(pack.previousSessionsUsed||0)-next.filter(b=>b.packageId===id).length
-      -(records['success-pilates-bookings']||[]).filter(b=>b.packageId===id).length
-      -cancellations.filter(b=>b.packageId===id && b.late).length;
-  };
-  for(const b of byId.values())if(!current.has(b.id)){
-    const late=Date.parse(b.date+'T'+b.time+':00+07:00')-now<cutoff;
-    cancellations.push({...b,...(cancellation?.id===b.id?{reason:cancellation.reason.trim()}:{}),late,cancelledAt:new Date(now).toISOString()});
-    changes.push({kind:'cancelled',booking:b,remaining:balance(b.packageId)});
+  return coveredUntil >= start + booking.duration;
+}
+
+function validateSlot(booking, reservations, windows) {
+  const start = minutes(booking.time);
+  const duration = booking.duration;
+  if (!validDate(booking.date) || !validCourts.has(booking.court) ||
+      !Number.isInteger(start) || !Number.isInteger(duration) || duration <= 0 ||
+      start < 7 * 60 || start + duration > 22 * 60) {
+    throw Error('Choose a valid court, date and time.');
   }
-  for(const b of current.values())if(!byId.has(b.id)){
-    if(cancellations.some(c=>c.id===b.id))throw Error('Lesson already cancelled.');
-    const start=minutes(b.time);
-    const windows=(records['success-coach-availability']||[]).filter(w=>w.date===b.date&&w.coach===b.coach).sort((a,c)=>minutes(a.time)-minutes(c.time));
-    let end=start;
-    for(const w of windows)if(minutes(w.time)<=end)end=Math.max(end,minutes(w.time)+w.duration);
-    if(!['Court 3','Court 4'].includes(b.court)||![60,90].includes(b.duration)||end<start+b.duration||
-      next.some(other=>other!==b && (other.court===b.court||other.coach===b.coach)&&overlaps(other,b)))throw Error('Lesson time unavailable.');
-    const remaining=balance(b.packageId);
-    if(b.packageId){
-      const pack=records[packages].find(p=>p.id===b.packageId);
-      if(pack.memberId!==b.customerId||!['padel5','padel10'].includes(pack.kind)||b.duration!==60||pack.purchased>b.date||pack.expires<b.date||remaining<0)throw Error('Package unavailable.');
+  if (isLesson(booking)) {
+    if (!booking.id || !booking.coach || !coachingCourts.has(booking.court) ||
+        ![60, 90].includes(duration) || start % 15 !== 0 || !coachAvailable(booking, windows)) {
+      throw Error('Lesson time unavailable.');
     }
-    changes.push({kind:'booked',booking:b,remaining});
+  } else if (!booking.eventId && (duration !== 60 || start % 60 !== 0)) {
+    throw Error('Choose a full hour on the calendar.');
   }
-  return {output,changes};
+  if (reservations.some(other => other !== booking &&
+      (other.court === booking.court || (booking.coach && other.coach === booking.coach)) &&
+      overlaps(booking, other))) {
+    throw Error(isLesson(booking) ? 'Lesson time unavailable.' : 'Court already booked.');
+  }
+}
+
+export function applyLessonChanges(records, next, now = Date.now(), cancellation, competitionBlocks = []) {
+  const prior = records[courts] ?? [];
+  const priorById = new Map(prior.filter(booking => booking.id).map(booking => [booking.id, booking]));
+  const nextIds = next.map(booking => booking?.id).filter(Boolean);
+  if (new Set(nextIds).size !== nextIds.length) throw Error('Duplicate booking.');
+  if (next.some(booking => !booking || typeof booking !== 'object' || Array.isArray(booking))) {
+    throw Error('Invalid booking.');
+  }
+  const changes = [];
+  const cancellations = [...(records.lessonCancellations ?? [])];
+  const output = {...records, [courts]:next, lessonCancellations:cancellations};
+  if (cancellation !== undefined) {
+    const booking = priorById.get(cancellation?.id);
+    const reason = cancellation?.reason;
+    if (!booking || nextIds.includes(booking.id) || typeof reason !== 'string' ||
+        !reason.trim() || reason.length > 500) throw Error('Invalid cancellation.');
+    if (!isLesson(booking)) {
+      output.courtCancellations = [...(records.courtCancellations ?? []),
+        {...booking, reason:reason.trim(), cancelledAt:new Date(now).toISOString()}];
+    }
+  }
+
+  const lessonIds = new Set(next.filter(isLesson).map(booking => booking.id).filter(Boolean));
+  const packageById = new Map((records[packages] ?? []).map(pack => [pack.id, pack]));
+  function balance(id) {
+    if (!id) return null;
+    const pack = packageById.get(id);
+    if (!pack) throw Error('Package unavailable.');
+    return pack.count - (pack.previousSessionsUsed || 0) - next.filter(booking => booking.packageId === id).length
+      - (records['success-pilates-bookings'] ?? []).filter(booking => booking.packageId === id).length
+      - cancellations.filter(booking => booking.packageId === id && booking.late).length;
+  }
+  for (const booking of prior) {
+    if (!booking.id || !isLesson(booking) || lessonIds.has(booking.id)) continue;
+    const late = Date.parse(booking.date + 'T' + booking.time + ':00+07:00') - now < cutoff;
+    cancellations.push({...booking, ...(cancellation?.id === booking.id ? {reason:cancellation.reason.trim()} : {}),
+      late, cancelledAt:new Date(now).toISOString()});
+    changes.push({kind:'cancelled', booking, remaining:balance(booking.packageId)});
+  }
+
+  const reservations = [...next, ...competitionBlocks];
+  const windows = records['success-coach-availability'] ?? [];
+  for (const booking of next) {
+    const previous = previousBooking(booking, prior, priorById);
+    const slotChanged = !previous || !sameSlot(previous, booking);
+    const packageChanged = !previous || previous.packageId !== booking.packageId ||
+      previous.customerId !== booking.customerId;
+    const lesson = isLesson(booking);
+    const newLesson = lesson && (!previous || !isLesson(previous));
+    if (newLesson && cancellations.some(item => item.id === booking.id)) throw Error('Lesson already cancelled.');
+    if (slotChanged) validateSlot(booking, reservations, windows);
+    if (!slotChanged && !packageChanged) continue;
+    const remaining = balance(booking.packageId);
+    if (booking.packageId) {
+      const pack = packageById.get(booking.packageId);
+      if (!lesson || !Number.isFinite(remaining) || remaining < 0 ||
+          pack.memberId !== booking.customerId || !['padel5', 'padel10'].includes(pack.kind) ||
+          booking.duration !== 60 || pack.purchased > booking.date || pack.expires < booking.date) {
+        throw Error('Package unavailable.');
+      }
+    }
+    if (newLesson) changes.push({kind:'booked', booking, remaining});
+  }
+  return {output, changes};
 }
 export async function sendLessonNotices(changes,enabled) {
   for(const {booking:b,kind,remaining} of changes){

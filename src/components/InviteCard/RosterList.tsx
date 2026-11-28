@@ -144,11 +144,13 @@ export function RosterList(props: Props) {
     .filter(Boolean)
     .join(' ')
 
+  const chipCount = props.format === 'duo' ? props.teams.length * 2 : props.slots.length
+  const gridRef = useEqualRosterChipWidth(chipCount)
+
   if (props.format === 'duo') {
     const { teams, currentUserId, competitionId } = props
     const columns = teams.length <= 4 ? 2 : 4
     const rows = Math.max(1, Math.ceil(teams.length / columns))
-    const gridRef = useEqualRosterChipWidth(teams.length * 2)
     return (
       <ul
         ref={gridRef}
@@ -200,7 +202,6 @@ export function RosterList(props: Props) {
   const { slots, currentUserId, competitionId } = props
   const columns = slots.length <= 4 ? 2 : slots.length <= 8 ? 3 : 4
   const rows = Math.max(1, Math.ceil(slots.length / columns))
-  const gridRef = useEqualRosterChipWidth(slots.length)
   return (
     <ul
       ref={gridRef}
